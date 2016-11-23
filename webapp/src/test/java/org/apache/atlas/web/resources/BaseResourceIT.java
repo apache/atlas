@@ -56,7 +56,10 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Base class for integration tests.
@@ -90,11 +93,32 @@ public abstract class BaseResourceIT {
     }
 
     protected void createType(TypesDef typesDef) throws Exception {
-        try {
+        try{
+            if ( !typesDef.enumTypes().isEmpty() ){
+                String sampleType = typesDef.enumTypesAsJavaList().get(0).name;
+                serviceClient.getType(sampleType);
+                LOG.info("Checking enum type existence");
+            }
+            else if( !typesDef.structTypes().isEmpty()){
+                StructTypeDefinition sampleType = typesDef.structTypesAsJavaList().get(0);
+                serviceClient.getType(sampleType.typeName);
+                LOG.info("Checking struct type existence");
+            }
+            else if( !typesDef.traitTypes().isEmpty()){
+                HierarchicalTypeDefinition<TraitType> sampleType = typesDef.traitTypesAsJavaList().get(0);
+                serviceClient.getType(sampleType.typeName);
+                LOG.info("Checking trait type existence");
+            }
+            else{
+                HierarchicalTypeDefinition<ClassType> sampleType = typesDef.classTypesAsJavaList().get(0);
+                serviceClient.getType(sampleType.typeName);
+                LOG.info("Checking class type existence");
+            }
+            LOG.info("Types already exist. Skipping type creation");
+        } catch(AtlasServiceException ase) {
+            //Expected if type doesnt exist
             String typesAsJSON = TypesSerialization.toJson(typesDef);
             createType(typesAsJSON);
-        } catch(AtlasServiceException ase) {
-            LOG.info("Types failed. Tests might malfunction");
         }
     }
 
@@ -116,6 +140,24 @@ public abstract class BaseResourceIT {
             return new Id(guids.get(guids.size() - 1), 0, referenceable.getTypeName());
         }
         return null;
+    }
+
+    protected TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,
+                                   ImmutableList<StructTypeDefinition> structs,
+                                   ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
+                                   ImmutableList<HierarchicalTypeDefinition<ClassType>> classes){
+        enums = (enums != null) ? enums : ImmutableList
+                .<EnumTypeDefinition>of();
+        structs =
+                (structs != null) ? structs : ImmutableList.<StructTypeDefinition>of();
+
+        traits = (traits != null) ? traits : ImmutableList
+                .<HierarchicalTypeDefinition<TraitType>>of();
+
+        classes = (classes != null) ? classes : ImmutableList
+                .<HierarchicalTypeDefinition<ClassType>>of();
+        return TypesUtil.getTypesDef(enums, structs, traits, classes);
+
     }
 
     protected static final String DATABASE_TYPE = "hive_db";
@@ -179,14 +221,22 @@ public abstract class BaseResourceIT {
                 TypesUtil.createTraitTypeDef("sec", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> financeTrait =
                 TypesUtil.createTraitTypeDef("finance", ImmutableSet.<String>of());
+        /*HierarchicalTypeDefinition<TraitType> factTrait =
+                TypesUtil.createTraitTypeDef("Fact", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> etlTrait =
+                TypesUtil.createTraitTypeDef("ETL", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> dimensionTrait =
+                TypesUtil.createTraitTypeDef("Dimension", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> metricTrait =
+                TypesUtil.createTraitTypeDef("Metric", ImmutableSet.<String>of());*/
 
-        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
-                ImmutableList.of(structTypeDefinition),
-                ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait),
-//                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
-                ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef));
-
-        createType(typesDef);
+        createType(getTypesDef(ImmutableList.of(enumTypeDefinition), null, null, null));
+        createType(getTypesDef(null, ImmutableList.of(structTypeDefinition), null, null));
+        createType(getTypesDef(null, null,
+                 ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait,
+                         soxTrait, secTrait, financeTrait), null));
+        createType(getTypesDef(null, null, null,
+                ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef)));
     }
 
     AttributeDefinition attrDef(String name, IDataType dT) {
@@ -208,7 +258,17 @@ public abstract class BaseResourceIT {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    protected Referenceable createHiveTableInstance(Referenceable databaseInstance, String tableName) throws Exception {
+    protected Referenceable createHiveTableInstance(String dbName, String tableName, Id dbId) throws Exception {
+        Map<String, Object> values = new HashMap<>();
+        values.put("name", dbName);
+        values.put("description", "foo database");
+        values.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        values.put("owner", "user1");
+        values.put("clusterName", "cl1");
+        values.put("parameters", Collections.EMPTY_MAP);
+        values.put("location", "/tmp");
+        Referenceable databaseInstance = new Referenceable(dbId._getId(), dbId.getTypeName(), values);
+
         Referenceable tableInstance =
                 new Referenceable(HIVE_TABLE_TYPE, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", tableName);
@@ -246,6 +306,11 @@ public abstract class BaseResourceIT {
         databaseInstance.set("qualifiedName", dbName);
         databaseInstance.set("clusterName", randomString());
         databaseInstance.set("description", "foo database");
+        databaseInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        databaseInstance.set("owner", "user1");
+        databaseInstance.set("clusterName", "cl1");
+        databaseInstance.set("parameters", Collections.EMPTY_MAP);
+        databaseInstance.set("location", "/tmp");
         return databaseInstance;
     }
 

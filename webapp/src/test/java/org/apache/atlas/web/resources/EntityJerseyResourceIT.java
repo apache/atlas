@@ -71,6 +71,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import java.util.Collections;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -92,6 +94,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private Referenceable tableInstance;
     private Id tableId;
+    private Id dbId;
     private String traitName;
 
     @Inject
@@ -103,6 +106,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         super.setUp();
 
         createTypeDefinitions();
+        Referenceable HiveDBInstance = createHiveDBInstance(DATABASE_NAME);
+        dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
@@ -112,17 +117,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSubmitEntity() throws Exception {
-        Referenceable dbInstance = createHiveDBInstance(DATABASE_NAME);
-
-        Id dbID = createInstance(dbInstance);
-        try {
-            Assert.assertNotNull(UUID.fromString(dbID._getId()));
-            dbInstance.replaceWithNewId(dbID);
-        } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + dbID._getId());
-        }
-
-        tableInstance = createHiveTableInstance(dbInstance, TABLE_NAME);
+        tableInstance = createHiveTableInstance(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
@@ -141,6 +136,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         entity.set("qualifiedName", dbName);
         entity.set("clusterName", randomString());
         entity.set("description", randomString());
+        entity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        entity.set("owner", "user1");
+        entity.set("clusterName", "cl1");
+        entity.set("parameters", Collections.EMPTY_MAP);
+        entity.set("location", "/tmp");
+
 
         String user = "admin";
         AtlasClient localClient = null;
@@ -165,6 +166,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("qualifiedName", dbName);
         databaseInstance.set("clusterName", randomString());
         databaseInstance.set("description", randomString());
+        databaseInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        databaseInstance.set("owner", "user1");
+        databaseInstance.set("clusterName", "cl1");
+        databaseInstance.set("parameters", Collections.EMPTY_MAP);
+        databaseInstance.set("location", "/tmp");
 
         ClientResponse clientResponse =
                 service.path(ENTITIES).accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
@@ -187,32 +193,30 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testEntityDeduping() throws Exception {
         final Referenceable db = new Referenceable(DATABASE_TYPE);
         final String dbName = "db" + randomString();
-        db.set("name", dbName);
-        db.set("qualifiedName", dbName);
-        db.set("clusterName", randomString());
-        db.set("description", randomString());
+        Referenceable HiveDBInstance = createHiveDBInstance(dbName);
+        Id dbIdReference = createInstance(HiveDBInstance);
+        final String dbId = dbIdReference._getId();
 
-        final String dbid = serviceClient.createEntity(db).get(0);
-        assertEntityAudit(dbid, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
+        assertEntityAudit(dbId, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
             @Override
             public boolean evaluate(EntityNotification notification) throws Exception {
-                return notification != null && notification.getEntity().getId()._getId().equals(dbid);
+                return notification != null && notification.getEntity().getId()._getId().equals(dbId);
             }
         });
 
-        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
-        List<String> entityResults = serviceClient.createEntity(db);
+        List<String> entityResults = serviceClient.createEntity(HiveDBInstance);
         assertEquals(entityResults.size(), 0);
         try {
             waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
                 @Override
                 public boolean evaluate(EntityNotification notification) throws Exception {
-                    return notification != null && notification.getEntity().getId()._getId().equals(dbid);
+                    return notification != null && notification.getEntity().getId()._getId().equals(dbId);
                 }
             });
             fail("Expected time out exception");
@@ -220,18 +224,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             //expected timeout
         }
 
-        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
 
         //Test the same across references
         Referenceable table = new Referenceable(HIVE_TABLE_TYPE);
         final String tableName = randomString();
-        table.set("name", tableName);
-        table.set("db", db);
-        table.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
-
-        serviceClient.createEntity(table);
-        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, tableName, dbIdReference);
+        serviceClient.createEntity(tableInstance);
+        results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
     }
 
@@ -282,8 +283,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(dataProvider = "invalidAttrValues")
     public void testEntityInvalidValue(String value) throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
-        String dbName = randomString();
-        databaseInstance.set("name", dbName);
+        databaseInstance.set("name", randomString());
         databaseInstance.set("description", value);
 
         try {
@@ -296,13 +296,16 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetEntityByAttribute() throws Exception {
-        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        Referenceable db1 = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
-        databaseInstance.set("name", dbName);
-        databaseInstance.set("qualifiedName", dbName);
-        databaseInstance.set("clusterName", randomString());
-        databaseInstance.set("description", "foo database");
-        createInstance(databaseInstance);
+        db1.set("name", dbName);
+        db1.set("description", randomString());
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set("owner", "user1");
+        db1.set("clusterName", "cl1");
+        db1.set("parameters", Collections.EMPTY_MAP);
+        db1.set("location", "/tmp");
+        createInstance(db1);
 
         //get entity by attribute
         Referenceable referenceable = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", dbName);
@@ -313,11 +316,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmitEntityWithBadDateFormat() throws Exception {
         try {
-            Referenceable hiveDBInstance = createHiveDBInstance("db" + randomString());
-            Id dbID = createInstance(hiveDBInstance);
-            hiveDBInstance.replaceWithNewId(dbID);
-
-            Referenceable tableInstance = createHiveTableInstance(hiveDBInstance, "table" + randomString());
+            Referenceable tableInstance = createHiveTableInstance("db" + randomString(), "table" + randomString(), dbId);
             tableInstance.set("lastAccessTime", "2014-07-11");
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
@@ -347,8 +346,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             Assert.assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
         }
 
-        //non-string property, update
-        String currentTime = String.valueOf(new DateTime());
+        String currentTime = String.valueOf(new DateTime() );
         addProperty(guid, "createTime", currentTime);
 
         entityRef = getEntityDefinition(getEntityDefinition(guid));
@@ -386,6 +384,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("qualifiedName", dbName);
         databaseInstance.set("clusterName", randomString());
         databaseInstance.set("description", "new database");
+        databaseInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        databaseInstance.set("owner", "user1");
+        databaseInstance.set("clusterName", "cl1");
+        databaseInstance.set("parameters", Collections.EMPTY_MAP);
+        databaseInstance.set("location", "/tmp");
 
         Id dbInstance = createInstance(databaseInstance);
         String dbId = dbInstance._getId();
@@ -759,12 +762,18 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testPartialUpdate() throws Exception {
+        String colName = "col1"+randomString();
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values = new HashMap<>();
-        values.put("name", "col1");
-        values.put("qualifiedName", "qualifiedName.col1");
-        values.put("type", "string");
+        values.put("name", colName);
         values.put("comment", "col1 comment");
+        values.put("qualifiedName", "default.table.col1@"+colName);
+        values.put("comment", "col1 comment");
+        values.put("type", "string");
+        values.put("owner", "user1");
+        values.put("position", 0);
+        values.put("description", "col1");
+        values.put("table", null);
 
         Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE, values);
         columns.add(ref);
@@ -794,8 +803,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         LOG.debug("Updating entity= " + tableUpdated);
         entityResult = serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                (String) tableInstance.get("name"), tableUpdated);
-        assertEquals(entityResult.getUpdateEntities().size(), 1);
+                (String) tableInstance.get("qualifiedName"), tableUpdated);
+        assertEquals(entityResult.getUpdateEntities().size(), 2);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
         response = getEntityDefinition(tableId._getId());
@@ -803,8 +812,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         getReferenceable = InstanceSerialization.fromJsonReferenceable(definition, true);
         refs = (List<Referenceable>) getReferenceable.get("columns");
 
-        Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
-        Assert.assertEquals(refs.get(0).get("dataType"), "int");
+        Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
+        Assert.assertEquals(refs.get(0).get("type"), "int");
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -812,15 +821,24 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values1 = new HashMap<>();
         values1.put("name", "col3");
-        values1.put("qualifiedName", "qualifiedName.col3");
-        values1.put("type", "string");
+        values1.put("qualifiedName", "default.table.col3@cl1");
         values1.put("comment", "col3 comment");
+        values1.put("type", "string");
+        values1.put("owner", "user1");
+        values1.put("position", 0);
+        values1.put("description", "col3");
+        values1.put("table", null);
+
 
         Map<String, Object> values2 = new HashMap<>();
         values2.put("name", "col4");
-        values2.put("qualifiedName", "qualifiedName.col4");
-        values2.put("type", "string");
+        values2.put("qualifiedName", "default.table.col4@cl1");
         values2.put("comment", "col4 comment");
+        values2.put("type", "string");
+        values2.put("owner", "user2");
+        values2.put("position", 1);
+        values2.put("description", "col4");
+        values2.put("table", null);
 
         Referenceable ref1 = new Referenceable(BaseResourceIT.COLUMN_TYPE, values1);
         Referenceable ref2 = new Referenceable(BaseResourceIT.COLUMN_TYPE, values2);
@@ -852,8 +870,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
-        Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
-        Assert.assertTrue(refs.get(1).equalsContents(columns.get(1)));
+        Assert.assertTrue(refs.get(0).getValuesMap().equals(values1));
+        Assert.assertTrue(refs.get(1).getValuesMap().equals(values2));
     }
     
     private static class UpdateEntitiesResponse {
@@ -871,11 +889,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testDeleteEntitiesViaRestApi() throws Exception {
         // Create 2 database entities
         Referenceable db1 = new Referenceable(DATABASE_TYPE);
-        String dbName1 = randomString();
-        db1.set("name", dbName1);
-        db1.set("qualifiedName", dbName1);
-        db1.set("clusterName", randomString());
+        String dbName = randomString();
+        db1.set("name", dbName);
         db1.set("description", randomString());
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set("owner", "user1");
+        db1.set("clusterName", "cl1");
+        db1.set("parameters", Collections.EMPTY_MAP);
+        db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
 
         Referenceable db2 = new Referenceable(DATABASE_TYPE);
@@ -884,6 +905,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db2.set("qualifiedName", dbName2);
         db2.set("clusterName", randomString());
         db2.set("description", randomString());
+        db2.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName2);
+        db2.set("owner", "user2");
+        db2.set("clusterName", "cl1");
+        db2.set("parameters", Collections.EMPTY_MAP);
+        db2.set("location", "/tmp");
         Id db2Id = createInstance(db2);
         
         // Delete the database entities
@@ -908,11 +934,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testDeleteEntitiesViaClientApi() throws Exception {
         // Create 2 database entities
         Referenceable db1 = new Referenceable(DATABASE_TYPE);
-        String dbName1 = randomString();
-        db1.set("name", dbName1);
-        db1.set("qualifiedName", dbName1);
-        db1.set("clusterName", randomString());
+        String dbName = randomString();
+        db1.set("name", dbName);
         db1.set("description", randomString());
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set("owner", "user1");
+        db1.set("clusterName", "cl1");
+        db1.set("parameters", Collections.EMPTY_MAP);
+        db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
         Referenceable db2 = new Referenceable(DATABASE_TYPE);
         String dbName2 = randomString();
@@ -920,6 +949,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db2.set("qualifiedName", dbName2);
         db2.set("clusterName", randomString());
         db2.set("description", randomString());
+        db2.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName2);
+        db2.set("owner", "user2");
+        db2.set("clusterName", "cl1");
+        db2.set("parameters", Collections.EMPTY_MAP);
+        db2.set("location", "/tmp");
         Id db2Id = createInstance(db2);
         
         // Delete the database entities
@@ -947,6 +981,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db1.set("qualifiedName", dbName);
         db1.set("clusterName", randomString());
         db1.set("description", randomString());
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set("owner", "user1");
+        db1.set("clusterName", "cl1");
+        db1.set("parameters", Collections.EMPTY_MAP);
+        db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
 
         // Delete the database entity

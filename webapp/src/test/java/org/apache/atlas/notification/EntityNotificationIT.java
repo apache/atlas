@@ -64,6 +64,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     @Inject
     private NotificationInterface notificationInterface;
     private Id tableId;
+    private Id dbId;
     private String traitName;
     private NotificationConsumer<EntityNotification> notificationConsumer;
 
@@ -71,6 +72,8 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
         createTypeDefinitions();
+        Referenceable HiveDBInstance = createHiveDBInstance(DATABASE_NAME);
+        dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
             notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
@@ -80,11 +83,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
     @Test
     public void testCreateEntity() throws Exception {
-        Referenceable hiveDBInstance = createHiveDBInstance(DATABASE_NAME);
-        Id dbID = createInstance(hiveDBInstance);
-        hiveDBInstance.replaceWithNewId(dbID);
-
-        Referenceable tableInstance = createHiveTableInstance(hiveDBInstance, TABLE_NAME);
+        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
@@ -110,11 +109,10 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
         final String dbName = "db-" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstance(dbName);
-        Id dbID = createInstance(hiveDBInstance);
-        hiveDBInstance.replaceWithNewId(dbID);
+        Referenceable HiveDBInstance = createHiveDBInstance(dbName);
+        Id dbId = createInstance(HiveDBInstance);
 
-        Referenceable tableInstance = createHiveTableInstance(hiveDBInstance, tableName);
+        Referenceable tableInstance = createHiveTableInstance(dbName, tableName, dbId);
         final Id tableId = createInstance(tableInstance);
         final String guid = tableId._getId();
 
