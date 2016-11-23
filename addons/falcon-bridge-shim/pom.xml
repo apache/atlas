@@ -32,7 +32,6 @@
 
     <properties>
         <falcon.version>0.8</falcon.version>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
     </properties>
 
     <dependencies>

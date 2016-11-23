@@ -32,7 +32,6 @@
 
     <properties>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
     </properties>
 
     <dependencies>

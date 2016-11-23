@@ -579,6 +579,7 @@
         <module>addons/storm-bridge</module>
 	
         <module>distro</module>
+        <module>build-tools</module>
     </modules>
 
     <repositories>
@@ -1241,6 +1242,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-buildtools</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
     	    <!-- use titan 0.5.4 by default -->
             <dependency>
                 <groupId>org.apache.atlas</groupId>
@@ -1249,7 +1256,7 @@
                 <type>pom</type>
 		        <!-- exclusions should be added here for all of the non-titan0 implementations -->
                 <scope>test</scope>
-	    </dependency>
+	        </dependency>
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
@@ -1888,6 +1895,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.atlas</groupId>
+                        <artifactId>atlas-buildtools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>checkstyle-check</id>
@@ -1897,11 +1911,8 @@
                         <phase>verify</phase>
                         <configuration>
                             <skip>${skipCheck}</skip>
-                            <consoleOutput>true</consoleOutput>
+                            <consoleOutput>false</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <configLocation>src/build/checkstyle.xml</configLocation>
-                            <headerLocation>src/build/checkstyle-java-header.txt</headerLocation>
-                            <suppressionsLocation>src/build/checkstyle-suppressions.xml</suppressionsLocation>
                             <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
                             <failOnViolation>${checkstyle.failOnViolation}</failOnViolation>
                         </configuration>

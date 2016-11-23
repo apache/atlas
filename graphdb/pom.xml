@@ -29,9 +29,6 @@
     <description>Apache Atlas Graph Database Projects</description>
     <name>Apache Atlas Graph Database Projects</name>
     <packaging>pom</packaging>
-    <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-    </properties>
 
     <modules>
         <module>api</module>

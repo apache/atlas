@@ -30,10 +30,6 @@
     <name>Shaded version of Apache hbase client</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.hbase</groupId>

@@ -9,9 +9,14 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-458 fix project organization for ATLAS build tools (sarath.kum4r@gmail.com via mneethiraj)
+ATLAS-1322 fix dereference null return value (sarath.kum4r@gmail.com via mneethiraj)
+ATLAS-1292 Integration test fixes caused by recent bootstrap changes (apoorvnaik via mneethiraj)
+ATLAS-1319 fix converters between v1 and v2 to handle struct type attributes (mneethiraj)
 ATLAS-1324 Fix SecureEmbeddedServerTest.testServerConfiguredUsingCredentialProvider UT failure(ayubkhan via svimal2106)
 ATLAS-1316 V2 API webapp tests are failing (ayubkhan via svimal2106)
 ATLAS-1315 Fix webapp Integration tests (ayubkhan,apoorvnaik via svimal2106)
+ATLAS-1314 update typedefs with addition of 'options' attribute (mneethiraj)
 ATLAS-1313 Tests SSLAndKerberosTest.testService and SSLTest.testService are failing (ayubkhan via svimal2106)
 ATLAS-1116 Performance monitoring of backend methods in API requests (shwethags)
 ATLAS-1310 attempt LDAP authentication only when enabled (mneethiraj)

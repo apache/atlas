@@ -32,7 +32,6 @@
 
     <properties>
         <storm.version>1.0.0</storm.version>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
     </properties>
 
     <dependencies>

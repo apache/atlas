@@ -29,10 +29,6 @@
     <name>Apache Atlas Notification</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>

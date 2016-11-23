@@ -29,10 +29,6 @@
     <name>Apache Atlas Integration</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>commons-collections</groupId>
