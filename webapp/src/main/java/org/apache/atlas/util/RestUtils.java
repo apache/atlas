@@ -320,17 +320,19 @@ public final class RestUtils {
                                         if (isForeignKey) {
                                             AtlasType attribType = entityType.getAttributeType(attrDef.getName());
 
-                                            if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
-                                                attribType = ((AtlasArrayType) attribType).getElementType();
-                                            }
+                                            if (attribType != null) {
+                                                if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
+                                                    attribType = ((AtlasArrayType) attribType).getElementType();
+                                                }
 
-                                            if (attribType.getTypeCategory() == TypeCategory.ENTITY) {
-                                                String revAttrName = ((AtlasEntityType) attribType).
-                                                        getMappedFromRefAttribute(entityType.getTypeName(), attrDef.getName());
+                                                if (attribType.getTypeCategory() == TypeCategory.ENTITY) {
+                                                    String revAttrName = ((AtlasEntityType) attribType).
+                                                            getMappedFromRefAttribute(entityType.getTypeName(), attrDef.getName());
 
-                                                if (StringUtils.equals(classTypeDefName , attrDef.getTypeName()) &&
-                                                        StringUtils.equals(oldAttr.name, revAttrName)) {
-                                                    refAttrName = attrDef.getName();
+                                                    if (StringUtils.equals(classTypeDefName, attrDef.getTypeName()) &&
+                                                            StringUtils.equals(oldAttr.name, revAttrName)) {
+                                                        refAttrName = attrDef.getName();
+                                                    }
                                                 }
                                             }
                                         }
