@@ -9,7 +9,6 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
-ATLAS-1321 Fix failure of Hive ITs (ayubkhan, svimal2106 via svimal2106)
 ATLAS-1324 Fix SecureEmbeddedServerTest.testServerConfiguredUsingCredentialProvider UT failure(ayubkhan via svimal2106)
 ATLAS-1316 V2 API webapp tests are failing (ayubkhan via svimal2106)
 ATLAS-1315 Fix webapp Integration tests (ayubkhan,apoorvnaik via svimal2106)

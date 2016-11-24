@@ -400,48 +400,6 @@
                 <executions>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${basedir}/target/models</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/../models</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>2.19.1</version>
-            <configuration>
-            <systemPropertyVariables>
-                <atlas.home>${basedir}/target</atlas.home>
-            </systemPropertyVariables>
-            </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>integration-test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
