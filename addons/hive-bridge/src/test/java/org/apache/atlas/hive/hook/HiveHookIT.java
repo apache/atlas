@@ -200,7 +200,7 @@ public class HiveHookIT extends HiveITBase {
         String colName = columnName();
 
         String pFile = createTestDFSPath("parentPath");
-        final String query = String.format("create TEMPORARY EXTERNAL table %s.%s( %s, %s) location '%s'", DEFAULT_DB , tableName , colName + " int", "name string",  pFile);
+        final String query = String.format("create EXTERNAL table %s.%s( %s, %s) location '%s'", DEFAULT_DB , tableName , colName + " int", "name string",  pFile);
         runCommand(query);
         assertTableIsRegistered(DEFAULT_DB, tableName, null, true);
         String processId = assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(),
@@ -658,7 +658,8 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertEquals(process2Reference.getId()._getId(), processReference.getId()._getId());
     }
 
-    @Test
+    //Disabling test as temporary table is not captured by hiveHook(https://issues.apache.org/jira/browse/ATLAS-1274)
+    @Test(enabled = false)
     public void testInsertIntoTempTable() throws Exception {
         String tableName = createTable();
         String insertTableName = createTable(false, false, true);
