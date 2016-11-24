@@ -78,23 +78,27 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmit() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
-            String typesAsJSON = TypesSerialization.toJson(typeDefinition, false);
-            System.out.println("typesAsJSON = " + typesAsJSON);
+            try{
+                serviceClient.getType(typeDefinition.typeName);
+            } catch (AtlasServiceException ase){
+                String typesAsJSON = TypesSerialization.toJson(typeDefinition, false);
+                System.out.println("typesAsJSON = " + typesAsJSON);
 
-            WebResource resource = service.path("api/atlas/types");
+                WebResource resource = service.path("api/atlas/types");
 
-            ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                    .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-            assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+                ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
+                assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
-            String responseAsString = clientResponse.getEntity(String.class);
-            Assert.assertNotNull(responseAsString);
+                String responseAsString = clientResponse.getEntity(String.class);
+                Assert.assertNotNull(responseAsString);
 
-            JSONObject response = new JSONObject(responseAsString);
-            JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
-            assertEquals(typesAdded.length(), 1);
-            assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
-            Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+                JSONObject response = new JSONObject(responseAsString);
+                JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
+                assertEquals(typesAdded.length(), 1);
+                assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
+                Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+            }
         }
     }
 
@@ -263,13 +267,15 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
                 .createClassTypeDef("database", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("qualifiedName", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
                 .createClassTypeDef("table", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("qualifiedName", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
                         createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         createOptionalAttrDef("parameters",

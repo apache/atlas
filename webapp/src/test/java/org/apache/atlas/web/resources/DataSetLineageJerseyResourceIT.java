@@ -32,6 +32,10 @@ import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import com.google.common.collect.ImmutableSet;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
@@ -213,6 +217,17 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     private void setupInstances() throws Exception {
+        HierarchicalTypeDefinition<TraitType> factTrait =
+                TypesUtil.createTraitTypeDef("Fact", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> etlTrait =
+                TypesUtil.createTraitTypeDef("ETL", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> dimensionTrait =
+                TypesUtil.createTraitTypeDef("Dimension", ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<TraitType> metricTrait =
+                TypesUtil.createTraitTypeDef("Metric", ImmutableSet.<String>of());
+        createType(getTypesDef(null, null,
+                        ImmutableList.of(factTrait, etlTrait, dimensionTrait, metricTrait), null));
+
         salesDBName = "Sales" + randomString();
         Id salesDB = database(salesDBName, "Sales Database", "John ETL",
                 "hdfs://host:8000/apps/warehouse/sales");

@@ -27,8 +27,13 @@
     <context-param>
         <param-name>guice.packages</param-name>
         <param-value>
-            org.apache.atlas.web.resources,org.apache.atlas.web.params
+            org.apache.atlas.web.resources,org.apache.atlas.web.params,org.apache.atlas.web.rest,org.apache.atlas.web.errors
         </param-value>
+    </context-param>
+  
+    <context-param>
+        <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+        <param-value>true</param-value>
     </context-param>
 
     <!--
@@ -46,7 +51,7 @@
         <filter-name>guiceFilter</filter-name>
         <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
     </filter>
-
+    
     <filter-mapping>
         <filter-name>springSecurityFilterChain</filter-name>
         <url-pattern>/*</url-pattern>
@@ -58,11 +63,11 @@
     </filter-mapping>
 
     <listener>
-        <listener-class>org.apache.atlas.web.listeners.TestGuiceServletConfig</listener-class>
-    </listener>
-
-    <listener>
         <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
+    </listener>
+    
+    <listener>
+        <listener-class>org.apache.atlas.web.listeners.GuiceServletConfig</listener-class>
     </listener>
 
     <listener>
@@ -73,6 +78,7 @@
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>
 
+
     <session-config>
         <session-timeout>60</session-timeout>
         <tracking-mode>COOKIE</tracking-mode>
@@ -82,4 +88,5 @@
         </cookie-config>
     </session-config>
 
+	
 </web-app>

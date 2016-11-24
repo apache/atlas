@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1316 V2 API webapp tests are failing (ayubkhan via svimal2106)
 ATLAS-1315 Fix webapp Integration tests (ayubkhan,apoorvnaik via svimal2106)
 ATLAS-1313 Tests SSLAndKerberosTest.testService and SSLTest.testService are failing (ayubkhan via svimal2106)
 ATLAS-1116 Performance monitoring of backend methods in API requests (shwethags)

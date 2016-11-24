@@ -52,6 +52,7 @@ import static org.apache.atlas.type.AtlasTypeUtil.createClassTypeDef;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -108,8 +109,9 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testUpdate() throws Exception {
+        String entityType = randomString();
         AtlasEntityDef typeDefinition =
-                createClassTypeDef(randomString(), ImmutableSet.<String>of(),
+                createClassTypeDef(entityType, ImmutableSet.<String>of(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"));
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
@@ -135,10 +137,18 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         assertEquals(updatedTypeDefs.getEntityDefs().get(0).getName(), atlasTypesDef.getEntityDefs().get(0).getName());
 
         Map<String, String> filterParams = new HashMap<>();
-        filterParams.put(SearchFilter.PARAM_TYPE, "entity");
+        filterParams.put(SearchFilter.PARAM_TYPE, "ENTITY");
         AtlasTypesDef allTypeDefs = clientV2.getAllTypeDefs(new SearchFilter(filterParams));
         assertNotNull(allTypeDefs);
-        assertEquals(allTypeDefs.getEntityDefs().get(0).getAttributeDefs().size(), 2);
+        Boolean entityDefFound = false;
+        for (AtlasEntityDef atlasEntityDef : allTypeDefs.getEntityDefs()){
+            if (atlasEntityDef.getName().equals(typeDefinition.getName())) {
+                assertEquals(atlasEntityDef.getAttributeDefs().size(), 2);
+                entityDefFound = true;
+                break;
+            }
+        }
+        assertTrue(entityDefFound, "Required entityDef not found.");
     }
 
     @Test(dependsOnMethods = "testCreate")
