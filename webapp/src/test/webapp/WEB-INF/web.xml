@@ -67,7 +67,7 @@
     </listener>
     
     <listener>
-        <listener-class>org.apache.atlas.web.listeners.GuiceServletConfig</listener-class>
+        <listener-class>org.apache.atlas.web.listeners.TestGuiceServletConfig</listener-class>
     </listener>
 
     <listener>
