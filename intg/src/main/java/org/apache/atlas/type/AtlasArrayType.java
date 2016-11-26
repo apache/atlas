@@ -39,8 +39,8 @@ public class AtlasArrayType extends AtlasType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasArrayType.class);
 
     private final String elementTypeName;
-    private final int    minCount;
-    private final int    maxCount;
+    private int          minCount;
+    private int          maxCount;
 
     private AtlasType elementType;
 
@@ -89,9 +89,13 @@ public class AtlasArrayType extends AtlasType {
         return elementTypeName;
     }
 
+    public void setMinCount(int minCount) { this.minCount = minCount; }
+
     public int getMinCount() {
         return minCount;
     }
+
+    public void setMaxCount(int maxCount) { this.maxCount = maxCount; }
 
     public int getMaxCount() {
         return maxCount;

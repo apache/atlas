@@ -111,9 +111,15 @@ public class AtlasStructType extends AtlasType {
             Cardinality cardinality = attributeDef.getCardinality();
 
             if (cardinality == Cardinality.LIST || cardinality == Cardinality.SET) {
-                attrType = new AtlasArrayType(attrType,
-                                              attributeDef.getValuesMinCount(),
-                                              attributeDef.getValuesMaxCount());
+                if (!(attrType instanceof AtlasArrayType)) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY,
+                                                 getTypeName(), attributeDef.getName());
+                }
+
+                AtlasArrayType arrayType = (AtlasArrayType)attrType;
+
+                arrayType.setMinCount(attributeDef.getValuesMinCount());
+                arrayType.setMaxCount(attributeDef.getValuesMaxCount());
             }
 
             a.put(attributeDef.getName(), attrType);

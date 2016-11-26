@@ -56,6 +56,7 @@ public enum AtlasErrorCode {
     TYPE_HAS_REFERENCES(409, "ATLAS4092E", "Given type {0} has references"),
     TYPE_MATCH_FAILED(409, "ATLAS4093E", "Given type {0} doesn't match {1}"),
     INVALID_TYPE_DEFINITION(409, "ATLAS4094E", "Invalid type definition {0}"),
+    INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY(409, "ATLAS4095E", "Cardinality of attribute {0}.{1} requires a list or set type"),
 
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
