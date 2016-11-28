@@ -80,7 +80,20 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
     };
     Utils.defaultErrorHandler = function(model, error) {
         if (error.status == 401) {
-            window.location = 'login.jsp'
+             if (error.statusText) {
+                var redirectURL;
+                    try {
+                        redirectURL = JSON.parse(error.statusText).knoxssoredirectURL;
+                    } catch(err){
+                    }
+                    if(redirectURL!=undefined && redirectURL!='' ){
+                         window.location.replace(decodeURIComponent(redirectURL));
+                    }else{
+                        window.location = 'login.jsp';
+                    }
+            } else {
+                    window.location = 'login.jsp';
+            }
         } else if (error.status == 419) {
             window.location = 'login.jsp'
         } else if (error.status == 403) {

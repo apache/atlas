@@ -30,6 +30,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -47,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -85,8 +87,10 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         } catch (Exception e) {
             LOG.error("Error while getting application properties", e);
         }
-        ssoEnabled = configuration.getBoolean("atlas.sso.knox.enabled", false);
-        jwtProperties = loadJwtProperties();
+        if (configuration != null) {
+            ssoEnabled = configuration.getBoolean("atlas.sso.knox.enabled", false);
+            jwtProperties = loadJwtProperties();
+        }
         setJwtProperties();
     }
 
@@ -120,7 +124,6 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         }
 
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("Knox doFilter {}", httpRequest.getRequestURI());
         }
@@ -168,25 +171,35 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
 
                     filterChain.doFilter(servletRequest, httpServletResponse);
                 } else {  // if the token is not valid then redirect to knox sso
-                    String ssourl = constructLoginURL(httpRequest);
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("SSO URL ={} invalid", ssourl);
-                    }
-                    httpServletResponse.sendRedirect(ssourl);
+                    redirectToKnox(httpRequest,httpServletResponse);
                 }
             } catch (ParseException e) {
                 LOG.warn("Unable to parse the JWT token", e);
             }
         } else {
-            String ssourl = constructLoginURL(httpRequest);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("SSO URL = {}  serializedJWT null", ssourl);
-            }
-            httpServletResponse.sendRedirect(ssourl);
+            redirectToKnox(httpRequest,httpServletResponse);
         }
 
     }
 
+    private void redirectToKnox(HttpServletRequest httpRequest, HttpServletResponse httpServletResponse) throws IOException {
+
+        String ajaxRequestHeader = httpRequest.getHeader("X-Requested-With");
+
+        if ("XMLHttpRequest".equals(ajaxRequestHeader)) {
+            String ssourl = constructLoginURL(httpRequest, true);
+            JSONObject json = new JSONObject();
+            json.put("knoxssoredirectURL", URLEncoder.encode(ssourl, "UTF-8"));
+            httpServletResponse.setContentType("application/json");
+            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            httpServletResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, json.toString());
+
+        } else {
+            String ssourl = constructLoginURL(httpRequest, false);
+            httpServletResponse.sendRedirect(ssourl);
+        }
+
+    }
 
     private boolean isWebUserAgent(String userAgent) {
         boolean isWeb = false;
@@ -259,13 +272,26 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      * @param request for getting the original request URL
      * @return url to use as login url for redirect
      */
-    protected String constructLoginURL(HttpServletRequest request) {
+    protected String constructLoginURL(HttpServletRequest request, boolean isXMLRequest) {
         String delimiter = "?";
         if (authenticationProviderUrl.contains("?")) {
             delimiter = "&";
         }
         StringBuilder loginURL = new StringBuilder();
-        loginURL.append(authenticationProviderUrl).append(delimiter).append(originalUrlQueryParam).append("=").append(request.getRequestURL().append(getOriginalQueryString(request)));
+        if (isXMLRequest) {
+            String atlasApplicationURL = "";
+            String referalURL = request.getHeader("referer");
+
+            if (referalURL == null) {
+                atlasApplicationURL = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+            } else {
+                atlasApplicationURL = referalURL;
+            }
+
+            loginURL.append(authenticationProviderUrl).append(delimiter).append(originalUrlQueryParam).append("=").append(atlasApplicationURL);
+        } else {
+            loginURL.append(authenticationProviderUrl).append(delimiter).append(originalUrlQueryParam).append("=").append(request.getRequestURL().append(getOriginalQueryString(request)));
+        }
         return loginURL.toString();
     }
 
