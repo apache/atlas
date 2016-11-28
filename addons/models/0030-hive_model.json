@@ -493,6 +493,39 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name" : "hive_column_lineage",
+            "superTypes" : [
+                "Process"
+            ],
+            "typeVersion" : "1.0",
+            "attributeDefs" : [
+                {
+                    "name": "query",
+                    "typeName": "hive_process",
+                    "cardinality" : "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "depenendencyType",
+                    "typeName": "string",
+                    "cardinality" : "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "expression",
+                    "typeName": "string",
+                    "cardinality" : "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
         }
     ]
 }
