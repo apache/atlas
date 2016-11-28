@@ -1846,6 +1846,7 @@
                         <exclude>**/*.twiki</exclude>
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
+                        <exclude>**/*.log</exclude>
                         <exclude>**/target/**</exclude>
                         <exclude>**/target*/**</exclude>
                         <exclude>**/build/**</exclude>

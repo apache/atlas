@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1325 Fix Apache Build failure due to Rat check on log files (svimal2106)
 ATLAS-458 fix project organization for ATLAS build tools (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1322 fix dereference null return value (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1292 Integration test fixes caused by recent bootstrap changes (apoorvnaik via mneethiraj)
