@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1338 fix SqoopHookIT (ayubpathan via mneethiraj)
 ATLAS-1300 LineageResource API needs to map to the new LineageREST API (sarath.kum4r@gmail.com via svimal2106)
 ATLAS-1321 fixed HiveHookIT failures (ayubpathan via mneethiraj)
 ATLAS-1336 fixed StormHookIT (ayubpathan via mneethiraj)

@@ -354,6 +354,10 @@
                             <key>atlas.conf</key>
                             <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
                         </systemProperty>
+                        <systemProperty>
+                            <key>atlas.home</key>
+                            <value>${project.basedir}/target</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
@@ -410,6 +414,29 @@
                 <version>1.2.1</version>
                 <inherited>false</inherited>
                 <executions>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/models</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/../models</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
