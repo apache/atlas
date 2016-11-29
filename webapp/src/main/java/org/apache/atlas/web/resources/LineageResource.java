@@ -22,10 +22,17 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.AtlasLineageService;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +51,10 @@ import javax.ws.rs.core.Response;
 @Singleton
 public class LineageResource {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageResource");
 
-    private final LineageService lineageService;
+    private final AtlasLineageService atlasLineageService;
+    private final LineageService      lineageService;
+    private final AtlasTypeRegistry   typeRegistry;
 
     /**
      * Created by the Guice ServletModule and injected with the
@@ -55,8 +63,10 @@ public class LineageResource {
      * @param lineageService lineage service handle
      */
     @Inject
-    public LineageResource(LineageService lineageService) {
-        this.lineageService = lineageService;
+    public LineageResource(LineageService lineageService, AtlasLineageService atlasLineageService, AtlasTypeRegistry typeRegistry) {
+        this.lineageService      = lineageService;
+        this.atlasLineageService = atlasLineageService;
+        this.typeRegistry        = typeRegistry;
     }
 
     /**
@@ -73,20 +83,15 @@ public class LineageResource {
         LOG.info("Fetching lineage inputs graph for guid={}", guid);
 
         try {
-            final String jsonResult = lineageService.getInputsGraphForEntity(guid);
+            AtlasLineageInfo lineageInfo = atlasLineageService.getAtlasLineageInfo(guid, LineageDirection.INPUT, -1);
+            final String result = LineageUtils.toLineageStruct(lineageInfo, typeRegistry);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
+            response.put(AtlasClient.RESULTS, new JSONObject(result));
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException e) {
-            LOG.error("entity not found for guid={}", guid);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage inputs graph for entity  guid={}", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
+        } catch (AtlasBaseException | JSONException e) {
             LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
@@ -106,20 +111,15 @@ public class LineageResource {
         LOG.info("Fetching lineage outputs graph for entity guid={}", guid);
 
         try {
-            final String jsonResult = lineageService.getOutputsGraphForEntity(guid);
+            AtlasLineageInfo lineageInfo = atlasLineageService.getAtlasLineageInfo(guid, LineageDirection.OUTPUT, -1);
+            final String result = LineageUtils.toLineageStruct(lineageInfo, typeRegistry);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
+            response.put(AtlasClient.RESULTS, new JSONObject(result));
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", guid);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
+        } catch (AtlasBaseException | JSONException e) {
             LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
