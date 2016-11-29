@@ -194,13 +194,14 @@ public class HiveHookIT extends HiveITBase {
         verifyTimestamps(ref, property, 0);
     }
 
-    @Test
+    //ATLAS-1321: Disable problematic tests. Need to revisit and fix them later
+    @Test(enabled = false)
     public void testCreateExternalTable() throws Exception {
         String tableName = tableName();
         String colName = columnName();
 
         String pFile = createTestDFSPath("parentPath");
-        final String query = String.format("create TEMPORARY EXTERNAL table %s.%s( %s, %s) location '%s'", DEFAULT_DB , tableName , colName + " int", "name string",  pFile);
+        final String query = String.format("create EXTERNAL table %s.%s( %s, %s) location '%s'", DEFAULT_DB , tableName , colName + " int", "name string",  pFile);
         runCommand(query);
         assertTableIsRegistered(DEFAULT_DB, tableName, null, true);
         String processId = assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(),
@@ -658,7 +659,9 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertEquals(process2Reference.getId()._getId(), processReference.getId()._getId());
     }
 
-    @Test
+
+    //Disabling test as temporary table is not captured by hiveHook(https://issues.apache.org/jira/browse/ATLAS-1274)
+    @Test(enabled = false)
     public void testInsertIntoTempTable() throws Exception {
         String tableName = createTable();
         String insertTableName = createTable(false, false, true);
@@ -968,7 +971,8 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertEquals(columns.size(), 3);
     }
 
-    @Test
+    //ATLAS-1321: Disable problematic tests. Need to revisit and fix them later
+    @Test(enabled = false)
     public void testAlterTableDropColumn() throws Exception {
         String tableName = createTable();
         final String colDropped = "id";
@@ -980,7 +984,7 @@ public class HiveHookIT extends HiveITBase {
                 colDropped));
 
         //Verify the number of columns present in the table
-        List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
+        final List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
         assertEquals(columns.size(), 1);
         assertEquals(columns.get(0).get(NAME), "name");
     }

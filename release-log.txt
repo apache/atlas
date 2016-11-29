@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1321 fixed HiveHookIT failures (ayubpathan via mneethiraj)
 ATLAS-1336 fixed StormHookIT (ayubpathan via mneethiraj)
 ATLAS-1335 multi-value attribute handling in AtlasStructType to be consistent with TypeSystem for backward compatibility (mneethiraj)
 ATLAS-1333 Storm Hook fails to capture the topology (svimal2106)

@@ -1756,12 +1756,6 @@
                     <forkCount>1</forkCount>
                     <threadCount>5</threadCount>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <!-- ATLAS-1317: Disable problematic tests. Need to revisit and fix them later -->
-                    <excludes>
-                        <exclude>**/TypesJerseyResourceIT.java</exclude>
-                        <exclude>**/MetadataDiscoveryJerseyResourceIT.java</exclude>
-                        <exclude>**/HiveHookIT.java</exclude>
-                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
