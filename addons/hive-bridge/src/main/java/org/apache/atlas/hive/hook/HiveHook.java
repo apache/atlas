@@ -1029,7 +1029,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             try {
                 this.lineageInfo = ColumnLineageUtils.buildLineageMap(lineageInfo);
                 LOG.debug("Column Lineage Map => {} ", this.lineageInfo.entrySet());
-            }catch (Exception e){
+            }catch (Throwable e){
                 LOG.warn("Column Lineage Map build failed with exception {}", e);
             }
         }
