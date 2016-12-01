@@ -20,14 +20,13 @@ package org.apache.atlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import java.text.MessageFormat;
 import java.util.Arrays;
-
-import javax.ws.rs.core.Response;
-
 public enum AtlasErrorCode {
     NO_SEARCH_RESULTS(204, "ATLAS2041E", "Given search filter did not yield any results"),
 
+    // All Bad request enums go here
     UNKNOWN_TYPE(400, "ATLAS4001E", "Unknown type {0} for {1}.{2}"),
     CIRCULAR_REFERENCE(400, "ATLAS4002E", "{0}: invalid supertypes - circular reference back to self {1}"),
     INCOMPATIBLE_SUPERTYPE(400, "ATLAS4003E", "{0}: incompatible supertype {1}"),
@@ -43,31 +42,33 @@ public enum AtlasErrorCode {
     ATTRIBUTE_DELETION_NOT_SUPPORTED(400, "ATLAS40013E", "{0}.{1} : attribute delete not supported"),
     SUPERTYPE_REMOVAL_NOT_SUPPORTED(400, "ATLAS40014E", "superType remove not supported"),
     UNEXPECTED_TYPE(400, "ATLAS40015E", "expected type {0}; found {1}"),
+    TYPE_MATCH_FAILED(400, "ATLAS40016E", "Given type {0} doesn't match {1}"),
+    INVALID_TYPE_DEFINITION(400, "ATLAS40017E", "Invalid type definition {0}"),
+    INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY(400, "ATLAS40018E", "Cardinality of attribute {0}.{1} requires a list or set type"),
+    ATTRIBUTE_UNIQUE_INVALID(400, "ATLAS40019E", "Type {0} with unique attribute {1} does not exist"),
+    TYPE_NAME_INVALID(400, "ATLAS40020E", "Type {0} with name {1} does not exist"),
+    TYPE_CATEGORY_INVALID(400, "ATLAS40021E", "Type Category {0} does not match {1} or is invalid"),
+    PATCH_NOT_APPLICABLE_FOR_TYPE(400, "ATLAS40022E", "{0} - invalid patch for type {1}"),
+    PATCH_FOR_UNKNOWN_TYPE(400, "ATLAS40023E", "{0} - patch references unknown type {1}"),
+    PATCH_INVALID_DATA(400, "ATLAS40024E", "{0} - patch data is invalid for type {1}"),
 
+    // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS4042E", "Given type guid {0} was invalid"),
     EMPTY_RESULTS(404, "ATLAS4044E", "No result found for {0}"),
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS4045E", "Given instance guid {0} is invalid"),
     INSTANCE_LINEAGE_INVALID_PARAMS(404, "ATLAS4046E", "Invalid lineage query parameters passed {0}: {1}"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
-    INSTANCE_ALREADY_EXISTS(405, "ATLAS4051E", "Given entity with guid/name {0} already exists"),
 
+    // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS4091E", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS4092E", "Given type {0} has references"),
-    TYPE_MATCH_FAILED(409, "ATLAS4093E", "Given type {0} doesn't match {1}"),
-    INVALID_TYPE_DEFINITION(409, "ATLAS4094E", "Invalid type definition {0}"),
-    INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY(409, "ATLAS4095E", "Cardinality of attribute {0}.{1} requires a list or set type"),
+    INSTANCE_ALREADY_EXISTS(409, "ATLAS4093E", "Given entity {0} already exists"),
 
+    // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
-    INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
-
-    PATCH_NOT_APPLICABLE_FOR_TYPE(500, "ATLAS5004E", "{0} - invalid patch for type {1}"),
-    PATCH_FOR_UNKNOWN_TYPE(500, "ATLAS5005E", "{0} - patch references unknown type {1}"),
-    PATCH_INVALID_DATA(500, "ATLAS5006E", "{0} - patch data is invalid for type {1}"),
-    ATTRIBUTE_UNIQUE_INVALID(400, "ATLAS40015E", "Type {0} with unique attribute {1} does not exist"),
-    TYPE_NAME_INVALID(400, "ATLAS40016E", "Type {0} with name {1} does not exist"),
-    TYPE_CATEGORY_INVALID(400, "ATLAS40017E", "Type Category {0} does not match {1} or is invalid");
+    INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}");
 
     private String errorCode;
     private String errorMessage;
