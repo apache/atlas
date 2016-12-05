@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.errors;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

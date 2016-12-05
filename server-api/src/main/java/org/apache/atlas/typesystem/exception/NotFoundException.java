@@ -18,28 +18,29 @@
 
 package org.apache.atlas.typesystem.exception;
 
+import org.apache.atlas.AtlasException;
+
 /**
- * A simple wrapper for  404.
- * Thrown when a requested trait can not be found.
+ * A simple wrapper for 404.
  */
-public class TraitNotFoundException extends NotFoundException {
-    public TraitNotFoundException() {
+public class NotFoundException extends AtlasException {
+    public NotFoundException() {
     }
 
-    public TraitNotFoundException(String message) {
+    public NotFoundException(String message) {
         super(message);
     }
 
-    public TraitNotFoundException(String message, Throwable cause) {
+    public NotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public TraitNotFoundException(Throwable cause) {
+    public NotFoundException(Throwable cause) {
         super(cause);
     }
 
-    public TraitNotFoundException(String message, Throwable cause, boolean enableSuppression,
-            boolean writableStackTrace) {
+    public NotFoundException(String message, Throwable cause, boolean enableSuppression,
+                             boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

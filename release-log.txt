@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1349 Reduce excessive exception logging (apoorvnaik via svimal2106)
 ATLAS-1343 CTAS query is not captured by Atlas with Hive2 (svimal2106)
 ATLAS-1337 fixed FalconHookIT (ayubpathan via mneethiraj)
 ATLAS-1338 fix SqoopHookIT (ayubpathan via mneethiraj)

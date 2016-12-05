@@ -18,12 +18,10 @@
 
 package org.apache.atlas.typesystem.exception;
 
-import org.apache.atlas.AtlasException;
-
 /**
  * A simple wrapper for 404.
  */
-public class EntityNotFoundException extends AtlasException {
+public class EntityNotFoundException extends NotFoundException {
     public EntityNotFoundException() {
     }
 

@@ -18,14 +18,15 @@
 
 package org.apache.atlas.authorize.simple;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -47,7 +48,13 @@ public class AtlasAuthorizationUtils {
         String[] split = contextPath.split("/", 3);
         String api = split[0];
         if (split.length > 1) {
-            return (!api.equals("v1")) ? api : String.format("v1/%s", split[1]);
+            if (Objects.equals(api, "v1")) {
+                return String.format("v1/%s", split[1]);
+            } else if (Objects.equals(api, "v2")) {
+                return String.format("v2/%s", split[1]);
+            } else {
+                return api;
+            }
         } else {
             return api;
         }
@@ -101,14 +108,15 @@ public class AtlasAuthorizationUtils {
             LOG.debug("==> getAtlasResourceType  for " + contextPath);
         }
         String api = getApi(contextPath);
-        if (api.startsWith("types")) {
+        if (api.startsWith("types") || api.startsWith("v2/types")) {
             resourceTypes.add(AtlasResourceTypes.TYPE);
         } else if (api.startsWith("admin") && (contextPath.contains("/session") || contextPath.contains("/version"))) {
             resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         } else if ((api.startsWith("discovery") && contextPath.contains("/gremlin")) || api.startsWith("admin")
             || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);
-        } else if (api.startsWith("entities") || api.startsWith("lineage") || api.startsWith("discovery")) {
+        } else if (api.startsWith("entities") || api.startsWith("lineage") ||
+                api.startsWith("discovery") || api.startsWith("v2/entity")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
         } else if (api.startsWith("v1/taxonomies")) {
             resourceTypes.add(AtlasResourceTypes.TAXONOMY);
@@ -117,7 +125,7 @@ public class AtlasAuthorizationUtils {
             if (contextPath.contains("/terms")) {
                 resourceTypes.add(AtlasResourceTypes.TERM);
             }
-        } else if (api.startsWith("v1/entities")) {
+        } else if (api.startsWith("v1/entities") || api.startsWith("v2/entities")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : " + api + "\nSetting "
