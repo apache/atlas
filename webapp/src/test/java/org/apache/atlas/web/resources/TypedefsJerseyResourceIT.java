@@ -337,7 +337,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                 } else if (typeDef.getCategory() == TypeCategory.ENTITY) {
                     byGuid = clientV2.getEntityByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.CLASSIFICATION) {
-                    byGuid = clientV2.getClassificationByGuid(typeDef.getName());
+                    byGuid = clientV2.getClassificationByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.STRUCT) {
                     byGuid = clientV2.getStructByGuid(typeDef.getGuid());
                 }

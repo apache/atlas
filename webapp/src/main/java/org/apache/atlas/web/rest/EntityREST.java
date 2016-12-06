@@ -393,7 +393,7 @@ public class EntityREST {
      */
     private void validateUniqueAttribute(AtlasEntityType entityType, String attributeName) throws AtlasBaseException {
         AtlasStructDef.AtlasAttributeDef attribute = entityType.getAttributeDef(attributeName);
-        if (!attribute.getIsUnique()) {
+        if (attribute != null && !attribute.getIsUnique()) {
             throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
         }
     }
