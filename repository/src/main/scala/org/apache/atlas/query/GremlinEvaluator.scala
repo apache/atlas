@@ -90,7 +90,7 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
         if(debug) {
             println(" rawRes " +rawRes)
         }
-        if (!qry.hasSelectList) {
+        if (!qry.hasSelectList && ! qry.isGroupBy) {
             val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { v =>
                 val instObj = instanceObject(v)
                 val o = persistenceStrategy.constructInstance(oType, instObj)
@@ -111,7 +111,20 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
                         val v = getColumnValue(rV, src, idx)
                         sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
                     }
-                }               
+                }
+                else if(qry.isGroupBy) {
+                    //the order in the result will always match the order in the select list
+                    val selExpr = qry.expr.asInstanceOf[GroupByExpression].selExpr
+                    var idx = 0;
+                    val row : java.util.List[Object] = rV.asInstanceOf[java.util.List[Object]]
+                    selExpr.selectListWithAlias.foreach { aE =>
+                        val cName = aE.alias
+                        val cValue = row.get(idx);
+
+                        sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, cValue))
+                        idx += 1;
+                    }
+                }
                 addPathStruct(r, sInstance)
             }
             GremlinQueryResult(qry.expr.toString, rType, rows.toList)

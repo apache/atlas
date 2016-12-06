@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.groovy.CastExpression;
 import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.ComparisonExpression;
 import org.apache.atlas.groovy.ComparisonOperatorExpression;
@@ -34,6 +35,7 @@ import org.apache.atlas.groovy.LiteralExpression;
 import org.apache.atlas.groovy.LogicalExpression;
 import org.apache.atlas.groovy.RangeExpression;
 import org.apache.atlas.groovy.TernaryOperatorExpression;
+import org.apache.atlas.groovy.TypeCoersionExpression;
 import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
 import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
 import org.apache.atlas.query.GraphPersistenceStrategies;
@@ -53,8 +55,9 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
     private static final String PATH_FIELD = "path";
     private static final String ENABLE_PATH_METHOD = "enablePath";
     private static final String BACK_METHOD = "back";
-
-
+    private static final String VERTEX_LIST_CLASS = "List<Vertex>";
+    private static final String VERTEX_ARRAY_CLASS = "Vertex[]";
+    private static final String LAST_METHOD = "last";
     @Override
     public GroovyExpression generateLogicalExpression(GroovyExpression parent, String operator, List<GroovyExpression> operands) {
         return new FunctionCallExpression(parent, operator, operands);
@@ -63,8 +66,11 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
 
     @Override
     public GroovyExpression generateBackReferenceExpression(GroovyExpression parent, boolean inSelect, String alias) {
-        if (inSelect) {
+        if (inSelect && parent == null) {
             return getFieldInSelect();
+        }
+        else if (inSelect && parent != null) {
+            return parent;
         }
         else {
             return new FunctionCallExpression(parent, BACK_METHOD, new LiteralExpression(alias));
@@ -208,16 +214,44 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
         return new FunctionCallExpression(parent, ORDER_METHOD, new ClosureExpression(comparisonFunction));
     }
 
-
     @Override
     public GroovyExpression getAnonymousTraversalExpression() {
         return new FunctionCallExpression("_");
     }
 
+    @Override
+    public GroovyExpression generateGroupByExpression(GroovyExpression parent, GroovyExpression groupByExpression,
+            GroovyExpression aggregationFunction) {
+
+            GroovyExpression groupByClosureExpr = new ClosureExpression(groupByExpression);
+            GroovyExpression itClosure = new ClosureExpression(getItVariable());
+            GroovyExpression result = new FunctionCallExpression(parent, "groupBy", groupByClosureExpr, itClosure);
+            result = new FunctionCallExpression(result, "cap");
+            result = new FunctionCallExpression(result, "next");
+            result = new FunctionCallExpression(result, "values");
+            result = new FunctionCallExpression(result, "toList");
+
+            GroovyExpression mapValuesClosure = new ClosureExpression(getItVariable());
+            GroovyExpression aggregrationFunctionClosure = new ClosureExpression(aggregationFunction);
+            result = new FunctionCallExpression(result, "collect", aggregrationFunctionClosure);
+            return result;
+    }
 
     @Override
     public GroovyExpression getFieldInSelect() {
         return getItVariable();
+    }
+    @Override
+    public GroovyExpression getGroupBySelectFieldParent() {
+        GroovyExpression itExpr = getItVariable();
+        return new FunctionCallExpression(itExpr, LAST_METHOD);
+    }
+
+    //assumes cast already performed
+    @Override
+    public GroovyExpression generateCountExpression(GroovyExpression itExpr) {
+        GroovyExpression collectionExpr = new CastExpression(itExpr,"Collection");
+        return new FunctionCallExpression(itExpr, "size");
     }
 }
 

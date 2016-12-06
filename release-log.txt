@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-737 Add DSL support for Sum, Max, Min and count operations with and without group by (guptaneeru via dkantor)
 ATLAS-1305 Fix potential NPEs in instance conversion code (sumasai)
 ATLAS-1349 Reduce excessive exception logging (apoorvnaik via svimal2106)
 ATLAS-1343 CTAS query is not captured by Atlas with Hive2 (svimal2106)

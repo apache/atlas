@@ -62,7 +62,7 @@ object Expressions {
 
     trait Expression {
         self: Product =>
-
+        def isAggregator = false
         def children: Seq[Expression]
 
         /**
@@ -331,6 +331,12 @@ object Expressions {
         def limit(lmt: Literal[Integer], offset : Literal[Integer]) = new LimitExpression(this, lmt, offset)
 
         def order(odr: Expression, asc: Boolean) = new OrderExpression(this, odr, asc)
+
+        def max(maxClause: Expression) = new MaxExpression(maxClause)
+
+        def min(minClause: Expression) = new MinExpression(minClause)
+
+        def groupBy(groupBy: SelectExpression, selectExpr: SelectExpression) = new GroupByExpression(this, groupBy, selectExpr)
     }
 
     trait BinaryNode {
@@ -393,7 +399,7 @@ object Expressions {
     case class UnresolvedFieldExpression(child: Expression, fieldName: String) extends Expression
     with UnaryNode {
         override def toString = s"${child}.$fieldName"
-
+        override def isAggregator = child.isAggregator
         override lazy val resolved = false
 
         override def dataType = throw new UnresolvedException(this, "field")
@@ -445,7 +451,7 @@ object Expressions {
         override def namedExpressions = child.namedExpressions + (alias -> child)
 
         override def toString = s"$child as $alias"
-
+        override def isAggregator = child.isAggregator
         lazy val dataType = {
             if (!resolved) {
                 throw new UnresolvedException(this,
@@ -518,6 +524,14 @@ object Expressions {
     }
 
     def listLiteral[_ <: PrimitiveType[_]](typ: ArrayType, rawValue: List[Expressions.Literal[_]]) = new ListLiteral(typ, rawValue)
+
+    def count() =  new CountExpression()
+
+    def maxExpr(maxClause: Expression) = new MaxExpression(maxClause)
+
+    def minExpr(minClause: Expression) = new MinExpression(minClause)
+
+    def sumExpr(sumClause: Expression) = new SumExpression(sumClause)
 
     case class ArithmeticExpression(symbol: String,
                                     left: Expression,
@@ -681,12 +695,24 @@ object Expressions {
         override def toString = s"$child where $condExpr"
     }
 
-    case class SelectExpression(child: Expression, selectList: List[Expression]) extends Expression {
+    case class SelectExpression(child: Expression, selectList: List[Expression], forGroupBy: Boolean = false) extends Expression {
         val children = List(child) ::: selectList
+
+        def hasAggregation = {
+           var result = false;
+           selectList.foreach { expr =>
+               {
+                   result = result || expr.isAggregator
+               }
+           }
+           result
+        }
+
         lazy val selectListWithAlias = selectList.zipWithIndex map {
             case (s: AliasExpression, _) => s
             case (x, i) => new AliasExpression(x, s"${x}")
         }
+
 
         lazy val dataType = {
             if (!resolved) {
@@ -698,7 +724,14 @@ object Expressions {
 
         override def namedExpressions = child.namedExpressions ++ (selectList.flatMap(_.namedExpressions))
 
-        override def toString = s"""$child select ${selectListWithAlias.mkString("", ", ", "")}"""
+        override def toString = {
+             //When this is part of a group by, the child is only present so that the select
+             //list gets translated correctly.  It is not really part of the query.  The child
+             //ends up both in the GroupByExpression as well as here.  We only want to show it
+             //in the GroupByExpression.  Hide it here.
+             var prefix = if(forGroupBy) { "" } else { s"""${child} select """ }
+             s"""${prefix}${selectListWithAlias.mkString("", ", ", "")}"""
+        }
     }
 
     case class LoopExpression(val input: Expression, val loopingExpression: Expression,
@@ -795,6 +828,70 @@ object Expressions {
                     s"datatype. Can not resolve due to unresolved children")
             }
             child.dataType
+    }
+  }
+
+  case class CountExpression() extends Expression {
+    override def isAggregator = true
+    override def toString = s"count()"
+    val children = Nil
+    lazy val dataType = {
+      DataTypes.LONG_TYPE
+    }
+
+  }
+   case class MaxExpression(maxClause: Expression) extends Expression {
+
+     override def toString = s"max($maxClause)"
+     override def isAggregator = true
+     val children = List(maxClause)
+     lazy val dataType = {
+          if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+            }
+            maxClause.dataType
+        }
+    }
+
+   case class MinExpression(minClause: Expression) extends Expression {
+
+     override def toString = s"min($minClause)"
+     override def isAggregator = true
+     val children = List(minClause)
+     lazy val dataType = {
+          if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+            }
+            minClause.dataType
+        }
+  }
+
+   case class SumExpression(sumClause: Expression) extends Expression {
+
+     override def toString = s"sum($sumClause)"
+     override def isAggregator = true
+     val children = List(sumClause)
+     lazy val dataType = {
+          if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+            }
+            sumClause.dataType
+        }
+  }
+
+  case class GroupByExpression(child: Expression, groupBy: SelectExpression, selExpr: SelectExpression) extends Expression{
+
+    override def toString = s"from ${child} groupby(${groupBy}) select ${selExpr}"
+    val children = List(child, groupBy, selExpr)
+    lazy val dataType = {
+      if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+        }
+        selExpr.dataType
     }
   }
 }

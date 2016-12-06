@@ -73,7 +73,12 @@ import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
 import org.apache.atlas.typesystem.types.IDataType
 import org.apache.atlas.typesystem.types.TypeSystem
 import org.joda.time.format.ISODateTimeFormat
-
+import org.apache.atlas.query.Expressions.GroupByExpression
+import org.apache.atlas.query.Expressions.MaxExpression
+import org.apache.atlas.query.Expressions.MinExpression
+import org.apache.atlas.query.Expressions.SumExpression
+import org.apache.atlas.query.Expressions.CountExpression
+import java.util.HashSet
 trait IntSequence {
     def next: Int
 }
@@ -84,11 +89,67 @@ case class GremlinQuery(expr: Expression, queryStr: String, resultMaping: Map[St
 
     def isPathExpression = expr.isInstanceOf[PathExpression]
 
+    def isGroupBy = expr.isInstanceOf[GroupByExpression]
 }
 
 
 trait SelectExpressionHandling {
 
+  class AliasFinder extends PartialFunction[Expression,Unit] {
+        val aliases = new HashSet[String]()
+
+         def isDefinedAt(e: Expression) = true
+
+         def apply(e: Expression) = e match {
+            case e@AliasExpression(_, alias) => {
+                aliases.add(alias)
+            }
+            case x => Unit
+        }
+    }
+
+    class ReplaceAliasWithBackReference(aliases: HashSet[String]) extends PartialFunction[Expression, Expression] {
+
+        def isDefinedAt(e: Expression) = true
+
+        def apply(e: Expression) = e match {
+            case e@AliasExpression(child,alias) if aliases.contains(alias) => {
+                new BackReference(alias, child, None)
+            }
+            case x => x
+        }
+    }
+
+    //in groupby, convert alias expressions defined in the group by child to BackReferences
+    //in the groupby list and selectList.
+    val AddBackReferencesToGroupBy : PartialFunction[Expression, Expression] = {
+        case GroupByExpression(child, groupBy, selExpr) => {
+
+            val aliases = ArrayBuffer[AliasExpression]()
+            val finder = new AliasFinder();
+            child.traverseUp(finder);
+
+            val replacer = new ReplaceAliasWithBackReference(finder.aliases)
+
+            val newGroupBy = new SelectExpression(
+                groupBy.child.transformUp(replacer),
+                groupBy.selectList.map {
+                    expr => expr.transformUp(replacer)
+
+                },
+                groupBy.forGroupBy);
+
+            val newSelExpr = new SelectExpression(
+                selExpr.child.transformUp(replacer),
+                selExpr.selectList.map {
+                    expr => expr.transformUp(replacer)
+                },
+                selExpr.forGroupBy);
+
+            new GroupByExpression(child, newGroupBy, newSelExpr)
+        }
+        case x => x
+    }
     /**
      * To aide in gremlinQuery generation add an alias to the input of SelectExpressions
      */
@@ -110,14 +171,22 @@ trait SelectExpressionHandling {
         }
 
         def apply(e: Expression) = e match {
-            case SelectExpression(aliasE@AliasExpression(_, _), selList) => {
+            case SelectExpression(aliasE@AliasExpression(_, _), selList, forGroupBy) => {
                 idx = idx + 1
-                SelectExpression(aliasE, selList.map(_.transformUp(new DecorateFieldWithAlias(aliasE))))
+                SelectExpression(aliasE, selList.map(_.transformUp(new DecorateFieldWithAlias(aliasE))), forGroupBy)
             }
-            case SelectExpression(child, selList) => {
+            case SelectExpression(child, selList, forGroupBy) => {
                 idx = idx + 1
                 val aliasE = AliasExpression(child, s"_src$idx")
-                SelectExpression(aliasE, selList.map(_.transformUp(new DecorateFieldWithAlias(aliasE))))
+                SelectExpression(aliasE, selList.map(_.transformUp(new DecorateFieldWithAlias(aliasE))), forGroupBy)
+            }
+            case OrderExpression(aliasE@AliasExpression(_, _), order, asc) => {
+                OrderExpression(aliasE, order.transformUp(new DecorateFieldWithAlias(aliasE)),asc)
+            }
+            case OrderExpression(child, order, asc) => {
+                idx = idx + 1
+                val aliasE = AliasExpression(child, s"_src$idx")
+                OrderExpression(aliasE, order.transformUp(new DecorateFieldWithAlias(aliasE)),asc)
             }
             case _ => e
         }
@@ -133,7 +202,7 @@ trait SelectExpressionHandling {
     }
 
     def validateSelectExprHaveOneSrc: PartialFunction[Expression, Unit] = {
-        case SelectExpression(_, selList) => {
+        case SelectExpression(_, selList, forGroupBy) => {
             selList.foreach { se =>
                 val srcs = getSelectExpressionSrc(se)
                 if (srcs.size > 1) {
@@ -262,25 +331,25 @@ class GremlinTranslator(expr: Expression,
     }
 
 
-    private def genQuery(parent: GroovyExpression, expr: Expression, inSelect: Boolean): GroovyExpression = expr match {
+    private def genQuery(parent: GroovyExpression, expr: Expression, inClosure: Boolean): GroovyExpression = expr match {
         case ClassExpression(clsName) => typeTestExpression(parent, clsName)
         case TraitExpression(clsName) => typeTestExpression(parent, clsName)
         case fe@FieldExpression(fieldName, fInfo, child)
             if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE || fe.dataType.getTypeCategory == TypeCategory.ARRAY => {
                 val fN = gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)
-                val childExpr = translateOptChild(parent, child, inSelect);
-                return GremlinExpressionFactory.INSTANCE.generateFieldExpression(childExpr, fInfo, fN, inSelect);
+                val childExpr = translateOptChild(parent, child, inClosure);
+                return GremlinExpressionFactory.INSTANCE.generateFieldExpression(childExpr, fInfo, fN, inClosure);
             }
         case fe@FieldExpression(fieldName, fInfo, child)
             if fe.dataType.getTypeCategory == TypeCategory.CLASS || fe.dataType.getTypeCategory == TypeCategory.STRUCT => {
-            val childExpr = translateOptChild(parent, child, inSelect);
+            val childExpr = translateOptChild(parent, child, inClosure);
             val direction = if (fInfo.isReverse) AtlasEdgeDirection.IN else AtlasEdgeDirection.OUT
             val edgeLbl = gPersistenceBehavior.edgeLabel(fInfo)
             return GremlinExpressionFactory.INSTANCE.generateAdjacentVerticesExpression(childExpr, direction, edgeLbl)
 
             }
         case fe@FieldExpression(fieldName, fInfo, child) if fInfo.traitName != null => {
-            val childExpr = translateOptChild(parent, child, inSelect);
+            val childExpr = translateOptChild(parent, child, inClosure);
             val direction = gPersistenceBehavior.instanceToTraitEdgeDirection
             val edgeLbl = gPersistenceBehavior.edgeLabel(fInfo)
             return GremlinExpressionFactory.INSTANCE.generateAdjacentVerticesExpression(childExpr, direction, edgeLbl)
@@ -289,25 +358,25 @@ class GremlinTranslator(expr: Expression,
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
             val qualifiedPropertyName = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
 
-            val childExpr = translateOptChild(parent, ch, inSelect)
+            val childExpr = translateOptChild(parent, ch, inClosure)
             val persistentExprValue : GroovyExpression = if(l.isInstanceOf[Literal[_]]) {
                 translateLiteralValue(fInfo.attrInfo.dataType, l.asInstanceOf[Literal[_]]);
             }
             else {
-                genQuery(null, l, inSelect);
+                genQuery(null, l, inClosure);
             }
 
            return GremlinExpressionFactory.INSTANCE.generateHasExpression(gPersistenceBehavior, childExpr, qualifiedPropertyName, c.symbol, persistentExprValue, fInfo);
         }
         case fil@FilterExpression(child, condExpr) => {
-            val newParent = genQuery(parent, child, inSelect);
-            return genQuery(newParent, condExpr, inSelect);
+            val newParent = genQuery(parent, child, inClosure);
+            return genQuery(newParent, condExpr, inClosure);
         }
         case l@LogicalExpression(symb, children) => {
-            val translatedChildren : java.util.List[GroovyExpression] = translateList(children, true, inSelect);
+            val translatedChildren : java.util.List[GroovyExpression] = translateList(children, false);
             return GremlinExpressionFactory.INSTANCE.generateLogicalExpression(parent, symb, translatedChildren);
         }
-        case sel@SelectExpression(child, selList) => {
+        case sel@SelectExpression(child, selList, forGroupBy) => {
               val m = groupSelectExpressionsBySrc(sel)
               var srcNamesList: java.util.List[LiteralExpression] = new ArrayList()
               var srcExprsList: List[java.util.List[GroovyExpression]] = List()
@@ -316,7 +385,7 @@ class GremlinTranslator(expr: Expression,
               while (it.hasNext) {
                   val (src, selExprs) = it.next
                   srcNamesList.add(new LiteralExpression(src));
-                  val translatedSelExprs : java.util.List[GroovyExpression] = translateList(selExprs, false, true);
+                  val translatedSelExprs : java.util.List[GroovyExpression] = translateList(selExprs, true);
                   srcExprsList = srcExprsList :+ translatedSelExprs
                }
                val srcExprsStringList : java.util.List[GroovyExpression] = new ArrayList();
@@ -324,7 +393,7 @@ class GremlinTranslator(expr: Expression,
                     srcExprsStringList.add(new ListExpression(it));
                }
 
-               val childExpr = genQuery(parent, child, inSelect)
+               val childExpr = genQuery(parent, child, inClosure)
                return GremlinExpressionFactory.INSTANCE.generateSelectExpression(childExpr, srcNamesList, srcExprsStringList);
 
         }
@@ -337,16 +406,16 @@ class GremlinTranslator(expr: Expression,
                 null.asInstanceOf[Integer]
             }
             val alias = input.asInstanceOf[AliasExpression].alias;
-            val inputQry = genQuery(parent, input, inSelect)
-            val translatedLoopExpr = genQuery(GremlinExpressionFactory.INSTANCE.getLoopExpressionParent(inputQry), loopExpr, inSelect);
+            val inputQry = genQuery(parent, input, inClosure)
+            val translatedLoopExpr = genQuery(GremlinExpressionFactory.INSTANCE.getLoopExpressionParent(inputQry), loopExpr, inClosure);
             return GremlinExpressionFactory.INSTANCE.generateLoopExpression(inputQry, gPersistenceBehavior, input.dataType, translatedLoopExpr, alias, times);
         }
         case BackReference(alias, _, _) => {
 
-            return GremlinExpressionFactory.INSTANCE.generateBackReferenceExpression(parent, inSelect, alias);
+            return GremlinExpressionFactory.INSTANCE.generateBackReferenceExpression(parent, inClosure, alias);
         }
         case AliasExpression(child, alias) => {
-            var childExpr = genQuery(parent, child, inSelect);
+            var childExpr = genQuery(parent, child, inClosure);
             return GremlinExpressionFactory.INSTANCE.generateAliasExpression(childExpr, alias);
         }
         case isTraitLeafExpression(traitName, Some(clsExp)) => {
@@ -371,11 +440,11 @@ class GremlinTranslator(expr: Expression,
             }
         }
         case hasFieldUnaryExpression(fieldName, child) =>
-            val childExpr = genQuery(parent, child, inSelect);
+            val childExpr = genQuery(parent, child, inClosure);
             return GremlinExpressionFactory.INSTANCE.generateUnaryHasExpression(childExpr, fieldName);
         case ArithmeticExpression(symb, left, right) => {
-            val leftExpr = genQuery(parent, left, inSelect);
-            val rightExpr = genQuery(parent, right, inSelect);
+            val leftExpr = genQuery(parent, left, inClosure);
+            val rightExpr = genQuery(parent, right, inClosure);
             return GremlinExpressionFactory.INSTANCE.generateArithmeticExpression(leftExpr, symb, rightExpr);
         }
         case l: Literal[_] =>  {
@@ -386,23 +455,22 @@ class GremlinTranslator(expr: Expression,
             return translateLiteralValue(l.dataType, l);
         }
         case list: ListLiteral[_] =>  {
-            val  values : java.util.List[GroovyExpression] = translateList(list.rawValue, false, inSelect);
+            val  values : java.util.List[GroovyExpression] = translateList(list.rawValue, true); //why hard coded
             return new ListExpression(values);
         }
         case in@TraitInstanceExpression(child) => {
-          val childExpr = genQuery(parent, child, inSelect);
+          val childExpr = genQuery(parent, child, inClosure);
           val direction = gPersistenceBehavior.traitToInstanceEdgeDirection;
           return GremlinExpressionFactory.INSTANCE.generateAdjacentVerticesExpression(childExpr, direction);
         }
         case in@InstanceExpression(child) => {
-            return genQuery(parent, child, inSelect);
+            return genQuery(parent, child, inClosure);
         }
         case pe@PathExpression(child) => {
-            val childExpr = genQuery(parent, child, inSelect)
+            val childExpr = genQuery(parent, child, inClosure)
             return GremlinExpressionFactory.INSTANCE.generatePathExpression(childExpr);
         }
         case order@OrderExpression(child, odr, asc) => {
-          var orderby = ""
           var orderExpression = odr
           if(odr.isInstanceOf[BackReference]) {
               orderExpression = odr.asInstanceOf[BackReference].reference
@@ -411,36 +479,95 @@ class GremlinTranslator(expr: Expression,
               orderExpression = odr.asInstanceOf[AliasExpression].child
           }
 
-          val childExpr = genQuery(parent, child, inSelect);
+          val childExpr = genQuery(parent, child, inClosure);
           var orderByParents : java.util.List[GroovyExpression] = GremlinExpressionFactory.INSTANCE.getOrderFieldParents();
 
           val translatedParents : java.util.List[GroovyExpression] = new ArrayList[GroovyExpression]();
           var translatedOrderParents = orderByParents.foreach { it =>
-                 translatedParents.add(genQuery(it, orderExpression, false));
+                 translatedParents.add(genQuery(it, orderExpression, true));
           }
           return GremlinExpressionFactory.INSTANCE.generateOrderByExpression(childExpr, translatedParents,asc);
 
         }
         case limitOffset@LimitExpression(child, limit, offset) => {
-            val childExpr = genQuery(parent, child, inSelect);
+            val childExpr = genQuery(parent, child, inClosure);
             val totalResultRows = limit.value + offset.value;
             return GremlinExpressionFactory.INSTANCE.generateLimitExpression(childExpr, offset.value, totalResultRows);
         }
+        case count@CountExpression() => {
+          val listExpr = GremlinExpressionFactory.INSTANCE.getClosureArgumentValue();
+          GremlinExpressionFactory.INSTANCE.generateCountExpression(listExpr);
+        }
+        case max@MaxExpression(child) => {
+          //use "it" as the parent since the child will become
+          //part of a closure.  Its value will be whatever vertex
+          //we are looking at in the collection.
+          val childExprParent = null;
+          val childExpr = genQuery(childExprParent, child, true);
+          val listExpr = GremlinExpressionFactory.INSTANCE.getClosureArgumentValue();
+          GremlinExpressionFactory.INSTANCE.generateMaxExpression(listExpr, childExpr);
+        }
+        case min@MinExpression(child) => {
+          //use "it" as the parent since the child will become
+          //part of a closure.  Its value will be whatever vertex
+          //we are looking at in the collection.
+          val childExprParent = null;
+          val childExpr = genQuery(childExprParent, child, true);
+          val listExpr = GremlinExpressionFactory.INSTANCE.getClosureArgumentValue();
+          GremlinExpressionFactory.INSTANCE.generateMinExpression(listExpr, childExpr);
+        }
+        case sum@SumExpression(child) => {
+           //use "it" as the parent since the child will become
+          //part of a closure.  Its value will be whatever vertex
+          //we are looking at in the collection.
+          val childExprParent = null;
+          val childExpr = genQuery(childExprParent, child, true);
+          val listExpr = GremlinExpressionFactory.INSTANCE.getClosureArgumentValue();
+          GremlinExpressionFactory.INSTANCE.generateSumExpression(listExpr, childExpr);
+        }
+        case groupByExpr@GroupByExpression(child, groupBy, selExpr) => {
+          //remove aliases
+          val groupByExprListToTranslate = (groupBy.asInstanceOf[SelectExpression]).selectListWithAlias.map {
+            x => x.child;
+          }
+          val grpByExprsList = translateList(groupByExprListToTranslate, true);
+          val groupByValue = new ListExpression(grpByExprsList);
+
+          //reduction only aggregate methods are supported here as of now.(Max, Min, Count)
+          //remove aliases
+          val srcExprListToTranslate = selExpr.selectListWithAlias.map {
+            x => x.child;
+          }
+          val srcExprsList = translateList(srcExprListToTranslate, true, true);
+          val srcExprsStringList = new ListExpression(srcExprsList)
+
+          val childExpr = genQuery(parent, child, inClosure);
+          return GremlinExpressionFactory.INSTANCE.generateGroupByExpression(childExpr, groupByValue, srcExprsStringList);
+         }
         case x => throw new GremlinTranslationException(x, "expression not yet supported")
     }
 
-    def translateList(exprs : List[Expressions.Expression], isAnonymousTraveral: Boolean, inSelect : Boolean) : java.util.List[GroovyExpression] = {
-        var parent = if(isAnonymousTraveral) {GremlinExpressionFactory.INSTANCE.getAnonymousTraversalExpression() } else { null }
+     def translateList(exprs : List[Expressions.Expression], inClosure : Boolean, inGroupBy: Boolean = false) : java.util.List[GroovyExpression] = {
+        var parent = if (inGroupBy) {
+          GremlinExpressionFactory.INSTANCE.getGroupBySelectFieldParent();
+        }
+
+        else if(inClosure) {
+          null;
+        }
+        else {
+          GremlinExpressionFactory.INSTANCE.getAnonymousTraversalExpression()
+        }
         var result : java.util.List[GroovyExpression] = new java.util.ArrayList(exprs.size);
         exprs.foreach { it =>
-            result.add(genQuery(parent, it, inSelect));
+            result.add(genQuery(parent, it, inClosure));
         }
         return result;
     }
 
-    def translateOptChild(parent : GroovyExpression, child : Option[Expressions.Expression] , inSelect: Boolean) : GroovyExpression = child match {
+    def translateOptChild(parent : GroovyExpression, child : Option[Expressions.Expression] , inClosure: Boolean) : GroovyExpression = child match {
 
-        case Some(x) => genQuery(parent, x, inSelect)
+        case Some(x) => genQuery(parent, x, inClosure)
         case None => parent
     }
 
@@ -532,6 +659,7 @@ class GremlinTranslator(expr: Expression,
         var e1 = expr.transformUp(wrapAndRule)
 
         e1.traverseUp(validateComparisonForm)
+        e1 = e1.transformUp(AddBackReferencesToGroupBy)
         e1 = e1.transformUp(new AddAliasToSelectInput)
         e1.traverseUp(validateSelectExprHaveOneSrc)
         e1 = e1.transformUp(addAliasToLoopInput())
@@ -556,7 +684,7 @@ class GremlinTranslator(expr: Expression,
      */
      def extractSelectExpression(child: Expression): Option[SelectExpression] = {
       child match {
-            case se@SelectExpression(child, selectList) =>{
+            case se@SelectExpression(child, selectList, false) =>{
               Some(se)
             }
             case limit@LimitExpression(child, lmt, offset) => {

@@ -24,6 +24,8 @@ import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.{ImplicitConversions, PackratParsers}
 import scala.util.parsing.input.CharArrayReader._
+import org.apache.atlas.AtlasException
+import org.apache.atlas.typesystem.types.DataTypes
 
 trait QueryKeywords {
     this: StandardTokenParsers =>
@@ -67,6 +69,10 @@ trait QueryKeywords {
     protected val LIMIT = Keyword("limit")
     protected val OFFSET = Keyword("offset")
     protected val ORDERBY = Keyword("orderby")
+    protected val COUNT = Keyword("count")
+    protected val MAX = Keyword("max")
+    protected val MIN = Keyword("min")
+    protected val SUM = Keyword("sum")
 }
 
 trait ExpressionUtils {
@@ -79,24 +85,24 @@ trait ExpressionUtils {
         case (c, t, Some(a)) => input.loop(c, t.get).as(a)
     }
 
-    def select(input: Expression, s: List[(Expression, Option[String])]) = {
+    def select(input: Expression, s: List[(Expression, Option[String])], forGroupBy: Boolean = false) = {
         val selList = s.map { t =>
             t._2 match {
                 case None => t._1.as(s"${t._1}")
                 case _ => t._1.as(t._2.get)
             }
         }
-        input.select(selList: _*)
+       new SelectExpression(input, selList, forGroupBy)
     }
 
     def limit(input: Expression, lmt: Literal[Integer], offset: Literal[Integer]) = {
-        input.limit(lmt, offset) 
+        input.limit(lmt, offset)
     }
-    
+
     def order(input: Expression, odr: Expression, asc: Boolean) = {
         input.order(odr, asc)
     }
-        
+
     def leftmostId(e: Expression) = {
         var le: IdExpression = null
         e.traverseUp { case i: IdExpression if le == null => le = i}
@@ -116,6 +122,10 @@ trait ExpressionUtils {
     def merge(snglQuery1: Expression, sngQuery2: Expression): Expression = {
         val leftSrcId = leftmostId(sngQuery2)
         sngQuery2.transformUp(replaceIdWithField(leftSrcId, snglQuery1.field(leftSrcId.name)))
+    }
+
+    def groupBy(input: Expression, groupByExpr: SelectExpression, selectExpr: SelectExpression) = {
+      input.groupBy(groupByExpr, selectExpr)
     }
 }
 
@@ -164,20 +174,16 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         *
         * @return
      */
-    def query(implicit queryParams: QueryParams) = querySrc ~ opt(loopExpression) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset) ^^ {
-      case s ~ l ~ sel ~ odr ~ lmtoff => {
+    def query(implicit queryParams: QueryParams) = querySrc ~ opt(loopExpression) ~ opt(groupByExpr) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset) ^^ {
+        case s ~ l ~ grp ~  sel ~ odr ~ lmtoff => {
         var expressiontree = s
-        if (l.isDefined) //Note: The order of if statements is important. 
+        if (l.isDefined) //Note: The order of if statements is important.
         {
           expressiontree = loop(expressiontree, l.get);
         }
         if (odr.isDefined)
         {
           expressiontree = order(expressiontree, odr.get._1, odr.get._2)
-        }
-        if (sel.isDefined)
-        {
-          expressiontree = select(expressiontree, sel.get)
         }
         if (queryParams != null && lmtoff.isDefined)
         {
@@ -189,8 +195,36 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         } else if(queryParams != null) {
           expressiontree = limit(expressiontree, int(queryParams.limit), int(queryParams.offset))
         }
-        expressiontree
-      }
+          if (grp.isDefined && sel.isDefined)
+        {
+
+           var child = expressiontree
+           var selectExpr: SelectExpression = select(child, sel.get, true)
+           var grpBySelectExpr: SelectExpression = select(child, grp.get, true)
+           expressiontree = groupBy(child, grpBySelectExpr, selectExpr)
+        }
+        else if (grp.isDefined)
+        {
+           throw new AtlasException("groupby without select is not allowed");
+        }
+        else if (sel.isDefined)
+        {
+            var selectChild = expressiontree
+            val selExpr : SelectExpression = select(selectChild, sel.get);
+            if(selExpr.hasAggregation) {
+                //In order to do the aggregation, we need to add an implicit group by.  Having the
+                //group by expression be a constant values forces all of the vertices into one group.
+                val groupByConstant : Expression = Expressions.literal(DataTypes.STRING_TYPE, "dummy");
+                val groupBySelExpr : SelectExpression = select(selectChild, sel.get, true);
+                val groupByListExpr : SelectExpression = select(selectChild, List((groupByConstant,None)), true)
+                expressiontree = groupBy(selectChild, groupByListExpr, groupBySelExpr)
+            }
+            else {
+                expressiontree =  selExpr
+            }
+        }
+           expressiontree
+        }
     }
 
     def querySrc: Parser[Expression] = rep1sep(singleQrySrc, opt(COMMA)) ^^ { l => l match {
@@ -279,7 +313,7 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         arithE ~ (LT | LTE | EQ | NEQ | GT | GTE) ~ arithE ^^ { case l ~ op ~ r => l.compareOp(op)(r)} |
             arithE ~ (ISA | IS) ~ ident ^^ { case l ~ i ~ t => l.isTrait(t)} |
             arithE ~ HAS ~ ident ^^ { case l ~ i ~ f => l.hasField(f)} |
-            arithE
+            arithE | countClause | maxClause | minClause | sumClause
 
     def arithE = multiE ~ opt(rep(arithERight)) ^^ {
         case l ~ None => l
@@ -350,6 +384,22 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
 
     def doubleConstant: Parser[String] =
         elem("int", _.isInstanceOf[lexical.DoubleLiteral]) ^^ (_.chars)
+
+   def countClause =  COUNT ~ LPAREN ~ RPAREN ^^ {
+        case c => count()
+    }
+    def maxClause =  MAX ~ (LPAREN ~> expr <~ RPAREN) ^^ {
+        case m ~ e => maxExpr(e)
+    }
+    def minClause =   MIN ~ (LPAREN ~> expr <~ RPAREN) ^^ {
+        case m ~ e => minExpr(e)
+    }
+    def sumClause =   SUM ~ (LPAREN ~> expr <~ RPAREN) ^^ {
+        case m ~ e => sumExpr(e)
+    }
+    def groupByExpr = GROUPBY ~ (LPAREN ~> rep1sep(selectExpression, COMMA) <~ RPAREN) ^^ {
+      case g ~ ce => ce
+    }
 
 }
 

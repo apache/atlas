@@ -81,11 +81,11 @@ class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expressi
             val r = new Resolver(Some(inputExpr), inputExpr.namedExpressions)
             return new FilterExpression(inputExpr, condExpr.transformUp(r))
         }
-        case SelectExpression(child, selectList) if child.resolved => {
+        case SelectExpression(child, selectList, forGroupBy) if child.resolved => {
             val r = new Resolver(Some(child), child.namedExpressions)
             return new SelectExpression(child, selectList.map {
                 _.transformUp(r)
-            })
+            }, forGroupBy)
         }
         case l@LoopExpression(inputExpr, loopExpr, t) if inputExpr.resolved => {
             val r = new Resolver(Some(inputExpr), inputExpr.namedExpressions, true)
@@ -145,11 +145,15 @@ object FieldValidator extends PartialFunction[Expression, Expression] {
                 new FilterExpression(inputExpr, validatedCE)
             }
         }
-        case SelectExpression(child, selectList) if child.resolved => {
+        case SelectExpression(child, selectList, forGroupBy) if child.resolved => {
             val v = validateQualifiedField(child.dataType)
             return new SelectExpression(child, selectList.map {
                 _.transformUp(v)
-            })
+            }, forGroupBy)
+        }
+        case OrderExpression(child, order, asc) => {
+          val v = validateQualifiedField(child.dataType)
+          OrderExpression(child, order.transformUp(v), asc)
         }
         case l@LoopExpression(inputExpr, loopExpr, t) => {
             val validatedLE = loopExpr.transformUp(validateQualifiedField(inputExpr.dataType))

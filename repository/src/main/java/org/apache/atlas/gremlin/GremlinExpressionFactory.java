@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.groovy.ArithmeticExpression;
+import org.apache.atlas.groovy.CastExpression;
 import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.FieldExpression;
 import org.apache.atlas.groovy.FunctionCallExpression;
@@ -214,7 +215,6 @@ public abstract class GremlinExpressionFactory {
      */
     protected abstract GroovyExpression initialExpression(GraphPersistenceStrategies s, GroovyExpression varExpr);
 
-
     /**
      * Generates an expression that tests whether the vertex represented by the 'toTest'
      * expression represents an instance of the specified type, checking both the type
@@ -385,12 +385,11 @@ public abstract class GremlinExpressionFactory {
         return new ArithmeticExpression(left, op, right);
     }
 
-
+    public abstract GroovyExpression generateGroupByExpression(GroovyExpression parent, GroovyExpression groupByExpression, GroovyExpression aggregationFunction);
 
     protected GroovyExpression getItVariable() {
         return new IdentifierExpression(IT_VARIABLE);
     }
-
 
     protected GroovyExpression getAllVerticesExpr() {
         GroovyExpression gExpr = getGraph();
@@ -401,9 +400,40 @@ public abstract class GremlinExpressionFactory {
         return new IdentifierExpression(G_VARIABLE);
     }
 
-
     protected GroovyExpression getCurrentObjectExpression() {
         return new FieldExpression(getItVariable(), OBJECT_FIELD);
     }
+    //assumes cast already performed
+    public GroovyExpression generateCountExpression(GroovyExpression itExpr) {
+        GroovyExpression collectionExpr = new CastExpression(itExpr,"Collection");
+        return new FunctionCallExpression(collectionExpr, "size");
+    }
 
+    public GroovyExpression generateMinExpression(GroovyExpression itExpr, GroovyExpression mapFunction) {
+        return getAggregrationExpression(itExpr, mapFunction, "min");
+    }
+
+    public GroovyExpression generateMaxExpression(GroovyExpression itExpr, GroovyExpression mapFunction) {
+        return getAggregrationExpression(itExpr, mapFunction, "max");
+    }
+
+    public GroovyExpression generateSumExpression(GroovyExpression itExpr, GroovyExpression mapFunction) {
+        return getAggregrationExpression(itExpr, mapFunction, "sum");
+    }
+
+    private GroovyExpression getAggregrationExpression(GroovyExpression itExpr,
+            GroovyExpression mapFunction, String functionName) {
+        GroovyExpression collectionExpr = new CastExpression(itExpr,
+                "Collection");
+        ClosureExpression collectFunction = new ClosureExpression(mapFunction);
+        GroovyExpression transformedList = new FunctionCallExpression(
+                collectionExpr, "collect", collectFunction);
+        return new FunctionCallExpression(transformedList, functionName);
+    }
+
+    public GroovyExpression getClosureArgumentValue() {
+        return getItVariable();
+    }
+
+    public abstract GroovyExpression getGroupBySelectFieldParent();
 }

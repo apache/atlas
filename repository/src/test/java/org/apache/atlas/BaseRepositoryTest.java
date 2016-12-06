@@ -65,19 +65,20 @@ public class BaseRepositoryTest {
     @Inject
     protected MetadataRepository repository;
 
-   
 
     protected void setUp() throws Exception {
         //force graph initialization / built in type registration
         TestUtils.getGraph();
         setUpDefaultTypes();
         setUpTypes();
+        TestUtils.getGraph().commit();
         new GraphBackedSearchIndexer(new AtlasTypeRegistry());
         TestUtils.resetRequestContext();
         setupInstances();
+        TestUtils.getGraph().commit();
         TestUtils.dumpGraph(TestUtils.getGraph());
     }
-    
+
     protected void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
         AtlasGraphProvider.cleanup();

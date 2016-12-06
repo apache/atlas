@@ -156,7 +156,8 @@ public final class TestUtils {
                 createOptionalAttrDef("salary", DataTypes.DOUBLE_TYPE),
                 createOptionalAttrDef("age", DataTypes.FLOAT_TYPE),
                 createOptionalAttrDef("numberOfStarsEstimate", DataTypes.BIGINTEGER_TYPE),
-                createOptionalAttrDef("approximationOfPi", DataTypes.BIGDECIMAL_TYPE)
+                createOptionalAttrDef("approximationOfPi", DataTypes.BIGDECIMAL_TYPE),
+                createOptionalAttrDef("isOrganDonor", DataTypes.BOOLEAN_TYPE)
                 );
 
         HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", "Manager"+_description, ImmutableSet.of("Person"),
@@ -195,6 +196,7 @@ public final class TestUtils {
         john.set("address", johnAddr);
 
         john.set("birthday",new Date(1950, 5, 15));
+        john.set("isOrganDonor", true);
         john.set("hasPets", true);
         john.set("numberOfCars", 1);
         john.set("houseNumber", 153);
@@ -227,6 +229,7 @@ public final class TestUtils {
         max.set("manager", jane);
         max.set("mentor", julius);
         max.set("birthday",new Date(1979, 3, 15));
+        max.set("isOrganDonor", true);
         max.set("hasPets", true);
         max.set("age", 36);
         max.set("numberOfCars", 2);

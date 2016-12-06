@@ -279,7 +279,9 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
     public GroovyExpression generateOrderByExpression(GroovyExpression parent, List<GroovyExpression> translatedOrderBy,
             boolean isAscending) {
 
-        GroovyExpression orderByClause = translatedOrderBy.get(0);
+        GroovyExpression orderByExpr = translatedOrderBy.get(0);
+        GroovyExpression orderByClosure = new ClosureExpression(orderByExpr);
+        GroovyExpression orderByClause = new TypeCoersionExpression(orderByClosure, FUNCTION_CLASS);
 
         GroovyExpression aExpr = new IdentifierExpression("a");
         GroovyExpression bExpr = new IdentifierExpression("b");
@@ -322,4 +324,32 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
         return new FunctionCallExpression(expr2, LAST_METHOD);
     }
 
+    @Override
+    public GroovyExpression generateGroupByExpression(GroovyExpression parent, GroovyExpression groupByExpression,
+            GroovyExpression aggregationFunction) {
+
+        GroovyExpression result = new FunctionCallExpression(parent, "group");
+        GroovyExpression groupByClosureExpr = new TypeCoersionExpression(new ClosureExpression(groupByExpression), "Function");
+        result = new FunctionCallExpression(result, "by", groupByClosureExpr);
+        result = new FunctionCallExpression(result, "toList");
+
+        GroovyExpression mapValuesClosure = new ClosureExpression(new FunctionCallExpression(new CastExpression(getItVariable(), "Map"), "values"));
+
+        result = new FunctionCallExpression(result, "collect", mapValuesClosure);
+
+        //when we call Map.values(), we end up with an extra list around the result.  We remove this by calling toList().get(0).  This
+        //leaves us with a list of lists containing the vertices that match each group.  We then apply the aggregation functions
+        //specified in the select list to each of these inner lists.
+
+        result = new FunctionCallExpression(result ,"toList");
+        result = new FunctionCallExpression(result, "get", new LiteralExpression(0));
+
+        GroovyExpression aggregrationFunctionClosure = new ClosureExpression(aggregationFunction);
+        result = new FunctionCallExpression(result, "collect", aggregrationFunctionClosure);
+        return result;
+    }
+    public GroovyExpression getGroupBySelectFieldParent() {
+        return null;
+    }
 }
+

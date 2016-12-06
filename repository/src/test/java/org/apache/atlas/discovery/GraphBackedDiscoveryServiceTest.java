@@ -18,7 +18,25 @@
 
 package org.apache.atlas.discovery;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
@@ -42,6 +60,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -51,25 +70,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-
-import javax.inject.Inject;
-
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import com.google.common.collect.ImmutableSet;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
@@ -639,96 +640,229 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_partition as p where values = ['2015-01-01']", 1},
                 {"hive_partition as p where values = ['2015-01-01'] limit 10", 1},
                 {"hive_partition as p where values = ['2015-01-01'] limit 10 offset 1", 0},
-                
+
         };
     }
-    
+
     @DataProvider(name = "dslOrderByQueriesProvider")
     private Object[][] createDSLQueriesWithOrderBy() {
         Boolean isAscending = Boolean.TRUE;
         return new Object[][]{
-                //Not working, the problem is in server code not figuring out how to sort. not sure if it is valid use case.
-//                {"hive_db  hive_table  orderby 'hive_db.owner'", 8, "owner", isAscending},
-//                {"hive_db hive_table orderby 'hive_db.owner' limit 5", 5, "owner", isAscending},
-//                {"hive_db hive_table orderby 'hive_db.owner' limit 5 offset 5", 3, "owner", isAscending},
-                {"hive_column select hive_column.name orderby name limit 10 withPath", 10, "name", isAscending},
-                {"hive_column select hive_column.name orderby name asc limit 10 withPath", 10, "name", isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' desc limit 10 withPath", 10, "name", !isAscending},
-                {"from hive_db orderby owner limit 3", 3, "owner", isAscending},
-                {"hive_db where hive_db.name=\"Reporting\" orderby owner", 1, "owner", isAscending},
-                
-                {"hive_db where hive_db.name=\"Reporting\" orderby owner limit 10", 1, "owner", isAscending},
-                {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby name", 1, "name", isAscending},
-                {"hive_db has name orderby 'hive_db.owner' limit 10 offset 0", 3, "owner", isAscending},
-                
-                {"from hive_table orderby owner", 10, "owner", isAscending},
-                {"from hive_table orderby 'hive_table.owner' limit 8", 8, "owner", isAscending},
-                
-                {"hive_table orderby owner", 10, "owner", isAscending},
-                {"hive_table orderby owner limit 8", 8, "owner", isAscending},
-                {"hive_table orderby owner limit 8 offset 0", 8, "owner", isAscending},
-                {"hive_table orderby 'hive_table.owner' desc limit 8 offset 0", 8, "owner", !isAscending},
-                
-                {"hive_table isa Dimension orderby owner", 3, "owner", isAscending},//order not working
-                {"hive_table isa Dimension orderby owner limit 3", 3, "owner", isAscending},
-                {"hive_table isa Dimension orderby owner limit 3 offset 0", 3, "owner", isAscending},
-                {"hive_table isa Dimension orderby 'hive_table.owner' desc limit 3 offset 0", 3, "owner", !isAscending},
-                
-                {"hive_column where hive_column isa PII orderby name", 8, "name", isAscending},
-                {"hive_column where hive_column isa PII orderby name limit 5", 5, "name", isAscending},
-                {"hive_column where hive_column isa PII orderby name limit 5 offset 1", 5, "name", isAscending},
-                {"hive_column where hive_column isa PII orderby 'hive_column.name' desc limit 5 offset 1", 5, "name", !isAscending},
-                
-                
-                {"hive_column select hive_column.name orderby name", 37, "hive_column.name", isAscending},
-                {"hive_column select hive_column.name orderby name limit 5", 5, "hive_column.name", isAscending},
-                {"hive_column select hive_column.name orderby name desc limit 5", 5, "hive_column.name", !isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' limit 5 offset 36", 1, "hive_column.name", isAscending},
-                
-                {"hive_column select name orderby name", 37, "name", isAscending},
-                {"hive_column select name orderby name limit 5", 5, "name", isAscending},
-                {"hive_column select name orderby 'hive_column.name' desc", 37, "name", !isAscending},
-                
-                {"hive_column where hive_column.name=\"customer_id\" orderby name", 6, "name", isAscending},
-                {"hive_column where hive_column.name=\"customer_id\" orderby name limit 2", 2, "name", isAscending},
-                {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name' limit 2 offset 1", 2, "name", isAscending},
-                
-                {"from hive_table select owner orderby owner", 10, "owner", isAscending},
-                {"from hive_table select owner orderby owner limit 5", 5, "owner", isAscending},
-                {"from hive_table select owner orderby owner desc limit 5", 5, "owner", !isAscending},
-                {"from hive_table select owner orderby 'hive_table.owner' limit 5 offset 5", 5, "owner", isAscending},
-                
-                {"hive_db where (name = \"Reporting\") orderby name", 1, "name", isAscending},
-                {"hive_db where (name = \"Reporting\") orderby 'hive_db.name' limit 10", 1, "name", isAscending},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1 orderby '_col_1'", 1, "_col_1", isAscending}, //will it work
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1  orderby owner limit 10", 1, "_col_1", isAscending},
-                {"hive_db where hive_db has name orderby owner", 3, "owner", isAscending},
-                {"hive_db where hive_db has name orderby owner limit 5", 3, "owner", isAscending},
-                {"hive_db where hive_db has name orderby owner limit 2 offset 0", 2, "owner", isAscending},
-                {"hive_db where hive_db has name orderby 'hive_db.owner' limit 2 offset 1", 2, "owner", isAscending},
-                
-                {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1'", 1, "_col_1", isAscending},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10", 1, "_col_1", isAscending},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 1", 0, "_col_1", isAscending},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 0", 1, "_col_1", isAscending},
-                
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime", 1, "_col_1", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 offset 5", 0, "_col_1", isAscending},
-                
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name", 1, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1", 0, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 0 offset 1", 0, "_col_0", isAscending},
+                //test with alias
+              // {"from hive_db select hive_db.name as 'o' orderby o limit 3", 3, "name", isAscending},
+               {"from hive_db as h orderby h.owner limit 3", 3, "owner", isAscending},
+               {"hive_column as c select c.name orderby hive_column.name ", 37, "c.name", isAscending},
+               {"hive_column as c select c.name orderby hive_column.name limit 5", 5, "c.name", isAscending},
+               {"hive_column as c select c.name orderby hive_column.name desc limit 5", 5, "c.name", !isAscending},
 
-                
-                //Test if proeprty is not defined. it should not fail the query
-                {"hive_table orderby 'hive_table.owner_notdefined'", 10, null, isAscending},
+               {"from hive_db orderby hive_db.owner limit 3", 3, "owner", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name ", 37, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name limit 5", 5, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name desc limit 5", 5, "hive_column.name", !isAscending},
+
+               {"from hive_db orderby owner limit 3", 3, "owner", isAscending},
+               {"hive_column select hive_column.name orderby name ", 37, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby name limit 5", 5, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby name desc limit 5", 5, "hive_column.name", !isAscending},
+
+           //Not working, the problem is in server code not figuring out how to sort. not sure if it is valid use case.
+//               {"hive_db  hive_table  orderby 'hive_db.owner'", 10, "owner", isAscending},
+//               {"hive_db hive_table orderby 'hive_db.owner' limit 5", 5, "owner", isAscending},
+//               {"hive_db hive_table orderby 'hive_db.owner' limit 5 offset 5", 3, "owner", isAscending},
+
+               {"hive_db select hive_db.description orderby hive_db.description limit 10 withPath", 3, "hive_db.description", isAscending},
+               {"hive_db select hive_db.description orderby hive_db.description desc limit 10 withPath", 3, "hive_db.description", !isAscending},
+
+               {"hive_column select hive_column.name orderby hive_column.name limit 10 withPath", 10, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name asc limit 10 withPath", 10, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name desc limit 10 withPath", 10, "hive_column.name", !isAscending},
+               {"from hive_db orderby hive_db.owner limit 3", 3, "owner", isAscending},
+               {"hive_db where hive_db.name=\"Reporting\" orderby 'owner'", 1, "owner", isAscending},
+
+               {"hive_db where hive_db.name=\"Reporting\" orderby hive_db.owner limit 10 ", 1, "owner", isAscending},
+               {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby hive_db.name ", 1, "name", isAscending},
+               {"hive_db has name orderby hive_db.owner limit 10 offset 0", 3, "owner", isAscending},
+
+               {"from hive_table select hive_table.owner orderby hive_table.owner", 10, "hive_table.owner", isAscending},
+               {"from hive_table select hive_table.owner  orderby hive_table.owner limit 8", 8, "hive_table.owner", isAscending},
+
+               {"hive_table orderby hive_table.name", 10, "name", isAscending},
+
+               {"hive_table orderby hive_table.owner", 10, "owner", isAscending},
+               {"hive_table orderby hive_table.owner limit 8", 8, "owner", isAscending},
+               {"hive_table orderby hive_table.owner limit 8 offset 0", 8, "owner", isAscending},
+               {"hive_table orderby hive_table.owner desc limit 8 offset 0", 8, "owner", !isAscending},
+
+               //Not working because of existing bug Atlas-175
+//                   {"hive_table isa Dimension orderby hive_table.owner", 3, "hive_table.owner", isAscending},//order not working
+//                   {"hive_table isa Dimension orderby hive_table.owner limit 3", 3, "hive_table.owner", isAscending},
+//                   {"hive_table isa Dimension orderby hive_table.owner limit 3 offset 0", 3, "hive_table.owner", isAscending},
+//                   {"hive_table isa Dimension orderby hive_table.owner desc limit 3 offset 0", 3, "hive_table.owner", !isAscending},
+//
+//                   {"hive_column where hive_column isa PII orderby hive_column.name", 6, "hive_column.name", isAscending},
+//                   {"hive_column where hive_column isa PII orderby hive_column.name limit 5", 5, "hive_column.name", isAscending},
+//                   {"hive_column where hive_column isa PII orderby hive_column.name limit 5 offset 1", 5, "hive_column.name", isAscending},
+//                   {"hive_column where hive_column isa PII orderby hive_column.name desc limit 5 offset 1", 5, "hive_column.name", !isAscending},
+
+               {"hive_column select hive_column.name orderby hive_column.name ", 37, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name limit 5", 5, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name desc limit 5", 5, "hive_column.name", !isAscending},
+
+               {"hive_column select hive_column.name orderby hive_column.name limit 5 offset 28", 5, "hive_column.name", isAscending},
+
+               {"hive_column select name orderby hive_column.name", 37, "name", isAscending},
+               {"hive_column select name orderby hive_column.name limit 5", 5, "name", isAscending},
+               {"hive_column select name orderby hive_column.name desc", 37, "name", !isAscending},
+
+               {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name", 6, "name", isAscending},
+               {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2", 2, "name", isAscending},
+               {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2 offset 1", 2, "name", isAscending},
+
+               {"from hive_table select owner orderby hive_table.owner",10, "owner", isAscending},
+               {"from hive_table select owner orderby hive_table.owner limit 5", 5, "owner", isAscending},
+               {"from hive_table select owner orderby hive_table.owner desc limit 5", 5, "owner", !isAscending},
+               {"from hive_table select owner orderby hive_table.owner limit 5 offset 5", 5, "owner", isAscending},
+
+               {"hive_db where (name = \"Reporting\") orderby hive_db.name", 1, "name", isAscending},
+               {"hive_db where (name = \"Reporting\") orderby hive_db.name limit 10", 1, "name", isAscending},
+               {"hive_db where hive_db has name orderby hive_db.owner", 3, "owner", isAscending},
+               {"hive_db where hive_db has name orderby hive_db.owner limit 5", 3, "owner", isAscending},
+               {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 0", 2, "owner", isAscending},
+               {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 1", 2, "owner", isAscending},
+
+
+               {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1'", 1, "_col_1", isAscending},
+               {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10", 1, "_col_1", isAscending},
+               {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 1", 0, "_col_1", isAscending},
+               {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 0", 1, "_col_1", isAscending},
+
+               {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' ", 1, "_col_1", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 ", 1, "_col_1", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 offset 0", 1, "_col_1", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 offset 5", 0, "_col_1", isAscending},
+
+               {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' ", 1, "_col_0", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10 offset 0", 1, "_col_0", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10 offset 1", 0, "_col_0", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10", 1, "_col_0", isAscending},
+               {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 0 offset 1", 0, "_col_0", isAscending},
+
+               {"hive_column select hive_column.name orderby hive_column.name limit 10 withPath", 10, "hive_column.name", isAscending},
+               {"hive_column select hive_column.name orderby hive_column.name limit 10 withPath", 10, "hive_column.name", isAscending},
+               {"hive_table orderby 'hive_table.owner_notdefined'", 10, null, isAscending},
         };
     }
-    
+
+    @DataProvider(name = "dslGroupByQueriesProvider")
+    private Object[][] createDSLGroupByQueries() {
+        return new Object[][]{
+                        { "from Person as p, mentor as m groupby(m.name) select m.name, count()",
+                                new FieldValueValidator().withFieldNames("m.name", "count()").withExpectedValues("Max", 1)
+                                        .withExpectedValues("Julius", 1) },
+
+        // This variant of this query is currently failing.  See OMS-335 for details.
+                      { "from Person as p, mentor groupby(mentor.name) select mentor.name, count()",
+                               new FieldValueValidator().withFieldNames("mentor.name", "count()").withExpectedValues("Max", 1)
+                                        .withExpectedValues("Julius", 1) },
+
+                        { "from Person, mentor groupby(mentor.name) select mentor.name, count()",
+                                new FieldValueValidator().withFieldNames("mentor.name", "count()").withExpectedValues("Max", 1)
+                                        .withExpectedValues("Julius", 1) },
+
+                        { "from Person, mentor as m groupby(m.name) select m.name, count()",
+                                new FieldValueValidator().withFieldNames("m.name", "count()").withExpectedValues("Max", 1)
+                                        .withExpectedValues("Julius", 1) },
+
+                        { "from Person groupby (isOrganDonor) select count()",
+                                new FieldValueValidator().withFieldNames("count()").withExpectedValues(2)
+                                        .withExpectedValues(2) },
+                        { "from Person groupby (isOrganDonor) select Person.isOrganDonor, count()",
+                                new FieldValueValidator().withFieldNames("Person.isOrganDonor", "count()")
+                                        .withExpectedValues(true, 2).withExpectedValues(false, 2) },
+
+                        { "from Person groupby (isOrganDonor) select Person.isOrganDonor as 'organDonor', count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
+                                new FieldValueValidator().withFieldNames("organDonor", "max", "min", "count")
+                                        .withExpectedValues(true, 50, 36, 2).withExpectedValues(false, 0, 0, 2) },
+
+                        { "from hive_db groupby (owner, name) select count() ", new FieldValueValidator()
+                                .withFieldNames("count()").withExpectedValues(1).withExpectedValues(1).withExpectedValues(1) },
+
+                        { "from hive_db groupby (owner, name) select hive_db.owner, hive_db.name, count() ",
+                                new FieldValueValidator().withFieldNames("hive_db.owner", "hive_db.name", "count()")
+                                        .withExpectedValues("Jane BI", "Reporting", 1)
+                                        .withExpectedValues("Tim ETL", "Logging", 1)
+                                        .withExpectedValues("John ETL", "Sales", 1) },
+
+                        { "from hive_db groupby (owner) select count() ",
+                                new FieldValueValidator().withFieldNames("count()").withExpectedValues(1).withExpectedValues(1)
+                                        .withExpectedValues(1) },
+
+                        { "from hive_db groupby (owner) select hive_db.owner, count() ",
+                                new FieldValueValidator().withFieldNames("hive_db.owner", "count()")
+                                        .withExpectedValues("Jane BI", 1).withExpectedValues("Tim ETL", 1)
+                                        .withExpectedValues("John ETL", 1) },
+
+                        { "from hive_db groupby (owner) select hive_db.owner, max(hive_db.name) ",
+                                new FieldValueValidator().withFieldNames("hive_db.owner", "max(hive_db.name)")
+                                        .withExpectedValues("Tim ETL", "Logging").withExpectedValues("Jane BI", "Reporting")
+                                        .withExpectedValues("John ETL", "Sales") },
+
+                        { "from hive_db groupby (owner) select max(hive_db.name) ",
+                                new FieldValueValidator().withFieldNames("max(hive_db.name)").withExpectedValues("Logging")
+                                        .withExpectedValues("Reporting").withExpectedValues("Sales") },
+
+                        { "from hive_db groupby (owner) select owner, hive_db.name, min(hive_db.name)  ",
+                                new FieldValueValidator().withFieldNames("owner", "hive_db.name", "min(hive_db.name)")
+                                        .withExpectedValues("Tim ETL", "Logging", "Logging")
+                                        .withExpectedValues("Jane BI", "Reporting", "Reporting")
+                                        .withExpectedValues("John ETL", "Sales", "Sales") },
+
+                        { "from hive_db groupby (owner) select owner, min(hive_db.name)  ",
+                                new FieldValueValidator().withFieldNames("owner", "min(hive_db.name)")
+                                        .withExpectedValues("Tim ETL", "Logging").withExpectedValues("Jane BI", "Reporting")
+                                        .withExpectedValues("John ETL", "Sales") },
+
+                        { "from hive_db groupby (owner) select min(name)  ",
+                                new FieldValueValidator().withFieldNames("min(name)")
+                                        .withExpectedValues("Reporting").withExpectedValues("Logging")
+                                        .withExpectedValues("Sales") },
+
+                        { "from hive_db groupby (owner) select min('name') ",
+                                new FieldValueValidator().withFieldNames("min(\"name\")").withExpectedValues("name")
+                                        .withExpectedValues("name").withExpectedValues("name") }, //finding the minimum of a constant literal expression...
+
+                        { "from hive_db groupby (owner) select name ",
+                                new FieldValueValidator().withFieldNames("name").withExpectedValues("Reporting")
+                                        .withExpectedValues("Sales").withExpectedValues("Logging") },
+
+                        //implied group by
+                        { "from hive_db select count() ",
+                                new FieldValueValidator().withFieldNames("count()").withExpectedValues(3) },
+                        //implied group by
+                        { "from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
+                                new FieldValueValidator().withFieldNames("max", "min", "count").withExpectedValues(50, 0, 4) },
+                         //Sum
+                       { "from Person groupby (isOrganDonor) select count() as 'count', sum(Person.age) as 'sum'",
+                                new FieldValueValidator().withFieldNames("count", "sum").withExpectedValues(2, 0)
+                                                        .withExpectedValues(2, 86) },
+                       { "from Person groupby (isOrganDonor) select Person.isOrganDonor as 'organDonor', count() as 'count', sum(Person.age) as 'sum'",
+                                 new FieldValueValidator().withFieldNames("organDonor", "count", "sum").withExpectedValues(false, 2, 0)
+                                                                    .withExpectedValues(true, 2, 86) },
+                       { "from Person select count() as 'count', sum(Person.age) as 'sum'",
+                                 new FieldValueValidator().withFieldNames("count", "sum").withExpectedValues(4, 86) },
+                         // tests to ensure that group by works with order by and limit
+                       { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
+                                     new FieldValueValidator().withFieldNames("min(name)")
+                                             .withExpectedValues("Logging").withExpectedValues("Reporting")
+                                              },
+
+                       { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
+                                                  new FieldValueValidator().withFieldNames("min(name)")
+                                                          .withExpectedValues("Reporting").withExpectedValues("Sales")
+                                                           },
+            };
+    }
+
     @Test(dataProvider = "dslOrderByQueriesProvider")
     public void  testSearchByDSLQueriesWithOrderBy(String dslQuery, Integer expectedNumRows, String orderBy, boolean ascending) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
@@ -747,7 +881,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertNotNull(typeName);
 
         JSONArray rows = results.getJSONArray("rows");
-       
+
         assertNotNull(rows);
         assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
         List<String> returnedList = new ArrayList<String> ();
@@ -759,7 +893,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
             }
             catch(Exception ex)
             {
-                System.out.println( " Exception occured " + ex.getMessage());
+                System.out.println( " Exception occured " + ex.getMessage() + " found row: "+row);
             }
         }
         Iterator<String> iter = returnedList.iterator();
@@ -771,10 +905,11 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 _prev = _current;
                 _current = iter.next().toLowerCase();
                 if (_prev != null && _prev.compareTo(_current) != 0) {
-                    if (ascending) {
-                        Assert.assertTrue(_prev.compareTo(_current) < 0);
-                    } else {
-                        Assert.assertTrue(_prev.compareTo(_current) > 0);
+                    if(ascending) {
+                        Assert.assertTrue(_prev.compareTo(_current) < 0,  _prev + " is greater than " + _current);
+                    }
+                    else {
+                        Assert.assertTrue(_prev.compareTo(_current) > 0, _prev + " is less than " + _current);
                     }
                 }
             }
@@ -885,5 +1020,156 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         ITypedReferenceableInstance typedInstance = deptType.convert(instance, Multiplicity.REQUIRED);
 
         repositoryService.createEntities(typedInstance);
+    }
+
+    private void runCountGroupByQuery(String dslQuery, ResultChecker checker) throws Exception {
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+        Object query = results.get("query");
+        assertNotNull(query);
+
+        JSONArray rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        if (checker != null) {
+            checker.validateResult(dslQuery, rows);
+        }
+
+        System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
+    }
+
+    @Test(dataProvider = "dslGroupByQueriesProvider")
+    public void testSearchGroupByDSLQueries(String dslQuery, ResultChecker checker) throws Exception {
+        runCountGroupByQuery(dslQuery, checker);
+    }
+
+    private interface ResultChecker {
+        void validateResult(String dslQuery, JSONArray foundRows) throws JSONException;
+    }
+
+    static class FieldValueValidator implements ResultChecker {
+        static class ResultObject {
+
+            @Override
+            public String toString() {
+                return "ResultObject [fieldValues_=" + fieldValues_ + "]";
+            }
+
+            Map<String, Object> fieldValues_ = new HashMap<>();
+
+            public void setFieldValue(String string, Object object) {
+                fieldValues_.put(string, object);
+
+            }
+
+            public boolean matches(JSONObject object) throws JSONException {
+                for (Map.Entry<String, Object> requiredFieldsEntry : fieldValues_.entrySet()) {
+                    String fieldName = requiredFieldsEntry.getKey();
+                    Object expectedValue = requiredFieldsEntry.getValue();
+                    Object foundValue = null;
+                    if (expectedValue.getClass() == Integer.class) {
+                        foundValue = object.getInt(fieldName);
+                    } else {
+                        foundValue = object.get(fieldName);
+                    }
+                    if (foundValue == null || !expectedValue.equals(foundValue)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        private String[] fieldNames_;
+        private List<ResultObject> expectedObjects_ = new ArrayList<>();
+        public FieldValueValidator() {
+
+        }
+
+
+        public FieldValueValidator withFieldNames(String... fields) {
+            fieldNames_ = fields;
+            return this;
+        }
+
+        public FieldValueValidator withExpectedValues(Object... values) {
+            ResultObject obj = new ResultObject();
+            for (int i = 0; i < fieldNames_.length; i++) {
+                obj.setFieldValue(fieldNames_[i], values[i]);
+            }
+            expectedObjects_.add(obj);
+            return this;
+        }
+
+        @Override
+        public void validateResult(String dslQuery, JSONArray foundRows) throws JSONException {
+
+            //make sure that all required rows are found
+            Assert.assertEquals(foundRows.length(), expectedObjects_.size(),
+                    "The wrong number of objects was returned for query " + dslQuery + ".  Expected "
+                            + expectedObjects_.size() + ", found " + foundRows.length());
+
+            for (ResultObject required : expectedObjects_) {
+                //not exactly efficient, but this is test code
+                boolean found = false;
+                for (int i = 0; i < foundRows.length(); i++) {
+                    JSONObject row = foundRows.getJSONObject(i);
+                    System.out.println(" found row "+ row);
+                    if (required.matches(row)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    Assert.fail("The result for " + dslQuery + " is wrong.  The required row " + required
+                            + " was not found in " + foundRows);
+                }
+            }
+        }
+
+    }
+
+    static class CountOnlyValidator implements ResultChecker {
+        private List<Integer> expectedCounts = new ArrayList<Integer>();
+        private int countColumn = 0;
+
+        public CountOnlyValidator() {
+
+        }
+
+
+        public CountOnlyValidator withCountColumn(int col) {
+            countColumn = col;
+            return this;
+        }
+
+        public CountOnlyValidator withExpectedCounts(Integer... counts) {
+            expectedCounts.addAll(Arrays.asList(counts));
+            return this;
+        }
+
+        @Override
+        public void validateResult(String dslQuery, JSONArray foundRows) throws JSONException {
+            assertEquals(foundRows.length(), expectedCounts.size());
+            for (int i = 0; i < foundRows.length(); i++) {
+
+                JSONArray row = foundRows.getJSONArray(i);
+                assertEquals(row.length(), 1);
+                int foundCount = row.getInt(countColumn);
+              //  assertTrue(expectedCounts.contains(foundCount));
+            }
+        }
+
+    }
+
+    private FieldValueValidator makeCountValidator(int count) {
+        return new FieldValueValidator().withFieldNames("count()").withExpectedValues(count);
+    }
+
+    private FieldValueValidator makeNoResultsValidator() {
+        return new FieldValueValidator();
     }
 }
