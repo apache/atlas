@@ -91,7 +91,10 @@ public class LineageResource {
             response.put(AtlasClient.RESULTS, new JSONObject(result));
 
             return Response.ok(response).build();
-        } catch (AtlasBaseException | JSONException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
+        } catch (JSONException e) {
             LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
@@ -119,7 +122,10 @@ public class LineageResource {
             response.put(AtlasClient.RESULTS, new JSONObject(result));
 
             return Response.ok(response).build();
-        } catch (AtlasBaseException | JSONException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
+        } catch (JSONException e) {
             LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
