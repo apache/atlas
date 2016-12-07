@@ -78,6 +78,8 @@ Please note that Solr installation in Cloud mode is a prerequisite before config
  atlas.graph.index.search.backend=solr5
  atlas.graph.index.search.solr.mode=cloud
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
+ atlas.graph.index.search.solr.zookeeper-connect-timeout=<SolrCloud Zookeeper Connection Timeout>. Default value is 60000 ms
+ atlas.graph.index.search.solr.zookeeper-session-timeout=<SolrCloud Zookeeper Session Timeout>. Default value is 60000 ms
 </verbatim>
 
 Also note that if the embedded-hbase-solr profile is used then Solr is included in the distribution so that a standalone
