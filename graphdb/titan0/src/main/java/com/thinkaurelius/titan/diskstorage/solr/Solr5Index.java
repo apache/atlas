@@ -142,6 +142,14 @@ public class Solr5Index implements IndexProvider {
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
             ConfigOption.Type.MASKABLE, "localhost:2181");
 
+    public static final ConfigOption<Integer> ZOOKEEPER_CONNECT_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"zookeeper-connect-timeout",
+        "SolrCloud Zookeeper connect timeout",
+        ConfigOption.Type.MASKABLE, 60000);
+
+    public static final ConfigOption<Integer> ZOOKEEPER_SESSION_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"zookeeper-session-timeout",
+        "SolrCloud Zookeeper session timeout",
+        ConfigOption.Type.MASKABLE, 60000);
+
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
@@ -210,6 +218,13 @@ public class Solr5Index implements IndexProvider {
             HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
             String zookeeperUrl = config.get(Solr5Index.ZOOKEEPER_URL);
             CloudSolrClient cloudServer = new CloudSolrClient(zookeeperUrl, true);
+
+            logger.info("Zookeeper connect timeout : " + config.get(ZOOKEEPER_CONNECT_TIMEOUT));
+            cloudServer.setZkConnectTimeout(config.get(ZOOKEEPER_CONNECT_TIMEOUT));
+
+            logger.info("Zookeeper session timeout : " + config.get(ZOOKEEPER_SESSION_TIMEOUT));
+            cloudServer.setZkClientTimeout(config.get(ZOOKEEPER_SESSION_TIMEOUT));
+
             cloudServer.connect();
             solrClient = cloudServer;
         } else if (mode==Mode.HTTP) {

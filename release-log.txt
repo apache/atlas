@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1342 Titan Solrclient - Add timeouts for zookeeper connect and session (sumasai)
 ATLAS-1353 Invalid error message(500 internal server error) for lineage query on non-existing table. (sumasai)
 ATLAS-1347 Creating a class with unknown supertype results in "409 Conflict", where as expected is "400 Bad Message" (apoorvnairk via sumasai)
 ATLAS-737 Add DSL support for Sum, Max, Min and count operations with and without group by (guptaneeru via dkantor)

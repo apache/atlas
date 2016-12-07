@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.script.Bindings;
+import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -282,6 +283,8 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
         Bindings bindings = engine.createBindings();
         bindings.put("g", getGraph());
+        //Do not cache script compilations due to memory implications
+        engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
         Object result = engine.eval(gremlinQuery, bindings);
         return result;
     }

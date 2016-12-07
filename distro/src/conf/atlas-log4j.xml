@@ -65,7 +65,7 @@
     </logger>
 
     <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="warn"/>
+        <level value="info"/>
         <appender-ref ref="FILE"/>
     </logger>
 
