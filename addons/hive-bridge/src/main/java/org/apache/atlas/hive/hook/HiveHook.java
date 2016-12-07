@@ -1087,7 +1087,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     static final class EntityComparator implements Comparator<Entity> {
         @Override
         public int compare(Entity o1, Entity o2) {
-            return o1.getName().toLowerCase().compareTo(o2.getName().toLowerCase());
+            String s1 = o1.getName();
+            String s2 = o2.getName();
+            if (s1 == null || s2 == null){
+                s1 = o1.getD().toString();
+                s2 = o2.getD().toString();
+            }
+            return s1.toLowerCase().compareTo(s2.toLowerCase());
         }
     }
 
