@@ -73,7 +73,13 @@ public class SearchFilter {
     }
 
     public String getParam(String name) {
-        return getParams(name).get(0);
+        String ret = null;
+
+        if (name != null && params != null) {
+            ret = params.getFirst(name);
+        }
+
+        return ret;
     }
 
     public List<String> getParams(String name) {

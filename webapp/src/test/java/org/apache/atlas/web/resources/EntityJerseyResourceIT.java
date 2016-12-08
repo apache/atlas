@@ -429,10 +429,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetEntityListForBadEntityType() throws Exception {
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("type", "blah");
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("type", "blah");
 
-        JSONObject response = serviceClient.callAPIWithBody(AtlasClient.API.GET_ENTITY, queryParams);
+        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));

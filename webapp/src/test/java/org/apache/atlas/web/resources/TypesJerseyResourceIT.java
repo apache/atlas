@@ -20,6 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.TypesDef;
@@ -41,12 +42,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.testng.Assert.assertEquals;
@@ -187,10 +187,10 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     public void testGetTraitNames() throws Exception {
         String[] traitsAdded = addTraits();
 
-            Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("type", DataTypes.TypeCategory.TRAIT.name());
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("type", DataTypes.TypeCategory.TRAIT.name());
 
-        JSONObject response = serviceClient.callAPIWithBody(AtlasClient.API.LIST_TYPES, queryParams);
+        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.LIST_TYPES, queryParams);
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));

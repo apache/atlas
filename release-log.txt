@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1358 NPE Fix for search filter changes & callAPI related fixes (apoorvnaik via sumasai)
 ATLAS-1357: Fixes for test failures from ATLAS-1307 (apoorvnaik via sumasai)
 ATLAS-1307: Integration test calls routing via the Client. (apoorvnaik via sumasai)
 ATLAS-1355: Fix for bad error translation from V2 API (apoorvnaik via sumasai)
