@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -398,7 +399,7 @@ public abstract class AtlasBaseClient {
         return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
     }
 
-    public <T> T callAPI(APIInfo api, Class<T> responseType, Map<String, String> queryParams, String... params)
+    public <T> T callAPI(APIInfo api, Class<T> responseType, MultivaluedMap<String, String> queryParams, String... params)
             throws AtlasServiceException {
         WebResource resource = getResource(api, queryParams, params);
         return callAPIWithResource(api, resource, null, responseType);
@@ -415,12 +416,27 @@ public abstract class AtlasBaseClient {
         return resource;
     }
 
-    public <T> T callAPI(APIInfo api, Class<T> responseType, Map<String, String> queryParams)
+    public <T> T callAPI(APIInfo api, Class<T> responseType, MultivaluedMap<String, String> queryParams)
             throws AtlasServiceException {
         return callAPIWithResource(api, getResource(api, queryParams), null, responseType);
     }
 
-    protected WebResource getResource(APIInfo api, Map<String, String> queryParams, String ... pathParams) {
+    public <T> T callAPI(APIInfo api, Class<T> responseType, String queryParamKey, List<String> queryParamValues)
+            throws AtlasServiceException {
+        return callAPIWithResource(api, getResource(api, queryParamKey, queryParamValues), null, responseType);
+    }
+
+    private WebResource getResource(APIInfo api, String queryParamKey, List<String> queryParamValues) {
+        WebResource resource = service.path(api.getPath());
+        for (String queryParamValue : queryParamValues) {
+            if (StringUtils.isNotBlank(queryParamKey) && StringUtils.isNotBlank(queryParamValue)) {
+                resource = resource.queryParam(queryParamKey, queryParamValue);
+            }
+        }
+        return resource;
+    }
+
+    protected WebResource getResource(APIInfo api, MultivaluedMap<String, String> queryParams, String ... pathParams) {
         WebResource resource = service.path(api.getPath());
         resource = appendPathParams(resource, pathParams);
         resource = appendQueryParams(queryParams, resource);
@@ -436,21 +452,25 @@ public abstract class AtlasBaseClient {
         return resource;
     }
 
-    protected WebResource getResource(APIInfo api, Map<String, String> queryParams) {
+    protected WebResource getResource(APIInfo api, MultivaluedMap<String, String> queryParams) {
         return getResource(service, api, queryParams);
     }
 
     // Modify URL to include the query params
-    private WebResource getResource(WebResource service, APIInfo api, Map<String, String> queryParams) {
+    private WebResource getResource(WebResource service, APIInfo api, MultivaluedMap<String, String> queryParams) {
         WebResource resource = service.path(api.getPath());
         resource = appendQueryParams(queryParams, resource);
         return resource;
     }
 
-    private WebResource appendQueryParams(Map<String, String> queryParams, WebResource resource) {
+    private WebResource appendQueryParams(MultivaluedMap<String, String> queryParams, WebResource resource) {
         if (null != queryParams && !queryParams.isEmpty()) {
-            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
-                resource = resource.queryParam(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+                for (String value : entry.getValue()) {
+                    if (StringUtils.isNotBlank(value)) {
+                        resource = resource.queryParam(entry.getKey(), value);
+                    }
+                }
             }
         }
         return resource;

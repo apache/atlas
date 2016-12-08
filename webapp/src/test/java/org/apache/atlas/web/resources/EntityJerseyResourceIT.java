@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
@@ -60,6 +61,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -169,7 +171,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("location", "/tmp");
 
         JSONObject response = serviceClient
-                .callAPI(AtlasClient.API.CREATE_ENTITY, InstanceSerialization.toJson(databaseInstance, true));
+                .callAPIWithBody(AtlasClient.API.CREATE_ENTITY, InstanceSerialization.toJson(databaseInstance, true));
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -322,7 +324,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String description = "bar table - new desc";
         addProperty(guid, "description", description);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, guid);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
         tableInstance.set("description", description);
@@ -338,7 +340,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String currentTime = String.valueOf(new DateTime() );
         addProperty(guid, "createTime", currentTime);
 
-        response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, guid);
+        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
         tableInstance.set("createTime", currentTime);
@@ -390,7 +392,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, guid);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
@@ -410,7 +412,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetInvalidEntityDefinition() throws Exception {
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, "blah");
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, "blah");
 
         Assert.assertNotNull(response);
 
@@ -430,7 +432,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("type", "blah");
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, queryParams);
+        JSONObject response = serviceClient.callAPIWithBody(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
@@ -441,10 +443,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetEntityListForNoInstances() throws Exception {
         String typeName = addNewType();
 
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("type", typeName);
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("type", typeName);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, queryParams);
+        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -468,7 +470,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetTraitNames() throws Exception {
         final String guid = tableId._getId();
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.LIST_TRAITS, null, guid, TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.LIST_TRAITS, null, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -490,7 +492,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -511,7 +513,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
         Struct traitDef = serviceClient.getTraitDefinition(guid, traitName);
         System.out.println(traitDef.toString());
@@ -533,7 +535,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
     }
 
@@ -553,12 +555,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         // verify the response
-        response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, guid);
+        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         final String definition = response.getString(AtlasClient.DEFINITION);
@@ -581,14 +583,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
     }
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String guid = tableId._getId();
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get("traitName"));
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
@@ -597,7 +599,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testDeleteTraitNonExistent() throws Exception {
         final String traitName = "blah_trait";
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
 
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertEquals(response.getString(AtlasClient.ERROR),
@@ -616,9 +618,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
         createType(traitDefinitionAsJSON);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
-        Assert.assertNotNull(response.get(AtlasClient.ERROR));
-        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
+        try {
+            JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+            fail("Call should've failed for deletion of invalid trait");
+        } catch (AtlasServiceException e) {
+            assertNotNull(e);
+            assertNotNull(e.getStatus());
+            assertEquals(e.getStatus(), ClientResponse.Status.NOT_FOUND);
+        }
     }
 
     private String random() {
@@ -643,8 +650,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         instance.set(attrName, attrValue);
         Id guid = createInstance(instance);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, guid._getId());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.toString(), true);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid._getId());
+        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         Assert.assertEquals(getReferenceable.get(attrName), attrValue);
     }
 
@@ -674,8 +681,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.toString(), true);
+        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
 
         Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
@@ -694,8 +701,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(entityResult.getUpdateEntities().size(), 2);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
-        response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        getReferenceable = InstanceSerialization.fromJsonReferenceable(response.toString(), true);
+        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         refs = (List<Referenceable>) getReferenceable.get("columns");
 
         Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
@@ -736,7 +743,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         entityArray.put(entityJson);
         LOG.debug("Replacing entity= " + tableInstance);
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.UPDATE_ENTITY, entityArray);
+        JSONObject response = serviceClient.callAPIWithBody(AtlasClient.API.UPDATE_ENTITY, entityArray);
 
         // ATLAS-586: verify response entity can be parsed by GSON.
         Gson gson = new Gson();
@@ -747,8 +754,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             Assert.fail("Response entity from not parse-able by GSON", e);
         }
 
-        response = serviceClient.callAPI(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.toString(), true);
+        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        LOG.info("Response = {}", response.toString());
+        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
@@ -795,11 +803,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id db2Id = createInstance(db2);
 
         // Delete the database entities
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(AtlasClient.GUID.toLowerCase(), db1Id._getId());
-        queryParams.put(AtlasClient.GUID.toLowerCase(), db2Id._getId());
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(AtlasClient.GUID.toLowerCase(), db1Id._getId());
+        queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 
-        JSONObject response = serviceClient.callAPI(AtlasClient.API.DELETE_ENTITIES, queryParams);
+        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.DELETE_ENTITIES, queryParams);
         List<String> deletedGuidsList = AtlasClient.EntityResult.fromString(response.toString()).getDeletedEntities();
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
         Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));

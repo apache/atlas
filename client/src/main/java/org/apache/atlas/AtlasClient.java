@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -301,7 +302,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public List<String> createType(String typeAsJson) throws AtlasServiceException {
         LOG.debug("Creating type definition: {}", typeAsJson);
-        JSONObject response = callAPI(API.CREATE_TYPE, typeAsJson);
+        JSONObject response = callAPIWithBody(API.CREATE_TYPE, typeAsJson);
         List<String> results = extractResults(response, AtlasClient.TYPES, new ExtractOperation<String, JSONObject>() {
             @Override
             String extractElement(JSONObject element) throws JSONException {
@@ -357,7 +358,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public List<String> updateType(String typeAsJson) throws AtlasServiceException {
         LOG.debug("Updating type definition: {}", typeAsJson);
-        JSONObject response = callAPI(API.UPDATE_TYPE, typeAsJson);
+        JSONObject response = callAPIWithBody(API.UPDATE_TYPE, typeAsJson);
         List<String> results = extractResults(response, AtlasClient.TYPES, new ExtractOperation<String, JSONObject>() {
             @Override
             String extractElement(JSONObject element) throws JSONException {
@@ -384,7 +385,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<String> listTypes() throws AtlasServiceException {
-        final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
+        final JSONObject jsonObject = callAPIWithQueryParams(API.LIST_TYPES, null);
         return extractResults(jsonObject, AtlasClient.RESULTS, new ExtractOperation<String, String>());
     }
 
@@ -435,7 +436,7 @@ public class AtlasClient extends AtlasBaseClient {
 
     public TypesDef getType(String typeName) throws AtlasServiceException {
         try {
-            JSONObject response = callAPI(API.GET_TYPE, null, typeName);;
+            JSONObject response = callAPIWithBodyAndParams(API.GET_TYPE, null, typeName);
             String typeJson = response.getString(DEFINITION);
             return TypesSerialization.fromJson(typeJson);
         } catch (AtlasServiceException e) {
@@ -456,7 +457,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     protected List<String> createEntity(JSONArray entities) throws AtlasServiceException {
         LOG.debug("Creating entities: {}", entities);
-        JSONObject response = callAPI(API.CREATE_ENTITY, entities.toString());
+        JSONObject response = callAPIWithBody(API.CREATE_ENTITY, entities.toString());
         List<String> results = extractEntityResult(response).getCreatedEntities();
         LOG.debug("Create entities returned results: {}", results);
         return results;
@@ -506,7 +507,7 @@ public class AtlasClient extends AtlasBaseClient {
 
     protected EntityResult updateEntities(JSONArray entities) throws AtlasServiceException {
         LOG.debug("Updating entities: {}", entities);
-        JSONObject response = callAPI(API.UPDATE_ENTITY, entities.toString());
+        JSONObject response = callAPIWithBody(API.UPDATE_ENTITY, entities.toString());
         EntityResult results = extractEntityResult(response);
         LOG.debug("Update entities returned results: {}", results);
         return results;
@@ -548,7 +549,7 @@ public class AtlasClient extends AtlasBaseClient {
     public EntityResult updateEntity(String guid, Referenceable entity) throws AtlasServiceException {
         String entityJson = InstanceSerialization.toJson(entity, true);
         LOG.debug("Updating entity id {} with {}", guid, entityJson);
-        JSONObject response = callAPI(API.UPDATE_ENTITY_PARTIAL, entityJson, guid);
+        JSONObject response = callAPIWithBodyAndParams(API.UPDATE_ENTITY_PARTIAL, entityJson, guid);
         return extractEntityResult(response);
     }
 
@@ -561,7 +562,7 @@ public class AtlasClient extends AtlasBaseClient {
     public void addTrait(String guid, Struct traitDefinition) throws AtlasServiceException {
         String traitJson = InstanceSerialization.toJson(traitDefinition, true);
         LOG.debug("Adding trait to entity with id {} {}", guid, traitJson);
-        callAPI(API.ADD_TRAITS, traitJson, guid, URI_TRAITS);
+        callAPIWithBodyAndParams(API.ADD_TRAITS, traitJson, guid, URI_TRAITS);
     }
 
     /**
@@ -571,7 +572,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public void deleteTrait(String guid, String traitName) throws AtlasServiceException {
-        callAPI(API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+        callAPIWithBodyAndParams(API.DELETE_TRAITS, null, guid, TRAITS, traitName);
     }
 
     /**
@@ -666,7 +667,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public Referenceable getEntity(String guid) throws AtlasServiceException {
-        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
+        JSONObject jsonResponse = callAPIWithBodyAndParams(API.GET_ENTITY, null, guid);
         try {
             String entityInstanceDefinition = jsonResponse.getString(AtlasClient.DEFINITION);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
@@ -736,7 +737,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<String> listTraits(final String guid) throws AtlasServiceException {
-        JSONObject jsonResponse = callAPI(API.LIST_TRAITS, null, guid, URI_TRAITS);
+        JSONObject jsonResponse = callAPIWithBodyAndParams(API.LIST_TRAITS, null, guid, URI_TRAITS);
         return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
     }
 
@@ -747,7 +748,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<Struct> listTraitDefinitions(final String guid) throws AtlasServiceException{
-        JSONObject jsonResponse = callAPI(API.GET_ALL_TRAIT_DEFINITIONS, null, guid, TRAIT_DEFINITIONS);
+        JSONObject jsonResponse = callAPIWithBodyAndParams(API.GET_ALL_TRAIT_DEFINITIONS, null, guid, TRAIT_DEFINITIONS);
         List<JSONObject> traitDefList = extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<JSONObject, JSONObject>());
         ArrayList<Struct> traitStructList = new ArrayList<>();
         for(JSONObject traitDef:traitDefList){
@@ -765,7 +766,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public Struct getTraitDefinition(final String guid, final String traitName) throws AtlasServiceException{
-        JSONObject jsonResponse = callAPI(API.GET_TRAIT_DEFINITION, null, guid, TRAIT_DEFINITIONS, traitName);
+        JSONObject jsonResponse = callAPIWithBodyAndParams(API.GET_TRAIT_DEFINITION, null, guid, TRAIT_DEFINITIONS, traitName);
 
         try {
             return InstanceSerialization.fromJsonStruct(jsonResponse.getString(AtlasClient.RESULTS), false);
@@ -909,7 +910,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     public JSONObject getInputGraph(String datasetName) throws AtlasServiceException {
-        JSONObject response = callAPI(API.NAME_LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
+        JSONObject response = callAPIWithBodyAndParams(API.NAME_LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -918,7 +919,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     public JSONObject getOutputGraph(String datasetName) throws AtlasServiceException {
-        JSONObject response = callAPI(API.NAME_LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
+        JSONObject response = callAPIWithBodyAndParams(API.NAME_LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -927,7 +928,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     public JSONObject getInputGraphForEntity(String entityId) throws AtlasServiceException {
-        JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, entityId, "/inputs/graph");
+        JSONObject response = callAPIWithBodyAndParams(API.LINEAGE_INPUTS_GRAPH, null, entityId, "/inputs/graph");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -936,7 +937,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     public JSONObject getOutputGraphForEntity(String datasetId) throws AtlasServiceException {
-        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/outputs/graph");
+        JSONObject response = callAPIWithBodyAndParams(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/outputs/graph");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -945,7 +946,7 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     public JSONObject getSchemaForEntity(String datasetId) throws AtlasServiceException {
-        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/schema");
+        JSONObject response = callAPIWithBodyAndParams(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/schema");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -965,17 +966,17 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     @VisibleForTesting
-    public JSONObject callAPI(API api, Object requestObject) throws AtlasServiceException {
+    public JSONObject callAPIWithBody(API api, Object requestObject) throws AtlasServiceException {
         return callAPI(toAPIInfo(api), requestObject, JSONObject.class, (String[]) null);
     }
 
     @VisibleForTesting
-    public JSONObject callAPI(API api, Object requestObject, String ... params) throws AtlasServiceException {
+    public JSONObject callAPIWithBodyAndParams(API api, Object requestObject, String ... params) throws AtlasServiceException {
         return callAPI(toAPIInfo(api), requestObject, JSONObject.class, params);
     }
 
     @VisibleForTesting
-    public JSONObject callAPI(API api, Map<String, String> queryParams) throws AtlasServiceException {
+    public JSONObject callAPIWithQueryParams(API api, MultivaluedMap<String, String> queryParams) throws AtlasServiceException {
         return callAPI(toAPIInfo(api), JSONObject.class, queryParams);
     }
 

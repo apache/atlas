@@ -17,18 +17,19 @@
  */
 package org.apache.atlas.model;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.List;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Generic filter, to specify search criteria using name/value pairs.
@@ -48,7 +49,7 @@ public class SearchFilter {
      */
     public enum SortType { NONE, ASC, DESC };
 
-    private Map<String, String> params     = null;
+    private MultivaluedMap<String, String> params     = null;
     private long                startIndex = 0;
     private long                maxRows    = Long.MAX_VALUE;
     private boolean             getCount   = true;
@@ -59,20 +60,24 @@ public class SearchFilter {
         setParams(null);
     }
 
-    public SearchFilter(Map<String, String> params) {
+    public SearchFilter(MultivaluedMap<String, String> params) {
         setParams(params);
     }
 
-    public Map<String, String> getParams() {
+    public MultivaluedMap<String, String> getParams() {
         return params;
     }
 
-    public void setParams(Map<String, String> params) {
+    public void setParams(MultivaluedMap<String, String> params) {
         this.params = params;
     }
 
     public String getParam(String name) {
-        String ret = null;
+        return getParams(name).get(0);
+    }
+
+    public List<String> getParams(String name) {
+        List<String> ret = null;
 
         if (name != null && params != null) {
             ret = params.get(name);
@@ -84,10 +89,10 @@ public class SearchFilter {
     public void setParam(String name, String value) {
         if (name != null) {
             if (params == null) {
-                params = new HashMap<String, String>();
+                params = new MultivaluedMapImpl();
             }
 
-            params.put(name, value);
+            params.add(name, value);
         }
     }
 

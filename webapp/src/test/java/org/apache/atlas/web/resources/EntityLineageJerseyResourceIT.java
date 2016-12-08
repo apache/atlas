@@ -20,6 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
@@ -30,8 +31,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +43,7 @@ import static org.apache.atlas.AtlasBaseClient.APIInfo;
  * Entity Lineage v2 Integration Tests.
  */
 public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceIT {
-    private static final String BASE_URI = "api/atlas/v2/lineage/";
+    private static final String BASE_URI = "api/atlas/v2/lineage";
     private static final APIInfo LINEAGE_V2_API = new APIInfo(BASE_URI, "GET", Response.Status.OK);
     private static final String INPUT_DIRECTION = "INPUT";
     private static final String OUTPUT_DIRECTION = "OUTPUT";
@@ -68,10 +69,10 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(DIRECTION_PARAM, INPUT_DIRECTION);
-        queryParams.put(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(DIRECTION_PARAM, INPUT_DIRECTION);
+        queryParams.add(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
         Assert.assertNotNull(response);
         System.out.println("input lineage info = " + response
         );
@@ -96,10 +97,10 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
 
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(DIRECTION_PARAM, OUTPUT_DIRECTION);
-        queryParams.put(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(DIRECTION_PARAM, OUTPUT_DIRECTION);
+        queryParams.add(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("output lineage info = " + response);
@@ -124,10 +125,10 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(DIRECTION_PARAM, BOTH_DIRECTION);
-        queryParams.put(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(DIRECTION_PARAM, BOTH_DIRECTION);
+        queryParams.add(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("both lineage info = " + response);

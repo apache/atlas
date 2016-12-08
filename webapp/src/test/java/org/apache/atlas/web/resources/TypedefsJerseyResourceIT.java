@@ -19,7 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableSet;
-
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.SearchFilter;
@@ -41,19 +41,13 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import static org.apache.atlas.type.AtlasTypeUtil.createClassTypeDef;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 /**
  * Integration test for types jersey resource.
@@ -136,8 +130,8 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         assertEquals(updatedTypeDefs.getEntityDefs().size(), atlasTypesDef.getEntityDefs().size());
         assertEquals(updatedTypeDefs.getEntityDefs().get(0).getName(), atlasTypesDef.getEntityDefs().get(0).getName());
 
-        Map<String, String> filterParams = new HashMap<>();
-        filterParams.put(SearchFilter.PARAM_TYPE, "ENTITY");
+        MultivaluedMap<String, String> filterParams = new MultivaluedMapImpl();
+        filterParams.add(SearchFilter.PARAM_TYPE, "ENTITY");
         AtlasTypesDef allTypeDefs = clientV2.getAllTypeDefs(new SearchFilter(filterParams));
         assertNotNull(allTypeDefs);
         Boolean entityDefFound = false;
@@ -265,15 +259,15 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         assertNotNull(created);
         assertEquals(created.getEntityDefs().size(), atlasTypesDef.getEntityDefs().size());
 
-        Map<String, String> searchParams = new HashMap<>();
-        searchParams.put(SearchFilter.PARAM_TYPE, "CLASS");
-        searchParams.put(SearchFilter.PARAM_SUPERTYPE, classDefA.getName());
+        MultivaluedMap<String, String> searchParams = new MultivaluedMapImpl();
+        searchParams.add(SearchFilter.PARAM_TYPE, "CLASS");
+        searchParams.add(SearchFilter.PARAM_SUPERTYPE, classDefA.getName());
         SearchFilter searchFilter = new SearchFilter(searchParams);
         AtlasTypesDef searchDefs = clientV2.getAllTypeDefs(searchFilter);
         assertNotNull(searchDefs);
         assertEquals(searchDefs.getEntityDefs().size(), 2);
 
-        searchParams.put(SearchFilter.PARAM_NOT_SUPERTYPE, classDefB.getName());
+        searchParams.add(SearchFilter.PARAM_NOT_SUPERTYPE, classDefB.getName());
         searchFilter = new SearchFilter(searchParams);
         searchDefs = clientV2.getAllTypeDefs(searchFilter);
         assertNotNull(searchDefs);
