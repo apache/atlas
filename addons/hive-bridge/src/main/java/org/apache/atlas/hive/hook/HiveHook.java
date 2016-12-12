@@ -49,6 +49,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.json.JSONObject;
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -71,6 +73,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -168,15 +171,15 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public void run(final HookContext hookContext) throws Exception {
         // clone to avoid concurrent access
         try {
-            final HiveConf conf = new HiveConf(hookContext.getConf());
-
             final HiveEventContext event = new HiveEventContext();
             event.setInputs(hookContext.getInputs());
             event.setOutputs(hookContext.getOutputs());
             event.setJsonPlan(getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan()));
             event.setHookType(hookContext.getHookType());
-            event.setUgi(hookContext.getUgi());
-            event.setUser(getUser(hookContext.getUserName()));
+
+            final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
+            event.setUgi(ugi);
+            event.setUser(getUser(hookContext.getUserName(), hookContext.getUgi()));
             event.setOperation(OPERATION_MAP.get(hookContext.getOperationName()));
             event.setQueryId(hookContext.getQueryPlan().getQueryId());
             event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
@@ -184,13 +187,31 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
 
             if (executor == null) {
-                fireAndForget(event);
+                collect(event);
+                notifyAsPrivilegedAction(event);
             } else {
                 executor.submit(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            fireAndForget(event);
+                            ugi.doAs(new PrivilegedExceptionAction<Object>() {
+                                @Override
+                                public Object run() throws Exception {
+                                    collect(event);
+                                    return event;
+                                }
+                            });
+
+                            //Notify as 'hive' service user in Kerberos mode else will default to the current user - doAs mode
+                            UserGroupInformation realUser = ugi.getRealUser();
+                            if (realUser != null) {
+                                LOG.info("Sending notification for event {} as service user {} ", event.getOperation(), realUser.getShortUserName());
+                                realUser.doAs(notifyAsPrivilegedAction(event));
+                            } else {
+                                //Unsecure or without doAs
+                                LOG.info("Sending notification for event {} as current user {} ", event.getOperation(), ugi.getShortUserName());
+                                ugi.doAs(notifyAsPrivilegedAction(event));
+                            }
                         } catch (Throwable e) {
                             LOG.error("Atlas hook failed due to error ", e);
                         }
@@ -202,11 +223,21 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
     }
 
-    private void fireAndForget(HiveEventContext event) throws Exception {
+    PrivilegedExceptionAction<Object> notifyAsPrivilegedAction(final HiveEventContext event) {
+        return new PrivilegedExceptionAction<Object>() {
+            @Override
+            public Object run() throws Exception {
+                notifyEntities(event.getMessages());
+                return event;
+            }
+        };
+    }
+
+    private void collect(HiveEventContext event) throws Exception {
 
         assert event.getHookType() == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
-        LOG.info("Entered Atlas hook for hook type {} operation {}", event.getHookType(), event.getOperation());
+        LOG.info("Entered Atlas hook for hook type {}, operation {} , user {} as {}", event.getHookType(), event.getOperation(), event.getUgi().getRealUser(), event.getUgi().getShortUserName());
 
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(atlasProperties, hiveConf);
 
@@ -278,8 +309,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         default:
         }
-
-        notifyEntities(event.getMessages());
     }
 
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
