@@ -145,16 +145,8 @@ public class CredentialProviderUtility {
         String providerPath = textDevice.readLine("Please enter the full path to the credential provider:");
 
         if (providerPath != null) {
-            File file = new File(providerPath);
-            if (file.exists()) {
-                textDevice
-                        .printf("%s already exists.  You will need to specify whether existing entries should be "
-                                + "overwritten "
-                                + "(default is 'yes')\n", providerPath);
-            }
-            String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + providerPath;
             Configuration conf = new Configuration(false);
-            conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerURI);
+            conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerPath);
             return CredentialProviderFactory.getProviders(conf).get(0);
         }
 

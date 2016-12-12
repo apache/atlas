@@ -57,7 +57,7 @@ public class CredentialProviderUtilityIT {
             }
 
             public String readLine(String fmt, Object... args) {
-                return finalTestPath.toString();
+                return JavaKeyStoreProvider.SCHEME_NAME + "://file/" + finalTestPath.toString();
             }
 
             @Override
@@ -113,7 +113,7 @@ public class CredentialProviderUtilityIT {
             }
 
             public String readLine(String fmt, Object... args) {
-                return finalTestPath.toString();
+                return JavaKeyStoreProvider.SCHEME_NAME + "://file/" + finalTestPath.toString();
             }
 
             @Override
@@ -166,7 +166,7 @@ public class CredentialProviderUtilityIT {
             }
 
             public String readLine(String fmt, Object... args) {
-                return finalTestPath.toString();
+                return JavaKeyStoreProvider.SCHEME_NAME + "://file/" + finalTestPath.toString();
             }
 
             @Override
@@ -217,7 +217,7 @@ public class CredentialProviderUtilityIT {
             }
 
             public String readLine(String fmt, Object... args) {
-                return finalTestPath.toString();
+                return JavaKeyStoreProvider.SCHEME_NAME + "://file/" + finalTestPath.toString();
             }
 
             @Override
@@ -239,7 +239,7 @@ public class CredentialProviderUtilityIT {
             }
 
             public String readLine(String fmt, Object... args) {
-                return i++ == 0 ? finalTestPath.toString() : "y";
+                return i++ == 0 ? JavaKeyStoreProvider.SCHEME_NAME + "://file/" + finalTestPath.toString() : "y";
             }
 
             @Override
