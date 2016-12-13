@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -109,24 +110,15 @@ public class EntityMutationResponse {
 
     @Override
     public boolean equals(Object o) {
-        if ( this == o) return true;
-
-        if ( this == null || getClass() != o.getClass()) return false;
-        if ( !super.equals(o)) return false;
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         EntityMutationResponse that = (EntityMutationResponse) o;
-
-        if ( entitiesMutated != null ? !entitiesMutated.equals(that.entitiesMutated) : that.entitiesMutated != null) {
-            return false;
-        }
-
-        return true;
+        return Objects.equals(entitiesMutated, that.entitiesMutated);
     }
 
     @Override
     public int hashCode() {
-        int result = (entitiesMutated != null ? entitiesMutated.hashCode() : 0);
-        return result;
+        return Objects.hash(entitiesMutated);
     }
 
     @Override

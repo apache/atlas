@@ -18,12 +18,10 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.classification.InterfaceAudience;
-import org.apache.atlas.utils.ParamChecker;
+
+import java.util.Objects;
 
 public class HierarchicalTypeDefinition<T extends HierarchicalType> extends StructTypeDefinition {
 
@@ -61,33 +59,16 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        HierarchicalTypeDefinition that = (HierarchicalTypeDefinition) o;
-
-        if (!hierarchicalMetaTypeName.equals(that.hierarchicalMetaTypeName)) {
-            return false;
-        }
-        if (!superTypes.equals(that.superTypes)) {
-            return false;
-        }
-
-        return true;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        HierarchicalTypeDefinition<?> that = (HierarchicalTypeDefinition<?>) o;
+        return Objects.equals(superTypes, that.superTypes) &&
+                Objects.equals(hierarchicalMetaTypeName, that.hierarchicalMetaTypeName);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + superTypes.hashCode();
-        result = 31 * result + hierarchicalMetaTypeName.hashCode();
-        return result;
+        return Objects.hash(super.hashCode(), superTypes, hierarchicalMetaTypeName);
     }
 }

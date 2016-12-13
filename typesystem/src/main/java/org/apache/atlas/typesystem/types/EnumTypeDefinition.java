@@ -22,6 +22,7 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.AtlasConstants;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public final class EnumTypeDefinition {
 
@@ -47,29 +48,17 @@ public final class EnumTypeDefinition {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         EnumTypeDefinition that = (EnumTypeDefinition) o;
-
-        if (!Arrays.equals(enumValues, that.enumValues)) {
-            return false;
-        }
-        if (!name.equals(that.name)) {
-            return false;
-        }
-
-        return true;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(version, that.version) &&
+                Arrays.equals(enumValues, that.enumValues);
     }
 
     @Override
     public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + Arrays.hashCode(enumValues);
-        return result;
+        return Objects.hash(name, description, version, enumValues);
     }
 }

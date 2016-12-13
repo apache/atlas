@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.utils.ParamChecker;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class StructTypeDefinition {
 
@@ -65,31 +66,19 @@ public class StructTypeDefinition {
     }
 
 
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         StructTypeDefinition that = (StructTypeDefinition) o;
-
-        if (!Arrays.equals(attributeDefinitions, that.attributeDefinitions)) {
-            return false;
-        }
-        if (!typeName.equals(that.typeName)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(typeName, that.typeName) &&
+                Objects.equals(typeDescription, that.typeDescription) &&
+                Objects.equals(typeVersion, that.typeVersion) &&
+                Arrays.equals(attributeDefinitions, that.attributeDefinitions);
     }
 
     @Override
     public int hashCode() {
-        int result = typeName.hashCode();
-        result = 31 * result + Arrays.hashCode(attributeDefinitions);
-        return result;
+        return Objects.hash(typeName, typeDescription, typeVersion, attributeDefinitions);
     }
 }

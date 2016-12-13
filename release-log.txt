@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1303 Update hashCode and equals method to use standard JDK libraries (apoorvnaik via svimal2106)
 ATLAS-1364 HiveHook : Fix Auth issue with doAs (sumasai)
 ATLAS-1340 Credential Provider utility does not work with fully qualified local/HDFS jceks path (vrathor via svimal2106)
 ATLAS-1363 Upgrade front end maven plugin to 1.0 (sumasai)

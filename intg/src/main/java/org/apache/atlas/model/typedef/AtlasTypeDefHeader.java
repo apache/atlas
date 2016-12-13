@@ -26,6 +26,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import java.util.Objects;
+
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
@@ -101,24 +103,17 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         AtlasTypeDefHeader that = (AtlasTypeDefHeader) o;
-
-        if (guid != null ? !guid.equals(that.guid) : that.guid != null) { return false; }
-        if (name != null ? !name.equals(that.name) : that.name != null) { return false; }
-        if (category != null ? !category.equals(that.category) : that.category != null) { return false; }
-
-        return true;
+        return Objects.equals(guid, that.guid) &&
+                Objects.equals(name, that.name) &&
+                category == that.category;
     }
 
     @Override
     public int hashCode() {
-        int result = guid != null ? guid.hashCode() : 0;
-        result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + (category != null ? category.hashCode() : 0);
-        return result;
+        return Objects.hash(guid, name, category);
     }
 
     public StringBuilder toString(StringBuilder sb) {

@@ -22,6 +22,8 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Objects;
+
 /**
  * Structure of entity audit event
  */
@@ -52,28 +54,22 @@ public class EntityAuditEvent {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-
-        if (!(other instanceof EntityAuditEvent)) {
-            return false;
-        }
-
-        EntityAuditEvent otherEvent = (EntityAuditEvent) other;
-        return StringUtils.equals(entityId, otherEvent.entityId) &&
-                    (timestamp == otherEvent.timestamp) &&
-                    StringUtils.equals(user, otherEvent.user) &&
-                    (action == otherEvent.action) &&
-                    StringUtils.equals(details, otherEvent.details) &&
-                    StringUtils.equals(eventKey, otherEvent.eventKey) &&
-                    StringUtils.equals(getEntityDefinitionString(), otherEvent.getEntityDefinitionString());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EntityAuditEvent that = (EntityAuditEvent) o;
+        return timestamp == that.timestamp &&
+                Objects.equals(entityId, that.entityId) &&
+                Objects.equals(user, that.user) &&
+                action == that.action &&
+                Objects.equals(details, that.details) &&
+                Objects.equals(eventKey, that.eventKey) &&
+                Objects.equals(entityDefinition, that.entityDefinition);
     }
 
     @Override
     public int hashCode() {
-        return toString().hashCode();
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entityDefinition);
     }
 
     @Override

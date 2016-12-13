@@ -17,25 +17,26 @@
  */
 package org.apache.atlas.model.typedef;
 
+import org.apache.atlas.model.TypeCategory;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.atlas.model.TypeCategory;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -279,24 +280,20 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         AtlasBaseTypeDef that = (AtlasBaseTypeDef) o;
 
-        if (category != null ? !category.equals(that.category) : that.category != null) { return false; }
-        if (guid != null ? !guid.equals(that.guid) : that.guid != null) { return false; }
-        if (createdBy != null ? !createdBy.equals(that.createdBy) : that.createdBy != null) { return false; }
-        if (updatedBy != null ? !updatedBy.equals(that.updatedBy) : that.updatedBy != null) { return false; }
-        if (createTime != null ? !createTime.equals(that.createTime) : that.createTime != null) { return false; }
-        if (updateTime != null ? !updateTime.equals(that.updateTime) : that.updateTime != null) { return false; }
-        if (version != null ? !version.equals(that.version) : that.version != null) { return false; }
-        if (name != null ? !name.equals(that.name) : that.name != null) { return false; }
-        if (description != null ? !description.equals(that.description) : that.description != null) { return false; }
-        if (typeVersion != null ? !typeVersion.equals(that.typeVersion) : that.typeVersion != null) { return false; }
-        if (options != null ? !options.equals(that.options) : that.options != null) { return false; }
-
-        return true;
+        return category == that.category &&
+                Objects.equals(guid, that.guid) &&
+                Objects.equals(createdBy, that.createdBy) &&
+                Objects.equals(updatedBy, that.updatedBy) &&
+                Objects.equals(createTime, that.createTime) &&
+                Objects.equals(updateTime, that.updateTime) &&
+                Objects.equals(version, that.version) &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(typeVersion, that.typeVersion);
 
     }
 

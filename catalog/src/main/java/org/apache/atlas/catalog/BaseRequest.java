@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Base user API request.
@@ -75,25 +76,20 @@ public abstract class BaseRequest implements Request {
         return additionalSelectProperties;
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         BaseRequest that = (BaseRequest) o;
-
-        return queryProperties.equals(that.queryProperties) &&
-               updateProperties.equals(that.updateProperties) &&
-               additionalSelectProperties.equals(that.additionalSelectProperties) &&
-               queryString == null ? that.queryString == null : queryString.equals(that.queryString);
+        return Objects.equals(queryProperties, that.queryProperties) &&
+                Objects.equals(updateProperties, that.updateProperties) &&
+                Objects.equals(queryString, that.queryString) &&
+                Objects.equals(additionalSelectProperties, that.additionalSelectProperties);
     }
 
     @Override
     public int hashCode() {
-        int result = queryProperties.hashCode();
-        result = 31 * result + updateProperties.hashCode();
-        result = 31 * result + (queryString != null ? queryString.hashCode() : 0);
-        result = 31 * result + additionalSelectProperties.hashCode();
-        return result;
+        return Objects.hash(queryProperties, updateProperties, queryString, additionalSelectProperties);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.atlas.model.instance;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -118,22 +119,16 @@ public class AtlasObjectId  implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         AtlasObjectId that = (AtlasObjectId) o;
-
-        if (typeName != null ? !typeName.equals(that.typeName) : that.typeName != null) { return false; }
-        if (guid != null ? !guid.equals(that.guid) : that.guid != null) { return false; }
-
-        return true;
+        return Objects.equals(typeName, that.typeName) &&
+                Objects.equals(guid, that.guid);
     }
 
     @Override
     public int hashCode() {
-        int result = typeName != null ? typeName.hashCode() : 0;
-        result = 31 * result + (guid != null ? guid.hashCode() : 0);
-        return result;
+        return Objects.hash(typeName, guid);
     }
 
     @Override

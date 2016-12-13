@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.mockito.Matchers.endsWith;
 import static org.mockito.Mockito.mock;
@@ -214,23 +215,16 @@ public class AbstractNotificationConsumerTest {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             TestMessage that = (TestMessage) o;
-
-            return i == that.i && (s != null ? s.equals(that.s) : that.s == null);
+            return i == that.i &&
+                    Objects.equals(s, that.s);
         }
 
         @Override
         public int hashCode() {
-            int result = s != null ? s.hashCode() : 0;
-            result = 31 * result + i;
-            return result;
+            return Objects.hash(s, i);
         }
     }
 

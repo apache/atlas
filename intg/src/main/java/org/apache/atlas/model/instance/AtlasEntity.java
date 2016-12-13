@@ -17,28 +17,28 @@
  */
 package org.apache.atlas.model.instance;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.atlas.model.PList;
-import org.apache.atlas.model.SearchFilter.SortType;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -190,30 +190,18 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         if (!super.equals(o)) { return false; }
 
         AtlasEntity that = (AtlasEntity) o;
-
-        if (guid != null ? !guid.equals(that.guid) : that.guid != null) { return false; }
-        if (status != null ? !status.equals(that.status) : that.status != null) { return false; }
-        if (createdBy != null ? !createdBy.equals(that.createdBy) : that.createdBy != null) { return false; }
-        if (updatedBy != null ? !updatedBy.equals(that.updatedBy) : that.updatedBy != null) { return false; }
-        if (createTime != null ? !createTime.equals(that.createTime) : that.createTime != null) { return false; }
-        if (updateTime != null ? !updateTime.equals(that.updateTime) : that.updateTime != null) { return false; }
-        if (version != null ? !version.equals(that.version) : that.version != null) { return false; }
-
-        return true;
+        return Objects.equals(guid, that.guid) &&
+                status == that.status &&
+                Objects.equals(createdBy, that.createdBy) &&
+                Objects.equals(updatedBy, that.updatedBy) &&
+                Objects.equals(createTime, that.createTime) &&
+                Objects.equals(updateTime, that.updateTime) &&
+                Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-
-        result = 31 * result + (guid != null ? guid.hashCode() : 0);
-        result = 31 * result + (status != null ? status.hashCode() : 0);
-        result = 31 * result + (createdBy != null ? createdBy.hashCode() : 0);
-        result = 31 * result + (updatedBy != null ? updatedBy.hashCode() : 0);
-        result = 31 * result + (createTime != null ? createTime.hashCode() : 0);
-        result = 31 * result + (updateTime != null ? updateTime.hashCode() : 0);
-        result = 31 * result + (version != null ? version.hashCode() : 0);
-        return result;
+        return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version);
     }
 
     @Override

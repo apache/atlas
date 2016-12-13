@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -134,34 +135,18 @@ public class Id implements ITypedReferenceableInstance {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         Id id1 = (Id) o;
-
-        if (version != id1.version) {
-            return false;
-        }
-        if (!typeName.equals(id1.typeName)) {
-            return false;
-        }
-        if (!id.equals(id1.id)) {
-            return false;
-        }
-
-        return true;
+        return version == id1.version &&
+                Objects.equals(id, id1.id) &&
+                Objects.equals(typeName, id1.typeName) &&
+                state == id1.state;
     }
 
     @Override
     public int hashCode() {
-        int result = id.hashCode();
-        result = 31 * result + typeName.hashCode();
-        result = 31 * result + version;
-        return result;
+        return Objects.hash(id, typeName, version, state);
     }
 
     @Override

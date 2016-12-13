@@ -25,6 +25,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class AttributeInfo {
@@ -90,40 +91,22 @@ public class AttributeInfo {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(name, multiplicity, isComposite, isUnique, isIndexable, reverseAttributeName, dataType);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         AttributeInfo that = (AttributeInfo) o;
-
-        if (isComposite != that.isComposite) {
-            return false;
-        }
-        if (isUnique != that.isUnique) {
-            return false;
-        }
-        if (isIndexable != that.isIndexable) {
-            return false;
-        }
-        if (!dataType.getName().equals(that.dataType.getName())) {
-            return false;
-        }
-        if (!multiplicity.equals(that.multiplicity)) {
-            return false;
-        }
-        if (!name.equals(that.name)) {
-            return false;
-        }
-        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName) :
-                that.reverseAttributeName != null) {
-            return false;
-        }
-
-        return true;
+        return isComposite == that.isComposite &&
+                isUnique == that.isUnique &&
+                isIndexable == that.isIndexable &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(multiplicity, that.multiplicity) &&
+                Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
+                Objects.equals(dataType, that.dataType);
     }
 
     public String toJson() throws JSONException {

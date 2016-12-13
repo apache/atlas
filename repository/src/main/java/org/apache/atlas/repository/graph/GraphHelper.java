@@ -58,15 +58,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Utility class for graph operations.
@@ -607,31 +599,18 @@ public final class GraphHelper {
         }
 
         @Override
-        public int hashCode() {
-
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((guid == null) ? 0 : guid.hashCode());
-            result = prime * result + ((vertex == null) ? 0 : vertex.hashCode());
-            return result;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            VertexInfo that = (VertexInfo) o;
+            return Objects.equals(guid, that.guid) &&
+                    Objects.equals(vertex, that.vertex) &&
+                    Objects.equals(typeName, that.typeName);
         }
 
         @Override
-        public boolean equals(Object obj) {
-
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (!(obj instanceof VertexInfo))
-                return false;
-            VertexInfo other = (VertexInfo)obj;
-            if (guid == null) {
-                if (other.guid != null)
-                    return false;
-            } else if (!guid.equals(other.guid))
-                return false;
-            return true;
+        public int hashCode() {
+            return Objects.hash(guid, vertex, typeName);
         }
     }
 

@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.persistence.Id;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a Class Instance that has not been associated with a FieldMapping.
@@ -156,6 +157,21 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     @Override
     public AtlasSystemAttributes getSystemAttributes(){
         return systemAttributes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Referenceable that = (Referenceable) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(traits, that.traits) &&
+                Objects.equals(traitNames, that.traitNames);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), id, traits, traitNames);
     }
 
     /**

@@ -28,6 +28,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -111,24 +112,17 @@ public class AtlasLineageInfo implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         AtlasLineageInfo that = (AtlasLineageInfo) o;
-
-        if (baseEntityGuid != null ? !baseEntityGuid.equals(that.baseEntityGuid) : that.baseEntityGuid != null) return false;
-        if (lineageDepth != that.lineageDepth) return false;
-        if (guidEntityMap != null ? !guidEntityMap.equals(that.guidEntityMap) : that.guidEntityMap != null) return false;
-        if (relations != null ? !relations.equals(that.relations) : that.relations != null) return false;
-        return lineageDirection == that.lineageDirection;
+        return lineageDepth == that.lineageDepth &&
+                Objects.equals(baseEntityGuid, that.baseEntityGuid) &&
+                lineageDirection == that.lineageDirection &&
+                Objects.equals(guidEntityMap, that.guidEntityMap) &&
+                Objects.equals(relations, that.relations);
     }
 
     @Override
     public int hashCode() {
-        int result = guidEntityMap != null ? guidEntityMap.hashCode() : 0;
-        result = 31 * result + (relations != null ? relations.hashCode() : 0);
-        result = 31 * result + (lineageDirection != null ? lineageDirection.hashCode() : 0);
-        result = 31 * result + lineageDepth;
-        result = 31 * result + (baseEntityGuid != null ? baseEntityGuid.hashCode() : 0);
-        return result;
+        return Objects.hash(baseEntityGuid, lineageDirection, lineageDepth, guidEntityMap, relations);
     }
 
     @Override
@@ -178,20 +172,14 @@ public class AtlasLineageInfo implements Serializable {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-
             LineageRelation that = (LineageRelation) o;
-
-            if (fromEntityId != null ? !fromEntityId.equals(that.fromEntityId) : that.fromEntityId != null)
-                return false;
-            return toEntityId != null ? toEntityId.equals(that.toEntityId) : that.toEntityId == null;
-
+            return Objects.equals(fromEntityId, that.fromEntityId) &&
+                    Objects.equals(toEntityId, that.toEntityId);
         }
 
         @Override
         public int hashCode() {
-            int result = fromEntityId != null ? fromEntityId.hashCode() : 0;
-            result = 31 * result + (toEntityId != null ? toEntityId.hashCode() : 0);
-            return result;
+            return Objects.hash(fromEntityId, toEntityId);
         }
 
         @Override

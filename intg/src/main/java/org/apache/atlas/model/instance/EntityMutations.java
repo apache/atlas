@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -74,22 +75,16 @@ public class EntityMutations implements Serializable {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) { return true; }
-            if (o == null || getClass() != o.getClass()) { return false; }
-
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             EntityMutation that = (EntityMutation) o;
-
-            if (op != null ? !op.equals(that.op) : that.op != null) { return false; }
-            if (entity != null ? !entity.equals(that.entity) : that.entity != null) { return false; }
-
-            return true;
+            return op == that.op &&
+                    Objects.equals(entity, that.entity);
         }
 
         @Override
         public int hashCode() {
-            int result = (op != null ? op.hashCode() : 0);
-            result = 31 * result + (entity != null ? entity.hashCode() : 0);
-            return result;
+            return Objects.hash(op, entity);
         }
 
         @Override
@@ -125,22 +120,18 @@ public class EntityMutations implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         EntityMutations that = (EntityMutations) o;
-
-        if (entityMutations != null ? !entityMutations.equals(that.entityMutations) : that.entityMutations != null) { return false; }
-
-        return true;
+        return Objects.equals(entityMutations, that.entityMutations);
     }
 
     @Override
     public int hashCode() {
-        int result = (entityMutations != null ? entityMutations.hashCode() : 0);
-        return result;
+        return Objects.hash(entityMutations);
     }
 }
 

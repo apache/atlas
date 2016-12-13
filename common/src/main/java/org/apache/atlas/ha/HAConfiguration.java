@@ -23,6 +23,7 @@ import org.apache.commons.configuration.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A wrapper for getting configuration entries related to HighAvailability.
@@ -151,47 +152,21 @@ public final class HAConfiguration {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             ZookeeperProperties that = (ZookeeperProperties) o;
-
-            if (retriesSleepTimeMillis != that.retriesSleepTimeMillis) {
-                return false;
-            }
-            if (numRetries != that.numRetries) {
-                return false;
-            }
-            if (sessionTimeout != that.sessionTimeout) {
-                return false;
-            }
-            if (!connectString.equals(that.connectString)) {
-                return false;
-            }
-            if (!zkRoot.equals(that.zkRoot)) {
-                return false;
-            }
-            if (acl != null ? !acl.equals(that.acl) : that.acl != null) {
-                return false;
-            }
-            return !(auth != null ? !auth.equals(that.auth) : that.auth != null);
-
+            return retriesSleepTimeMillis == that.retriesSleepTimeMillis &&
+                    numRetries == that.numRetries &&
+                    sessionTimeout == that.sessionTimeout &&
+                    Objects.equals(connectString, that.connectString) &&
+                    Objects.equals(zkRoot, that.zkRoot) &&
+                    Objects.equals(acl, that.acl) &&
+                    Objects.equals(auth, that.auth);
         }
 
         @Override
         public int hashCode() {
-            int result = connectString.hashCode();
-            result = 31 * result + zkRoot.hashCode();
-            result = 31 * result + retriesSleepTimeMillis;
-            result = 31 * result + numRetries;
-            result = 31 * result + sessionTimeout;
-            result = 31 * result + (acl != null ? acl.hashCode() : 0);
-            result = 31 * result + (auth != null ? auth.hashCode() : 0);
-            return result;
+            return Objects.hash(connectString, zkRoot, retriesSleepTimeMillis, numRetries, sessionTimeout, acl, auth);
         }
 
         public boolean hasAcl() {

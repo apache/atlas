@@ -21,6 +21,7 @@ package org.apache.atlas.web.params;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Objects;
 
 /**
  * An abstract base class from which to build Jersey parameter classes.
@@ -111,20 +112,16 @@ public abstract class AbstractParam<T> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if ((obj == null) || (getClass() != obj.getClass())) {
-            return false;
-        }
-        final AbstractParam<?> that = (AbstractParam<?>) obj;
-        return value.equals(that.value);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AbstractParam<?> that = (AbstractParam<?>) o;
+        return Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return value.hashCode();
+        return Objects.hash(value);
     }
 
     @Override

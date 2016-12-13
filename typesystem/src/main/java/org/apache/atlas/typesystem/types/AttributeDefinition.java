@@ -20,6 +20,8 @@ package org.apache.atlas.typesystem.types;
 
 import org.apache.atlas.utils.ParamChecker;
 
+import java.util.Objects;
+
 public final class AttributeDefinition {
 
     public final String name;
@@ -55,51 +57,21 @@ public final class AttributeDefinition {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         AttributeDefinition that = (AttributeDefinition) o;
-
-        if (isComposite != that.isComposite) {
-            return false;
-        }
-        if (isUnique != that.isUnique) {
-            return false;
-        }
-        if (isIndexable != that.isIndexable) {
-            return false;
-        }
-        if (!dataTypeName.equals(that.dataTypeName)) {
-            return false;
-        }
-        if (!multiplicity.equals(that.multiplicity)) {
-            return false;
-        }
-        if (!name.equals(that.name)) {
-            return false;
-        }
-        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName) :
-                that.reverseAttributeName != null) {
-            return false;
-        }
-
-        return true;
+        return isComposite == that.isComposite &&
+                isUnique == that.isUnique &&
+                isIndexable == that.isIndexable &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(dataTypeName, that.dataTypeName) &&
+                Objects.equals(multiplicity, that.multiplicity) &&
+                Objects.equals(reverseAttributeName, that.reverseAttributeName);
     }
 
     @Override
     public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + dataTypeName.hashCode();
-        result = 31 * result + multiplicity.hashCode();
-        result = 31 * result + (isComposite ? 1 : 0);
-        result = 31 * result + (isUnique ? 1 : 0);
-        result = 31 * result + (isIndexable ? 1 : 0);
-        result = 31 * result + (reverseAttributeName != null ? reverseAttributeName.hashCode() : 0);
-        return result;
+        return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable, reverseAttributeName);
     }
 
     @Override

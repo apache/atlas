@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -106,25 +107,17 @@ public class EntityNotificationImpl implements EntityNotification {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         EntityNotificationImpl that = (EntityNotificationImpl) o;
-
-        return !(entity != null ? !entity.equals(that.entity) : that.entity != null)
-                && operationType == that.operationType && traits.equals(that.traits);
+        return Objects.equals(entity, that.entity) &&
+                operationType == that.operationType &&
+                Objects.equals(traits, that.traits);
     }
 
     @Override
     public int hashCode() {
-        int result = entity != null ? entity.hashCode() : 0;
-        result = 31 * result + operationType.hashCode();
-        result = 31 * result + traits.hashCode();
-        return result;
+        return Objects.hash(entity, operationType, traits);
     }
 
 
