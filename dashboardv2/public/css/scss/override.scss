@@ -152,6 +152,11 @@
 
 .select2-container--default .select2-search--inline .select2-search__field {
     color: #555;
+    width: 300px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    width: 327px !important;
 }
 
 .typeLOV {
@@ -239,4 +244,8 @@
             padding: 5px;
         }
     }
+}
+
+.tab-content > .tab-pane.active {
+    overflow-x: hidden;
 }

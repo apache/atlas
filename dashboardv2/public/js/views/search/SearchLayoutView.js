@@ -42,7 +42,8 @@ define(['require',
                 searchBtn: '[data-id="searchBtn"]',
                 clearSearch: '[data-id="clearSearch"]',
                 typeLov: '[data-id="typeLOV"]',
-                refreshBtn: '[data-id="refreshBtn"]'
+                refreshBtn: '[data-id="refreshBtn"]',
+                createEntity: "[data-id='createEntity']",
             },
             /** ui events hash */
             events: function() {
@@ -63,6 +64,7 @@ define(['require',
                 events["click " + this.ui.clearSearch] = 'clearSearchData';
                 events["change " + this.ui.typeLov] = 'onChangeTypeList';
                 events["click " + this.ui.refreshBtn] = 'onRefreshButton';
+                events["click " + this.ui.createEntity] = 'onClickCreateEntity';
                 return events;
             },
             /**
@@ -247,7 +249,20 @@ define(['require',
                     mergeBrowserUrl: false,
                     trigger: true
                 });
-            }
+            },
+            onClickCreateEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
+            },
         });
     return SearchLayoutView;
 });

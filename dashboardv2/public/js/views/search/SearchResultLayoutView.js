@@ -57,7 +57,8 @@ define(['require',
                 previousData: "[data-id='previousData']",
                 nextData: "[data-id='nextData']",
                 pageRecordText: "[data-id='pageRecordText']",
-                addAssignTag: "[data-id='addAssignTag']"
+                addAssignTag: "[data-id='addAssignTag']",
+                editEntityButton: "[data-id='editEntityButton']"
             },
 
             /** ui events hash */
@@ -107,6 +108,7 @@ define(['require',
                 };
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
+                events["click " + this.ui.editEntityButton] = "onClickEditEntity";
                 return events;
             },
             /**
@@ -450,6 +452,7 @@ define(['require',
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
+                                    nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     return nameHtml;
                                 }
                             }
@@ -485,6 +488,7 @@ define(['require',
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
+                                    nameHtml += '<button title="Edit" data-giud= "' +(model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     return nameHtml;
                                 }
                             }
@@ -667,6 +671,22 @@ define(['require',
                 });
                 this.previousClick = true;
                 this.fetchCollection();
+            },
+
+            onClickEditEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                var guid = $(e.currentTarget).data('giud');
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
+                        guid: guid,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
             }
         });
     return SearchResultLayoutView;

@@ -126,7 +126,7 @@ module.exports = function(grunt) {
                     'd3': 'd3/d3.min.js',
                     'd3/': 'd3-tip/index.js',
                     'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
-                    'select2': 'select2/dist/js/select2.min.js',
+                    'select2': 'select2/dist/js/select2.full.min.js',
                     'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js',
                     'moment/js': 'moment/min/moment.min.js',
                     'jquery-placeholder/js': 'jquery-placeholder/jquery.placeholder.js',

@@ -29,11 +29,11 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             return this.baseUrl + '/v1/taxonomies' + '/' + name + '/terms';
         },
         entitiesApiUrl: function(guid, name) {
-            var entitiesUrl = this.baseUrlV2 + '/entity/guid';
+            var entitiesUrl = this.baseUrlV2 + '/entity';
             if (guid && name) {
-                return entitiesUrl + '/' + guid + '/classification/' + name;
+                return entitiesUrl + '/guid/' + guid + '/classification/' + name;
             } else if (guid && !name) {
-                return entitiesUrl + '/' + guid;
+                return entitiesUrl + '/guid/' + guid;
             } else {
                 return entitiesUrl;
             }

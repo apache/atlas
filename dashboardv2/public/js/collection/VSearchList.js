@@ -46,7 +46,15 @@ define(['require',
                     if (!this.modelAttrName) {
                         throw new Error("this.modelAttrName not defined for " + this);
                     }
-                    return _.reject(resp[this.modelAttrName], _.isNull);
+                    var list = _.reject(resp[this.modelAttrName], _.isNull);
+                    _.each(list, function(obj) {
+                        if (!obj.id) {
+                            if (obj['$id$'] && obj['$id$'].id) {
+                                obj.id = obj['$id$'].id
+                            }
+                        }
+                    })
+                    return list;
                 } catch (e) {
                     console.log(e);
                 }

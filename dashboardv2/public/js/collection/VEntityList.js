@@ -40,14 +40,7 @@ define(['require',
                     // if (!this.modelAttrName) {
                     //     throw new Error("this.modelAttrName not defined for " + this);
                     // }
-                    if (this.modelAttrName && this.modelAttrName.length) {
-                        if (resp[this.modelAttrName]) {
-                            return resp[this.modelAttrName];
-                        } else {
-                            return resp
-                        }
-
-                    } else {
+                    if (this.modelAttrName && this.modelAttrName === "createEntity") {
                         var arr = [];
                         arr.push({
                             attributes: resp.attributes,
@@ -56,6 +49,12 @@ define(['require',
                             typeName: resp.typeName
                         });
                         return arr;
+                    } else {
+                        if (resp[this.modelAttrName]) {
+                            return resp[this.modelAttrName];
+                        } else {
+                            return resp
+                        }
                     }
 
                 } catch (e) {

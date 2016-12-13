@@ -75,6 +75,7 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.editButton] = 'onClickEditEntity';
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         var scope = $(e.currentTarget);
@@ -357,6 +358,21 @@ define(['require',
                         assetName: that.name,
                         term: true
                     }));
+                });
+            },
+            onClickEditEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
+                        guid: that.id,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+
                 });
             }
         });

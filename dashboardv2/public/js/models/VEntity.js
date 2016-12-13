@@ -70,8 +70,20 @@ define(['require',
             }, options);
 
             return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+        },
+        createOreditEntity: function(guid, options) {
+            var url;
+            if (guid) {
+                url = UrlLinks.entitiesApiUrl(guid);
+            } else {
+                url = UrlLinks.entitiesApiUrl();
+            }
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, "", options);
         }
-
     }, {});
     return VEntity;
 });
