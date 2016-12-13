@@ -19,10 +19,12 @@
 package org.apache.atlas.web.security;
 
 import java.util.List;
+import java.util.Properties;
 import javax.annotation.PostConstruct;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.log4j.Logger;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -127,25 +129,35 @@ public class AtlasLdapAuthenticationProvider extends
     private void setLdapProperties() {
         try {
             Configuration configuration = ApplicationProperties.get();
-
-            ldapURL = configuration.getString("atlas.authentication.method.ldap.url");
-            ldapUserDNPattern = configuration.getString(
-                    "atlas.authentication.method.ldap.userDNpattern");
-            ldapGroupSearchBase = configuration.getString(
-                    "atlas.authentication.method.ldap.groupSearchBase");
-            ldapGroupSearchFilter = configuration.getString(
-                    "atlas.authentication.method.ldap.groupSearchFilter");
-            ldapGroupRoleAttribute = configuration.getString(
-                    "atlas.authentication.method.ldap.groupRoleAttribute");
-            ldapBindDN = configuration.getString("atlas.authentication.method.ldap.bind.dn");
-            ldapBindPassword = configuration.getString(
-                    "atlas.authentication.method.ldap.bind.password");
-            ldapDefaultRole = configuration.getString("atlas.authentication.method.ldap.default.role");
-            ldapUserSearchFilter = configuration.getString(
-                    "atlas.authentication.method.ldap.user.searchfilter");
-            ldapReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
-            ldapBase = configuration.getString("atlas.authentication.method.ldap.base.dn");
+            Properties properties = ConfigurationConverter.getProperties(configuration.subset("atlas.authentication.method.ldap"));
+            ldapURL = properties.getProperty("url");
+            ldapUserDNPattern = properties.getProperty("userDNpattern");
+            ldapGroupSearchBase = properties.getProperty("groupSearchBase");
+            ldapGroupSearchFilter = properties.getProperty("groupSearchFilter");
+            ldapGroupRoleAttribute = properties.getProperty("groupRoleAttribute");
+            ldapBindDN = properties.getProperty("bind.dn");
+            ldapBindPassword = properties.getProperty("bind.password");
+            ldapDefaultRole = properties.getProperty("default.role");
+            ldapUserSearchFilter = properties.getProperty("user.searchfilter");
+            ldapReferral = properties.getProperty("referral");
+            ldapBase = properties.getProperty("base.dn");
             groupsFromUGI = configuration.getBoolean("atlas.authentication.method.ldap.ugi-groups", true);
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("AtlasLdapAuthenticationProvider{" +
+                        "ldapURL='" + ldapURL + '\'' +
+                        ", ldapUserDNPattern='" + ldapUserDNPattern + '\'' +
+                        ", ldapGroupSearchBase='" + ldapGroupSearchBase + '\'' +
+                        ", ldapGroupSearchFilter='" + ldapGroupSearchFilter + '\'' +
+                        ", ldapGroupRoleAttribute='" + ldapGroupRoleAttribute + '\'' +
+                        ", ldapBindDN='" + ldapBindDN + '\'' +
+                        ", ldapDefaultRole='" + ldapDefaultRole + '\'' +
+                        ", ldapUserSearchFilter='" + ldapUserSearchFilter + '\'' +
+                        ", ldapReferral='" + ldapReferral + '\'' +
+                        ", ldapBase='" + ldapBase + '\'' +
+                        ", groupsFromUGI=" + groupsFromUGI +
+                        '}');
+            }
 
         } catch (Exception e) {
             LOG.error("Exception while setLdapProperties", e);

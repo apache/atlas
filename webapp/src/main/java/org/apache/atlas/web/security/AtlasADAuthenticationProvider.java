@@ -19,12 +19,14 @@
 package org.apache.atlas.web.security;
 
 import java.util.List;
+import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.log4j.Logger;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -105,15 +107,31 @@ public class AtlasADAuthenticationProvider extends
         try {
 
             Configuration configuration = ApplicationProperties.get();
-            this.adDomain = configuration.getString("atlas.authentication.method.ldap.ad.domain");
-            this.adURL = configuration.getString("atlas.authentication.method.ldap.ad.url");
-            this.adBindDN = configuration.getString("atlas.authentication.method.ldap.ad.bind.dn");
-            this.adBindPassword = configuration.getString("atlas.authentication.method.ldap.ad.bind.password");
-            this.adUserSearchFilter = configuration.getString("atlas.authentication.method.ldap.ad.user.searchfilter");
-            this.adBase = configuration.getString("atlas.authentication.method.ldap.ad.base.dn");
-            this.adReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
-            this.adDefaultRole = configuration.getString("atlas.authentication.method.ldap.ad.default.role");
+            Properties properties = ConfigurationConverter.getProperties(configuration.subset("atlas.authentication.method.ldap.ad"));
+            this.adDomain = properties.getProperty("domain");
+            this.adURL = properties.getProperty("url");
+            this.adBindDN = properties.getProperty("bind.dn");
+            this.adBindPassword = properties.getProperty("bind.password");
+            this.adUserSearchFilter = properties.getProperty("user.searchfilter");
+            this.adBase = properties.getProperty("base.dn");
+            this.adReferral = properties.getProperty("referral");
+            this.adDefaultRole = properties.getProperty("default.role");
+
             this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.ldap.ugi-groups", true);
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("AtlasADAuthenticationProvider{" +
+                        "adURL='" + adURL + '\'' +
+                        ", adDomain='" + adDomain + '\'' +
+                        ", adBindDN='" + adBindDN + '\'' +
+                        ", adUserSearchFilter='" + adUserSearchFilter + '\'' +
+                        ", adBase='" + adBase + '\'' +
+                        ", adReferral='" + adReferral + '\'' +
+                        ", adDefaultRole='" + adDefaultRole + '\'' +
+                        ", groupsFromUGI=" + groupsFromUGI +
+                        '}');
+            }
+
 
         } catch (Exception e) {
             LOG.error("Exception while setADProperties", e);
