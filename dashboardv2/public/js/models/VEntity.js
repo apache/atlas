@@ -18,12 +18,13 @@
 
 define(['require',
     'utils/Globals',
-    'models/BaseModel'
-], function(require, Globals, VBaseModel) {
+    'models/BaseModel',
+    'utils/UrlLinks'
+], function(require, Globals, VBaseModel, UrlLinks) {
     'use strict';
     var VEntity = VBaseModel.extend({
 
-        urlRoot: Globals.baseURL + '/api/atlas/entities/',
+        urlRoot: UrlLinks.entitiesApiUrl(),
 
         defaults: {},
 
@@ -43,7 +44,7 @@ define(['require',
          *************************/
 
         getEntity: function(token, options) {
-            var url = Globals.baseURL + '/api/atlas/entities/' + token;
+            var url = UrlLinks.entitiesApiUrl(token);
 
             options = _.extend({
                 contentType: 'application/json',
@@ -53,13 +54,23 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
         },
         saveEntity: function(token, options) {
-            var url = Globals.baseURL + '/api/atlas/entities/' + token + '/traits';
+            var url = UrlLinks.entitiesTraitsApiUrl(token);
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
         },
+        getEntityDef: function(name, options) {
+            var url = UrlLinks.entitiesDefApiUrl(name);
+
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+
+            return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+        }
 
     }, {});
     return VEntity;

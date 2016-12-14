@@ -21,10 +21,11 @@ define(['require',
     'hbs!tmpl/tag/TagAttributeDetailLayoutView_tmpl',
     'utils/Utils',
     'views/tag/AddTagAttributeView',
-    'collection/VCommonList',
+    'collection/VTagList',
     'models/VTag',
-    'utils/Messages'
-], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VCommonList, VTag, Messages) {
+    'utils/Messages',
+    'utils/UrlLinks'
+], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VTagList, VTag, Messages, UrlLinks) {
     'use strict';
 
     var TagAttributeDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -63,32 +64,12 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'tag', 'vent'));
-                this.tagCollection = new VCommonList();
-                this.tagCollection.url = "/api/atlas/types/" + this.tag;
-                this.tagCollection.modelAttrName = "definition";
-                this.tagCollection.fetch({ reset: true });
-                this.bindEvents();
+                _.extend(this, _.pick(options, 'globalVent', 'tag', 'collection'));
             },
             bindEvents: function() {
-                this.listenTo(this.tagCollection, 'reset', function() {
-                    var that = this,
-                        attributeData = "";
-                    _.each(this.tagCollection.models, function(attr) {
-                        var traitTypes = attr.get("traitTypes");
-                        if (traitTypes[0].typeDescription != null) {
-                            var descriptionValue = traitTypes[0].typeDescription;
-                            that.ui.description.html(descriptionValue);
-                        }
-                        _.each(traitTypes[0].attributeDefinitions, function(value, key) {
-                            attributeData += '<span class="inputAttribute">' + value.name + '</span>';
-                        });
-                    });
-                    if (attributeData.length) {
-                        that.ui.addTagtext.hide();
-                        that.ui.addTagPlus.show();
-                    }
-                    that.ui.showAttribute.html(attributeData);
+                this.listenTo(this.collection, 'reset', function() {
+                    this.model = this.collection.findWhere({ name: this.tag });
+                    this.renderTagDetail();
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
                     if (response.responseJSON && response.responseJSON.error) {
@@ -100,24 +81,47 @@ define(['require',
                 }, this);
             },
             onRender: function() {
-                this.ui.title.html('<span>' + this.tag + '</span>');
+                if (this.collection.models.length && !this.model) {
+                    this.model = this.collection.findWhere({ name: this.tag });
+                    this.renderTagDetail();
+                }
+                this.bindEvents();
                 this.ui.saveButton.attr("disabled", "true");
                 this.ui.publishButton.prop('disabled', true);
             },
+            renderTagDetail: function() {
+                var attributeData = "",
+                    attributeDefs = this.model.get("attributeDefs");
+                if (this.model.get("name")) {
+                    this.ui.title.html('<span>' + this.model.get("name") + '</span>');
+                }
+                if (this.model.get("description")) {
+                    this.ui.description.html(this.model.get("description"));
+                }
+                if (this.model.get("attributeDefs")) {
+                    if (!_.isArray(attributeDefs)) {
+                        attributeDefs = [attributeDefs];
+                    }
+                    _.each(attributeDefs, function(value, key) {
+                        attributeData += '<span class="inputAttribute">' + value.name + '</span>';
+                    });
+                    this.ui.showAttribute.html(attributeData);
+                }
+
+            },
             onSaveButton: function(saveObject, message) {
-                var that = this,
-                    tagModel = new VTag();
-                tagModel.set(saveObject).save(null, {
-                    type: "PUT",
+                var that = this;
+                this.model.saveTagAttribute(this.model.get('name'), {
+                    data: JSON.stringify(saveObject),
                     success: function(model, response) {
-                        that.tagCollection.fetch({ reset: true });
+                        that.model.set(model);
+                        that.renderTagDetail();
                         Utils.notifySuccess({
                             content: message
                         });
                     },
                     error: function(model, response) {
                         if (response.responseJSON && response.responseJSON.error) {
-                            that.tagCollection.fetch({ reset: true });
                             Utils.notifyError({
                                 content: response.responseJSON.error
                             });
@@ -141,16 +145,20 @@ define(['require',
                             }).open();
                         modal.on('ok', function() {
                             var attributeName = $(view.el).find("input").val();
-                            that.tagCollection.first().get('traitTypes')[0].attributeDefinitions.push({
+                            var attributes = _.clone(that.model.get('attributeDefs'));
+                            if (!_.isArray(attributes)) {
+                                attributes = [attributes];
+                            }
+                            attributes.push({
                                 "name": attributeName,
-                                "dataTypeName": "string",
-                                "multiplicity": "optional",
-                                "isComposite": false,
-                                "isUniquvar e": false,
-                                "isIndexable": true,
-                                "reverseAttributeName": null
+                                "typeName": "string",
+                                "cardinality": "SINGLE",
+                                "isUnique": false,
+                                "indexable": true,
+                                "isOptional":true
                             });
-                            that.onSaveButton(that.tagCollection.first().toJSON(), Messages.addAttributeSuccessMessage);
+                            var saveData = _.extend(that.model.toJSON(), { 'attributeDefs': attributes });
+                            that.onSaveButton(saveData, Messages.addAttributeSuccessMessage);
                         });
                         modal.on('closeModal', function() {
                             modal.trigger('cancel');
@@ -163,15 +171,15 @@ define(['require',
                 this.ui.editBox.hide();
             },
             textAreaChangeEvent: function(view, modal) {
-                if (view.tagCollection.first().get('traitTypes')[0].typeDescription == view.ui.description.val()) {
+                if (this.model.get('description') === view.ui.description.val()) {
                     modal.$el.find('button.ok').prop('disabled', true);
                 } else {
                     modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
             onPublishClick: function(view) {
-                view.tagCollection.first().get('traitTypes')[0].typeDescription = view.ui.description.val();
-                this.onSaveButton(this.tagCollection.first().toJSON(), Messages.updateTagDescriptionMessage);
+                var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val() });
+                this.onSaveButton(saveObj, Messages.updateTagDescriptionMessage);
                 this.ui.description.show();
             },
             onEditButton: function(e) {
@@ -181,7 +189,7 @@ define(['require',
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'tagCollection': that.tagCollection, 'tag': that.tag });
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag });
                     var modal = new Modal({
                         title: 'Edit Tag',
                         content: view,

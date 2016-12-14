@@ -152,14 +152,15 @@ require(['App',
     'router/Router',
     'utils/CommonViewFunction',
     'utils/Globals',
+    'utils/UrlLinks',
     'utils/Overrides',
     'bootstrap',
     'd3',
-    'select2'
-], function(App, Router, CommonViewFunction, Globals) {
+    'select2' 
+], function(App, Router, CommonViewFunction, Globals, UrlLinks) {
     App.appRouter = new Router();
     CommonViewFunction.userDataFetch({
-        url: Globals.baseURL + "/api/atlas/admin/session",
+        url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
             if (response && response.userName) {
                 Globals.userLogedIn.status = true;

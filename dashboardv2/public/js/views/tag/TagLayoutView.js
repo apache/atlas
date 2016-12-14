@@ -23,8 +23,9 @@ define(['require',
     'collection/VEntityList',
     'utils/Utils',
     'utils/Messages',
-    'utils/Globals'
-], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages, Globals) {
+    'utils/Globals',
+    'utils/UrlLinks'
+], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages, Globals, UrlLinks) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -45,7 +46,6 @@ define(['require',
                 offLineSearchTag: "[data-id='offlineSearchTag']",
                 deleteTerm: "[data-id='deleteTerm']",
                 refreshTag: '[data-id="refreshTag"]'
-
             },
             /** ui events hash */
             events: function() {
@@ -62,20 +62,12 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'tag'));
-                this.tagCollection = new VTagList();
-                this.collection = new Backbone.Collection();
-                this.json = {
-                    "enumTypes": [],
-                    "traitTypes": [],
-                    "structTypes": [],
-                    "classTypes": []
-                };
+                _.extend(this, _.pick(options, 'globalVent', 'tag', 'collection'));
             },
             bindEvents: function() {
                 var that = this;
-                this.listenTo(this.tagCollection, "reset", function() {
-                    this.tagsAndTypeGenerator('tagCollection');
+                this.listenTo(this.collection, "reset", function() {
+                    this.tagsAndTypeGenerator('collection');
                 }, this);
                 this.ui.tagsParent.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
@@ -98,8 +90,7 @@ define(['require',
                 });
             },
             fetchCollections: function() {
-                $.extend(this.tagCollection.queryParams, { type: 'TRAIT', notsupertype: 'TaxonomyTerm' });
-                this.tagCollection.fetch({ reset: true });
+                this.collection.fetch({ reset: true });
                 this.ui.offLineSearchTag.val("");
             },
             manualRender: function(tagName) {
@@ -152,19 +143,19 @@ define(['require',
             tagsAndTypeGenerator: function(collection, searchString) {
                 var that = this,
                     str = '';
-                that.tagCollection.fullCollection.comparator = function(model) {
-                    return model.get('tags').toLowerCase();
+                that.collection.fullCollection.comparator = function(model) {
+                    return model.get('name').toLowerCase();
                 };
-                that.tagCollection.fullCollection.sort().each(function(model) {
+                that.collection.fullCollection.sort().each(function(model) {
                     if (searchString) {
-                        if (model.get('tags').search(new RegExp(searchString, "i")) != -1) {
+                        if (model.get('name').search(new RegExp(searchString, "i")) != -1) {
                             // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name=" `' + model.get('tags') + '`" >' + model.get('tags') + '</a></li>';
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('name') + '"  data-name="`' + model.get('name') + '`" >' + model.get('name') + '</a></li>';
                         } else {
                             return;
                         }
                     } else {
-                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name=" `' + model.get('tags') + '`">' + model.get('tags') + '</a></li>';
+                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('name') + '"  data-name="`' + model.get('name') + '`">' + model.get('name') + '</a></li>';
                     }
                 });
                 this.ui.tagsParent.empty().html(str);
@@ -175,7 +166,6 @@ define(['require',
                 }
 
             },
-
             onClickCreateTag: function(e) {
                 var that = this;
                 $(e.currentTarget).blur();
@@ -183,7 +173,7 @@ define(['require',
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'tagCollection': that.tagCollection });
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection });
                     var modal = new Modal({
                         title: 'Create a new tag',
                         content: view,
@@ -223,22 +213,23 @@ define(['require',
                 if (ref.ui.parentTag.val() && ref.ui.parentTag.val()) {
                     superTypes = ref.ui.parentTag.val();
                 }
-                this.json.traitTypes[0] = {
-                    attributeDefinitions: this.collection.toJSON(),
-                    typeName: this.name,
-                    typeDescription: this.description,
-                    superTypes: superTypes,
-                    hierarchicalMetaTypeName: "org.apache.atlas.typesystem.types.TraitType"
+                this.json = {
+                    'name': this.name,
+                    'description': this.description,
+                    "typeVersion": "2",
+                    "version": "2",
+                    'superTypes': superTypes.length ? superTypes : [],
                 };
-                new this.tagCollection.model().set(this.json).save(null, {
+                new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
                         that.createTag = true;
                         that.fetchCollections();
+                        that.collection.add(model)
                         that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
                             content: "Tag " + that.name + Messages.addSuccessMessage
                         });
-                        that.collection.reset([]);
+
                     },
                     error: function(model, response) {
                         if (response.responseJSON && response.responseJSON.error) {
@@ -270,7 +261,7 @@ define(['require',
             },
             offlineSearchTag: function(e) {
                 var type = $(e.currentTarget).data('type');
-                this.tagsAndTypeGenerator('tagCollection', $(e.currentTarget).val());
+                this.tagsAndTypeGenerator('collection', $(e.currentTarget).val());
             },
             createTagAction: function() {
                 var that = this;

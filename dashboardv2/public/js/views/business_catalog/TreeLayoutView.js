@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'collection/VCatalogList',
     'utils/CommonViewFunction',
-    'utils/Messages'
-], function(require, Backbone, TreeLayoutView_tmpl, Utils, VCatalogList, CommonViewFunction, Messages) {
+    'utils/Messages',
+    'utils/UrlLinks'
+], function(require, Backbone, TreeLayoutView_tmpl, Utils, VCatalogList, CommonViewFunction, Messages, UrlLinks) {
     'use strict';
 
     var TreeLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -251,7 +252,7 @@ define(['require',
                     if (parentURL) {
                         this.url = parentURL;
                     } else {
-                        this.url = "api/atlas/v1/taxonomies";
+                        this.url = UrlLinks.taxonomiesApiUrl();
                     }
                 }
                 this.showLoader();
@@ -308,7 +309,7 @@ define(['require',
                 var that = this;
                 _.each(this.taxanomy.models, function(model, key) {
                     var name = model.get('name');
-                    that.termCollection.url = "/api/atlas/v1/taxonomies/" + name + "/terms";
+                    that.termCollection.url = UrlLinks.taxonomiesTermsApiUrl(name)
                 });
                 this.termCollection.fetch({ reset: true });
             },
@@ -388,9 +389,9 @@ define(['require',
                         if (name.name) {
                               // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
                             if (that.viewBased) {
-                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name=" `' + model.get('name') + '`">' + name.name + '</a>';
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
                             } else {
-                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name=" `' + model.get('name') + '`">' + name.name + '</a>';
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
                             }
                         }
                     });
@@ -613,7 +614,7 @@ define(['require',
                     'modules/Modal'
                 ], function(AddTermLayoutView, Modal) {
                     var view = new AddTermLayoutView({
-                        url: "/api/atlas/v1/taxonomies",
+                        url: UrlLinks.taxonomiesApiUrl(),
                         model: new that.parentCollection.model(),
                         defaultTerm:true
                     });

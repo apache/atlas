@@ -18,12 +18,13 @@
 
 define(['require',
     'utils/Globals',
-    'models/BaseModel'
-], function(require, Globals, VBaseModel) {
+    'models/BaseModel',
+    'utils/UrlLinks'
+], function(require, Globals, VBaseModel, UrlLinks) {
     'use strict';
     var VLineage = VBaseModel.extend({
 
-        urlRoot: Globals.baseURL,
+        urlRoot: UrlLinks.baseURL,
 
         defaults: {},
 

@@ -22,8 +22,9 @@ define(['require',
     'collection/VCommonList',
     'modules/Modal',
     'models/VEntity',
-    'utils/Utils'
-], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils) {
+    'utils/Utils',
+    'utils/UrlLinks'
+], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks) {
     'use strict';
 
     var AddTagModel = Marionette.LayoutView.extend({
@@ -47,7 +48,7 @@ define(['require',
             var that = this;
             _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader'));
             this.collection = new VTagList();
-            this.commonCollection = new VCommonList();
+            this.commonCollection = new VTagList();
             this.asyncAttrFetchCounter = 0;
             this.modal = new Modal({
                 title: 'Add Tag',
@@ -74,7 +75,7 @@ define(['require',
                         var obj = {
                             tagName: tagName,
                             tagAttributes: tagAttributes,
-                            guid: that.multiple[i].id.id
+                            guid: (_.isObject(that.multiple[i].id) ? that.multiple[i].id.id : that.multiple[i].id)
                         }
                         that.saveTagData(obj);
                     }
@@ -112,12 +113,12 @@ define(['require',
         },
         tagsCollection: function() {
             this.collection.fullCollection.comparator = function(model) {
-                return model.get('tags').toLowerCase();
+                return model.get('name').toLowerCase();
             }
 
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             this.collection.fullCollection.sort().each(function(obj, key) {
-                str += '<option>' + obj.get('tags') + '</option>';
+                str += '<option>' + obj.get('name') + '</option>';
             });
             this.ui.addTagOptions.html(str);
             this.ui.addTagOptions.select2({
@@ -134,8 +135,7 @@ define(['require',
             this.fetchTagSubData(tagname);
         },
         fetchTagSubData: function(tagname) {
-            this.commonCollection.url = "/api/atlas/types/" + tagname;
-            this.commonCollection.modelAttrName = 'definition';
+            this.commonCollection.url = UrlLinks.typesClassicationApiUrl(tagname);
             ++this.asyncAttrFetchCounter
             this.commonCollection.fetch({ reset: true });
         },
@@ -153,18 +153,28 @@ define(['require',
             this.$('.attrLoader').show();
         },
         subAttributeData: function() {
-            if (this.commonCollection.models[0] && this.commonCollection.models[0].attributes && this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions) {
-                for (var i = 0; i < this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions.length; i++) {
-                    var attribute = this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions;
-                    var strAttribute = '<div class="form-group"><label>' + attribute[i].name + '</label>' +
-                        '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
-                    this.ui.tagAttribute.append(strAttribute);
+            var that = this;
+            if (this.commonCollection.models[0]) {
+                if (this.commonCollection.models[0].get('attributeDefs')) {
+                    _.each(this.commonCollection.models[0].get('attributeDefs'), function(obj) {
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + obj.name + '</label>' +
+                            '<input type="text" class="form-control attributeInputVal attrName" data-key="' + obj.name + '" ></input></div>');
+                    });
                 }
-                if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {
-                    for (var j = 0; j < this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length; j++) {
-                        var superTypeAttr = this.commonCollection.models[0].attributes.traitTypes[0].superTypes[j];
-                        this.fetchTagSubData(superTypeAttr);
+
+                if (this.commonCollection.models[0].get('superTypes')) {
+                    var superTypes = this.commonCollection.models[0].get('superTypes');
+                    if (!_.isArray(superTypes)) {
+                        superTypes = [superTypes];
                     }
+                    if (superTypes.length) {
+                        _.each(superTypes, function(name) {
+                            that.fetchTagSubData(name);
+                        });
+                    } else {
+                        this.showAttributeBox();
+                    }
+
                 } else {
                     this.showAttributeBox();
                 }
@@ -178,11 +188,10 @@ define(['require',
             this.entityModel = new VEntity();
             var tagName = options.tagName,
                 tagAttributes = options.tagAttributes,
-                json = {
-                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
+                json = [{
                     "typeName": tagName,
-                    "values": tagAttributes
-                };
+                    "attributes": tagAttributes
+                }];
             this.entityModel.saveEntity(options.guid, {
                 data: JSON.stringify(json),
                 success: function(data) {

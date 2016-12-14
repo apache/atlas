@@ -22,8 +22,10 @@ define([
     'backbone',
     'App',
     'utils/Globals',
-    'utils/Utils'
-], function($, _, Backbone, App, Globals, Utils) {
+    'utils/Utils',
+    'utils/UrlLinks',
+    'collection/VTagList'
+], function($, _, Backbone, App, Globals, Utils, UrlLinks, VTagList) {
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
@@ -46,6 +48,7 @@ define([
             this.globalVent = new Backbone.Wreqr.EventAggregator();
             this.catalogVent = new Backbone.Wreqr.EventAggregator();
             this.tagVent = new Backbone.Wreqr.EventAggregator();
+            this.tagCollection = new VTagList();
         },
         bindCommonEvents: function() {
             var that = this;
@@ -110,7 +113,7 @@ define([
                     this.collection.url = url;
                     App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url, 'collection': that.tagCollection }));
                     } else {
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
                         App.rSideNav.currentView.selectTab();
@@ -138,17 +141,16 @@ define([
                     this.entityCollection = new VEntityList([], {});
                     App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'collection': that.tagCollection }));
                     } else {
                         App.rSideNav.currentView.selectTab();
                     }
-
                     App.rNContent.show(new DetailPageLayoutView({
                         'globalVent': that.globalVent,
                         'collection': this.entityCollection,
                         'id': id,
                     }));
-                    this.entityCollection.url = "/api/atlas/entities/" + id;
+                    this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });
                 });
             }
@@ -165,7 +167,8 @@ define([
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
                         'globalVent': that.globalVent,
-                        'tag': tagName
+                        'tag': tagName,
+                        'collection': that.tagCollection
                     }));
                 } else {
 
@@ -176,7 +179,8 @@ define([
                 if (tagName) {
                     App.rNContent.show(new TagDetailLayoutView({
                         'globalVent': that.globalVent,
-                        'tag': tagName
+                        'tag': tagName,
+                        'collection': that.tagCollection
                     }));
                 }
             });
@@ -191,7 +195,8 @@ define([
                 App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
-                        'globalVent': that.globalVent
+                        'globalVent': that.globalVent,
+                        'collection': that.tagCollection
                     }));
                 } else {
                     App.rSideNav.currentView.selectTab();
@@ -218,7 +223,8 @@ define([
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
                         'globalVent': that.globalVent,
-                        'value': paramObj
+                        'value': paramObj,
+                        'collection': that.tagCollection
                     }));
                 } else {
                     App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);

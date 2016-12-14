@@ -19,13 +19,14 @@
 define(['require',
     'utils/Globals',
     'collection/BaseCollection',
-    'models/VSearch'
-], function(require, Globals, BaseCollection, VSearch) {
+    'models/VSearch',
+    'utils/UrlLinks'
+], function(require, Globals, BaseCollection, VSearch, UrlLinks) {
     'use strict';
     var VSearchList = BaseCollection.extend(
         //Prototypal attributes
         {
-            url: Globals.baseURL + '/api/atlas/discovery/search',
+            url: UrlLinks.searchApiUrl(),
 
             model: VSearch,
 

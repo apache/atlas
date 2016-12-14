@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -58,9 +57,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection', 'tag', 'termCollection', 'descriptionData'));
-                if (this.tagCollection && this.tagCollection.length > 0 && this.tagCollection.first().get('traitTypes')) {
-                    this.description = this.tagCollection.first().get('traitTypes')[0].typeDescription;
+                _.extend(this, _.pick(options, 'tagCollection', 'model', 'tag', 'termCollection', 'descriptionData'));
+                if (this.model) {
+                    this.description = this.model.get('description');
                 } else if (this.termCollection) {
                     this.description = this.descriptionData;
                 } else {
@@ -80,7 +79,7 @@ define(['require',
                     that = this;
                 this.ui.parentTag.empty();
                 this.tagCollection.fullCollection.each(function(val) {
-                    str += '<option>' + val.get("tags") + '</option>';
+                    str += '<option>' + val.get("name") + '</option>';
                 });
                 that.ui.parentTag.html(str);
                 console.log(platform);

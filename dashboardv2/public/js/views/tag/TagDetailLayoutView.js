@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'tag'));
+                _.extend(this, _.pick(options, 'globalVent', 'tag', 'collection'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -68,7 +68,8 @@ define(['require',
                 var that = this;
                 require(['views/tag/TagAttributeDetailLayoutView'], function(TagAttributeDetailLayoutView) {
                     that.RTagAttributeDetailLayoutView.show(new TagAttributeDetailLayoutView({
-                        tag: that.tag
+                        tag: that.tag,
+                        collection: that.collection
                     }));
                 });
             },

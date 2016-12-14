@@ -23,8 +23,10 @@ define(['require',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Messages',
-    'utils/Globals'
-], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils, CommonViewFunction, Messages, Globals) {
+    'utils/Globals',
+    'utils/Enums',
+    'utils/UrlLinks'
+], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils, CommonViewFunction, Messages, Globals, Enums, UrlLinks) {
     'use strict';
 
     var SchemaTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -91,7 +93,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'guid', 'vent'));
                 this.schemaCollection = new VSchemaList([], {});
-                this.schemaCollection.url = "/api/atlas/lineage/" + this.guid + "/schema";
+                this.schemaCollection.url = UrlLinks.schemaApiUrl(this.guid);
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
                     includeFilter: false,
@@ -252,7 +254,7 @@ define(['require',
                                 } else {
                                     nameHtml = '<a>' + rawValue + '</a>';
                                 }
-                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {

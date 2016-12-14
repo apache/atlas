@@ -19,13 +19,14 @@
 define(['require',
     'utils/Globals',
     'collection/BaseCollection',
-    'models/VSchema'
-], function(require, Globals, BaseCollection, VSchema) {
+    'models/VSchema',
+    'utils/UrlLinks'
+], function(require, Globals, BaseCollection, VSchema, UrlLinks) {
     'use strict';
     var VSchemaList = BaseCollection.extend(
         //Prototypal attributes
         {
-            url: Globals.baseURL,
+            url: UrlLinks.baseURL,
             model: VSchema,
             initialize: function() {
                 this.modelName = 'VSchema';

@@ -66,7 +66,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'globalVent', 'url', 'value', 'tag', 'selectFirst'));
+            _.extend(this, _.pick(options, 'globalVent', 'url', 'value', 'tag', 'selectFirst','collection'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -98,7 +98,7 @@ define(['require',
             require(['views/tag/TagLayoutView'], function(TagLayoutView) {
                 that.RTagLayoutView.show(new TagLayoutView({
                     globalVent: that.globalVent,
-                    searchCollection: that.searchCollection,
+                    collection: that.collection,
                     tag: that.tag
                 }));
             });

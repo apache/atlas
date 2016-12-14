@@ -24,8 +24,10 @@ define(['require',
     'models/VEntity',
     'utils/CommonViewFunction',
     'utils/Globals',
-    'utils/Messages'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals, Messages) {
+    'utils/Enums',
+    'utils/Messages',
+    'utils/UrlLinks'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -73,15 +75,6 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = function() {
-                    this.ui.editButton.hide();
-                    this.ui.description.hide();
-                    this.ui.editBox.show();
-                    this.ui.descriptionTextArea.focus();
-                    if (this.descriptionPresent) {
-                        this.ui.descriptionTextArea.val(this.ui.description.text());
-                    }
-                };
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         var scope = $(e.currentTarget);
@@ -89,7 +82,7 @@ define(['require',
                             var url = scope.data('href').split(".").join("/terms/");
                             Globals.saveApplicationState.tabState.stateChanged = false;
                             Utils.setUrl({
-                                url: '#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + url,
+                                url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
                                 mergeBrowserUrl: false,
                                 trigger: true
                             });
@@ -124,35 +117,37 @@ define(['require',
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
 
-                    var collectionJSON = this.collection.toJSON();
-                    if (collectionJSON[0].id && collectionJSON[0].id.id) {
-                        var tagGuid = collectionJSON[0].id.id;
-                        this.readOnly = Globals.entityStateReadOnly[collectionJSON[0].id.state];
-                    }
-                    if (this.readOnly) {
-                        this.$el.addClass('readOnly');
+                    var collectionJSON = this.collection.first().toJSON();
+                    if (collectionJSON && collectionJSON.guid) {
+                        var tagGuid = collectionJSON.guid;
+                        //this.readOnly = Enums.entityStateReadOnly[collectionJSON[0].id.state];
                     } else {
-                        this.$el.removeClass('readOnly');
+                        var tagGuid = this.id;
                     }
-                    if (collectionJSON && collectionJSON.length) {
-                        if (collectionJSON[0].values) {
-                            if (collectionJSON[0].values.name) {
-                                this.name = collectionJSON[0].values.name;
+                    // if (this.readOnly) {
+                    //     this.$el.addClass('readOnly');
+                    // } else {
+                    //     this.$el.removeClass('readOnly');
+                    // }
+                    if (collectionJSON) {
+                        if (collectionJSON.attributes) {
+                            if (collectionJSON.attributes.name) {
+                                this.name = collectionJSON.attributes.name
                             }
-                            if (!this.name && collectionJSON[0].values.qualifiedName) {
-                                this.name = collectionJSON[0].values.qualifiedName;
+                            if (!this.name && collectionJSON.attributes.qualifiedName) {
+                                this.name = collectionJSON.attributes.qualifiedName;
                             }
-                            if (this.name && collectionJSON[0].typeName) {
-                                this.name = this.name + ' (' + collectionJSON[0].typeName + ')';
+                            if (this.name && collectionJSON.typeName) {
+                                this.name = this.name + ' (' + collectionJSON.typeName + ')';
                             }
-                            if (!this.name && collectionJSON[0].typeName) {
-                                this.name = collectionJSON[0].typeName;
+                            if (!this.name && collectionJSON.typeName) {
+                                this.name = collectionJSON.typeName;
                             }
 
                             if (!this.name && this.id) {
                                 this.name = this.id;
                             }
-                            this.description = collectionJSON[0].values.description;
+                            this.description = collectionJSON.attributes.description;
                             if (this.name) {
                                 this.ui.title.show();
                                 var titleName = '<span>' + this.name + '</span>';
@@ -170,22 +165,24 @@ define(['require',
                                 this.ui.description.hide();
                             }
                         }
-                        if (collectionJSON[0].traits) {
-                            this.addTagToTerms(collectionJSON[0].traits);
+                        if (collectionJSON.classifications) {
+                            this.addTagToTerms(collectionJSON.classifications);
+                        }else{
+                             this.addTagToTerms([]);
                         }
                     }
 
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
-                    this.renderLineageLayoutView(tagGuid);
-                    this.renderSchemaLayoutView(tagGuid);
-                    this.renderAuditTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
                 }, this);
             },
             onRender: function() {
                 var that = this;
                 this.ui.editBox.hide();
+                this.renderLineageLayoutView(this.id);
+                this.renderSchemaLayoutView(this.id);
+                this.renderAuditTableLayoutView(this.id);
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });

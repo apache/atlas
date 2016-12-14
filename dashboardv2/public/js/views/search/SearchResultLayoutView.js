@@ -26,8 +26,10 @@ define(['require',
     'collection/VSearchList',
     'models/VCommon',
     'utils/CommonViewFunction',
-    'utils/Messages'
-], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages) {
+    'utils/Messages',
+    'utils/Enums',
+    'utils/UrlLinks'
+], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -70,7 +72,7 @@ define(['require',
                             var url = scope.data('href').split(".").join("/terms/");
                             Globals.saveApplicationState.tabState.stateChanged = false;
                             Utils.setUrl({
-                                url: '#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + url,
+                                url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
                                 mergeBrowserUrl: false,
                                 trigger: true
                             });
@@ -214,12 +216,12 @@ define(['require',
                 $.extend(this.searchCollection.queryParams, { limit: this.limit });
                 if (value) {
                     if (value.searchType) {
-                        this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;
+                        this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                         $.extend(this.searchCollection.queryParams, { limit: this.limit });
                         this.offset = 0;
                     }
                     if (Utils.getUrlState.isTagTab()) {
-                        this.searchCollection.url = "/api/atlas/discovery/search/dsl";
+                        this.searchCollection.url = UrlLinks.searchApiUrl(Enums.searchUrlType.DSL);
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() });
                 }
@@ -347,19 +349,17 @@ define(['require',
                                 ++that.asyncFetchCounter;
                                 model.getEntity(guid, {
                                     success: function(data) {
-                                        if (data.definition) {
-                                            if (data.definition.id && data.definition.values) {
+                                        if (data.attributes) {
+                                            if (data.guid && data.attributes) {
                                                 var id = "";
-                                                if (_.isObject(data.definition.id) && data.definition.id.id) {
-                                                    id = data.definition.id.id;
-                                                } else {
-                                                    id = data.definition.id;
+                                                id = data.guid;
+                                                if (that.searchCollection.get(id)) {
+                                                    that.searchCollection.get(id).set(data.attributes);
+                                                    that.searchCollection.get(id).set({
+                                                        '$id$': data.guid,
+                                                        '$traits$': data.classifications
+                                                    });
                                                 }
-                                                that.searchCollection.get(id).set(data.definition.values);
-                                                that.searchCollection.get(id).set({
-                                                    '$id$': data.definition.id,
-                                                    '$traits$': data.definition.traits
-                                                });
                                             }
                                         }
                                     },
@@ -441,12 +441,12 @@ define(['require',
                                         return "";
                                     }
                                 }
-                                if (model.get('$id$') && model.get('$id$').id) {
-                                    nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                if (model.get('$id$')) {
+                                    nameHtml = '<a href="#!/detailPage/' + (model.get('$id$').id || model.get('$id$')) + '">' + rawValue + '</a>';
                                 } else {
                                     nameHtml = '<a>' + rawValue + '</a>';
                                 }
-                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
@@ -476,12 +476,12 @@ define(['require',
                                         return "";
                                     }
                                 }
-                                if (model.get('$id$') && model.get('$id$').id) {
-                                    nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                if (model.get('$id$')) {
+                                    nameHtml = '<a href="#!/detailPage/' + (model.get('$id$').id || model.get('$id$')) + '">' + rawValue + '</a>';
                                 } else {
                                     nameHtml = '<a>' + rawValue + '</a>';
                                 }
-                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
@@ -513,7 +513,7 @@ define(['require',
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                            if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                 return '<div class="readOnly">' + CommonViewFunction.tagForTable(model); + '</div>';
                             } else {
                                 return CommonViewFunction.tagForTable(model);
@@ -536,7 +536,7 @@ define(['require',
                                 if (returnObject.object) {
                                     that.bradCrumbList.push(returnObject.object);
                                 }
-                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     return '<div class="readOnly">' + returnObject.html + '</div>';
                                 } else {
                                     return returnObject.html;

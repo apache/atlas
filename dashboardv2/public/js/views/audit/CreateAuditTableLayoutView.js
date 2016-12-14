@@ -19,9 +19,9 @@
 define(['require',
     'backbone',
     'hbs!tmpl/audit/CreateAuditTableLayoutView_tmpl',
-    'utils/Globals',
+    'utils/Enums',
     'utils/CommonViewFunction'
-], function(require, Backbone, CreateAuditTableLayoutViewTmpl, Globals, CommonViewFunction) {
+], function(require, Backbone, CreateAuditTableLayoutViewTmpl, Enums, CommonViewFunction) {
     'use strict';
 
     var CreateAuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -68,7 +68,7 @@ define(['require',
                     var detailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
                     //Append string for JSON parse
                     var valueObject = detailsObject.values;
-                    if (this.action == Globals.auditAction.TAG_ADD) {
+                    if (this.action == Enums.auditAction.TAG_ADD) {
                         this.ui.auditHeaderValue.html('<th>Tag</th>');
                         this.ui.auditValue.html("<tr><td>" + detailsObject.typeName + "</td></tr>");
                     } else {
@@ -83,7 +83,7 @@ define(['require',
                             this.ui.tableAudit.hide();
                         }
                     }
-                } else if (this.action == Globals.auditAction.TAG_DELETE) {
+                } else if (this.action == Enums.auditAction.TAG_DELETE) {
                     var appendedString = this.entityModel.get('details').split(':');
                     this.ui.auditHeaderValue.html('<th>Tag</th>');
                     this.ui.auditValue.html("<tr><td>" + appendedString[1] + "</td></tr>");

@@ -21,7 +21,8 @@ define(['require',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
     'collection/VTagList',
     'utils/Utils',
-], function(require, Backbone, SearchLayoutViewTmpl, VTagList, Utils) {
+    'utils/UrlLinks'
+], function(require, Backbone, SearchLayoutViewTmpl, VTagList, Utils, UrlLinks) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -71,6 +72,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'value'));
                 this.typecollection = new VTagList([], {});
+                this.typecollection.url = UrlLinks.typesApiUrl();
                 this.type = "fulltext";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -104,7 +106,6 @@ define(['require',
                 this.ui.searchBtn.attr("disabled", "true");
             },
             fetchCollection: function(value) {
-                $.extend(this.typecollection.queryParams, { type: 'CLASS' });
                 this.typecollection.fetch({ reset: true });
             },
             onRefreshButton: function() {
@@ -118,10 +119,10 @@ define(['require',
                 this.ui.typeLov.empty();
                 var str = '<option></option>';
                 this.typecollection.fullCollection.comparator = function(model) {
-                    return model.get('tags').toLowerCase();
+                    return model.get('name').toLowerCase();
                 }
                 this.typecollection.fullCollection.sort().each(function(model) {
-                    str += '<option>' + model.get("tags") + '</option>';
+                    str += '<option>' + model.get("name") + '</option>';
                 });
                 that.ui.typeLov.html(str);
             },

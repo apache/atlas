@@ -61,9 +61,9 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid', 'term', 'assetName'));
-                this.collectionObject = this.collection.toJSON();
+                this.collectionObject = this.collection.first().toJSON();
                 this.tagTermCollection = new VTagList();
-                var tagorterm = _.toArray(this.collectionObject[0].traits),
+                var tagorterm = _.toArray(this.collectionObject.classifications),
                     tagTermList = [],
                     that = this;
                 _.each(tagorterm, function(object) {
@@ -130,7 +130,7 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var values = model.get('values'),
+                                    var values = model.get('attributes'),
                                         tagValue = 'NA';
                                     if (!_.isEmpty(values)) {
                                         var stringArr = [];

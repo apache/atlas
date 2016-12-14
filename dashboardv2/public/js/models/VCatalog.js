@@ -18,11 +18,12 @@
 
 define(['require',
     'utils/Globals',
-    'models/BaseModel'
-], function(require, Globals, VBaseModel) {
+    'models/BaseModel',
+    'utils/UrlLinks'
+], function(require, Globals, VBaseModel, UrlLinks) {
     'use strict';
     var VCatalog = VBaseModel.extend({
-        urlRoot: Globals.baseURL + '/api/atlas/v1/taxonomies',
+        urlRoot: UrlLinks.taxonomiesApiUrl(),
 
         defaults: {},
 
@@ -38,7 +39,7 @@ define(['require',
             return this.get('name');
         },
         deleteTerm: function(termURL, options) {
-            var url = Globals.baseURL + termURL;
+            var url = UrlLinks.baseURL + termURL;
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

@@ -20,8 +20,9 @@ define(['require',
     'backbone',
     'hbs!tmpl/audit/AuditTableLayoutView_tmpl',
     'collection/VEntityList',
-    'utils/Globals'
-], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Globals) {
+    'utils/Enums',
+    'utils/UrlLinks'
+], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Enums, UrlLinks) {
     'use strict';
 
     var AuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -60,7 +61,7 @@ define(['require',
                 _.extend(this, _.pick(options, 'globalVent', 'guid'));
                 this.entityCollection = new VEntityList();
                 this.count = 26;
-                this.entityCollection.url = "/api/atlas/entities/" + this.guid + "/audit";
+                this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
                 this.entityCollection.modelAttrName = "events";
                 this.entityModel = new this.entityCollection.model();
                 this.pervOld = [];
@@ -140,6 +141,7 @@ define(['require',
                         if ((that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
                             options.next.attr('disabled', true);
                             options.previous.removeAttr("disabled");
+                            //that.renderTableLayoutView();
                         } else {
                             if (that.entityCollection.models.length > 0) {
                                 that.next = that.entityCollection.last().get('eventKey');
@@ -193,8 +195,8 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                if (Globals.auditAction[rawValue]) {
-                                    return Globals.auditAction[rawValue];
+                                if (Enums.auditAction[rawValue]) {
+                                    return Enums.auditAction[rawValue];
                                 } else {
                                     return rawValue;
                                 }
@@ -208,7 +210,7 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Globals.auditAction[model.attributes.action] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
+                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Enums.auditAction[model.attributes.action] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
                             }
                         })
                     },

@@ -16,35 +16,36 @@
  * limitations under the License.
  */
 
-define(['require',
-    'utils/Globals',
-    'collection/BaseCollection',
-    'models/VCommon',
-    'utils/UrlLinks'
-], function(require, Globals, BaseCollection, VCommon, UrlLinks) {
+define(['require'], function(require) {
     'use strict';
-    var VCommonList = BaseCollection.extend(
-        //Prototypal attributes
-        {
-            url: UrlLinks.baseURL + '',
 
-            model: VCommon,
+    var Enums = {};
 
-            initialize: function() {
-                this.modelName = 'VCommon';
-                this.modelAttrName = '';
-                this.bindErrorEvents();
-            },
-        },
-        //Static Class Members
-        {
-            /**
-             * Table Cols to be passed to Backgrid
-             * UI has to use this as base and extend this.
-             *
-             */
-            tableCols: {}
-        }
-    );
-    return VCommonList;
+    Enums.auditAction = {
+        ENTITY_CREATE: "Entity Created",
+        ENTITY_UPDATE: "Entity Updated",
+        ENTITY_DELETE: "Entity Deleted",
+        TAG_ADD: "Tag Added",
+        TAG_DELETE: "Tag Deleted"
+    }
+
+    Enums.entityStateReadOnly = {
+        ACTIVE: false,
+        DELETED: true,
+        STATUS_ACTIVE: false,
+        STATUS_DELETED: true
+    }
+
+    Enums.lineageUrlType = {
+        INPUT: 'inputs',
+        OUTPUT: 'outputs',
+        SCHEMA: 'schema'
+    }
+
+    Enums.searchUrlType = {
+        DSL: 'dsl',
+        FULLTEXT: 'fulltext'
+    }
+
+    return Enums;
 });
