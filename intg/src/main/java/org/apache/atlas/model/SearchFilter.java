@@ -41,6 +41,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class SearchFilter {
     public static final String PARAM_TYPE = "type";
+    public static final String PARAM_NAME = "name";
     public static final String PARAM_SUPERTYPE = "supertype";
     public static final String PARAM_NOT_SUPERTYPE = "notsupertype";
 

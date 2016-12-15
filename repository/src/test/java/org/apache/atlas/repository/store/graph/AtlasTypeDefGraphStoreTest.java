@@ -165,9 +165,23 @@ public class AtlasTypeDefGraphStoreTest {
 
     @DataProvider
     public Object[][] validUpdateDeptTypes(){
+        AtlasTypesDef typesDef = TestUtilsV2.defineValidUpdatedDeptEmployeeTypes();
         return new Object[][] {
-                {TestUtilsV2.defineValidUpdatedDeptEmployeeTypes()}
+                {typesDef}
         };
+    }
+
+    @DataProvider
+    public Object[][] allCreatedTypes(){
+        // Capture all the types that are getting created or updated here.
+        AtlasTypesDef updatedTypeDefs = TestUtilsV2.defineValidUpdatedDeptEmployeeTypes();
+        AtlasTypesDef allTypeDefs = new AtlasTypesDef();
+        allTypeDefs.getEnumDefs().addAll(updatedTypeDefs.getEnumDefs());
+        allTypeDefs.getStructDefs().addAll(updatedTypeDefs.getStructDefs());
+        allTypeDefs.getClassificationDefs().addAll(updatedTypeDefs.getClassificationDefs());
+        allTypeDefs.getEntityDefs().addAll(updatedTypeDefs.getEntityDefs());
+        allTypeDefs.getEntityDefs().addAll(TestUtilsV2.getEntityWithValidSuperType());
+        return new Object[][] {{allTypeDefs}};
     }
 
     @DataProvider
@@ -309,7 +323,7 @@ public class AtlasTypeDefGraphStoreTest {
     }
 
     // This should run after all the update calls
-    @Test(dependsOnMethods = {"testUpdate"}, dataProvider = "validUpdateDeptTypes")
+    @Test(dependsOnMethods = {"testUpdate"}, dataProvider = "allCreatedTypes")
     public void testDelete(AtlasTypesDef atlasTypesDef){
         try {
             typeDefStore.deleteTypesDef(atlasTypesDef);
@@ -385,6 +399,21 @@ public class AtlasTypeDefGraphStoreTest {
             fail("Entity creation with invalid supertype should've failed");
         } catch (AtlasBaseException e) {}
 
+    }
+
+    @Test(dependsOnMethods = "testGet")
+    public void testSearchFunctionality() {
+        SearchFilter searchFilter = new SearchFilter();
+        searchFilter.setParam(SearchFilter.PARAM_SUPERTYPE, "Person");
+
+        try {
+            AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
+            assertNotNull(typesDef);
+            assertNotNull(typesDef.getEntityDefs());
+            assertEquals(typesDef.getEntityDefs().size(), 3);
+        } catch (AtlasBaseException e) {
+            fail("Search should've succeeded", e);
+        }
     }
 
 }

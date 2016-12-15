@@ -57,7 +57,6 @@ import java.util.Set;
 @Path("v2/types")
 @Singleton
 public class TypesREST {
-    private static final Logger LOG = LoggerFactory.getLogger(TypesREST.class);
 
     private AtlasTypeDefStore typeDefStore;
 
