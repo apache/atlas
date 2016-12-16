@@ -35,24 +35,24 @@ public class PolicyUtilTest {
     @Test
     public void testCreatePermissionMap() {
 
-        HashMap<AtlasResourceTypes, List<String>> resourceMap = new HashMap<AtlasResourceTypes, List<String>>();
-        List<String> resource1List = new ArrayList<String>();
+        HashMap<AtlasResourceTypes, List<String>> resourceMap = new HashMap<>();
+        List<String> resource1List = new ArrayList<>();
         resource1List.add("*abc");
         resourceMap.put(AtlasResourceTypes.ENTITY, resource1List);
 
-        List<String> resource2List = new ArrayList<String>();
+        List<String> resource2List = new ArrayList<>();
         resource2List.add("*xyz");
         resourceMap.put(AtlasResourceTypes.OPERATION, resource2List);
 
-        List<String> resource3List = new ArrayList<String>();
+        List<String> resource3List = new ArrayList<>();
         resource3List.add("PII");
         resourceMap.put(AtlasResourceTypes.TYPE, resource3List);
 
         Map<String, HashMap<AtlasResourceTypes, List<String>>> permissionMap =
-            new HashMap<String, HashMap<AtlasResourceTypes, List<String>>>();
+                new HashMap<>();
         permissionMap.put("grp1", resourceMap);
 
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;entity:*abc,operation:*xyz,type:PII");
         List<PolicyDef> policyDefList = new PolicyParser().parsePolicies(policies);
 
@@ -66,25 +66,25 @@ public class PolicyUtilTest {
     @Test
     public void testMergeCreatePermissionMap() {
 
-        HashMap<AtlasResourceTypes, List<String>> resourceMap = new HashMap<AtlasResourceTypes, List<String>>();
-        List<String> resource1List = new ArrayList<String>();
+        HashMap<AtlasResourceTypes, List<String>> resourceMap = new HashMap<>();
+        List<String> resource1List = new ArrayList<>();
         resource1List.add("*abc");
         resourceMap.put(AtlasResourceTypes.ENTITY, resource1List);
 
-        List<String> resource2List = new ArrayList<String>();
+        List<String> resource2List = new ArrayList<>();
         resource2List.add("*x");
         resource2List.add("*xyz");
         resourceMap.put(AtlasResourceTypes.OPERATION, resource2List);
 
-        List<String> resource3List = new ArrayList<String>();
+        List<String> resource3List = new ArrayList<>();
         resource3List.add("PII");
         resourceMap.put(AtlasResourceTypes.TYPE, resource3List);
 
         Map<String, HashMap<AtlasResourceTypes, List<String>>> permissionMap =
-            new HashMap<String, HashMap<AtlasResourceTypes, List<String>>>();
+                new HashMap<>();
         permissionMap.put("grp1", resourceMap);
 
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicys;;;;grp1:rwu;;entity:*abc,operation:*xyz,operation:*x");
         policies.add("hivePolicy;;;;grp1:rwu;;entity:*abc,operation:*xyz");
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu;;entity:*abc,operation:*xyz");

@@ -99,7 +99,7 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
             }
 
             String userName = null;
-            Set<String> groups = new HashSet<String>();
+            Set<String> groups = new HashSet<>();
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -166,7 +166,6 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                         + atlasResourceTypes + " : " + atlasRequest.getResource()
                         + "\nReturning 403 since the access is blocked update!!!!");
                 }
-                return;
             }
 
         } else {

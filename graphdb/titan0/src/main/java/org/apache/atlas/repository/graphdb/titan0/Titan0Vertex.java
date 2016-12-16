@@ -103,7 +103,7 @@ public class Titan0Vertex extends Titan0Element<Vertex> implements AtlasVertex<T
     public <T> Collection<T> getPropertyValues(String key, Class<T> clazz) {
 
         TitanVertex tv = getAsTitanVertex();
-        Collection<T> result = new ArrayList<T>();
+        Collection<T> result = new ArrayList<>();
         for (TitanProperty property : tv.getProperties(key)) {
             result.add((T) property.getValue());
         }

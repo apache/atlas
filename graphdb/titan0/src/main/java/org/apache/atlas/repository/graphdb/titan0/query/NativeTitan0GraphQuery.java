@@ -56,7 +56,7 @@ public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Verte
 
 
     @Override
-    public void in(String propertyName, Collection<? extends Object> values) {
+    public void in(String propertyName, Collection<?> values) {
         query.has(propertyName, Contain.IN, values);
 
     }

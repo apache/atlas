@@ -130,8 +130,7 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
 
     @Override
     public GroovyExpression getLoopExpressionParent(GroovyExpression inputQry) {
-        GroovyExpression curTraversal = new IdentifierExpression("__");
-        return curTraversal;
+        return new IdentifierExpression("__");
     }
 
     @Override

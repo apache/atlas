@@ -41,7 +41,6 @@ import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIA
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
-import static org.apache.atlas.security.SecurityProperties.SSL_CLIENT_PROPERTIES;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
 import static org.apache.atlas.security.SecurityProperties.SSL_CLIENT_PROPERTIES;
 import org.apache.commons.io.FileUtils;

@@ -96,7 +96,7 @@ public class GraphBackedTypeStoreTest {
 
     @Test(dependsOnMethods = "testStore")
     public void testRestoreType() throws Exception {
-        TypesDef typesDef = ((GraphBackedTypeStore)typeStore).restoreType("Manager");
+        TypesDef typesDef = typeStore.restoreType("Manager");
         verifyRestoredClassType(typesDef, "Manager");
     }
 
@@ -214,8 +214,8 @@ public class GraphBackedTypeStoreTest {
 
         Iterator<AtlasEdge> outGoingEdgesByLabel = GraphHelper.getInstance().getOutGoingEdgesByLabel(typeVertex, edgeLabel);
         int edgeCount = 0;
-        for (Iterator<AtlasEdge> iterator = outGoingEdgesByLabel; iterator.hasNext();) {
-            iterator.next();
+        for (; outGoingEdgesByLabel.hasNext();) {
+            outGoingEdgesByLabel.next();
             edgeCount++;
         }
         return edgeCount;

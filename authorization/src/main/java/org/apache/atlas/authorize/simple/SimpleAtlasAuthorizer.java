@@ -45,7 +45,7 @@ import com.google.common.annotations.VisibleForTesting;
 public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
 
 	public enum AtlasAccessorTypes {
-        USER, GROUP;
+        USER, GROUP
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAtlasAuthorizer.class);
@@ -133,8 +133,8 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                 + "\nResource :: " + resource);
 
         boolean isAccessAllowed = false;
-        boolean isUser = user == null ? false : true;
-        boolean isGroup = groups == null ? false : true;
+        boolean isUser = user != null;
+        boolean isGroup = groups != null;
 
         if ((!isUser && !isGroup) || action == null || resource == null) {
             if (isDebugEnabled) {
@@ -149,26 +149,22 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                 case READ:
                     isAccessAllowed = checkAccess(user, resourceTypes, resource, userReadMap);
                     isAccessAllowed =
-                        isAccessAllowed == false ? checkAccessForGroups(groups, resourceTypes, resource, groupReadMap)
-                            : isAccessAllowed;
+                            isAccessAllowed || checkAccessForGroups(groups, resourceTypes, resource, groupReadMap);
                     break;
                 case CREATE:
                     isAccessAllowed = checkAccess(user, resourceTypes, resource, userWriteMap);
                     isAccessAllowed =
-                        isAccessAllowed == false ? checkAccessForGroups(groups, resourceTypes, resource, groupWriteMap)
-                            : isAccessAllowed;
+                            isAccessAllowed || checkAccessForGroups(groups, resourceTypes, resource, groupWriteMap);
                     break;
                 case UPDATE:
                     isAccessAllowed = checkAccess(user, resourceTypes, resource, userUpdateMap);
                     isAccessAllowed =
-                        isAccessAllowed == false
-                            ? checkAccessForGroups(groups, resourceTypes, resource, groupUpdateMap) : isAccessAllowed;
+                            isAccessAllowed || checkAccessForGroups(groups, resourceTypes, resource, groupUpdateMap);
                     break;
                 case DELETE:
                     isAccessAllowed = checkAccess(user, resourceTypes, resource, userDeleteMap);
                     isAccessAllowed =
-                        isAccessAllowed == false
-                            ? checkAccessForGroups(groups, resourceTypes, resource, groupDeleteMap) : isAccessAllowed;
+                            isAccessAllowed || checkAccessForGroups(groups, resourceTypes, resource, groupDeleteMap);
                     break;
                 default:
                     if (isDebugEnabled) {
@@ -249,7 +245,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
 
         boolean optWildCard = true;
 
-        List<String> policyValues = new ArrayList<String>();
+        List<String> policyValues = new ArrayList<>();
 
         if (policyResource != null) {
             boolean isWildCardPresent = !optWildCard;
@@ -302,8 +298,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (isMatch == false) {
-
+        if (!isMatch) {
             if (isDebugEnabled) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("[");
@@ -327,8 +322,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     private boolean isAllValuesRequested(String resource) {
-        boolean result = StringUtils.isEmpty(resource) || WILDCARD_ASTERISK.equals(resource);
-        return result;
+        return StringUtils.isEmpty(resource) || WILDCARD_ASTERISK.equals(resource);
     }
 
     @Override

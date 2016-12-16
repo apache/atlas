@@ -77,7 +77,7 @@ public class LocalLockMediator<T> {
      * according to {@link AuditRecord#expires}, in which case the lock should
      * be considered invalid.
      */
-    private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<KeyColumn, AuditRecord<T>>();
+    private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<>();
 
     public LocalLockMediator(String name, TimestampProvider times) {
         this.name = name;
@@ -125,7 +125,7 @@ public class LocalLockMediator<T> {
         assert null != kc;
         assert null != requestor;
 
-        AuditRecord<T> audit = new AuditRecord<T>(requestor, expires);
+        AuditRecord<T> audit = new AuditRecord<>(requestor, expires);
         AuditRecord<T> inmap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
@@ -134,7 +134,7 @@ public class LocalLockMediator<T> {
             // Uncontended lock succeeded
             if (log.isTraceEnabled()) {
                 log.trace("New local lock created: {} namespace={} txn={}",
-                    new Object[]{kc, name, requestor});
+                        kc, name, requestor);
             }
             success = true;
         } else if (inmap.equals(audit)) {
@@ -144,13 +144,13 @@ public class LocalLockMediator<T> {
                 if (success) {
                     log.trace(
                         "Updated local lock expiration: {} namespace={} txn={} oldexp={} newexp={}",
-                        new Object[]{kc, name, requestor, inmap.expires,
-                            audit.expires});
+                            kc, name, requestor, inmap.expires,
+                            audit.expires);
                 } else {
                     log.trace(
                         "Failed to update local lock expiration: {} namespace={} txn={} oldexp={} newexp={}",
-                        new Object[]{kc, name, requestor, inmap.expires,
-                            audit.expires});
+                            kc, name, requestor, inmap.expires,
+                            audit.expires);
                 }
             }
         } else if (0 > inmap.expires.compareTo(times.getTime())) {
@@ -159,14 +159,14 @@ public class LocalLockMediator<T> {
             if (log.isTraceEnabled()) {
                 log.trace(
                     "Discarding expired lock: {} namespace={} txn={} expired={}",
-                    new Object[]{kc, name, inmap.holder, inmap.expires});
+                        kc, name, inmap.holder, inmap.expires);
             }
         } else {
             // we lost to a valid lock
             if (log.isTraceEnabled()) {
                 log.trace(
                     "Local lock failed: {} namespace={} txn={} (already owned by {})",
-                    new Object[]{kc, name, requestor, inmap});
+                        kc, name, requestor, inmap);
             }
         }
 
@@ -190,13 +190,13 @@ public class LocalLockMediator<T> {
             return false;
         }
 
-        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, null);
+        AuditRecord<T> unlocker = new AuditRecord<>(requestor, null);
 
         AuditRecord<T> holder = locks.get(kc);
 
         if (!holder.equals(unlocker)) {
             log.error("Local unlock of {} by {} failed: it is held by {}",
-                new Object[]{kc, unlocker, holder});
+                    kc, unlocker, holder);
             return false;
         }
 
@@ -206,7 +206,7 @@ public class LocalLockMediator<T> {
             expiryQueue.remove(kc);
             if (log.isTraceEnabled()) {
                 log.trace("Local unlock succeeded: {} namespace={} txn={}",
-                    new Object[]{kc, name, requestor});
+                        kc, name, requestor);
             }
         } else {
             log.warn("Local unlock warning: lock record for {} disappeared "

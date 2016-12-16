@@ -74,7 +74,7 @@ public class SerializationJavaTest extends BaseTest {
                 new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
         HierarchicalTypeDefinition<ClassType> managerTypeDef =
-                createClassTypeDef("Manager", ImmutableSet.<String>of("Person"),
+                createClassTypeDef("Manager", ImmutableSet.of("Person"),
                         new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
                                 Multiplicity.COLLECTION, false, "manager"));
 
@@ -98,9 +98,9 @@ public class SerializationJavaTest extends BaseTest {
 
         john.set("manager", jane);
 
-        hrDept.set("employees", ImmutableList.<Referenceable>of(john, jane));
+        hrDept.set("employees", ImmutableList.of(john, jane));
 
-        jane.set("subordinates", ImmutableList.<Referenceable>of(john));
+        jane.set("subordinates", ImmutableList.of(john));
 
         jane.getTrait("SecurityClearance").set("level", 1);
 

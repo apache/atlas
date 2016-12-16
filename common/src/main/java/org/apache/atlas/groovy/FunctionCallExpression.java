@@ -32,7 +32,7 @@ public class FunctionCallExpression extends AbstractGroovyExpression {
     private GroovyExpression target;
 
     private String functionName;
-    private List<GroovyExpression> arguments = new ArrayList<GroovyExpression>();
+    private List<GroovyExpression> arguments = new ArrayList<>();
 
     public FunctionCallExpression(String functionName, List<? extends GroovyExpression> arguments) {
         this.target = null;

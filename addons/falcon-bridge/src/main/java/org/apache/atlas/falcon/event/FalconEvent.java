@@ -20,8 +20,6 @@ package org.apache.atlas.falcon.event;
 
 import org.apache.falcon.entity.v0.Entity;
 
-import java.util.Date;
-
 /**
  * Falcon event to interface with Atlas Service.
  */

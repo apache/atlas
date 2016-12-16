@@ -29,7 +29,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,7 @@ public class EntityMutationResponse {
 
     public void addEntity(EntityMutations.EntityOperation op, AtlasEntityHeader header) {
         if (entitiesMutated == null) {
-            entitiesMutated = new HashMap<EntityMutations.EntityOperation, List<AtlasEntityHeader>>();
+            entitiesMutated = new HashMap<>();
         }
 
         if (entitiesMutated != null && entitiesMutated.get(op) == null) {

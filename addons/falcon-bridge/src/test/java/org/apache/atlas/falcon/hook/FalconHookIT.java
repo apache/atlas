@@ -178,7 +178,7 @@ public class FalconHookIT {
 
         String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
         Referenceable pathEntity = atlasClient.getEntity(inputId);
-        assertEquals(pathEntity.getTypeName(), HiveMetaStoreBridge.HDFS_PATH.toString());
+        assertEquals(pathEntity.getTypeName(), HiveMetaStoreBridge.HDFS_PATH);
 
         List<Location> locations = FeedHelper.getLocations(feedCluster, feed);
         Location dataLocation = FileSystemStorage.getLocation(locations, LocationType.DATA);

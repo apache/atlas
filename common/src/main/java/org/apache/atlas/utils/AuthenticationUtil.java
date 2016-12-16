@@ -46,13 +46,7 @@ public final class AuthenticationUtil {
     }
 
     public static boolean isKerberosAuthenticationEnabled(Configuration atlasConf) {
-        boolean isKerberosAuthenticationEnabled;
-        if ("true".equalsIgnoreCase(atlasConf.getString("atlas.authentication.method.kerberos"))) {
-            isKerberosAuthenticationEnabled = true;
-        } else {
-            isKerberosAuthenticationEnabled = false;
-        }
-        return isKerberosAuthenticationEnabled;
+        return atlasConf.getBoolean("atlas.authentication.method.kerberos", false);
     }
 
     public static String[] getBasicAuthenticationInput() {

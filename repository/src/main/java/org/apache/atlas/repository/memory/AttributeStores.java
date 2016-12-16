@@ -100,7 +100,7 @@ public class AttributeStores {
         AbstractAttributeStore(AttributeInfo attrInfo) {
             this.attrInfo = attrInfo;
             this.nullList = new BooleanArrayList();
-            hiddenVals = new HashMap<Integer, Map<String, Object>>();
+            hiddenVals = new HashMap<>();
         }
 
         final void setNull(int pos, boolean flag) {
@@ -115,7 +115,7 @@ public class AttributeStores {
             List<String> attrNames = type.getNames(attrInfo);
             Map<String, Object> m = hiddenVals.get(pos);
             if (m == null) {
-                m = new HashMap<String, Object>();
+                m = new HashMap<>();
                 hiddenVals.put(pos, m);
             }
             for (int i = 2; i < attrNames.size(); i++) {
@@ -455,7 +455,7 @@ public class AttributeStores {
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
             while (list.size() < pos + 1) {
-                list.add((T) null);
+                list.add(null);
             }
             nullList.size(pos + 1);
         }

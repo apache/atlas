@@ -94,9 +94,9 @@ public class StructType extends AbstractDataType<IStruct> implements IConstructa
     protected FieldMapping constructFieldMapping(AttributeInfo... fields)
     throws AtlasException {
 
-        Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
-        Map<String, Integer> fieldPos = new HashMap<String, Integer>();
-        Map<String, Integer> fieldNullPos = new HashMap<String, Integer>();
+        Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<>();
+        Map<String, Integer> fieldPos = new HashMap<>();
+        Map<String, Integer> fieldNullPos = new HashMap<>();
         int numBools = 0;
         int numBytes = 0;
         int numShorts = 0;

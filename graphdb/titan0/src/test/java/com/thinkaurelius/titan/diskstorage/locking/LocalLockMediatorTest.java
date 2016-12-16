@@ -39,13 +39,13 @@ public class LocalLockMediatorTest {
     public void testLock() throws InterruptedException {
         TimestampProvider times = Timestamps.MICRO;
         LocalLockMediator<HBaseTransaction> llm =
-            new LocalLockMediator<HBaseTransaction>(LOCK_NAMESPACE, times);
+                new LocalLockMediator<>(LOCK_NAMESPACE, times);
 
         //Expire immediately
         Assert.assertTrue(llm.lock(kc, mockTx1, times.getTime(0, TimeUnit.NANOSECONDS)));
         Assert.assertTrue(llm.lock(kc, mockTx2, times.getTime(Long.MAX_VALUE, TimeUnit.NANOSECONDS)));
 
-        llm = new LocalLockMediator<HBaseTransaction>(LOCK_NAMESPACE, times);
+        llm = new LocalLockMediator<>(LOCK_NAMESPACE, times);
 
         //Expire later
         Assert.assertTrue(llm.lock(kc, mockTx1, times.getTime(Long.MAX_VALUE, TimeUnit.NANOSECONDS)));

@@ -33,14 +33,14 @@ public class TestAtlasArrayType {
     private final Object[]       invalidValues;
 
     {
-        List<Integer> intList  = new ArrayList<Integer>();
-        Set<Integer>  intSet   = new HashSet<Integer>();
+        List<Integer> intList  = new ArrayList<>();
+        Set<Integer>  intSet   = new HashSet<>();
         Integer[]     intArray = new Integer[] { 1, 2, 3 };
-        List<Object>  objList  = new ArrayList<Object>();
-        Set<Object>   objSet   = new HashSet<Object>();
+        List<Object>  objList  = new ArrayList<>();
+        Set<Object>   objSet   = new HashSet<>();
         Object[]      objArray = new Object[] { 1, 2, 3 };
-        List<String>  strList  = new ArrayList<String>();
-        Set<String>   strSet   = new HashSet<String>();
+        List<String>  strList  = new ArrayList<>();
+        Set<String>   strSet   = new HashSet<>();
         String[]      strArray = new String[] { "1", "2", "3" };
 
         for (int i = 0; i < 10; i++) {
@@ -105,7 +105,7 @@ public class TestAtlasArrayType {
 
     @Test
     public void testArrayTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(intArrayType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

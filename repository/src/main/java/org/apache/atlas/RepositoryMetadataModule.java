@@ -101,9 +101,9 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         Configuration configuration = getConfiguration();
         bindAuditRepository(binder(), configuration);
 
-        bind(DeleteHandler.class).to((Class<? extends DeleteHandler>) AtlasRepositoryConfiguration.getDeleteHandlerImpl()).asEagerSingleton();
+        bind(DeleteHandler.class).to(AtlasRepositoryConfiguration.getDeleteHandlerImpl()).asEagerSingleton();
 
-        bind(TypeCache.class).to((Class<? extends TypeCache>) AtlasRepositoryConfiguration.getTypeCache()).asEagerSingleton();
+        bind(TypeCache.class).to(AtlasRepositoryConfiguration.getTypeCache()).asEagerSingleton();
 
         //Add EntityAuditListener as EntityChangeListener
         Multibinder<EntityChangeListener> entityChangeListenerBinder =

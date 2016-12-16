@@ -20,7 +20,6 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -146,11 +145,11 @@ public class AtlasClassificationType extends AtlasStructType {
     }
 
     public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
-        return classificationType != null ? classificationType.getAllSuperTypes().contains(this.getTypeName()) : false;
+        return classificationType != null && classificationType.getAllSuperTypes().contains(this.getTypeName());
     }
 
     public boolean isSubTypeOf(AtlasClassificationType classificationType) {
-        return classificationType != null ? allSuperTypes.contains(classificationType.getTypeName()) : false;
+        return classificationType != null && allSuperTypes.contains(classificationType.getTypeName());
     }
 
     @Override

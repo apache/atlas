@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.services.MetadataService;

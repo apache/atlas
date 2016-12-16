@@ -31,8 +31,8 @@ import static org.testng.Assert.*;
 
 public class TestAtlasClassificationType {
     private final AtlasClassificationType classificationType;
-    private final List<Object>            validValues        = new ArrayList<Object>();
-    private final List<Object>            invalidValues      = new ArrayList<Object>();
+    private final List<Object>            validValues        = new ArrayList<>();
+    private final List<Object>            invalidValues      = new ArrayList<>();
 
     {
         classificationType = getClassificationType(ModelTestUtil.getClassificationDefWithSuperTypes());
@@ -55,7 +55,7 @@ public class TestAtlasClassificationType {
         invalidValues.add(invalidValue2);
         invalidValues.add(invalidValue3);
         invalidValues.add(new AtlasClassification());     // no values for mandatory attributes
-        invalidValues.add(new HashMap<Object, Object>()); // no values for mandatory attributes
+        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
         invalidValues.add(1);               // incorrect datatype
         invalidValues.add(new HashSet());   // incorrect datatype
         invalidValues.add(new ArrayList()); // incorrect datatype
@@ -102,7 +102,7 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testClassificationTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(classificationType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

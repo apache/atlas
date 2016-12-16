@@ -95,7 +95,7 @@ public class TestAtlasByteType {
 
     @Test
     public void testByteTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(byteType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

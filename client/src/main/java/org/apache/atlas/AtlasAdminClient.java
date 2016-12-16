@@ -28,6 +28,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.Configuration;
 
+import java.util.Arrays;
+
 
 /**
  * An application that allows users to run admin commands against an Atlas server.
@@ -83,7 +85,7 @@ public class AtlasAdminClient {
                 System.out.println(atlasClient.getAdminStatus());
                 cmdStatus = 0;
             } catch (AtlasServiceException e) {
-                System.err.println("Could not retrieve status of the server at " + atlasServerUri);
+                System.err.println("Could not retrieve status of the server at " + Arrays.toString(atlasServerUri));
                 printStandardHttpErrorDetails(e);
             }
         } else {

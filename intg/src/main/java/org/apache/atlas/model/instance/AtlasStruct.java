@@ -119,7 +119,7 @@ public class AtlasStruct implements Serializable {
         if (a != null) {
             a.put(name, value);
         } else {
-            a = new HashMap<String, Object>();
+            a = new HashMap<>();
             a.put(name, value);
 
             this.attributes = a;
@@ -208,7 +208,7 @@ public class AtlasStruct implements Serializable {
         return sb;
     }
 
-    public static StringBuilder dumpObjects(Collection<? extends Object> objects, StringBuilder sb) {
+    public static StringBuilder dumpObjects(Collection<?> objects, StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
@@ -228,14 +228,14 @@ public class AtlasStruct implements Serializable {
         return sb;
     }
 
-    public static StringBuilder dumpObjects(Map<? extends Object, ? extends Object> objects, StringBuilder sb) {
+    public static StringBuilder dumpObjects(Map<?, ?> objects, StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
 
         if (MapUtils.isNotEmpty(objects)) {
             int i = 0;
-            for (Map.Entry<? extends Object, ? extends Object> e : objects.entrySet()) {
+            for (Map.Entry<?, ?> e : objects.entrySet()) {
                 if (i > 0) {
                     sb.append(", ");
                 }

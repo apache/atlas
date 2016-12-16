@@ -78,8 +78,8 @@ public class TestAtlasStructType {
         structDef.addAttribute(multiValuedAttribMax);
 
         structType    = getStructType(structDef);
-        validValues   = new ArrayList<Object>();
-        invalidValues = new ArrayList<Object>();
+        validValues   = new ArrayList<>();
+        invalidValues = new ArrayList<>();
 
         AtlasStruct invalidValue1 = structType.createDefaultValue();
         AtlasStruct invalidValue2 = structType.createDefaultValue();
@@ -121,7 +121,7 @@ public class TestAtlasStructType {
         invalidValues.add(invalidValue6);
         invalidValues.add(invalidValue7);
         invalidValues.add(new AtlasStruct());             // no values for mandatory attributes
-        invalidValues.add(new HashMap<Object, Object>()); // no values for mandatory attributes
+        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
         invalidValues.add(1);               // incorrect datatype
         invalidValues.add(new HashSet());   // incorrect datatype
         invalidValues.add(new ArrayList()); // incorrect datatype
@@ -168,7 +168,7 @@ public class TestAtlasStructType {
 
     @Test
     public void testStructTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(structType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

@@ -51,7 +51,7 @@ public class PolicyParser {
         if (isDebugEnabled) {
             LOG.debug("==> PolicyParser getListOfAutorities");
         }
-        List<AtlasActionTypes> authorities = new ArrayList<AtlasActionTypes>();
+        List<AtlasActionTypes> authorities = new ArrayList<>();
 
         for (int i = 0; i < auth.length(); i++) {
             char access = auth.toLowerCase().charAt(i);
@@ -86,7 +86,7 @@ public class PolicyParser {
         if (isDebugEnabled) {
             LOG.debug("==> PolicyParser parsePolicies");
         }
-        List<PolicyDef> policyDefs = new ArrayList<PolicyDef>();
+        List<PolicyDef> policyDefs = new ArrayList<>();
         for (String policy : policies) {
             PolicyDef policyDef = parsePolicy(policy);
             if (policyDef != null) {
@@ -129,7 +129,7 @@ public class PolicyParser {
         }
         boolean isValidEntity = Pattern.matches("(.+:.+)+", entity);
         boolean isEmpty = entity.isEmpty();
-        if (isValidEntity == false || isEmpty == true) {
+        if (!isValidEntity || isEmpty) {
             if (isDebugEnabled) {
                 LOG.debug("group/user/resource not properly define in Policy");
                 LOG.debug("<== PolicyParser validateEntity");
@@ -150,7 +150,7 @@ public class PolicyParser {
         }
         String[] users = usersDef.split(",");
         String[] userAndRole = null;
-        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<String, List<AtlasActionTypes>>();
+        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<>();
         if (validateEntity(usersDef)) {
             for (String user : users) {
                 if (!Pattern.matches("(.+:.+)+", user)) {
@@ -179,7 +179,7 @@ public class PolicyParser {
         }
         String[] groups = groupsDef.split("\\,");
         String[] groupAndRole = null;
-        Map<String, List<AtlasActionTypes>> groupsMap = new HashMap<String, List<AtlasActionTypes>>();
+        Map<String, List<AtlasActionTypes>> groupsMap = new HashMap<>();
         if (validateEntity(groupsDef.trim())) {
             for (String group : groups) {
                 if (!Pattern.matches("(.+:.+)+", group)) {
@@ -209,7 +209,7 @@ public class PolicyParser {
         }
         String[] resources = resourceDef.split(",");
         String[] resourceTypeAndName = null;
-        Map<AtlasResourceTypes, List<String>> resourcesMap = new HashMap<AtlasResourceTypes, List<String>>();
+        Map<AtlasResourceTypes, List<String>> resourcesMap = new HashMap<>();
         if (validateEntity(resourceDef)) {
             for (String resource : resources) {
                 if (!Pattern.matches("(.+:.+)+", resource)) {
@@ -238,7 +238,7 @@ public class PolicyParser {
 
                 List<String> resourceList = resourcesMap.get(resourceType);
                 if (resourceList == null) {
-                    resourceList = new ArrayList<String>();
+                    resourceList = new ArrayList<>();
                 }
                 resourceList.add(resourceTypeAndName[RESOURCE_NAME]);
                 resourcesMap.put(resourceType, resourceList);

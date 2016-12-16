@@ -18,6 +18,7 @@
 
 package org.apache.atlas.storm.hook;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.generated.Grouping;
@@ -82,8 +83,7 @@ public final class StormTopologyUtil {
                 components.add(boltName);
                 components = removeSystemComponent ? removeSystemComponents(components)
                         : components;
-                if ((removeSystemComponent && !isSystemComponent(inputComponentId)) ||
-                        !removeSystemComponent) {
+                if (!removeSystemComponent || !isSystemComponent(inputComponentId)) {
                     adjacencyMap.put(inputComponentId, components);
                 }
             }
@@ -132,7 +132,7 @@ public final class StormTopologyUtil {
                                                      Set<Object> objectsToSkip)
     throws IllegalAccessException {
         if (objectsToSkip == null) {
-            objectsToSkip = new HashSet<Object>();
+            objectsToSkip = new HashSet<>();
         }
 
         Map<String, String> output = new HashMap<>();
@@ -175,9 +175,7 @@ public final class StormTopologyUtil {
 
                                 String keyStr = getString(mapKey, false, objectsToSkip);
                                 String valStr = getString(mapVal, false, objectsToSkip);
-                                if ((valStr == null) || (valStr.isEmpty())) {
-                                    continue;
-                                } else {
+                                if (StringUtils.isNotEmpty(valStr)) {
                                     output.put(String.format("%s.%s", key, keyStr), valStr);
                                 }
                             }

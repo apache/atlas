@@ -215,8 +215,8 @@ public class HiveITBase {
     protected void validateHDFSPaths(Referenceable processReference, String attributeName, String... testPaths) throws Exception {
         List<Id> hdfsPathRefs = (List<Id>) processReference.get(attributeName);
 
-        for (int i = 0; i < testPaths.length; i++) {
-            final Path path = new Path(testPaths[i]);
+        for (String testPath : testPaths) {
+            final Path path = new Path(testPath);
             final String testPathNormed = lower(path.toString());
             String hdfsPathId = assertHDFSPathIsRegistered(testPathNormed);
             Assert.assertEquals(hdfsPathRefs.get(0)._getId(), hdfsPathId);

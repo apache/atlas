@@ -48,7 +48,7 @@ public class SearchFilter {
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.
      */
-    public enum SortType { NONE, ASC, DESC };
+    public enum SortType { NONE, ASC, DESC }
 
     private MultivaluedMap<String, String> params     = null;
     private long                startIndex = 0;

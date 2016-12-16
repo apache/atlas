@@ -147,7 +147,7 @@ public class SetupSteps {
         String serverId = getServerId(configuration);
         ACL acl = AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0));
-        List<ACL> acls = Arrays.asList(new ACL[]{acl});
+        List<ACL> acls = Arrays.asList(acl);
 
         CuratorFramework client = curatorFactory.clientInstance();
         try {

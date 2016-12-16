@@ -218,8 +218,8 @@ public final class GraphToTypedInstanceMapper {
 
         String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
         ArrayList values = new ArrayList();
-        for (int index = 0; index < list.size(); index++) {
-            values.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, list.get(index),
+        for (Object aList : list) {
+            values.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, aList,
                     edgeLabel));
         }
 

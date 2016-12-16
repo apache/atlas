@@ -20,10 +20,6 @@ package org.apache.atlas.catalog;
 
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.catalog.definition.EntityTagResourceDefinition;
-import org.apache.atlas.catalog.definition.ResourceDefinition;
-import org.apache.atlas.repository.Constants;
-
-import java.util.Collections;
 
 /**
  * Wrapper for term vertices.

@@ -37,11 +37,11 @@ public class TestAtlasObjectIdType {
     private final Object[] invalidValues;
 
     {
-        Map<String, String> objectId1 = new HashMap<String, String>();
-        Map<Object, Object> objectId2 = new HashMap<Object, Object>();
-        Map<Object, Object> objectId3 = new HashMap<Object, Object>();
-        Map<Object, Object> objectId4 = new HashMap<Object, Object>();
-        Map<Object, Object> objectId5 = new HashMap<Object, Object>();
+        Map<String, String> objectId1 = new HashMap<>();
+        Map<Object, Object> objectId2 = new HashMap<>();
+        Map<Object, Object> objectId3 = new HashMap<>();
+        Map<Object, Object> objectId4 = new HashMap<>();
+        Map<Object, Object> objectId5 = new HashMap<>();
 
         objectId1.put(AtlasObjectId.KEY_TYPENAME, "testType");
         objectId1.put(AtlasObjectId.KEY_GUID, "guid-1234");
@@ -107,7 +107,7 @@ public class TestAtlasObjectIdType {
 
     @Test
     public void testObjectIdTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(objectIdType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

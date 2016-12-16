@@ -103,7 +103,7 @@ public class TestAtlasEntityDef {
         AtlasEntityDef entityDef = ModelTestUtil.newEntityDefWithSuperTypes();
 
         Set<String> oldSuperTypes = entityDef.getSuperTypes();
-        Set<String> newSuperTypes = new HashSet<String>();
+        Set<String> newSuperTypes = new HashSet<>();
 
         newSuperTypes.add("newType-abcd-1234");
 

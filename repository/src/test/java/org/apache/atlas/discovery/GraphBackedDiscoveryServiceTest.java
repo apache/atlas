@@ -88,7 +88,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         super.setUp();
 
         final TypeSystem typeSystem = TypeSystem.getInstance();
-        Collection<String> oldTypeNames = new HashSet<String>();
+        Collection<String> oldTypeNames = new HashSet<>();
         oldTypeNames.addAll(typeSystem.getTypeNames());
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);
@@ -111,7 +111,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         newTypeNames.addAll(typeSystem.getTypeNames());
         newTypeNames.removeAll(oldTypeNames);
 
-        Collection<IDataType> newTypes = new ArrayList<IDataType>();
+        Collection<IDataType> newTypes = new ArrayList<>();
         for(String name : newTypeNames) {
             try {
                 newTypes.add(typeSystem.getDataType(IDataType.class, name));
@@ -294,7 +294,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         resultList = (List<Map<String, Object>>) r;
         Assert.assertTrue(resultList.size() > 0);
         System.out.println("search result = " + r);
-        List<Object> names = new ArrayList<Object>(resultList.size());
+        List<Object> names = new ArrayList<>(resultList.size());
         for (Map<String, Object> vertexProps : resultList) {
             names.addAll(vertexProps.values());
         }
@@ -884,7 +884,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
         assertNotNull(rows);
         assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
-        List<String> returnedList = new ArrayList<String> ();
+        List<String> returnedList = new ArrayList<>();
         for (int i = 0; i < rows.length(); i++) {
             JSONObject row = rows.getJSONObject(i);
             try
@@ -953,7 +953,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
         JSONArray rows = results.getJSONArray("rows");
         assertNotNull(rows);
-        assertEquals( rows.length(), expectedNumRows.intValue(), "query [" + dslQuery + "] returned [" + rows.length() + "] rows.  Expected " + expectedNumRows.intValue() + " rows."); // some queries may not have any results
+        assertEquals( rows.length(), expectedNumRows.intValue(), "query [" + dslQuery + "] returned [" + rows.length() + "] rows.  Expected " + expectedNumRows + " rows."); // some queries may not have any results
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
 

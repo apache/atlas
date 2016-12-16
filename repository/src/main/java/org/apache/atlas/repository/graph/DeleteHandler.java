@@ -202,8 +202,7 @@ public abstract class DeleteHandler {
                                     boolean forceDeleteStructTrait) throws AtlasException {
         LOG.debug("Deleting {}", string(edge));
         boolean forceDelete =
-                (typeCategory == DataTypes.TypeCategory.STRUCT || typeCategory == DataTypes.TypeCategory.TRAIT)
-                        ? forceDeleteStructTrait : false;
+                (typeCategory == DataTypes.TypeCategory.STRUCT || typeCategory == DataTypes.TypeCategory.TRAIT) && forceDeleteStructTrait;
         if (typeCategory == DataTypes.TypeCategory.STRUCT || typeCategory == DataTypes.TypeCategory.TRAIT
                 || (typeCategory == DataTypes.TypeCategory.CLASS && isComposite)) {
             //If the vertex is of type struct/trait, delete the edge and then the reference vertex as the vertex is not shared by any other entities.
@@ -249,10 +248,8 @@ public abstract class DeleteHandler {
     protected void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasException {
         //Update external references(incoming edges) to this vertex
         LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
-        Iterator<AtlasEdge> edges = instanceVertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
-        while(edges.hasNext()) {
-            AtlasEdge edge = edges.next();
+        for (AtlasEdge edge : (Iterable<AtlasEdge>) instanceVertex.getEdges(AtlasEdgeDirection.IN)) {
             Id.EntityState edgeState = GraphHelper.getState(edge);
             if (edgeState == Id.EntityState.ACTIVE) {
                 //Delete only the active edge references

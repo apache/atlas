@@ -41,8 +41,8 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
 
     public ObjectGraphTraversal(TypeSystem typeSystem, IReferenceableInstance start) throws AtlasException {
         this.typeSystem = typeSystem;
-        queue = new LinkedList<InstanceTuple>();
-        processedIds = new HashSet<Id>();
+        queue = new LinkedList<>();
+        processedIds = new HashSet<>();
         processReferenceableInstance(start);
     }
 

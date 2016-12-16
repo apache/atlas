@@ -101,9 +101,9 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         }
 
         if (CollectionUtils.isEmpty(superTypes)) {
-            this.superTypes = new HashSet<String>();
+            this.superTypes = new HashSet<>();
         } else {
-            this.superTypes = new HashSet<String>(superTypes);
+            this.superTypes = new HashSet<>(superTypes);
         }
     }
 
@@ -115,7 +115,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         Set<String> s = this.superTypes;
 
         if (!hasSuperType(s, typeName)) {
-            s = new HashSet<String>(s);
+            s = new HashSet<>(s);
 
             s.add(typeName);
 
@@ -127,7 +127,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         Set<String> s = this.superTypes;
 
         if (hasSuperType(s, typeName)) {
-            s = new HashSet<String>(s);
+            s = new HashSet<>(s);
 
             s.remove(typeName);
 

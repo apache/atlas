@@ -32,9 +32,9 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
  * Util class for Properties.
  */
 public final class PropertiesUtil extends PropertyPlaceholderConfigurer {
-    private static Map<String, String> propertiesMap = new HashMap<String, String>();
+    private static Map<String, String> propertiesMap = new HashMap<>();
     private static Logger logger = Logger.getLogger(PropertiesUtil.class);
-    protected List<String> xmlPropertyConfigurer = new ArrayList<String>();
+    protected List<String> xmlPropertyConfigurer = new ArrayList<>();
 
     private PropertiesUtil() {
 

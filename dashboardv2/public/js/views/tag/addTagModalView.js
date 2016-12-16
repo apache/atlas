@@ -103,11 +103,11 @@ define(['require',
                 this.tagsCollection();
             }, this);
             this.listenTo(this.commonCollection, 'reset', function() {
-                --this.asyncAttrFetchCounter
+                --this.asyncAttrFetchCounter;
                 this.subAttributeData();
             }, this);
             this.listenTo(this.commonCollection, 'error', function() {
-                --this.asyncAttrFetchCounter
+                --this.asyncAttrFetchCounter;
                 this.$('.attrLoader').hide();
             }, this);
         },

@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Module;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 public class TestGuiceServletConfig extends GuiceServletConfig {
 

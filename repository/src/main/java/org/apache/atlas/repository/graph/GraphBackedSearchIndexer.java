@@ -549,7 +549,7 @@ public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateCh
 
         if (existingIndex == null) {
             
-            List<AtlasPropertyKey> keys = new ArrayList<AtlasPropertyKey>(2);
+            List<AtlasPropertyKey> keys = new ArrayList<>(2);
             keys.add(propertyKey);
             keys.add(typePropertyKey);
             management.createExactMatchIndex(indexName, false, keys);

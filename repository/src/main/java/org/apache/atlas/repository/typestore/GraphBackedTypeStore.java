@@ -284,9 +284,7 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     private ImmutableSet<String> getSuperTypes(AtlasVertex vertex) {
         Set<String> superTypes = new HashSet<>();
-        Iterator<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT, SUPERTYPE_EDGE_LABEL).iterator();
-        while (edges.hasNext()) {
-            AtlasEdge edge = edges.next();
+        for (AtlasEdge edge : (Iterable<AtlasEdge>) vertex.getEdges(AtlasEdgeDirection.OUT, SUPERTYPE_EDGE_LABEL)) {
             superTypes.add(edge.getInVertex().getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class));
         }
         return ImmutableSet.copyOf(superTypes);

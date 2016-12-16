@@ -40,7 +40,7 @@ public class PolicyUtil {
                 + " & " + principalType);
         }
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap =
-            new HashMap<String, Map<AtlasResourceTypes, List<String>>>();
+                new HashMap<>();
 
         // Iterate over the list of policies to create map
         for (PolicyDef policyDef : policyDefList) {
@@ -63,7 +63,7 @@ public class PolicyUtil {
                     if (isDebugEnabled) {
                         LOG.debug("Resource list not found for " + username + ", creating it");
                     }
-                    userResourceList = new HashMap<AtlasResourceTypes, List<String>>();
+                    userResourceList = new HashMap<>();
                 }
                 /*
                  * Iterate over resources from the current policy def and update the resource list for the current user
@@ -77,7 +77,7 @@ public class PolicyUtil {
                     if (resourceList == null) {
                         // if the resource list was not added for this type then
                         // create and add all the resources in this policy
-                        resourceList = new ArrayList<String>();
+                        resourceList = new ArrayList<>();
                         resourceList.addAll(resourceTypeMap.getValue());
                     } else {
                         // if the resource list is present then merge both the

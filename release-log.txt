@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1304 Redundant code removal and code simplification (apoorvnaik via mneethiraj)
 ATLAS-1345 Enhance search APIs to resolve hierarchical references (apoorvnaik via sumasai)
 ATLAS-1287 Subtasks: ATLAS-1288/ATLAS-1289 Integrated V2 API for Lineage,Entity Details,Tag assign to entity,Tags listing,tag create (kevalbhatt)
 ATLAS-1303 Update hashCode and equals method to use standard JDK libraries (apoorvnaik via svimal2106)

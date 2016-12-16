@@ -30,8 +30,6 @@ import org.testng.annotations.Test;
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
-import static org.easymock.EasyMock.createStrictMock;
-import static org.easymock.EasyMock.replay;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;

@@ -74,8 +74,8 @@ public class GraphHelperMockTest {
         when(v2.getEdges(AtlasEdgeDirection.IN)).thenReturn(noEdgesIterable);
         when(v1.getEdges(AtlasEdgeDirection.OUT)).thenReturn(noEdgesIterable);
 
-        when(v1.getId()).thenReturn(new String("1234"));
-        when(v2.getId()).thenReturn(new String("5678"));
+        when(v1.getId()).thenReturn("1234");
+        when(v2.getId()).thenReturn("5678");
         when(graph.addEdge(v1, v2, edgeLabel)).thenThrow(new RuntimeException("Unique property constraint violated"));
         graphHelperInstance.getOrCreateEdge(v1, v2, edgeLabel);
     }
@@ -110,9 +110,9 @@ public class GraphHelperMockTest {
         when(v2.getEdges(AtlasEdgeDirection.IN)).thenReturn(noEdgesIterable);
         when(v1.getEdges(AtlasEdgeDirection.OUT)).thenReturn(noEdgesIterable);
 
-        when(v1.getId()).thenReturn(new String("v1"));
-        when(v2.getId()).thenReturn(new String("v2"));
-        when(edge.getId()).thenReturn(new String("edge"));
+        when(v1.getId()).thenReturn("v1");
+        when(v2.getId()).thenReturn("v2");
+        when(edge.getId()).thenReturn("edge");
         when(graph.addEdge(v1, v2, edgeLabel))
                 .thenThrow(new RuntimeException("Unique property constraint violated")).thenReturn(edge);
         AtlasEdge redge = graphHelperInstance.getOrCreateEdge(v1, v2, edgeLabel);

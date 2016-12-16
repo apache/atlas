@@ -57,7 +57,7 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
                 bigIntegers, dates, strings, arrays, maps, structs, referenceableInstances, ids);
         this.id = id;
         this.traits = traits;
-        ImmutableList.Builder<String> b = new ImmutableList.Builder<String>();
+        ImmutableList.Builder<String> b = new ImmutableList.Builder<>();
         for (String t : traits.keySet()) {
             b.add(t);
         }

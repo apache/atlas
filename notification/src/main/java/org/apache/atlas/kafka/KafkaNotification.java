@@ -277,7 +277,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     protected <T> org.apache.atlas.kafka.KafkaConsumer<T>
     createKafkaConsumer(Class<T> type, MessageDeserializer<T> deserializer, KafkaStream stream,
                         int consumerId, ConsumerConnector consumerConnector, boolean autoCommitEnabled) {
-        return new org.apache.atlas.kafka.KafkaConsumer<T>(deserializer, stream,
+        return new org.apache.atlas.kafka.KafkaConsumer<>(deserializer, stream,
                 consumerId, consumerConnector, autoCommitEnabled);
     }
 

@@ -231,7 +231,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                     String clientId = tokenizer.nextToken();
                     SortedSet<Integer> indexList = jaasClients.get(clientId);
                     if (indexList == null) {
-                        indexList = new TreeSet<Integer>();
+                        indexList = new TreeSet<>();
                         jaasClients.put(clientId, indexList);
                     }
                     String indexStr = tokenizer.nextToken();
@@ -275,20 +275,26 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 AppConfigurationEntry.LoginModuleControlFlag loginControlFlag = null;
                 if (controlFlag != null) {
                     controlFlag = controlFlag.trim().toLowerCase();
-                    if (controlFlag.equals("optional")) {
-                        loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.OPTIONAL;
-                    } else if (controlFlag.equals("requisite")) {
-                        loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUISITE;
-                    } else if (controlFlag.equals("sufficient")) {
-                        loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT;
-                    } else if (controlFlag.equals("required")) {
-                        loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
-                    } else {
-                        String validValues = "optional|requisite|sufficient|required";
-                        LOG.warn("Unknown JAAS configuration value for (" + keyParam
-                                + ") = [" + controlFlag + "], valid value are [" + validValues
-                                + "] using the default value, REQUIRED");
-                        loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
+                    switch (controlFlag) {
+                        case "optional":
+                            loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.OPTIONAL;
+                            break;
+                        case "requisite":
+                            loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUISITE;
+                            break;
+                        case "sufficient":
+                            loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT;
+                            break;
+                        case "required":
+                            loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
+                            break;
+                        default:
+                            String validValues = "optional|requisite|sufficient|required";
+                            LOG.warn("Unknown JAAS configuration value for (" + keyParam
+                                    + ") = [" + controlFlag + "], valid value are [" + validValues
+                                    + "] using the default value, REQUIRED");
+                            loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
+                            break;
                     }
                 } else {
                     LOG.warn("Unable to find JAAS configuration ("
@@ -336,7 +342,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
 
                 List<AppConfigurationEntry> retList =  applicationConfigEntryMap.get(jaasClient);
                 if (retList == null) {
-                    retList = new ArrayList<AppConfigurationEntry>();
+                    retList = new ArrayList<>();
                     applicationConfigEntryMap.put(jaasClient, retList);
                 }
 

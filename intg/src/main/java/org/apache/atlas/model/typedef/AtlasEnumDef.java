@@ -107,11 +107,11 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         if (CollectionUtils.isEmpty(elementDefs)) {
-            this.elementDefs = new ArrayList<AtlasEnumElementDef>();
+            this.elementDefs = new ArrayList<>();
         } else {
             // if multiple elements with same value are present, keep only the last entry
-            List<AtlasEnumElementDef> tmpList       = new ArrayList<AtlasEnumElementDef>(elementDefs.size());
-            Set<String>               elementValues = new HashSet<String>();
+            List<AtlasEnumElementDef> tmpList       = new ArrayList<>(elementDefs.size());
+            Set<String>               elementValues = new HashSet<>();
 
             ListIterator<AtlasEnumElementDef> iter = elementDefs.listIterator(elementDefs.size());
             while (iter.hasPrevious()) {
@@ -149,7 +149,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     public void addElement(AtlasEnumElementDef elementDef) {
         List<AtlasEnumElementDef> e = this.elementDefs;
 
-        List<AtlasEnumElementDef> tmpList = new ArrayList<AtlasEnumElementDef>();
+        List<AtlasEnumElementDef> tmpList = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(e)) {
             // copy existing elements, except ones having same value as the element being added
             for (AtlasEnumElementDef existingElem : e) {
@@ -168,7 +168,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
 
         // if element doesn't exist, no need to create the tmpList below
         if (hasElement(e, elemValue)) {
-            List<AtlasEnumElementDef> tmpList = new ArrayList<AtlasEnumElementDef>();
+            List<AtlasEnumElementDef> tmpList = new ArrayList<>();
 
             // copy existing elements, except ones having same value as the element being removed
             for (AtlasEnumElementDef existingElem : e) {

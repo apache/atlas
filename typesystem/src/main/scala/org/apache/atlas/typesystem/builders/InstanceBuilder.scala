@@ -69,7 +69,7 @@ object DynamicValue {
       if ( s != null ) {
         new DynamicCollection(ib, attr, s)
       } else {
-        new DynamicValue(ib, attr, s, jL.map{ e => transformOut(null, null, e)}.toSeq)
+        new DynamicValue(ib, attr, s, jL.map { e => transformOut(null, null, e) })
       }
     }
     case jM : java.util.Map[_,_] => {

@@ -106,7 +106,7 @@ public class AttributeInfo {
                 Objects.equals(name, that.name) &&
                 Objects.equals(multiplicity, that.multiplicity) &&
                 Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
-                Objects.equals(dataType, that.dataType);
+                dataType == null ? that.dataType == null : Objects.equals(dataType.getName(), that.dataType.getName());
     }
 
     public String toJson() throws JSONException {

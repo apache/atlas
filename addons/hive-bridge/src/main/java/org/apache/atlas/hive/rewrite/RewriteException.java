@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.hive.rewrite;
 
-import org.apache.hadoop.hive.ql.parse.ParseException;
-
 public class RewriteException extends Exception {
     public RewriteException(final String message, final Exception exception) {
         super(message, exception);

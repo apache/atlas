@@ -148,10 +148,10 @@ class TypesBuilder {
 
   def types(f : => Unit ) : TypesDef = {
     f
-    TypesDef(context.value.enums.toSeq,
-      context.value.structs.toSeq,
-      context.value.traits.toSeq,
-      context.value.classes.toSeq)
+    TypesDef(context.value.enums,
+      context.value.structs,
+      context.value.traits,
+      context.value.classes)
   }
 
   def _class(name : String, superTypes : List[String] = List())(f : => Unit): Unit = {

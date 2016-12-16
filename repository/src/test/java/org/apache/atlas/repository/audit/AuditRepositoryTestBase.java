@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.audit;
 
-import junit.framework.Assert;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.RandomStringUtils;

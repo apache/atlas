@@ -19,6 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -98,15 +99,13 @@ public class AtlasCSRFPreventionFilter implements Filter {
 	
 	void parseMethodsToIgnore(String mti) {
         String[] methods = mti.split(",");
-        methodsToIgnore = new HashSet<String>();
-        for (int i = 0; i < methods.length; i++) {
-          methodsToIgnore.add(methods[i]);
-        }
+        methodsToIgnore = new HashSet<>();
+		Collections.addAll(methodsToIgnore, methods);
 	}
 	
 	void parseBrowserUserAgents(String userAgents) {
 		String[] agentsArray = userAgents.split(",");
-		browserUserAgents = new HashSet<Pattern>();
+		browserUserAgents = new HashSet<>();
 		for (String patternString : agentsArray) {
 			browserUserAgents.add(Pattern.compile(patternString));
 		}

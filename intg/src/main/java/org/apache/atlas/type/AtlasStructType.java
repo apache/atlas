@@ -51,7 +51,7 @@ public class AtlasStructType extends AtlasType {
 
     private Map<String, AtlasType>         attrTypes               = Collections.emptyMap();
     private Set<String>                    foreignKeyAttributes    = new HashSet<>();
-    private Map<String, TypeAttributePair> mappedFromRefAttributes = new HashMap<String, TypeAttributePair>();
+    private Map<String, TypeAttributePair> mappedFromRefAttributes = new HashMap<>();
 
 
     public AtlasStructType(AtlasStructDef structDef) {
@@ -101,7 +101,7 @@ public class AtlasStructType extends AtlasType {
 
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        Map<String, AtlasType> a = new HashMap<String, AtlasType>();
+        Map<String, AtlasType> a = new HashMap<>();
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
             AtlasType attrType = typeRegistry.getType(attributeDef.getTypeName());
@@ -275,7 +275,7 @@ public class AtlasStructType extends AtlasType {
             Map<String, Object> attributes = obj.getAttributes();
 
             if (attributes == null) {
-                attributes = new HashMap<String, Object>();
+                attributes = new HashMap<>();
             }
 
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -348,13 +348,16 @@ public class AtlasStructType extends AtlasType {
                 continue;
             }
 
-            if (constraintType.equals(AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY)) {
-                resolveForeignKeyConstraint(attribDef, constraintDef, attribType);
-            } else if (constraintType.equals(CONSTRAINT_TYPE_MAPPED_FROM_REF)) {
-                resolveMappedFromRefConstraint(attribDef, constraintDef, attribType);
-            } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CONSTRAINT, constraintType,
-                        getTypeName(), attribDef.getName());
+            switch (constraintType) {
+                case AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY:
+                    resolveForeignKeyConstraint(attribDef, constraintDef, attribType);
+                    break;
+                case CONSTRAINT_TYPE_MAPPED_FROM_REF:
+                    resolveMappedFromRefConstraint(attribDef, constraintDef, attribType);
+                    break;
+                default:
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CONSTRAINT, constraintType,
+                            getTypeName(), attribDef.getName());
             }
         }
     }

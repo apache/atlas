@@ -93,7 +93,7 @@ public class TestAtlasEnumDef {
         AtlasEnumDef enumDef = ModelTestUtil.newEnumDef();
 
         List<AtlasEnumElementDef> oldElements = enumDef.getElementDefs();
-        List<AtlasEnumElementDef> newElements = new ArrayList<AtlasEnumElementDef>();
+        List<AtlasEnumElementDef> newElements = new ArrayList<>();
 
         newElements.add(new AtlasEnumElementDef("newElement", "new Element", 100));
 

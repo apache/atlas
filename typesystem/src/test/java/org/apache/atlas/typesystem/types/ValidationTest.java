@@ -17,7 +17,6 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
@@ -75,14 +74,12 @@ public class ValidationTest {
     @Test(dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testClassType(String name) {
         AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
-        ;
         TypesUtil.createClassTypeDef(name, ImmutableSet.of("super"), value);
     }
 
     @Test(dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testTraitType(String name) {
         AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
-        ;
         TypesUtil.createTraitTypeDef(name, ImmutableSet.of("super"), value);
     }
 

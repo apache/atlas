@@ -119,73 +119,73 @@ public class Solr5Index implements IndexProvider {
     public static final ConfigNamespace SOLR_NS =
             new ConfigNamespace(GraphDatabaseConfiguration.INDEX_NS, "solr", "Solr index configuration");
 
-    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(SOLR_NS,"mode",
+    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<>(SOLR_NS, "mode",
             "The operation mode for Solr which is either via HTTP (`http`) or using SolrCloud (`cloud`)",
             ConfigOption.Type.GLOBAL_OFFLINE, "cloud");
 
-    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<Boolean>(SOLR_NS,"dyn-fields",
+    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<>(SOLR_NS, "dyn-fields",
             "Whether to use dynamic fields (which appends the data type to the field name). If dynamic fields is disabled" +
                     "the user must map field names and define them explicitly in the schema.",
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 
-    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(SOLR_NS,"key-field-names",
+    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<>(SOLR_NS, "key-field-names",
             "Field name that uniquely identifies each document in Solr. Must be specified as a list of `collection=field`.",
             ConfigOption.Type.GLOBAL, String[].class);
 
-    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(SOLR_NS,"ttl_field",
+    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<>(SOLR_NS, "ttl_field",
             "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
     /** SolrCloud Configuration */
 
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
+    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS, "zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
             ConfigOption.Type.MASKABLE, "localhost:2181");
 
-    public static final ConfigOption<Integer> ZOOKEEPER_CONNECT_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"zookeeper-connect-timeout",
+    public static final ConfigOption<Integer> ZOOKEEPER_CONNECT_TIMEOUT = new ConfigOption<>(SOLR_NS,"zookeeper-connect-timeout",
         "SolrCloud Zookeeper connect timeout",
         ConfigOption.Type.MASKABLE, 60000);
 
-    public static final ConfigOption<Integer> ZOOKEEPER_SESSION_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"zookeeper-session-timeout",
+    public static final ConfigOption<Integer> ZOOKEEPER_SESSION_TIMEOUT = new ConfigOption<>(SOLR_NS,"zookeeper-session-timeout",
         "SolrCloud Zookeeper session timeout",
         ConfigOption.Type.MASKABLE, 60000);
 
-    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
+    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<>(SOLR_NS,"num-shards",
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(SOLR_NS,"max-shards-per-node",
+    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<>(SOLR_NS, "max-shards-per-node",
             "Maximum number of shards per node. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(SOLR_NS,"replication-factor",
+    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<>(SOLR_NS, "replication-factor",
             "Replication factor for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
 
     /** HTTP Configuration */
 
-    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(SOLR_NS,"http-urls",
+    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<>(SOLR_NS, "http-urls",
             "List of URLs to use to connect to Solr Servers (LBHttpSolrClient is used), don't add core or collection name to the URL.",
-            ConfigOption.Type.MASKABLE, new String[] { "http://localhost:8983/solr" });
+            ConfigOption.Type.MASKABLE, new String[]{"http://localhost:8983/solr"});
 
-    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"http-connection-timeout",
+    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<>(SOLR_NS, "http-connection-timeout",
             "Solr HTTP connection timeout.",
             ConfigOption.Type.MASKABLE, 5000);
 
-    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<Boolean>(SOLR_NS,"http-compression",
+    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<>(SOLR_NS, "http-compression",
             "Enable/disable compression on the HTTP connections made to Solr.",
             ConfigOption.Type.MASKABLE, false);
 
-    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(SOLR_NS,"http-max-per-host",
+    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(SOLR_NS, "http-max-per-host",
             "Maximum number of HTTP connections per Solr host.",
             ConfigOption.Type.MASKABLE, 20);
 
-    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<Integer>(SOLR_NS,"http-max",
+    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<>(SOLR_NS, "http-max",
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.MASKABLE, 100);
 
-    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<Boolean>(SOLR_NS, "wait-searcher",
+    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<>(SOLR_NS, "wait-searcher",
             "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
             ConfigOption.Type.LOCAL, false);
 
@@ -245,7 +245,7 @@ public class Solr5Index implements IndexProvider {
     }
 
     private Map<String, String> parseKeyFieldsForCollections(Configuration config) throws BackendException {
-        Map<String, String> keyFieldNames = new HashMap<String, String>();
+        Map<String, String> keyFieldNames = new HashMap<>();
         String[] collectionFieldStatements = config.has(KEY_FIELD_NAMES)?config.get(KEY_FIELD_NAMES):new String[0];
         for (String collectionFieldStatement : collectionFieldStatements) {
             String[] parts = collectionFieldStatement.trim().split("=");
@@ -282,13 +282,7 @@ public class Solr5Index implements IndexProvider {
             CloudSolrClient client = (CloudSolrClient) solrClient;
             try {
                 createCollectionIfNotExists(client, configuration, store);
-            } catch (IOException e) {
-                throw new PermanentBackendException(e);
-            } catch (SolrServerException e) {
-                throw new PermanentBackendException(e);
-            } catch (InterruptedException e) {
-                throw new PermanentBackendException(e);
-            } catch (KeeperException e) {
+            } catch (IOException | KeeperException | InterruptedException | SolrServerException e) {
                 throw new PermanentBackendException(e);
             }
         }
@@ -303,8 +297,8 @@ public class Solr5Index implements IndexProvider {
                 String collectionName = stores.getKey();
                 String keyIdField = getKeyFieldId(collectionName);
 
-                List<String> deleteIds = new ArrayList<String>();
-                Collection<SolrInputDocument> changes = new ArrayList<SolrInputDocument>();
+                List<String> deleteIds = new ArrayList<>();
+                Collection<SolrInputDocument> changes = new ArrayList<>();
 
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docId = entry.getKey();
@@ -380,8 +374,8 @@ public class Solr5Index implements IndexProvider {
             for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
                 final String collectionName = stores.getKey();
 
-                List<String> deleteIds = new ArrayList<String>();
-                List<SolrInputDocument> newDocuments = new ArrayList<SolrInputDocument>();
+                List<String> deleteIds = new ArrayList<>();
+                List<SolrInputDocument> newDocuments = new ArrayList<>();
 
                 for (Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
                     final String docID = entry.getKey();
@@ -491,7 +485,7 @@ public class Solr5Index implements IndexProvider {
             if (!query.hasLimit() && totalHits >= maxResults)
                 logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
 
-            result = new ArrayList<String>(totalHits);
+            result = new ArrayList<>(totalHits);
             for (SolrDocument hit : response.getResults()) {
                 result.add(hit.getFieldValue(keyIdField).toString());
             }
@@ -525,11 +519,11 @@ public class Solr5Index implements IndexProvider {
             if (!query.hasLimit() && totalHits >= maxResults) {
                 logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
             }
-            result = new ArrayList<RawQuery.Result<String>>(totalHits);
+            result = new ArrayList<>(totalHits);
 
             for (SolrDocument hit : response.getResults()) {
                 double score = Double.parseDouble(hit.getFieldValue("score").toString());
-                result.add(new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
+                result.add(new RawQuery.Result<>(hit.getFieldValue(keyIdField).toString(), score));
             }
         } catch (IOException e) {
             logger.error("Query did not complete : ", e);
@@ -595,9 +589,9 @@ public class Solr5Index implements IndexProvider {
                     } else if (terms.size() == 1) {
                         return (key + ":(" + escapeValue(terms.get(0)) + ")");
                     } else {
-                        And<TitanElement> andTerms = new And<TitanElement>();
+                        And<TitanElement> andTerms = new And<>();
                         for (String term : terms) {
-                            andTerms.add(new PredicateCondition<String, TitanElement>(key, titanPredicate, term));
+                            andTerms.add(new PredicateCondition<>(key, titanPredicate, term));
                         }
                         return buildQueryFilter(andTerms, informations);
                     }
@@ -727,7 +721,7 @@ public class Solr5Index implements IndexProvider {
     }
 
     private List<Geoshape.Point> getPolygonPoints(Geoshape polygon) {
-        List<Geoshape.Point> locations = new ArrayList<Geoshape.Point>();
+        List<Geoshape.Point> locations = new ArrayList<>();
 
         int index = 0;
         boolean hasCoordinates = true;
@@ -953,8 +947,8 @@ public class Solr5Index implements IndexProvider {
                     Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (Map.Entry<String, Replica> shard : shards.entrySet()) {
                         String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-                        if ((state.equals(Replica.State.RECOVERING)
-                                || state.equals(Replica.State.DOWN))
+                        if ((state.equals(Replica.State.RECOVERING.toString())
+                                || state.equals(Replica.State.DOWN.toString()))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {
                             sawLiveRecovering = true;

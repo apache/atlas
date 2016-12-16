@@ -53,9 +53,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
             }         
             return graphDb_;
         }
-        catch (IllegalAccessException e) {
-            throw new RuntimeException("Error initializing graph database", e);
-        } catch (InstantiationException e) {
+        catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException("Error initializing graph database", e);
         }
     }

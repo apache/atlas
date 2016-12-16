@@ -38,8 +38,8 @@ import static org.testng.Assert.*;
 
 public class TestAtlasEntityType {
     private final AtlasEntityType entityType;
-    private final List<Object>    validValues   = new ArrayList<Object>();
-    private final List<Object>    invalidValues = new ArrayList<Object>();
+    private final List<Object>    validValues   = new ArrayList<>();
+    private final List<Object>    invalidValues = new ArrayList<>();
 
     {
         entityType  = getEntityType(ModelTestUtil.getEntityDefWithSuperTypes());
@@ -62,7 +62,7 @@ public class TestAtlasEntityType {
         invalidValues.add(invalidValue2);
         invalidValues.add(invalidValue3);
         invalidValues.add(new AtlasEntity());             // no values for mandatory attributes
-        invalidValues.add(new HashMap<Object, Object>()); // no values for mandatory attributes
+        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
         invalidValues.add(1);               // incorrect datatype
         invalidValues.add(new HashSet());   // incorrect datatype
         invalidValues.add(new ArrayList()); // incorrect datatype
@@ -109,7 +109,7 @@ public class TestAtlasEntityType {
 
     @Test
     public void testEntityTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(entityType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

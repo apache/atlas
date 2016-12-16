@@ -69,10 +69,7 @@ public class SecureEmbeddedServerTestBase {
         javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(new javax.net.ssl.HostnameVerifier() {
 
                     public boolean verify(String hostname, javax.net.ssl.SSLSession sslSession) {
-                        if (hostname.equals("localhost")) {
-                            return true;
-                        }
-                        return false;
+                        return hostname.equals("localhost");
                     }
                 });
         System.setProperty("javax.net.ssl.trustStore", DEFAULT_KEYSTORE_FILE_LOCATION);

@@ -66,8 +66,8 @@ public class ObjectGraphWalker {
             List<? extends IReferenceableInstance> roots) throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
-        queue = new LinkedList<IReferenceableInstance>();
-        processedIds = new HashSet<Id>();
+        queue = new LinkedList<>();
+        processedIds = new HashSet<>();
         for (IReferenceableInstance r : roots) {
             visitReferenceableInstance(r);
         }

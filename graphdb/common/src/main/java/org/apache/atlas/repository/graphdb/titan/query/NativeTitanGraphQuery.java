@@ -46,7 +46,7 @@ public interface NativeTitanGraphQuery<V, E> {
      * @param propertyName
      * @param values
      */
-    void in(String propertyName, Collection<? extends Object> values);
+    void in(String propertyName, Collection<?> values);
 
     /**
      * Adds a has condition to the query.

@@ -22,11 +22,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
-import org.apache.atlas.web.listeners.LoginProcessor;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -110,7 +108,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         LOG.info("AtlasAuthenticationFilter initialization started");
         final FilterConfig globalConf = filterConfig;
 
-        final Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new HashMap<>();
 
         FilterConfig filterConfig1 = new FilterConfig() {
             @Override
@@ -473,9 +471,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         if (isCookieSet) {
             Collection<String> authUserName = response1.getHeaders("Set-Cookie");
             if (authUserName != null) {
-                Iterator<String> i = authUserName.iterator();
-                while (i.hasNext()) {
-                    String cookie = i.next();
+                for (String cookie : authUserName) {
                     if (!StringUtils.isEmpty(cookie)) {
                         if (cookie.toLowerCase().startsWith(AuthenticatedURL.AUTH_COOKIE.toLowerCase()) && cookie.contains("u=")) {
                             String[] split = cookie.split(";");
@@ -571,7 +567,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
     void parseBrowserUserAgents(String userAgents) {
         String[] agentsArray = userAgents.split(",");
-        browserUserAgents = new HashSet<Pattern>();
+        browserUserAgents = new HashSet<>();
         for (String patternString : agentsArray) {
             browserUserAgents.add(Pattern.compile(patternString));
         }

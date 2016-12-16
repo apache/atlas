@@ -19,7 +19,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
@@ -78,7 +77,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
         this.serializer = serializer;
-        this.constraints = new ArrayList<PredicateCondition<String, TitanElement>>(5);
+        this.constraints = new ArrayList<>(5);
     }
 
     /* ---------------------------------------------------------------
@@ -90,7 +89,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
-        constraints.add(new PredicateCondition<String, TitanElement>(key, predicate, condition));
+        constraints.add(new PredicateCondition<>(key, predicate, condition));
         return this;
     }
 
@@ -172,19 +171,19 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     @Override
     public Iterable<Vertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), Vertex.class);
     }
 
     @Override
     public Iterable<Edge> edges() {
         GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), Edge.class);
     }
 
     @Override
     public Iterable<TitanProperty> properties() {
         GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanProperty.class);
+        return Iterables.filter(new QueryProcessor<>(query, tx.elementProcessor), TitanProperty.class);
     }
 
     private QueryDescription describe(ElementCategory category) {
@@ -232,7 +231,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = new HashSet<IndexType>();
+        final Set<IndexType> indexCandidates = new HashSet<>();
         ConditionUtil.traversal(conditions, new Predicate<Condition<TitanElement>>() {
             @Override
             public boolean apply(@Nullable Condition<TitanElement> condition) {
@@ -281,7 +280,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                         log.warn("The query optimizer currently does not support multiple label constraints in query: {}", this);
                         continue;
                     }
-                    if (!type.getName().equals((String)Iterables.getOnlyElement(labels))) continue;
+                    if (!type.getName().equals(Iterables.getOnlyElement(labels))) continue;
                     subcover.add(equalCon.getKey());
                 }
 
@@ -345,9 +344,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             }
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted, null);
+            query = new BackendQueryHolder<>(jointQuery, coveredClauses.size() == conditions.numChildren(), isSorted, null);
         } else {
-            query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, isSorted, null);
+            query = new BackendQueryHolder<>(new JointIndexQuery(), false, isSorted, null);
         }
 
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
@@ -366,8 +365,8 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
         IndexField[] fields = index.getFieldKeys();
         Object[] indexValues = new Object[fields.length];
-        Set<Condition> coveredClauses = new HashSet<Condition>(fields.length);
-        List<Object[]> indexCovers = new ArrayList<Object[]>(4);
+        Set<Condition> coveredClauses = new HashSet<>(fields.length);
+        List<Object[]> indexCovers = new ArrayList<>(4);
 
         constructIndexCover(indexValues, 0, fields, condition, indexCovers, coveredClauses);
         if (!indexCovers.isEmpty()) {
@@ -384,7 +383,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         } else {
             IndexField field = fields[position];
             Map.Entry<Condition, Collection<Object>> equalCon = getEqualityConditionValues(condition, field.getFieldKey());
-            if (equalCon!=null) {
+            if (equalCon != null) {
                 coveredClauses.add(equalCon.getKey());
                 assert equalCon.getValue().size()>0;
                 for (Object value : equalCon.getValue()) {
@@ -392,7 +391,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                     newValues[position]=value;
                     constructIndexCover(newValues, position+1, fields, condition, indexCovers, coveredClauses);
                 }
-            } else return;
+            }
         }
 
     }
@@ -419,7 +418,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
-        And<TitanElement> subcondition = new And<TitanElement>(condition.numChildren());
+        And<TitanElement> subcondition = new And<>(condition.numChildren());
         for (Condition<TitanElement> subclause : condition.getChildren()) {
             if (coversAll(index, subclause, indexInfo)) {
                 subcondition.add(subclause);
@@ -439,9 +438,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             PropertyKey key = (PropertyKey) atom.getKey();
             ParameterIndexField[] fields = index.getFieldKeys();
             ParameterIndexField match = null;
-            for (int i = 0; i < fields.length; i++) {
-                if (fields[i].getStatus()!= SchemaStatus.ENABLED) continue;
-                if (fields[i].getFieldKey().equals(key)) match = fields[i];
+            for (ParameterIndexField field : fields) {
+                if (field.getStatus() != SchemaStatus.ENABLED) continue;
+                if (field.getFieldKey().equals(key)) match = field;
             }
             if (match==null) return false;
             return indexInfo.supports(index, match, atom.getPredicate());

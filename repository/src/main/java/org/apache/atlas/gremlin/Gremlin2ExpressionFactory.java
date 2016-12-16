@@ -115,8 +115,7 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
 
         GroovyExpression typeMatchesExpr = new ComparisonExpression(typeAttrExpr, ComparisonOperator.EQUALS, typeNameExpr);
         GroovyExpression isSuperTypeExpr = new FunctionCallExpression(superTypeAttrExpr, CONTAINS, typeNameExpr);
-        GroovyExpression hasSuperTypeAttrExpr = superTypeAttrExpr;
-        GroovyExpression superTypeMatchesExpr = new TernaryOperatorExpression(hasSuperTypeAttrExpr, isSuperTypeExpr, LiteralExpression.FALSE);
+        GroovyExpression superTypeMatchesExpr = new TernaryOperatorExpression(superTypeAttrExpr, isSuperTypeExpr, LiteralExpression.FALSE);
 
         return new LogicalExpression(typeMatchesExpr, LogicalOperator.OR, superTypeMatchesExpr);
     }

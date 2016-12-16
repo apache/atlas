@@ -18,5 +18,5 @@
 package org.apache.atlas.authorize;
 
 public enum AtlasActionTypes {
-    READ, CREATE, UPDATE, DELETE;
+    READ, CREATE, UPDATE, DELETE
 }

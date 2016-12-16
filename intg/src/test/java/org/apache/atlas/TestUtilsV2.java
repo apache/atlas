@@ -656,7 +656,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
         AtlasClassificationDef janitorSecurityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", ImmutableSet.<String>of("SecurityClearance1"),
+                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", ImmutableSet.of("SecurityClearance1"),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
         return Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);

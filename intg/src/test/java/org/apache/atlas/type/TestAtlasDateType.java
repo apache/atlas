@@ -107,7 +107,7 @@ public class TestAtlasDateType {
 
     @Test
     public void testDateTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(dateType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

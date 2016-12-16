@@ -66,7 +66,7 @@ public interface TypeCache {
      * @return returns non-null type if cached, otherwise null
      * @throws AtlasException
      */
-    public IDataType get(String typeName) throws AtlasException;
+    IDataType get(String typeName) throws AtlasException;
 
     /**
      * @param typeCategory Non-null category of type. The category can be one of
@@ -75,7 +75,7 @@ public interface TypeCache {
      * @return returns non-null type (of the specified category) if cached, otherwise null
      * @throws AtlasException
      */
-    public IDataType get(DataTypes.TypeCategory typeCategory, String typeName) throws AtlasException;
+    IDataType get(DataTypes.TypeCategory typeCategory, String typeName) throws AtlasException;
 
     /**
      *

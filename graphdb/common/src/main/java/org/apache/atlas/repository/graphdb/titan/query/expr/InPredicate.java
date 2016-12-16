@@ -28,9 +28,9 @@ import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
 public class InPredicate implements QueryPredicate {
 
     private String propertyName;
-    private Collection<? extends Object> values;
+    private Collection<?> values;
 
-    public InPredicate(String propertyName, Collection<? extends Object> values) {
+    public InPredicate(String propertyName, Collection<?> values) {
         super();
         this.propertyName = propertyName;
         this.values = values;

@@ -95,7 +95,7 @@ public class TestAtlasDoubleType {
 
     @Test
     public void testDoubleTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(doubleType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

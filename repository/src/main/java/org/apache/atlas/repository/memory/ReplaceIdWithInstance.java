@@ -50,23 +50,23 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
 
     @Override
     public void processNode(ObjectGraphWalker.Node nd) throws AtlasException {
-        if (nd.attributeName == null) {
-            // do nothing
-        } else if (!nd.aInfo.isComposite || nd.value == null) {
-            // do nothing
-        } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
-            if (nd.value != null && nd.value instanceof Id) {
-                Id id = (Id) nd.value;
-                ITypedReferenceableInstance r = getInstance(id);
-                nd.instance.set(nd.attributeName, r);
+        if (nd.attributeName != null) {
+            if (nd.aInfo.isComposite && nd.value != null) {
+                if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
+                    if (nd.value instanceof Id) {
+                        Id id = (Id) nd.value;
+                        ITypedReferenceableInstance r = getInstance(id);
+                        nd.instance.set(nd.attributeName, r);
+                    }
+                } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
+                    DataTypes.ArrayType aT = (DataTypes.ArrayType) nd.aInfo.dataType();
+                    nd.instance.set(nd.attributeName,
+                            convertToInstances((ImmutableCollection) nd.value, nd.aInfo.multiplicity, aT));
+                } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
+                    DataTypes.MapType mT = (DataTypes.MapType) nd.aInfo.dataType();
+                    nd.instance.set(nd.attributeName, convertToInstances((ImmutableMap) nd.value, nd.aInfo.multiplicity, mT));
+                }
             }
-        } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
-            DataTypes.ArrayType aT = (DataTypes.ArrayType) nd.aInfo.dataType();
-            nd.instance.set(nd.attributeName,
-                    convertToInstances((ImmutableCollection) nd.value, nd.aInfo.multiplicity, aT));
-        } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
-            DataTypes.MapType mT = (DataTypes.MapType) nd.aInfo.dataType();
-            nd.instance.set(nd.attributeName, convertToInstances((ImmutableMap) nd.value, nd.aInfo.multiplicity, mT));
         }
     }
 
@@ -78,9 +78,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
         }
 
         ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
-        Iterator it = val.iterator();
-        while (it.hasNext()) {
-            Object elem = it.next();
+        for (Object elem : val) {
             if (elem instanceof Id) {
                 Id id = (Id) elem;
                 elem = getInstance(id);
@@ -100,9 +98,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
             return val;
         }
         ImmutableMap.Builder b = ImmutableMap.builder();
-        Iterator<Map.Entry> it = val.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry elem = it.next();
+        for (Map.Entry elem : (Iterable<Map.Entry>) val.entrySet()) {
             Object oldKey = elem.getKey();
             Object oldValue = elem.getValue();
             Object newKey = oldKey;

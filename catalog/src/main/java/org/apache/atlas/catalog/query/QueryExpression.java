@@ -88,7 +88,7 @@ public interface QueryExpression {
      *
      * @param fieldName  field name
      */
-    public void setField(String fieldName);
+    void setField(String fieldName);
 
     /**
      * Get the expected value for the expression.

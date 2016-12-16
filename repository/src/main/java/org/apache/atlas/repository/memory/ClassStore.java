@@ -26,6 +26,7 @@ import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.ClassType;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class ClassStore extends HierarchicalTypeStore {
 
@@ -35,7 +36,7 @@ public class ClassStore extends HierarchicalTypeStore {
     public ClassStore(MemRepository repository, ClassType hierarchicalType) throws RepositoryException {
         super(repository, hierarchicalType);
         classType = hierarchicalType;
-        traitNamesStore = new ArrayList<ImmutableList<String>>();
+        traitNamesStore = new ArrayList<>();
     }
 
     void store(ReferenceableInstance i) throws RepositoryException {
@@ -61,7 +62,7 @@ public class ClassStore extends HierarchicalTypeStore {
         }
 
         String typeName = typeNameList.get(pos);
-        if (typeName != hierarchicalType.getName()) {
+        if (!Objects.equals(typeName, hierarchicalType.getName())) {
             throw new RepositoryException(
                     String.format("Invalid Id (incorrect typeName, type is %s) : %s", typeName, id));
         }
@@ -75,7 +76,7 @@ public class ClassStore extends HierarchicalTypeStore {
     ReferenceableInstance createInstance(MemRepository repo, Id id) throws RepositoryException {
         Integer pos = idPosMap.get(id);
         String typeName = typeNameList.get(pos);
-        if (typeName != hierarchicalType.getName()) {
+        if (!Objects.equals(typeName, hierarchicalType.getName())) {
             return repo.getClassStore(typeName).createInstance(repo, id);
         }
 
@@ -83,8 +84,7 @@ public class ClassStore extends HierarchicalTypeStore {
         String[] tNs = traitNames.toArray(new String[]{});
 
         try {
-            ReferenceableInstance r = (ReferenceableInstance) classType.createInstance(id, tNs);
-            return r;
+            return (ReferenceableInstance) classType.createInstance(id, tNs);
         } catch (AtlasException me) {
             throw new RepositoryException(me);
         }

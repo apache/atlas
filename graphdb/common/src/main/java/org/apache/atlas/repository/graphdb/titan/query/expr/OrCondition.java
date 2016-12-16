@@ -43,7 +43,7 @@ public class OrCondition {
     }
 
     public OrCondition(boolean addInitialTerm) {
-        this.children = new ArrayList<AndCondition>();
+        this.children = new ArrayList<>();
         if (addInitialTerm) {
             children.add(new AndCondition());
         }
@@ -96,7 +96,7 @@ public class OrCondition {
         //it creates a new AndCondition that combines the two AndConditions together.  These combined
         //AndConditions become the new set of AndConditions in this OrCondition.
 
-        List<AndCondition> expandedExpressionChildren = new ArrayList<AndCondition>();
+        List<AndCondition> expandedExpressionChildren = new ArrayList<>();
         for (AndCondition otherExprTerm : other.getAndTerms()) {
             for (AndCondition currentExpr : children) {
                 AndCondition currentAndConditionCopy = currentExpr.copy();

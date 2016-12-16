@@ -106,11 +106,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         if (CollectionUtils.isEmpty(attributeDefs)) {
-            this.attributeDefs = new ArrayList<AtlasAttributeDef>();
+            this.attributeDefs = new ArrayList<>();
         } else {
             // if multiple attributes with same name are present, keep only the last entry
-            List<AtlasAttributeDef> tmpList     = new ArrayList<AtlasAttributeDef>(attributeDefs.size());
-            Set<String>             attribNames = new HashSet<String>();
+            List<AtlasAttributeDef> tmpList     = new ArrayList<>(attributeDefs.size());
+            Set<String>             attribNames = new HashSet<>();
 
             ListIterator<AtlasAttributeDef> iter = attributeDefs.listIterator(attributeDefs.size());
             while (iter.hasPrevious()) {
@@ -144,7 +144,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         List<AtlasAttributeDef> a = this.attributeDefs;
 
-        List<AtlasAttributeDef> tmpList = new ArrayList<AtlasAttributeDef>();
+        List<AtlasAttributeDef> tmpList = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(a)) {
             // copy existing attributes, except ones having same name as the attribute being added
             for (AtlasAttributeDef existingAttrDef : a) {
@@ -162,7 +162,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         List<AtlasAttributeDef> a = this.attributeDefs;
 
         if (hasAttribute(a, attrName)) {
-            List<AtlasAttributeDef> tmpList = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> tmpList = new ArrayList<>();
 
             // copy existing attributes, except ones having same name as the attribute being removed
             for (AtlasAttributeDef existingAttrDef : a) {
@@ -256,7 +256,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         /**
          * single-valued attribute or multi-valued attribute.
          */
-        public enum Cardinality { SINGLE, LIST, SET };
+        public enum Cardinality { SINGLE, LIST, SET }
 
         public static final int COUNT_NOT_SET = -1;
 
@@ -376,7 +376,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             if (CollectionUtils.isEmpty(constraintDefs)) {
                 this.constraintDefs = null;
             } else {
-                this.constraintDefs = new ArrayList<AtlasConstraintDef>(constraintDefs);
+                this.constraintDefs = new ArrayList<>(constraintDefs);
             }
         }
 
@@ -482,7 +482,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.type = type;
 
             if (params != null) {
-                this.params = new HashMap<String, Object>(params);
+                this.params = new HashMap<>(params);
             }
         }
 
@@ -491,7 +491,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 this.type = that.type;
 
                 if (that.params != null) {
-                    this.params = new HashMap<String, Object>(that.params);
+                    this.params = new HashMap<>(that.params);
                 }
             }
         }

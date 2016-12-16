@@ -37,12 +37,7 @@ import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.hooks.*;
-import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
-import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -360,16 +355,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         String changedColStringOldName = oldColList.get(0).getName();
         String changedColStringNewName = changedColStringOldName;
 
-        for (int i = 0; i < oldColList.size(); i++) {
-            if (!newColHashMap.containsKey(oldColList.get(i))) {
-                changedColStringOldName = oldColList.get(i).getName();
+        for (FieldSchema oldCol : oldColList) {
+            if (!newColHashMap.containsKey(oldCol)) {
+                changedColStringOldName = oldCol.getName();
                 break;
             }
         }
 
-        for (int i = 0; i < newColList.size(); i++) {
-            if (!oldColHashMap.containsKey(newColList.get(i))) {
-                changedColStringNewName = newColList.get(i).getName();
+        for (FieldSchema newCol : newColList) {
+            if (!oldColHashMap.containsKey(newCol)) {
+                changedColStringNewName = newCol.getName();
                 break;
             }
         }
@@ -395,7 +390,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             if (writeEntity.getType() == Type.TABLE) {
                 Table newTable = writeEntity.getTable();
                 createOrUpdateEntities(dgiBridge, event, writeEntity, true, oldTable);
-                final String newQualifiedTableName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                final String newQualifiedTableName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                     newTable);
                 String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, oldColName);
                 String newColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, newColName);
@@ -424,9 +419,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 Table newTable = writeEntity.getTable();
                 //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
                 if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
-                    final String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                    final String oldQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         oldTable);
-                    final String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                    final String newQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         newTable);
 
                     //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
@@ -624,7 +619,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         // filter out select queries which do not modify data
         if (!isSelectQuery) {
 
-            SortedSet<ReadEntity> sortedHiveInputs = new TreeSet<>(entityComparator);;
+            SortedSet<ReadEntity> sortedHiveInputs = new TreeSet<>(entityComparator);
             if ( event.getInputs() != null) {
                 sortedHiveInputs.addAll(event.getInputs());
             }
@@ -671,7 +666,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private  <T extends Entity> void processHiveEntity(HiveMetaStoreBridge dgiBridge, HiveEventContext event, T entity, Set<String> dataSetsProcessed,
         SortedMap<T, Referenceable> dataSets, Set<Referenceable> entities) throws Exception {
         if (entity.getType() == Type.TABLE || entity.getType() == Type.PARTITION) {
-            final String tblQFName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
+            final String tblQFName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
             if (!dataSetsProcessed.contains(tblQFName)) {
                 LinkedHashMap<Type, Referenceable> result = createOrUpdateEntities(dgiBridge, event, entity, false);
                 dataSets.put(entity, result.get(Type.TABLE));
@@ -754,14 +749,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private static boolean isCreateOp(HiveEventContext hiveEvent) {
-        if (HiveOperation.CREATETABLE.equals(hiveEvent.getOperation())
-            || HiveOperation.CREATEVIEW.equals(hiveEvent.getOperation())
-            || HiveOperation.ALTERVIEW_AS.equals(hiveEvent.getOperation())
-            || HiveOperation.ALTERTABLE_LOCATION.equals(hiveEvent.getOperation())
-            || HiveOperation.CREATETABLE_AS_SELECT.equals(hiveEvent.getOperation())) {
-            return true;
-        }
-        return false;
+        return HiveOperation.CREATETABLE.equals(hiveEvent.getOperation())
+                || HiveOperation.CREATEVIEW.equals(hiveEvent.getOperation())
+                || HiveOperation.ALTERVIEW_AS.equals(hiveEvent.getOperation())
+                || HiveOperation.ALTERTABLE_LOCATION.equals(hiveEvent.getOperation())
+                || HiveOperation.CREATETABLE_AS_SELECT.equals(hiveEvent.getOperation());
     }
 
     private Referenceable getProcessReferenceable(HiveMetaStoreBridge dgiBridge, HiveEventContext hiveEvent,
@@ -973,8 +965,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private static boolean addQueryType(HiveOperation op, WriteEntity entity) {
-        if (((WriteEntity) entity).getWriteType() != null && HiveOperation.QUERY.equals(op)) {
-            switch (((WriteEntity) entity).getWriteType()) {
+        if (entity.getWriteType() != null && HiveOperation.QUERY.equals(op)) {
+            switch (entity.getWriteType()) {
             case INSERT:
             case INSERT_OVERWRITE:
             case UPDATE:

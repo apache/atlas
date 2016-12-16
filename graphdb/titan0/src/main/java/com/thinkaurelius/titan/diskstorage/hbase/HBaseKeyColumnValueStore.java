@@ -48,7 +48,6 @@ import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -151,7 +150,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     void handleLockFailure(StoreTransaction txh, KeyColumn lockID, int trialCount) throws PermanentLockingException {
         if (trialCount < lockMaxRetries) {
             try {
-                Thread.sleep(lockMaxWaitTimeMs.getLength(TimeUnit.DAYS.MILLISECONDS));
+                Thread.sleep(lockMaxWaitTimeMs.getLength(TimeUnit.MILLISECONDS));
             } catch (InterruptedException e) {
                 throw new PermanentLockingException(
                         "Interrupted while waiting for acquiring lock for transaction "
@@ -199,7 +198,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws BackendException {
-        List<Get> requests = new ArrayList<Get>(keys.size());
+        List<Get> requests = new ArrayList<>(keys.size());
         {
             for (StaticBuffer key : keys) {
                 Get g = new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter);
@@ -212,7 +211,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             }
         }
 
-        Map<StaticBuffer,EntryList> resultMap = new HashMap<StaticBuffer,EntryList>(keys.size());
+        Map<StaticBuffer,EntryList> resultMap = new HashMap<>(keys.size());
 
         try {
             TableMask table = null;
@@ -336,7 +335,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 @Override
                 public boolean hasNext() {
                     ensureOpen();
-                    return kv == null ? false : kv.hasNext();
+                    return kv != null && kv.hasNext();
                 }
 
                 @Override

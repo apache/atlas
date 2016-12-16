@@ -191,7 +191,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     public ITypedReferenceableInstance createInstanceWithTraits(Id id, AtlasSystemAttributes systemAttributes, Referenceable r, String... traitNames)
     throws AtlasException {
 
-        ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<String, ITypedStruct>();
+        ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<>();
         if (traitNames != null) {
             for (String t : traitNames) {
                 TraitType tType = typeSystem.getDataType(TraitType.class, t);

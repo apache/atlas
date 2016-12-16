@@ -75,7 +75,7 @@ public class TestAtlasStringType {
 
     @Test
     public void testStringTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(stringType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

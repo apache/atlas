@@ -99,32 +99,32 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "hbase", "HBase storage options");
 
     public static final ConfigOption<Boolean> SHORT_CF_NAMES =
-            new ConfigOption<Boolean>(HBASE_NS, "short-cf-names",
-            "Whether to shorten the names of Titan's column families to one-character mnemonics " +
-            "to conserve storage space", ConfigOption.Type.FIXED, true);
+            new ConfigOption<>(HBASE_NS, "short-cf-names",
+                    "Whether to shorten the names of Titan's column families to one-character mnemonics " +
+                            "to conserve storage space", ConfigOption.Type.FIXED, true);
 
     public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
 
     public static final ConfigOption<String> COMPRESSION =
-            new ConfigOption<String>(HBASE_NS, "compression-algorithm",
-            "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
-            "The compression algorithm must be installed and available on the HBase cluster.  Titan cannot install " +
-            "and configure new compression algorithms on the HBase cluster by itself.",
-            ConfigOption.Type.MASKABLE, "GZ");
+            new ConfigOption<>(HBASE_NS, "compression-algorithm",
+                    "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
+                            "The compression algorithm must be installed and available on the HBase cluster.  Titan cannot install " +
+                            "and configure new compression algorithms on the HBase cluster by itself.",
+                    ConfigOption.Type.MASKABLE, "GZ");
 
     public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
-            new ConfigOption<Boolean>(HBASE_NS, "skip-schema-check",
-            "Assume that Titan's HBase table and column families already exist. " +
-            "When this is true, Titan will not check for the existence of its table/CFs, " +
-            "nor will it attempt to create them under any circumstances.  This is useful " +
-            "when running Titan without HBase admin privileges.",
-            ConfigOption.Type.MASKABLE, false);
+            new ConfigOption<>(HBASE_NS, "skip-schema-check",
+                    "Assume that Titan's HBase table and column families already exist. " +
+                            "When this is true, Titan will not check for the existence of its table/CFs, " +
+                            "nor will it attempt to create them under any circumstances.  This is useful " +
+                            "when running Titan without HBase admin privileges.",
+                    ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<String> HBASE_TABLE =
-            new ConfigOption<String>(HBASE_NS, "table",
-            "The name of the table Titan will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
-            " is false, Titan will automatically create this table if it does not already exist.",
-            ConfigOption.Type.LOCAL, "titan");
+            new ConfigOption<>(HBASE_NS, "table",
+                    "The name of the table Titan will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
+                            " is false, Titan will automatically create this table if it does not already exist.",
+                    ConfigOption.Type.LOCAL, "titan");
 
     /**
      * Related bug fixed in 0.98.0, 0.94.7, 0.95.0:
@@ -139,15 +139,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * Titan connects to an HBase backend for the first time.
      */
     public static final ConfigOption<Integer> REGION_COUNT =
-            new ConfigOption<Integer>(HBASE_NS, "region-count",
-            "The number of initial regions set when creating Titan's HBase table",
-            ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
+            new ConfigOption<>(HBASE_NS, "region-count",
+                    "The number of initial regions set when creating Titan's HBase table",
+                    ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
                 @Override
                 public boolean apply(Integer input) {
                     return null != input && MIN_REGION_COUNT <= input;
                 }
             }
-    );
+            );
 
     /**
      * This setting is used only when {@link #REGION_COUNT} is unset.
@@ -183,9 +183,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * These considerations may differ for other HBase implementations (e.g. MapR).
      */
     public static final ConfigOption<Integer> REGIONS_PER_SERVER =
-            new ConfigOption<Integer>(HBASE_NS, "regions-per-server",
-            "The number of regions per regionserver to set when creating Titan's HBase table",
-            ConfigOption.Type.MASKABLE, Integer.class);
+            new ConfigOption<>(HBASE_NS, "regions-per-server",
+                    "The number of regions per regionserver to set when creating Titan's HBase table",
+                    ConfigOption.Type.MASKABLE, Integer.class);
 
     /**
      * If this key is present in either the JVM system properties or the process
@@ -217,11 +217,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      */
     public static final ConfigOption<String> COMPAT_CLASS =
-            new ConfigOption<String>(HBASE_NS, "compat-class",
-            "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
-            "When this option is unset, Titan calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
-            "at runtime.  Setting this option forces Titan to instead reflectively load and instantiate the specified class.",
-            ConfigOption.Type.MASKABLE, String.class);
+            new ConfigOption<>(HBASE_NS, "compat-class",
+                    "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
+                            "When this option is unset, Titan calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
+                            "at runtime.  Setting this option forces Titan to instead reflectively load and instantiate the specified class.",
+                    ConfigOption.Type.MASKABLE, String.class);
 
     public static final int PORT_DEFAULT = 9160;
 
@@ -266,7 +266,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final HBaseCompat compat;
 
     private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers =
-            new ConcurrentHashMap<HBaseStoreManager, Throwable>();
+            new ConcurrentHashMap<>();
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -342,7 +342,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
         logger.debug("End of HBase config key=value pairs");
 
-        openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
+        openStores = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -420,7 +420,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                         commitTime.getAdditionTime(times.getUnit()),
                         commitTime.getDeletionTime(times.getUnit()));
 
-        List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
+        List<Row> batch = new ArrayList<>(commandsPerKey.size()); // actual batch operation
 
         // convert sorted commands into representation required for 'batch' operation
         for (Pair<Put, Delete> commands : commandsPerKey.values()) {
@@ -442,9 +442,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             } finally {
                 IOUtils.closeQuietly(table);
             }
-        } catch (IOException e) {
-            throw new TemporaryBackendException(e);
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             throw new TemporaryBackendException(e);
         }
 
@@ -466,7 +464,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
             final String llmPrefix = getName();
-            llm = LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix, times);
+            llm = LocalLockMediators.INSTANCE.get(llmPrefix, times);
             HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName, llm);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
@@ -511,7 +509,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
 
-        List<KeyRange> result = new LinkedList<KeyRange>();
+        List<KeyRange> result = new LinkedList<>();
 
         TableMask table = null;
         try {
@@ -645,7 +643,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         // Require either no null key bounds or a pair of them
-        Preconditions.checkState(!(null == nullStart ^ null == nullEnd));
+        Preconditions.checkState((null == nullStart) == (null == nullEnd));
 
         // Check that every key in the result is at least 4 bytes long
         Map<KeyRange, ServerName> result = b.build();
@@ -675,8 +673,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         byte padded[] = new byte[targetLength];
 
-        for (int i = 0; i < dataToPad.length; i++)
-            padded[i] = dataToPad[i];
+        System.arraycopy(dataToPad, 0, padded, 0, dataToPad.length);
 
         for (int i = dataToPad.length; i < padded.length; i++)
             padded[i] = (byte)0;
@@ -856,7 +853,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
                                                                    final long putTimestamp,
                                                                    final long delTimestamp) throws PermanentBackendException {
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<StaticBuffer, Pair<Put, Delete>>();
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<>();
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
 
@@ -870,7 +867,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 Pair<Put, Delete> commands = commandsPerKey.get(m.getKey());
 
                 if (commands == null) {
-                    commands = new Pair<Put, Delete>();
+                    commands = new Pair<>();
                     commandsPerKey.put(m.getKey(), commands);
                 }
 
@@ -928,7 +925,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * Similar to {@link Function}, except that the {@code apply} method is allowed
      * to throw {@link BackendException}.
      */
-    private static interface BackendFunction<F, T> {
+    private interface BackendFunction<F, T> {
 
         T apply(F input) throws BackendException;
     }

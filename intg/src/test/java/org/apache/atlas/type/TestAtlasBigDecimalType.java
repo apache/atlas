@@ -94,7 +94,7 @@ public class TestAtlasBigDecimalType {
 
     @Test
     public void testBigDecimalTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(bigDecimalType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

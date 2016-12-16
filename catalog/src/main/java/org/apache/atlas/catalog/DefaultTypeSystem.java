@@ -85,7 +85,7 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
         } catch(TypeNotFoundException tne) {
             //Type not found . Create
             TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(type),
+                ImmutableList.of(type),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
             metadataService.createType(TypesSerialization.toJson(typesDef));
         }
@@ -198,11 +198,11 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
         try {
             HierarchicalTypeDefinition<T> definition = null;
             if ( isTrait) {
-                definition = new HierarchicalTypeDefinition<T>(type, name, description,
-                    ImmutableSet.<String>of(TaxonomyResourceProvider.TAXONOMY_TERM_TYPE), attributes.toArray(new AttributeDefinition[attributes.size()]));
+                definition = new HierarchicalTypeDefinition<>(type, name, description,
+                        ImmutableSet.of(TaxonomyResourceProvider.TAXONOMY_TERM_TYPE), attributes.toArray(new AttributeDefinition[attributes.size()]));
             } else {
-                definition = new HierarchicalTypeDefinition<T>(type, name, description,
-                    ImmutableSet.<String>of(), attributes.toArray(new AttributeDefinition[attributes.size()]));
+                definition = new HierarchicalTypeDefinition<>(type, name, description,
+                        ImmutableSet.<String>of(), attributes.toArray(new AttributeDefinition[attributes.size()]));
             }
 
             metadataService.createType(TypesSerialization.toJson(definition, isTrait));

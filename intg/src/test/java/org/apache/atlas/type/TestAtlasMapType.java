@@ -34,13 +34,13 @@ public class TestAtlasMapType {
     private final Object[]     invalidValues;
 
     {
-        Map<String, Integer>  strIntMap     = new HashMap<String, Integer>();
-        Map<String, Double>   strDoubleMap  = new HashMap<String, Double>();
-        Map<String, String>   strStringMap  = new HashMap<String, String>();
-        Map<Integer, Integer> intIntMap     = new HashMap<Integer, Integer>();
-        Map<Object, Object>   objObjMap     = new HashMap<Object, Object>();
-        Map<Object, Object>   invObjObjMap1 = new HashMap<Object, Object>();
-        Map<Object, Object>   invObjObjMap2 = new HashMap<Object, Object>();
+        Map<String, Integer>  strIntMap     = new HashMap<>();
+        Map<String, Double>   strDoubleMap  = new HashMap<>();
+        Map<String, String>   strStringMap  = new HashMap<>();
+        Map<Integer, Integer> intIntMap     = new HashMap<>();
+        Map<Object, Object>   objObjMap     = new HashMap<>();
+        Map<Object, Object>   invObjObjMap1 = new HashMap<>();
+        Map<Object, Object>   invObjObjMap2 = new HashMap<>();
 
         for (int i = 0; i < 10; i++) {
             strIntMap.put(Integer.toString(i), i);
@@ -54,7 +54,7 @@ public class TestAtlasMapType {
         invObjObjMap2.put("123", "xyz"); // invalid value
 
         validValues = new Object[] {
-            null, new HashMap<String, Integer>(), new HashMap<Object, Object>(), strIntMap, strDoubleMap, strStringMap,
+            null, new HashMap<String, Integer>(), new HashMap<>(), strIntMap, strDoubleMap, strStringMap,
             intIntMap, objObjMap,
         };
 
@@ -101,7 +101,7 @@ public class TestAtlasMapType {
 
     @Test
     public void testMapTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(intIntMapType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

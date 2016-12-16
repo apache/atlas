@@ -95,7 +95,7 @@ public class TestAtlasShortType {
 
     @Test
     public void testShortTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(shortType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

@@ -73,7 +73,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of byte type.
      */
     public static class AtlasByteType extends AtlasType {
-        private static final Byte DEFAULT_VALUE = new Byte((byte)0);
+        private static final Byte DEFAULT_VALUE = (byte) 0;
 
         public AtlasByteType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_BYTE, TypeCategory.PRIMITIVE);
@@ -117,7 +117,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of short type.
      */
     public static class AtlasShortType extends AtlasType {
-        private static final Short DEFAULT_VALUE = new Short((short)0);
+        private static final Short DEFAULT_VALUE = (short) 0;
 
         public AtlasShortType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, TypeCategory.PRIMITIVE);
@@ -161,7 +161,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of integer type.
      */
     public static class AtlasIntType extends AtlasType {
-        private static final Integer DEFAULT_VALUE = new Integer(0);
+        private static final Integer DEFAULT_VALUE = 0;
 
         public AtlasIntType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_INT, TypeCategory.PRIMITIVE);
@@ -205,7 +205,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of long type.
      */
     public static class AtlasLongType extends AtlasType {
-        private static final Long DEFAULT_VALUE = new Long(0);
+        private static final Long DEFAULT_VALUE = 0L;
 
         public AtlasLongType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_LONG, TypeCategory.PRIMITIVE);
@@ -249,7 +249,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of float type.
      */
     public static class AtlasFloatType extends AtlasType {
-        private static final Float DEFAULT_VALUE = new Float(0);
+        private static final Float DEFAULT_VALUE = 0f;
 
         public AtlasFloatType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, TypeCategory.PRIMITIVE);
@@ -293,7 +293,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of double type.
      */
     public static class AtlasDoubleType extends AtlasType {
-        private static final Double DEFAULT_VALUE = new Double(0);
+        private static final Double DEFAULT_VALUE = 0d;
 
         public AtlasDoubleType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE);

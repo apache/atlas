@@ -539,12 +539,12 @@ public class AtlasTypeRegistry {
                 LOG.debug("==> AtlasTypeRegistry.updateType({})", typeDef);
             }
 
-            if (typeDef == null) {
-                // ignore
-            } else if (StringUtils.isNotBlank(typeDef.getGuid())) {
-                updateTypeByGuidWithNoRefResolve(typeDef.getGuid(), typeDef);
-            } else if (StringUtils.isNotBlank(typeDef.getName())) {
-                updateTypeByNameWithNoRefResolve(typeDef.getName(), typeDef);
+            if (typeDef != null) {
+                if (StringUtils.isNotBlank(typeDef.getGuid())) {
+                    updateTypeByGuidWithNoRefResolve(typeDef.getGuid(), typeDef);
+                } else if (StringUtils.isNotBlank(typeDef.getName())) {
+                    updateTypeByNameWithNoRefResolve(typeDef.getName(), typeDef);
+                }
             }
 
             if (LOG.isDebugEnabled()) {
@@ -694,15 +694,13 @@ class TypeCache {
     }
 
     public AtlasType getTypeByGuid(String guid) {
-        AtlasType ret = guid != null ? typeGuidMap.get(guid) : null;
 
-        return ret;
+        return guid != null ? typeGuidMap.get(guid) : null;
     }
 
     public AtlasType getTypeByName(String name) {
-        AtlasType ret = name != null ? typeNameMap.get(name) : null;
 
-        return ret;
+        return name != null ? typeNameMap.get(name) : null;
     }
 
     public void updateGuid(String typeName, String currGuid, String newGuid) {
@@ -768,15 +766,13 @@ class TypeDefCache<T extends AtlasBaseTypeDef> {
     }
 
     public T getTypeDefByGuid(String guid) {
-        T ret = guid != null ? typeDefGuidMap.get(guid) : null;
 
-        return ret;
+        return guid != null ? typeDefGuidMap.get(guid) : null;
     }
 
     public T getTypeDefByName(String name) {
-        T ret = name != null ? typeDefNameMap.get(name) : null;
 
-        return ret;
+        return name != null ? typeDefNameMap.get(name) : null;
     }
 
     public void updateGuid(String typeName, String newGuid) {

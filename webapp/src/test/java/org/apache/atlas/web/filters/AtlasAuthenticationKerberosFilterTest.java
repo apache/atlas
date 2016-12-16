@@ -133,13 +133,13 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
 
             @Override
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                for (int i = 0; i < callbacks.length; i++) {
-                    if (callbacks[i] instanceof PasswordCallback) {
-                        PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+                for (Callback callback : callbacks) {
+                    if (callback instanceof PasswordCallback) {
+                        PasswordCallback passwordCallback = (PasswordCallback) callback;
                         passwordCallback.setPassword(TESTPASS.toCharArray());
                     }
-                    if (callbacks[i] instanceof NameCallback) {
-                        NameCallback nameCallback = (NameCallback) callbacks[i];
+                    if (callback instanceof NameCallback) {
+                        NameCallback nameCallback = (NameCallback) callback;
                         nameCallback.setName(TESTUSER);
                     }
                 }

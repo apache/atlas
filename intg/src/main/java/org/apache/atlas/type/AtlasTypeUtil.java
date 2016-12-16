@@ -51,14 +51,14 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
  * Utility methods for AtlasType/AtlasTypeDef.
  */
 public class AtlasTypeUtil {
-    private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<String>();
+    private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<>();
 
     static {
         Collections.addAll(ATLAS_BUILTIN_TYPENAMES, AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES);
     }
 
     public static Set<String> getReferencedTypeNames(String typeName) {
-        Set<String> ret = new HashSet<String>();
+        Set<String> ret = new HashSet<>();
 
         getReferencedTypeNames(typeName, ret);
 

@@ -93,7 +93,7 @@ public class AtlasMapType extends AtlasType {
 
     @Override
     public Map<Object, Object>  createDefaultValue() {
-        Map<Object, Object> ret = new HashMap<Object, Object>();
+        Map<Object, Object> ret = new HashMap<>();
 
         ret.put(keyType.createDefaultValue(), valueType.createDefaultValue());
 
@@ -126,7 +126,7 @@ public class AtlasMapType extends AtlasType {
         }
 
         if (obj instanceof Map) {
-            Map<Object, Object> ret = new HashMap<Object, Object>();
+            Map<Object, Object> ret = new HashMap<>();
 
             Map<Object, Objects> map = (Map<Object, Objects>) obj;
 

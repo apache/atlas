@@ -24,7 +24,6 @@ import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
-import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.commons.configuration.Configuration;

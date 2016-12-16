@@ -90,38 +90,24 @@ public class Titan0DatabaseTest {
 
         testProperty(graph, "booleanProperty", Boolean.TRUE);
         testProperty(graph, "booleanProperty", Boolean.FALSE);
-        testProperty(graph, "booleanProperty", new Boolean(Boolean.TRUE));
-        testProperty(graph, "booleanProperty", new Boolean(Boolean.FALSE));
 
         testProperty(graph, "byteProperty", Byte.MAX_VALUE);
         testProperty(graph, "byteProperty", Byte.MIN_VALUE);
-        testProperty(graph, "byteProperty", new Byte(Byte.MAX_VALUE));
-        testProperty(graph, "byteProperty", new Byte(Byte.MIN_VALUE));
 
         testProperty(graph, "shortProperty", Short.MAX_VALUE);
         testProperty(graph, "shortProperty", Short.MIN_VALUE);
-        testProperty(graph, "shortProperty", new Short(Short.MAX_VALUE));
-        testProperty(graph, "shortProperty", new Short(Short.MIN_VALUE));
 
         testProperty(graph, "intProperty", Integer.MAX_VALUE);
         testProperty(graph, "intProperty", Integer.MIN_VALUE);
-        testProperty(graph, "intProperty", new Integer(Integer.MAX_VALUE));
-        testProperty(graph, "intProperty", new Integer(Integer.MIN_VALUE));
 
         testProperty(graph, "longProperty", Long.MIN_VALUE);
         testProperty(graph, "longProperty", Long.MAX_VALUE);
-        testProperty(graph, "longProperty", new Long(Long.MIN_VALUE));
-        testProperty(graph, "longProperty", new Long(Long.MAX_VALUE));
 
         testProperty(graph, "doubleProperty", Double.MAX_VALUE);
         testProperty(graph, "doubleProperty", Double.MIN_VALUE);
-        testProperty(graph, "doubleProperty", new Double(Double.MAX_VALUE));
-        testProperty(graph, "doubleProperty", new Double(Double.MIN_VALUE));
 
         testProperty(graph, "floatProperty", Float.MAX_VALUE);
         testProperty(graph, "floatProperty", Float.MIN_VALUE);
-        testProperty(graph, "floatProperty", new Float(Float.MAX_VALUE));
-        testProperty(graph, "floatProperty", new Float(Float.MIN_VALUE));
 
         // enumerations - TypeCategory
         testProperty(graph, "typeCategoryProperty", TypeCategory.CLASS);
@@ -147,7 +133,7 @@ public class Titan0DatabaseTest {
     @Test
     public <V, E> void testMultiplicityOnePropertySupport() {
 
-        AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
+        AtlasGraph<V, E> graph = getGraph();
 
         AtlasVertex<V, E> vertex = graph.addVertex();
         vertex.setProperty("name", "Jeff");
@@ -183,7 +169,7 @@ public class Titan0DatabaseTest {
     @Test
     public <V, E> void testRemoveEdge() {
 
-        AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
+        AtlasGraph<V, E> graph = getGraph();
         AtlasVertex<V, E> v1 = graph.addVertex();
         AtlasVertex<V, E> v2 = graph.addVertex();
 
@@ -205,7 +191,7 @@ public class Titan0DatabaseTest {
     @Test
     public <V, E> void testRemoveVertex() {
 
-        AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
+        AtlasGraph<V, E> graph = getGraph();
 
         AtlasVertex<V, E> v1 = graph.addVertex();
 
@@ -219,7 +205,7 @@ public class Titan0DatabaseTest {
     @Test
     public <V, E> void testGetEdges() {
 
-        AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
+        AtlasGraph<V, E> graph = getGraph();
         AtlasVertex<V, E> v1 = graph.addVertex();
         AtlasVertex<V, E> v2 = graph.addVertex();
         AtlasVertex<V, E> v3 = graph.addVertex();
@@ -296,7 +282,7 @@ public class Titan0DatabaseTest {
 
         AtlasGraph<V, E> graph = getGraph();
         AtlasVertex<V, E> vertex = graph.addVertex();
-        vertex.setListProperty("colors", Arrays.asList(new String[] { "red", "blue", "green" }));
+        vertex.setListProperty("colors", Arrays.asList("red", "blue", "green"));
         List<String> colors = vertex.getListProperty("colors");
         assertTrue(colors.contains("red"));
         assertTrue(colors.contains("blue"));
@@ -419,7 +405,7 @@ public class Titan0DatabaseTest {
     }
 
     private static <T> List<T> toList(Iterable<? extends T> iterable) {
-        List<T> result = new ArrayList<T>();
+        List<T> result = new ArrayList<>();
         for (T item : iterable) {
             result.add(item);
         }

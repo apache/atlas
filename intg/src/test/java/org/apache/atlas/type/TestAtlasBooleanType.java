@@ -73,7 +73,7 @@ public class TestAtlasBooleanType {
 
     @Test
     public void testBooleanTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(booleanType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

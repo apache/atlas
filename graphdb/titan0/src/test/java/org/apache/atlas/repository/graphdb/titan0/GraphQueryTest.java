@@ -402,7 +402,7 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     }
 
     private static <T> List<T> toList(Iterable<T> itr) {
-        List<T> result = new ArrayList<T>();
+        List<T> result = new ArrayList<>();
         for(T object : itr) {
             result.add(object);
         }

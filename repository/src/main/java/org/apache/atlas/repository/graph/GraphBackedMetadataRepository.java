@@ -19,7 +19,6 @@
 package org.apache.atlas.repository.graph;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -349,7 +348,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
                 LOG.info("Deletion request ignored for non-existent entity with guid " + guid);
-                continue;
             }
         }
 

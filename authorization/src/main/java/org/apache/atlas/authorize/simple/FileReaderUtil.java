@@ -36,7 +36,7 @@ public class FileReaderUtil {
         if (isDebugEnabled) {
             LOG.debug("==> FileReaderUtil readFile");
         }
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         LOG.info("reading the file" + path);
         List<String> fileLines = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
         if (fileLines != null) {

@@ -111,8 +111,8 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
-    public Collection<? extends Object> createDefaultValue() {
-        Collection<Object> ret = new ArrayList<Object>();
+    public Collection<?> createDefaultValue() {
+        Collection<Object> ret = new ArrayList<>();
 
         ret.add(elementType.createDefaultValue());
 
@@ -161,13 +161,13 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
-    public Collection<? extends Object> getNormalizedValue(Object obj) {
+    public Collection<?> getNormalizedValue(Object obj) {
         if (obj == null) {
             return null;
         }
 
         if (obj instanceof List || obj instanceof Set) {
-            List<Object> ret = new ArrayList<Object>();
+            List<Object> ret = new ArrayList<>();
 
             Collection objList = (Collection) obj;
 
@@ -191,7 +191,7 @@ public class AtlasArrayType extends AtlasType {
 
             return ret;
         } else if (obj.getClass().isArray()) {
-            List<Object> ret = new ArrayList<Object>();
+            List<Object> ret = new ArrayList<>();
 
             int arrayLen = Array.getLength(obj);
 

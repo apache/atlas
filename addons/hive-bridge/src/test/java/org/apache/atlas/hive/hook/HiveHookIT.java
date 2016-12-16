@@ -533,7 +533,7 @@ public class HiveHookIT extends HiveITBase {
         Referenceable processRef1 = validateProcess(event, expectedInputs, outputs);
 
         //Test sorting of tbl names
-        SortedSet<String> sortedTblNames = new TreeSet<String>();
+        SortedSet<String> sortedTblNames = new TreeSet<>();
         sortedTblNames.add(inputTable1Name.toLowerCase());
         sortedTblNames.add(inputTable2Name.toLowerCase());
 
@@ -584,13 +584,13 @@ public class HiveHookIT extends HiveITBase {
 
         Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         final Set<WriteEntity> outputs = getOutputs(pFile1, Entity.Type.DFS_DIR);
-        ((WriteEntity)outputs.iterator().next()).setWriteType(WriteEntity.WriteType.PATH_WRITE);
+        outputs.iterator().next().setWriteType(WriteEntity.WriteType.PATH_WRITE);
 
         final HiveHook.HiveEventContext hiveEventContext = constructEvent(query, HiveOperation.QUERY, inputs, outputs);
         Referenceable processReference = validateProcess(hiveEventContext);
         validateHDFSPaths(processReference, OUTPUTS, pFile1);
 
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsRegistered(DEFAULT_DB, tableName);
         validateInputTables(processReference, inputs);
 
         //Rerun same query with same HDFS path
@@ -630,7 +630,7 @@ public class HiveHookIT extends HiveITBase {
 
         Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         final Set<WriteEntity> outputs = getOutputs(pFile1, Entity.Type.DFS_DIR);
-        ((WriteEntity)outputs.iterator().next()).setWriteType(WriteEntity.WriteType.PATH_WRITE);
+        outputs.iterator().next().setWriteType(WriteEntity.WriteType.PATH_WRITE);
 
         final Set<ReadEntity> partitionIps = new LinkedHashSet<>(inputs);
         partitionIps.addAll(getInputs(DEFAULT_DB + "@" + tableName + "@dt='" + PART_FILE + "'", Entity.Type.PARTITION));
@@ -646,7 +646,7 @@ public class HiveHookIT extends HiveITBase {
         runCommand(query);
 
         final Set<WriteEntity> pFile2Outputs = getOutputs(pFile2, Entity.Type.DFS_DIR);
-        ((WriteEntity)pFile2Outputs.iterator().next()).setWriteType(WriteEntity.WriteType.PATH_WRITE);
+        pFile2Outputs.iterator().next().setWriteType(WriteEntity.WriteType.PATH_WRITE);
         //Now the process has 2 paths - one older with deleted reference to partition and another with the the latest partition
         Set<WriteEntity> p2Outputs = new LinkedHashSet<WriteEntity>() {{
             addAll(pFile2Outputs);
@@ -676,7 +676,7 @@ public class HiveHookIT extends HiveITBase {
         Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         Set<WriteEntity> outputs = getOutputs(insertTableName, Entity.Type.TABLE);
         outputs.iterator().next().setName(getQualifiedTblName(insertTableName + HiveMetaStoreBridge.TEMP_TABLE_PREFIX + SessionState.get().getSessionId()));
-        ((WriteEntity)outputs.iterator().next()).setWriteType(WriteEntity.WriteType.INSERT);
+        outputs.iterator().next().setWriteType(WriteEntity.WriteType.INSERT);
 
         validateProcess(constructEvent(query,  HiveOperation.QUERY, inputs, outputs));
 
@@ -696,7 +696,7 @@ public class HiveHookIT extends HiveITBase {
 
         final Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         final Set<WriteEntity> outputs = getOutputs(insertTableName, Entity.Type.TABLE);
-        ((WriteEntity)outputs.iterator().next()).setWriteType(WriteEntity.WriteType.INSERT);
+        outputs.iterator().next().setWriteType(WriteEntity.WriteType.INSERT);
 
         final Set<ReadEntity> partitionIps = new LinkedHashSet<ReadEntity>() {
             {
@@ -1673,7 +1673,7 @@ public class HiveHookIT extends HiveITBase {
     private void verifyProperties(Struct referenceable, Map<String, String> expectedProps, boolean checkIfNotExists) {
         Map<String, String> parameters = (Map<String, String>) referenceable.get(HiveMetaStoreBridge.PARAMETERS);
 
-        if (checkIfNotExists == false) {
+        if (!checkIfNotExists) {
             //Check if properties exist
             Assert.assertNotNull(parameters);
             for (String propKey : expectedProps.keySet()) {
@@ -1745,11 +1745,11 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private String getDSTypeName(Entity entity) {
-        return Entity.Type.TABLE.equals(entity.getType()) ? HiveDataTypes.HIVE_TABLE.name() : HiveMetaStoreBridge.HDFS_PATH.toString();
+        return Entity.Type.TABLE.equals(entity.getType()) ? HiveDataTypes.HIVE_TABLE.name() : HiveMetaStoreBridge.HDFS_PATH;
     }
 
     private <T extends Entity> SortedMap<T, Referenceable> getSortedProcessDataSets(Set<T> inputTbls) {
-        SortedMap<T, Referenceable> inputs = new TreeMap<T, Referenceable>(entityComparator);
+        SortedMap<T, Referenceable> inputs = new TreeMap<>(entityComparator);
         if (inputTbls != null) {
             for (final T tbl : inputTbls) {
                 Referenceable inputTableRef = new Referenceable(getDSTypeName(tbl), new HashMap<String, Object>() {{

@@ -129,19 +129,19 @@ public class StructInstance implements ITypedStruct {
         }
         nullFlags[nullPos] = false;
         if (i.dataType() == DataTypes.BOOLEAN_TYPE) {
-            bools[pos] = ((Boolean) cVal).booleanValue();
+            bools[pos] = (Boolean) cVal;
         } else if (i.dataType() == DataTypes.BYTE_TYPE) {
-            bytes[pos] = ((Byte) cVal).byteValue();
+            bytes[pos] = (Byte) cVal;
         } else if (i.dataType() == DataTypes.SHORT_TYPE) {
-            shorts[pos] = ((Short) cVal).shortValue();
+            shorts[pos] = (Short) cVal;
         } else if (i.dataType() == DataTypes.INT_TYPE) {
-            ints[pos] = ((Integer) cVal).intValue();
+            ints[pos] = (Integer) cVal;
         } else if (i.dataType() == DataTypes.LONG_TYPE) {
-            longs[pos] = ((Long) cVal).longValue();
+            longs[pos] = (Long) cVal;
         } else if (i.dataType() == DataTypes.FLOAT_TYPE) {
-            floats[pos] = ((Float) cVal).floatValue();
+            floats[pos] = (Float) cVal;
         } else if (i.dataType() == DataTypes.DOUBLE_TYPE) {
-            doubles[pos] = ((Double) cVal).doubleValue();
+            doubles[pos] = (Double) cVal;
         } else if (i.dataType() == DataTypes.BIGINTEGER_TYPE) {
             bigIntegers[pos] = (BigInteger) cVal;
         } else if (i.dataType() == DataTypes.BIGDECIMAL_TYPE) {

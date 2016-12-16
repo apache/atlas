@@ -30,7 +30,6 @@ import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticatedURL;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticator;
 import org.apache.hadoop.security.token.delegation.web.KerberosDelegationTokenAuthenticator;
-import org.apache.hadoop.security.token.delegation.web.PseudoDelegationTokenAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +55,7 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
  */
 public class SecureClientUtils {
 
-    public final static int DEFAULT_SOCKET_TIMEOUT = 1 * 60 * 1000; // 1 minute
+    public final static int DEFAULT_SOCKET_TIMEOUT_IN_MSECS = 1 * 60 * 1000; // 1 minute
     private static final Logger LOG = LoggerFactory.getLogger(SecureClientUtils.class);
 
 
@@ -120,14 +119,14 @@ public class SecureClientUtils {
     private final static ConnectionConfigurator DEFAULT_TIMEOUT_CONN_CONFIGURATOR = new ConnectionConfigurator() {
         @Override
         public HttpURLConnection configure(HttpURLConnection conn) throws IOException {
-            setTimeouts(conn, DEFAULT_SOCKET_TIMEOUT);
+            setTimeouts(conn, DEFAULT_SOCKET_TIMEOUT_IN_MSECS);
             return conn;
         }
     };
 
     private static ConnectionConfigurator newConnConfigurator(Configuration conf) {
         try {
-            return newSslConnConfigurator(DEFAULT_SOCKET_TIMEOUT, conf);
+            return newSslConnConfigurator(DEFAULT_SOCKET_TIMEOUT_IN_MSECS, conf);
         } catch (Exception e) {
             LOG.debug("Cannot load customized ssl related configuration. " + "Fallback to system-generic settings.", e);
             return DEFAULT_TIMEOUT_CONN_CONFIGURATOR;

@@ -20,7 +20,6 @@ package org.apache.atlas.catalog.definition;
 
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.transform.TransformFunctionPipe;
-import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.TaxonomyResourceProvider;
 import org.apache.atlas.catalog.VertexWrapper;

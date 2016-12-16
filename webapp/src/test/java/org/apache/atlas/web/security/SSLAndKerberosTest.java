@@ -72,7 +72,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
 
-        persistSSLClientConfiguration((org.apache.commons.configuration.Configuration) configuration);
+        persistSSLClientConfiguration(configuration);
 
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
             ApplicationProperties.APPLICATION_PROPERTIES);
@@ -163,13 +163,13 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
             @Override
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                for (int i = 0; i < callbacks.length; i++) {
-                    if (callbacks[i] instanceof PasswordCallback) {
-                        PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+                for (Callback callback : callbacks) {
+                    if (callback instanceof PasswordCallback) {
+                        PasswordCallback passwordCallback = (PasswordCallback) callback;
                         passwordCallback.setPassword(TESTPASS.toCharArray());
                     }
-                    if (callbacks[i] instanceof NameCallback) {
-                        NameCallback nameCallback = (NameCallback) callbacks[i];
+                    if (callback instanceof NameCallback) {
+                        NameCallback nameCallback = (NameCallback) callback;
                         nameCallback.setName(TESTUSER);
                     }
                 }

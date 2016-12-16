@@ -38,7 +38,7 @@ public class SimpleAtlasAuthorizerTest {
 
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap = null;
         Map<String, Map<AtlasResourceTypes, List<String>>> groupReadMap = null;
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;type:*abc,type:PII");
 
         List<PolicyDef> policyDefs = new PolicyParser().parsePolicies(policies);
@@ -50,13 +50,13 @@ public class SimpleAtlasAuthorizerTest {
         userReadMap = policyUtil.createPermissionMap(policyDefs,
                 AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.USER);
 
-        Set<AtlasResourceTypes> resourceType = new HashSet<AtlasResourceTypes>();
+        Set<AtlasResourceTypes> resourceType = new HashSet<>();
         resourceType.add(AtlasResourceTypes.TYPE);
         String resource = "xsdfhjabc";
         AtlasActionTypes action = AtlasActionTypes.READ;
         String user = "usr1";
 
-        Set<String> userGroups = new HashSet<String>();
+        Set<String> userGroups = new HashSet<>();
         userGroups.add("grp3");
         try {
             AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
@@ -83,7 +83,7 @@ public class SimpleAtlasAuthorizerTest {
 
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap = null;
         Map<String, Map<AtlasResourceTypes, List<String>>> groupReadMap = null;
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;type:PII");
 
         List<PolicyDef> policyDefs = new PolicyParser().parsePolicies(policies);
@@ -95,12 +95,12 @@ public class SimpleAtlasAuthorizerTest {
         userReadMap = policyUtil.createPermissionMap(policyDefs,
                 AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.USER);
 
-        Set<AtlasResourceTypes> resourceType = new HashSet<AtlasResourceTypes>();
+        Set<AtlasResourceTypes> resourceType = new HashSet<>();
         resourceType.add(AtlasResourceTypes.TYPE);
         String resource = "PII";
         AtlasActionTypes action = AtlasActionTypes.READ;
         String user = "usr3";
-        Set<String> userGroups = new HashSet<String>();
+        Set<String> userGroups = new HashSet<>();
         userGroups.add("grp1");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
                 resource, action, user, userGroups);
@@ -126,7 +126,7 @@ public class SimpleAtlasAuthorizerTest {
 
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap = null;
         Map<String, Map<AtlasResourceTypes, List<String>>> groupReadMap = null;
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;type:PII");
 
         List<PolicyDef> policyDefs = new PolicyParser().parsePolicies(policies);
@@ -138,12 +138,12 @@ public class SimpleAtlasAuthorizerTest {
         userReadMap = policyUtil.createPermissionMap(policyDefs,
                 AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.USER);
 
-        Set<AtlasResourceTypes> resourceType = new HashSet<AtlasResourceTypes>();
+        Set<AtlasResourceTypes> resourceType = new HashSet<>();
         resourceType.add(AtlasResourceTypes.TYPE);
         String resource = "abc";
         AtlasActionTypes action = AtlasActionTypes.READ;
         String user = "usr1";
-        Set<String> userGroups = new HashSet<String>();
+        Set<String> userGroups = new HashSet<>();
         userGroups.add("grp1");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
                 resource, action, user, userGroups);
@@ -168,7 +168,7 @@ public class SimpleAtlasAuthorizerTest {
 
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap = null;
         Map<String, Map<AtlasResourceTypes, List<String>>> groupReadMap = null;
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;type:PII");
 
         List<PolicyDef> policyDefs = new PolicyParser().parsePolicies(policies);
@@ -180,12 +180,12 @@ public class SimpleAtlasAuthorizerTest {
         userReadMap = policyUtil.createPermissionMap(policyDefs,
                 AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.USER);
 
-        Set<AtlasResourceTypes> resourceType = new HashSet<AtlasResourceTypes>();
+        Set<AtlasResourceTypes> resourceType = new HashSet<>();
         resourceType.add(AtlasResourceTypes.TYPE);
         String resource = "PII";
         AtlasActionTypes action = AtlasActionTypes.READ;
         String user = "usr3";
-        Set<String> userGroups = new HashSet<String>();
+        Set<String> userGroups = new HashSet<>();
         userGroups.add("grp3");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
                 resource, action, user, userGroups);

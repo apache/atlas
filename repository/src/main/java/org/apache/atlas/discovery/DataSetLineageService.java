@@ -218,11 +218,9 @@ public class DataSetLineageService implements LineageService {
      * @param guid entity id
      */
     private String validateDatasetExists(String guid) throws AtlasException {
-        Iterator<AtlasVertex> results = graph.query().has(Constants.GUID_PROPERTY_KEY, guid)
-                          .has(Constants.SUPER_TYPES_PROPERTY_KEY, AtlasClient.DATA_SET_SUPER_TYPE)
-                          .vertices().iterator();
-        while (results.hasNext()) {
-            AtlasVertex vertex = results.next();
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) graph.query().has(Constants.GUID_PROPERTY_KEY, guid)
+                .has(Constants.SUPER_TYPES_PROPERTY_KEY, AtlasClient.DATA_SET_SUPER_TYPE)
+                .vertices()) {
             return GraphHelper.getTypeName(vertex);
         }
         throw new EntityNotFoundException("Dataset with guid = " + guid + " does not exist");

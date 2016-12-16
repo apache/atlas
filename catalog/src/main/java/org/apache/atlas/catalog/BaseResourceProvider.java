@@ -23,8 +23,6 @@ import org.apache.atlas.catalog.exception.InvalidPayloadException;
 import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.query.QueryFactory;
 
-import java.util.Collections;
-
 /**
  * Base class for resource providers.
  */

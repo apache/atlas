@@ -103,7 +103,7 @@ public class UserDao {
             throw new AtlasAuthenticationException("User role credentials is not set properly for " + username );
         }
 
-        List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
+        List<GrantedAuthority> grantedAuths = new ArrayList<>();
         if (StringUtils.hasText(role)) {
             grantedAuths.add(new SimpleGrantedAuthority(role));
         } else {
@@ -129,8 +129,8 @@ public class UserDao {
             byte[] hash = digest.digest(base.getBytes("UTF-8"));
             StringBuffer hexString = new StringBuffer();
 
-            for (int i = 0; i < hash.length; i++) {
-                String hex = Integer.toHexString(0xff & hash[i]);
+            for (byte aHash : hash) {
+                String hex = Integer.toHexString(0xff & aHash);
                 if (hex.length() == 1) hexString.append('0');
                 hexString.append(hex);
             }

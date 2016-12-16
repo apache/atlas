@@ -772,7 +772,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private static class AtlasEntity {
         String typeName;
-        final Map<String, Object> values = new HashMap<String, Object>();
+        final Map<String, Object> values = new HashMap<>();
     }
 
     @Test

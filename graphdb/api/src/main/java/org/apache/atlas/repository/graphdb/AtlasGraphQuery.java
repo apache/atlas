@@ -50,7 +50,7 @@ public interface AtlasGraphQuery<V, E> {
      * @param value
      * @return
      */
-    AtlasGraphQuery<V, E> in(String propertyKey, Collection<? extends Object> values);
+    AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values);
 
 
     /**

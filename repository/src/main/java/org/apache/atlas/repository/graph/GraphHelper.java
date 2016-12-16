@@ -388,7 +388,7 @@ public final class GraphHelper {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         LOG.debug("Reading property {} from {}", actualPropertyName, elementStr);    
        
-        return (T)element.getProperty(actualPropertyName, clazz);              
+        return element.getProperty(actualPropertyName, clazz);
     }
 
 
@@ -510,7 +510,7 @@ public final class GraphHelper {
     }
 
     public static String getIdFromVertex(AtlasVertex vertex) {
-        return vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+        return vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
     public static String getTypeName(AtlasVertex instanceVertex) {
@@ -687,7 +687,6 @@ public final class GraphHelper {
                         }
                         break;
                     default:
-                        continue;
                 }
             }
         }
@@ -797,7 +796,7 @@ public final class GraphHelper {
     }
 
     public static String string(ITypedReferenceableInstance instance) {
-        return String.format("entity[type=%s guid=%]", instance.getTypeName(), instance.getId()._getId());
+        return String.format("entity[type=%s guid=%s]", instance.getTypeName(), instance.getId()._getId());
     }
 
     public static String string(AtlasVertex<?,?> vertex) {

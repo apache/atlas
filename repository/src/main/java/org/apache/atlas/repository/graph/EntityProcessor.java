@@ -40,7 +40,7 @@ public final class EntityProcessor implements ObjectGraphWalker.NodeProcessor {
     }
 
     public Collection<IReferenceableInstance> getInstances() {
-        ArrayList<IReferenceableInstance> instances = new ArrayList<IReferenceableInstance>(idToInstanceMap.values());
+        ArrayList<IReferenceableInstance> instances = new ArrayList<>(idToInstanceMap.values());
         Collections.reverse(instances);
         return instances;
     }

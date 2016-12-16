@@ -55,9 +55,8 @@ public abstract class AtlasAbstractAuthenticationProvider implements
         UsernamePasswordAuthenticationToken result = null;
         if (authentication != null && authentication.isAuthenticated()) {
             final List<GrantedAuthority> grantedAuths = getAuthorities(authentication
-                    .getName().toString());
-            final UserDetails userDetails = new User(authentication.getName()
-                    .toString(), authentication.getCredentials().toString(),
+                    .getName());
+            final UserDetails userDetails = new User(authentication.getName(), authentication.getCredentials().toString(),
                     grantedAuths);
             result = new UsernamePasswordAuthenticationToken(userDetails,
                     authentication.getCredentials(), grantedAuths);
@@ -72,7 +71,7 @@ public abstract class AtlasAbstractAuthenticationProvider implements
      * 
      */
     protected List<GrantedAuthority> getAuthorities(String username) {
-        final List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
+        final List<GrantedAuthority> grantedAuths = new ArrayList<>();
         grantedAuths.add(new SimpleGrantedAuthority("DATA_SCIENTIST"));
         return grantedAuths;
     }
@@ -84,10 +83,9 @@ public abstract class AtlasAbstractAuthenticationProvider implements
         if (authentication != null && authentication.isAuthenticated()) {
 
             List<GrantedAuthority> grantedAuthsUGI = getAuthoritiesFromUGI(authentication
-                    .getName().toString());
+                    .getName());
 
-            final UserDetails userDetails = new User(authentication.getName()
-                    .toString(), authentication.getCredentials().toString(),
+            final UserDetails userDetails = new User(authentication.getName(), authentication.getCredentials().toString(),
                     grantedAuthsUGI);
             result = new UsernamePasswordAuthenticationToken(userDetails,
                     authentication.getCredentials(), grantedAuthsUGI);

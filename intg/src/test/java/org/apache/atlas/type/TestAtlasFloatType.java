@@ -95,7 +95,7 @@ public class TestAtlasFloatType {
 
     @Test
     public void testFloatTypeValidateValue() {
-        List<String> messages = new ArrayList<String>();
+        List<String> messages = new ArrayList<>();
         for (Object value : validValues) {
             assertTrue(floatType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);

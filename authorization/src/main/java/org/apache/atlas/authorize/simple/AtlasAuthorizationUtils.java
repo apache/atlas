@@ -103,7 +103,7 @@ public class AtlasAuthorizationUtils {
      *         unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
      */
     public static Set<AtlasResourceTypes> getAtlasResourceType(String contextPath) {
-        Set<AtlasResourceTypes> resourceTypes = new HashSet<AtlasResourceTypes>();
+        Set<AtlasResourceTypes> resourceTypes = new HashSet<>();
         if (isDebugEnabled) {
             LOG.debug("==> getAtlasResourceType  for " + contextPath);
         }

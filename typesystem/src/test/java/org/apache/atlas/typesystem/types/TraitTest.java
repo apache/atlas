@@ -70,16 +70,16 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
-        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.<String>of("A"),
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
         HierarchicalTypeDefinition C =
-                createTraitTypeDef("C", ImmutableSet.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
-        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.<String>of("B", "C"),
+                createTraitTypeDef("C", ImmutableSet.of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(A, B, C, D);
 
-        TraitType DType = (TraitType) getTypeSystem().getDataType(TraitType.class, "D");
+        TraitType DType = getTypeSystem().getDataType(TraitType.class, "D");
 
         //        for(String aName : DType.fieldMapping().fields.keySet()) {
         //            System.out.println(String.format("nameToQualifiedName.put(\"%s\", \"%s\");", aName, DType
@@ -134,7 +134,7 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         /*
          * cast to B and set the 'b' attribute on A.
          */
-        TraitType BType = (TraitType) getTypeSystem().getDataType(TraitType.class, "B");
+        TraitType BType = getTypeSystem().getDataType(TraitType.class, "B");
         IStruct s2 = DType.castAs(ts, "B");
         s2.set("A.B.b", false);
 
@@ -155,7 +155,7 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         /*
          * cast again to A and set the 'b' attribute on A.
          */
-        TraitType AType = (TraitType) getTypeSystem().getDataType(TraitType.class, "A");
+        TraitType AType = getTypeSystem().getDataType(TraitType.class, "A");
         IStruct s3 = BType.castAs(s2, "A");
         s3.set("b", true);
         Assert.assertEquals(ts.toString(), "{\n" +
@@ -178,16 +178,16 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
-        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.<String>of("A"),
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableSet.<String>of("A"),
+        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableSet.of("A"),
                 createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
-        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.<String>of("B", "C"),
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(B, D, A, C);
 
-        TraitType DType = (TraitType) getTypeSystem().getDataType(TraitType.class, "D");
+        TraitType DType = getTypeSystem().getDataType(TraitType.class, "D");
 
         Struct s1 = new Struct("D");
         s1.set("d", 1);

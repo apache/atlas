@@ -103,9 +103,9 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         }
 
         if (CollectionUtils.isEmpty(superTypes)) {
-            this.superTypes = new HashSet<String>();
+            this.superTypes = new HashSet<>();
         } else {
-            this.superTypes = new HashSet<String>(superTypes);
+            this.superTypes = new HashSet<>(superTypes);
         }
     }
 
@@ -117,7 +117,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         Set<String> s = this.superTypes;
 
         if (!hasSuperType(s, typeName)) {
-            s = new HashSet<String>(s);
+            s = new HashSet<>(s);
 
             s.add(typeName);
 
@@ -129,7 +129,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         Set<String> s = this.superTypes;
 
         if (hasSuperType(s, typeName)) {
-            s = new HashSet<String>(s);
+            s = new HashSet<>(s);
 
             s.remove(typeName);
 

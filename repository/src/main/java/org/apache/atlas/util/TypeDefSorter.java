@@ -17,12 +17,9 @@
  */
 package org.apache.atlas.util;
 
-import com.google.common.collect.ImmutableSet;
-
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

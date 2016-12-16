@@ -575,7 +575,7 @@ public class HiveMetaStoreBridge {
     }
 
     public Referenceable fillHDFSDataSet(String pathUri) {
-        Referenceable ref = new Referenceable(HDFS_PATH.toString());
+        Referenceable ref = new Referenceable(HDFS_PATH);
         ref.set("path", pathUri);
         Path path = new Path(pathUri);
         ref.set(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());

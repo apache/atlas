@@ -644,8 +644,8 @@ public class DefaultMetadataServiceTest {
         List<Referenceable> actualArray = (List<Referenceable>) entityDefinition.get(arrAttrName);
         if (expectedArray == null && actualArray != null) {
             //all are marked as deleted in case of soft delete
-            for (int index = 0; index < actualArray.size(); index++) {
-                assertEquals(actualArray.get(index).getId().state, Id.EntityState.DELETED);
+            for (Referenceable referenceable : actualArray) {
+                assertEquals(referenceable.getId().state, Id.EntityState.DELETED);
             }
         } else if(expectedArray == null) {
             //hard delete case

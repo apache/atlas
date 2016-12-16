@@ -45,7 +45,7 @@ final class AtlasPluginClassLoaderUtil {
             LOG.debug("==> AtlasPluginClassLoaderUtil.getFilesInDirectories()");
         }
 
-        List<URL> ret = new ArrayList<URL>();
+        List<URL> ret = new ArrayList<>();
 
         for (String libDir : libDirs) {
             getFilesInDirectory(libDir, ret);

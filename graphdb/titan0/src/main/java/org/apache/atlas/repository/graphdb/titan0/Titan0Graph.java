@@ -319,12 +319,12 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> wrapEdges(Iterator<Edge> it) {
 
-        Iterable<Edge> iterable = new IteratorToIterableAdapter<Edge>(it);
+        Iterable<Edge> iterable = new IteratorToIterableAdapter<>(it);
         return wrapEdges(iterable);
     }
 
     public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> wrapVertices(Iterator<Vertex> it) {
-        Iterable<Vertex> iterable = new IteratorToIterableAdapter<Vertex>(it);
+        Iterable<Vertex> iterable = new IteratorToIterableAdapter<>(it);
         return wrapVertices(iterable);
     }
 
@@ -341,7 +341,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> wrapEdges(Iterable<Edge> it) {
-        Iterable<Edge> result = (Iterable<Edge>)it;
+        Iterable<Edge> result = it;
         return Iterables.transform(result, new Function<Edge, AtlasEdge<Titan0Vertex, Titan0Edge>>(){
 
             @Override

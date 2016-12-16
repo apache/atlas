@@ -18,7 +18,6 @@
 
 package org.apache.atlas.examples;
 
-import org.apache.atlas.Atlas;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.Referenceable;

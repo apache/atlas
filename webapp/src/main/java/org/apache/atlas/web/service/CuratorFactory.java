@@ -125,7 +125,7 @@ public class CuratorFactory {
                     getIdForLogging(acl.getId().getScheme(), acl.getId().getId()),
                     acl.getId().getScheme(), acl.getPerms());
             LOG.info("Current logged in user: {}", getCurrentUser());
-            final List<ACL> acls = Arrays.asList(new ACL[]{acl});
+            final List<ACL> acls = Arrays.asList(acl);
             aclProvider = new ACLProvider() {
                 @Override
                 public List<ACL> getDefaultAcl() {

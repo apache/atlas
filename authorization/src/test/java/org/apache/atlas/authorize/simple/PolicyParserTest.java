@@ -33,42 +33,42 @@ public class PolicyParserTest {
 
     @Test
     public void testParsePoliciesWithAllProperties() {
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;grp1:rwu,grp2:u;;entity:*abc,operation:*xyz,type:PII");
         /* Creating group data */
-        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<String, List<AtlasActionTypes>>();
-        List<AtlasActionTypes> accessList1 = new ArrayList<AtlasActionTypes>();
+        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<>();
+        List<AtlasActionTypes> accessList1 = new ArrayList<>();
         accessList1.add(AtlasActionTypes.READ);
         accessList1.add(AtlasActionTypes.CREATE);
         accessList1.add(AtlasActionTypes.UPDATE);
 
         groupMap.put("grp1", accessList1);
-        List<AtlasActionTypes> accessList2 = new ArrayList<AtlasActionTypes>();
+        List<AtlasActionTypes> accessList2 = new ArrayList<>();
         accessList2.add(AtlasActionTypes.UPDATE);
         groupMap.put("grp2", accessList2);
 
         /* Creating user data */
-        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<String, List<AtlasActionTypes>>();
-        List<AtlasActionTypes> usr1AccessList = new ArrayList<AtlasActionTypes>();
+        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<>();
+        List<AtlasActionTypes> usr1AccessList = new ArrayList<>();
         usr1AccessList.add(AtlasActionTypes.READ);
         usersMap.put("usr1", usr1AccessList);
 
-        List<AtlasActionTypes> usr2AccessList = new ArrayList<AtlasActionTypes>();
+        List<AtlasActionTypes> usr2AccessList = new ArrayList<>();
         usr2AccessList.add(AtlasActionTypes.READ);
         usr2AccessList.add(AtlasActionTypes.CREATE);
         usersMap.put("usr2", usr2AccessList);
 
         /* Creating resources data */
-        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<AtlasResourceTypes, List<String>>();
-        List<String> resource1List = new ArrayList<String>();
+        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<>();
+        List<String> resource1List = new ArrayList<>();
         resource1List.add("*abc");
         resourceMap.put(AtlasResourceTypes.ENTITY, resource1List);
 
-        List<String> resource2List = new ArrayList<String>();
+        List<String> resource2List = new ArrayList<>();
         resource2List.add("*xyz");
         resourceMap.put(AtlasResourceTypes.OPERATION, resource2List);
 
-        List<String> resource3List = new ArrayList<String>();
+        List<String> resource3List = new ArrayList<>();
         resource3List.add("PII");
         resourceMap.put(AtlasResourceTypes.TYPE, resource3List);
 
@@ -86,34 +86,34 @@ public class PolicyParserTest {
 
     @Test
     public void testParsePoliciesWithOutUserProperties() {
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;;;grp1:rwu,grp2:u;;entity:*abc,operation:*xyz,type:PII");
         // Creating group data
-        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<String, List<AtlasActionTypes>>();
-        List<AtlasActionTypes> accessList1 = new ArrayList<AtlasActionTypes>();
+        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<>();
+        List<AtlasActionTypes> accessList1 = new ArrayList<>();
         accessList1.add(AtlasActionTypes.READ);
         accessList1.add(AtlasActionTypes.CREATE);
         accessList1.add(AtlasActionTypes.UPDATE);
 
         groupMap.put("grp1", accessList1);
-        List<AtlasActionTypes> accessList2 = new ArrayList<AtlasActionTypes>();
+        List<AtlasActionTypes> accessList2 = new ArrayList<>();
         accessList2.add(AtlasActionTypes.UPDATE);
         groupMap.put("grp2", accessList2);
 
         // Creating user data
-        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<String, List<AtlasActionTypes>>();
+        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<>();
 
         // Creating resources data
-        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<AtlasResourceTypes, List<String>>();
-        List<String> resource1List = new ArrayList<String>();
+        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<>();
+        List<String> resource1List = new ArrayList<>();
         resource1List.add("*abc");
         resourceMap.put(AtlasResourceTypes.ENTITY, resource1List);
 
-        List<String> resource2List = new ArrayList<String>();
+        List<String> resource2List = new ArrayList<>();
         resource2List.add("*xyz");
         resourceMap.put(AtlasResourceTypes.OPERATION, resource2List);
 
-        List<String> resource3List = new ArrayList<String>();
+        List<String> resource3List = new ArrayList<>();
         resource3List.add("PII");
         resourceMap.put(AtlasResourceTypes.TYPE, resource3List);
 
@@ -131,33 +131,33 @@ public class PolicyParserTest {
 
     @Test
     public void testParsePoliciesWithOutGroupProperties() {
-        List<String> policies = new ArrayList<String>();
+        List<String> policies = new ArrayList<>();
         policies.add("hivePolicy;;usr1:r,usr2:rw;;;;entity:*abc,operation:*xyz,type:PII");
         // Creating group data
-        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<String, List<AtlasActionTypes>>();
+        Map<String, List<AtlasActionTypes>> groupMap = new HashMap<>();
 
         // Creating user data
-        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<String, List<AtlasActionTypes>>();
-        List<AtlasActionTypes> usr1AccessList = new ArrayList<AtlasActionTypes>();
+        Map<String, List<AtlasActionTypes>> usersMap = new HashMap<>();
+        List<AtlasActionTypes> usr1AccessList = new ArrayList<>();
         usr1AccessList.add(AtlasActionTypes.READ);
         usersMap.put("usr1", usr1AccessList);
 
-        List<AtlasActionTypes> usr2AccessList = new ArrayList<AtlasActionTypes>();
+        List<AtlasActionTypes> usr2AccessList = new ArrayList<>();
         usr2AccessList.add(AtlasActionTypes.READ);
         usr2AccessList.add(AtlasActionTypes.CREATE);
         usersMap.put("usr2", usr2AccessList);
 
         // Creating resources data
-        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<AtlasResourceTypes, List<String>>();
-        List<String> resource1List = new ArrayList<String>();
+        Map<AtlasResourceTypes, List<String>> resourceMap = new HashMap<>();
+        List<String> resource1List = new ArrayList<>();
         resource1List.add("*abc");
         resourceMap.put(AtlasResourceTypes.ENTITY, resource1List);
 
-        List<String> resource2List = new ArrayList<String>();
+        List<String> resource2List = new ArrayList<>();
         resource2List.add("*xyz");
         resourceMap.put(AtlasResourceTypes.OPERATION, resource2List);
 
-        List<String> resource3List = new ArrayList<String>();
+        List<String> resource3List = new ArrayList<>();
         resource3List.add("PII");
         resourceMap.put(AtlasResourceTypes.TYPE, resource3List);
 

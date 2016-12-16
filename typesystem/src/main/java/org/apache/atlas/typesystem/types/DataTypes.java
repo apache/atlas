@@ -79,7 +79,7 @@ public class DataTypes {
         return mapTypeName(keyType.getName(), valueType.getName());
     }
 
-    public static enum TypeCategory {
+    public enum TypeCategory {
         PRIMITIVE,
         ENUM,
         ARRAY,
@@ -179,7 +179,7 @@ public class DataTypes {
         @Override
         public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
             if ( val != null ) {
-                digester.update(((Byte) val).byteValue());
+                digester.update((Byte) val);
             }
         }
     }
@@ -267,7 +267,7 @@ public class DataTypes {
         }
 
         public Long nullValue() {
-            return 0l;
+            return 0L;
         }
     }
 
@@ -524,9 +524,7 @@ public class DataTypes {
                 return val;
             }
             ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
-            Iterator it = val.iterator();
-            while (it.hasNext()) {
-                Object elem = it.next();
+            for (Object elem : val) {
                 if (elem instanceof IReferenceableInstance) {
                     Id oldId = ((IReferenceableInstance) elem).getId();
                     Id newId = transientToNewIds.get(oldId);
@@ -613,9 +611,7 @@ public class DataTypes {
                 return val;
             }
             ImmutableMap.Builder b = ImmutableMap.builder();
-            Iterator<Map.Entry> it = val.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry elem = it.next();
+            for (Map.Entry elem : (Iterable<Map.Entry>) val.entrySet()) {
                 Object oldKey = elem.getKey();
                 Object oldValue = elem.getValue();
                 Object newKey = oldKey;

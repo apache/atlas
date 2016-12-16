@@ -144,7 +144,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
 
 
     @Override
-    public AtlasGraphQuery<V, E> in(String propertyKey, Collection<? extends Object> values) {
+    public AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values) {
         queryCondition.andWith(new InPredicate(propertyKey, values));
         return this;
     }

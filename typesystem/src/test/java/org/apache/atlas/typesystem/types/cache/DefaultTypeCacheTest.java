@@ -176,7 +176,7 @@ public class DefaultTypeCacheTest {
     @Test
     public void testCacheGetAllTypeNames() throws Exception {
 
-        List<String> allTypeNames = new ArrayList<String>(cache.getAllTypeNames());
+        List<String> allTypeNames = new ArrayList<>(cache.getAllTypeNames());
         Collections.sort(allTypeNames);
 
         final int EXPECTED_TYPE_COUNT = 4;

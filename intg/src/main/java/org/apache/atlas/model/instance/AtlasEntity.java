@@ -55,7 +55,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
      */
-    public enum Status { STATUS_ACTIVE, STATUS_DELETED };
+    public enum Status { STATUS_ACTIVE, STATUS_DELETED }
 
     private String guid       = null;
     private Status status     = Status.STATUS_ACTIVE;

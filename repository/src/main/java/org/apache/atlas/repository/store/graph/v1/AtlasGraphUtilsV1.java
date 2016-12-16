@@ -69,7 +69,7 @@ public class AtlasGraphUtilsV1 {
     }
 
     public static String getIdFromVertex(AtlasVertex vertex) {
-        return vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+        return vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
     public static String getTypeName(AtlasVertex instanceVertex) {

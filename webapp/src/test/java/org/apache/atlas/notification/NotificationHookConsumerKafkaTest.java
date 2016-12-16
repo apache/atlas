@@ -121,9 +121,7 @@ public class NotificationHookConsumerKafkaTest {
 
         try {
             hookConsumer.handleMessage(consumer.next());
-        } catch (AtlasServiceException e) {
-            Assert.fail("Consumer failed with exception ", e);
-        } catch (AtlasException e) {
+        } catch (AtlasServiceException | AtlasException e) {
             Assert.fail("Consumer failed with exception ", e);
         }
     }

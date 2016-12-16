@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class TypedStructHandler {
@@ -49,7 +50,7 @@ public class TypedStructHandler {
         if (val != null) {
             if (val instanceof ITypedStruct) {
                 ITypedStruct ts = (ITypedStruct) val;
-                if (ts.getTypeName() != structType.getName()) {
+                if (!Objects.equals(ts.getTypeName(), structType.getName())) {
                     throw new ValueConversionException(structType, val);
                 }
                 return ts;
@@ -70,7 +71,7 @@ public class TypedStructHandler {
                     }
                 }
                 return ts;
-            } else if (val instanceof StructInstance && ((StructInstance) val).getTypeName() == structType.getName()) {
+            } else if (val instanceof StructInstance && Objects.equals(((StructInstance) val).getTypeName(), structType.getName())) {
                 return (StructInstance) val;
             } else {
                 throw new ValueConversionException(structType, val);

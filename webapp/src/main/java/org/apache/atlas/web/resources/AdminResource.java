@@ -151,10 +151,10 @@ public class AdminResource {
         Boolean enableTaxonomy = null;
         try {
             PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
-            enableTaxonomy = new Boolean(configProperties.getString(isTaxonomyEnabled, "false"));
+            enableTaxonomy = configProperties.getBoolean(isTaxonomyEnabled, false);
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userName = null;
-            Set<String> groups = new HashSet<String>();
+            Set<String> groups = new HashSet<>();
             if (auth != null) {
                 userName = auth.getName();
                 Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
@@ -172,8 +172,7 @@ public class AdminResource {
             
             responseData.put("userName", userName);
             responseData.put("groups", groups);
-            Response response = Response.ok(responseData).build();
-            return response;
+            return Response.ok(responseData).build();
         } catch (JSONException | ConfigurationException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }

@@ -20,6 +20,7 @@ package org.apache.atlas.model.typedef;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -278,6 +279,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         return sb;
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -313,11 +315,6 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         return result;
     }
 
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
-    }
-
     public static String getArrayTypeName(String elemTypeName) {
         return  ATLAS_TYPE_ARRAY_PREFIX + elemTypeName + ATLAS_TYPE_ARRAY_SUFFIX;
     }
@@ -327,7 +324,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
                 valueTypeName, ATLAS_TYPE_MAP_SUFFIX);
     }
 
-    public static StringBuilder dumpObjects(Collection<? extends Object> objects, StringBuilder sb) {
+    public static StringBuilder dumpObjects(Collection<?> objects, StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
@@ -347,14 +344,14 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         return sb;
     }
 
-    public static StringBuilder dumpObjects(Map<? extends Object, ? extends Object> objects, StringBuilder sb) {
+    public static StringBuilder dumpObjects(Map<?, ?> objects, StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
 
         if (MapUtils.isNotEmpty(objects)) {
             int i = 0;
-            for (Map.Entry<? extends Object, ? extends Object> e : objects.entrySet()) {
+            for (Map.Entry<?, ?> e : objects.entrySet()) {
                 if (i > 0) {
                     sb.append(", ");
                 }

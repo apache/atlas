@@ -278,7 +278,7 @@ object InstanceSerialization {
           convertId.map(asJava(_)(format)).getOrElse {
             jsonMap.map { t =>
               (t._1 -> asJava(t._2)(format))
-            }.toMap.asJava
+            }.asJava
           }
         }
       }
@@ -305,7 +305,7 @@ object InstanceSerialization {
         asJava(r.traitNames).asInstanceOf[java.util.List[String]],
         asJava(r.traits).asInstanceOf[java.util.Map[String, IStruct]], s_attr)
     }
-    case l : List[_] => l.map(e => asJava(e)).toList.asJava
+    case l : List[_] => l.map(e => asJava(e)).asJava
     case m : Map[_, _] if Try{m.asInstanceOf[Map[String,_]]}.isDefined => {
       if (m.keys.size == 2 && m.keys.contains("value") && m.keys.contains("ordinal")) {
         new EnumValue(m.get("value").toString, m.get("ordinal").asInstanceOf[BigInt].intValue())
