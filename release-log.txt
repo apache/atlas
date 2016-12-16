@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1367 fix to use correct version of curator-client library (mneethiraj)
 ATLAS-1371 create/edit tag dialog to allow choosing of data-type for attributes (Kalyanikashikar via mneethiraj)
 ATLAS-1395 Lineage improvement for tooltip (kevalbhatt via mneethiraj)
 ATLAS-1193 UI to create/update entities (Kalyanikashikar via mneethiraj)

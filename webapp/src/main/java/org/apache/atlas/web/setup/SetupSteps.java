@@ -78,7 +78,7 @@ public class SetupSteps {
         } catch (SetupException se) {
             LOG.error("Got setup exception while trying to setup", se);
             throw se;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOG.error("Error running setup steps", e);
             throw new SetupException("Error running setup steps", e);
         } finally {
