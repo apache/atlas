@@ -141,20 +141,16 @@ define(['require',
                     obj['shape'] = "img";
                     obj['typeName'] = relationObj.typeName
                     obj['label'] = relationObj.displayText.trunc(18);
-                    obj['toolTiplabel'] = relationObj.displayText;
-                    if (obj.typeName) {
-                        var temp = obj['label'] + ' (' + relationObj.typeName + ')';
-                        obj['toolTiplabel'] = temp
-                        obj['label'] = temp.trunc(18);
-                    }
+                    obj['toolTipLabel'] = relationObj.displayText;
                     obj['id'] = relationObj.guid;
+                    obj['queryText'] = relationObj.queryText;
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
                     if (that.typeMap && that.typeMap[relationObj.typeName]) {
                         obj['isProcess'] = _.contains(that.typeMap[relationObj.typeName], "Process") ? true : false;
                     } else {
-                        that.typeMap[relationObj.typeName] = { fetch: true }
+                        that.typeMap[relationObj.typeName] = { fetch: true };
                         fetchEntity(relationObj.typeName);
                     }
                     return obj;
@@ -303,7 +299,10 @@ define(['require',
                     .attr('class', 'd3-tip')
                     .html(function(d) {
                         var value = that.g.node(d);
-                        var htmlStr = "<h5>Name: <span style='color:#359f89'>" + value.toolTiplabel + "</span></h5> ";
+                        var htmlStr = "<h5 class='text-center'><span style='color:#359f89'>" + value.toolTipLabel + "</span></h5> ";
+                        if (value.typeName) {
+                            htmlStr += "<h5 class='text-center'><span>(" + value.typeName + ")</span></h5> ";
+                        }
                         if (value.queryText) {
                             htmlStr += "<h5>Query: <span style='color:#359f89'>" + value.queryText + "</span></h5> ";
                         }
@@ -318,22 +317,19 @@ define(['require',
                 //change text postion 
                 svgGroup.selectAll("g.nodes g.label")
                     .attr("transform", "translate(2,-30)");
-
-                svgGroup.selectAll("g.nodes image")
-                    .on('mouseover', function(d) {
+                svgGroup.selectAll("g.nodes g.node")
+                    .on('mouseenter', function(d) {
                         tooltip.show(d);
                     })
                     .on('dblclick', function(d) {
                         tooltip.hide(d);
-                        //var urlForTab = window.location.hash.split('/')[1];
-
                         Utils.setUrl({
                             url: '#!/detailPage/' + d,
                             mergeBrowserUrl: false,
                             trigger: true
                         });
                     })
-                    .on('mouseout', function(d) {
+                    .on('mouseleave', function(d) {
                         tooltip.hide(d);
                     });
                 // Center the graph
