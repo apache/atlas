@@ -178,6 +178,7 @@ define(['require',
                         title: 'Create a new tag',
                         content: view,
                         cancelText: "Cancel",
+                        okCloses: false,
                         okText: 'Create',
                         allowCancel: true,
                     }).open();
@@ -198,20 +199,42 @@ define(['require',
                         });
                     });
                     modal.on('ok', function() {
-                        that.onCreateButton(view);
+                        that.onCreateButton(view, modal);
                     });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
                 });
             },
-            onCreateButton: function(ref) {
+            onCreateButton: function(ref, modal) {
                 var that = this;
+                var validate = true;
+                if (modal.$el.find(".attributeInput").length > 0) {
+                    modal.$el.find(".attributeInput").each(function() {
+                        if ($(this).val() === "") {
+                            $(this).css('borderColor', "red")
+                            validate = false;
+                        }
+                    });
+                }
+                modal.$el.find(".attributeInput").keyup(function() {
+                    $(this).css('borderColor', "#e8e9ee");
+                });
+                if (!validate) {
+                    Utils.notifyInfo({
+                        content: "Please fill the attributes or delete the input box"
+                    });
+                    return;
+                }
                 this.name = ref.ui.tagName.val();
                 this.description = ref.ui.description.val();
                 var superTypes = [];
                 if (ref.ui.parentTag.val() && ref.ui.parentTag.val()) {
                     superTypes = ref.ui.parentTag.val();
+                }
+                var attributeObj = ref.collection.toJSON();
+                if (ref.collection.length === 1 && ref.collection.first().get("name") === "") {
+                    attributeObj = [];
                 }
                 this.json = {
                     'name': this.name,
@@ -219,6 +242,7 @@ define(['require',
                     "typeVersion": "2",
                     "version": "2",
                     'superTypes': superTypes.length ? superTypes : [],
+                    "attributeDefs": attributeObj
                 };
                 new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
@@ -229,7 +253,7 @@ define(['require',
                         Utils.notifySuccess({
                             content: "Tag " + that.name + Messages.addSuccessMessage
                         });
-
+                        modal.trigger('cancel');
                     },
                     error: function(model, response) {
                         if (response.responseJSON && response.responseJSON.error) {

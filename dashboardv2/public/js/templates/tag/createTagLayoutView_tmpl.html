@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<form name="tagDefinitionform" class="css-form">
+<form name="tagDefinitionform" class="css-form" data-id="createTagForm">
     <!-- <h4 style="margin-bottom:30px"></h4> -->
     <div class="form-group">
         {{#if create}}
@@ -27,9 +27,19 @@
         <input class="form-control row-margin-bottom" data-id="description" value="{{description}}" placeholder="Description">
         </input>
         {{#if create}}
-        <span class="row-margin-bottom">Select tags to inherit attributes(optional)</span>
-        <p class="attributeText">Attributes define additional properties for the tag</p>
-        <select class="form-control" data-id="parentTagList" multiple="multiple"></select>
+        <div class="row row-margin-bottom">
+            <div class="col-md-12">
+                <span>Select tags to inherit attributes(optional)</span>
+                <p class="attributeText">Attributes define additional properties for the tag</p>
+                <select class="form-control" data-id="parentTagList" multiple="multiple"></select>
+            </div>
+        </div>
+        <div class="clearfix">
+            <span class="pull-left">Attributes(optional)</span>
+            <button type="button" class="btn btn-success btn-sm pull-right" data-id="attributeData"><i class="fa fa-plus"></i> Add New Attribute</button>
+        </div>
         {{/if}}
+        <div data-id="addAttributeDiv">
+        </div>
     </div>
 </form>

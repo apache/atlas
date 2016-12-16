@@ -48,7 +48,7 @@ define(['require',
                 addTagPlus: '[data-id="addTagPlus"]',
                 description: '[data-id="description"]',
                 descriptionTextArea: '[data-id="descriptionTextArea"]',
-                publishButton: '[data-id="publishButton"]',
+                publishButton: '[data-id="publishButton"]'
             },
             /** ui events hash */
             events: function() {
@@ -68,7 +68,7 @@ define(['require',
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
-                    this.model = this.collection.findWhere({ name: this.tag });
+                    this.model = this.collection.fullCollection.findWhere({ name: this.tag });
                     this.renderTagDetail();
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
@@ -82,7 +82,7 @@ define(['require',
             },
             onRender: function() {
                 if (this.collection.models.length && !this.model) {
-                    this.model = this.collection.findWhere({ name: this.tag });
+                    this.model = this.collection.fullCollection.findWhere({ name: this.tag });
                     this.renderTagDetail();
                 }
                 this.bindEvents();
@@ -111,7 +111,25 @@ define(['require',
             },
             onSaveButton: function(saveObject, message) {
                 var that = this;
-                this.model.saveTagAttribute(this.model.get('name'), {
+                var validate = true;
+                if (this.modal.$el.find(".attributeInput").length > 1) {
+                    this.modal.$el.find(".attributeInput").each(function() {
+                        if ($(this).val() === "") {
+                            $(this).css('borderColor', "red")
+                            validate = false;
+                        }
+                    });
+                }
+                this.modal.$el.find(".attributeInput").keyup(function() {
+                    $(this).css('borderColor', "#e8e9ee");
+                });
+                if (!validate) {
+                    Utils.notifyInfo({
+                        content: "Please fill the attributes or delete the input box"
+                    });
+                    return;
+                }
+                this.model.saveTagAttribute(this.model.get('guid'), {
                     data: JSON.stringify(saveObject),
                     success: function(model, response) {
                         that.model.set(model);
@@ -119,6 +137,7 @@ define(['require',
                         Utils.notifySuccess({
                             content: message
                         });
+                        that.modal.close();
                     },
                     error: function(model, response) {
                         if (response.responseJSON && response.responseJSON.error) {
@@ -135,33 +154,34 @@ define(['require',
                         'modules/Modal'
                     ],
                     function(AddTagAttributeView, Modal) {
-                        var view = new AddTagAttributeView(),
-                            modal = new Modal({
-                                title: 'Add Attribute',
-                                content: view,
-                                cancelText: "Cancel",
-                                okText: 'Add',
-                                allowCancel: true,
-                            }).open();
-                        modal.on('ok', function() {
-                            var attributeName = $(view.el).find("input").val();
-                            var attributes = _.clone(that.model.get('attributeDefs'));
-                            if (!_.isArray(attributes)) {
-                                attributes = [attributes];
+                        var view = new AddTagAttributeView();
+                        that.modal = new Modal({
+                            title: 'Add Attribute',
+                            content: view,
+                            cancelText: "Cancel",
+                            okText: 'Add',
+                            okCloses: false,
+                            allowCancel: true,
+                        }).open();
+                        that.modal.$el.find('button.ok').attr("disabled", "true");
+                        $(view.ui.addAttributeDiv).on('keyup', that.modal.$el.find('attributeInput'), function(e) {
+                            if ((e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 32) && e.target.value.trim() == "") {
+                                that.modal.$el.find('button.ok').attr("disabled", "disabled");
+                            } else {
+                                that.modal.$el.find('button.ok').removeAttr("disabled");
                             }
-                            attributes.push({
-                                "name": attributeName,
-                                "typeName": "string",
-                                "cardinality": "SINGLE",
-                                "isUnique": false,
-                                "indexable": true,
-                                "isOptional":true
-                            });
-                            var saveData = _.extend(that.model.toJSON(), { 'attributeDefs': attributes });
-                            that.onSaveButton(saveData, Messages.addAttributeSuccessMessage);
                         });
-                        modal.on('closeModal', function() {
-                            modal.trigger('cancel');
+                        that.modal.on('ok', function() {
+                            var newAttributeList = view.collection.toJSON();
+                            var saveJSON = JSON.parse(JSON.stringify(that.model.toJSON()));
+                            var oldAttributeList = saveJSON.attributeDefs;
+                            _.each(newAttributeList, function(obj) {
+                                oldAttributeList.push(obj);
+                            });
+                            that.onSaveButton(saveJSON, Messages.addAttributeSuccessMessage);
+                        });
+                        that.modal.on('closeModal', function() {
+                            that.modal.trigger('cancel');
                         });
                     });
             },

@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,36 +19,77 @@
 define(['require',
     'backbone',
     'hbs!tmpl/tag/AddTagAttributeView_tmpl',
+    'views/tag/TagAttributeItemView',
 
-], function(require, Backbone, AddTagAttributeView_tmpl) {
+], function(require, Backbone, AddTagAttributeView_tmpl, TagAttributeItemView) {
     'use strict';
 
-    return Backbone.Marionette.LayoutView.extend(
+    return Backbone.Marionette.CompositeView.extend(
         /** @lends GlobalExclusionListView */
         {
 
             template: AddTagAttributeView_tmpl,
+            templateHelpers: function() {
+                return {
+                    create: this.create,
+                    description: this.description
+                };
+            },
 
-            /** Layout sub regions */
-            regions: {},
+            childView: TagAttributeItemView,
 
+            childViewContainer: "[data-id='addAttributeDiv']",
+
+            childViewOptions: function() {
+                return {
+                    // saveButton: this.ui.saveButton,
+                    parentView: this
+                };
+            },
             /** ui selector cache */
             ui: {
                 close: "[data-id='close']",
-                attributeId: "[data-id='attributeId']"
+                attributeId: "[data-id='attributeId']",
+                attributeData: "[data-id='attributeData']",
+                addAttributeDiv: "[data-id='addAttributeDiv']"
             },
             events: function() {
                 var events = {};
+                events["click " + this.ui.attributeData] = "onClickAddAttriBtn";
                 return events;
             },
-            /**
-             * intialize a new GlobalExclusionComponentView Layout
-             * @constructs
-             */
             initialize: function(options) {
-                this.parentView = options.parentView;
+                // this.parentView = options.parentView;
+                this.collection = new Backbone.Collection();
+                this.collectionAttribute();
             },
-            onRender: function() {},
-            bindEvents: function() {}
+            onRender: function() {
+                this.ui.addAttributeDiv.find('.closeInput').hide();
+                if (!('placeholder' in HTMLInputElement.prototype)) {
+                    this.ui.addAttributeDiv.find('input,textarea').placeholder();
+                }
+            },
+            bindEvents: function() {},
+            collectionAttribute: function() {
+                this.collection.add(new Backbone.Model({
+                    "name": "",
+                    "typeName": "string",
+                    "isOptional": true,
+                    "cardinality": "SINGLE",
+                    "valuesMinCount": 0,
+                    "valuesMaxCount": 1,
+                    "isUnique": false,
+                    "isIndexable": false
+                }));
+            },
+            onClickAddAttriBtn: function() {
+                if (this.ui.addAttributeDiv.find("input").length > 0) {
+                    this.ui.addAttributeDiv.find('.closeInput').show();
+                };
+                this.collectionAttribute();
+                if (!('placeholder' in HTMLInputElement.prototype)) {
+                    this.ui.addAttributeDiv.find('input,textarea').placeholder();
+                }
+            }
         });
 });

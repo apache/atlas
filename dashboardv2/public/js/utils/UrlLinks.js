@@ -52,10 +52,12 @@ define(['require', 'utils/Enums'], function(require, Enums) {
         entityCollectionaudit: function(guid) {
             return this.baseUrl + '/entities/' + guid + '/audit';
         },
-        typesClassicationApiUrl: function(name) {
+        typesClassicationApiUrl: function(name, guid) {
             var typeUrl = this.baseUrlV2 + '/types/classificationdef'
             if (name) {
                 return typeUrl + '/name/' + name;
+            } else if (guid) {
+                return typeUrl + '/guid/' + guid;
             } else {
                 return typeUrl;
             }
