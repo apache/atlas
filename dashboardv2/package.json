@@ -33,7 +33,7 @@
     "dagre-d3": "^0.4.17",
     "font-awesome": "^4.6.3",
     "jquery": "^2.2.2",
-    "jquery-asBreadcrumbs": "git+https://github.com/amazingSurge/jquery-asBreadcrumbs.git",
+    "jquery-asBreadcrumbs": "^0.2.1",
     "jquery-ui": "^1.10.4",
     "jstree": "^3.3.0",
     "noty": "^2.3.8",

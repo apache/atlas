@@ -27,6 +27,8 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1298 UI never finishes loading ( kevalbhatt )
+deleting the fonts that were missed out (shwethags)
 ATLAS-959 Exception while writing to audit log. [java.io.IOException: No FileSystem for scheme: hdfs] (saqeeb.s via sumasai)
 ATLAS-967 Remove unused logo file and footer. (kevalbhatt18 via yhemanth)
 ATLAS-964 Cleanup NOTICE and LICENSE (shwethags)
