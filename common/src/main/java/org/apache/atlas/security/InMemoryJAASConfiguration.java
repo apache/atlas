@@ -261,9 +261,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 String loginModuleName = properties.getProperty(keyParam);
 
                 if (loginModuleName == null) {
-                    LOG.error("Unable to add JAAS configuration for "
-                            + "client [" + jaasClient + "] as it is missing param [" + keyParam + "]."
-                            + " Skipping JAAS config for [" + jaasClient + "]");
+                    LOG.error("Unable to add JAAS configuration for client [{}] as it is missing param [{}]. Skipping JAAS config for [{}]", jaasClient, keyParam, jaasClient);
                     continue;
                 } else {
                     loginModuleName = loginModuleName.trim();
@@ -290,15 +288,12 @@ public final class InMemoryJAASConfiguration extends Configuration {
                             break;
                         default:
                             String validValues = "optional|requisite|sufficient|required";
-                            LOG.warn("Unknown JAAS configuration value for (" + keyParam
-                                    + ") = [" + controlFlag + "], valid value are [" + validValues
-                                    + "] using the default value, REQUIRED");
+                            LOG.warn("Unknown JAAS configuration value for ({}) = [{}], valid value are [{}] using the default value, REQUIRED", keyParam, controlFlag, validValues);
                             loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
                             break;
                     }
                 } else {
-                    LOG.warn("Unable to find JAAS configuration ("
-                            + keyParam + "); using the default value, REQUIRED");
+                    LOG.warn("Unable to find JAAS configuration ({}); using the default value, REQUIRED", keyParam);
                     loginControlFlag = AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
                 }
 
@@ -318,8 +313,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                                     optionVal = SecurityUtil.getServerPrincipal(optionVal, (String) null);
                                 }
                             } catch (IOException e) {
-                                LOG.warn("Failed to build serverPrincipal. Using provided value:["
-                                        + optionVal + "]");
+                                LOG.warn("Failed to build serverPrincipal. Using provided value:[{}]", optionVal);
                             }
                         }
                         options.put(optionKey, optionVal);

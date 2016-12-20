@@ -67,12 +67,11 @@ public class UserDao {
                 inStr = new FileInputStream(PROPERTY_FILE_PATH);
                 userLogins.load(inStr);
             }else {
-                LOG.error("Error while reading user.properties file, filepath="
-                        + PROPERTY_FILE_PATH);
+                LOG.error("Error while reading user.properties file, filepath={}", PROPERTY_FILE_PATH);
             }
 
         } catch (IOException | AtlasException e) {
-            LOG.error("Error while reading user.properties file, filepath=" + PROPERTY_FILE_PATH, e);
+            LOG.error("Error while reading user.properties file, filepath={}", PROPERTY_FILE_PATH, e);
             throw new RuntimeException(e);
         } finally {
             if(inStr != null) {
@@ -99,7 +98,7 @@ public class UserDao {
             role = dataArr[0];
             password = dataArr[1];
         } else {
-            LOG.error("User role credentials is not set properly for " + username);
+            LOG.error("User role credentials is not set properly for {}", username);
             throw new AtlasAuthenticationException("User role credentials is not set properly for " + username );
         }
 
@@ -107,7 +106,7 @@ public class UserDao {
         if (StringUtils.hasText(role)) {
             grantedAuths.add(new SimpleGrantedAuthority(role));
         } else {
-            LOG.error("User role credentials is not set properly for " + username);
+            LOG.error("User role credentials is not set properly for {}", username);
             throw new AtlasAuthenticationException("User role credentials is not set properly for " + username );
         }
 

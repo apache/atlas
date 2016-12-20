@@ -179,7 +179,7 @@ public class HiveMetaStoreBridge {
     }
 
     private Referenceable createOrUpdateDBInstance(Database hiveDB, Referenceable dbRef) {
-        LOG.info("Importing objects from databaseName : " + hiveDB.getName());
+        LOG.info("Importing objects from databaseName : {}", hiveDB.getName());
 
         if (dbRef == null) {
             dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
@@ -206,12 +206,12 @@ public class HiveMetaStoreBridge {
      */
     private Referenceable registerInstance(Referenceable referenceable) throws Exception {
         String typeName = referenceable.getTypeName();
-        LOG.debug("creating instance of type " + typeName);
+        LOG.debug("creating instance of type {}", typeName);
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
         List<String> guids = getAtlasClient().createEntity(entityJSON);
-        LOG.debug("created instance for type " + typeName + ", guid: " + guids);
+        LOG.debug("created instance for type {}, guid: {}", typeName, guids);
 
         return new Referenceable(guids.get(guids.size() - 1), referenceable.getTypeName(), null);
     }
@@ -497,9 +497,9 @@ public class HiveMetaStoreBridge {
     private Referenceable registerTable(Referenceable dbReference, Table table) throws Exception {
         String dbName = table.getDbName();
         String tableName = table.getTableName();
-        LOG.info("Attempting to register table [" + tableName + "]");
+        LOG.info("Attempting to register table [{}]", tableName);
         Referenceable tableReference = getTableReference(table);
-        LOG.info("Found result " + tableReference);
+        LOG.info("Found result {}", tableReference);
         if (tableReference == null) {
             tableReference = createTableInstance(dbReference, table);
             tableReference = registerInstance(tableReference);
@@ -514,7 +514,7 @@ public class HiveMetaStoreBridge {
 
     private void updateInstance(Referenceable referenceable) throws AtlasServiceException {
         String typeName = referenceable.getTypeName();
-        LOG.debug("updating instance of type " + typeName);
+        LOG.debug("updating instance of type {}", typeName);
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Updating entity {} = {}", referenceable.getTypeName(), entityJSON);
@@ -524,13 +524,13 @@ public class HiveMetaStoreBridge {
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,
         String sdQualifiedName, Id tableId) throws Exception {
-        LOG.debug("Filling storage descriptor information for " + storageDesc);
+        LOG.debug("Filling storage descriptor information for {}", storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
         sdReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, sdQualifiedName);
 
         SerDeInfo serdeInfo = storageDesc.getSerdeInfo();
-        LOG.debug("serdeInfo = " + serdeInfo);
+        LOG.debug("serdeInfo = {}", serdeInfo);
         // SkewedInfo skewedInfo = storageDesc.getSkewedInfo();
 
         String serdeInfoName = HiveDataTypes.HIVE_SERDE.getName();
@@ -594,7 +594,7 @@ public class HiveMetaStoreBridge {
         List<Referenceable> colList = new ArrayList<>();
         int columnPosition = 0;
         for (FieldSchema fs : schemaList) {
-            LOG.debug("Processing field " + fs);
+            LOG.debug("Processing field {}", fs);
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                     getColumnQualifiedName((String) tableReference.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), fs.getName()));

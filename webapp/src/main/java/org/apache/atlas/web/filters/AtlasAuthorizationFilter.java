@@ -18,18 +18,7 @@
 
 package org.apache.atlas.web.filters;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.google.common.base.Strings;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationException;
@@ -44,7 +33,16 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
-import com.google.common.base.Strings;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class AtlasAuthorizationFilter extends GenericFilterBean {
 
@@ -95,7 +93,7 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
         String pathInfo = request.getServletPath();
         if (!Strings.isNullOrEmpty(pathInfo) && pathInfo.startsWith(BASE_URL)) {
             if (isDebugEnabled) {
-                LOG.debug(pathInfo + " is a valid REST API request!!!");
+                LOG.debug("{} is a valid REST API request!!!", pathInfo);
             }
 
             String userName = null;
@@ -111,16 +109,13 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                 }
             } else {
                 if (LOG.isErrorEnabled()) {
-                    LOG.error("Cannot obtain Security Context : " + auth);
+                    LOG.error("Cannot obtain Security Context : {}", auth);
                 }
                 throw new ServletException("Cannot obtain Security Context : " + auth);
             }
             AtlasAccessRequest atlasRequest = new AtlasAccessRequest(request, userName, groups);
             if (isDebugEnabled) {
-                LOG.debug("============================\n" + "UserName :: " + atlasRequest.getUser() + "\nGroups :: "
-                    + atlasRequest.getUserGroups() + "\nURL :: " + request.getRequestURL() + "\nAction :: "
-                    + atlasRequest.getAction() + "\nrequest.getServletPath() :: " + pathInfo
-                    + "\n============================\n");
+                LOG.debug("============================\nUserName :: {}\nGroups :: {}\nURL :: {}\nAction :: {}\nrequest.getServletPath() :: {}\n============================\n", atlasRequest.getUser(), atlasRequest.getUserGroups(), request.getRequestURL(), atlasRequest.getAction(), pathInfo);
             }
 
             boolean accessAllowed = false;
@@ -129,7 +124,7 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
             if (atlasResourceTypes.size() == 1 && atlasResourceTypes.contains(AtlasResourceTypes.UNKNOWN)) {
                 // Allowing access to unprotected resource types
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Allowing access to unprotected resource types " + atlasResourceTypes);
+                    LOG.debug("Allowing access to unprotected resource types {}", atlasResourceTypes);
                 }
                 accessAllowed = true;
             } else {
@@ -140,11 +135,11 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                     }
                 } catch (AtlasAuthorizationException e) {
                     if (LOG.isErrorEnabled()) {
-                        LOG.error("Access Restricted. Could not process the request :: " + e);
+                        LOG.error("Access Restricted. Could not process the request :: {}", e);
                     }
                 }
                 if (isDebugEnabled) {
-                    LOG.debug("Authorizer result :: " + accessAllowed);
+                    LOG.debug("Authorizer result :: {}", accessAllowed);
                 }
             }
             if (accessAllowed) {
@@ -162,15 +157,13 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
 
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, json.toString());
                 if (isDebugEnabled) {
-                    LOG.debug("You are not authorized for " + atlasRequest.getAction().name() + " on "
-                        + atlasResourceTypes + " : " + atlasRequest.getResource()
-                        + "\nReturning 403 since the access is blocked update!!!!");
+                    LOG.debug("You are not authorized for {} on {} : {}\nReturning 403 since the access is blocked update!!!!", atlasRequest.getAction().name(), atlasResourceTypes, atlasRequest.getResource());
                 }
             }
 
         } else {
             if (isDebugEnabled) {
-                LOG.debug("Ignoring request " + pathInfo);
+                LOG.debug("Ignoring request {}", pathInfo);
             }
             chain.doFilter(req, res);
         }

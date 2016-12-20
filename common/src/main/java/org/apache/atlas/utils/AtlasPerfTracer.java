@@ -74,7 +74,7 @@ public final class AtlasPerfTracer {
     public void log() {
         long elapsedTime = getElapsedTime();
         if (elapsedTime > reportingThresholdMs) {
-            logger.debug("PERF|" + tag + "|" + elapsedTime);
+            logger.debug("PERF|{}|{}", tag, elapsedTime);
         }
     }
 }

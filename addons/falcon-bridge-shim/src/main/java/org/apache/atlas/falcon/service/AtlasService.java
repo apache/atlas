@@ -112,7 +112,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
     @Override
     public void onAdd(Entity entity) throws FalconException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onAdd(" + entity + ")");
+            LOG.debug("==> AtlasService.onAdd({})", entity);
         }
 
         try {
@@ -123,14 +123,14 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onAdd(" + entity + ")");
+            LOG.debug("<== AtlasService.onAdd({})", entity);
         }
     }
 
     @Override
     public void onRemove(Entity entity) throws FalconException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onRemove(" + entity + ")");
+            LOG.debug("==> AtlasService.onRemove({})", entity);
         }
 
         try {
@@ -141,14 +141,14 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onRemove(" + entity + ")");
+            LOG.debug("<== AtlasService.onRemove({})", entity);
         }
     }
 
     @Override
     public void onChange(Entity entity, Entity entity1) throws FalconException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onChange(" + entity + ", " + entity1 + ")");
+            LOG.debug("==> AtlasService.onChange({}, {})", entity, entity1);
         }
 
         try {
@@ -159,14 +159,14 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onChange(" + entity + ", " + entity1 + ")");
+            LOG.debug("<== AtlasService.onChange({}, {})", entity, entity1);
         }
     }
 
     @Override
     public void onReload(Entity entity) throws FalconException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onReload(" + entity + ")");
+            LOG.debug("==> AtlasService.onReload({})", entity);
         }
 
         try {
@@ -177,7 +177,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onReload(" + entity + ")");
+            LOG.debug("<== AtlasService.onReload({})", entity);
         }
     }
 

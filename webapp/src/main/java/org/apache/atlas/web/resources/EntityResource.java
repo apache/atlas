@@ -268,10 +268,10 @@ public class EntityResource {
             LOG.error("An entity with type={} and qualifiedName={} does not exist {} ", entityType, value, entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to partially update entity {} {} " + entityType + ":" + attribute + "." + value, entityJson, e);
+            LOG.error("Unable to partially update entity {} {}:{}.{}", entityJson, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
-            LOG.error("Unable to partially update entity {} {} " + entityType + ":" + attribute + "." + value, entityJson, e);
+            LOG.error("Unable to partially update entity {} {}:{}.{}", entityJson, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }

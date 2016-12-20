@@ -43,7 +43,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
     @Override
     public void publish(SqoopJobDataPublisher.Data data) throws Exception {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SqoopHook.run(" + data + ")");
+            LOG.debug("==> SqoopHook.run({})", data);
         }
 
         try {
@@ -54,7 +54,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== SqoopHook.run(" + data + ")");
+            LOG.debug("<== SqoopHook.run({})", data);
         }
     }
 

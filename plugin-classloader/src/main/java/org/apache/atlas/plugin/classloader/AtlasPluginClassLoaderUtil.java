@@ -52,7 +52,7 @@ final class AtlasPluginClassLoaderUtil {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoaderUtil.getFilesInDirectories(): " + ret.size() + " files");
+            LOG.debug("<== AtlasPluginClassLoaderUtil.getFilesInDirectories(): {} files", ret.size());
         }
 
         return ret.toArray(new URL[]{});
@@ -73,32 +73,31 @@ final class AtlasPluginClassLoaderUtil {
                             URL jarPath = dirFile.toURI().toURL();
 
                             if (LOG.isDebugEnabled()) {
-                                LOG.debug(
-                                        "getFilesInDirectory('" + dirPath + "'): adding " + dirFile.getAbsolutePath());
+                                LOG.debug("getFilesInDirectory('{}'): adding {}", dirPath, dirFile.getAbsolutePath());
                             }
 
                             files.add(jarPath);
                         } catch (Exception excp) {
-                            LOG.warn("getFilesInDirectory('" + dirPath + "'): failed to get URI for file " + dirFile
+                            LOG.warn("getFilesInDirectory('{}'): failed to get URI for file {}", dirPath, dirFile
                                     .getAbsolutePath(), excp);
                         }
                     }
                 }
             } catch (Exception excp) {
-                LOG.warn("getFilesInDirectory('" + dirPath + "'): error", excp);
+                LOG.warn("getFilesInDirectory('{}'): error", dirPath, excp);
             }
         } else {
-            LOG.warn("getFilesInDirectory('" + dirPath + "'): could not find directory in path " + dirPath);
+            LOG.warn("getFilesInDirectory('{}'): could not find directory in path {}", dirPath, dirPath);
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoaderUtil.getFilesInDirectory(" + dirPath + ")");
+            LOG.debug("<== AtlasPluginClassLoaderUtil.getFilesInDirectory({})", dirPath);
         }
     }
 
     public static String getPluginImplLibPath(String pluginType, Class<?> pluginClass) throws Exception {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class (" + pluginClass.getName() + ")");
+            LOG.debug("==> AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class ({})", pluginClass.getName());
         }
 
         URI uri = pluginClass.getProtectionDomain().getCodeSource().getLocation().toURI();
@@ -106,8 +105,7 @@ final class AtlasPluginClassLoaderUtil {
         String ret = path.getParent().toString() + File.separatorChar + ATLAS_PLUGIN_LIBDIR.replaceAll("%", pluginType);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class " + pluginClass.getName() + "): "
-                    + ret + ")");
+            LOG.debug("<== AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class {}): {})", pluginClass.getName(), ret);
         }
 
         return ret;

@@ -36,15 +36,14 @@ public class PolicyUtil {
     public Map<String, Map<AtlasResourceTypes, List<String>>> createPermissionMap(List<PolicyDef> policyDefList,
         AtlasActionTypes permissionType, SimpleAtlasAuthorizer.AtlasAccessorTypes principalType) {
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyUtil createPermissionMap" + "\nCreating Permission Map for :: " + permissionType
-                + " & " + principalType);
+            LOG.debug("==> PolicyUtil createPermissionMap\nCreating Permission Map for :: {} & {}", permissionType, principalType);
         }
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap =
                 new HashMap<>();
 
         // Iterate over the list of policies to create map
         for (PolicyDef policyDef : policyDefList) {
-            LOG.info("Processing policy def : " + policyDef);
+            LOG.info("Processing policy def : {}", policyDef);
             Map<String, List<AtlasActionTypes>> principalMap =
                 principalType.equals(SimpleAtlasAuthorizer.AtlasAccessorTypes.USER) ? policyDef.getUsers() : policyDef
                     .getGroups();
@@ -61,7 +60,7 @@ public class PolicyUtil {
                 // If its not added then create a new resource list
                 if (userResourceList == null) {
                     if (isDebugEnabled) {
-                        LOG.debug("Resource list not found for " + username + ", creating it");
+                        LOG.debug("Resource list not found for {}, creating it", username);
                     }
                     userResourceList = new HashMap<>();
                 }
@@ -89,11 +88,11 @@ public class PolicyUtil {
                     userResourceList.put(type, resourceList);
                 }
                 userReadMap.put(username, userResourceList);
-                LOG.info("userReadMap " + userReadMap);
+                LOG.info("userReadMap {}", userReadMap);
             }
         }
         if (isDebugEnabled) {
-            LOG.debug("Returning Map for " + principalType + " :: " + userReadMap);
+            LOG.debug("Returning Map for {} :: {}", principalType, userReadMap);
             LOG.debug("<== PolicyUtil createPermissionMap");
         }
         return userReadMap;

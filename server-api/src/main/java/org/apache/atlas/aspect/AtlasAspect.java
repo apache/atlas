@@ -27,6 +27,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Aspect
@@ -55,11 +56,11 @@ public class AtlasAspect {
         String methodName = methodSign.getDeclaringType().getSimpleName() + "." + methodSign.getName();
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug(String.format("==> %s(%s)", methodName, joinPoint.getArgs()));
+            LOG.debug(String.format("==> %s(%s)", methodName, Arrays.toString(joinPoint.getArgs())));
         }
         Object response = joinPoint.proceed();
         if (LOG.isDebugEnabled()) {
-            LOG.debug(String.format("<== %s(%s): %s", methodName, joinPoint.getArgs(),
+            LOG.debug(String.format("<== %s(%s): %s", methodName, Arrays.toString(joinPoint.getArgs()),
                     response instanceof List ? ((List)response).size() : response));
         }
         return response;

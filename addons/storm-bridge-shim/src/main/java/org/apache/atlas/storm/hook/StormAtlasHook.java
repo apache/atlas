@@ -49,7 +49,7 @@ public class StormAtlasHook implements ISubmitterHook {
     public void notify(TopologyInfo topologyInfo, Map stormConf, StormTopology stormTopology)
         throws IllegalAccessException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> StormAtlasHook.notify(" + topologyInfo + ", " + stormConf + ", " + stormTopology + ")");
+            LOG.debug("==> StormAtlasHook.notify({}, {}, {})", topologyInfo, stormConf, stormTopology);
         }
 
         try {
@@ -60,7 +60,7 @@ public class StormAtlasHook implements ISubmitterHook {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== StormAtlasHook.notify(" + topologyInfo + ", " + stormConf + ", " + stormTopology + ")");
+            LOG.debug("<== StormAtlasHook.notify({}, {}, {})", topologyInfo, stormConf, stormTopology);
         }
     }
 

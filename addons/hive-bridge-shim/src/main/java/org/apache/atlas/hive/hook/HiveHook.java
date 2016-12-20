@@ -44,7 +44,7 @@ public class HiveHook implements ExecuteWithHookContext {
     @Override
     public void run(final HookContext hookContext) throws Exception {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HiveHook.run(" + hookContext + ")");
+            LOG.debug("==> HiveHook.run({})", hookContext);
         }
 
         try {
@@ -55,7 +55,7 @@ public class HiveHook implements ExecuteWithHookContext {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HiveHook.run(" + hookContext + ")");
+            LOG.debug("<== HiveHook.run({})", hookContext);
         }
     }
 

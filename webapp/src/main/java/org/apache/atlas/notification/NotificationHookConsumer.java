@@ -249,7 +249,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     break;
                 } catch (Throwable e) {
-                    LOG.warn("Error handling message" + e.getMessage());
+                    LOG.warn("Error handling message{}", e.getMessage());
                     try{
                         LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
                         Thread.sleep(consumerRetryInterval);
@@ -273,7 +273,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private void recordFailedMessages() {
             //logging failed messages
             for (HookNotification.HookNotificationMessage message : failedMessages) {
-                FAILED_LOG.error("[DROPPED_NOTIFICATION] " + AbstractNotification.getMessageJson(message));
+                FAILED_LOG.error("[DROPPED_NOTIFICATION] {}", AbstractNotification.getMessageJson(message));
             }
             failedMessages.clear();
         }

@@ -237,7 +237,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             for (Cookie cookie : cookies) {
                 if (cookieName.equals(cookie.getName())) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug(cookieName + " cookie has been found and is being processed");
+                        LOG.debug("{} cookie has been found and is being processed", cookieName);
                     }
                     serializedJWT = cookie.getValue();
                     break;

@@ -114,7 +114,7 @@ public class FileAuthenticationTest {
         when(authentication.getCredentials()).thenReturn("admin");
 
         Authentication auth = authProvider.authenticate(authentication);
-        LOG.debug(" " + auth);
+        LOG.debug(" {}", auth);
 
         Assert.assertTrue(auth.isAuthenticated());
     }
@@ -127,7 +127,7 @@ public class FileAuthenticationTest {
 
        try {
             Authentication auth = authProvider.authenticate(authentication);
-            LOG.debug(" " + auth);
+           LOG.debug(" {}", auth);
         } catch (BadCredentialsException bcExp) {
             Assert.assertEquals("Wrong password", bcExp.getMessage());
         }
@@ -140,7 +140,7 @@ public class FileAuthenticationTest {
         when(authentication.getCredentials()).thenReturn("wrongpassword");
       try {
             Authentication auth = authProvider.authenticate(authentication);
-            LOG.debug(" " + auth);
+          LOG.debug(" {}", auth);
         } catch (UsernameNotFoundException uExp) {
             Assert.assertTrue(uExp.getMessage().contains("Username not found."));
         }
@@ -153,7 +153,7 @@ public class FileAuthenticationTest {
         when(authentication.getCredentials()).thenReturn("user12");
         try {
             Authentication auth = authProvider.authenticate(authentication);
-            LOG.debug(" " + auth);
+            LOG.debug(" {}", auth);
         } catch (AtlasAuthenticationException uExp) {
             Assert.assertTrue(uExp.getMessage().startsWith("User role credentials is not set properly for"));
         }
@@ -167,7 +167,7 @@ public class FileAuthenticationTest {
         when(authentication.getCredentials()).thenReturn("P@ssword");
         try {
             Authentication auth = authProvider.authenticate(authentication);
-            LOG.debug(" " + auth);
+            LOG.debug(" {}", auth);
         } catch (UsernameNotFoundException uExp) {
             Assert.assertTrue(uExp.getMessage().startsWith("Username not found"));
         }
@@ -180,7 +180,7 @@ public class FileAuthenticationTest {
         when(authentication.getCredentials()).thenReturn("admin");
 
         Authentication auth = authProvider.authenticate(authentication);
-        LOG.debug(" " + auth);
+        LOG.debug(" {}", auth);
 
         Assert.assertTrue(auth.isAuthenticated());
 

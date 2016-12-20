@@ -130,7 +130,7 @@ public class AtlasTypeDefStoreInitializer {
 
                 typeDefStore.createTypesDef(typesToCreate);
             } catch (Throwable t) {
-                LOG.error("error while registering types in file " + typeDefFile.getAbsolutePath(), t);
+                LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
             }
         }
 
@@ -194,12 +194,11 @@ public class AtlasTypeDefStoreInitializer {
                     try {
                         patchHandler.applyPatch(patch);
                     } catch (AtlasBaseException excp) {
-                        LOG.error("Failed to apply " + patch.getAction() + " patch in file " +
-                                  typePatchFile.getAbsolutePath() + ". Ignored", excp);
+                        LOG.error("Failed to apply {} patch in file {}. Ignored", patch.getAction(), typePatchFile.getAbsolutePath(), excp);
                     }
                 }
             } catch (Throwable t) {
-                LOG.error("Failed to apply patches in file " + typePatchFile.getAbsolutePath() + ". Ignored", t);
+                LOG.error("Failed to apply patches in file {}. Ignored", typePatchFile.getAbsolutePath(), t);
             }
         }
     }

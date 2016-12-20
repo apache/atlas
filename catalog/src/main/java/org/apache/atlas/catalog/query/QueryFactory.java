@@ -95,7 +95,7 @@ public class QueryFactory {
             } catch (ParseException e) {
                 throw new InvalidQueryException(e.getMessage());
             }
-            LOG.info("LuceneQuery: " + query);
+            LOG.info("LuceneQuery: {}", query);
             queryExpression = create(query, resourceDefinition);
         } else {
             queryExpression = new AlwaysQueryExpression();

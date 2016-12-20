@@ -71,7 +71,7 @@ public class PolicyParser {
 
                 default:
                     if (LOG.isErrorEnabled()) {
-                        LOG.error("Invalid action: '" + access + "'");
+                        LOG.error("Invalid action: '{}'", access);
                     }
                     break;
             }
@@ -108,7 +108,7 @@ public class PolicyParser {
         String[] props = data.split(";;");
 
         if (props.length < RESOURCE_INDEX) {
-            LOG.warn("skipping invalid policy line: " + data);
+            LOG.warn("skipping invalid policy line: {}", data);
         } else {
             def = new PolicyDef();
             def.setPolicyName(props[POLICYNAME]);

@@ -32,9 +32,9 @@ import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
+import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
-import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.util.Signer;
 import org.apache.hadoop.security.authentication.util.SignerException;
 import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
@@ -50,16 +50,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletContext;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -69,7 +71,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.servlet.http.Cookie;
 
 /**
  * This enforces authentication as part of the filter before processing the request.
@@ -91,7 +92,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             LOG.info("AtlasAuthenticationFilter initialization started");
             init(null);
         } catch (ServletException e) {
-            LOG.error("Error while initializing AtlasAuthenticationFilter : " + e.getMessage());
+            LOG.error("Error while initializing AtlasAuthenticationFilter : {}", e.getMessage());
         }
     }
 
@@ -149,7 +150,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     @Override
     public void initializeSecretProvider(FilterConfig filterConfig)
             throws ServletException {
-        LOG.debug("AtlasAuthenticationFilter :: initializeSecretProvider " + filterConfig);
+        LOG.debug("AtlasAuthenticationFilter :: initializeSecretProvider {}", filterConfig);
         secretProvider = (SignerSecretProvider) filterConfig.getServletContext().
                 getAttribute(AuthenticationFilter.SIGNER_SECRET_PROVIDER_ATTRIBUTE);
         if (secretProvider == null) {
@@ -278,7 +279,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                         SecurityContextHolder.getContext().setAuthentication(finalAuthentication);
 
                         request.setAttribute("atlas.http.authentication.type", true);
-                        LOG.info("Logged into Atlas as = " + userName);
+                        LOG.info("Logged into Atlas as = {}", userName);
                     }
                 }
                 // OPTIONS method is sent from quick start jersey atlas client
@@ -357,7 +358,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 token = getToken(httpRequest);
             }
             catch (AuthenticationException ex) {
-                LOG.warn("AuthenticationToken ignored: " + ex.getMessage());
+                LOG.warn("AuthenticationToken ignored: {}", ex.getMessage());
                 // will be sent back in a 401 unless filter authenticates
                 authenticationEx = ex;
                 token = null;
@@ -412,7 +413,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             // exception from the filter itself is fatal
             errCode = HttpServletResponse.SC_FORBIDDEN;
             authenticationEx = ex;
-            LOG.warn("Authentication exception: " + ex.getMessage(), ex);
+            LOG.warn("Authentication exception: {}", ex.getMessage(), ex);
         }
         if (unauthorizedResponse) {
             if (!httpResponse.isCommitted()) {

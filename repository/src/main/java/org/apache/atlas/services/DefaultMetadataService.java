@@ -159,7 +159,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         if (typesDef != null && !typesDef.isEmpty()) {
             TypeSystem.TransientTypeSystem transientTypeSystem = typeSystem.createTransientTypeSystem(typesDef, true);
             Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
-            LOG.info("Number of types got from transient type system: " + typesAdded.size());
+            LOG.info("Number of types got from transient type system: {}", typesAdded.size());
             typeSystem.commitTypes(typesAdded);
         }
     }
@@ -748,7 +748,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
             TypeSystem.TransientTypeSystem transientTypeSystem
                     = typeSystem.createTransientTypeSystem(typesDef, false);
             Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
-            LOG.info("Number of types got from transient type system: " + typesAdded.size());
+            LOG.info("Number of types got from transient type system: {}", typesAdded.size());
             typeSystem.commitTypes(typesAdded);
         } catch (AtlasException e) {
             LOG.error("Failed to restore type-system after TypeRegistry changes", e);

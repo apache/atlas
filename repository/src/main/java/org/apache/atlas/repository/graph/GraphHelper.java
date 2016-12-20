@@ -564,7 +564,7 @@ public final class GraphHelper {
                     result = findVertex(propertyKey, instance.get(attributeInfo.name),
                             Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getName(),
                             Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-                    LOG.debug("Found vertex by unique attribute : " + propertyKey + "=" + instance.get(attributeInfo.name));
+                    LOG.debug("Found vertex by unique attribute : {}={}", propertyKey, instance.get(attributeInfo.name));
                 } catch (EntityNotFoundException e) {
                     //Its ok if there is no entity with the same unique value
                 }

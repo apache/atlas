@@ -398,7 +398,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         final String definition = response.getString(AtlasClient.DEFINITION);
         Assert.assertNotNull(definition);
-        LOG.debug("tableInstanceAfterGet = " + definition);
+        LOG.debug("tableInstanceAfterGet = {}", definition);
         InstanceSerialization.fromJsonReferenceable(definition, true);
     }
 
@@ -483,12 +483,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
-        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         final String guid = tableId._getId();
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
@@ -504,12 +504,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
-        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         final String guid = tableId._getId();
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
@@ -531,7 +531,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         final String guid = tableId._getId();
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
@@ -545,13 +545,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
-        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
         traitInstance.set("type", "SSN");
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         final String guid = tableId._getId();
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
@@ -576,11 +576,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
-        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
     }
@@ -675,7 +675,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             put("columns", columns);
         }});
 
-        LOG.debug("Updating entity= " + tableUpdated);
+        LOG.debug("Updating entity= {}", tableUpdated);
         AtlasClient.EntityResult entityResult = atlasClientV1.updateEntity(tableId._getId(), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
@@ -694,7 +694,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             put("columns", columns);
         }});
 
-        LOG.debug("Updating entity= " + tableUpdated);
+        LOG.debug("Updating entity= {}", tableUpdated);
         entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 (String) tableInstance.get(QUALIFIED_NAME), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 2);
@@ -740,7 +740,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String entityJson = InstanceSerialization.toJson(tableInstance, true);
         JSONArray entityArray = new JSONArray(1);
         entityArray.put(entityJson);
-        LOG.debug("Replacing entity= " + tableInstance);
+        LOG.debug("Replacing entity= {}", tableInstance);
 
         JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API.UPDATE_ENTITY, entityArray);
 

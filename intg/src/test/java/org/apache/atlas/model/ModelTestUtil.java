@@ -17,33 +17,33 @@
  */
 package org.apache.atlas.model;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasStruct;
-
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_PRIMITIVE_TYPES;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public final class  ModelTestUtil {
@@ -309,7 +309,7 @@ public final class  ModelTestUtil {
                 ret = ((AtlasEntityType) dataType).createDefaultValue();
             }
         } catch (AtlasBaseException excp) {
-            LOG.error("failed to get entity-type " + entityDef.getName(), excp);
+            LOG.error("failed to get entity-type {}", entityDef.getName(), excp);
         }
 
         return ret;
@@ -329,7 +329,7 @@ public final class  ModelTestUtil {
                 ret = ((AtlasStructType)dataType).createDefaultValue();
             }
         } catch (AtlasBaseException excp) {
-            LOG.error("failed to get struct-type " + structDef.getName(), excp);
+            LOG.error("failed to get struct-type {}", structDef.getName(), excp);
         }
 
         return ret;
@@ -350,7 +350,7 @@ public final class  ModelTestUtil {
                 ret = ((AtlasClassificationType)dataType).createDefaultValue();
             }
         } catch (AtlasBaseException excp) {
-            LOG.error("failed to get classification-type " + classificationDef.getName(), excp);
+            LOG.error("failed to get classification-type {}", classificationDef.getName(), excp);
         }
 
         return ret;

@@ -134,7 +134,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("Trait instance = " + traitInstanceJSON);
+        LOG.debug("Trait instance = {}", traitInstanceJSON);
 
         final String guid = tableId._getId();
 
@@ -161,7 +161,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         traitInstance = new Struct(anotherTraitName);
         traitInstanceJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("Trait instance = " + traitInstanceJSON);
+        LOG.debug("Trait instance = {}", traitInstanceJSON);
 
         atlasClientV1.addTrait(guid, traitInstance);
 
@@ -200,7 +200,7 @@ public class EntityNotificationIT extends BaseResourceIT {
             TypesUtil.createTraitTypeDef(traitName, ImmutableSet.copyOf(superTraitNames));
 
         String traitDefinitionJSON = TypesSerialization$.MODULE$.toJson(trait, true);
-        LOG.debug("Trait definition = " + traitDefinitionJSON);
+        LOG.debug("Trait definition = {}", traitDefinitionJSON);
         createType(traitDefinitionJSON);
     }
 

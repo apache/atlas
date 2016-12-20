@@ -71,7 +71,7 @@ public class SetupSteps {
             LOG.info("Acquired lock for running setup.");
             handleSetupInProgress(configuration, zookeeperProperties);
             for (SetupStep step : setupSteps) {
-                LOG.info("Running setup step: " + step);
+                LOG.info("Running setup step: {}", step);
                 step.run();
             }
             clearSetupInProgress(zookeeperProperties);

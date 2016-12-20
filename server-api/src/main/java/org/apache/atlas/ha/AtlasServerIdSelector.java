@@ -56,18 +56,18 @@ public class AtlasServerIdSelector {
                 try {
                     socketAddress = NetUtils.createSocketAddr(hostPort);
                 } catch (Exception e) {
-                    LOG.warn("Exception while trying to get socket address for " + hostPort, e);
+                    LOG.warn("Exception while trying to get socket address for {}", hostPort, e);
                     continue;
                 }
                 if (!socketAddress.isUnresolved()
                         && NetUtils.isLocalAddress(socketAddress.getAddress())
                         && appPort == socketAddress.getPort()) {
-                    LOG.info("Found matched server id " + id + " with host port: " + hostPort);
+                    LOG.info("Found matched server id {} with host port: {}", id, hostPort);
                     matchingServerId = id;
                     break;
                 }
             } else {
-                LOG.info("Could not find matching address entry for id: " + id);
+                LOG.info("Could not find matching address entry for id: {}", id);
             }
         }
         if (matchingServerId == null) {

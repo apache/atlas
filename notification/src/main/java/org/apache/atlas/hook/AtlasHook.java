@@ -131,7 +131,7 @@ public abstract class AtlasHook {
             } catch (Exception e) {
                 numRetries++;
                 if (numRetries < maxRetries) {
-                    LOG.error("Failed to send notification - attempt #" + numRetries + "; error=" + e.getMessage());
+                    LOG.error("Failed to send notification - attempt #{}; error={}", numRetries, e.getMessage());
                     try {
                         LOG.debug("Sleeping for {} ms before retry", notificationRetryInterval);
                         Thread.sleep(notificationRetryInterval);
@@ -190,14 +190,14 @@ public abstract class AtlasHook {
     public static String getUser(String userName, UserGroupInformation ugi) {
         if (StringUtils.isNotEmpty(userName)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Returning userName {} " + userName);
+                LOG.debug("Returning userName {}", userName);
             }
             return userName;
         }
 
         if (ugi != null && StringUtils.isNotEmpty(ugi.getShortUserName())) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Returning ugi.getShortUserName {} " + userName);
+                LOG.debug("Returning ugi.getShortUserName {}", userName);
             }
             return ugi.getShortUserName();
         }

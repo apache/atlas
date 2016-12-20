@@ -36,7 +36,7 @@ public class AtlasAuthorizationUtils {
 
     public static String getApi(String contextPath) {
         if (isDebugEnabled) {
-            LOG.debug("==> getApi from " + contextPath);
+            LOG.debug("==> getApi from {}", contextPath);
         }
         if (contextPath.startsWith(BASE_URL)) {
             contextPath = contextPath.substring(BASE_URL.length());
@@ -74,14 +74,14 @@ public class AtlasAuthorizationUtils {
                 break;
             default:
                 if (isDebugEnabled) {
-                    LOG.debug("getAtlasAction(): Invalid HTTP method '" + method + "'");
+                    LOG.debug("getAtlasAction(): Invalid HTTP method '{}", method);
                 }
                 break;
         }
 
         if (isDebugEnabled) {
-            LOG.debug("<== AtlasAuthorizationFilter getAtlasAction HTTP Method " + method + " mapped to AtlasAction : "
-                + action);
+            LOG.debug("<== AtlasAuthorizationFilter getAtlasAction HTTP Method {} mapped to AtlasAction : {}",
+                    method, action);
         }
         return action;
     }
@@ -96,15 +96,15 @@ public class AtlasAuthorizationUtils {
      *         entities,lineage and discovery apis are mapped with AtlasResourceTypes.ENTITY eg :- /api/atlas/lineage/hive/table/*
      *         /api/atlas/entities/{guid}* /api/atlas/discovery/*
      * 
-     *         taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have 
+     *         taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have
      *         added AtlasResourceTypes.TERM associations.
-     *         
+     *
      *         unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
      */
     public static Set<AtlasResourceTypes> getAtlasResourceType(String contextPath) {
         Set<AtlasResourceTypes> resourceTypes = new HashSet<>();
         if (isDebugEnabled) {
-            LOG.debug("==> getAtlasResourceType  for " + contextPath);
+            LOG.debug("==> getAtlasResourceType  for {}", contextPath);
         }
         String api = getApi(contextPath);
         if (api.startsWith("types")) {
@@ -125,13 +125,13 @@ public class AtlasAuthorizationUtils {
                 resourceTypes.add(AtlasResourceTypes.TERM);
             }
         } else {
-            LOG.error("Unable to find Atlas Resource corresponding to : " + api + "\nSetting "
-                    + AtlasResourceTypes.UNKNOWN.name());
+            LOG.error("Unable to find Atlas Resource corresponding to : {}\nSetting {}"
+                , api, AtlasResourceTypes.UNKNOWN.name());
             resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         }
 
         if (isDebugEnabled) {
-            LOG.debug("<== Returning AtlasResource/s " + resourceTypes + " for api " + api);
+            LOG.debug("<== Returning AtlasResources {} for api {}", resourceTypes, api);
         }
         return resourceTypes;
     }

@@ -40,7 +40,7 @@ public class AtlasSetup {
 
     public AtlasSetup() {
         injector = Guice.createInjector(new AtlasSetupModule());
-        LOG.info("Got injector: " + injector);
+        LOG.info("Got injector: {}", injector);
     }
 
     public static void main(String[] args) {

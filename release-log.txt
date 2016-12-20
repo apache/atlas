@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1407 improve LOG statement performance (apoorvnaik via mneethiraj)
 ATLAS-1350 update authorization to handle v2 REST endpoints (saqeeb.s via mneethiraj)
 ATLAS-1311 Integration tests for V2 Entity APIs (apoorvnaik via mneethiraj)
 ATLAS-1377 fix for Escaping comma in for LDAP properties (nixonrodrigues via mneethiraj)

@@ -347,7 +347,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             } catch (EntityNotFoundException e) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
-                LOG.info("Deletion request ignored for non-existent entity with guid " + guid);
+                LOG.info("Deletion request ignored for non-existent entity with guid {}", guid);
             }
         }
 

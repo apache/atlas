@@ -102,7 +102,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                                 String initParamValue = getServletContext().getInitParameter(initParamName);
 
                                 if (GUICE_CTX_PARAM.equals(initParamName)) {
-                                    LOG.info("Jersey loading from packages: " + initParamValue);
+                                    LOG.info("Jersey loading from packages: {}", initParamValue);
 
                                     initParams.put(PackagesResourceConfig.PROPERTY_PACKAGES, initParamValue);
                                 } else {

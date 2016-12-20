@@ -588,7 +588,7 @@ public final class TypedInstanceToGraphMapper {
             String edgeLabel) throws AtlasException {
         AtlasVertex newReferenceVertex = getClassVertex(newAttributeValue);
         if( ! GraphHelper.elementExists(newReferenceVertex) && newAttributeValue != null) {
-            LOG.error("Could not find vertex for Class Reference " + newAttributeValue);
+            LOG.error("Could not find vertex for Class Reference {}", newAttributeValue);
             throw new EntityNotFoundException("Could not find vertex for Class Reference " + newAttributeValue);
         }
 

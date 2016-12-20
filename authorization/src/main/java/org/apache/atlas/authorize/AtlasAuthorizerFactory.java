@@ -62,7 +62,7 @@ public class AtlasAuthorizerFactory {
                     }
 
                     if (isDebugEnabled) {
-                        LOG.debug("Initializing Authorizer :: " + authorizerClass);
+                        LOG.debug("Initializing Authorizer :: {}", authorizerClass);
                     }
                     try {
                         Class authorizerMetaObject = Class.forName(authorizerClass);
@@ -70,7 +70,7 @@ public class AtlasAuthorizerFactory {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
                         }
                     } catch (Exception e) {
-                        LOG.error("Error while creating authorizer of type '" + authorizerClass + "'", e);
+                        LOG.error("Error while creating authorizer of type '{}", authorizerClass, e);
                         throw new AtlasAuthorizationException("Error while creating authorizer of type '"
                             + authorizerClass + "'", e);
                     }
