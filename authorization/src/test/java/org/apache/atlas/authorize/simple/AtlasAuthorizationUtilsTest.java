@@ -39,10 +39,10 @@ public class AtlasAuthorizationUtilsTest {
         assertEquals(AtlasAuthorizationUtils.getApi(contextPath), "entities");
 
         contextPath = "/api/atlas/v1/entities";
-        assertEquals(AtlasAuthorizationUtils.getApi(contextPath), "v1/entities");
+        assertEquals(AtlasAuthorizationUtils.getApi(contextPath), "entities");
 
         contextPath = "/api/atlas/v1/entities/111/tags";
-        assertEquals(AtlasAuthorizationUtils.getApi(contextPath), "v1/entities");
+        assertEquals(AtlasAuthorizationUtils.getApi(contextPath), "entities");
 
         // not sure of this use case but the code appears to support url's that don't
         // begin with base url.

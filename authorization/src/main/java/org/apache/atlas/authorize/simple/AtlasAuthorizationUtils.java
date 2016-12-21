@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -46,18 +47,13 @@ public class AtlasAuthorizationUtils {
             }
         }
         String[] split = contextPath.split("/", 3);
+
         String api = split[0];
-        if (split.length > 1) {
-            if (Objects.equals(api, "v1")) {
-                return String.format("v1/%s", split[1]);
-            } else if (Objects.equals(api, "v2")) {
-                return String.format("v2/%s", split[1]);
-            } else {
-                return api;
-            }
-        } else {
-            return api;
+        if(Pattern.matches("v\\d", api)) {
+            api = split[1];
         }
+        LOG.info("Now returning API : "+api);
+        return api;
     }
 
     public static AtlasActionTypes getAtlasAction(String method) {
@@ -100,6 +96,9 @@ public class AtlasAuthorizationUtils {
      *         entities,lineage and discovery apis are mapped with AtlasResourceTypes.ENTITY eg :- /api/atlas/lineage/hive/table/*
      *         /api/atlas/entities/{guid}* /api/atlas/discovery/*
      * 
+     *         taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have 
+     *         added AtlasResourceTypes.TERM associations.
+     *         
      *         unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
      */
     public static Set<AtlasResourceTypes> getAtlasResourceType(String contextPath) {
@@ -108,33 +107,31 @@ public class AtlasAuthorizationUtils {
             LOG.debug("==> getAtlasResourceType  for " + contextPath);
         }
         String api = getApi(contextPath);
-        if (api.startsWith("types") || api.startsWith("v2/types")) {
+        if (api.startsWith("types")) {
             resourceTypes.add(AtlasResourceTypes.TYPE);
         } else if (api.startsWith("admin") && (contextPath.contains("/session") || contextPath.contains("/version"))) {
             resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         } else if ((api.startsWith("discovery") && contextPath.contains("/gremlin")) || api.startsWith("admin")
-            || api.startsWith("graph")) {
+                || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);
         } else if (api.startsWith("entities") || api.startsWith("lineage") ||
-                api.startsWith("discovery") || api.startsWith("v2/entity")) {
+                api.startsWith("discovery") || api.startsWith("entity")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
-        } else if (api.startsWith("v1/taxonomies")) {
+        } else if (api.startsWith("taxonomies")) {
             resourceTypes.add(AtlasResourceTypes.TAXONOMY);
             // taxonomies are modeled as entities
             resourceTypes.add(AtlasResourceTypes.ENTITY);
             if (contextPath.contains("/terms")) {
                 resourceTypes.add(AtlasResourceTypes.TERM);
             }
-        } else if (api.startsWith("v1/entities") || api.startsWith("v2/entities")) {
-            resourceTypes.add(AtlasResourceTypes.ENTITY);
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : " + api + "\nSetting "
-                + AtlasResourceTypes.UNKNOWN.name());
+                    + AtlasResourceTypes.UNKNOWN.name());
             resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         }
 
         if (isDebugEnabled) {
-            LOG.debug("<== Returning AtlasResources " + resourceTypes + " for api " + api);
+            LOG.debug("<== Returning AtlasResource/s " + resourceTypes + " for api " + api);
         }
         return resourceTypes;
     }

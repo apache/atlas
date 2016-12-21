@@ -9,6 +9,9 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1350 update authorization to handle v2 REST endpoints (saqeeb.s via mneethiraj)
+ATLAS-1311 Integration tests for V2 Entity APIs (apoorvnaik via mneethiraj)
+ATLAS-1377 fix for Escaping comma in for LDAP properties (nixonrodrigues via mneethiraj)
 ATLAS-1367 fix to use correct version of curator-client library (mneethiraj)
 ATLAS-1371 create/edit tag dialog to allow choosing of data-type for attributes (Kalyanikashikar via mneethiraj)
 ATLAS-1395 Lineage improvement for tooltip (kevalbhatt via mneethiraj)
