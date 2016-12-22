@@ -77,6 +77,7 @@ import java.util.Map;
 
 import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtils.COLUMN_TYPE;
+import static org.apache.atlas.TestUtils.DATABASE_TYPE;
 import static org.apache.atlas.TestUtils.PII;
 import static org.apache.atlas.TestUtils.TABLE_TYPE;
 import static org.apache.atlas.TestUtils.createColumnEntity;
@@ -871,6 +872,16 @@ public class DefaultMetadataServiceTest {
         }
     }
 
+    @Test(expectedExceptions = ValueConversionException.class)
+    public void testCreateRequiredAttrNull() throws Exception {
+        //Update required attribute
+
+        Referenceable tableEntity = new Referenceable(TABLE_TYPE);
+        tableEntity.set(NAME, "table_" + TestUtils.randomString());
+
+        TestUtils.createInstance(metadataService, tableEntity);
+        Assert.fail("Expected exception while creating with required attribute null");
+    }
 
     @Test(expectedExceptions = ValueConversionException.class)
     public void testUpdateRequiredAttrToNull() throws Exception {
@@ -887,6 +898,54 @@ public class DefaultMetadataServiceTest {
     }
 
     @Test
+    public void testCheckOptionalAttrValueRetention() throws Exception {
+
+        Referenceable entity = createDBEntity();
+
+        String dbId = TestUtils.createInstance(metadataService, entity);
+
+        entity = getEntity(dbId);
+
+        //The optional boolean attribute should have a non-null value
+        final String isReplicatedAttr = "isReplicated";
+        final String paramsAttr = "parameters";
+        Assert.assertNotNull(entity.get(isReplicatedAttr));
+        Assert.assertEquals(entity.get(isReplicatedAttr), Boolean.FALSE);
+        Assert.assertNull(entity.get(paramsAttr));
+
+        //Update to true
+        entity.set(isReplicatedAttr, Boolean.TRUE);
+        //Update array
+        final HashMap<String, String> params = new HashMap<String, String>() {{ put("param1", "val1"); put("param2", "val2"); }};
+        entity.set(paramsAttr, params);
+        //Complete update
+        updateInstance(entity);
+
+        entity = getEntity(dbId);
+
+        Assert.assertNotNull(entity.get(isReplicatedAttr));
+        Assert.assertEquals(entity.get(isReplicatedAttr), Boolean.TRUE);
+        Assert.assertEquals(entity.get(paramsAttr), params);
+
+        //Complete update without setting the attribute
+        Referenceable newEntity = createDBEntity();
+        //Reset name to the current DB name
+        newEntity.set(NAME, entity.get(NAME));
+        updateInstance(newEntity);
+
+        entity = getEntity(dbId);
+        Assert.assertNotNull(entity.get(isReplicatedAttr));
+        Assert.assertEquals(entity.get(isReplicatedAttr), Boolean.TRUE);
+        Assert.assertEquals(entity.get(paramsAttr), params);
+    }
+
+    private Referenceable getEntity(String guid) throws AtlasException {
+        String entityJson = metadataService.getEntityDefinition(guid);
+        Assert.assertNotNull(entityJson);
+        return InstanceSerialization.fromJsonReferenceable(entityJson, true);
+    }
+
+    @Test
     public void testUpdateOptionalAttrToNull() throws Exception {
         String tableDefinitionJson =
             metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME));
@@ -895,7 +954,7 @@ public class DefaultMetadataServiceTest {
         //Update optional Attribute
         Assert.assertNotNull(tableDefinition.get("created"));
         //Update optional attribute
-            table.setNull("created");
+        table.setNull("created");
 
         String newtableId = updateInstance(table).getUpdateEntities().get(0);
         assertEquals(newtableId, tableId._getId());

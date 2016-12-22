@@ -48,11 +48,11 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
 
 
     public ReferenceableInstance(Id id, String dataTypeName, FieldMapping fieldMapping, boolean[] nullFlags,
-            boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,
+            boolean[] explicitNullFlags, boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,
             BigDecimal[] bigDecimals, BigInteger[] bigIntegers, Date[] dates, String[] strings,
             ImmutableList<Object>[] arrays, ImmutableMap<Object, Object>[] maps, StructInstance[] structs,
             ReferenceableInstance[] referenceableInstances, Id[] ids, ImmutableMap<String, ITypedStruct> traits) {
-        super(dataTypeName, fieldMapping, nullFlags, bools, bytes, shorts, ints, longs, floats, doubles, bigDecimals,
+        super(dataTypeName, fieldMapping, nullFlags, explicitNullFlags, bools, bytes, shorts, ints, longs, floats, doubles, bigDecimals,
                 bigIntegers, dates, strings, arrays, maps, structs, referenceableInstances, ids);
         this.id = id;
         this.traits = traits;

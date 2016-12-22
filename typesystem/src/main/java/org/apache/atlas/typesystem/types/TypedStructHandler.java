@@ -88,6 +88,7 @@ public class TypedStructHandler {
 
     public ITypedStruct createInstance() {
         return new StructInstance(structType.getName(), fieldMapping, new boolean[fieldMapping.fields.size()],
+                new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
                 fieldMapping.numBytes == 0 ? null : new byte[fieldMapping.numBytes],
                 fieldMapping.numShorts == 0 ? null : new short[fieldMapping.numShorts],

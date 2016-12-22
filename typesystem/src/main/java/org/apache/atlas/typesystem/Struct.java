@@ -69,7 +69,7 @@ public class Struct implements IStruct {
 
     @Override
     public void setNull(String attrName) throws AtlasException {
-        values.remove(attrName);
+        values.put(attrName, null);
     }
 
     @Override

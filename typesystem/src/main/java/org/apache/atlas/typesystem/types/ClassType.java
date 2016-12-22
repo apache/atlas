@@ -33,15 +33,13 @@ import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.StructInstance;
+import scala.tools.cmd.gen.AnyVals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ClassType extends HierarchicalType<ClassType, IReferenceableInstance>
         implements IConstructableType<IReferenceableInstance, ITypedReferenceableInstance> {
@@ -139,10 +137,17 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                         }
                     }
 
-                    try {
-                        tr.set(attrKey, aVal);
-                    } catch (ValueConversionException ve) {
-                        throw new ValueConversionException(this, val, ve);
+                    if(!i.multiplicity.nullAllowed() && !s.getValuesMap().containsKey(attrKey)){
+                        throw new ValueConversionException.NullConversionException(i.multiplicity,
+                                String.format(" Value expected for required attribute %s", i.name));
+                    } else {
+                        try {
+                            if (s.getValuesMap().containsKey(attrKey)) {
+                                tr.set(attrKey, aVal);
+                            }
+                        } catch (ValueConversionException ve) {
+                            throw new ValueConversionException(this, val, ve);
+                        }
                     }
                 }
 
@@ -188,7 +193,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         }
 
         return new ReferenceableInstance(id == null ? new Id(getName()) : id, getName(), fieldMapping,
-                new boolean[fieldMapping.fields.size()],
+                new boolean[fieldMapping.fields.size()], new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
                 fieldMapping.numBytes == 0 ? null : new byte[fieldMapping.numBytes],
                 fieldMapping.numShorts == 0 ? null : new short[fieldMapping.numShorts],

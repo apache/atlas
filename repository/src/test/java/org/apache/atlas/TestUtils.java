@@ -250,6 +250,8 @@ public final class TestUtils {
                 createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,ImmutableSet.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                         createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+                        createOptionalAttrDef("isReplicated", DataTypes.BOOLEAN_TYPE),
+                        new AttributeDefinition("parameters", new DataTypes.MapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
 
