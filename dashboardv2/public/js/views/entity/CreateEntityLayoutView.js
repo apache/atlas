@@ -115,7 +115,7 @@ define(['require',
                         }
                     }
                 }).open();
-                var enable = false;
+                this.modal.$el.find('button.ok').attr("disabled", true);
                 this.ui.entityList.val("");
                 $(this.ui.entityInputData).on('keyup change dp.change', that.modal.$el.find('input select textarea'), function(e) {
                     that.ui.entityInputData.find("input,select,textarea").each(function() {
@@ -176,7 +176,7 @@ define(['require',
                     value;
                 if (this.guid) {
                     this.collection.each(function(val) {
-                        name += val.get("attributes").name || val.get("attributes").qualifiedName || val.get("attributes").id;
+                        name += _.escape(val.get("attributes").name) || _.escape(val.get("attributes").qualifiedName) || _.escape(val.get("attributes").id);
                         that.entityData = val;
                     });
                     this.ui.assetName.html(name);
@@ -187,7 +187,7 @@ define(['require',
                         return model.get('name');
                     }
                     this.collection.fullCollection.sort().each(function(val) {
-                        str += '<option>' + val.get("name") + '</option>';
+                        str += '<option>' + _.escape(val.get("name")) + '</option>';
                     });
                     this.ui.entityList.html(str);
                 }
@@ -208,6 +208,7 @@ define(['require',
 
             },
             onEntityChange: function(e, value) {
+                this.modal.$el.find('button.ok').prop("disabled", false);
                 var that = this,
                     typeName;
                 this.showLoader();
@@ -464,6 +465,7 @@ define(['require',
                                     }
                                 } else {
                                     if (that.selectStoreCollection.length && pickKey) {
+
                                         var temp = {} // I9 support;
                                         temp[pickKey] = $(this).val();
                                         var parseData = that.selectStoreCollection.findWhere(temp).toJSON();
@@ -554,7 +556,7 @@ define(['require',
                             } else if (value.get("id")) {
                                 labelName = "id";
                             }
-                            str += '<option>' + value.get(labelName) + '</option>';
+                            str += '<option>' + _.escape(value.get(labelName)) + '</option>';
                         });
                     }
                 }
@@ -591,7 +593,7 @@ define(['require',
                                 var dataValue = that.entityData.get("attributes")[keyData];
                                 if (dataValue !== null) {
                                     _.each(dataValue, function(obj) {
-                                        str += '<option>' + obj + '</option>';
+                                        str += '<option>' + _.escape(obj) + '</option>';
                                     });
                                     $this.html(str);
                                 }

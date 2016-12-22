@@ -99,9 +99,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
                         }
                         if (value.length > 1) {
-                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + value + '</a>');
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(value) + '</a>');
                         } else {
-                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + id + '</a>');
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
                         }
                         if (deleteButton.length) {
                             scope.$('td div[data-id="' + id + '"]').addClass('block readOnlyLink');
@@ -118,6 +118,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 });
             }
         _.keys(valueObject).map(function(key) {
+            key = _.escape(key)
             var keyValue = valueObject[key],
                 valueOfArray = [];
             if (_.isArray(keyValue) || _.isObject(keyValue)) {
@@ -132,7 +133,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         readOnly = false;
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         if (inputOutputField.indexOf("$") == -1) {
-                            valueOfArray.push('<span>' + inputOutputField + '</span>');
+                            valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !inputOutputField.attributes && !id) {
                         _.each(inputOutputField, function(objValue, objKey) {
@@ -141,7 +142,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 if (_.isObject(value)) {
                                     value = JSON.stringify(value);
                                 }
-                                valueOfArray.push('<span>' + objKey + ':' + value + '</span>');
+                                valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
                             }
                         });
                     }
@@ -149,18 +150,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (id && inputOutputField) {
                         if (inputOutputField.attributes) {
                             if (inputOutputField.attributes.name) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.attributes.name + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.attributes.name) + '</a>'
                             } else if (inputOutputField.attributes.qualifiedName) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.attributes.qualifiedName + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.attributes.qualifiedName) + '</a>'
                             } else if (inputOutputField.typeName) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.typeName + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.typeName) + '</a>'
                             } else {
                                 tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
                             }
                         } else if (inputOutputField.name) {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.name + '</a>';
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.name) + '</a>';
                         } else if (inputOutputField.qualifiedName) {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.qualifiedName + '</a>'
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.qualifiedName) + '</a>'
                         } else {
                             var fetch = true;
                             fetchInputOutputValue(id);
@@ -191,7 +192,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (searchTable) {
                     table = subLink;
                 } else {
-                    table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
+                    table += '<tr><td>' + key + '</td><td>' + _.escape(subLink) + '</td></tr>';
                 }
             } else {
                 if (key.indexOf("Time") !== -1 || key == "retention") {
@@ -208,7 +209,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             table = valueObject[key];
                         }
                     } else {
-                        table += '<tr><td>' + key + '</td><td>' + valueObject[key] + '</td></tr>';
+                        table += '<tr><td>' + key + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
                     }
                 }
             }
@@ -236,13 +237,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (i == 0) {
                     href = splitUrlWithoutTerm[i];
                     urlList.push({
-                        value: splitUrlWithoutTerm[i],
+                        value: _.escape(splitUrlWithoutTerm[i]),
                         href: href
                     });
                 } else {
                     href += "/terms/" + splitUrlWithoutTerm[i];
                     urlList.push({
-                        value: splitUrlWithoutTerm[i],
+                        value: _.escape(splitUrlWithoutTerm[i]),
                         href: href
                     });
                 };
@@ -254,7 +255,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var li = "";
         if (options.urlList) {
             _.each(options.urlList, function(object) {
-                li += '<li><a class="link" href="#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '?load=true">' + object.value + '</a></li>';
+                li += '<li><a class="link" href="#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '?load=true">' + _.escape(object.value) + '</a></li>';
             });
         }
         if (options.scope) {
@@ -300,8 +301,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
             if (tagName.term) {
                 terms.push({
-                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName + '" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ></i></a>',
-                    url: tagName.fullName.split(".").join("/"),
+                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + _.escape(model.get("name")) + '" data-name="' + tagName.fullName + '" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ></i></a>',
+                    url: _.unescape(tagName.fullName).split(".").join("/"),
                     name: tagName.fullName
                 });
             }
@@ -312,7 +313,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 className += "showHideDiv hide";
             }
             obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
-            html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
+            html += '<div class="' + className + '" dataterm-name="' + _.escape(obj.name) + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
         })
         if (terms.length > 1) {
             html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'

@@ -414,13 +414,13 @@ define(['require',
                     that = this;
                 if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
                 } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });

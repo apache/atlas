@@ -46,6 +46,7 @@ define(['require',
                 addTagListBtn: '[data-id="addTagListBtn"]',
                 addTagtext: '[data-id="addTagtext"]',
                 addTagPlus: '[data-id="addTagPlus"]',
+                addTagBtn: '[data-id="addTagBtn"]',
                 description: '[data-id="description"]',
                 descriptionTextArea: '[data-id="descriptionTextArea"]',
                 publishButton: '[data-id="publishButton"]'
@@ -69,12 +70,28 @@ define(['require',
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
                     this.model = this.collection.fullCollection.findWhere({ name: this.tag });
-                    this.renderTagDetail();
+                    /// this.model = this.collection.fullCollection.findWhere({ typeName: $(".dataTypeSelector").val() });
+                    if (this.model) {
+                        this.renderTagDetail();
+                    } else {
+                        this.ui.addTagBtn.hide();
+                        this.ui.editButton.hide();
+                        Utils.notifyError({
+                            content: 'Something went wrong'
+                        });
+                    }
+
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
+                    this.ui.addTagBtn.hide();
+                    this.ui.editButton.hide();
                     if (response.responseJSON && response.responseJSON.error) {
                         Utils.notifyError({
                             content: response.responseJSON.error
+                        });
+                    } else {
+                        Utils.notifyError({
+                            content: 'Something went wrong'
                         });
                     }
 
@@ -93,17 +110,17 @@ define(['require',
                 var attributeData = "",
                     attributeDefs = this.model.get("attributeDefs");
                 if (this.model.get("name")) {
-                    this.ui.title.html('<span>' + this.model.get("name") + '</span>');
+                    this.ui.title.html('<span>' + _.escape(this.model.get("name")) + '</span>');
                 }
                 if (this.model.get("description")) {
-                    this.ui.description.html(this.model.get("description"));
+                    this.ui.description.text(this.model.get("description"));
                 }
                 if (this.model.get("attributeDefs")) {
                     if (!_.isArray(attributeDefs)) {
                         attributeDefs = [attributeDefs];
                     }
                     _.each(attributeDefs, function(value, key) {
-                        attributeData += '<span class="inputAttribute">' + value.name + '</span>';
+                        attributeData += '<span class="inputAttribute">' + _.escape(value.name) + '</span>';
                     });
                     this.ui.showAttribute.html(attributeData);
                 }
@@ -190,11 +207,11 @@ define(['require',
                 this.ui.editButton.show();
                 this.ui.editBox.hide();
             },
-            textAreaChangeEvent: function(view, modal) {
+            textAreaChangeEvent: function(view) {
                 if (this.model.get('description') === view.ui.description.val()) {
-                    modal.$el.find('button.ok').prop('disabled', true);
+                    this.modal.$el.find('button.ok').prop('disabled', true);
                 } else {
-                    modal.$el.find('button.ok').prop('disabled', false);
+                    this.modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
             onPublishClick: function(view) {
@@ -210,7 +227,7 @@ define(['require',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
                     var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag });
-                    var modal = new Modal({
+                    that.modal = new Modal({
                         title: 'Edit Tag',
                         content: view,
                         cancelText: "Cancel",
@@ -218,14 +235,14 @@ define(['require',
                         allowCancel: true,
                     }).open();
                     view.ui.description.on('keyup', function(e) {
-                        that.textAreaChangeEvent(view, modal);
+                        that.textAreaChangeEvent(view);
                     });
-                    modal.$el.find('button.ok').prop('disabled', true);
-                    modal.on('ok', function() {
+                    that.modal.$el.find('button.ok').prop('disabled', true);
+                    that.modal.on('ok', function() {
                         that.onPublishClick(view);
                     });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
+                    that.modal.on('closeModal', function() {
+                        that.modal.trigger('cancel');
                     });
                 });
             }

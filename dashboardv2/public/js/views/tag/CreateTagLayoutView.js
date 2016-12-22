@@ -87,7 +87,7 @@ define(['require',
                 if (this.create) {
                     this.tagCollectionList();
                 } else {
-                    this.ui.title.html('<span>' + this.tag + '</span>');
+                    this.ui.title.html('<span>' + _.escape(this.tag) + '</span>');
                 }
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.createTagForm.find('input,textarea').placeholder();
@@ -98,7 +98,7 @@ define(['require',
                     that = this;
                 this.ui.parentTag.empty();
                 this.tagCollection.fullCollection.each(function(val) {
-                    str += '<option>' + val.get("name") + '</option>';
+                    str += '<option>' + _.escape(val.get("name")) + '</option>';
                 });
                 that.ui.parentTag.html(str);
                 console.log(platform);

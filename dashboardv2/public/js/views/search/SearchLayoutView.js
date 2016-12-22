@@ -124,7 +124,7 @@ define(['require',
                     return model.get('name').toLowerCase();
                 }
                 this.typecollection.fullCollection.sort().each(function(model) {
-                    str += '<option>' + model.get("name") + '</option>';
+                    str += '<option>' + _.escape(model.get("name")) + '</option>';
                 });
                 that.ui.typeLov.html(str);
             },

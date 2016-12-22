@@ -147,15 +147,16 @@ define(['require',
                     return model.get('name').toLowerCase();
                 };
                 that.collection.fullCollection.sort().each(function(model) {
+                    var name = _.escape(model.get('name'))
                     if (searchString) {
-                        if (model.get('name').search(new RegExp(searchString, "i")) != -1) {
+                        if (name.search(new RegExp(searchString, "i")) != -1) {
                             // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('name') + '"  data-name="`' + model.get('name') + '`" >' + model.get('name') + '</a></li>';
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name=" `' + name + '`" >' + name + '</a></li>';
                         } else {
                             return;
                         }
                     } else {
-                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('name') + '"  data-name="`' + model.get('name') + '`">' + model.get('name') + '</a></li>';
+                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name=" `' + name + '`">' + name + '</a></li>';
                     }
                 });
                 this.ui.tagsParent.empty().html(str);
@@ -187,7 +188,7 @@ define(['require',
                         modal.$el.find('button.ok').removeAttr("disabled");
                     });
                     view.ui.tagName.on('keyup', function(e) {
-                        if (e.keyCode == 8 && e.currentTarget.value == "") {
+                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value == "") {
                             modal.$el.find('button.ok').attr("disabled", "true");
                         }
                     });

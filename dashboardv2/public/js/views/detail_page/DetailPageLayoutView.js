@@ -113,6 +113,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent', 'id'));
                 this.bindEvents();
+                this.auditVent = new Backbone.Wreqr.EventAggregator();
             },
             bindEvents: function() {
                 var that = this;
@@ -151,7 +152,7 @@ define(['require',
                             this.description = collectionJSON.attributes.description;
                             if (this.name) {
                                 this.ui.title.show();
-                                var titleName = '<span>' + this.name + '</span>';
+                                var titleName = '<span>' + _.escape(this.name) + '</span>';
                                 if (this.readOnly) {
                                     titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
@@ -161,18 +162,18 @@ define(['require',
                             }
                             if (this.description) {
                                 this.ui.description.show();
-                                this.ui.description.html('<span>' + this.description + '</span>');
+                                this.ui.description.html('<span>' + _.escape(this.description) + '</span>');
                             } else {
                                 this.ui.description.hide();
                             }
                         }
                         if (collectionJSON.classifications) {
                             this.addTagToTerms(collectionJSON.classifications);
-                        }else{
-                             this.addTagToTerms([]);
+                        } else {
+                            this.addTagToTerms([]);
                         }
                     }
-
+                    this.auditVent.trigger("reset:collection");
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
@@ -199,13 +200,13 @@ define(['require',
                     that = this;
                 if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
                 } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });
@@ -344,7 +345,8 @@ define(['require',
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     that.RAuditTableLayoutView.show(new AuditTableLayoutView({
                         globalVent: that.globalVent,
-                        guid: tagGuid
+                        guid: tagGuid,
+                        vent: that.auditVent
                     }));
                 });
             },

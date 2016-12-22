@@ -104,7 +104,7 @@ define(['require',
                     }
                     if (description) {
                         this.ui.description.show();
-                        this.ui.description.html('<span>' + description + '</span>');
+                        this.ui.description.html('<span>' + _.escape(description) + '</span>');
                     } else {
                         this.ui.description.hide();
                     }
@@ -129,56 +129,6 @@ define(['require',
                 this.ui.editButton.show();
                 this.ui.editBox.hide();
             },
-            addTagCollectionList: function(obj, searchString) {
-                var list = "",
-                    that = this;
-                _.each(obj, function(model) {
-                    var tags = model.get("tags");
-                    if (!_.contains(that.tagElement, tags)) {
-                        if (searchString) {
-                            if (tags.search(new RegExp(searchString, "i")) != -1) {
-                                list += '<div><span>' + tags + '</span></div>';
-                                return;
-                            }
-                        } else {
-                            list += '<div><span>' + tags + '</span></div>';
-                        }
-                    }
-                });
-                if (list.length <= 0) {
-                    list += '<div><span>' + "No more tags" + '</span></div>';
-                }
-                this.ui.appendList.html(list);
-            },
-            addTagToTerms: function(tagObject) {
-                var tagData = "";
-                _.each(tagObject, function(val) {
-                    tagData += '<span class="inputTag"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
-                });
-                this.$('.addTag-dropdown').before(tagData);
-            },
-            saveTagFromList: function(ref) {
-                var that = this;
-                this.entityModel = new VEntity();
-                var tagName = ref.text();
-                var json = {
-                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
-                    "typeName": tagName,
-                    "values": {}
-                };
-                this.entityModel.saveEntity(this.id, {
-                    data: JSON.stringify(json),
-                    success: function(data) {
-                        that.collection.fetch({ reset: true });
-                    },
-                    error: function(error, data, status) {
-                        if (error && error.responseText) {
-                            var data = JSON.parse(error.responseText);
-                        }
-                    },
-                    complete: function() {}
-                });
-            },
             onEditButton: function(e) {
                 var that = this;
                 $(e.currentTarget).blur();
@@ -186,7 +136,7 @@ define(['require',
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'termCollection': that.collection, 'descriptionData': that.model.get('description'), 'tag': that.termName.name });
+                    var view = new CreateTagLayoutView({ 'termCollection': that.collection, 'descriptionData': that.model.get('description'), 'tag': _.unescape(that.termName.name) });
                     var modal = new Modal({
                         title: 'Edit Term',
                         content: view,

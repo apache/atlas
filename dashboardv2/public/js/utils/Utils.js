@@ -49,33 +49,33 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
     };
 
     var notify = function(options) {
-        new pnotify(_.extend({ icon: true, hide: true, delay: 3000,remove:true }, options));
+        new pnotify(_.extend({ icon: true, hide: true, delay: 3000, remove: true }, options));
     }
     Utils.notifyInfo = function(options) {
         notify({
             type: "info",
-            text: options.content || "Info message."
+            text: _.escape(options.content) || "Info message."
         });
     };
 
     Utils.notifyWarn = function(options) {
         notify({
             type: "notice",
-            text: options.content || "Info message."
+            text: _.escape(options.content) || "Info message."
         });
     };
 
     Utils.notifyError = function(options) {
         notify({
             type: "error",
-            text: options.content || "Error occurred."
+            text: _.escape(options.content) || "Error occurred."
         });
     };
 
     Utils.notifySuccess = function(options) {
         notify({
             type: "success",
-            text: options.content || "Error occurred."
+            text: _.escape(options.content) || "Error occurred."
         });
     };
     Utils.defaultErrorHandler = function(model, error) {
@@ -243,7 +243,7 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
             if (value == "TaxonomyTerm") {
                 return {}
             }
-            var name = value.split('.');
+            var name = _.escape(value).split('.');
             return {
                 term: true,
                 tag: false,
@@ -261,7 +261,7 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
             if (name === "TaxonomyTerm") {
                 return {}
             }
-            name = name.split('.');
+            name = _.escape(name).split('.');
             var trem = false;
             if (value['taxonomy.namespace']) {
                 trem = true;

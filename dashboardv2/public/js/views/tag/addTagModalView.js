@@ -57,6 +57,7 @@ define(['require',
                 cancelText: "Cancel",
                 allowCancel: true,
             }).open();
+            this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
                 var tagName = this.ui.addTagOptions.val();
                 var tagAttributes = {};
@@ -103,11 +104,11 @@ define(['require',
                 this.tagsCollection();
             }, this);
             this.listenTo(this.commonCollection, 'reset', function() {
-                --this.asyncAttrFetchCounter;
+                --this.asyncAttrFetchCounter
                 this.subAttributeData();
             }, this);
             this.listenTo(this.commonCollection, 'error', function() {
-                --this.asyncAttrFetchCounter;
+                --this.asyncAttrFetchCounter
                 this.$('.attrLoader').hide();
             }, this);
         },
@@ -118,17 +119,17 @@ define(['require',
 
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             this.collection.fullCollection.sort().each(function(obj, key) {
-                str += '<option>' + obj.get('name') + '</option>';
+                str += '<option>' + _.escape(obj.get('name')) + '</option>';
             });
             this.ui.addTagOptions.html(str);
             this.ui.addTagOptions.select2({
                 placeholder: "Select Tag",
-                allowClear: true
+                allowClear: false
             });
         },
         onChangeTagDefination: function() {
             this.ui.tagAttribute.empty();
-            var saveBtn = this.modal.$el.find('.btn-success');
+            var saveBtn = this.modal.$el.find('button.ok');
             saveBtn.prop("disabled", false);
             var tagname = this.ui.addTagOptions.val();
             this.hideAttributeBox();
@@ -157,7 +158,7 @@ define(['require',
             if (this.commonCollection.models[0]) {
                 if (this.commonCollection.models[0].get('attributeDefs')) {
                     _.each(this.commonCollection.models[0].get('attributeDefs'), function(obj) {
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + obj.name + '</label>' +
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + _.escape(obj.name) + '</label>' +
                             '<input type="text" class="form-control attributeInputVal attrName" data-key="' + obj.name + '" ></input></div>');
                     });
                 }

@@ -269,7 +269,7 @@ define(['require',
                         if (that.searchCollection.models.length) {
                             that.startRenderTableProcess();
                         }
-                        var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>';
+                        var resultData = 'Results for <b>' + _.escape(that.searchCollection.queryParams.query) + '</b>';
                         var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>';
                         if (Globals.taxonomy) {
                             var multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
@@ -279,7 +279,8 @@ define(['require',
                         }
 
                     },
-                    silent: true
+                    silent: true,
+                    reset: true
                 });
             },
             startRenderTableProcess: function() {
@@ -444,13 +445,13 @@ define(['require',
                                     }
                                 }
                                 if (model.get('$id$')) {
-                                    nameHtml = '<a href="#!/detailPage/' + (model.get('$id$').id || model.get('$id$')) + '">' + rawValue + '</a>';
+                                    nameHtml = '<a href="#!/detailPage/' + (model.get('$id$').id || model.get('$id$')) + '">' + _.escape(rawValue) + '</a>';
                                 } else {
-                                    nameHtml = '<a>' + rawValue + '</a>';
+                                    nameHtml = '<a>' + _.escape(rawValue) + '</a>';
                                 }
                                 if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                                    return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                    return '<div class="readOnly readOnlyLink">' + _.escape(nameHtml) + '</div>';
                                 } else {
                                     nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     return nameHtml;
@@ -488,7 +489,7 @@ define(['require',
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
-                                    nameHtml += '<button title="Edit" data-giud= "' +(model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                    nameHtml += '<button title="Edit" data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     return nameHtml;
                                 }
                             }
@@ -619,13 +620,13 @@ define(['require',
                     that = this;
                 if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
                 } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });

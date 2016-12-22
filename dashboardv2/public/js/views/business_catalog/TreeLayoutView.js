@@ -259,11 +259,11 @@ define(['require',
                 if (isParent) {
                     this.parentCollection.url = this.url;
                     this.parentCollection.fullCollection.reset(undefined, { silent: true });
-                    this.parentCollection.fetch({ reset: true,cache:true });
+                    this.parentCollection.fetch({ reset: true, cache: true });
                 } else {
                     this.childCollection.url = this.url + "?hierarchy/path:.";
                     this.childCollection.fullCollection.reset(undefined, { silent: true });
-                    this.childCollection.fetch({ reset: true });
+                    this.childCollection.fetch({ reset: true, cache: true });
                 }
             },
             showLoader: function() {
@@ -387,7 +387,7 @@ define(['require',
                         }
                         var name = Utils.checkTagOrTerm(model.get('name'), true);
                         if (name.name) {
-                              // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
+                            // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
                             if (that.viewBased) {
                                 parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
                             } else {
@@ -530,7 +530,7 @@ define(['require',
                     assetName = $(e.target).data("assetname"),
                     that = this,
                     modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Delete: " + "<b>" + termName + "?</b></div>" +
+                        msg: "<div class='ellipsis'>Delete: " + "<b>" + _.escape(termName) + "?</b></div>" +
                             "<p class='termNote'>Assets mapped to this term will be unclassified.</p>",
                         titleMessage: Messages.deleteTerm,
                         buttonText: "Delete"
@@ -616,7 +616,7 @@ define(['require',
                     var view = new AddTermLayoutView({
                         url: UrlLinks.taxonomiesApiUrl(),
                         model: new that.parentCollection.model(),
-                        defaultTerm:true
+                        defaultTerm: true
                     });
                     var modal = new Modal({
                         title: 'Taxonomy',
