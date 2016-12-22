@@ -208,9 +208,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasEnumDefs searchEnumDefs(SearchFilter filter) throws AtlasBaseException {
         AtlasEnumDefs search = getEnumDefStore(typeRegistry).search(filter);
-        if (search == null || search.getTotalCount() == 0) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
-        }
         return search;
     }
 
@@ -323,9 +320,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasStructDefs searchStructDefs(SearchFilter filter) throws AtlasBaseException {
         AtlasStructDefs search = getStructDefStore(typeRegistry).search(filter);
-        if (search == null || search.getTotalCount() == 0) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
-        }
+
         return search;
     }
 
@@ -442,9 +437,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasClassificationDefs searchClassificationDefs(SearchFilter filter) throws AtlasBaseException {
         AtlasClassificationDefs search = getClassificationDefStore(typeRegistry).search(filter);
-        if (search == null || search.getTotalCount() == 0) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
-        }
+
         return search;
     }
 
@@ -557,9 +550,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasEntityDefs searchEntityDefs(SearchFilter filter) throws AtlasBaseException {
         AtlasEntityDefs search = getEntityDefStore(typeRegistry).search(filter);
-        if (search == null || search.getTotalCount() == 0) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
-        }
+
         return search;
     }
 
@@ -917,9 +908,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             LOG.error("Failed to retrieve the EntityDefs", ex);
         }
 
-        if (typesDef.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
-        }
         return typesDef;
     }
 

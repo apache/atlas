@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 import java.text.MessageFormat;
 import java.util.Arrays;
 public enum AtlasErrorCode {
-    NO_SEARCH_RESULTS(204, "ATLAS2041E", "Given search filter did not yield any results"),
+    NO_SEARCH_RESULTS(204, "ATLAS2041E", "Given search filter {0} did not yield any results"),
 
     // All Bad request enums go here
     UNKNOWN_TYPE(400, "ATLAS4001E", "Unknown type {0} for {1}.{2}"),

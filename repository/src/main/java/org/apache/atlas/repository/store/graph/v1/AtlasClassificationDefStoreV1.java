@@ -347,18 +347,14 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             }
         }
 
-        if (CollectionUtils.isNotEmpty(classificationDefs)) {
-            CollectionUtils.filter(classificationDefs, FilterUtil.getPredicateFromSearchFilter(filter));
+        CollectionUtils.filter(classificationDefs, FilterUtil.getPredicateFromSearchFilter(filter));
 
-            AtlasClassificationDefs ret = new AtlasClassificationDefs(classificationDefs);
+        AtlasClassificationDefs ret = new AtlasClassificationDefs(classificationDefs);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasClassificationDefStoreV1.search({}): {}", filter, ret);
-            }
-            return ret;
-        } else {
-            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasClassificationDefStoreV1.search({}): {}", filter, ret);
         }
+        return ret;
     }
 
     private void updateVertexPreCreate(AtlasClassificationDef  classificationDef,

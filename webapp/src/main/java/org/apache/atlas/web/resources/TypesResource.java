@@ -265,9 +265,8 @@ public class TypesResource {
 
             return Response.ok(response).build();
         } catch (AtlasBaseException e) {
-            LOG.error("Given search filter did not yield any results");
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(new Exception("Given search filter did not yield any results "), Response.Status.BAD_REQUEST));
+            LOG.warn("TypesREST exception: {} {}", e.getClass().getSimpleName(), e.getMessage());
+            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
