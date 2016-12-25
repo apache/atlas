@@ -125,7 +125,13 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
             ret = new HashMap<>();
 
             for (AtlasStructDef.AtlasAttributeDef attrDef : getAttributeDefs(structType)) {
-                AtlasType            attrType      = structType.getAttributeType(attrDef.getName());
+                AtlasType attrType = structType.getAttributeType(attrDef.getName());
+
+                if (attrType == null) {
+                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attrDef.getName());
+                    continue;
+                }
+
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
 
                 Object v2Value = attributes.get(attrDef.getName());

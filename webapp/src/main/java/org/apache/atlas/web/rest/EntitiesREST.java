@@ -174,9 +174,13 @@ public class EntitiesREST {
         AtlasEntity.AtlasEntities atlasEntities = entitiesStore.searchEntities(searchFilter);
         AtlasEntityHeader.AtlasEntityHeaders entityHeaders = new AtlasEntityHeader.AtlasEntityHeaders();
         entityHeaders.setList(new LinkedList<AtlasEntityHeader>());
-        for (AtlasEntity atlasEntity : atlasEntities.getList()) {
-            entityHeaders.getList().add(new AtlasEntityHeader(atlasEntity.getTypeName(), atlasEntity.getAttributes()));
+
+        if (atlasEntities != null) {
+            for (AtlasEntity atlasEntity : atlasEntities.getList()) {
+                entityHeaders.getList().add(new AtlasEntityHeader(atlasEntity.getTypeName(), atlasEntity.getAttributes()));
+            }
         }
+
         return entityHeaders;
     }
 
