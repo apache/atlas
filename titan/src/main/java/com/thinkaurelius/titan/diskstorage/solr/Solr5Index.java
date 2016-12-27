@@ -224,7 +224,6 @@ public class Solr5Index implements IndexProvider {
 
             logger.info("Zookeeper session timeout : " + config.get(ZOOKEEPER_SESSION_TIMEOUT));
             cloudServer.setZkClientTimeout(config.get(ZOOKEEPER_SESSION_TIMEOUT));
-
             cloudServer.connect();
             solrClient = cloudServer;
         } else if (mode==Mode.HTTP) {

@@ -34,6 +34,7 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -156,14 +157,14 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
         testInvalidArguments(expectedException, new Invoker() {
             @Override
             void run() throws AtlasException {
-                lineageService.getInputsGraphForEntity(tableName);
+                lineageService.getInputsGraph(tableName);
             }
         });
     }
 
     @Test
     public void testGetInputsGraph() throws Exception {
-        JSONObject results = new JSONObject(lineageService.getInputsGraph("sales_fact_monthly_mv"));
+        JSONObject results = getInputsGraph("sales_fact_monthly_mv");
         assertNotNull(results);
         System.out.println("inputs graph = " + results);
 
@@ -179,7 +180,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testCircularLineage() throws Exception{
-        JSONObject results = new JSONObject(lineageService.getInputsGraph("table2"));
+        JSONObject results = getInputsGraph("table2");
         assertNotNull(results);
         System.out.println("inputs graph = " + results);
 
@@ -223,19 +224,19 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
     }
 
     @Test(dataProvider = "invalidArgumentsProvider")
-    public void testGetOutputsGraphForEntityInvalidArguments(final String tableName, String expectedException)
+    public void testGetOutputsGraphForEntityInvalidArguments(final String tableId, String expectedException)
             throws Exception {
         testInvalidArguments(expectedException, new Invoker() {
             @Override
             void run() throws AtlasException {
-                lineageService.getOutputsGraphForEntity(tableName);
+                lineageService.getOutputsGraphForEntity(tableId);
             }
         });
     }
 
     @Test
     public void testGetOutputsGraph() throws Exception {
-        JSONObject results = new JSONObject(lineageService.getOutputsGraph("sales_fact"));
+        JSONObject results = getOutputsGraph("sales_fact");
         assertNotNull(results);
         System.out.println("outputs graph = " + results);
 
@@ -276,7 +277,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
     @Test(dataProvider = "tableNamesProvider")
     public void testGetSchema(String tableName, String expected) throws Exception {
-        JSONObject results = new JSONObject(lineageService.getSchema(tableName));
+        JSONObject results = getSchema(tableName);
         assertNotNull(results);
         System.out.println("columns = " + results);
 
@@ -284,11 +285,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
         Assert.assertEquals(rows.length(), Integer.parseInt(expected));
 
         for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            assertNotNull(row.getString("name"));
-            assertNotNull(row.getString("comment"));
-            assertNotNull(row.getString("dataType"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+            assertColumn(rows.getJSONObject(index));
         }
     }
 
@@ -305,12 +302,15 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
         Assert.assertEquals(rows.length(), Integer.parseInt(expected));
 
         for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            assertNotNull(row.getString("name"));
-            assertNotNull(row.getString("comment"));
-            assertNotNull(row.getString("dataType"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+            assertColumn(rows.getJSONObject(index));
         }
+    }
+
+    private void assertColumn(JSONObject jsonObject) throws JSONException {
+        assertNotNull(jsonObject.getString("name"));
+        assertNotNull(jsonObject.getString("comment"));
+        assertNotNull(jsonObject.getString("dataType"));
+        Assert.assertEquals(jsonObject.getString("$typeName$"), "hive_column");
     }
 
     @Test(expectedExceptions = SchemaNotFoundException.class)
@@ -359,23 +359,35 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
         });
     }
 
+    private JSONObject getSchema(String tableName) throws Exception {
+        return new JSONObject(lineageService.getSchema("qualified:" + tableName));
+    }
+
+    private JSONObject getInputsGraph(String tableName) throws Exception {
+        return new JSONObject(lineageService.getInputsGraph("qualified:" + tableName));
+    }
+
+    private JSONObject getOutputsGraph(String tableName) throws Exception {
+        return new JSONObject(lineageService.getOutputsGraph("qualified:" + tableName));
+    }
+
     @Test
     public void testLineageWithDelete() throws Exception {
         String tableName = "table" + random();
         createTable(tableName, 3, true);
         String tableId = getEntityId(HIVE_TABLE_TYPE, "name", tableName);
 
-        JSONObject results = new JSONObject(lineageService.getSchema(tableName));
+        JSONObject results = getSchema(tableName);
         assertEquals(results.getJSONArray("rows").length(), 3);
 
-        results = new JSONObject(lineageService.getInputsGraph(tableName));
+        results = getInputsGraph(tableName);
         Struct resultInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
         Map<String, Struct> vertices = (Map) resultInstance.get("vertices");
         assertEquals(vertices.size(), 2);
         Struct vertex = vertices.get(tableId);
         assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
-        results = new JSONObject(lineageService.getOutputsGraph(tableName));
+        results = getOutputsGraph(tableName);
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 2);
 
         results = new JSONObject(lineageService.getSchemaForEntity(tableId));
@@ -408,21 +420,21 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 2);
 
         try {
-            lineageService.getSchema(tableName);
+            getSchema(tableName);
             fail("Expected EntityNotFoundException");
         } catch (EntityNotFoundException e) {
             //expected
         }
 
         try {
-            lineageService.getInputsGraph(tableName);
+            getInputsGraph(tableName);
             fail("Expected EntityNotFoundException");
         } catch (EntityNotFoundException e) {
             //expected
         }
 
         try {
-            lineageService.getOutputsGraph(tableName);
+            getOutputsGraph(tableName);
             fail("Expected EntityNotFoundException");
         } catch (EntityNotFoundException e) {
             //expected
@@ -430,13 +442,13 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
         //Create table again should show new lineage
         createTable(tableName, 2, false);
-        results = new JSONObject(lineageService.getSchema(tableName));
+        results = getSchema(tableName);
         assertEquals(results.getJSONArray("rows").length(), 2);
 
-        results = new JSONObject(lineageService.getOutputsGraph(tableName));
+        results = getOutputsGraph(tableName);
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 0);
 
-        results = new JSONObject(lineageService.getInputsGraph(tableName));
+        results = getInputsGraph(tableName);
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 0);
 
         tableId = getEntityId(HIVE_TABLE_TYPE, "name", tableName);

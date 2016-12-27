@@ -247,6 +247,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
+    public boolean filterBySubTypes() {
+        return GraphPersistenceStrategies$class.filterBySubTypes(this);
+    }
+
+    @Override
     public boolean addGraphVertexPrefix(scala.collection.Traversable<String> preStatements) {
         return GraphPersistenceStrategies$class.addGraphVertexPrefix(this, preStatements);
     }

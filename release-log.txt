@@ -32,6 +32,8 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1403 Performance fixes for search, lineage
+ATLAS-1342 Titan Solrclient - Add timeouts for zookeeper connect and session (sumasai)
 ATLAS-1402 fix UI input validation
 ATLAS-1192 Atlas IE support (kevalbhatt)
 ATLAS-1215 Atlas UI not working in firefox due to fix in ATLAS-1199 (kevalbhatt)

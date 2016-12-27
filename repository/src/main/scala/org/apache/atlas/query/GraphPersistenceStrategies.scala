@@ -30,7 +30,9 @@ import org.apache.atlas.repository.graph.{GraphHelper, GraphBackedMetadataReposi
 import org.apache.atlas.typesystem.persistence.Id
 import org.apache.atlas.typesystem.types.DataTypes._
 import org.apache.atlas.typesystem.types._
+import org.apache.atlas.typesystem.types.cache.TypeCache
 import org.apache.atlas.typesystem.{ITypedInstance, ITypedReferenceableInstance}
+import org.elasticsearch.common.collect.ImmutableList
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -149,10 +151,14 @@ trait GraphPersistenceStrategies {
      *
      * @return
      */
-    def collectTypeInstancesIntoVar = true
+    def collectTypeInstancesIntoVar = false
+
+    def filterBySubTypes = true
 
     def typeTestExpression(typeName : String, intSeq : IntSequence) : Seq[String] = {
-        if (collectTypeInstancesIntoVar)
+        if (filterBySubTypes)
+            typeTestExpressionUsingInFilter(typeName)
+        else if (collectTypeInstancesIntoVar)
             typeTestExpressionMultiStep(typeName, intSeq)
         else
             typeTestExpressionUsingFilter(typeName)
@@ -178,6 +184,18 @@ trait GraphPersistenceStrategies {
             fillVarWithSubTypeInstances(typeName, varName),
             s"$varName._()"
         )
+    }
+
+    private def typeTestExpressionUsingInFilter(typeName: String) = {
+        val filters = collection.mutable.Map[TypeCache.TYPE_FILTER, String]();
+        filters put (TypeCache.TYPE_FILTER.SUPERTYPE, typeName)
+        val subTypes : com.google.common.collect.ImmutableList[String] = TypeSystem.getInstance().getTypeNames(filters)
+        val typeNames = new util.ArrayList[String]()
+        typeNames.add(typeName)
+        if ( !subTypes.isEmpty )
+          typeNames.addAll(subTypes)
+
+        Seq(s"""has("${typeAttributeName}", T.in, ${typeNames.mkString("['", "','", "']")})""")
     }
 
     private def newSetVar(varName : String) = s"$varName = [] as Set"

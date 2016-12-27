@@ -116,11 +116,13 @@ class GremlinTest2 extends BaseGremlinTest {
   }
 
   @Test def testHighLevelLineageReturnGraph {
-    val r = InputLineageClosureQuery("Table", "name", "sales_fact_monthly_mv",
+    val q = InputLineageClosureQuery("Table", "name", "sales_fact_monthly_mv",
       "LoadProcess",
       "inputTables",
       "outputTable",
-      None, Some(List("name")), true, GraphPersistenceStrategy1, g).graph
+      None, Some(List("name")), true, GraphPersistenceStrategy1, g);
+    val gr = q.evaluate();
+    val r = q.graph(gr);
 
     println(r.toInstanceJson)
     //validateJson(r)
@@ -136,11 +138,13 @@ class GremlinTest2 extends BaseGremlinTest {
   }
 
   @Test def testHighLevelWhereUsedReturnGraph {
-    val r = OutputLineageClosureQuery("Table", "name", "sales_fact",
+    val q = OutputLineageClosureQuery("Table", "name", "sales_fact",
       "LoadProcess",
       "inputTables",
       "outputTable",
-      None, Some(List("name")), true, GraphPersistenceStrategy1, g).graph
+      None, Some(List("name")), true, GraphPersistenceStrategy1, g)
+    val gr = q.evaluate();
+    val r = q.graph(gr);
     println(r.toInstanceJson)
   }
 

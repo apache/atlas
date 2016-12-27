@@ -56,6 +56,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -150,7 +151,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         //If the final limit is 0, don't launch the query, return with 0 rows
         if (validatedExpression instanceof Expressions.LimitExpression
                 && ((Integer)((Expressions.LimitExpression) validatedExpression).limit().rawValue()) == 0) {
-            return new GremlinQueryResult(dslQuery, validatedExpression.dataType());
+            return new GremlinQueryResult(dslQuery, validatedExpression.dataType(), Collections.emptyList());
         }
 
         GremlinQuery gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();

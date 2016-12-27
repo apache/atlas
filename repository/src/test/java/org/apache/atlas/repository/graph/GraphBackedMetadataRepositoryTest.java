@@ -135,8 +135,8 @@ public class GraphBackedMetadataRepositoryTest {
         }
     }
 
-    @Test
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
+    @Test
     public void testConcurrentCalls() throws Exception {
         final HierarchicalTypeDefinition<ClassType> refType =
                 createClassTypeDef(randomString(), ImmutableSet.<String>of());
@@ -188,7 +188,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     private boolean assertEdge(String id, String typeName) throws Exception {
         TitanGraph graph = graphProvider.get();
-        Vertex vertex = (Vertex)graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
+        Vertex vertex = (Vertex) graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
         Iterable<Edge> edges = vertex.getEdges(Direction.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
         if (!edges.iterator().hasNext()) {
             ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);

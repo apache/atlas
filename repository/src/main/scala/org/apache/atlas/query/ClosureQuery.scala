@@ -147,15 +147,13 @@ trait ClosureQuery {
     QueryProcessor.evaluate(e, g, persistenceStrategy)
   }
 
-  def graph : GraphResult = {
+  def graph(res: GremlinQueryResult) : GraphResult = {
 
     if (!withPath) {
       throw new ExpressionException(expr, "Graph requested for non Path Query")
     }
 
     import scala.collection.JavaConverters._
-
-    val res = evaluate()
 
     val graphResType = TypeUtils.GraphResultStruct.createType(res.resultDataType.asInstanceOf[StructType])
     val vertexPayloadType = {
@@ -187,7 +185,7 @@ trait ClosureQuery {
      *   add an entry for the Src Vertex to the vertex Map
      *   add an entry for the Dest Vertex to the vertex Map
      */
-    res.rows.map(_.asInstanceOf[StructInstance]).foreach { r =>
+    res.rows.asScala.map(_.asInstanceOf[StructInstance]).foreach { r =>
 
       val path = r.get(TypeUtils.ResultWithPathStruct.pathAttrName).asInstanceOf[java.util.List[_]].asScala
       val srcVertex = path.head.asInstanceOf[StructInstance]
