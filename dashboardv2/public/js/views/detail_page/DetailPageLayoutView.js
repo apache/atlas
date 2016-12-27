@@ -155,7 +155,7 @@ define(['require',
                             this.description = collectionJSON[0].values.description;
                             if (this.name) {
                                 this.ui.title.show();
-                                var titleName = '<span>' + this.name + '</span>';
+                                var titleName = '<span>' + _.escape(this.name) + '</span>';
                                 if (this.readOnly) {
                                     titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
@@ -165,7 +165,7 @@ define(['require',
                             }
                             if (this.description) {
                                 this.ui.description.show();
-                                this.ui.description.html('<span>' + this.description + '</span>');
+                                this.ui.description.html('<span>' + _.escape(this.description) + '</span>');
                             } else {
                                 this.ui.description.hide();
                             }
@@ -201,13 +201,13 @@ define(['require',
                     that = this;
                 if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
                 } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });

@@ -156,7 +156,7 @@ define(['require',
             if (this.commonCollection.models[0] && this.commonCollection.models[0].attributes && this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions) {
                 for (var i = 0; i < this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions.length; i++) {
                     var attribute = this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions;
-                    var strAttribute = '<div class="form-group"><label>' + attribute[i].name + '</label>' +
+                    var strAttribute = '<div class="form-group"><label>' + _.escape(attribute[i].name) + '</label>' +
                         '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
                     this.ui.tagAttribute.append(strAttribute);
                 }

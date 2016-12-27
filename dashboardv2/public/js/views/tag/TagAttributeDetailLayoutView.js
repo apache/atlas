@@ -45,6 +45,7 @@ define(['require',
                 addTagListBtn: '[data-id="addTagListBtn"]',
                 addTagtext: '[data-id="addTagtext"]',
                 addTagPlus: '[data-id="addTagPlus"]',
+                addTagBtn: '[data-id="addTagBtn"]',
                 description: '[data-id="description"]',
                 descriptionTextArea: '[data-id="descriptionTextArea"]',
                 publishButton: '[data-id="publishButton"]',
@@ -74,16 +75,17 @@ define(['require',
                 this.listenTo(this.tagCollection, 'reset', function() {
                     var that = this,
                         attributeData = "";
-                    _.each(this.tagCollection.models, function(attr) {
-                        var traitTypes = attr.get("traitTypes");
-                        if (traitTypes[0].typeDescription != null) {
-                            var descriptionValue = traitTypes[0].typeDescription;
-                            that.ui.description.html(descriptionValue);
-                        }
-                        _.each(traitTypes[0].attributeDefinitions, function(value, key) {
-                            attributeData += '<span class="inputAttribute">' + value.name + '</span>';
-                        });
+                    this.traitTypes = this.tagCollection.first().get("traitTypes")[0];
+                    if (this.traitTypes.typeDescription != null) {
+                        that.ui.description.text(this.traitTypes.typeDescription);
+                    }
+                    if (this.traitTypes.typeName != null) {
+                        that.ui.title.text(this.traitTypes.typeName);
+                    }
+                    _.each(this.traitTypes.attributeDefinitions, function(value, key) {
+                        attributeData += '<span class="inputAttribute">' + _.escape(value.name) + '</span>';
                     });
+
                     if (attributeData.length) {
                         that.ui.addTagtext.hide();
                         that.ui.addTagPlus.show();
@@ -91,16 +93,21 @@ define(['require',
                     that.ui.showAttribute.html(attributeData);
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
+                    this.ui.addTagBtn.hide();
+                    this.ui.editButton.hide();
                     if (response.responseJSON && response.responseJSON.error) {
                         Utils.notifyError({
                             content: response.responseJSON.error
+                        });
+                    } else {
+                        Utils.notifyError({
+                            content: "Something went wrong"
                         });
                     }
 
                 }, this);
             },
             onRender: function() {
-                this.ui.title.html('<span>' + this.tag + '</span>');
                 this.ui.saveButton.attr("disabled", "true");
                 this.ui.publishButton.prop('disabled', true);
             },
@@ -141,7 +148,7 @@ define(['require',
                             }).open();
                         modal.on('ok', function() {
                             var attributeName = $(view.el).find("input").val();
-                            that.tagCollection.first().get('traitTypes')[0].attributeDefinitions.push({
+                            that.traitTypes.attributeDefinitions.push({
                                 "name": attributeName,
                                 "dataTypeName": "string",
                                 "multiplicity": "optional",
@@ -163,14 +170,14 @@ define(['require',
                 this.ui.editBox.hide();
             },
             textAreaChangeEvent: function(view, modal) {
-                if (view.tagCollection.first().get('traitTypes')[0].typeDescription == view.ui.description.val()) {
+                if (this.traitTypes.typeDescription == view.ui.description.val()) {
                     modal.$el.find('button.ok').prop('disabled', true);
                 } else {
                     modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
             onPublishClick: function(view) {
-                view.tagCollection.first().get('traitTypes')[0].typeDescription = view.ui.description.val();
+                this.traitTypes.typeDescription = view.ui.description.val();
                 this.onSaveButton(this.tagCollection.first().toJSON(), Messages.updateTagDescriptionMessage);
                 this.ui.description.show();
             },

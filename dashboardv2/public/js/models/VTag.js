@@ -32,6 +32,7 @@ define(['require',
 
         initialize: function() {
             this.modelName = 'VTag';
+            this.set('tags', _.escape(this.get('tags')));
             this.bindErrorEvents();
         },
         toString: function() {

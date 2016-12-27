@@ -336,13 +336,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 if (i == 0) {
                     href = splitUrlWithoutTerm[i];
                     urlList.push({
-                        value: splitUrlWithoutTerm[i],
+                        value: _.escape(splitUrlWithoutTerm[i]),
                         href: href
                     });
                 } else {
                     href += "/terms/" + splitUrlWithoutTerm[i];
                     urlList.push({
-                        value: splitUrlWithoutTerm[i],
+                        value: _.escape(splitUrlWithoutTerm[i]),
                         href: href
                     });
                 };
@@ -398,8 +398,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             }
             if (tagName.term) {
                 terms.push({
-                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
-                    url: tagName.fullName.split(".").join("/"),
+                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + _.escape(model.get("name")) + '" data-name="' + tagName.fullName + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
+                    url: _.unescape(tagName.fullName).split(".").join("/"),
                     name: tagName.fullName
                 });
             }
@@ -410,7 +410,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 className += "showHideDiv hide";
             }
             obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
-            html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
+            html += '<div class="' + className + '" dataterm-name="' + _.escape(obj.name) + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
         })
         if (terms.length > 1) {
             html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'

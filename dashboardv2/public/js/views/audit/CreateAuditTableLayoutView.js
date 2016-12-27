@@ -70,7 +70,7 @@ define(['require',
                     var valueObject = detailsObject.values;
                     if (this.action == Globals.auditAction.TAG_ADD) {
                         this.ui.auditHeaderValue.html('<th>Tag</th>');
-                        this.ui.auditValue.html("<tr><td>" + detailsObject.typeName + "</td></tr>");
+                        this.ui.auditValue.html("<tr><td>" + _.escape(detailsObject.typeName) + "</td></tr>");
                     } else {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
                         table = CommonViewFunction.propertyTable(valueObject, this);
@@ -86,7 +86,7 @@ define(['require',
                 } else if (this.action == Globals.auditAction.TAG_DELETE) {
                     var appendedString = this.entityModel.get('details').split(':');
                     this.ui.auditHeaderValue.html('<th>Tag</th>');
-                    this.ui.auditValue.html("<tr><td>" + appendedString[1] + "</td></tr>");
+                    this.ui.auditValue.html("<tr><td>" + _.escape(appendedString[1]) + "</td></tr>");
                 }
 
             },

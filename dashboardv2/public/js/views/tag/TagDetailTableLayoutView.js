@@ -136,7 +136,7 @@ define(['require',
                                         var stringArr = [];
                                         tagValue = "";
                                         _.each(values, function(val, key) {
-                                            var attrName = "<span>" + key + ":" + val + "</span>";
+                                            var attrName = "<span>" + _.escape(key) + ":" + _.escape(val) + "</span>";
                                             stringArr.push(attrName);
                                         });
                                         tagValue += stringArr.join(", ");
@@ -178,13 +178,13 @@ define(['require',
                     that = this;
                 if (that.term) {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove",
                     });
                 } else {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove",
                     });

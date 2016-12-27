@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -72,7 +71,7 @@ define(['require',
                 if (this.create) {
                     this.tagCollectionList();
                 } else {
-                    this.ui.title.html('<span>' + this.tag + '</span>');
+                    this.ui.title.html('<span>' + _.escape(this.tag) + '</span>');
                 }
             },
             tagCollectionList: function() {
