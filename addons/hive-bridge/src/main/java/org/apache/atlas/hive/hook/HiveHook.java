@@ -202,16 +202,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                                 }
                             });
 
-                            //Notify as 'hive' service user in Kerberos mode else will default to the current user - doAs mode
-                            UserGroupInformation realUser = ugi.getRealUser();
-                            if (realUser != null) {
-                                LOG.info("Sending notification for event {} as service user {} ", event.getOperation(), realUser.getShortUserName());
-                                realUser.doAs(notifyAsPrivilegedAction(event));
-                            } else {
-                                //Unsecure or without doAs
-                                LOG.info("Sending notification for event {} as current user {} ", event.getOperation(), ugi.getShortUserName());
-                                ugi.doAs(notifyAsPrivilegedAction(event));
-                            }
+                            notifyAsPrivilegedAction(event);
                         } catch (Throwable e) {
                             LOG.error("Atlas hook failed due to error ", e);
                         }
@@ -223,14 +214,29 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
     }
 
-    PrivilegedExceptionAction<Object> notifyAsPrivilegedAction(final HiveEventContext event) {
-        return new PrivilegedExceptionAction<Object>() {
-            @Override
-            public Object run() throws Exception {
-                notifyEntities(event.getMessages());
-                return event;
+    void notifyAsPrivilegedAction(final HiveEventContext event) {
+
+        try {
+            PrivilegedExceptionAction<Object> privilegedNotify = new PrivilegedExceptionAction<Object>() {
+                @Override
+                public Object run() throws Exception {
+                    notifyEntities(event.getMessages());
+                    return event;
+                }
+            };
+
+            //Notify as 'hive' service user in doAs mode
+            UserGroupInformation realUser = event.getUgi().getRealUser();
+            if (realUser != null) {
+                LOG.info("Sending notification for event {} as service user {} #messages {} ", event.getOperation(), realUser.getShortUserName(), event.getMessages().size());
+                realUser.doAs(privilegedNotify);
+            } else {
+                LOG.info("Sending notification for event {} as current user {} #messages {} ", event.getOperation(), event.getUgi().getShortUserName(), event.getMessages().size());
+                event.getUgi().doAs(privilegedNotify);
             }
-        };
+        } catch(Throwable e) {
+            LOG.error("Error during notify {} ", event.getOperation(), e);
+        }
     }
 
     private void collect(HiveEventContext event) throws Exception {
