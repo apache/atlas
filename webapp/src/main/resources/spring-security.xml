@@ -53,7 +53,7 @@
                 username-parameter="j_username"
                 password-parameter="j_password" />
 
-        <security:logout logout-success-url="/login.jsp" delete-cookies="JSESSIONID"
+        <security:logout logout-success-url="/login.jsp" delete-cookies="ATLASSESSIONID"
                          logout-url="/logout.html" />
         <http-basic />
         <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>

@@ -435,7 +435,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                         Collection<String> headerNames = httpResponse.getHeaderNames();
                         for (String headerName : headerNames) {
                             String value = httpResponse.getHeader(headerName);
-                            if (headerName.equalsIgnoreCase("Set-Cookie") && value.startsWith("JSESSIONID")) {
+                            if (headerName.equalsIgnoreCase("Set-Cookie") && value.startsWith("ATLASSESSIONID")) {
                                 chk = false;
                                 break;
                             }
