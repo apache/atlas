@@ -133,19 +133,8 @@ public final class Servlets {
     public static Response getErrorResponse(Throwable e, Response.Status status) {
         String message = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
         Response response = getErrorResponse(message, status);
-        JSONObject responseJson = (JSONObject) response.getEntity();
-        try {
-            responseJson.put(AtlasClient.STACKTRACE, printStackTrace(e));
-        } catch (JSONException e1) {
-            LOG.warn("Could not construct error Json rensponse", e1);
-        }
-        return response;
-    }
 
-    private static String printStackTrace(Throwable t) {
-        StringWriter sw = new StringWriter();
-        t.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+        return response;
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {

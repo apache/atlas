@@ -416,7 +416,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
-        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -434,7 +433,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
-        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
 
@@ -603,7 +601,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertEquals(response.getString(AtlasClient.ERROR),
                 "trait=" + traitName + " should be defined in type system before it can be deleted");
-        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
