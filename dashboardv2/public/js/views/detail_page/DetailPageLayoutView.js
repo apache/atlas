@@ -177,6 +177,7 @@ define(['require',
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
+                    this.renderAuditTableLayoutView(this.id, collectionJSON.attributes);
                 }, this);
             },
             onRender: function() {
@@ -184,7 +185,7 @@ define(['require',
                 this.ui.editBox.hide();
                 this.renderLineageLayoutView(this.id);
                 this.renderSchemaLayoutView(this.id);
-                this.renderAuditTableLayoutView(this.id);
+
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
@@ -340,13 +341,14 @@ define(['require',
                     }));
                 });
             },
-            renderAuditTableLayoutView: function(tagGuid) {
+            renderAuditTableLayoutView: function(tagGuid, entityObject) {
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     that.RAuditTableLayoutView.show(new AuditTableLayoutView({
                         globalVent: that.globalVent,
                         guid: tagGuid,
-                        vent: that.auditVent
+                        vent: that.auditVent,
+                        entityObject: entityObject
                     }));
                 });
             },

@@ -58,7 +58,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'vent'));
+                _.extend(this, _.pick(options, 'globalVent', 'guid', 'vent', 'entityObject'));
                 this.entityCollection = new VEntityList();
                 this.count = 26;
                 this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
@@ -239,7 +239,7 @@ define(['require',
                     that.action = $(e.target).data("action");
                     var eventModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
                         collectionModel = new that.entityCollection.model(eventModel),
-                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action });
+                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entityObject: that.entityObject });
                     var modal = new Modal({
                         title: that.action,
                         content: view,

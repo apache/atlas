@@ -451,7 +451,7 @@ define(['require',
                                 }
                                 if (model.get('$id$') && model.get('$id$').state && Enums.entityStateReadOnly[model.get('$id$').state]) {
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                                    return '<div class="readOnly readOnlyLink">' + _.escape(nameHtml) + '</div>';
+                                    return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
                                     nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     return nameHtml;

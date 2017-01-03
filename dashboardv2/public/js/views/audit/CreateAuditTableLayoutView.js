@@ -53,7 +53,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'entityModel', 'action'));
+                _.extend(this, _.pick(options, 'globalVent', 'guid', 'entityModel', 'action', 'entityObject'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -69,7 +69,7 @@ define(['require',
                     //Append string for JSON parse
                     var valueObject = detailsObject.values;
                     if (this.action == Enums.auditAction.TAG_ADD) {
-                        this.ui.auditHeaderValue.html('<th>Tag</th>');
+                        this.ui.auditHeaderValue.html('<th>' + Enums.auditAction.TAG_ADD + '</th>');
                         this.ui.auditValue.html("<tr><td>" + _.escape(detailsObject.typeName) + "</td></tr>");
                     } else {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
@@ -83,10 +83,10 @@ define(['require',
                             this.ui.tableAudit.hide();
                         }
                     }
-                } else if (this.action == Enums.auditAction.TAG_DELETE) {
-                    var appendedString = this.entityModel.get('details').split(':');
-                    this.ui.auditHeaderValue.html('<th>Tag</th>');
-                    this.ui.auditValue.html("<tr><td>" + _.escape(appendedString[1]) + "</td></tr>");
+                } else if (this.action == Enums.auditAction.TAG_DELETE || Enums.auditAction.ENTITY_DELETE) {
+                    //var appendedString = this.entityModel.get('details').split(':');
+                    this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
+                    this.ui.auditValue.html("<tr><td>" + this.entityObject.name + "</td></tr>");
                 }
 
             },

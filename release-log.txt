@@ -9,7 +9,13 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
-ATLAS-1391 Add exclusion mechanism for Atlas audit
+ATLAS-1421 Regression : HTML is displayed for deleted entities in search-result and entity-details pages (Kalyanikashikar via mneethiraj)
+ATLAS-1417 HIveHook: synchronous execution fails to notify (sumasai via mneethiraj)
+ATLAS-1391 Add exclusion mechanism for Atlas audit (guptaneeru via mneethiraj)
+ATLAS-1424 Avoid stack-trace in REST API error response (nixonrodrigues via mneethiraj)
+ATLAS-1415 fix potential NPE issues found by Coverity scan (mneethiraj)
+ATLAS-1412 delete AtlasApiEntities, as it is not used (david_radley via mneethiraj)
+ATLAS-1402 UI issues due to v2 API integration (Kalyanikashikar via mneethiraj)
 ATLAS-1407 improve LOG statement performance (apoorvnaik via mneethiraj)
 ATLAS-1350 update authorization to handle v2 REST endpoints (saqeeb.s via mneethiraj)
 ATLAS-1311 Integration tests for V2 Entity APIs (apoorvnaik via mneethiraj)

@@ -128,14 +128,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var subLink = "";
                 for (var i = 0; i < keyValue.length; i++) {
                     var inputOutputField = keyValue[i],
-                        id = inputOutputField.guid,
+                        id = inputOutputField.guid || inputOutputField.id,
                         tempLink = "",
                         readOnly = false;
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         if (inputOutputField.indexOf("$") == -1) {
                             valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
                         }
-                    } else if (_.isObject(inputOutputField) && !inputOutputField.attributes && !id) {
+                    } else if (_.isObject(inputOutputField) && !id) {
                         _.each(inputOutputField, function(objValue, objKey) {
                             var value = objValue;
                             if (objKey.indexOf("$") == -1) {
@@ -156,7 +156,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             } else if (inputOutputField.typeName) {
                                 tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.typeName) + '</a>'
                             } else {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>'
                             }
                         } else if (inputOutputField.name) {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.name) + '</a>';
@@ -164,8 +164,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.qualifiedName) + '</a>'
                         } else {
                             var fetch = true;
-                            fetchInputOutputValue(id);
-                            tempLink += '<div data-id="' + id + '"></div>';
+                            var fetchId = (_.isObject(id) ? id.id : id);
+                            fetchInputOutputValue(fetchId);
+                            tempLink += '<div data-id="' + fetchId + '"></div>';
                         }
                     }
 
@@ -192,14 +193,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (searchTable) {
                     table = subLink;
                 } else {
-                    table += '<tr><td>' + key + '</td><td>' + _.escape(subLink) + '</td></tr>';
+                    table += '<tr><td>' + _.escape(key) + '</td><td>' + subLink + '</td></tr>';
                 }
             } else {
                 if (key.indexOf("Time") !== -1 || key == "retention") {
                     if (searchTable) {
                         table = new Date(valueObject[key]);
                     } else {
-                        table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
+                        table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
                     }
                 } else {
                     if (searchTable) {
@@ -209,7 +210,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             table = valueObject[key];
                         }
                     } else {
-                        table += '<tr><td>' + key + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
+                        table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
                     }
                 }
             }
