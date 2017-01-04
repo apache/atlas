@@ -326,7 +326,7 @@
                         }
                     ],
                     "isIndexable": false,
-                    "isOptional": true,
+                    "isOptional": false,
                     "isUnique": false
                 },
                 {
@@ -489,7 +489,7 @@
                         }
                     ],
                     "isIndexable": false,
-                    "isOptional": true,
+                    "isOptional": false,
                     "isUnique": false
                 }
             ]
