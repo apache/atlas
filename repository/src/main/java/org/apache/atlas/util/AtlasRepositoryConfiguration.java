@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
@@ -35,14 +38,16 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class AtlasRepositoryConfiguration {
-    
+
     private static Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
-  
+
     public static final String TYPE_CACHE_IMPLEMENTATION_PROPERTY = "atlas.TypeCache.impl";
+    public static final String AUDIT_EXCLUDED_OPERATIONS = "atlas.audit.excludes";
+    private static List<String> skippedOperations = null;
+    public static final String SEPARATOR = ":";
 
     @SuppressWarnings("unchecked")
     public static Class<? extends TypeCache> getTypeCache() {
-
         // Get the type cache implementation class from Atlas configuration.
         try {
             Configuration config = ApplicationProperties.get();
@@ -92,6 +97,48 @@ public class AtlasRepositoryConfiguration {
             throw new RuntimeException(e);
         }
     }
-   
+
+    /**
+     * Get the list of operations which are configured to be skipped from auditing
+     * Valid format is HttpMethod:URL eg: GET:Version
+     * @return list of string
+     */
+    public static List<String> getAuditExcludedOperations(Configuration config) {
+        if (config == null) {
+            try {
+                config = ApplicationProperties.get();
+            } catch (AtlasException e) {
+                LOG.error(" Error reading operations for auditing ", e);
+            }
+        }
+        if (skippedOperations == null) {
+            skippedOperations = new ArrayList<String>();
+                String[] skipAuditForOperations = config
+                        .getStringArray(AUDIT_EXCLUDED_OPERATIONS);
+                if (skipAuditForOperations != null
+                        && skipAuditForOperations.length > 0) {
+                    for (String skippedOperation : skipAuditForOperations) {
+                        String[] excludedOperations = skippedOperation.trim().toLowerCase().split(SEPARATOR);
+                        if (excludedOperations!= null && excludedOperations.length == 2) {
+                            skippedOperations.add(skippedOperation.toLowerCase());
+                        } else {
+                            LOG.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
+                        }
+                    }
+                }
+        }
+        return skippedOperations;
+    }
+
+    public static boolean isExcludedFromAudit(Configuration config, String httpMethod, String httpUrl) {
+        if (getAuditExcludedOperations(config).size() > 0) {
+            return getAuditExcludedOperations(config).contains(httpMethod.toLowerCase() + SEPARATOR + httpUrl.toLowerCase());
+        } else {
+            return false;
+        }
+    }
+   public static void resetExcludedOperations() { //for test purpose only
+        skippedOperations = null;
+    }
 
 }

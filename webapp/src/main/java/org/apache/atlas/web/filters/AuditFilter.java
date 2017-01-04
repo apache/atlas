@@ -22,6 +22,8 @@ import com.google.inject.Singleton;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -35,8 +37,10 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -45,7 +49,6 @@ import java.util.UUID;
  */
 @Singleton
 public class AuditFilter implements Filter {
-
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
     private static final Logger LOG = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger METRICS_LOG = LoggerFactory.getLogger("METRICS");
@@ -91,7 +94,15 @@ public class AuditFilter implements Filter {
         final String whatURL = Servlets.getRequestURL(httpRequest);
         final String whatAddrs = httpRequest.getLocalAddr();
 
-        audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
+        final String whatUrlPath = httpRequest.getRequestURL().toString();//url path without query string
+
+        if (!isOperationExcludedFromAudit(whatRequest, whatUrlPath.toLowerCase(), null)) {
+            audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
+        } else {
+            if(LOG.isDebugEnabled()) {
+                LOG.debug(" Skipping Audit for {} ", whatURL);
+            }
+        }
     }
 
     private String getUserFromRequest(HttpServletRequest httpRequest) {
@@ -113,6 +124,10 @@ public class AuditFilter implements Filter {
             METRICS_LOG.info("{}", requestMetrics);
         }
      }
+
+    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
+       return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
+    }
 
     @Override
     public void destroy() {
