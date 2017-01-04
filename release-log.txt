@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1428 Create of entityDef type fails with type already exists exception (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1421 Regression : HTML is displayed for deleted entities in search-result and entity-details pages (Kalyanikashikar via mneethiraj)
 ATLAS-1417 HIveHook: synchronous execution fails to notify (sumasai via mneethiraj)
 ATLAS-1391 Add exclusion mechanism for Atlas audit (guptaneeru via mneethiraj)

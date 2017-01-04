@@ -165,10 +165,7 @@ public class TypesResource {
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
             return Response.ok().entity(response).build();
-        } catch (TypeExistsException e) {
-            LOG.error("Type already exists", e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (AtlasBaseException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
