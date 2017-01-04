@@ -28,6 +28,7 @@ import org.json4s._
 import org.json4s.native.Serialization._
 import scala.language.existentials
 import org.apache.atlas.query.Expressions._
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
 
 case class GremlinQueryResult(query: String,
                               resultDataType: IDataType[_],
@@ -109,7 +110,12 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
                         val cName = aE.alias
                         val (src, idx) = qry.resultMaping(cName)
                         val v = getColumnValue(rV, src, idx)
-                        sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
+                        //if select clause is selecting the entire object then return only the instance id (guid, version, state and typeName)
+                        if (aE.dataType.getTypeCategory == TypeCategory.CLASS) {
+                             sInstance.set(cName, persistenceStrategy.constructClassInstanceId(aE.dataType.asInstanceOf[ClassType], v))
+                        } else {
+                            sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
+                        }
                     }
                 }
                 else if(qry.isGroupBy) {

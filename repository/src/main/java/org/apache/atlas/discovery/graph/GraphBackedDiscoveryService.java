@@ -95,12 +95,12 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         }
 
         while (results.hasNext() && response.length() < queryParams.limit()) {
-            
+
             AtlasIndexQuery.Result<?,?> result = results.next();
             AtlasVertex<?,?> vertex = result.getVertex();
 
             JSONObject row = new JSONObject();
-            String guid = GraphHelper.getIdFromVertex(vertex);
+            String guid = GraphHelper.getGuid(vertex);
             if (guid != null) { //Filter non-class entities
                 try {
                     row.put("guid", guid);

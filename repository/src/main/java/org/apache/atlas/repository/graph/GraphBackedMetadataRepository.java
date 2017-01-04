@@ -105,6 +105,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public String getIdAttributeName() {
         return Constants.GUID_PROPERTY_KEY;
     }
+    @Override
+    public String getVersionAttributeName() {
+        return Constants.VERSION_PROPERTY_KEY;
+    }
 
     @Override
     public String getTraitLabel(IDataType<?> dataType, String traitName) {
@@ -169,7 +173,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Constants.ENTITY_TYPE_PROPERTY_KEY, entityType,
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
-        String guid = GraphHelper.getIdFromVertex(instanceVertex);
+        String guid = GraphHelper.getGuid(instanceVertex);
         return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
     }
 
@@ -186,7 +190,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         ArrayList<String> entityList = new ArrayList<>();
         while (results.hasNext()) {
             AtlasVertex vertex = results.next();
-            entityList.add(GraphHelper.getIdFromVertex(vertex));
+            entityList.add(GraphHelper.getGuid(vertex));
         }
 
         return entityList;

@@ -76,6 +76,10 @@ trait GraphPersistenceStrategies {
       * Name of attribute used to store state in vertex
       */
     def stateAttributeName : String
+    /**
+     * Name of attribute used to store version in vertex
+     */
+    def versionAttributeName : String
 
     /**
      * Given a dataType and a reference attribute, how is edge labeled
@@ -123,6 +127,8 @@ trait GraphPersistenceStrategies {
 
     def constructInstance[U](dataType: IDataType[U], v: java.lang.Object): U
 
+    def constructClassInstanceId[U](dataType: ClassType, v: java.lang.Object): ITypedReferenceableInstance
+
     def addGraphVertexPrefix(preStatements : Traversable[GroovyExpression]) = !collectTypeInstancesIntoVar
 
     /**
@@ -162,6 +168,7 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
     val superTypeAttributeName = "superTypeNames"
     val idAttributeName = "guid"
     val stateAttributeName = "state"
+    val versionAttributeName = "version"
 
     override def getGraph() : AtlasGraph[_,_] =  {
         return g;
@@ -178,6 +185,9 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
     def getIdFromVertex(dataTypeNm: String, v: AtlasVertex[_,_]): Id =
         new Id(v.getId.toString, 0, dataTypeNm)
 
+    def getIdFromVertex(v: AtlasVertex[_,_]): Id =
+        getIdFromVertex(v.getProperty(typeAttributeName, classOf[java.lang.String]), v)
+
     def traitNames(v: AtlasVertex[_,_]): java.util.List[String] = {
         val s = v.getProperty("traitNames", classOf[String])
         if (s != null) {
@@ -186,7 +196,12 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
             Seq()
         }
     }
-
+    def constructClassInstanceId[U](classType: ClassType, v: AnyRef): ITypedReferenceableInstance = {
+        val vertex = v.asInstanceOf[AtlasVertex[_,_]];
+        val id = getIdFromVertex(vertex)
+        val cInstance = classType.createInstance(id)
+        classType.convert(cInstance, Multiplicity.OPTIONAL)
+    }
     def constructInstance[U](dataType: IDataType[U], v: AnyRef): U = {
         dataType.getTypeCategory match {
             case DataTypes.TypeCategory.PRIMITIVE => dataType.convert(v, Multiplicity.OPTIONAL)

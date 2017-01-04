@@ -627,7 +627,7 @@ public final class TypedInstanceToGraphMapper {
 
         if (id.isUnassigned()) {
             AtlasVertex classVertex = idToVertexMap.get(id);
-            String guid = GraphHelper.getIdFromVertex(classVertex);
+            String guid = GraphHelper.getGuid(classVertex);
             id = new Id(guid, 0, typedReference.getTypeName());
         }
         return id;
@@ -641,7 +641,7 @@ public final class TypedInstanceToGraphMapper {
         LOG.debug("Updating {} for reference attribute {}", string(currentEdge), attributeInfo.name);
         // Update edge if it exists
         AtlasVertex currentVertex = currentEdge.getInVertex();
-        String currentEntityId = GraphHelper.getIdFromVertex(currentVertex);
+        String currentEntityId = GraphHelper.getGuid(currentVertex);
         String newEntityId = getId(newAttributeValue).id;
         AtlasEdge newEdge = currentEdge;
         if (!currentEntityId.equals(newEntityId)) {

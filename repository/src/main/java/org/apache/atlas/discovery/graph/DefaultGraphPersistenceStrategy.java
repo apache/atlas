@@ -36,10 +36,12 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
@@ -110,6 +112,19 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
+    public ITypedReferenceableInstance constructClassInstanceId(ClassType classType, Object value) {
+        try {
+            AtlasVertex classVertex = (AtlasVertex) value;
+            ITypedReferenceableInstance classInstance = classType.createInstance(GraphHelper.getIdFromVertex(classVertex),
+                    new String[0]);
+            return classType.convert(classInstance, Multiplicity.OPTIONAL);
+        } catch (AtlasException e) {
+            LOG.error("error while constructing an instance", e);
+        }
+        return null;
+    }
+
+    @Override
     public <U> U constructInstance(IDataType<U> dataType, Object value) {
         try {
             switch (dataType.getTypeCategory()) {
@@ -136,7 +151,6 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 AtlasVertex structVertex = (AtlasVertex) value;
                 StructType structType = (StructType) dataType;
                 ITypedStruct structInstance = structType.createInstance();
-
                 TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
 
                 if (dataType.getName().equals(idType.getName())) {
@@ -146,6 +160,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                     if (stateValue != null) {
                         structInstance.set(idType.stateAttrName(), stateValue);
                     }
+                    structInstance.set(idType.versionAttrName(), structVertex.getProperty(versionAttributeName(), Integer.class));
                 } else {
                     metadataRepository.getGraphToInstanceMapper()
                         .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);
@@ -224,6 +239,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     @Override
     public String stateAttributeName() {
         return metadataRepository.getStateAttributeName();
+    }
+
+    @Override
+    public String versionAttributeName() {
+        return metadataRepository.getVersionAttributeName();
     }
 
     @Override

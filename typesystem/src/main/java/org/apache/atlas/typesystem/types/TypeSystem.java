@@ -736,6 +736,7 @@ public class TypeSystem {
         private static final String ID_ATTRNAME = "guid";
         private static final String TYPENAME_ATTRNAME = "typeName";
         private static final String STATE_ATTRNAME = "state";
+        private static final String VERSION_ATTRNAME = "version";
         private static final String TYP_NAME = "__IdType";
 
         private StructType type;
@@ -750,11 +751,15 @@ public class TypeSystem {
             AttributeDefinition stateAttr =
                     new AttributeDefinition(STATE_ATTRNAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED,
                             false, null);
+            AttributeDefinition versionAttr =
+                    new AttributeDefinition(VERSION_ATTRNAME, DataTypes.INT_TYPE.getName(), Multiplicity.REQUIRED,
+                            false, null);
             try {
-                AttributeInfo[] infos = new AttributeInfo[3];
+                AttributeInfo[] infos = new AttributeInfo[4];
                 infos[0] = new AttributeInfo(TypeSystem.this, idAttr, null);
                 infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr, null);
                 infos[2] = new AttributeInfo(TypeSystem.this, stateAttr, null);
+                infos[3] = new AttributeInfo(TypeSystem.this, versionAttr, null);
 
                 type = new StructType(TypeSystem.this, TYP_NAME, null, infos);
             } catch (AtlasException me) {
@@ -780,6 +785,10 @@ public class TypeSystem {
 
         public String stateAttrName() {
             return STATE_ATTRNAME;
+        }
+
+        public String versionAttrName() {
+            return VERSION_ATTRNAME;
         }
     }
 

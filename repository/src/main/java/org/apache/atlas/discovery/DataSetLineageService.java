@@ -207,7 +207,7 @@ public class DataSetLineageService implements LineageService {
                                              .vertices().iterator();
         while (results.hasNext()) {
             AtlasVertex vertex = results.next();
-            return TypeUtils.Pair.of(GraphHelper.getTypeName(vertex), GraphHelper.getIdFromVertex(vertex));
+            return TypeUtils.Pair.of(GraphHelper.getTypeName(vertex), GraphHelper.getGuid(vertex));
         }
         throw new EntityNotFoundException("Dataset with name = " + datasetName + " does not exist");
     }

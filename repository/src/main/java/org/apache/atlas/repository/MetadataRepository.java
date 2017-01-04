@@ -54,6 +54,11 @@ public interface MetadataRepository {
      * @return
      */
     String getStateAttributeName();
+    /**
+     * Returns the attribute name used for entity version
+     * @return
+     */
+    String getVersionAttributeName();
 
     /**
      * Return the property key used to store a given traitName in the repository.

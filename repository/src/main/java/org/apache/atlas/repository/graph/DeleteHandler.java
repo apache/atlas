@@ -76,7 +76,7 @@ public abstract class DeleteHandler {
        Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
        for (AtlasVertex instanceVertex : instanceVertices) {
-            String guid = GraphHelper.getIdFromVertex(instanceVertex);
+            String guid = GraphHelper.getGuid(instanceVertex);
             Id.EntityState state = GraphHelper.getState(instanceVertex);
             if (requestContext.getDeletedEntityIds().contains(guid) || state == Id.EntityState.DELETED) {
                    LOG.debug("Skipping deletion of {} as it is already deleted", guid);
@@ -274,7 +274,7 @@ public abstract class DeleteHandler {
         LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex),
                 attributeName);
         String typeName = GraphHelper.getTypeName(outVertex);
-        String outId = GraphHelper.getIdFromVertex(outVertex);
+        String outId = GraphHelper.getGuid(outVertex);
         Id.EntityState state = GraphHelper.getState(outVertex);
         if ((outId != null && RequestContext.get().isDeletedEntity(outId)) || state == Id.EntityState.DELETED) {
             //If the reference vertex is marked for deletion, skip updating the reference

@@ -52,7 +52,7 @@ public class FullTextMapper {
 
     @Monitored
     public String mapRecursive(AtlasVertex instanceVertex, boolean followReferences) throws AtlasException {
-        String guid = GraphHelper.getIdFromVertex(instanceVertex);
+        String guid = GraphHelper.getGuid(instanceVertex);
         ITypedReferenceableInstance typedReference;
         if (instanceCache.containsKey(guid)) {
             typedReference = instanceCache.get(guid);

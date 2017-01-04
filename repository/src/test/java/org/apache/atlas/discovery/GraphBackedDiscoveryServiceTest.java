@@ -81,7 +81,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @Inject
     private GraphBackedDiscoveryService discoveryService;
     private QueryParams queryParams = new QueryParams(40, 0);
-
+    private static final String idType = "idType";
     @Override
     @BeforeClass
     public void setUp() throws Exception {
@@ -387,6 +387,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @DataProvider(name = "dslQueriesProvider")
     private Object[][] createDSLQueries() {
         return new Object[][]{
+                {"from hive_db as h select h as id", 3},
                 {"from hive_db", 3},
                 {"hive_db", 3},
                 {"hive_db where hive_db.name=\"Reporting\"", 1},
@@ -863,6 +864,16 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
             };
     }
 
+    @DataProvider(name = "dslObjectQueriesReturnIdProvider")
+    private Object[][] createDSLObjectIdQueries() {
+        return new Object[][] { {
+                "from hive_db as h select h as id",
+                new FieldValueValidator().withFieldNames("id")
+                        .withExpectedValues(idType).withExpectedValues(idType)
+                        .withExpectedValues(idType) }
+        };
+    }
+
     @Test(dataProvider = "dslOrderByQueriesProvider")
     public void  testSearchByDSLQueriesWithOrderBy(String dslQuery, Integer expectedNumRows, String orderBy, boolean ascending) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
@@ -1023,6 +1034,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     }
 
     private void runCountGroupByQuery(String dslQuery, ResultChecker checker) throws Exception {
+        runAndValidateQuery(dslQuery, checker);
+    }
+
+    private void runAndValidateQuery(String dslQuery, ResultChecker checker) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
@@ -1046,12 +1061,21 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         runCountGroupByQuery(dslQuery, checker);
     }
 
+    @Test(dataProvider = "dslObjectQueriesReturnIdProvider")
+    public void testSearchObjectQueriesReturnId(String dslQuery,
+            ResultChecker checker) throws Exception {
+        runAndValidateQuery(dslQuery, checker);
+    }
+
     private interface ResultChecker {
         void validateResult(String dslQuery, JSONArray foundRows) throws JSONException;
     }
 
     static class FieldValueValidator implements ResultChecker {
         static class ResultObject {
+
+            private static String[] idTypeAttributes = { "id", "$typeName$",
+                "state", "version" };
 
             @Override
             public String toString() {
@@ -1072,10 +1096,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                     Object foundValue = null;
                     if (expectedValue.getClass() == Integer.class) {
                         foundValue = object.getInt(fieldName);
+                    } else if (expectedValue == idType) {
+                        return validateObjectIdType(object, fieldName);
                     } else {
                         foundValue = object.get(fieldName);
                     }
                     if (foundValue == null || !expectedValue.equals(foundValue)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // validates that returned object id contains all the required attributes.
+            private boolean validateObjectIdType(JSONObject object,
+                    String fieldName) throws JSONException {
+                JSONObject foundJson = object.getJSONObject(fieldName);
+                for (String idAttr : idTypeAttributes) {
+                    if (foundJson.get(idAttr) == null) {
                         return false;
                     }
                 }
