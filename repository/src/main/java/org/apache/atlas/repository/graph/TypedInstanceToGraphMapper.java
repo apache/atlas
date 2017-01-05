@@ -45,6 +45,8 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.utils.MD5Utils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -320,29 +322,21 @@ public final class TypedInstanceToGraphMapper {
                 attributeInfo.name, string(instanceVertex));
 
         List newElements = (List) typedInstance.get(attributeInfo.name);
-        boolean newAttributeEmpty = (newElements == null || newElements.isEmpty());
-
-        if (newAttributeEmpty && operation != Operation.UPDATE_FULL) {
-            return;
-        }
 
         String propertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
         List<String> currentElements = GraphHelper.getProperty(instanceVertex, propertyName);
         IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
         List<Object> newElementsCreated = new ArrayList<>();
 
-        if (!newAttributeEmpty) {
-            if (newElements != null && !newElements.isEmpty()) {
-                int index = 0;
-                for (; index < newElements.size(); index++) {
-                    String currentElement = (currentElements != null && index < currentElements.size()) ?
-                            currentElements.get(index) : null;
-                    LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
-                            currentElement, newElements.get(index));
-                    Object newEntry = addOrUpdateCollectionEntry(instanceVertex, attributeInfo, elementType,
-                            newElements.get(index), currentElement, propertyName, operation);
-                    newElementsCreated.add(newEntry);
-                }
+        if (CollectionUtils.isNotEmpty(newElements)) {
+            for (int index = 0; index < newElements.size(); index++) {
+                String currentElement = (currentElements != null && index < currentElements.size()) ?
+                        currentElements.get(index) : null;
+                LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
+                        currentElement, newElements.get(index));
+                Object newEntry = addOrUpdateCollectionEntry(instanceVertex, attributeInfo, elementType,
+                        newElements.get(index), currentElement, propertyName, operation);
+                newElementsCreated.add(newEntry);
             }
         }
 
@@ -397,11 +391,6 @@ public final class TypedInstanceToGraphMapper {
         @SuppressWarnings("unchecked") Map<Object, Object> newAttribute =
                 (Map<Object, Object>) typedInstance.get(attributeInfo.name);
 
-        boolean newAttributeEmpty = (newAttribute == null || newAttribute.isEmpty());
-        if (newAttributeEmpty && operation != Operation.UPDATE_FULL) {
-            return;
-        }
-
         IDataType elementType = ((DataTypes.MapType) attributeInfo.dataType()).getValueType();
         String propertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
 
@@ -417,7 +406,7 @@ public final class TypedInstanceToGraphMapper {
             }
         }
 
-        if (!newAttributeEmpty) {
+        if (MapUtils.isNotEmpty(newAttribute)) {
             for (Map.Entry entry : newAttribute.entrySet()) {
                 String keyStr = entry.getKey().toString();
                 String propertyNameForKey = GraphHelper.getQualifiedNameForMapKey(propertyName, keyStr);

@@ -32,6 +32,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1419 fix entity-update to set attribute value to null when null is explicitly provided (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1427 Support an option to exclude protocols in SSL mode (nixonrodrigues via mneethiraj)
 ATLAS-1424 Avoid stack-trace in REST API error response (nixonrodrigues via mneethiraj)
 ATLAS-1420 use ATLASSESSIONID as cookie name instead of JSESSIONID (nixonrodrigues via mneethiraj)
