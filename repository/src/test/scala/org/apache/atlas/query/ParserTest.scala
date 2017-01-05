@@ -92,4 +92,8 @@ class ParserTest extends BaseTest {
     )
   }
 
+  @Test def testorder_by: Unit = {
+    println(QueryParser.apply("from DB order by columnA").right.get.toString)
+  }
+
 }

@@ -73,6 +73,8 @@ trait QueryKeywords {
     protected val MAX = Keyword("max")
     protected val MIN = Keyword("min")
     protected val SUM = Keyword("sum")
+    protected val BY = Keyword("by")
+    protected val ORDER = Keyword("order")
 }
 
 trait ExpressionUtils {
@@ -270,7 +272,7 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     def fromSrc = identifier ~ AS ~ alias ^^ { case s ~ a ~ al => s.as(al)} |
         identifier
 
-    def orderby = ORDERBY ~ expr ~ opt (asce) ^^ {
+    def orderby = (ORDERBY|(ORDER ~ BY )) ~ expr ~ opt (asce) ^^ {
       case o ~ odr ~ None => (odr, true)
       case o ~ odr ~ asc => (odr, asc.get)
     }
