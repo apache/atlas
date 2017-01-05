@@ -460,30 +460,30 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
             DataTypes.TypeCategory attrTypeCategory = attributeInfo.dataType().getTypeCategory();
             Object value = updatedEntity.get(attributeName);
-            if (value != null) {
-                switch (attrTypeCategory) {
-                    case CLASS:
+            switch (attrTypeCategory) {
+                case CLASS:
+                    if (value != null) {
                         if (value instanceof Referenceable) {
                             newInstance.set(attributeName, value);
                         } else {
                             Id id = new Id((String) value, 0, attributeInfo.dataType().getName());
                             newInstance.set(attributeName, id);
                         }
-                        break;
+                    }
+                    break;
 
-                    case ENUM:
-                    case PRIMITIVE:
-                    case ARRAY:
-                    case STRUCT:
-                    case MAP:
-                        newInstance.set(attributeName, value);
-                        break;
+                case ENUM:
+                case PRIMITIVE:
+                case ARRAY:
+                case STRUCT:
+                case MAP:
+                    newInstance.set(attributeName, value);
+                    break;
 
-                    case TRAIT:
-                        //TODO - handle trait updates as well?
-                    default:
-                        throw new AtlasException("Update of " + attrTypeCategory + " is not supported");
-                }
+                case TRAIT:
+                    //TODO - handle trait updates as well?
+                default:
+                    throw new AtlasException("Update of " + attrTypeCategory + " is not supported");
             }
         }
 

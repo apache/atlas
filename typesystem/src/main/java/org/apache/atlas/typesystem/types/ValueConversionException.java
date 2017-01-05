@@ -52,6 +52,10 @@ public class ValueConversionException extends AtlasException {
             super(String.format("Null value not allowed for multiplicty %s", m));
         }
 
+        public NullConversionException(Multiplicity m, String msg){
+            super(String.format("Null value not allowed for multiplicty %s . Message %s", m, msg));
+        }
+
         public NullConversionException(String msg, Exception e) {
             super(msg, e);
         }

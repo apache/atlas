@@ -49,11 +49,11 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
 
 
     public ReferenceableInstance(Id id, String dataTypeName, AtlasSystemAttributes systemAttributes, FieldMapping fieldMapping, boolean[] nullFlags,
-            boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,
+            boolean[] explicitSets, boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,
             BigDecimal[] bigDecimals, BigInteger[] bigIntegers, Date[] dates, String[] strings,
             ImmutableList<Object>[] arrays, ImmutableMap<Object, Object>[] maps, StructInstance[] structs,
             ReferenceableInstance[] referenceableInstances, Id[] ids, ImmutableMap<String, ITypedStruct> traits) {
-        super(dataTypeName, fieldMapping, nullFlags, bools, bytes, shorts, ints, longs, floats, doubles, bigDecimals,
+        super(dataTypeName, fieldMapping, nullFlags, explicitSets, bools, bytes, shorts, ints, longs, floats, doubles, bigDecimals,
                 bigIntegers, dates, strings, arrays, maps, structs, referenceableInstances, ids);
         this.id = id;
         this.traits = traits;
@@ -62,10 +62,10 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
             b.add(t);
         }
         this.traitNames = b.build();
-        if(systemAttributes == null){
+        if (systemAttributes == null){
             this.systemAttributes = new AtlasSystemAttributes();
         }
-        else{
+        else {
             this.systemAttributes = systemAttributes;
         }
     }
