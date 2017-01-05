@@ -29,6 +29,7 @@ import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -54,6 +55,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.preCreate({})", entityDef);
         }
+
+        AtlasTypeUtil.validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -173,6 +176,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
 
+        AtlasTypeUtil.validateType(entityDef);
+
         AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getGuid()) ? updateByGuid(entityDef.getGuid(), entityDef)
                                                                          : updateByName(entityDef.getName(), entityDef);
 
@@ -188,6 +193,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByName({}, {})", name, entityDef);
         }
+
+        AtlasTypeUtil.validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -218,6 +225,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasTypeUtil.validateType(entityDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

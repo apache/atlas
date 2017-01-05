@@ -30,6 +30,7 @@ import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -55,6 +56,8 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.preCreate({})", classificationDef);
         }
+
+        AtlasTypeUtil.validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -174,6 +177,8 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }
 
+        AtlasTypeUtil.validateType(classifiDef);
+
         AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
                   ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
@@ -190,6 +195,8 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
         }
+
+        AtlasTypeUtil.validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -220,6 +227,8 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasTypeUtil.validateType(classificationDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

@@ -19,6 +19,8 @@ package org.apache.atlas.type;
 
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -40,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_PREFIX;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_SUFFIX;
@@ -52,6 +56,9 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
  */
 public class AtlasTypeUtil {
     private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<>();
+    private static final String  NAME_REGEX   = "[a-zA-z][a-zA-Z0-9_ ]*";
+    private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+
 
     static {
         Collections.addAll(ATLAS_BUILTIN_TYPENAMES, AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES);
@@ -79,6 +86,20 @@ public class AtlasTypeUtil {
             && StringUtils.endsWith(typeName, ATLAS_TYPE_MAP_SUFFIX);
     }
 
+
+    public static boolean isValidTypeName(String typeName) {
+        Matcher m = NAME_PATTERN.matcher(typeName);
+
+        return m.matches();
+    }
+
+    public static void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        String typeName = typeDef.getName();
+
+        if (!isValidTypeName(typeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeName, typeDef.getCategory().name());
+        }
+    }
 
     public static String getStringValue(Map map, Object key) {
         Object ret = map != null ? map.get(key) : null;

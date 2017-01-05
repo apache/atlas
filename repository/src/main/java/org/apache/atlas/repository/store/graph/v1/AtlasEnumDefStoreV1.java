@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -53,6 +54,8 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV1.create({})", enumDef);
         }
+
+        AtlasTypeUtil.validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByName(enumDef.getName());
 
@@ -143,6 +146,8 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
             LOG.debug("==> AtlasEnumDefStoreV1.update({})", enumDef);
         }
 
+        AtlasTypeUtil.validateType(enumDef);
+
         AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef)
                                                                      : updateByName(enumDef.getName(), enumDef);
 
@@ -158,6 +163,8 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV1.updateByName({}, {})", name, enumDef);
         }
+
+        AtlasTypeUtil.validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
 
@@ -183,6 +190,8 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasTypeUtil.validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.ENUM);
 

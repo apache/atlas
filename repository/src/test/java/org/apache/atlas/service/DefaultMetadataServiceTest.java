@@ -202,7 +202,7 @@ public class DefaultMetadataServiceTest {
         String arrayAttrName = randomStrWithReservedChars();
         String mapAttrName = randomStrWithReservedChars();
         HierarchicalTypeDefinition<ClassType> typeDefinition =
-                createClassTypeDef(randomStrWithReservedChars(), ImmutableSet.<String>of(),
+                createClassTypeDef("test_type_"+ RandomStringUtils.randomAlphanumeric(10), ImmutableSet.<String>of(),
                         createOptionalAttrDef(strAttrName, DataTypes.STRING_TYPE),
                         new AttributeDefinition(arrayAttrName, DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.OPTIONAL, false, null),
@@ -1142,6 +1142,22 @@ public class DefaultMetadataServiceTest {
         String typeDefinition = metadataService.getTypeDefinition(typeName);
         typesDef = TypesSerialization.fromJson(typeDefinition);
         assertEquals(typesDef.classTypes().head().attributeDefinitions.length, 1);
+    }
+
+    @Test
+    public void testTypeWithDotsCreationShouldNotBeCreated() throws AtlasException, JSONException {
+        String typeName = "test_.v1_type_"+ RandomStringUtils.randomAlphanumeric(10);
+        HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(
+                typeName, ImmutableSet.<String>of(),
+                TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE));
+        TypesDef typesDef = new TypesDef(typeDef, false);
+
+        try {
+            metadataService.createType(TypesSerialization.toJson(typesDef));
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
     }
 
     @Test

@@ -40,6 +40,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.typestore.ITypeStore;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -55,8 +56,11 @@ import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.EnumTypeDefinition;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
@@ -213,14 +217,36 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         return createOrUpdateTypes(typeDefinition, true);
     }
 
-    private TypesDef validateTypeDefinition(String typeDefinition) {
+    private TypesDef validateTypeDefinition(String typeDefinition) throws AtlasException {
         try {
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             if (typesDef.isEmpty()) {
                 throw new IllegalArgumentException("Invalid type definition");
             }
+
+            for (HierarchicalTypeDefinition<ClassType> t : typesDef.classTypesAsJavaList()) {
+                if (!AtlasTypeUtil.isValidTypeName(t.typeName))
+                    throw new AtlasException("Only characters, numbers and '_' are allowed in class names. " + t.toString());
+            }
+
+            for (StructTypeDefinition t : typesDef.structTypesAsJavaList()) {
+                if (!AtlasTypeUtil.isValidTypeName(t.typeName))
+                    throw new AtlasException("Only characters, numbers and '_' are allowed in struct names. " + t.toString());
+            }
+
+            for (EnumTypeDefinition t : typesDef.enumTypesAsJavaList()) {
+                if (!AtlasTypeUtil.isValidTypeName(t.name))
+                    throw new AtlasException("Only characters, numbers and '_' are allowed in enum names. " + t.toString());
+            }
+
+            for (HierarchicalTypeDefinition<TraitType> t : typesDef.traitTypesAsJavaList()) {
+                if (!AtlasTypeUtil.isValidTypeName(t.typeName))
+                    throw new AtlasException("Only characters, numbers and '_' are allowed in trait names. " + t.toString());
+            }
+
             return typesDef;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             LOG.error("Unable to deserialize json={}", typeDefinition, e);
             throw new IllegalArgumentException("Unable to deserialize json " + typeDefinition, e);
         }
