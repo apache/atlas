@@ -43,4 +43,7 @@ public final class SecurityProperties {
     public static final String ATLAS_SSL_EXCLUDE_CIPHER_SUITES = "atlas.ssl.exclude.cipher.suites";
     public static final List<String> DEFAULT_CIPHER_SUITES = Arrays.asList(
             ".*NULL.*", ".*RC4.*", ".*MD5.*", ".*DES.*", ".*DSS.*");
+    public static final String ATLAS_SSL_EXCLUDE_PROTOCOLS = "atlas.ssl.exclude.protocols";
+    public static final String[] DEFAULT_EXCLUDE_PROTOCOLS = new String[]{"TLSv1", "TLSv1.1"};
+
 }

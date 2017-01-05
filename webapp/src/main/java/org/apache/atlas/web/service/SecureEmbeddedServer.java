@@ -48,6 +48,8 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
 import static org.apache.atlas.security.SecurityProperties.DEFAULT_CIPHER_SUITES;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
+import static org.apache.atlas.security.SecurityProperties.DEFAULT_EXCLUDE_PROTOCOLS;
 
 /**
  * This is a jetty server which requires client auth via certificates.
@@ -76,6 +78,12 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         List<Object> cipherList = config.getList(ATLAS_SSL_EXCLUDE_CIPHER_SUITES, DEFAULT_CIPHER_SUITES);
         sslContextFactory.setExcludeCipherSuites(cipherList.toArray(new String[cipherList.size()]));
         sslContextFactory.setRenegotiationAllowed(false);
+
+        String[] excludedProtocols = config.containsKey(ATLAS_SSL_EXCLUDE_PROTOCOLS) ?
+                config.getStringArray(ATLAS_SSL_EXCLUDE_PROTOCOLS) : DEFAULT_EXCLUDE_PROTOCOLS;
+        if (excludedProtocols != null && excludedProtocols.length > 0) {
+            sslContextFactory.addExcludeProtocols(excludedProtocols);
+        }
 
         // SSL HTTP Configuration
         // HTTP Configuration

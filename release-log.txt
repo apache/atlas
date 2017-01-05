@@ -32,6 +32,10 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1427 Support an option to exclude protocols in SSL mode (nixonrodrigues via mneethiraj)
+ATLAS-1424 Avoid stack-trace in REST API error response (nixonrodrigues via mneethiraj)
+ATLAS-1420 use ATLASSESSIONID as cookie name instead of JSESSIONID (nixonrodrigues via mneethiraj)
+ATLAS-1417 HIveHook: synchronous execution fails to notify (sumasai)
 ATLAS-1419 fix entity-update to retain value of attributes when not provided (sumasai)
 ATLAS-1364 HiveHook : Fix Auth issue with doAs (sumasai)
 ATLAS-1403 Performance fixes for search, lineage
