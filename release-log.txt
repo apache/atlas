@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1308 Discovery/Search REST API - v2 (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1408 added validation to prevent creating types with . (dot) in name (ashutoshm via mneethiraj)
 ATLAS-1277 Add feather use 'order by ' in the DSL search (zhangqiang2 via sumasai)
 ATLAS-1379 Avoid object query overhead when report query selects class type alias (guptaneeru via dkantor)

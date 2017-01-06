@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableCollection
 import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
+import scala.collection.JavaConverters._
 
 object Expressions {
 
@@ -732,6 +733,8 @@ object Expressions {
              var prefix = if(forGroupBy) { "" } else { s"""${child} select """ }
              s"""${prefix}${selectListWithAlias.mkString("", ", ", "")}"""
         }
+
+        def toJavaList = selectListWithAlias.asJava
     }
 
     case class LoopExpression(val input: Expression, val loopingExpression: Expression,

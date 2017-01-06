@@ -20,16 +20,15 @@ package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.aspect.Monitored;
+import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
-import org.apache.atlas.model.lineage.AtlasLineageService;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
-import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONException;

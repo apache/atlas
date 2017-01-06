@@ -19,10 +19,10 @@
 package org.apache.atlas.web.rest;
 
 
+import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
-import org.apache.atlas.model.lineage.AtlasLineageService;
 import org.apache.atlas.web.util.Servlets;
 
 import javax.inject.Inject;

@@ -77,6 +77,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         if (other != null) {
             setGuid(other.getGuid());
             setStatus(other.getStatus());
+            setDisplayText(other.getDisplayText());
         }
     }
 

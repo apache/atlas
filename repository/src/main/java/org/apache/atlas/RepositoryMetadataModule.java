@@ -24,15 +24,17 @@ import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 
 import org.aopalliance.intercept.MethodInterceptor;
+import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.discovery.DataSetLineageService;
 import org.apache.atlas.discovery.DiscoveryService;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.EntityLineageService;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.model.lineage.AtlasLineageService;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.audit.EntityAuditListener;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
@@ -94,6 +96,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
         // bind the DiscoveryService interface to an implementation
         bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
+        bind(AtlasDiscoveryService.class).to(EntityDiscoveryService.class).asEagerSingleton();
 
         bind(LineageService.class).to(DataSetLineageService.class).asEagerSingleton();
         bind(AtlasLineageService.class).to(EntityLineageService.class).asEagerSingleton();

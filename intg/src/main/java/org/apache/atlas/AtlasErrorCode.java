@@ -20,13 +20,14 @@ package org.apache.atlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.Response;
 import java.text.MessageFormat;
 import java.util.Arrays;
+
+import javax.ws.rs.core.Response;
+
 public enum AtlasErrorCode {
     NO_SEARCH_RESULTS(204, "ATLAS2041E", "Given search filter {0} did not yield any results"),
 
-    // All Bad request enums go here
     UNKNOWN_TYPE(400, "ATLAS4001E", "Unknown type {0} for {1}.{2}"),
     CIRCULAR_REFERENCE(400, "ATLAS4002E", "{0}: invalid supertypes - circular reference back to self {1}"),
     INCOMPATIBLE_SUPERTYPE(400, "ATLAS4003E", "{0}: incompatible supertype {1}"),
@@ -60,6 +61,8 @@ public enum AtlasErrorCode {
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS4045E", "Given instance guid {0} is invalid"),
     INSTANCE_LINEAGE_INVALID_PARAMS(404, "ATLAS4046E", "Invalid lineage query parameters passed {0}: {1}"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
+    DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
+
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS4091E", "Given type {0} already exists"),
