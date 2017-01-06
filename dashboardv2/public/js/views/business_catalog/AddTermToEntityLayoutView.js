@@ -62,13 +62,17 @@ define(['require',
                 }).open();
                 this.on('ok', function() {
                     that.asyncFetchCounter = 0;
+                    var termName = this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join("");
+                    if (termName.trim) {
+                        termName = termName.trim();
+                    }
                     if (that.multiple) {
                         for (var i = 0; i < that.multiple.length; i++) {
                             if (i == 0) {
                                 that.showLoader();
                             }
                             var obj = {
-                                termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
+                                termName: termName,
                                 guid: that.multiple[i].id.id
                             };
                             CommonViewFunction.saveTermToAsset(obj, that);
@@ -76,7 +80,7 @@ define(['require',
                     } else {
                         that.asyncFetchCounter = 0;
                         CommonViewFunction.saveTermToAsset({
-                            termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
+                            termName: termName,
                             guid: this.guid
                         }, that);
                     }

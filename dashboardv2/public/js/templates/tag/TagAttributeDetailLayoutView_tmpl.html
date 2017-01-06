@@ -15,16 +15,23 @@
  * limitations under the License.
 -->
 <div class="page-title clearfix">
-    <h1><span data-id="title"></span></h1>
-    <button type="button" data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
-    <p class="sub-title" data-id="description"></p>
-    <span class="attrLabel">Attributes:</span>
-    <div data-id="showAttribute">
+    <div class="fontLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
-        <div class=" addTagBase dropdown-toggle" data-id="addTagBtn" data-toggle="dropdown">
-            <div class="addTagText" data-id="addTagtext" style="display: block">ADD Attribute &nbsp; <i class="fa fa-plus"></i></div>
-            <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
+    <div class="tagDetail">
+        <h1><span data-id="title"></span></h1>
+        <button type="button" data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
+        <p class="sub-title" data-id="description"></p>
+        <div class="attributes">
+            <span class="attrLabel">Attributes:</span>
+            <div data-id="showAttribute">
+            </div>
+            <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
+                <div class=" addTagBase dropdown-toggle" data-id="addTagBtn" data-toggle="dropdown">
+                    <div class="addTagText" data-id="addTagtext" style="display: block">ADD Attribute &nbsp; <i class="fa fa-plus"></i></div>
+                    <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

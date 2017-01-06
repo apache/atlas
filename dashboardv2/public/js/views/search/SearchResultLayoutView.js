@@ -412,7 +412,7 @@ define(['require',
                         ++nameCheck;
                     }
                     if (model && model.get('$id$') === undefined) {
-                        i = i - 1;
+                        i = i > 0 ? (i - 1) : i;
                         that.searchCollection.remove(model);
                     }
                 }

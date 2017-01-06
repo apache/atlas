@@ -15,32 +15,30 @@
  * limitations under the License.
 -->
 <div class="page-title clearfix">
-    <div class="row">
-        <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
+    <div class="fontLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <h1><span  data-id="title"></span></h1>
-    <div data-id="editBox" style="margin-bottom:10px;">
-        <textarea class="well well-sm col-sm-12" data-id="descriptionTextArea"></textarea>
-        <div class="clearfix" align="right">
-            <button type="button" class="btn-atlas" data-id="cancelButton">Cancel</button>
-            <button type="button" class="btn-atlas" data-id="publishButton">Publish</button>
+    <div class="entityDetail">
+        <div class="row">
+            <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
         </div>
-    </div>
-    <div class="tagTerm">
-        <span class="tagSpan">Tags:</span>
-        <div class="" data-id="tagList">
-            <div class="addTag-dropdown" data-id="addTag">
-                <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
+        <h1><span  data-id="title"></span></h1>
+        <div class="tagTerm">
+            <span class="tagSpan">Tags:</span>
+            <div class="" data-id="tagList">
+                <div class="addTag-dropdown" data-id="addTag">
+                    <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
+                </div>
             </div>
-        </div>
-        <hr class="termTagLine"> {{#if taxonomy}}
-        <span class="termSpan">Terms:</span>
-        <div class="" data-id="termList">
-            <div class="addTag-dropdown" data-id="addTerm">
-                <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
+            <hr class="termTagLine"> {{#if taxonomy}}
+            <span class="termSpan">Terms:</span>
+            <div class="" data-id="termList">
+                <div class="addTag-dropdown" data-id="addTerm">
+                    <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
+                </div>
             </div>
+            {{/if}}
         </div>
-        {{/if}}
     </div>
 </div>
 <div class="container-fluid gray-bg">
@@ -70,19 +68,39 @@
                 </ul>
                 <div class="tab-content">
                     <div id="tab-details" role="tabpanel" class="tab-pane active">
-                        <div id="r_entityDetailTableLayoutView"></div>
+                        <div id="r_entityDetailTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-tagTable" role="tabpanel" class="tab-pane">
-                        <div id="r_tagTableLayoutView"></div>
+                        <div id="r_tagTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-termTable" role="tabpanel" class="tab-pane">
-                        <div id="r_termTableLayoutView"></div>
+                        <div id="r_termTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-audit" role="tabpanel" class="tab-pane">
-                        <div id="r_auditTableLayoutView"></div>
+                        <div id="r_auditTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-schema" role="tabpanel" class="tab-pane">
-                        <div id="r_schemaTableLayoutView"></div>
+                        <div id="r_schemaTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

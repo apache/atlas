@@ -49,12 +49,6 @@ define(['require',
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 title: '[data-id="title"]',
-                editButton: '[data-id="editButton"]',
-                cancelButton: '[data-id="cancelButton"]',
-                publishButton: '[data-id="publishButton"]',
-                description: '[data-id="description"]',
-                descriptionTextArea: '[data-id="descriptionTextArea"]',
-                editBox: '[data-id="editBox"]',
                 createDate: '[data-id="createDate"]',
                 updateDate: '[data-id="updateDate"]',
                 createdUser: '[data-id="createdUser"]',
@@ -65,23 +59,9 @@ define(['require',
                 tagList: '[data-id="tagList"]',
                 termList: '[data-id="termList"]'
             },
-            templateHelpers: function() {
-                return {
-                    taxonomy: Globals.taxonomy
-                };
-            },
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = function() {
-                    this.ui.editButton.hide();
-                    this.ui.description.hide();
-                    this.ui.editBox.show();
-                    this.ui.descriptionTextArea.focus();
-                    if (this.descriptionPresent) {
-                        this.ui.descriptionTextArea.val(this.ui.description.text());
-                    }
-                };
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         var scope = $(e.currentTarget);
@@ -102,8 +82,6 @@ define(['require',
                         }
                     }
                 };
-                // events["click " + this.ui.publishButton] = 'onPublishButtonClick';
-                events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
@@ -111,6 +89,11 @@ define(['require',
                     Backbone.history.history.back();
                 };
                 return events;
+            },
+            templateHelpers: function() {
+                return {
+                    taxonomy: Globals.taxonomy
+                };
             },
             /**
              * intialize a new DetailPageLayoutView Layout
@@ -152,7 +135,6 @@ define(['require',
                             if (!this.name && this.id) {
                                 this.name = this.id;
                             }
-                            this.description = collectionJSON[0].values.description;
                             if (this.name) {
                                 this.ui.title.show();
                                 var titleName = '<span>' + _.escape(this.name) + '</span>';
@@ -163,37 +145,34 @@ define(['require',
                             } else {
                                 this.ui.title.hide();
                             }
-                            if (this.description) {
-                                this.ui.description.show();
-                                this.ui.description.html('<span>' + _.escape(this.description) + '</span>');
-                            } else {
-                                this.ui.description.hide();
-                            }
                         }
                         if (collectionJSON[0].traits) {
-                            this.addTagToTerms(collectionJSON[0].traits);
+                            this.addTagTerms(collectionJSON[0].traits);
                         }
                     }
-
+                    Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
-                    this.renderLineageLayoutView(tagGuid);
-                    this.renderSchemaLayoutView(tagGuid);
                     this.renderAuditTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
+                }, this);
+                this.listenTo(this.collection, 'error', function(model, response) {
+                    this.$('.fontLoader').hide();
+                    if (response.responseJSON && response.responseJSON.error) {
+                        Utils.notifyError({
+                            content: response.responseJSON.error
+                        });
+                    }
                 }, this);
             },
             onRender: function() {
                 var that = this;
-                this.ui.editBox.hide();
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
+                this.renderLineageLayoutView(this.id);
+                this.renderSchemaLayoutView(this.id);
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
-            },
-            onCancelButtonClick: function() {
-                this.ui.description.show();
-                this.ui.editButton.show();
-                this.ui.editBox.hide();
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),
@@ -224,6 +203,7 @@ define(['require',
             deleteTagData: function(e, tagOrTerm) {
                 var that = this,
                     tagName = $(e.currentTarget).text();
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.id,
@@ -233,7 +213,7 @@ define(['require',
                     }
                 });
             },
-            addTagToTerms: function(tagObject) {
+            addTagTerms: function(tagObject) {
                 var that = this,
                     tagData = "",
                     termData = "";
@@ -252,28 +232,6 @@ define(['require',
                 this.ui.tagList.prepend(tagData);
                 this.ui.termList.prepend(termData);
             },
-            saveTagFromList: function(ref) {
-                var that = this;
-                this.entityModel = new VEntity();
-                var tagName = ref.text();
-                var json = {
-                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
-                    "typeName": tagName,
-                    "values": {}
-                };
-                this.entityModel.saveEntity(this.id, {
-                    data: JSON.stringify(json),
-                    success: function(data) {
-                        that.fetchCollection();
-                    },
-                    error: function(error, data, status) {
-                        if (error && error.responseText) {
-                            var data = JSON.parse(error.responseText);
-                        }
-                    },
-                    complete: function() {}
-                });
-            },
             onClickAddTagBtn: function(e) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
@@ -284,9 +242,9 @@ define(['require',
                             that.fetchCollection();
                         }
                     });
-                    /*view.saveTagData = function() {
-                    override saveTagData function 
-                    }*/
+                    view.modal.on('ok', function() {
+                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                    });
                 });
             },
             onClickAddTermBtn: function(e) {
@@ -299,6 +257,9 @@ define(['require',
                         callback: function() {
                             that.fetchCollection();
                         }
+                    });
+                    view.modal.on('ok', function() {
+                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
                     });
                 });
 

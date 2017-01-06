@@ -286,5 +286,21 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
             }
         }
     }
+
+    Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
+        loaderEl.css({
+            'display': 'block',
+            'position': 'relative',
+            'height': '85px',
+            'marginTop': '85px',
+            'marginLeft': '50%',
+            'left': '0%'
+        });
+        titleBoxEl.hide();
+    }
+    Utils.hideTitleLoader = function(loaderEl, titleBoxEl) {
+        loaderEl.hide();
+        titleBoxEl.fadeIn();
+    }
     return Utils;
 });

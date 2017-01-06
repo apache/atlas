@@ -47,7 +47,7 @@ Redirect();
     <script src="js/modules/atlasLogin.js" ></script>
   </head>
   <body class="login" style="">
-
+<% response.setHeader("X-Frame-Options", "DENY"); %>
 <div id="wrapper">
   <div class="container-fluid">
         <div class="row">
