@@ -71,6 +71,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -88,6 +89,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class DefaultMetadataService implements MetadataService, ActiveStateChangeHandler, TypeDefChangeListener {
+    private enum OperationType {
+        CREATE, UPDATE, DELETE
+    };
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultMetadataService.class);
     private final short maxAuditResults;
@@ -177,12 +181,12 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public JSONObject createType(String typeDefinition) throws AtlasException {
-        return createOrUpdateTypes(typeDefinition, false);
+        return createOrUpdateTypes(OperationType.CREATE, typeDefinition, false);
     }
 
-    private JSONObject createOrUpdateTypes(String typeDefinition, boolean isUpdate) throws AtlasException {
+    private JSONObject createOrUpdateTypes(OperationType opType, String typeDefinition, boolean isUpdate) throws AtlasException {
         typeDefinition = ParamChecker.notEmpty(typeDefinition, "type definition");
-        TypesDef typesDef = validateTypeDefinition(typeDefinition);
+        TypesDef typesDef = validateTypeDefinition(opType, typeDefinition);
 
 
         try {
@@ -214,10 +218,12 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     @Override
     public JSONObject updateType(String typeDefinition) throws AtlasException {
-        return createOrUpdateTypes(typeDefinition, true);
+        return createOrUpdateTypes(OperationType.UPDATE, typeDefinition, true);
     }
 
-    private TypesDef validateTypeDefinition(String typeDefinition) throws AtlasException {
+    private TypesDef validateTypeDefinition(OperationType opType, String typeDefinition) throws AtlasException {
+        final String exceptionErrorMessageFormat = "%s for '%s' failed: %s";
+
         try {
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             if (typesDef.isEmpty()) {
@@ -226,22 +232,26 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
             for (HierarchicalTypeDefinition<ClassType> t : typesDef.classTypesAsJavaList()) {
                 if (!AtlasTypeUtil.isValidTypeName(t.typeName))
-                    throw new AtlasException("Only characters, numbers and '_' are allowed in class names. " + t.toString());
+                    throw new AtlasException(
+                            String.format(exceptionErrorMessageFormat, opType.toString(), t.typeName, AtlasTypeUtil.getInvalidTypeNameErrorMessage()));
             }
 
             for (StructTypeDefinition t : typesDef.structTypesAsJavaList()) {
                 if (!AtlasTypeUtil.isValidTypeName(t.typeName))
-                    throw new AtlasException("Only characters, numbers and '_' are allowed in struct names. " + t.toString());
+                    throw new AtlasException(
+                            String.format(exceptionErrorMessageFormat, opType.toString(), t.typeName, AtlasTypeUtil.getInvalidTypeNameErrorMessage()));
             }
 
             for (EnumTypeDefinition t : typesDef.enumTypesAsJavaList()) {
                 if (!AtlasTypeUtil.isValidTypeName(t.name))
-                    throw new AtlasException("Only characters, numbers and '_' are allowed in enum names. " + t.toString());
+                    throw new AtlasException(
+                            String.format(exceptionErrorMessageFormat, opType.toString(), t.name, AtlasTypeUtil.getInvalidTypeNameErrorMessage()));
             }
 
             for (HierarchicalTypeDefinition<TraitType> t : typesDef.traitTypesAsJavaList()) {
-                if (!AtlasTypeUtil.isValidTypeName(t.typeName))
-                    throw new AtlasException("Only characters, numbers and '_' are allowed in trait names. " + t.toString());
+                if (!AtlasTypeUtil.isValidTraitTypeName(t.typeName))
+                    throw new AtlasException(
+                            String.format(exceptionErrorMessageFormat, opType.toString(), t.typeName, AtlasTypeUtil.getInvalidTraitTypeNameErrorMessage()));
             }
 
             return typesDef;

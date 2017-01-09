@@ -56,9 +56,13 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
  */
 public class AtlasTypeUtil {
     private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<>();
-    private static final String  NAME_REGEX   = "[a-zA-z][a-zA-Z0-9_ ]*";
+    private static final String  NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ ]*";
+    private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ .]*";
     private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+    private static final Pattern TRAIT_NAME_PATTERN = Pattern.compile(TRAIT_NAME_REGEX);
 
+    private static final String InvalidTypeNameErrorMessage = "Only characters, numbers and '_' are allowed in names.";
+    private static final String InvalidTraitTypeNameErrorMessage = "Only characters, numbers, '.' and '_' are allowed in names.";
 
     static {
         Collections.addAll(ATLAS_BUILTIN_TYPENAMES, AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES);
@@ -91,6 +95,20 @@ public class AtlasTypeUtil {
         Matcher m = NAME_PATTERN.matcher(typeName);
 
         return m.matches();
+    }
+
+    public static String getInvalidTypeNameErrorMessage() {
+        return InvalidTypeNameErrorMessage;
+    }
+
+    public static boolean isValidTraitTypeName(String typeName) {
+        Matcher m = TRAIT_NAME_PATTERN.matcher(typeName);
+
+        return m.matches();
+    }
+
+    public static String getInvalidTraitTypeNameErrorMessage() {
+        return InvalidTraitTypeNameErrorMessage;
     }
 
     public static void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {

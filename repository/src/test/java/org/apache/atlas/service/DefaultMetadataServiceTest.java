@@ -39,6 +39,7 @@ import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -1146,7 +1147,7 @@ public class DefaultMetadataServiceTest {
 
     @Test
     public void testTypeWithDotsCreationShouldNotBeCreated() throws AtlasException, JSONException {
-        String typeName = "test_.v1_type_"+ RandomStringUtils.randomAlphanumeric(10);
+        String typeName = "test_.v1_type_XXXX";
         HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(
                 typeName, ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE));
@@ -1156,7 +1157,7 @@ public class DefaultMetadataServiceTest {
             metadataService.createType(TypesSerialization.toJson(typesDef));
             fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-            //expected
+            assertTrue (e.getCause().getMessage().contains(AtlasTypeUtil.getInvalidTypeNameErrorMessage()), e.getCause().getMessage());
         }
     }
 
