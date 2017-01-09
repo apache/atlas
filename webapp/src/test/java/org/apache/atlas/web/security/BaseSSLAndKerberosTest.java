@@ -42,6 +42,10 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
     protected File httpKeytabFile;
     protected File userKeytabFile;
 
+    protected BaseSSLAndKerberosTest() {
+        System.setProperty("https.protocols", "TLSv1.2");
+    }
+
     class TestSecureEmbeddedServer extends SecureEmbeddedServer {
 
         public TestSecureEmbeddedServer(int port, String path) throws IOException {
