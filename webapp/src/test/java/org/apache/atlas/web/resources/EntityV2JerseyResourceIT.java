@@ -335,6 +335,17 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertEquals(classifications.getList().size(), 8);
     }
 
+    @Test(dependsOnMethods = "testSubmitEntity")
+    public void testCommonAttributes() throws Exception{
+        AtlasEntity entity = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        Assert.assertNotNull(entity.getStatus());
+        Assert.assertNotNull(entity.getVersion());
+        Assert.assertNotNull(entity.getCreatedBy());
+        Assert.assertNotNull(entity.getCreateTime());
+        Assert.assertNotNull(entity.getUpdatedBy());
+        Assert.assertNotNull(entity.getUpdateTime());
+    }
+
     private void addProperty(String guid, String property, String value) throws AtlasServiceException {
 
         AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(guid);

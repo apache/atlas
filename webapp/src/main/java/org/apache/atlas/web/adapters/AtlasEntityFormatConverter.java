@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasEntityType;
@@ -31,7 +32,9 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.persistence.Id.EntityState;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -61,6 +64,8 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                 ret = new AtlasEntityWithAssociations(id.getTypeName());
                 ret.setGuid(id.getId()._getId());
+                EntityState state = id.getState();
+                ret.setStatus(convertState(state));
             } else if (v1Obj instanceof IReferenceableInstance) {
                 IReferenceableInstance entity    = (IReferenceableInstance) v1Obj;
                 Map<String, Object>    v1Attribs = null;
@@ -73,6 +78,13 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                 ret =  new AtlasEntityWithAssociations(entity.getTypeName(), super.fromV1ToV2(entityType, v1Attribs));
                 ret.setGuid(entity.getId()._getId());
+                ret.setStatus(convertState(entity.getId().getState()));
+                AtlasSystemAttributes systemAttributes = entity.getSystemAttributes();
+                ret.setCreatedBy(systemAttributes.createdBy);
+                ret.setCreateTime(systemAttributes.createdTime);
+                ret.setUpdatedBy(systemAttributes.modifiedBy);
+                ret.setUpdateTime(systemAttributes.modifiedTime);
+                ret.setVersion(new Long(entity.getId().version));
 
                 if (CollectionUtils.isNotEmpty(entity.getTraits())) {
                     List<AtlasClassification> classifications = new ArrayList<>();
@@ -94,6 +106,15 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
             }
         }
         return ret;
+    }
+
+    private AtlasEntity.Status convertState(EntityState state){
+        Status status = Status.STATUS_ACTIVE;
+        if(state != null && state.equals(EntityState.DELETED)){
+            status = Status.STATUS_DELETED;
+        }
+        LOG.debug("Setting state to {}", state);
+        return status;
     }
 
     @Override
