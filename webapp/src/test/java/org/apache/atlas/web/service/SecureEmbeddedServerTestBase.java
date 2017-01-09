@@ -78,6 +78,7 @@ public class SecureEmbeddedServerTestBase {
         System.setProperty("javax.net.ssl.trustStore", DEFAULT_KEYSTORE_FILE_LOCATION);
         System.setProperty("javax.net.ssl.trustStorePassword", "keypass");
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+        System.setProperty("https.protocols", "TLSv1.2");
     }
 
     @BeforeClass
