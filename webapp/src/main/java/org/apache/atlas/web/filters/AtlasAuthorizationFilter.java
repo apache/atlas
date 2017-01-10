@@ -92,6 +92,10 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
         }
 
         HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) res;
+        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(response);
+        responseWrapper.setHeader("X-Frame-Options", "DENY");
+
         String pathInfo = request.getServletPath();
         if (!Strings.isNullOrEmpty(pathInfo) && pathInfo.startsWith(BASE_URL)) {
             if (isDebugEnabled) {
@@ -156,7 +160,6 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                 JSONObject json = new JSONObject();
                 json.put("AuthorizationError", "You are not authorized for " + atlasRequest.getAction().name() + " on "
                     + atlasResourceTypes + " : " + atlasRequest.getResource());
-                HttpServletResponse response = (HttpServletResponse) res;
                 response.setContentType("application/json");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 

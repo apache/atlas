@@ -308,6 +308,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         try {
             Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+            AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+            responseWrapper.setHeader("X-Frame-Options", "DENY");
+
             if (existingAuth == null) {
                 String authHeader = httpRequest.getHeader("Authorization");
                 if (authHeader != null && authHeader.startsWith("Basic")) {

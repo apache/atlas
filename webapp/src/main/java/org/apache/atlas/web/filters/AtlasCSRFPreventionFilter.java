@@ -181,14 +181,18 @@ public class AtlasCSRFPreventionFilter implements Filter {
 	}
 	
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-		if (isCSRF_ENABLED){
-			final HttpServletRequest httpRequest = (HttpServletRequest)request;
-		    final HttpServletResponse httpResponse = (HttpServletResponse)response;
-		    handleHttpInteraction(new ServletFilterHttpInteraction(httpRequest, httpResponse, chain));
-		}else{
-			chain.doFilter(request, response);
-		}
-	}
+        final HttpServletRequest httpRequest = (HttpServletRequest) request;
+        final HttpServletResponse httpResponse = (HttpServletResponse) response;
+        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+        responseWrapper.setHeader("X-Frame-Options", "DENY");
+
+        if (isCSRF_ENABLED) {
+            handleHttpInteraction(new ServletFilterHttpInteraction(httpRequest, httpResponse, chain));
+        } else {
+            chain.doFilter(request, response);
+        }
+
+    }
 
 	public void destroy() {
 	}
