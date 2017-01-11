@@ -55,7 +55,7 @@ define(['require', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholde
             var that = this;
             Backgrid.HeaderRow.__super__.render.apply(this, arguments);
             _.each(this.columns.models, function(modelValue) {
-                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('width', modelValue.get('width') + '%')
+                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px')
                 if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'))
             });
             return this;

@@ -9,9 +9,15 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1432 Responsive loader and css changes (kevalbhatt via mneethiraj)
+ATLAS-1434 Updated typename validation to allow "." for classifications (ashutoshm via mneethiraj)
+ATLAS-1435 include common attributes in v2 entity API response (svimal2106 via mneethiraj)
+ATLAS-1427 update tests for the changes in default SSL protocols support (mneethiraj)
 ATLAS-1308 Discovery/Search REST API - v2 (sarath.kum4r@gmail.com via mneethiraj)
+ATLAS-1429 fix hive model to make composite attributes as mandatory
 ATLAS-1408 added validation to prevent creating types with . (dot) in name (ashutoshm via mneethiraj)
 ATLAS-1277 Add feather use 'order by ' in the DSL search (zhangqiang2 via sumasai)
+ATLAS-1427 Support an option to exclude protocols in SSL mode (nixonrodrigues via mneethiraj)
 ATLAS-1379 Avoid object query overhead when report query selects class type alias (guptaneeru via dkantor)
 ATLAS-1419 update entity-update API impl to preserve value of entity attribute when no value is provided
 ATLAS-1346 Search API to return empty list/container object instead of exception (apoorvnaik via mneethiraj)

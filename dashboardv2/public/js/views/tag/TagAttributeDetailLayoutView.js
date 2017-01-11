@@ -39,23 +39,17 @@ define(['require',
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
                 editBox: '[data-id="editBox"]',
-                addAttrBtn: '[data-id="addAttrBtn"]',
                 saveButton: "[data-id='saveButton']",
                 showAttribute: "[data-id='showAttribute']",
-                cancelButton: "[data-id='cancelButton']",
                 addTagListBtn: '[data-id="addTagListBtn"]',
-                addTagtext: '[data-id="addTagtext"]',
                 addTagPlus: '[data-id="addTagPlus"]',
                 addTagBtn: '[data-id="addTagBtn"]',
                 description: '[data-id="description"]',
-                descriptionTextArea: '[data-id="descriptionTextArea"]',
                 publishButton: '[data-id="publishButton"]'
             },
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
-                events["click " + this.ui.addAttrBtn] = 'onClickAddAttribute';
                 events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
                 events["click " + this.ui.editButton] = 'onEditButton';
                 return events;
@@ -74,17 +68,13 @@ define(['require',
                     if (this.model) {
                         this.renderTagDetail();
                     } else {
-                        this.ui.addTagBtn.hide();
-                        this.ui.editButton.hide();
+                        this.$('.fontLoader').hide();
                         Utils.notifyError({
                             content: 'Something went wrong'
                         });
                     }
-
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
-                    this.ui.addTagBtn.hide();
-                    this.ui.editButton.hide();
                     if (response.responseJSON && response.responseJSON.error) {
                         Utils.notifyError({
                             content: response.responseJSON.error
@@ -94,10 +84,11 @@ define(['require',
                             content: 'Something went wrong'
                         });
                     }
-
+                    this.$('.fontLoader').hide();
                 }, this);
             },
             onRender: function() {
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 if (this.collection.models.length && !this.model) {
                     this.model = this.collection.fullCollection.findWhere({ name: this.tag });
                     this.renderTagDetail();
@@ -124,9 +115,10 @@ define(['require',
                     });
                     this.ui.showAttribute.html(attributeData);
                 }
-
+                Utils.hideTitleLoader(this.$('.fontLoader'), this.$('.tagDetail'));
             },
             onSaveButton: function(saveObject, message) {
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 var that = this;
                 var validate = true;
                 if (this.modal.$el.find(".attributeInput").length > 1) {
@@ -177,7 +169,6 @@ define(['require',
                             content: view,
                             cancelText: "Cancel",
                             okText: 'Add',
-                            okCloses: false,
                             allowCancel: true,
                         }).open();
                         that.modal.$el.find('button.ok').attr("disabled", "true");
@@ -201,11 +192,6 @@ define(['require',
                             that.modal.trigger('cancel');
                         });
                     });
-            },
-            onCancelButtonClick: function() {
-                this.ui.description.show();
-                this.ui.editButton.show();
-                this.ui.editBox.hide();
             },
             textAreaChangeEvent: function(view) {
                 if (this.model.get('description') === view.ui.description.val()) {

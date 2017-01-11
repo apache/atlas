@@ -20,11 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/business_catalog/BusinessCatalogDetailLayoutView_tmpl',
     'utils/Utils',
-    'collection/VCatalogList',
     'models/VEntity',
     'models/VCatalog',
     'utils/Messages'
-], function(require, Backbone, BusinessCatalogDetailLayoutViewTmpl, Utils, VCatalogList, VEntity, VCatalog, Messages) {
+], function(require, Backbone, BusinessCatalogDetailLayoutViewTmpl, Utils, VEntity, VCatalog, Messages) {
     'use strict';
 
     var BusinessCatalogDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -35,32 +34,14 @@ define(['require',
             template: BusinessCatalogDetailLayoutViewTmpl,
 
             /** Layout sub regions */
-            regions: {
-                REntityDetailTableLayoutView: "#r_entityDetailTableLayoutView",
-                RSchemaTableLayoutView: "#r_schemaTableLayoutView",
-                RTagTableLayoutView: "#r_tagTableLayoutView",
-                RLineageLayoutView: "#r_lineageLayoutView",
-            },
+            regions: {},
             /** ui selector cache */
             ui: {
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
-                cancelButton: '[data-id="cancelButton"]',
-                publishButton: '[data-id="publishButton"]',
                 description: '[data-id="description"]',
-                descriptionTextArea: '[data-id="descriptionTextArea"]',
                 editBox: '[data-id="editBox"]',
-                createDate: '[data-id="createDate"]',
-                updateDate: '[data-id="updateDate"]',
-                createdUser: '[data-id="createdUser"]',
-                addTagBtn: '[data-id="addTagBtn"]',
-                appendList: '[data-id="appendList"]',
-                inputTagging: '[data-id="inputTagging"]',
-                deleteTag: '[data-id="deleteTag"]',
-                addTagtext: '[data-id="addTagtext"]',
-                addTagPlus: '[data-id="addTagPlus"]',
-                searchTag: '[data-id="searchTag"] input',
-                addTagListBtn: '[data-id="addTagListBtn"]'
+                createDate: '[data-id="createDate"]'
             },
             /** ui events hash */
             events: function() {
@@ -112,22 +93,15 @@ define(['require',
                         var splitDate = createdDate.split(":");
                         this.ui.createDate.html('<strong> Date Created: </strong> ' + splitDate[0] + " " + splitDate[1] + ":" + splitDate[2] + ":" + splitDate[3] + " (GMT)");
                     }
+                    Utils.hideTitleLoader(this.$('.fontLoader'), this.$('.catlogDetail'));
                 }, this);
             },
             onRender: function() {
                 var that = this;
-                this.$('.fontLoader').show();
-                this.ui.editBox.hide();
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.catlogDetail'));
             },
             fetchCollection: function() {
-                this.$('.fontLoader').show();
                 this.collection.fetch({ reset: true });
-            },
-
-            onCancelButtonClick: function() {
-                this.ui.description.show();
-                this.ui.editButton.show();
-                this.ui.editBox.hide();
             },
             onEditButton: function(e) {
                 var that = this;
@@ -174,6 +148,7 @@ define(['require',
                 termModel.url = function() {
                     return that.collection.url;
                 };
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.catlogDetail'));
                 termModel.set({
                     "description": view.ui.description.val()
                 }).save(null, {

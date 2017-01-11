@@ -20,14 +20,12 @@ define(['require',
     'backbone',
     'hbs!tmpl/detail_page/DetailPageLayoutView_tmpl',
     'utils/Utils',
-    'collection/VTagList',
-    'models/VEntity',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
     'utils/UrlLinks'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -52,14 +50,8 @@ define(['require',
                 tagClick: '[data-id="tagClick"]',
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
-                cancelButton: '[data-id="cancelButton"]',
-                publishButton: '[data-id="publishButton"]',
                 description: '[data-id="description"]',
-                descriptionTextArea: '[data-id="descriptionTextArea"]',
                 editBox: '[data-id="editBox"]',
-                createDate: '[data-id="createDate"]',
-                updateDate: '[data-id="updateDate"]',
-                createdUser: '[data-id="createdUser"]',
                 deleteTag: '[data-id="deleteTag"]',
                 backButton: "[data-id='backButton']",
                 addTag: '[data-id="addTag"]',
@@ -96,8 +88,6 @@ define(['require',
                         }
                     }
                 };
-                // events["click " + this.ui.publishButton] = 'onPublishButtonClick';
-                events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
@@ -118,19 +108,12 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
-
                     var collectionJSON = this.collection.first().toJSON();
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
-                        //this.readOnly = Enums.entityStateReadOnly[collectionJSON[0].id.state];
                     } else {
                         var tagGuid = this.id;
                     }
-                    // if (this.readOnly) {
-                    //     this.$el.addClass('readOnly');
-                    // } else {
-                    //     this.$el.removeClass('readOnly');
-                    // }
                     if (collectionJSON) {
                         if (collectionJSON.attributes) {
                             if (collectionJSON.attributes.name) {
@@ -145,7 +128,6 @@ define(['require',
                             if (!this.name && collectionJSON.typeName) {
                                 this.name = collectionJSON.typeName;
                             }
-
                             if (!this.name && this.id) {
                                 this.name = this.id;
                             }
@@ -173,27 +155,32 @@ define(['require',
                             this.addTagToTerms([]);
                         }
                     }
+                    Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                     this.auditVent.trigger("reset:collection");
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
                     this.renderAuditTableLayoutView(this.id, collectionJSON.attributes);
                 }, this);
+                this.listenTo(this.collection, 'error', function(model, response) {
+                    this.$('.fontLoader').hide();
+                    if (response.responseJSON) {
+                        Utils.notifyError({
+                            content: response.responseJSON.errorMessage || response.responseJSON.error
+                        });
+                    }
+                }, this);
             },
             onRender: function() {
                 var that = this;
-                this.ui.editBox.hide();
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
+                this.$('.fontLoader').show(); // to show tab loader
                 this.renderLineageLayoutView(this.id);
                 this.renderSchemaLayoutView(this.id);
 
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
-            },
-            onCancelButtonClick: function() {
-                this.ui.description.show();
-                this.ui.editButton.show();
-                this.ui.editBox.hide();
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),
@@ -224,6 +211,7 @@ define(['require',
             deleteTagData: function(e, tagOrTerm) {
                 var that = this,
                     tagName = $(e.currentTarget).text();
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.id,
@@ -252,28 +240,6 @@ define(['require',
                 this.ui.tagList.prepend(tagData);
                 this.ui.termList.prepend(termData);
             },
-            saveTagFromList: function(ref) {
-                var that = this;
-                this.entityModel = new VEntity();
-                var tagName = ref.text();
-                var json = {
-                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
-                    "typeName": tagName,
-                    "values": {}
-                };
-                this.entityModel.saveEntity(this.id, {
-                    data: JSON.stringify(json),
-                    success: function(data) {
-                        that.fetchCollection();
-                    },
-                    error: function(error, data, status) {
-                        if (error && error.responseText) {
-                            var data = JSON.parse(error.responseText);
-                        }
-                    },
-                    complete: function() {}
-                });
-            },
             onClickAddTagBtn: function(e) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
@@ -284,9 +250,9 @@ define(['require',
                             that.fetchCollection();
                         }
                     });
-                    /*view.saveTagData = function() {
-                    override saveTagData function 
-                    }*/
+                    view.modal.on('ok', function() {
+                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                    });
                 });
             },
             onClickAddTermBtn: function(e) {
@@ -299,6 +265,9 @@ define(['require',
                         callback: function() {
                             that.fetchCollection();
                         }
+                    });
+                    view.modal.on('ok', function() {
+                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
                     });
                 });
 

@@ -109,6 +109,11 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
+        HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
+
+        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+        responseWrapper.setHeader("X-Frame-Options", "DENY");
+
         if (!ssoEnabled) {
             filterChain.doFilter(servletRequest, servletResponse);
             return;

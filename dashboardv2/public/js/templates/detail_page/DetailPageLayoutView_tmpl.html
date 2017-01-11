@@ -15,33 +15,31 @@
  * limitations under the License.
 -->
 <div class="page-title clearfix">
-    <div class="row">
-        <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
+    <div class="fontLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <h1><span  data-id="title"></span></h1>
-    <button data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
-    <div data-id="editBox" style="margin-bottom:10px;">
-        <textarea class="well well-sm col-sm-12" data-id="descriptionTextArea"></textarea>
-        <div class="clearfix" align="right">
-            <button type="button" class="btn-atlas" data-id="cancelButton">Cancel</button>
-            <button type="button" class="btn-atlas" data-id="publishButton">Publish</button>
+    <div class="entityDetail">
+        <div class="row">
+            <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
         </div>
-    </div>
-    <div class="tagTerm">
-        <span class="tagSpan">Tags:</span>
-        <div class="" data-id="tagList">
-            <div class="addTag-dropdown" data-id="addTag">
-                <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
+        <h1><span  data-id="title"></span></h1>
+        <button data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
+        <div class="tagTerm">
+            <span class="tagSpan">Tags:</span>
+            <div class="" data-id="tagList">
+                <div class="addTag-dropdown" data-id="addTag">
+                    <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
+                </div>
             </div>
-        </div>
-        <hr class="termTagLine"> {{#if taxonomy}}
-        <span class="termSpan">Terms:</span>
-        <div class="" data-id="termList">
-            <div class="addTag-dropdown" data-id="addTerm">
-                <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
+            <hr class="termTagLine"> {{#if taxonomy}}
+            <span class="termSpan">Terms:</span>
+            <div class="" data-id="termList">
+                <div class="addTag-dropdown" data-id="addTerm">
+                    <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
+                </div>
             </div>
+            {{/if}}
         </div>
-        {{/if}}
     </div>
 </div>
 <div class="container-fluid gray-bg">
@@ -61,7 +59,6 @@
                 <h4 class="detailLabel">DETAILS</h4>
                 <ul class="nav nav-tabs" role="tablist">
                     <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                    <!--  <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Acceptable Use</a></li> -->
                     <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
                     {{#if taxonomy}}
                     <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
@@ -71,39 +68,42 @@
                 </ul>
                 <div class="tab-content">
                     <div id="tab-details" role="tabpanel" class="tab-pane active">
-                        <div id="r_entityDetailTableLayoutView"></div>
+                        <div id="r_entityDetailTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-tagTable" role="tabpanel" class="tab-pane">
-                        <div id="r_tagTableLayoutView"></div>
+                        <div id="r_tagTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-termTable" role="tabpanel" class="tab-pane">
-                        <div id="r_termTableLayoutView"></div>
+                        <div id="r_termTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-audit" role="tabpanel" class="tab-pane">
-                        <div id="r_auditTableLayoutView"></div>
+                        <div id="r_auditTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                     <div id="tab-schema" role="tabpanel" class="tab-pane">
-                        <div id="r_schemaTableLayoutView"></div>
+                        <div id="r_schemaTableLayoutView" style="position: relative;">
+                            <div class="fontLoader">
+                                <i class="fa fa-refresh fa-spin-custom"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<div>
-    <!-- div class="col-sm-custom">
-        <h2>Comments</h2>
-        <textarea class="form-control comment-input" rows="5" placeholder="Add a Comment"></textarea>
-        <button class="btn-atlas">Comment</button>
-        <div class="comment-box">
-            <p class="comment">There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
-            <p class="author">Micheal Surmac</p>
-            <p class="date">December 16, 2016 11:03:23 AM</p>
-        </div>
-        <div class="comment-box">
-            <p class="comment">Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.</p>
-            <p class="author">Paula Schmidt</p>
-            <p class="date">May 3, 2015 9:16:12 AM</p>
-        </div>
-</div> -->
 </div>
