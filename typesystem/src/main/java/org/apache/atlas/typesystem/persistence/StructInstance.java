@@ -279,10 +279,10 @@ public class StructInstance implements ITypedStruct {
     public Map<String, Object> getValuesMap() throws AtlasException {
         Map<String, Object> m = new HashMap<>();
         for (String attr : fieldMapping.fields.keySet()) {
-            int pos = fieldMapping.fieldNullPos.get(attr);
-            if (  explicitSets[pos] ) {
+//            int pos = fieldMapping.fieldNullPos.get(attr);
+//            if (  explicitSets[pos] ) {
                 m.put(attr, get(attr));
-            }
+//            }
         }
         return m;
     }
@@ -771,6 +771,12 @@ public class StructInstance implements ITypedStruct {
         structType.updateSignatureHash(digester, this);
         byte[] digest = digester.digest();
         return MD5Utils.toString(digest);
+    }
+
+    @Override
+    public boolean isValueSet(final String attrName) throws AtlasException {
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+        return explicitSets[nullPos];
     }
 
     @Override

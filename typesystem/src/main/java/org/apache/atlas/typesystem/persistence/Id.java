@@ -289,6 +289,10 @@ public class Id implements ITypedReferenceableInstance {
         throw new AtlasException("Get/Set not supported on an Id object");
     }
 
+    public boolean isValueSet(String attrName) throws AtlasException {
+        throw new AtlasException("Attributes not set on an Id object");
+    }
+
     @Override
     public String getSignatureHash(MessageDigest digester) throws AtlasException {
         digester.update(id.getBytes(Charset.forName("UTF-8")));

@@ -195,7 +195,7 @@ public final class TypedInstanceToGraphMapper {
                               AttributeInfo attributeInfo, Operation operation) throws AtlasException {
 
         final Map<String, Object> valuesMap = typedInstance.getValuesMap();
-        if ( valuesMap.containsKey(attributeInfo.name) || operation == Operation.CREATE ) {
+        if ( typedInstance.isValueSet(attributeInfo.name) || operation == Operation.CREATE ) {
 
             Object attrValue = typedInstance.get(attributeInfo.name);
             LOG.debug("Mapping attribute {} = {}", attributeInfo.name, attrValue);

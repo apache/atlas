@@ -83,4 +83,6 @@ public interface ITypedInstance extends IInstance {
     void setString(String attrName, String val) throws AtlasException;
 
     String getSignatureHash(MessageDigest digester) throws AtlasException;
+
+    boolean isValueSet(String attrName) throws AtlasException;
 }
