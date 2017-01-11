@@ -22,7 +22,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.7-incubating</version>
+        <version>0.7.1-incubating</version>
     </parent>
     <artifactId>atlas-plugin-classloader</artifactId>
     <description>Apache Atlas Plugin Classloader</description>
