@@ -102,13 +102,15 @@ public class AtlasRepositoryConfiguration {
      * Get the list of operations which are configured to be skipped from auditing
      * Valid format is HttpMethod:URL eg: GET:Version
      * @return list of string
+     * @throws AtlasException
      */
-    public static List<String> getAuditExcludedOperations(Configuration config) {
+    public static List<String> getAuditExcludedOperations(Configuration config) throws AtlasException {
         if (config == null) {
             try {
                 config = ApplicationProperties.get();
             } catch (AtlasException e) {
                 LOG.error(" Error reading operations for auditing ", e);
+                throw e;
             }
         }
         if (skippedOperations == null) {
@@ -130,7 +132,7 @@ public class AtlasRepositoryConfiguration {
         return skippedOperations;
     }
 
-    public static boolean isExcludedFromAudit(Configuration config, String httpMethod, String httpUrl) {
+    public static boolean isExcludedFromAudit(Configuration config, String httpMethod, String httpUrl) throws AtlasException {
         if (getAuditExcludedOperations(config).size() > 0) {
             return getAuditExcludedOperations(config).contains(httpMethod.toLowerCase() + SEPARATOR + httpUrl.toLowerCase());
         } else {

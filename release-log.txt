@@ -9,6 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1391 Add exclusion mechanism for Atlas audit mechanism (guptaneeru via svimal2106)
+ATLAS-1280 Atlas changes to support Hive hook for Hive2 (mneethiraj via svimal2106)
 ATLAS-1432 Responsive loader and css changes (kevalbhatt via mneethiraj)
 ATLAS-1434 Updated typename validation to allow "." for classifications (ashutoshm via mneethiraj)
 ATLAS-1435 include common attributes in v2 entity API response (svimal2106 via mneethiraj)

@@ -115,4 +115,11 @@ public class AuditFilterTest {
         verify(filterChain).doFilter(servletRequest, servletResponse);
     }
 
+    @Test
+    public void testNullConfig() {
+        AtlasRepositoryConfiguration.resetExcludedOperations();
+        AuditFilter auditFilter = new AuditFilter();
+        assertFalse(auditFilter.isOperationExcludedFromAudit("GET", "Version", null));
+    }
+
 }

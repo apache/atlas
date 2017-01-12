@@ -19,11 +19,13 @@
 package org.apache.atlas.web.filters;
 
 import com.google.inject.Singleton;
+
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.metrics.Metrics;
-import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -40,7 +42,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -126,7 +127,11 @@ public class AuditFilter implements Filter {
      }
 
     boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
-       return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
+       try {
+        return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
+    } catch (AtlasException e) {
+        return false;
+    }
     }
 
     @Override
