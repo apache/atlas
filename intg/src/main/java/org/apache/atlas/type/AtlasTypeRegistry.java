@@ -731,6 +731,7 @@ class TypeCache {
 }
 
 class TypeDefCache<T extends AtlasBaseTypeDef> {
+    private static final Logger LOG = LoggerFactory.getLogger(TypeDefCache.class);
     private final TypeCache      typeCache;
     private final Map<String, T> typeDefGuidMap;
     private final Map<String, T> typeDefNameMap;
@@ -766,7 +767,6 @@ class TypeDefCache<T extends AtlasBaseTypeDef> {
     }
 
     public T getTypeDefByGuid(String guid) {
-
         return guid != null ? typeDefGuidMap.get(guid) : null;
     }
 
@@ -781,8 +781,14 @@ class TypeDefCache<T extends AtlasBaseTypeDef> {
 
             if (typeDef != null) {
                 String currGuid = typeDef.getGuid();
-
-                if (!StringUtils.equals(currGuid, newGuid)) {
+                if (!typeDefGuidMap.containsKey(newGuid) || !StringUtils.equals(currGuid, newGuid)) {
+                    if(LOG.isDebugEnabled()) {
+                        if (!typeDefGuidMap.containsKey(newGuid)) {
+                            LOG.debug("TypeDefGuidMap doesn't contain entry for guid {}. Adding new entry", newGuid);
+                        } else {
+                            LOG.debug("Removing entry for guid {} and adding entry for guid {}", currGuid, newGuid);
+                        }
+                    }
                     if (currGuid != null) {
                         typeDefGuidMap.remove(currGuid);
                     }
