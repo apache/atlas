@@ -25,7 +25,10 @@ import org.apache.hadoop.hive.ql.hooks.LineageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,16 +65,53 @@ public class ColumnLineageUtils {
         for (Map.Entry<LineageInfo.DependencyKey, LineageInfo.Dependency> e : lInfo.entrySet()) {
             List<HiveColumnLineageInfo> l = new ArrayList<>();
             String k = getQualifiedName(e.getKey());
-            for (LineageInfo.BaseColumnInfo iCol : e.getValue().getBaseCols()) {
-                String db = iCol.getTabAlias().getTable().getDbName();
-                String table = iCol.getTabAlias().getTable().getTableName();
-                String colQualifiedName = iCol.getColumn() == null ? db + "." + table : db + "." + table + "." + iCol.getColumn().getName();
-                l.add(new HiveColumnLineageInfo(e.getValue(), colQualifiedName));
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("buildLineageMap(): key={}; value={}", e.getKey(), e.getValue());
             }
-            LOG.debug("Setting lineage --> Input: {} ==> Output : {}", l, k);
-            m.put(k, l);
+
+            Collection<LineageInfo.BaseColumnInfo> baseCols = getBaseCols(e.getValue());
+
+            if (baseCols != null) {
+                for (LineageInfo.BaseColumnInfo iCol : baseCols) {
+                    String db = iCol.getTabAlias().getTable().getDbName();
+                    String table = iCol.getTabAlias().getTable().getTableName();
+                    String colQualifiedName = iCol.getColumn() == null ? db + "." + table : db + "." + table + "." + iCol.getColumn().getName();
+                    l.add(new HiveColumnLineageInfo(e.getValue(), colQualifiedName));
+                }
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Setting lineage --> Input: {} ==> Output : {}", l, k);
+                }
+                m.put(k, l);
+            }
         }
         return m;
+    }
+
+    static Collection<LineageInfo.BaseColumnInfo> getBaseCols(LineageInfo.Dependency lInfoDep) {
+        Collection<LineageInfo.BaseColumnInfo> ret = null;
+
+        if (lInfoDep != null) {
+            try {
+                Method getBaseColsMethod = lInfoDep.getClass().getMethod("getBaseCols");
+
+                Object retGetBaseCols = getBaseColsMethod.invoke(lInfoDep);
+
+                if (retGetBaseCols != null) {
+                    if (retGetBaseCols instanceof Collection) {
+                        ret = (Collection) retGetBaseCols;
+                    } else {
+                        LOG.warn("{}: unexpected return type from LineageInfo.Dependency.getBaseCols(), expected type {}",
+                                retGetBaseCols.getClass().getName(), "Collection");
+                    }
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
+                LOG.warn("getBaseCols()", ex);
+            }
+        }
+
+        return ret;
     }
 
     static String[] extractComponents(String qualifiedName) {
