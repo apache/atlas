@@ -536,7 +536,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testUTF8() throws Exception {
-        String classType = random();
+        String classType = randomString();
         String attrName = random();
         String attrValue = random();
 
