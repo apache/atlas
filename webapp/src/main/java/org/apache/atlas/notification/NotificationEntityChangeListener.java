@@ -19,6 +19,7 @@ package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.notification.entity.EntityNotification;
@@ -31,7 +32,11 @@ import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.configuration.Configuration;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,6 +52,11 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
 
     private final NotificationInterface notificationInterface;
     private final TypeSystem typeSystem;
+
+    private Map<String, List<String>> notificationAttributesCache = new HashMap<>();
+    private static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
+    static Configuration APPLICATION_PROPERTIES = null;
+
 
 
     // ----- Constructors ------------------------------------------------------
@@ -148,14 +158,54 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         List<EntityNotification> messages = new LinkedList<>();
 
         for (IReferenceableInstance entityDefinition : entityDefinitions) {
-            Referenceable entity = new Referenceable(entityDefinition);
+            Referenceable       entity                  = new Referenceable(entityDefinition);
+            Map<String, Object> attributesMap           = entity.getValuesMap();
+            List<String>        entityNotificationAttrs = getNotificationAttributes(entity.getTypeName());
 
-            EntityNotificationImpl notification =
-                    new EntityNotificationImpl(entity, operationType, getAllTraits(entity, typeSystem));
+            if (MapUtils.isNotEmpty(attributesMap) && CollectionUtils.isNotEmpty(entityNotificationAttrs)) {
+                for (String entityAttr : attributesMap.keySet()) {
+                    if (!entityNotificationAttrs.contains(entityAttr)) {
+                        entity.setNull(entityAttr);
+                    }
+                }
+            }
+
+            EntityNotificationImpl notification = new EntityNotificationImpl(entity, operationType, getAllTraits(entity, typeSystem));
 
             messages.add(notification);
         }
 
         notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
+    }
+
+    private List<String> getNotificationAttributes(String entityType) {
+        List<String> ret = null;
+
+        initApplicationProperties();
+
+        if (notificationAttributesCache.containsKey(entityType)) {
+            ret = notificationAttributesCache.get(entityType);
+        } else if (APPLICATION_PROPERTIES != null) {
+            String[] notificationAttributes = APPLICATION_PROPERTIES.getStringArray(ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." +
+                                                                                    entityType + "." + "attributes.include");
+
+            if (notificationAttributes != null) {
+                ret = Arrays.asList(notificationAttributes);
+            }
+
+            notificationAttributesCache.put(entityType, ret);
+        }
+
+        return ret;
+    }
+
+    private void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
+        }
     }
 }
