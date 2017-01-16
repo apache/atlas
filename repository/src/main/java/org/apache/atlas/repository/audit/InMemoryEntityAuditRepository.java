@@ -66,4 +66,14 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
         }
         return events;
     }
+
+    @Override
+    public long repositoryMaxSize() throws AtlasException {
+        return -1;
+    }
+
+    @Override
+    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+        return null;
+    }
 }

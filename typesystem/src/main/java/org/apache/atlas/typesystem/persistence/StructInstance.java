@@ -254,6 +254,10 @@ public class StructInstance implements ITypedStruct {
             bigDecimals[pos] = null;
         } else if (i.dataType() == DataTypes.DATE_TYPE) {
             dates[pos] = null;
+        } else if (i.dataType() == DataTypes.INT_TYPE) {
+            ints[pos] = 0;
+        } else if (i.dataType() == DataTypes.BOOLEAN_TYPE) {
+            bools[pos] = false;
         } else if (i.dataType() == DataTypes.STRING_TYPE) {
             strings[pos] = null;
         } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY) {

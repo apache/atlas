@@ -52,8 +52,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * HBase based repository for entity audit events
@@ -74,9 +76,6 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public static final String CONFIG_PREFIX = "atlas.audit";
     public static final String CONFIG_TABLE_NAME = CONFIG_PREFIX + ".hbase.tablename";
     public static final String DEFAULT_TABLE_NAME = "ATLAS_ENTITY_AUDIT_EVENTS";
-
-    private static final String FIELD_SEPARATOR = ":";
-
     public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
 
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
@@ -85,7 +84,15 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public static final byte[] COLUMN_USER = Bytes.toBytes("u");
     public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
 
-    private static boolean persistEntityDefinition;
+    private static final String  AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
+    private static final String  AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
+    private static final String  FIELD_SEPARATOR = ":";
+    private static final long    ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE = 1024 * 1024;
+    private static Configuration APPLICATION_PROPERTIES = null;
+
+    private static boolean       persistEntityDefinition;
+
+    private Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
 
     static {
         try {
@@ -216,6 +223,52 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         } finally {
             close(scanner);
             close(table);
+        }
+    }
+
+    @Override
+    public long repositoryMaxSize() throws AtlasException {
+        long ret;
+        initApplicationProperties();
+
+        if (APPLICATION_PROPERTIES == null) {
+            ret = ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE;
+        } else {
+            ret = APPLICATION_PROPERTIES.getLong(AUDIT_REPOSITORY_MAX_SIZE_PROPERTY, ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+        List<String> ret = null;
+
+        initApplicationProperties();
+
+        if (auditExcludedAttributesCache.containsKey(entityType)) {
+            ret = auditExcludedAttributesCache.get(entityType);
+        } else if (APPLICATION_PROPERTIES != null) {
+            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
+                    entityType + "." +  "attributes.exclude");
+
+            if (excludeAttributes != null) {
+                ret = Arrays.asList(excludeAttributes);
+            }
+
+            auditExcludedAttributesCache.put(entityType, ret);
+        }
+
+        return ret;
+    }
+
+    private void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
         }
     }
 

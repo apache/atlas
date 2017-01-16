@@ -47,4 +47,14 @@ public class NoopEntityAuditRepository implements EntityAuditRepository {
             throws AtlasException {
         return Collections.emptyList();
     }
+
+    @Override
+    public long repositoryMaxSize() throws AtlasException {
+        return -1;
+    }
+
+    @Override
+    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+        return null;
+    }
 }

@@ -50,4 +50,18 @@ public interface EntityAuditRepository {
      * @throws AtlasException
      */
     List<EntityAuditEvent> listEvents(String entityId, String startKey, short n) throws AtlasException;
+
+    /**
+     * Returns maximum allowed repository size per EntityAuditEvent
+     * @throws AtlasException
+     */
+    long repositoryMaxSize() throws AtlasException;
+
+    /**
+     * list of attributes to be excluded when storing in audit repo.
+     * @param entityType type of entity
+     * @return list of attribute names to be excluded
+     * @throws AtlasException
+     */
+    List<String> getAuditExcludeAttributes(String entityType) throws AtlasException;
 }
