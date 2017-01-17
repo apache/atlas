@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1460 v2 search API updated to return name/description/owner and classification names in result (vimalsharma via mneethiraj)
 ATLAS-1434 fixed unit test to use correct type names; updated error message per review comments (ashutoshm via mneethiraj)
 ATLAS-1391 Add exclusion mechanism for Atlas audit mechanism (guptaneeru via svimal2106)
 ATLAS-1280 Atlas changes to support Hive hook for Hive2 (mneethiraj via svimal2106)

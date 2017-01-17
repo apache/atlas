@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.model.discovery;
 
-import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaderWithAssociations;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -42,11 +42,11 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasSearchResult implements Serializable {
-    private String                    queryText;
-    private AtlasQueryType            queryType;
-    private List<AtlasEntityHeader>   entities;
-    private AttributeSearchResult     attributes;
-    private List<AtlasFullTextResult> fullTextResult;
+    private String                                  queryText;
+    private AtlasQueryType                          queryType;
+    private List<AtlasEntityHeaderWithAssociations> entities;
+    private AttributeSearchResult                   attributes;
+    private List<AtlasFullTextResult>               fullTextResult;
 
     public AtlasSearchResult() {}
 
@@ -66,9 +66,9 @@ public class AtlasSearchResult implements Serializable {
 
     public void setQueryType(AtlasQueryType queryType) { this.queryType = queryType; }
 
-    public List<AtlasEntityHeader> getEntities() { return entities; }
+    public List<AtlasEntityHeaderWithAssociations> getEntities() { return entities; }
 
-    public void setEntities(List<AtlasEntityHeader> entities) { this.entities = entities; }
+    public void setEntities(List<AtlasEntityHeaderWithAssociations> entities) { this.entities = entities; }
 
     public AttributeSearchResult getAttributes() { return attributes; }
 
@@ -104,7 +104,7 @@ public class AtlasSearchResult implements Serializable {
                 '}';
     }
 
-    public void addEntity(AtlasEntityHeader newEntity) {
+    public void addEntity(AtlasEntityHeaderWithAssociations newEntity) {
         if (entities == null) {
             entities = new ArrayList<>();
         }
@@ -117,13 +117,13 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
-    public void removeEntity(AtlasEntityHeader entity) {
-        List<AtlasEntityHeader> entities = this.entities;
+    public void removeEntity(AtlasEntityHeaderWithAssociations entity) {
+        List<AtlasEntityHeaderWithAssociations> entities = this.entities;
 
         if (CollectionUtils.isNotEmpty(entities)) {
-            Iterator<AtlasEntityHeader> iter = entities.iterator();
+            Iterator<AtlasEntityHeaderWithAssociations> iter = entities.iterator();
             while (iter.hasNext()) {
-                AtlasEntityHeader currEntity = iter.next();
+                AtlasEntityHeaderWithAssociations currEntity = iter.next();
                 if (StringUtils.equals(currEntity.getGuid(), entity.getGuid())) {
                     iter.remove();
                 }
@@ -184,19 +184,19 @@ public class AtlasSearchResult implements Serializable {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasFullTextResult {
-        AtlasEntityHeader entity;
-        Double            score;
+        AtlasEntityHeaderWithAssociations entity;
+        Double                            score;
 
         public AtlasFullTextResult() {}
 
-        public AtlasFullTextResult(AtlasEntityHeader entity, Double score) {
+        public AtlasFullTextResult(AtlasEntityHeaderWithAssociations entity, Double score) {
             this.entity = entity;
             this.score  = score;
         }
 
-        public AtlasEntityHeader getEntity() { return entity; }
+        public AtlasEntityHeaderWithAssociations getEntity() { return entity; }
 
-        public void setEntity(AtlasEntityHeader entity) { this.entity = entity; }
+        public void setEntity(AtlasEntityHeaderWithAssociations entity) { this.entity = entity; }
 
         public Double getScore() { return score; }
 
