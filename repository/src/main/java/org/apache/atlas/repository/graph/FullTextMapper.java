@@ -56,12 +56,18 @@ public class FullTextMapper {
         ITypedReferenceableInstance typedReference;
         if (instanceCache.containsKey(guid)) {
             typedReference = instanceCache.get(guid);
-            LOG.debug("Cache hit: guid = {}, entityId = {}", guid, typedReference.getId()._getId());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Cache hit: guid = {}, entityId = {}", guid, typedReference.getId()._getId());
+            }
         } else {
             typedReference =
                     graphToTypedInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
             instanceCache.put(guid, typedReference);
-            LOG.debug("Cache miss: guid = {}, entityId = {}", guid, typedReference.getId().getId());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Cache miss: guid = {}, entityId = {}", guid, typedReference.getId().getId());
+            }
         }
         String fullText = forInstance(typedReference, followReferences);
         StringBuilder fullTextBuilder =

@@ -136,7 +136,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @GraphTransaction
     public List<String> createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
         EntityExistsException {
-        LOG.debug("adding entities={}", entities);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("adding entities={}", entities);
+        }
+
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.CREATE, entities);
@@ -151,7 +154,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException {
-        LOG.debug("Retrieving entity with guid={}", guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving entity with guid={}", guid);
+        }
 
         AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
@@ -166,7 +171,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String entityType, String attribute, Object value)
             throws AtlasException {
-        LOG.debug("Retrieving entity with type={} and {}={}", entityType, attribute, value);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving entity with type={} and {}={}", entityType, attribute, value);
+        }
+
         IDataType type = typeSystem.getDataType(IDataType.class, entityType);
         String propertyKey = getFieldNameInVertex(type, attribute);
         AtlasVertex instanceVertex = graphHelper.findVertex(propertyKey, value,
@@ -180,7 +188,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public List<String> getEntityList(String entityType) throws RepositoryException {
-        LOG.debug("Retrieving entity list for type={}", entityType);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving entity list for type={}", entityType);
+        }
+
         AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
         Iterator<AtlasVertex> results = query.vertices().iterator();
         if (!results.hasNext()) {
@@ -206,7 +217,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public List<String> getTraitNames(String guid) throws AtlasException {
-        LOG.debug("Retrieving trait names for entity={}", guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving trait names for entity={}", guid);
+        }
+
         AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
         return GraphHelper.getTraitNames(instanceVertex);
     }
@@ -224,7 +238,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public void addTrait(String guid, ITypedStruct traitInstance) throws RepositoryException {
         Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
         final String traitName = traitInstance.getTypeName();
-        LOG.debug("Adding a new trait={} for entity={}", traitName, guid);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding a new trait={} for entity={}", traitName, guid);
+        }
 
         try {
             AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
@@ -260,7 +277,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public void deleteTrait(String guid, String traitNameToBeDeleted) throws TraitNotFoundException, EntityNotFoundException, RepositoryException {
-        LOG.debug("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
+        }
         
         AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
@@ -303,7 +322,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
-        LOG.debug("updating entity {}", entitiesUpdated);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("updating entity {}", entitiesUpdated);
+        }
+
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_FULL,
@@ -319,7 +341,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
-        LOG.debug("updating entity {}", entity);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("updating entity {}", entity);
+        }
+
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);

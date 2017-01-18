@@ -233,7 +233,10 @@ public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateCh
         AtlasGraphManagement management = provider.get().getManagementSystem();
                
         for (IDataType dataType : dataTypes) {
-            LOG.debug("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
+            }
+
             try {
                 addIndexForType(management, dataType);
                 LOG.info("Index creation for type {} complete", dataType.getName());
@@ -506,17 +509,17 @@ public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateCh
             AtlasPropertyKey propertyKey, boolean enforceUniqueness) {
         
         String propertyName = propertyKey.getName();
-        LOG.debug("Creating composite index for property {} of type {} ", propertyName, propertyClass.getName());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
+        }
 
         AtlasGraphIndex existingIndex = management.getGraphIndex(propertyName);
         if (existingIndex == null) {
-            if (enforceUniqueness) {
-                LOG.debug("Enabling unique index for property {} of type {} ", propertyName, propertyClass.getName());
-            }
             management.createExactMatchIndex(propertyName, enforceUniqueness, Collections.singletonList(propertyKey));
-
         }
-        LOG.info("Created composite index for property {} of type {} ", propertyName, propertyClass.getName());
+
+        LOG.info("Created composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
     }
     
 
@@ -536,8 +539,10 @@ public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateCh
             Class propertyClass, AtlasPropertyKey propertyKey, final String systemPropertyKey,
             AtlasCardinality cardinality) {
 
-        LOG.debug("Creating composite index for property {} of type {} and {}", propertyKey.getName(), propertyClass.getName(),
-                systemPropertyKey);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating composite index for property {} of type {} and {}", propertyKey.getName(), propertyClass.getName(),
+                    systemPropertyKey);
+        }
 
         AtlasPropertyKey typePropertyKey = management.getPropertyKey(systemPropertyKey);
         if (typePropertyKey == null) {
@@ -562,9 +567,12 @@ public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateCh
     private void updateVertexIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
             AtlasCardinality cardinality, AtlasPropertyKey propertyKey) {
         if (checkIfVertexIndexApplicable(propertyClass, cardinality)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Creating backing index for property {} of type {} ", propertyName, propertyClass.getName());
+            }
+
             // Use backing index
             management.addVertexIndexKey(Constants.VERTEX_INDEX, propertyKey);
-            LOG.debug("Creating backing index for property {} of type {} ", propertyName, propertyClass.getName());
 
             LOG.info("Created backing index for property {} of type {} ", propertyName, propertyClass.getName());
         }

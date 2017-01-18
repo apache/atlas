@@ -90,7 +90,10 @@ public final class TypedInstanceToGraphMapper {
             throws AtlasException {
         RequestContext requestContext = RequestContext.get();
         for (ITypedReferenceableInstance typedInstance : typedInstances) {
-            LOG.debug("Adding/updating entity {}", typedInstance);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Adding/updating entity {}", typedInstance);
+            }
+
             Collection<IReferenceableInstance> newInstances = walkClassInstances(typedInstance);
             TypeUtils.Pair<List<ITypedReferenceableInstance>, List<ITypedReferenceableInstance>> instancesPair =
                     createVerticesAndDiscoverInstances(newInstances);
@@ -126,7 +129,10 @@ public final class TypedInstanceToGraphMapper {
 
         EntityProcessor entityProcessor = new EntityProcessor();
         try {
-            LOG.debug("Walking the object graph for instance {}", typedInstance.toShortString());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Walking the object graph for instance {}", typedInstance.toShortString());
+            }
+
             new ObjectGraphWalker(typeSystem, entityProcessor, typedInstance).walk();
         } catch (AtlasException me) {
             throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
@@ -153,7 +159,9 @@ public final class TypedInstanceToGraphMapper {
     @Monitored
     private String addOrUpdateAttributesAndTraits(Operation operation, ITypedReferenceableInstance typedInstance)
             throws AtlasException {
-        LOG.debug("Adding/Updating typed instance {}", typedInstance.toShortString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding/Updating typed instance {}", typedInstance.toShortString());
+        }
 
         Id id = typedInstance.getId();
         if (id == null) { // oops
@@ -178,8 +186,10 @@ public final class TypedInstanceToGraphMapper {
     void mapInstanceToVertex(ITypedInstance typedInstance, AtlasVertex instanceVertex,
                              Map<String, AttributeInfo> fields, boolean mapOnlyUniqueAttributes, Operation operation)
             throws AtlasException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapping instance {} to vertex {}", typedInstance.toShortString(), string(instanceVertex));
+        }
 
-        LOG.debug("Mapping instance {} to vertex {}", typedInstance.toShortString(), string(instanceVertex));
         for (AttributeInfo attributeInfo : fields.values()) {
             if (mapOnlyUniqueAttributes && !attributeInfo.isUnique) {
                 continue;
@@ -189,7 +199,10 @@ public final class TypedInstanceToGraphMapper {
         GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 RequestContext.get().getRequestTime());
         GraphHelper.setProperty(instanceVertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
-        LOG.debug("Setting modifiedBy: {} and modifiedTime: {}", RequestContext.get().getUser(), RequestContext.get().getRequestTime());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Setting modifiedBy: {} and modifiedTime: {}", RequestContext.get().getUser(), RequestContext.get().getRequestTime());
+        }
     }
 
     void mapAttributeToVertex(ITypedInstance typedInstance, AtlasVertex instanceVertex,
@@ -198,7 +211,10 @@ public final class TypedInstanceToGraphMapper {
         if ( typedInstance.isValueSet(attributeInfo.name) || operation == Operation.CREATE ) {
 
             Object attrValue = typedInstance.get(attributeInfo.name);
-            LOG.debug("Mapping attribute {} = {}", attributeInfo.name, attrValue);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Mapping attribute {} = {}", attributeInfo.name, attrValue);
+            }
 
             switch (attributeInfo.dataType().getTypeCategory()) {
             case PRIMITIVE:
@@ -246,14 +262,20 @@ public final class TypedInstanceToGraphMapper {
         List<ITypedReferenceableInstance> instancesToUpdate = new ArrayList<>();
 
         for (IReferenceableInstance instance : instances) {
-            LOG.debug("Discovering instance to create/update for {}", instance.toShortString());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Discovering instance to create/update for {}", instance.toShortString());
+            }
+
             ITypedReferenceableInstance newInstance;
             Id id = instance.getId();
 
             if (!idToVertexMap.containsKey(id)) {
                 AtlasVertex instanceVertex;
                 if (id.isAssigned()) {  // has a GUID
-                    LOG.debug("Instance has an assigned id {}", instance.getId()._getId());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Instance has an assigned id {}", instance.getId()._getId());
+                    }
+
                     instanceVertex = graphHelper.getVertexForGUID(id.id);
                     if (!(instance instanceof ReferenceableInstance)) {
                         throw new IllegalStateException(
@@ -269,7 +291,10 @@ public final class TypedInstanceToGraphMapper {
 
                     //no entity with the given unique attribute, create new
                     if (instanceVertex == null) {
-                        LOG.debug("Creating new vertex for instance {}", instance.toShortString());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Creating new vertex for instance {}", instance.toShortString());
+                        }
+
                         newInstance = classType.convert(instance, Multiplicity.REQUIRED);
                         instanceVertex = graphHelper.createVertexWithIdentity(newInstance, classType.getAllSuperTypeNames());
                         instancesToCreate.add(newInstance);
@@ -278,7 +303,10 @@ public final class TypedInstanceToGraphMapper {
                         mapInstanceToVertex(newInstance, instanceVertex, classType.fieldMapping().fields, true, Operation.CREATE);
 
                     } else {
-                        LOG.debug("Re-using existing vertex {} for instance {}", string(instanceVertex), instance.toShortString());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Re-using existing vertex {} for instance {}", string(instanceVertex), instance.toShortString());
+                        }
+
                         if (!(instance instanceof ReferenceableInstance)) {
                             throw new IllegalStateException(
                                     String.format("%s is not of type ITypedReferenceableInstance", instance.toShortString()));
@@ -306,7 +334,10 @@ public final class TypedInstanceToGraphMapper {
     private void addTraits(ITypedReferenceableInstance typedInstance, AtlasVertex instanceVertex, ClassType classType)
             throws AtlasException {
         for (String traitName : typedInstance.getTraits()) {
-            LOG.debug("mapping trait {}", traitName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("mapping trait {}", traitName);
+            }
+
             GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
             ITypedStruct traitInstance = (ITypedStruct) typedInstance.getTrait(traitName);
 
@@ -319,8 +350,10 @@ public final class TypedInstanceToGraphMapper {
 
     private void mapArrayCollectionToVertex(ITypedInstance typedInstance, AtlasVertex instanceVertex,
                                             AttributeInfo attributeInfo, Operation operation) throws AtlasException {
-        LOG.debug("Mapping instance {} for array attribute {} vertex {}", typedInstance.toShortString(),
-                attributeInfo.name, string(instanceVertex));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapping instance {} for array attribute {} vertex {}", typedInstance.toShortString(),
+                    attributeInfo.name, string(instanceVertex));
+        }
 
         List newElements = (List) typedInstance.get(attributeInfo.name);
         boolean newAttributeEmpty = (newElements == null || newElements.isEmpty());
@@ -338,8 +371,11 @@ public final class TypedInstanceToGraphMapper {
                 for (; index < newElements.size(); index++) {
                     Object currentElement = (currentElements != null && index < currentElements.size()) ?
                             currentElements.get(index) : null;
-                    LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
-                            currentElement, newElements.get(index));
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
+                                currentElement, newElements.get(index));
+                    }
+
                     Object newEntry = addOrUpdateCollectionEntry(instanceVertex, attributeInfo, elementType,
                             newElements.get(index), currentElement, propertyName, operation);
                     newElementsCreated.add(newEntry);
@@ -372,7 +408,10 @@ public final class TypedInstanceToGraphMapper {
                 List<AtlasEdge> cloneElements = new ArrayList<>(currentEntries);
                 cloneElements.removeAll(newEntries);
                 List<AtlasEdge> additionalElements = new ArrayList<>();
-                LOG.debug("Removing unused entries from the old collection - {}", cloneElements);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Removing unused entries from the old collection - {}", cloneElements);
+                }
 
                 if (!cloneElements.isEmpty()) {
                     for (AtlasEdge edge : cloneElements) {
@@ -393,8 +432,11 @@ public final class TypedInstanceToGraphMapper {
 
     private void mapMapCollectionToVertex(ITypedInstance typedInstance, AtlasVertex instanceVertex,
                                           AttributeInfo attributeInfo, Operation operation) throws AtlasException {
-        LOG.debug("Mapping instance {} to vertex {} for attribute {}", typedInstance.toShortString(), string(instanceVertex),
-                attributeInfo.name);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapping instance {} to vertex {} for attribute {}", typedInstance.toShortString(), string(instanceVertex),
+                    attributeInfo.name);
+        }
+
         @SuppressWarnings("unchecked") Map<Object, Object> newAttribute =
                 (Map<Object, Object>) typedInstance.get(attributeInfo.name);
 
@@ -544,8 +586,10 @@ public final class TypedInstanceToGraphMapper {
         // add a new vertex for the struct or trait instance
         AtlasVertex structInstanceVertex = graphHelper.createVertexWithoutIdentity(structInstance.getTypeName(), null,
                 Collections.<String>emptySet()); // no super types for struct type
-        LOG.debug("created vertex {} for struct {} value {}", string(structInstanceVertex), attributeInfo.name,
-                structInstance.toShortString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("created vertex {} for struct {} value {}", string(structInstanceVertex), attributeInfo.name,
+                    structInstance.toShortString());
+        }
 
         // map all the attributes to this new vertex
         mapInstanceToVertex(structInstance, structInstanceVertex, structInstance.fieldMapping().fields, false,
@@ -561,7 +605,9 @@ public final class TypedInstanceToGraphMapper {
         //Already existing vertex. Update
         AtlasVertex structInstanceVertex = currentEdge.getInVertex();
 
-        LOG.debug("Updating struct vertex {} with struct {}", string(structInstanceVertex), newAttributeValue.toShortString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Updating struct vertex {} with struct {}", string(structInstanceVertex), newAttributeValue.toShortString());
+        }
 
         // Update attributes
         final MessageDigest digester = MD5Utils.getDigester();
@@ -570,7 +616,10 @@ public final class TypedInstanceToGraphMapper {
 
         if (!newSignature.equals(curSignature)) {
             //Update struct vertex instance only if there is a change
-            LOG.debug("Updating struct {} since signature has changed {} {} ", newAttributeValue, curSignature, newSignature);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updating struct {} since signature has changed {} {} ", newAttributeValue, curSignature, newSignature);
+            }
+
             mapInstanceToVertex(newAttributeValue, structInstanceVertex, newAttributeValue.fieldMapping().fields, false, operation);
             GraphHelper.setProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.valueOf(newSignature));
         }
@@ -638,7 +687,10 @@ public final class TypedInstanceToGraphMapper {
             ITypedReferenceableInstance newAttributeValue,
             AtlasVertex newVertex, AttributeInfo attributeInfo,
             String edgeLabel) throws AtlasException {
-        LOG.debug("Updating {} for reference attribute {}", string(currentEdge), attributeInfo.name);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Updating {} for reference attribute {}", string(currentEdge), attributeInfo.name);
+        }
+
         // Update edge if it exists
         AtlasVertex currentVertex = currentEdge.getInVertex();
         String currentEntityId = GraphHelper.getGuid(currentVertex);
@@ -663,7 +715,9 @@ public final class TypedInstanceToGraphMapper {
         final String traitName = traitInstance.getTypeName();
         AtlasVertex traitInstanceVertex = graphHelper.createVertexWithoutIdentity(traitInstance.getTypeName(), null,
                 typeSystem.getDataType(TraitType.class, traitName).getAllSuperTypeNames());
-        LOG.debug("created vertex {} for trait {}", string(traitInstanceVertex), traitName);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("created vertex {} for trait {}", string(traitInstanceVertex), traitName);
+        }
 
         // map all the attributes to this newly created AtlasVertex
         mapInstanceToVertex(traitInstance, traitInstanceVertex, traitInstance.fieldMapping().fields, false, Operation.CREATE);

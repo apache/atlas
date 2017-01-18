@@ -79,8 +79,11 @@ public abstract class DeleteHandler {
             String guid = GraphHelper.getGuid(instanceVertex);
             Id.EntityState state = GraphHelper.getState(instanceVertex);
             if (requestContext.getDeletedEntityIds().contains(guid) || state == Id.EntityState.DELETED) {
-                   LOG.debug("Skipping deletion of {} as it is already deleted", guid);
-                   continue;
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Skipping deletion of {} as it is already deleted", guid);
+                }
+
+                continue;
             }
 
            // Get GUIDs and vertices for all deletion candidates.
@@ -131,13 +134,19 @@ public abstract class DeleteHandler {
      * @throws AtlasException
      */
     protected void deleteTypeVertex(AtlasVertex instanceVertex, boolean force) throws AtlasException {
-        LOG.debug("Deleting {}", string(instanceVertex));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting {}", string(instanceVertex));
+        }
+
         String typeName = GraphHelper.getTypeName(instanceVertex);
         IDataType type = typeSystem.getDataType(IDataType.class, typeName);
         FieldMapping fieldMapping = getFieldMapping(type);
 
         for (AttributeInfo attributeInfo : fieldMapping.fields.values()) {
-            LOG.debug("Deleting attribute {} for {}", attributeInfo.name, string(instanceVertex));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleting attribute {} for {}", attributeInfo.name, string(instanceVertex));
+            }
+
             String edgeLabel = GraphHelper.getEdgeLabel(type, attributeInfo);
 
             switch (attributeInfo.dataType().getTypeCategory()) {
@@ -200,7 +209,10 @@ public abstract class DeleteHandler {
      */
     public boolean deleteEdgeReference(AtlasEdge edge, DataTypes.TypeCategory typeCategory, boolean isComposite,
                                     boolean forceDeleteStructTrait) throws AtlasException {
-        LOG.debug("Deleting {}", string(edge));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting {}", string(edge));
+        }
+
         boolean forceDelete =
                 (typeCategory == DataTypes.TypeCategory.STRUCT || typeCategory == DataTypes.TypeCategory.TRAIT) && forceDeleteStructTrait;
         if (typeCategory == DataTypes.TypeCategory.STRUCT || typeCategory == DataTypes.TypeCategory.TRAIT
@@ -247,7 +259,9 @@ public abstract class DeleteHandler {
 
     protected void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasException {
         //Update external references(incoming edges) to this vertex
-        LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
+        }
 
         for (AtlasEdge edge : (Iterable<AtlasEdge>) instanceVertex.getEdges(AtlasEdgeDirection.IN)) {
             Id.EntityState edgeState = GraphHelper.getState(edge);
@@ -271,8 +285,11 @@ public abstract class DeleteHandler {
      * @throws AtlasException
      */
     protected void deleteEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, String attributeName) throws AtlasException {
-        LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex),
-                attributeName);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex),
+                    attributeName);
+        }
+
         String typeName = GraphHelper.getTypeName(outVertex);
         String outId = GraphHelper.getGuid(outVertex);
         Id.EntityState state = GraphHelper.getState(outVertex);
@@ -331,8 +348,11 @@ public abstract class DeleteHandler {
                             //if composite attribute, remove the reference as well. else, just remove the edge
                             //for example, when table is deleted, process still references the table
                             //but when column is deleted, table will not reference the deleted column
-                            LOG.debug("Removing edge {} from the array attribute {}", string(elementEdge),
-                                    attributeName);
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Removing edge {} from the array attribute {}", string(elementEdge),
+                                        attributeName);
+                            }
+
                             elements.remove(elementEdge.getId().toString());
                             GraphHelper.setProperty(outVertex, propertyName, elements);
                             break;
@@ -367,8 +387,11 @@ public abstract class DeleteHandler {
 
                             if (shouldUpdateReverseAttribute) {
                                 //remove this key
-                                LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
-                                        attributeName);
+                                if (LOG.isDebugEnabled()) {
+                                    LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
+                                            attributeName);
+                                }
+
                                 keys.remove(key);
                                 GraphHelper.setProperty(outVertex, propertyName, keys);
                                 GraphHelper.setProperty(outVertex, keyPropertyName, null);
@@ -426,7 +449,11 @@ public abstract class DeleteHandler {
      */
     private void deleteAllTraits(AtlasVertex instanceVertex) throws AtlasException {
         List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
-        LOG.debug("Deleting traits {} for {}", traitNames, string(instanceVertex));
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting traits {} for {}", traitNames, string(instanceVertex));
+        }
+
         String typeName = GraphHelper.getTypeName(instanceVertex);
 
         for (String traitNameToBeDeleted : traitNames) {
