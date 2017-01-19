@@ -20,7 +20,6 @@ package org.apache.atlas.repository.graph;
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -85,7 +84,6 @@ public final class TypedInstanceToGraphMapper {
         UPDATE_FULL
     }
 
-    @Monitored
     void mapTypedInstanceToGraph(Operation operation, ITypedReferenceableInstance... typedInstances)
             throws AtlasException {
         RequestContext requestContext = RequestContext.get();
@@ -156,7 +154,6 @@ public final class TypedInstanceToGraphMapper {
         return guids;
     }
 
-    @Monitored
     private String addOrUpdateAttributesAndTraits(Operation operation, ITypedReferenceableInstance typedInstance)
             throws AtlasException {
         if (LOG.isDebugEnabled()) {
@@ -254,7 +251,6 @@ public final class TypedInstanceToGraphMapper {
         }
     }
 
-    @Monitored
     private TypeUtils.Pair<List<ITypedReferenceableInstance>, List<ITypedReferenceableInstance>> createVerticesAndDiscoverInstances(
             Collection<IReferenceableInstance> instances) throws AtlasException {
 

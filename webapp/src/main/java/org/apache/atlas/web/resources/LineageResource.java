@@ -19,7 +19,6 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
@@ -29,6 +28,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONException;
@@ -50,6 +50,7 @@ import javax.ws.rs.core.Response;
 @Singleton
 public class LineageResource {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageResource");
 
     private final AtlasLineageService atlasLineageService;
     private final LineageService      lineageService;
@@ -73,15 +74,21 @@ public class LineageResource {
      * @param guid dataset entity id
      * @return
      */
-    @Monitored
     @GET
     @Path("{guid}/inputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response inputsGraph(@PathParam("guid") String guid) {
-        LOG.info("Fetching lineage inputs graph for guid={}", guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> LineageResource.inputsGraph({})", guid);
+        }
 
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.inputsGraph(" + guid + ")");
+            }
+
             AtlasLineageInfo lineageInfo = atlasLineageService.getAtlasLineageInfo(guid, LineageDirection.INPUT, -1);
             final String result = LineageUtils.toLineageStruct(lineageInfo, typeRegistry);
 
@@ -96,6 +103,12 @@ public class LineageResource {
         } catch (JSONException e) {
             LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== LineageResource.inputsGraph({})", guid);
+            }
         }
     }
 
@@ -104,15 +117,22 @@ public class LineageResource {
      *
      * @param guid dataset entity id
      */
-    @Monitored
     @GET
     @Path("{guid}/outputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response outputsGraph(@PathParam("guid") String guid) {
-        LOG.info("Fetching lineage outputs graph for entity guid={}", guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> LineageResource.outputsGraph({})", guid);
+        }
+
+        AtlasPerfTracer perf = null;
 
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.outputsGraph(" + guid + ")");
+            }
+
             AtlasLineageInfo lineageInfo = atlasLineageService.getAtlasLineageInfo(guid, LineageDirection.OUTPUT, -1);
             final String result = LineageUtils.toLineageStruct(lineageInfo, typeRegistry);
 
@@ -127,6 +147,12 @@ public class LineageResource {
         } catch (JSONException e) {
             LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== LineageResource.outputsGraph({})", guid);
+            }
         }
     }
 
@@ -135,15 +161,21 @@ public class LineageResource {
      *
      * @param guid dataset entity id
      */
-    @Monitored
     @GET
     @Path("{guid}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response schema(@PathParam("guid") String guid) {
-        LOG.info("Fetching schema for entity guid={}", guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> LineageResource.schema({})", guid);
+        }
 
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.schema(" + guid + ")");
+            }
+
             final String jsonResult = lineageService.getSchemaForEntity(guid);
 
             JSONObject response = new JSONObject();
@@ -163,6 +195,12 @@ public class LineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get schema for entity={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== LineageResource.schema({})", guid);
+            }
         }
     }
 }

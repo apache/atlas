@@ -20,8 +20,6 @@ package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.aspect.Monitored;
-import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -31,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,7 +51,7 @@ import java.util.Set;
 @Path("admin")
 @Singleton
 public class AdminResource {
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AdminResource");
+    private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
 
     private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
     private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
@@ -73,11 +72,14 @@ public class AdminResource {
      *
      * @return json representing the thread stack dump.
      */
-    @Monitored
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
     public String getThreadDump() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getThreadDump()");
+        }
+
         ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
 
         while (topThreadGroup.getParent() != null) {
@@ -93,6 +95,11 @@ public class AdminResource {
             String stackTrace = StringUtils.join(threads[i].getStackTrace(), "\n");
             builder.append(stackTrace);
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getThreadDump()");
+        }
+
         return builder.toString();
     }
 
@@ -101,11 +108,14 @@ public class AdminResource {
      *
      * @return json representing the version.
      */
-    @Monitored
     @GET
     @Path("version")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getVersion() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getVersion()");
+        }
+
         if (version == null) {
             try {
                 PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
@@ -124,34 +134,51 @@ public class AdminResource {
             }
         }
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getVersion()");
+        }
+
         return version;
     }
 
-    @Monitored
     @GET
     @Path("status")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getStatus() {
-        JSONObject responseData = new JSONObject();
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getStatus()");
+        }
+
+        Response response;
+
         try {
+            JSONObject responseData = new JSONObject();
             responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
-            Response response = Response.ok(responseData).build();
-            return response;
+            response = Response.ok(responseData).build();
         } catch (JSONException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getStatus()");
+        }
+
+        return response;
     }
 
-    @Monitored
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getUserProfile() {
-        JSONObject responseData = new JSONObject();
-        Boolean enableTaxonomy = null;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getUserProfile()");
+        }
+
+        Response response;
+
         try {
             PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
-            enableTaxonomy = configProperties.getBoolean(isTaxonomyEnabled, false);
+            Boolean enableTaxonomy = configProperties.getBoolean(isTaxonomyEnabled, false);
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userName = null;
             Set<String> groups = new HashSet<>();
@@ -161,20 +188,27 @@ public class AdminResource {
                 for (GrantedAuthority c : authorities) {
                     groups.add(c.getAuthority());
                 }
-            } 
-            
+            }
+
+            JSONObject responseData = new JSONObject();
+
             responseData.put(isCSRF_ENABLED,  AtlasCSRFPreventionFilter.isCSRF_ENABLED);
             responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
             responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
             responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
-            
             responseData.put(isTaxonomyEnabled, enableTaxonomy);
-            
             responseData.put("userName", userName);
             responseData.put("groups", groups);
-            return Response.ok(responseData).build();
+
+            response = Response.ok(responseData).build();
         } catch (JSONException | ConfigurationException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getUserProfile()");
+        }
+
+        return response;
     }
 }

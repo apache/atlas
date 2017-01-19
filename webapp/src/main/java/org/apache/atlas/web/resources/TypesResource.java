@@ -22,7 +22,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -88,17 +87,29 @@ public class TypesResource {
      * Submits a type definition corresponding to a given type representing a meta model of a
      * domain. Could represent things like Hive Database, Hive Table, etc.
      */
-    @Monitored
     @POST
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> TypesResource.submit()");
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
+        }
+
         TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONArray typesResponse = new JSONArray();
 
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.info("Creating type with definition {} ", typeDefinition);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Creating type with definition {} ", typeDefinition);
+            }
 
             AtlasTypesDef createTypesDef  = RestUtils.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef createdTypesDef = typesRest.createAtlasTypeDefs(createTypesDef);
@@ -127,6 +138,12 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== TypesResource.submit()");
+            }
         }
     }
 
@@ -139,16 +156,28 @@ public class TypesResource {
      * @param request
      * @return
      */
-    @Monitored
     @PUT
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response update(@Context HttpServletRequest request) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> TypesResource.update()");
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
+        }
+
         TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONArray typesResponse = new JSONArray();
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.info("Updating type with definition {} ", typeDefinition);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updating type with definition {} ", typeDefinition);
+            }
 
             AtlasTypesDef updateTypesDef  = RestUtils.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef updatedTypesDef = typesRest.updateAtlasTypeDefs(updateTypesDef);
@@ -174,6 +203,12 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== TypesResource.update()");
+            }
         }
     }
 
@@ -182,11 +217,20 @@ public class TypesResource {
      *
      * @param typeName name of a type which is unique.
      */
-    @Monitored
     @GET
     @Path("{typeName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getDefinition(@Context HttpServletRequest request, @PathParam("typeName") String typeName) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> TypesResource.getDefinition({})", typeName);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
+        }
+
         TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONObject response = new JSONObject();
 
@@ -233,6 +277,12 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== TypesResource.getDefinition({})", typeName);
+            }
         }
     }
 
@@ -248,12 +298,21 @@ public class TypesResource {
      * For example, typeCategory = TRAIT && supertype contains 'X' && supertype !contains 'Y'
      * If there is no filter, all the types are returned
      */
-    @Monitored
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTypesByFilter(@Context HttpServletRequest request, @QueryParam("type") String typeCategory,
                                      @QueryParam("supertype") String supertype,
                                      @QueryParam("notsupertype") String notsupertype) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> TypesResource.getTypesByFilter({}, {}, {})", typeCategory, supertype, notsupertype);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + typeCategory + ", " + supertype + ", " + notsupertype + ")");
+        }
+
         TypesREST typesRest  = resourceContext.getResource(TypesREST.class);
         JSONObject response  = new JSONObject();
         try {
@@ -270,6 +329,12 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== TypesResource.getTypesByFilter({}, {}, {})", typeCategory, supertype, notsupertype);
+            }
         }
     }
 }

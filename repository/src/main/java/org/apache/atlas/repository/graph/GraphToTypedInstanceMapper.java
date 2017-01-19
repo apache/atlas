@@ -19,7 +19,6 @@ package org.apache.atlas.repository.graph;
 
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -66,7 +65,6 @@ public final class GraphToTypedInstanceMapper {
         this.graph = graph;
     }
 
-    @Monitored
     public ITypedReferenceableInstance mapGraphToTypedInstance(String guid, AtlasVertex instanceVertex)
         throws AtlasException {
 
@@ -104,7 +102,6 @@ public final class GraphToTypedInstanceMapper {
         return typedInstance;
     }
 
-    @Monitored
     private void mapVertexToInstanceTraits(AtlasVertex instanceVertex, ITypedReferenceableInstance typedInstance,
         List<String> traits) throws AtlasException {
         for (String traitName : traits) {
@@ -117,7 +114,6 @@ public final class GraphToTypedInstanceMapper {
         }
     }
 
-    @Monitored
     public void mapVertexToInstance(AtlasVertex instanceVertex, ITypedInstance typedInstance,
         Map<String, AttributeInfo> fields) throws AtlasException {
 

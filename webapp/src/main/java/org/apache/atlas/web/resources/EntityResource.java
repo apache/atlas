@@ -24,7 +24,6 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
@@ -95,13 +94,21 @@ public class EntityResource {
      * The body contains the JSONArray of entity json. The service takes care of de-duping the entities based on any
      * unique attribute for the give type.
      */
-    @Monitored
     @POST
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.submit()");
+        }
+
         String entityJson = null;
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.submit()");
+            }
+
             String entities = Servlets.getRequestPayload(request);
 
             //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
@@ -115,10 +122,17 @@ public class EntityResource {
             }
 
             entityJson = AtlasClient.toString(new JSONArray(entities));
-            LOG.info("submitting entities {} ", entityJson);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("submitting entities {} ", entityJson);
+            }
 
             final List<String> guids = metadataService.createEntities(entities);
-            LOG.info("Created entities {}", guids);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Created entities {}", guids);
+            }
+
             JSONObject response = getResponse(new AtlasClient.EntityResult(guids, null, null));
 
             URI locationURI = getLocationURI(guids);
@@ -137,6 +151,13 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.submit()");
+            }
+
         }
     }
 
@@ -174,20 +195,34 @@ public class EntityResource {
      * Adds/Updates given entities identified by its GUID or unique attribute
      * @return response payload as json
      */
-    @Monitored
     @PUT
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response updateEntities(@Context HttpServletRequest request) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.updateEntities()");
+        }
+
         String entityJson = null;
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.updateEntities()");
+            }
+
             final String entities = Servlets.getRequestPayload(request);
 
             entityJson = AtlasClient.toString(new JSONArray(entities));
-            LOG.info("updating entities {} ", entityJson);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.info("updating entities {} ", entityJson);
+            }
 
             AtlasClient.EntityResult entityResult = metadataService.updateEntities(entities);
-            LOG.info("Updated entities: {}", entityResult);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updated entities: {}", entityResult);
+            }
 
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
@@ -203,6 +238,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.updateEntities()");
+            }
         }
     }
 
@@ -235,7 +276,6 @@ public class EntityResource {
      * The body contains the JSONArray of entity json. The service takes care of de-duping the entities based on any
      * unique attribute for the give type.
      */
-    @Monitored
     @POST
     @Path("qualifiedName")
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
@@ -243,18 +283,32 @@ public class EntityResource {
     public Response updateByUniqueAttribute(@QueryParam("type") String entityType,
                                             @QueryParam("property") String attribute,
                                             @QueryParam("value") String value, @Context HttpServletRequest request) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.updateByUniqueAttribute({}, {}, {})", entityType, attribute, value);
+        }
+
+        AtlasPerfTracer perf = null;
         String entityJson = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.updateByUniqueAttribute(" + entityType + ", " + attribute + ", " + value + ")");
+            }
+
             entityJson = Servlets.getRequestPayload(request);
 
-            LOG.info("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
+            }
 
             Referenceable updatedEntity =
                 InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
             AtlasClient.EntityResult entityResult =
                     metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, updatedEntity);
-            LOG.info("Updated entities: {}", entityResult);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updated entities: {}", entityResult);
+            }
 
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
@@ -273,6 +327,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to partially update entity {} {}:{}.{}", entityJson, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.updateByUniqueAttribute({}, {}, {})", entityType, attribute, value);
+            }
         }
     }
 
@@ -291,26 +351,48 @@ public class EntityResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response updateEntityByGuid(@PathParam("guid") String guid, @QueryParam("property") String attribute,
                                        @Context HttpServletRequest request) {
-        if (StringUtils.isEmpty(attribute)) {
-            return updateEntityPartialByGuid(guid, request);
-        } else {
-            return updateEntityAttributeByGuid(guid, attribute, request);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.updateEntityByGuid({}, {})", guid, attribute);
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.updateEntityByGuid(" + guid + ", " + attribute + ")");
+            }
+
+            if (StringUtils.isEmpty(attribute)) {
+                return updateEntityPartialByGuid(guid, request);
+            } else {
+                return updateEntityAttributeByGuid(guid, attribute, request);
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.updateEntityByGuid({}, {})", guid, attribute);
+            }
         }
     }
 
-    @Monitored
     private Response updateEntityPartialByGuid(String guid, HttpServletRequest request) {
         String entityJson = null;
         try {
             guid = ParamChecker.notEmpty(guid, "Guid property cannot be null");
             entityJson = Servlets.getRequestPayload(request);
-            LOG.info("partially updating entity for guid {} : {} ", guid, entityJson);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
+            }
 
             Referenceable updatedEntity =
                     InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
             AtlasClient.EntityResult entityResult = metadataService.updateEntityPartialByGuid(guid, updatedEntity);
-            LOG.info("Updated entities: {}", entityResult);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updated entities: {}", entityResult);
+            }
 
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
@@ -336,7 +418,6 @@ public class EntityResource {
      * @postbody property's value
      * @return response payload as json
      */
-    @Monitored
     private Response updateEntityAttributeByGuid(String guid, String property, HttpServletRequest request) {
         String value = null;
         try {
@@ -344,9 +425,15 @@ public class EntityResource {
             value = Servlets.getRequestPayload(request);
             Preconditions.checkNotNull(value, "Entity value cannot be null");
 
-            LOG.info("Updating entity {} for property {} = {}", guid, property, value);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updating entity {} for property {} = {}", guid, property, value);
+            }
+
             AtlasClient.EntityResult entityResult = metadataService.updateEntityAttributeByGuid(guid, property, value);
-            LOG.info("Updated entities: {}", entityResult);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updated entities: {}", entityResult);
+            }
 
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
@@ -374,23 +461,41 @@ public class EntityResource {
      * @param value the unique attribute value used to identify the entity
      * @return response payload as json - including guids of entities(including composite references from that entity) that were deleted
      */
-    @Monitored
     @DELETE
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteEntities(@QueryParam("guid") List<String> guids,
         @QueryParam("type") String entityType,
         @QueryParam("property") String attribute,
         @QueryParam("value") String value) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.deleteEntities({}, {}, {}, {})", guids, entityType, attribute, value);
+        }
+
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.deleteEntities(" + guids + ", " + entityType + ", " + attribute + ", " + value + ")");
+            }
+
             AtlasClient.EntityResult entityResult;
             if (guids != null && !guids.isEmpty()) {
-                LOG.info("Deleting entities {}", guids);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Deleting entities {}", guids);
+                }
+
                 entityResult = metadataService.deleteEntities(guids);
             } else {
-                LOG.info("Deleting entity type={} with property {}={}", entityType, attribute, value);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Deleting entity type={} with property {}={}", entityType, attribute, value);
+                }
+
                 entityResult = metadataService.deleteEntityByUniqueAttribute(entityType, attribute, value);
             }
-            LOG.info("Deleted entity result: {}", entityResult);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleted entity result: {}", entityResult);
+            }
+
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -406,6 +511,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to delete entities {} {} {} {} ", guids, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.deleteEntities({}, {}, {}, {})", guids, entityType, attribute, value);
+            }
         }
     }
 
@@ -414,13 +525,24 @@ public class EntityResource {
      *
      * @param guid GUID for the entity
      */
-    @Monitored
     @GET
     @Path("{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getEntityDefinition({})", guid);
+        }
+
+        AtlasPerfTracer perf = null;
         try {
-            LOG.debug("Fetching entity definition for guid={} ", guid);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getEntityDefinition(" + guid + ")");
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching entity definition for guid={} ", guid);
+            }
+
             guid = ParamChecker.notEmpty(guid, "guid cannot be null");
             final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
 
@@ -447,6 +569,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getEntityDefinition({})", guid);
+            }
         }
     }
 
@@ -455,12 +583,14 @@ public class EntityResource {
      *
      * @param entityType name of a type which is unique
      */
-    @Monitored
     public Response getEntityListByType(String entityType) {
         try {
             Preconditions.checkNotNull(entityType, "Entity type cannot be null");
 
-            LOG.debug("Fetching entity list for type={} ", entityType);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching entity list for type={} ", entityType);
+            }
+
             final List<String> entityList = metadataService.getEntityList(entityType);
 
             JSONObject response = new JSONObject();
@@ -488,12 +618,29 @@ public class EntityResource {
     public Response getEntity(@QueryParam("type") String entityType,
                               @QueryParam("property") String attribute,
                               @QueryParam("value") String value) {
-        if (StringUtils.isEmpty(attribute)) {
-            //List API
-            return getEntityListByType(entityType);
-        } else {
-            //Get entity by unique attribute
-            return getEntityDefinitionByAttribute(entityType, attribute, value);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getEntity({}, {}, {})", entityType, attribute, value);
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getEntity(" + entityType + ", " + attribute + ", " + value + ")");
+            }
+
+            if (StringUtils.isEmpty(attribute)) {
+                //List API
+                return getEntityListByType(entityType);
+            } else {
+                //Get entity by unique attribute
+                return getEntityDefinitionByAttribute(entityType, attribute, value);
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getEntity({}, {}, {})", entityType, attribute, value);
+            }
         }
     }
 
@@ -504,10 +651,12 @@ public class EntityResource {
      * @param attribute
      * @param value
      */
-    @Monitored
     public Response getEntityDefinitionByAttribute(String entityType, String attribute, String value) {
         try {
-            LOG.debug("Fetching entity definition for type={}, qualified name={}", entityType, value);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching entity definition for type={}, qualified name={}", entityType, value);
+            }
+
             entityType = ParamChecker.notEmpty(entityType, "Entity type cannot be null");
             attribute  = ParamChecker.notEmpty(attribute, "attribute name cannot be null");
             value      = ParamChecker.notEmpty(value, "attribute value cannot be null");
@@ -549,13 +698,24 @@ public class EntityResource {
      * @param guid globally unique identifier for the entity
      * @return a list of trait names for the given entity guid
      */
-    @Monitored
     @GET
     @Path("{guid}/traits")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTraitNames(@PathParam("guid") String guid) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getTraitNames({})", guid);
+        }
+
+        AtlasPerfTracer perf = null;
         try {
-            LOG.debug("Fetching trait names for entity={}", guid);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitNames(" + guid + ")");
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching trait names for entity={}", guid);
+            }
+
             final List<String> traitNames = metadataService.getTraitNames(guid);
 
             JSONObject response = new JSONObject();
@@ -573,6 +733,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getTraitNames({})", guid);
+            }
         }
     }
 
@@ -580,13 +746,24 @@ public class EntityResource {
      * Fetches the trait definitions of all the traits associated to the given entity
      * @param guid globally unique identifier for the entity
      */
-    @Monitored
     @GET
     @Path("{guid}/traitDefinitions")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTraitDefinitionsForEntity(@PathParam("guid") String guid){
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getTraitDefinitionsForEntity({})", guid);
+        }
+
+        AtlasPerfTracer perf = null;
         try {
-            LOG.debug("Fetching all trait definitions for entity={}", guid);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitDefinitionsForEntity(" + guid + ")");
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching all trait definitions for entity={}", guid);
+            }
+
             final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
 
             Referenceable entity = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
@@ -611,6 +788,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to get trait definitions for entity {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getTraitDefinitionsForEntity({})", guid);
+            }
         }
     }
 
@@ -620,13 +803,24 @@ public class EntityResource {
      * @param guid globally unique identifier for the entity
      * @param traitName name of the trait
      */
-    @Monitored
     @GET
     @Path("{guid}/traitDefinitions/{traitName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTraitDefinitionForEntity(@PathParam("guid") String guid, @PathParam("traitName") String traitName){
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getTraitDefinitionForEntity({}, {})", guid, traitName);
+        }
+
+        AtlasPerfTracer perf = null;
         try {
-            LOG.debug("Fetching trait definition for entity {} and trait name {}", guid, traitName);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitDefinitionForEntity(" + guid + ", " + traitName + ")");
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Fetching trait definition for entity {} and trait name {}", guid, traitName);
+            }
+
             final IStruct traitDefinition = metadataService.getTraitDefinition(guid, traitName);
 
             JSONObject response = new JSONObject();
@@ -644,6 +838,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to get trait definition for entity {} and trait {}", guid, traitName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getTraitDefinitionForEntity({}, {})", guid, traitName);
+            }
         }
     }
 
@@ -652,16 +852,28 @@ public class EntityResource {
      *
      * @param guid globally unique identifier for the entity
      */
-    @Monitored
     @POST
     @Path("{guid}/traits")
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response addTrait(@Context HttpServletRequest request, @PathParam("guid") final String guid) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.addTrait({})", guid);
+        }
+
         String traitDefinition = null;
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.addTrait(" + guid + ")");
+            }
+
             traitDefinition = Servlets.getRequestPayload(request);
-            LOG.info("Adding trait={} for entity={} ", traitDefinition, guid);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
+            }
+
             metadataService.addTrait(guid, traitDefinition);
 
             URI locationURI = getLocationURI(new ArrayList<String>() {{
@@ -681,6 +893,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to add trait for entity={} traitDef={}", guid, traitDefinition, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.addTrait({})", guid);
+            }
         }
     }
 
@@ -690,15 +908,27 @@ public class EntityResource {
      * @param guid      globally unique identifier for the entity
      * @param traitName name of the trait
      */
-    @Monitored
     @DELETE
     @Path("{guid}/traits/{traitName}")
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request, @PathParam("guid") String guid,
             @PathParam(TRAIT_NAME) String traitName) {
-        LOG.info("Deleting trait={} from entity={} ", traitName, guid);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.deleteTrait({}, {})", guid, traitName);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting trait={} from entity={} ", traitName, guid);
+        }
+
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.deleteTrait(" + guid + ", " + traitName + ")");
+            }
+
             metadataService.deleteTrait(guid, traitName);
 
             JSONObject response = new JSONObject();
@@ -718,6 +948,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.deleteTrait({}, {})", guid, traitName);
+            }
         }
     }
 
@@ -731,15 +967,26 @@ public class EntityResource {
      * @param count number of events required
      * @return
      */
-    @Monitored
     @GET
     @Path("{guid}/audit")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
                                    @QueryParam("count") @DefaultValue("100") short count) {
-        LOG.debug("Audit events request for entity {}, start key {}, number of results required {}", guid, startKey,
-                count);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> EntityResource.getAuditEvents({}, {}, {})", guid, startKey, count);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Audit events request for entity {}, start key {}, number of results required {}", guid, startKey, count);
+        }
+
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
+            }
+
             List<EntityAuditEvent> events = metadataService.getAuditEvents(guid, startKey, count);
 
             JSONObject response = new JSONObject();
@@ -752,6 +999,12 @@ public class EntityResource {
         } catch (Throwable e) {
             LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== EntityResource.getAuditEvents({}, {}, {})", guid, startKey, count);
+            }
         }
     }
 
