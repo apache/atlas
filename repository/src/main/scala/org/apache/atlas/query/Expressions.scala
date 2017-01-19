@@ -387,7 +387,21 @@ object Expressions {
 
     def _trait(name: String) = new TraitExpression(name)
 
-    case class IdExpression(name: String) extends Expression with LeafNode {
+    object IdExpressionType extends Enumeration {
+        val Unresolved, NonType = Value;
+
+        class IdExpressionTypeValue(exprValue : Value) {
+
+            def isTypeAllowed = exprValue match {
+                case Unresolved => true
+                case _ => false
+            }
+        }
+        import scala.language.implicitConversions
+        implicit def value2ExprValue(exprValue: Value) = new IdExpressionTypeValue(exprValue)
+    }
+
+    case class IdExpression(name: String, exprType: IdExpressionType.Value) extends Expression with LeafNode {
         override def toString = name
 
         override lazy val resolved = false
@@ -395,7 +409,16 @@ object Expressions {
         override def dataType = throw new UnresolvedException(this, "id")
     }
 
-    def id(name: String) = new IdExpression(name)
+    /**
+     * Creates an IdExpression whose allowed value type will be determined
+     * later.
+     */
+    def id(name: String) = new IdExpression(name, IdExpressionType.Unresolved)
+
+    /**
+     * Creates an IdExpression whose value must resolve to a field name
+     */
+    def fieldId(name: String) = new IdExpression(name, IdExpressionType.NonType)
 
     case class UnresolvedFieldExpression(child: Expression, fieldName: String) extends Expression
     with UnaryNode {

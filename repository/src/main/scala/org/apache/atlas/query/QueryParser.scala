@@ -338,8 +338,26 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     }
 
     def identifier = rep1sep(ident, DOT) ^^ { l => l match {
+
+        /*
+         * We don't have enough context here to know what the id can be.
+         * Examples:
+         *    Column isa PII - "Column" could be a field, type, or alias
+         *    name = 'John' - "name" must be a field.
+         * Use generic id(), let type the be refined based on the context later.
+         */
         case h :: Nil => id(h)
-        case h :: t => {
+
+        /*
+         * Then left-most part of the identifier ("h") must be a can be either.  However,
+         * Atlas does support struct attributes, whose fields must accessed through
+         * this syntax.  Let the downstream processing figure out which case we're in.
+         *
+         * Examples:
+         * hive_table.name - here, hive_table must be a type
+         * sortCol.order - here, sortCol is a struct attribute, must resolve to a field.
+         */
+        case h :: t => { //the left-most part of the identifier (h) can be
             t.foldLeft(id(h).asInstanceOf[Expression])(_.field(_))
         }
     }

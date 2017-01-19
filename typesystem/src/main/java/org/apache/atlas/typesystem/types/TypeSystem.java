@@ -149,17 +149,13 @@ public class TypeSystem {
         return coreTypes.containsKey(typeName);
     }
 
-    public <T> T getDataType(Class<T> cls, String name) throws AtlasException {
+    public IDataType getDataType(String name) throws AtlasException {
         if (isCoreType(name)) {
-            return cls.cast(coreTypes.get(name));
+            return coreTypes.get(name);
         }
 
         if (typeCache.has(name)) {
-            try {
-                return cls.cast(typeCache.get(name));
-            } catch (ClassCastException cce) {
-                throw new AtlasException(cce);
-            }
+            return typeCache.get(name);
         }
 
         /*
@@ -167,8 +163,8 @@ public class TypeSystem {
          */
         String arrElemType = TypeUtils.parseAsArrayType(name);
         if (arrElemType != null) {
-            IDataType dT = defineArrayType(getDataType(IDataType.class, arrElemType));
-            return cls.cast(dT);
+            IDataType dT = defineArrayType(getDataType(arrElemType));
+            return dT;
         }
 
         /*
@@ -177,8 +173,8 @@ public class TypeSystem {
         String[] mapType = TypeUtils.parseAsMapType(name);
         if (mapType != null) {
             IDataType dT =
-                    defineMapType(getDataType(IDataType.class, mapType[0]), getDataType(IDataType.class, mapType[1]));
-            return cls.cast(dT);
+                    defineMapType(getDataType(mapType[0]), getDataType(mapType[1]));
+            return dT;
         }
 
         /*
@@ -186,10 +182,20 @@ public class TypeSystem {
          */
         IDataType dT = typeCache.onTypeFault(name);
         if (dT != null) {
-            return cls.cast(dT);
+            return dT;
         }
 
         throw new TypeNotFoundException(String.format("Unknown datatype: %s", name));
+    }
+
+    public <T extends IDataType> T getDataType(Class<T> cls, String name) throws AtlasException {
+        try {
+            IDataType dt = getDataType(name);
+            return cls.cast(dt);
+        } catch (ClassCastException cce) {
+            throw new AtlasException(cce);
+        }
+
     }
 
     public StructType defineStructType(String name, boolean errorIfExists, AttributeDefinition... attrDefs)
@@ -636,14 +642,11 @@ public class TypeSystem {
 
         //get from transient types. Else, from main type system
         @Override
-        public <T> T getDataType(Class<T> cls, String name) throws AtlasException {
+        public IDataType getDataType(String name) throws AtlasException {
+
             if (transientTypes != null) {
                 if (transientTypes.containsKey(name)) {
-                    try {
-                        return cls.cast(transientTypes.get(name));
-                    } catch (ClassCastException cce) {
-                        throw new AtlasException(cce);
-                    }
+                    return transientTypes.get(name);
                 }
 
             /*
@@ -652,7 +655,7 @@ public class TypeSystem {
                 String arrElemType = TypeUtils.parseAsArrayType(name);
                 if (arrElemType != null) {
                     IDataType dT = defineArrayType(getDataType(IDataType.class, arrElemType));
-                    return cls.cast(dT);
+                    return dT;
                 }
 
             /*
@@ -662,11 +665,11 @@ public class TypeSystem {
                 if (mapType != null) {
                     IDataType dT =
                             defineMapType(getDataType(IDataType.class, mapType[0]), getDataType(IDataType.class, mapType[1]));
-                    return cls.cast(dT);
+                    return dT;
                 }
             }
 
-            return TypeSystem.this.getDataType(cls, name);
+            return TypeSystem.this.getDataType(name);
         }
 
         @Override

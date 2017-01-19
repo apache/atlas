@@ -61,8 +61,8 @@ public class AtlasTypeUtil {
     private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
     private static final Pattern TRAIT_NAME_PATTERN = Pattern.compile(TRAIT_NAME_REGEX);
 
-    private static final String InvalidTypeNameErrorMessage = "Only alphanumeric characters, numbers and '_' are allowed in names.";
-    private static final String InvalidTraitTypeNameErrorMessage = "Only alphanumeric characters, numbers, '.' and '_' are allowed in names.";
+    private static final String InvalidTypeNameErrorMessage = "Names must consist of a letter followed by a sequence of letter, number, or '_' characters.";
+    private static final String InvalidTraitTypeNameErrorMessage = "Names must consist of a leter followed by a sequence of letters,  numbers, '.', or '_' characters.";
 
     static {
         Collections.addAll(ATLAS_BUILTIN_TYPENAMES, AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES);

@@ -252,6 +252,15 @@ object TypeUtils {
         None
     }
 
+    def resolveAsDataType(id : String) : Option[IDataType[_]] = {
+       try {
+            Some(typSystem.getDataType(id))
+        } catch {
+            case _ : AtlasException => None
+        }
+
+    }
+
     def resolveAsClassType(id : String) : Option[ClassType] = {
         try {
             Some(typSystem.getDataType(classOf[ClassType], id))

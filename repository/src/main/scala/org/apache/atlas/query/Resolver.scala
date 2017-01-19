@@ -20,7 +20,8 @@ package org.apache.atlas.query
 
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.typesystem.types.IDataType
-
+import org.apache.atlas.typesystem.types.TraitType
+import org.apache.atlas.typesystem.types.ClassType
 class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expression] = Map(),
                connectClassExprToSrc: Boolean = false)
     extends PartialFunction[Expression, Expression] {
@@ -30,25 +31,37 @@ class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expressi
     def isDefinedAt(x: Expression) = true
 
     def apply(e: Expression): Expression = e match {
-        case idE@IdExpression(name) => {
+        case idE@IdExpression(name, exprType) => {
+
             val backExpr = aliases.get(name)
             if (backExpr.isDefined) {
-                return new BackReference(name, backExpr.get, None)
+                  if(backExpr.get.resolved) {
+                     return new BackReference(name, backExpr.get, None)
+                  }
+                  else {
+                    //replace once resolved
+                    return idE;
+                  }
             }
+
             if (srcExpr.isDefined) {
                 val fInfo = resolveReference(srcExpr.get.dataType, name)
                 if (fInfo.isDefined) {
                     return new FieldExpression(name, fInfo.get, None)
                 }
             }
-            val cType = resolveAsClassType(name)
-            if (cType.isDefined) {
-                return new ClassExpression(name)
-            }
-            val tType = resolveAsTraitType(name)
-            if (tType.isDefined) {
-                return new TraitExpression(name)
-            }
+
+            if(exprType.isTypeAllowed) {
+                val dt = resolveAsDataType(name);
+                if(dt.isDefined) {
+                    if(dt.get.isInstanceOf[ClassType]) {
+                         return new ClassExpression(name)
+                    }
+                    if(dt.get.isInstanceOf[TraitType]) {
+                      return new TraitExpression(name)
+                    }
+                }
+             }
             idE
         }
         case ce@ClassExpression(clsName) if connectClassExprToSrc && srcExpr.isDefined => {

@@ -73,8 +73,8 @@ trait ClosureQuery {
   sealed trait PathAttribute {
 
     def toExpr : Expression = this match {
-      case r : Relation => id(r.attributeName)
-      case rr : ReverseRelation => id(s"${rr.typeName}->${rr.attributeName}")
+      case r : Relation => fieldId(r.attributeName)
+      case rr : ReverseRelation => fieldId(s"${rr.typeName}->${rr.attributeName}")
     }
 
     def toFieldName : String = this match {
@@ -124,9 +124,9 @@ trait ClosureQuery {
 
   def selectExpr(alias : String) : List[Expression] = {
     selectAttributes.map { _.map { a =>
-      id(alias).field(a).as(s"${alias}_$a")
+      fieldId(alias).field(a).as(s"${alias}_$a")
     }
-    }.getOrElse(List(id(alias)))
+    }.getOrElse(List(fieldId(alias)))
   }
 
   /**
@@ -184,8 +184,8 @@ trait ClosureQuery {
      * foreach resultRow
      *   for each Path entry
      *     add an entry in the edges Map
-     *   add an entry for the Src AtlasVertex to the vertex Map
-     *   add an entry for the Dest AtlasVertex to the vertex Map
+     *   add an entry for the Src vertex to the vertex Map
+     *   add an entry for the Dest vertex to the vertex Map
      */
     res.rows.map(_.asInstanceOf[StructInstance]).foreach { r =>
 
@@ -207,7 +207,7 @@ trait ClosureQuery {
         }
         currVertex = nextVertex
       }
-      val AtlasVertex = r.get(TypeUtils.ResultWithPathStruct.resultAttrName)
+      val vertex = r.get(TypeUtils.ResultWithPathStruct.resultAttrName)
       vertices.put(id(srcVertex), vertexStruct(srcVertex,
         r.get(TypeUtils.ResultWithPathStruct.resultAttrName).asInstanceOf[ITypedStruct],
         s"${SRC_PREFIX}_"))
@@ -237,7 +237,7 @@ trait SingleInstanceClosureQuery[T] extends ClosureQuery {
 
   override  def srcCondition(expr : Expression) : Expression = {
     expr.where(
-      Expressions.id(attributeToSelectInstance).`=`(Expressions.literal(attributeTyp, instanceValue))
+      Expressions.fieldId(attributeToSelectInstance).`=`(Expressions.literal(attributeTyp, instanceValue))
     )
   }
 }

@@ -411,7 +411,8 @@ public abstract class BaseResourceIT {
     }
 
     protected String randomString() {
-        return RandomStringUtils.randomAlphanumeric(10);
+        //names cannot start with a digit
+        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(9);
     }
 
     protected Referenceable createHiveTableInstanceV1(String dbName, String tableName, Id dbId) throws Exception {

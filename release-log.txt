@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1386 Avoid uunnecessary type cache lookups (jnhagelb)
 ATLAS-1464 option to include only specified attributes in notification message (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1460 v2 search API updated to return name/description/owner and classification names in result (vimalsharma via mneethiraj)
 ATLAS-1434 fixed unit test to use correct type names; updated error message per review comments (ashutoshm via mneethiraj)

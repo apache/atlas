@@ -387,6 +387,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @DataProvider(name = "dslQueriesProvider")
     private Object[][] createDSLQueries() {
         return new Object[][]{
+                {"hive_db as inst where inst.name=\"Reporting\" select inst as id, inst.name", 1},
                 {"from hive_db as h select h as id", 3},
                 {"from hive_db", 3},
                 {"hive_db", 3},
