@@ -42,17 +42,33 @@ http://incubator.apache.org/projects/atlas.html
 Build Process
 =============
 
-1. Check out the code from GIT repository
+1. Get Atlas sources to your local directory, for example with following commands
+   $ cd <your-local-directory>
    $ git clone https://github.com/apache/incubator-atlas.git
-
-2. Execute the following commands to build Apache Atlas
-
    $ cd incubator-atlas
+
+2. Checkout the branch or tag you would like to build
+   # to checkout a branch
+     $ git checkout <branch>
+
+   # to checkout a tag
+     $ git checkout tags/<tag>
+
+3. Execute the following commands to build Apache Atlas
+
    $ export MAVEN_OPTS="-Xms2g -Xmx2g -XX:MaxPermSize=512M"
    $ mvn clean install
+
+   # currently few tests might fail in some environments
+   # (timing issue?), the community is reviewing and updating
+   # such tests.
+   #
+   # if you see test failures, please run the following command:
+      $ mvn clean -DskipTests install
+
    $ mvn clean package -Pdist
 
-3. After the above build commands successfully complete, you should see the following files
+4. After above build commands successfully complete, you should see the following files
 
    webapp/target/atlas-webapp-<version>.war
    addons/falcon-bridge/target/falcon-bridge-<version>.jar
