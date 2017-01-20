@@ -19,13 +19,11 @@
 define(['require',
     'backbone',
     'hbs!tmpl/tag/TagLayoutView_tmpl',
-    'collection/VTagList',
-    'collection/VEntityList',
     'utils/Utils',
     'utils/Messages',
     'utils/Globals',
     'utils/UrlLinks'
-], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages, Globals, UrlLinks) {
+], function(require, Backbone, TagLayoutViewTmpl, Utils, Messages, Globals, UrlLinks) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -44,7 +42,6 @@ define(['require',
                 createTag: "[data-id='createTag']",
                 tags: "[data-id='tags']",
                 offLineSearchTag: "[data-id='offlineSearchTag']",
-                deleteTerm: "[data-id='deleteTerm']",
                 refreshTag: '[data-id="refreshTag"]'
             },
             /** ui events hash */
@@ -53,7 +50,6 @@ define(['require',
                 events["click " + this.ui.createTag] = 'onClickCreateTag';
                 events["click " + this.ui.tags] = 'onTagList';
                 events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
-                events["click " + this.ui.deleteTerm] = 'onDeleteTerm';
                 events['click ' + this.ui.refreshTag] = 'fetchCollections';
                 return events;
             },
@@ -265,7 +261,6 @@ define(['require',
                     }
                 });
             },
-
             setUrl: function(url, create) {
                 Utils.setUrl({
                     url: url,
@@ -277,10 +272,6 @@ define(['require',
                 });
             },
             onTagList: function(e, toggle) {
-                /*if (toggle) {
-                    var assetUl = $(e.currentTarget).siblings('.tagAsset')
-                    assetUl.slideToggle("slow");
-                }*/
                 this.ui.tagsParent.find('li').removeClass("active");
                 $(e.currentTarget).addClass("active");
             },

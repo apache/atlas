@@ -39,7 +39,6 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                auditValue: "[data-id='auditValue']",
                 auditCreate: "[data-id='auditCreate']",
                 previousAuditData: "[data-id='previousAuditData']",
                 nextAuditData: "[data-id='nextAuditData']",
@@ -80,8 +79,6 @@ define(['require',
                 };
                 this.currPage = 1;
                 this.bindEvents();
-                // this.pageFrom = 1;
-                // this.pageTo = this.count;
             },
             onRender: function() {
                 $.extend(this.entityCollection.queryParams, { count: this.count });

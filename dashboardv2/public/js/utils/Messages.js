@@ -33,7 +33,8 @@ define(['require'], function(require) {
         addAttributeSuccessMessage: "Tag attribute is added successfully",
         updateTagDescriptionMessage: "Tag description is updated successfully",
         updateTermDescriptionMessage: "Term description is updated successfully",
-        editSuccessMessage: " has been updated successfully"
+        editSuccessMessage: " has been updated successfully",
+        assignDeletedEntity: " entity is deleted, Tag cannot be assign"
     };
     return Messages;
 });

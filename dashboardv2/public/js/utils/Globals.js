@@ -20,8 +20,6 @@ define(['require'], function(require) {
     'use strict';
 
     var Globals = {};
-
-    //Globals.baseURL = '/api/atlas';
     Globals.settings = {};
     Globals.settings.PAGE_SIZE = 25;
     Globals.saveApplicationState = {
@@ -38,6 +36,5 @@ define(['require'], function(require) {
         status: false,
         response: {}
     }
-
     return Globals;
 });

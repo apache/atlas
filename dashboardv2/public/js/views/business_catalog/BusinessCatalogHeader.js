@@ -31,7 +31,6 @@ define(['require',
         initialize: function(options) {
             _.extend(this, _.pick(options, 'globalVent', 'url', 'collection'));
             this.value = [];
-
         },
         /**
          * After Page Render createBrudCrum called.

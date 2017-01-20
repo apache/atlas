@@ -80,7 +80,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     success: function(data) {
                         var value = "",
                             deleteButton = "";
-
                         if (data && data.attributes) {
                             if (data.attributes.name) {
                                 value = data.attributes.name;
@@ -92,11 +91,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                         var id = "";
                         if (data.guid) {
-                            if (Enums.entityStateReadOnly[data.attributes.state]) {
+                            if (Enums.entityStateReadOnly[data.status]) {
                                 deleteButton += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                             }
                             id = data.guid;
-
                         }
                         if (value.length > 1) {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(value) + '</a>');
@@ -131,6 +129,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         id = inputOutputField.guid || inputOutputField.id,
                         tempLink = "",
                         readOnly = false;
+                    if (Enums.entityStateReadOnly[inputOutputField.status]) {
+                        readOnly = inputOutputField.status
+                    }
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         if (inputOutputField.indexOf("$") == -1) {
                             valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
@@ -169,7 +170,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             tempLink += '<div data-id="' + fetchId + '"></div>';
                         }
                     }
-
                     if (readOnly) {
                         if (!fetch) {
                             tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
@@ -364,10 +364,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         require(['models/VCatalog'], function(Vcatalog) {
             var VCatalog = new Vcatalog();
             var name = options.termName;
+            ++that.asyncFetchCounter;
             VCatalog.url = function() {
                 return "api/atlas/v1/entities/" + options.guid + "/tags/" + name;
             };
-            ++that.asyncFetchCounter;
             VCatalog.save(null, {
                 success: function(data) {
                     Utils.notifySuccess({

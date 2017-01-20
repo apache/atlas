@@ -209,9 +209,7 @@ define(['require',
                 if (value && (value.query === undefined || value.query.trim() === "")) {
                     return;
                 }
-                this.$('.fontLoader').show();
-                this.$('.searchTable').hide();
-                this.$('.searchResult').hide();
+                this.showLoader();
                 if (Globals.searchApiCallRef) {
                     Globals.searchApiCallRef.abort();
                 }
@@ -312,9 +310,7 @@ define(['require',
             checkTableFetch: function() {
                 if (this.asyncFetchCounter <= 0) {
                     this.$('div[data-id="r_tableSpinner"]').removeClass('show');
-                    this.$('.fontLoader').hide();
-                    this.$('.searchTable').show();
-                    this.$('.searchResult').show();
+                    this.hideLoader();
                 }
             },
             getEntityTableColumns: function() {
@@ -453,7 +449,9 @@ define(['require',
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
-                                    nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                    if (Globals.entityCrud) {
+                                        nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                    }
                                     return nameHtml;
                                 }
                             }
@@ -563,15 +561,23 @@ define(['require',
                             that.fetchCollection();
                             that.arr = [];
                         },
-                        showLoader: function() {
-                            that.$('.fontLoader').show();
-                            that.$('.searchTable').hide();
-                        }
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that)
                     });
                     // view.saveTagData = function() {
                     //override saveTagData function 
                     // }
                 });
+            },
+            showLoader: function() {
+                this.$('.fontLoader').show();
+                this.$('.searchTable').hide();
+                this.$('.searchResult').hide();
+            },
+            hideLoader: function() {
+                this.$('.fontLoader').hide();
+                this.$('.searchTable').show();
+                this.$('.searchResult').show();
             },
             checkedValue: function(e) {
                 var guid = "",
@@ -605,10 +611,8 @@ define(['require',
                             that.fetchCollection();
                             that.arr = [];
                         },
-                        showLoader: function() {
-                            that.$('.fontLoader').show();
-                            that.$('.searchTable').hide();
-                        }
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that)
                     });
                 });
             },

@@ -23,8 +23,9 @@ define(['require',
     'modules/Modal',
     'collection/VCatalogList',
     'utils/CommonViewFunction',
-    'utils/Messages'
-], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList, CommonViewFunction, Messages) {
+    'utils/Messages',
+    'utils/Enums'
+], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList, CommonViewFunction, Messages, Enums) {
     'use strict';
 
     var AddTermToEntityLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -50,7 +51,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'modalCollection', 'callback', 'multiple', 'showLoader'));
+                _.extend(this, _.pick(options, 'guid', 'modalCollection', 'callback', 'multiple', 'showLoader', 'hideLoader'));
                 this.vCatalogList = new VCatalogList();
                 var that = this;
                 this.modal = new Modal({
@@ -73,9 +74,21 @@ define(['require',
                             }
                             var obj = {
                                 termName: termName,
-                                guid: that.multiple[i].id.id
+                                guid: that.multiple[i].id.id,
+                                deletedEntity: Enums.entityStateReadOnly[that.multiple[i].id.state],
+                                entityName: that.multiple[i].model.get('name')
                             };
-                            CommonViewFunction.saveTermToAsset(obj, that);
+                            if (obj.deletedEntity) {
+                                Utils.notifyError({
+                                    content: obj.entityName + Messages.assignDeletedEntity
+                                });
+                                if (that.multiple.length === 1 || (that.multiple.length == (i + 1) && that.asyncFetchCounter == 0)) {
+                                    that.hideLoader();
+                                }
+                            } else {
+                                CommonViewFunction.saveTermToAsset(obj, that);
+                            }
+
                         }
                     } else {
                         that.asyncFetchCounter = 0;

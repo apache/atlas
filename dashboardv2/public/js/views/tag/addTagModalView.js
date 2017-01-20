@@ -23,8 +23,10 @@ define(['require',
     'modules/Modal',
     'models/VEntity',
     'utils/Utils',
-    'utils/UrlLinks'
-], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks) {
+    'utils/UrlLinks',
+    'utils/Enums',
+    'utils/Messages',
+], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages) {
     'use strict';
 
     var AddTagModel = Marionette.LayoutView.extend({
@@ -46,7 +48,7 @@ define(['require',
          */
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader'));
+            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader'));
             this.collection = new VTagList();
             this.commonCollection = new VTagList();
             this.asyncAttrFetchCounter = 0;
@@ -76,9 +78,20 @@ define(['require',
                         var obj = {
                             tagName: tagName,
                             tagAttributes: tagAttributes,
-                            guid: (_.isObject(that.multiple[i].id) ? that.multiple[i].id.id : that.multiple[i].id)
+                            guid: (_.isObject(that.multiple[i].id) ? that.multiple[i].id.id : that.multiple[i].id),
+                            deletedEntity: Enums.entityStateReadOnly[that.multiple[i].id.state],
+                            entityName: that.multiple[i].model.get('name')
                         }
-                        that.saveTagData(obj);
+                        if (obj.deletedEntity) {
+                            Utils.notifyError({
+                                content: obj.entityName + Messages.assignDeletedEntity
+                            });
+                            if (that.multiple.length === 1 || (that.multiple.length == (i + 1) && that.asyncFetchCounter == 0)) {
+                                that.hideLoader();
+                            }
+                        } else {
+                            that.saveTagData(obj);
+                        }
                     }
                 } else {
                     that.asyncFetchCounter = 0;

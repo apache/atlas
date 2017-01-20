@@ -67,7 +67,9 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = 'onClickEditEntity';
+                if (Globals.entityCrud) {
+                    events["click " + this.ui.editButton] = 'onClickEditEntity';
+                }
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         var scope = $(e.currentTarget);
@@ -111,8 +113,14 @@ define(['require',
                     var collectionJSON = this.collection.first().toJSON();
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
+                        this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
                     } else {
                         var tagGuid = this.id;
+                    }
+                    if (this.readOnly) {
+                        this.$el.addClass('readOnly');
+                    } else {
+                        this.$el.removeClass('readOnly');
                     }
                     if (collectionJSON) {
                         if (collectionJSON.attributes) {

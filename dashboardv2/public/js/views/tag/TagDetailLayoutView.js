@@ -72,9 +72,7 @@ define(['require',
                         collection: that.collection
                     }));
                 });
-            },
-
-
+            }
         });
     return TagDetailLayoutView;
 });

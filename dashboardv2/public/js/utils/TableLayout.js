@@ -181,30 +181,6 @@ define(['require',
                     this.collection.trigger("sort");
                 });
 
-                /*this.listenTo(this.collection, 'remove', function(model, collection, response){
-                    if (model.isNew() || !this.includePagination) {
-                        return;
-                    }
-                    if (this.collection.state && this.collection.state.totalRecords>0) {
-                        this.collection.state.totalRecords-=1;
-                    }
-                    if (this.collection.length===0 && this.collection.state && this.collection.state.totalRecords>0) {
-
-                        if (this.collection.state.totalRecords>this.collection.state.currentPage*this.collection.state.pageSize) {
-                            this.collection.fetch({reset:true});
-                        } else {
-                            if (this.collection.state.currentPage>0) {
-                                this.collection.state.currentPage-=1;
-                                this.collection.fetch({reset:true});
-                            }
-                        }
-
-                    } else if (this.collection.length===0 && this.collection.state && this.collection.state.totalRecords===0) {
-                        this.collection.state.currentPage=0;
-                        this.collection.fetch({reset:true});
-                    }
-                }, this);*/
-
                 // It will show tool tip when td has ellipsis  Property
                 this.listenTo(this.collection, "backgrid:refresh", function() {
                     /*this.$('.table td').bind('mouseenter', function() {

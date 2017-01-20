@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1437 UI update to disallow tag association changes to deleted entities (Kalyanikashikar via mneethiraj)
 ATLAS-1352 fix for error in redirecting to Knox gateway URL (nixonrodrigues via mneethiraj)
 ATLAS-1467 instance create/full-Update implementation (sumasai via mneethiraj)
 ATLAS-1463 option to exclude specific entity attributes in audit records (sarath.kum4r@gmail.com via mneethiraj)
