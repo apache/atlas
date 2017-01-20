@@ -50,6 +50,9 @@ public abstract class AtlasType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
+    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    }
+
     public String getTypeName() { return typeName; }
 
     public TypeCategory getTypeCategory() { return typeCategory; }

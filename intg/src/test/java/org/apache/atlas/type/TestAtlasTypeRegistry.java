@@ -46,7 +46,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefValidSuperTypes() {
+    public void testClassificationDefValidHierarchy() {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -102,6 +102,14 @@ public class TestAtlasTypeRegistry {
         validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
         validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
 
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
+        validateSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L2-1", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-2", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-3", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-4", new HashSet<String>());
+
         validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
         validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
         validateAttributeNames(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1")));
@@ -112,7 +120,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testClassificationDefInvalidSuperTypes_Self() {
+    public void testClassificationDefInvalidHierarchy_Self() {
         AtlasClassificationDef classifiDef1 = new AtlasClassificationDef("classifiDef-1");
 
         classifiDef1.addSuperType(classifiDef1.getName());
@@ -141,7 +149,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefInvalidSuperTypes_CircularRef() {
+    public void testClassificationDefInvalidHierarchy_CircularRef() {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -191,7 +199,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefValidSuperTypes() {
+    public void testEntityDefValidHierarchy() {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
@@ -247,6 +255,14 @@ public class TestAtlasTypeRegistry {
         validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
         validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
 
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
+        validateSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L2-1", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-2", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-3", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L2-4", new HashSet<String>());
+
         validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
         validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
         validateAttributeNames(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1")));
@@ -257,7 +273,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testEntityDefInvalidSuperTypes_Self() {
+    public void testEntityDefInvalidHierarchy_Self() {
         AtlasEntityDef entDef1 = new AtlasEntityDef("entDef-1");
 
         entDef1.addSuperType(entDef1.getName());
@@ -286,7 +302,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefInvalidSuperTypes_CircularRef() {
+    public void testEntityDefInvalidHierarchy_CircularRef() {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
@@ -345,6 +361,27 @@ public class TestAtlasTypeRegistry {
         }
 
         assertEquals(superTypes, expectedSuperTypes);
+    }
+
+    private void validateSubTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSubTypes) {
+        AtlasType type = null;
+
+        try {
+            type = typeRegistry.getType(typeName);
+        } catch (AtlasBaseException excp) {
+        }
+
+        Set<String> subTypes = null;
+
+        if (type != null) {
+            if (type instanceof AtlasEntityType) {
+                subTypes = ((AtlasEntityType) type).getAllSubTypes();
+            } else if (type instanceof AtlasClassificationType) {
+                subTypes = ((AtlasClassificationType) type).getAllSubTypes();
+            }
+        }
+
+        assertEquals(subTypes, expectedSubTypes);
     }
 
     private void validateAttributeNames(AtlasTypeRegistry typeRegistry, String typeName, Set<String> attributeNames) {

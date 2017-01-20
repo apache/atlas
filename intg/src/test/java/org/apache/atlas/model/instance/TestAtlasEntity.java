@@ -26,6 +26,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 
@@ -35,17 +36,17 @@ public class TestAtlasEntity {
     public void testEntitySerDe() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDef();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
-        AtlasType         dataType     = typeRegistry.getType(entityDef.getName());
+        AtlasEntityType   entityType   = typeRegistry.getEntityTypeByName(entityDef.getName());
 
-        assertTrue(dataType instanceof  AtlasEntityType);
+        assertNotNull(entityType);
 
-        AtlasEntity ent1 =  ((AtlasEntityType)dataType).createDefaultValue();
+        AtlasEntity ent1 =  entityType.createDefaultValue();
 
         String jsonString = AtlasType.toJson(ent1);
 
         AtlasEntity ent2 = AtlasType.fromJson(jsonString, AtlasEntity.class);
 
-        ((AtlasEntityType)dataType).normalizeAttributeValues(ent2);
+        entityType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasEntity");
     }
@@ -54,17 +55,17 @@ public class TestAtlasEntity {
     public void testEntitySerDeWithSuperType() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDefWithSuperType();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
-        AtlasType         dataType     = typeRegistry.getType(entityDef.getName());
+        AtlasEntityType   entityType   = typeRegistry.getEntityTypeByName(entityDef.getName());
 
-        assertTrue(dataType instanceof  AtlasEntityType);
+        assertNotNull(entityType);
 
-        AtlasEntity ent1 =  ((AtlasEntityType)dataType).createDefaultValue();
+        AtlasEntity ent1 =  entityType.createDefaultValue();
 
         String jsonString = AtlasType.toJson(ent1);
 
         AtlasEntity ent2 = AtlasType.fromJson(jsonString, AtlasEntity.class);
 
-        ((AtlasEntityType)dataType).normalizeAttributeValues(ent2);
+        entityType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasEntity with superType");
     }
@@ -73,17 +74,17 @@ public class TestAtlasEntity {
     public void testEntitySerDeWithSuperTypes() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDefWithSuperTypes();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
-        AtlasType         dataType     = typeRegistry.getType(entityDef.getName());
+        AtlasEntityType   entityType   = typeRegistry.getEntityTypeByName(entityDef.getName());
 
-        assertTrue(dataType instanceof  AtlasEntityType);
+        assertNotNull(entityType);
 
-        AtlasEntity ent1 =  ((AtlasEntityType)dataType).createDefaultValue();
+        AtlasEntity ent1 =  entityType.createDefaultValue();
 
         String jsonString = AtlasType.toJson(ent1);
 
         AtlasEntity ent2 = AtlasType.fromJson(jsonString, AtlasEntity.class);
 
-        ((AtlasEntityType)dataType).normalizeAttributeValues(ent2);
+        entityType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasEntity with superTypes");
     }

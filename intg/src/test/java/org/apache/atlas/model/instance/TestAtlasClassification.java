@@ -26,6 +26,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 
@@ -33,11 +34,11 @@ public class TestAtlasClassification {
 
     @Test
     public void testClassificationSerDe() throws AtlasBaseException {
-        AtlasClassificationDef classificationDef = ModelTestUtil.getClassificationDef();
-        AtlasTypeRegistry      typeRegistry      = ModelTestUtil.getTypesRegistry();
-        AtlasType              dataType          = typeRegistry.getType(classificationDef.getName());
+        AtlasClassificationDef  classificationDef  = ModelTestUtil.getClassificationDef();
+        AtlasTypeRegistry       typeRegistry       = ModelTestUtil.getTypesRegistry();
+        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationDef.getName());
 
-        assertTrue(dataType instanceof  AtlasClassificationType);
+        assertNotNull(classificationType);
 
         AtlasClassification ent1 = ModelTestUtil.newClassification(classificationDef, typeRegistry);
 
@@ -45,45 +46,45 @@ public class TestAtlasClassification {
 
         AtlasClassification ent2 = AtlasType.fromJson(jsonString, AtlasClassification.class);
 
-        ((AtlasClassificationType)dataType).normalizeAttributeValues(ent2);
+        classificationType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasClassification");
     }
 
     @Test
     public void testClassificationSerDeWithSuperType() throws AtlasBaseException {
-        AtlasClassificationDef classificationDef = ModelTestUtil.getClassificationDefWithSuperType();
-        AtlasTypeRegistry      typeRegistry      = ModelTestUtil.getTypesRegistry();
-        AtlasType              dataType          = typeRegistry.getType(classificationDef.getName());
+        AtlasClassificationDef  classificationDef  = ModelTestUtil.getClassificationDefWithSuperType();
+        AtlasTypeRegistry       typeRegistry       = ModelTestUtil.getTypesRegistry();
+        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationDef.getName());
 
-        assertTrue(dataType instanceof AtlasClassificationType);
+        assertNotNull(classificationType);
 
-        AtlasClassification ent1 =  ((AtlasClassificationType)dataType).createDefaultValue();
+        AtlasClassification ent1 =  classificationType.createDefaultValue();
 
         String jsonString = AtlasType.toJson(ent1);
 
         AtlasClassification ent2 = AtlasType.fromJson(jsonString, AtlasClassification.class);
 
-        ((AtlasClassificationType)dataType).normalizeAttributeValues(ent2);
+        classificationType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasClassification with superType");
     }
 
     @Test
     public void testClassificationSerDeWithSuperTypes() throws AtlasBaseException {
-        AtlasClassificationDef classificationDef = ModelTestUtil.getClassificationDefWithSuperTypes();
-        AtlasTypeRegistry      typeRegistry      = ModelTestUtil.getTypesRegistry();
-        AtlasType              dataType          = typeRegistry.getType(classificationDef.getName());
+        AtlasClassificationDef  classificationDef  = ModelTestUtil.getClassificationDefWithSuperTypes();
+        AtlasTypeRegistry       typeRegistry       = ModelTestUtil.getTypesRegistry();
+        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationDef.getName());
 
-        assertTrue(dataType instanceof  AtlasClassificationType);
+        assertNotNull(classificationType);
 
-        AtlasClassification ent1 =  ((AtlasClassificationType)dataType).createDefaultValue();
+        AtlasClassification ent1 =  classificationType.createDefaultValue();
 
         String jsonString = AtlasType.toJson(ent1);
 
         AtlasClassification ent2 = AtlasType.fromJson(jsonString, AtlasClassification.class);
 
-        ((AtlasClassificationType)dataType).normalizeAttributeValues(ent2);
+        classificationType.normalizeAttributeValues(ent2);
 
         assertEquals(ent2, ent1, "Incorrect serialization/deserialization of AtlasClassification with superTypes");
     }

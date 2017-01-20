@@ -45,8 +45,9 @@ public class AtlasEntityType extends AtlasStructType {
 
     private final AtlasEntityDef entityDef;
 
-    private List<AtlasEntityType>          superTypes        = Collections.emptyList();
-    private Set<String>                    allSuperTypes     = Collections.emptySet();
+    private List<AtlasEntityType> superTypes    = Collections.emptyList();
+    private Set<String>           allSuperTypes = Collections.emptySet();
+    private Set<String>           allSubTypes   = Collections.emptySet();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -68,8 +69,8 @@ public class AtlasEntityType extends AtlasStructType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
-        List<AtlasEntityType>          s    = new ArrayList<>();
-        Set<String>                    allS = new HashSet<>();
+        List<AtlasEntityType>       s    = new ArrayList<>();
+        Set<String>                 allS = new HashSet<>();
         Map<String, AtlasAttribute> allA    = new HashMap<>();
 
         getTypeHierarchyInfo(typeRegistry, allS, allA);
@@ -84,9 +85,24 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        this.superTypes        = Collections.unmodifiableList(s);
-        this.allSuperTypes     = Collections.unmodifiableSet(allS);
-        this.allAttributes     = Collections.unmodifiableMap(allA);
+        this.superTypes    = Collections.unmodifiableList(s);
+        this.allSuperTypes = Collections.unmodifiableSet(allS);
+        this.allAttributes = Collections.unmodifiableMap(allA);
+        this.allSubTypes   = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+    }
+
+    @Override
+    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        super.resolveReferencesPhase2(typeRegistry);
+
+        for (String superTypeName : allSuperTypes) {
+            AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
+            superType.addSubType(this);
+        }
+    }
+
+    private void addSubType(AtlasEntityType subType) {
+        allSubTypes.add(subType.getTypeName());
     }
 
     public Set<String> getSuperTypes() {
@@ -97,8 +113,16 @@ public class AtlasEntityType extends AtlasStructType {
         return allSuperTypes;
     }
 
+    public Set<String> getAllSubTypes() {
+        return allSubTypes;
+    }
+
     public boolean isSuperTypeOf(AtlasEntityType entityType) {
-        return entityType != null && entityType.getAllSuperTypes().contains(this.getTypeName());
+        return entityType != null && allSubTypes.contains(entityType.getTypeName());
+    }
+
+    public boolean isSuperTypeOf(String entityTypeName) {
+        return StringUtils.isNotEmpty(entityTypeName) && allSubTypes.contains(entityTypeName);
     }
 
     public boolean isSubTypeOf(AtlasEntityType entityType) {
@@ -238,10 +262,9 @@ public class AtlasEntityType extends AtlasStructType {
         if (CollectionUtils.isNotEmpty(entityDef.getSuperTypes())) {
             visitedTypes.add(entityDef.getName());
             for (String superTypeName : entityDef.getSuperTypes()) {
-                AtlasType type = typeRegistry.getType(superTypeName);
+                AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
 
-                if (type instanceof AtlasEntityType) {
-                    AtlasEntityType superType = (AtlasEntityType) type;
+                if (superType != null) {
                     superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, visitedTypes);
                 }
             }
@@ -263,11 +286,7 @@ public class AtlasEntityType extends AtlasStructType {
             return false;
         } else {
             String typeName = objId.getTypeName();
-            if (!typeName.equals(getTypeName())) {
-                //TODO - Enable below after enabling subType check
-//                        if ( !isSuperTypeOf(typeName)) {
-//                            return false;
-//                        }
+            if (!typeName.equals(getTypeName()) && !isSuperTypeOf(typeName)) {
                 return false;
             }
         }

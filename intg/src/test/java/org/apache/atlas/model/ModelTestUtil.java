@@ -302,14 +302,12 @@ public final class  ModelTestUtil {
     public static AtlasEntity newEntity(AtlasEntityDef entityDef, AtlasTypeRegistry typesRegistry) {
         AtlasEntity ret = null;
 
-        try {
-            AtlasType dataType = typesRegistry.getType(entityDef.getName());
+        AtlasEntityType entityType = typesRegistry.getEntityTypeByName(entityDef.getName());
 
-            if (dataType instanceof AtlasEntityType) {
-                ret = ((AtlasEntityType) dataType).createDefaultValue();
-            }
-        } catch (AtlasBaseException excp) {
-            LOG.error("failed to get entity-type {}", entityDef.getName(), excp);
+        if (entityType != null) {
+            ret = entityType.createDefaultValue();
+        } else {
+            LOG.error("failed to get entity-type {}", entityDef.getName());
         }
 
         return ret;
@@ -322,14 +320,12 @@ public final class  ModelTestUtil {
     public static AtlasStruct newStruct(AtlasStructDef structDef, AtlasTypeRegistry typesRegistry) {
         AtlasStruct ret = null;
 
-        try {
-            AtlasType dataType = typesRegistry.getType(structDef.getName());
+        AtlasStructType structType = typesRegistry.getStructTypeByName(structDef.getName());
 
-            if (dataType instanceof AtlasStructType) {
-                ret = ((AtlasStructType)dataType).createDefaultValue();
-            }
-        } catch (AtlasBaseException excp) {
-            LOG.error("failed to get struct-type {}", structDef.getName(), excp);
+        if (structType != null) {
+            ret = structType.createDefaultValue();
+        } else {
+            LOG.error("failed to get struct-type {}", structDef.getName());
         }
 
         return ret;
@@ -343,14 +339,12 @@ public final class  ModelTestUtil {
                                                         AtlasTypeRegistry typesRegistry) {
         AtlasClassification ret = null;
 
-        try {
-            AtlasType dataType = typesRegistry.getType(classificationDef.getName());
+        AtlasClassificationType classificationType = typesRegistry.getClassificationTypeByName(classificationDef.getName());
 
-            if (dataType instanceof AtlasClassificationType) {
-                ret = ((AtlasClassificationType)dataType).createDefaultValue();
-            }
-        } catch (AtlasBaseException excp) {
-            LOG.error("failed to get classification-type {}", classificationDef.getName(), excp);
+        if (classificationType != null) {
+            ret = classificationType.createDefaultValue();
+        } else {
+            LOG.error("failed to get classification-type {}", classificationDef.getName());
         }
 
         return ret;

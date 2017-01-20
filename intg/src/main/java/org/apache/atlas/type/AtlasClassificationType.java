@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +45,9 @@ public class AtlasClassificationType extends AtlasStructType {
 
     private final AtlasClassificationDef classificationDef;
 
-    private List<AtlasClassificationType>  superTypes        = Collections.emptyList();
-    private Set<String>                    allSuperTypes     = Collections.emptySet();
+    private List<AtlasClassificationType>  superTypes    = Collections.emptyList();
+    private Set<String>                    allSuperTypes = Collections.emptySet();
+    private Set<String>                    allSubTypes   = Collections.emptySet();
 
     public AtlasClassificationType(AtlasClassificationDef classificationDef) {
         super(classificationDef);
@@ -68,9 +70,9 @@ public class AtlasClassificationType extends AtlasStructType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
-        List<AtlasClassificationType>  s    = new ArrayList<>();
-        Set<String>                    allS = new HashSet<>();
-        Map<String, AtlasAttribute> allA    = new HashMap<>();
+        List<AtlasClassificationType> s    = new ArrayList<>();
+        Set<String>                   allS = new HashSet<>();
+        Map<String, AtlasAttribute>   allA = new HashMap<>();
 
         getTypeHierarchyInfo(typeRegistry, allS, allA);
 
@@ -85,9 +87,24 @@ public class AtlasClassificationType extends AtlasStructType {
             }
         }
 
-        this.superTypes        = Collections.unmodifiableList(s);
-        this.allSuperTypes     = Collections.unmodifiableSet(allS);
-        this.allAttributes     = Collections.unmodifiableMap(allA);
+        this.superTypes    = Collections.unmodifiableList(s);
+        this.allSuperTypes = Collections.unmodifiableSet(allS);
+        this.allAttributes = Collections.unmodifiableMap(allA);
+        this.allSubTypes   = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+    }
+
+    @Override
+    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        super.resolveReferencesPhase2(typeRegistry);
+
+        for (String superTypeName : allSuperTypes) {
+            AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
+            superType.addSubType(this);
+        }
+    }
+
+    private void addSubType(AtlasClassificationType subType) {
+        allSubTypes.add(subType.getTypeName());
     }
 
     public Set<String> getSuperTypes() {
@@ -96,12 +113,24 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public Set<String> getAllSuperTypes() { return allSuperTypes; }
 
+    public Set<String> getAllSubTypes() {
+        return allSubTypes;
+    }
+
     public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
-        return classificationType != null && classificationType.getAllSuperTypes().contains(this.getTypeName());
+        return classificationType != null && allSubTypes.contains(classificationType.getTypeName());
+    }
+
+    public boolean isSuperTypeOf(String classificationName) {
+        return StringUtils.isNotEmpty(classificationName) && allSubTypes.contains(classificationName);
     }
 
     public boolean isSubTypeOf(AtlasClassificationType classificationType) {
         return classificationType != null && allSuperTypes.contains(classificationType.getTypeName());
+    }
+
+    public boolean isSubTypeOf(String classificationName) {
+        return StringUtils.isNotEmpty(classificationName) && allSuperTypes.contains(classificationName);
     }
 
     @Override
@@ -217,11 +246,9 @@ public class AtlasClassificationType extends AtlasStructType {
         if (CollectionUtils.isNotEmpty(classificationDef.getSuperTypes())) {
             visitedTypes.add(classificationDef.getName());
             for (String superTypeName : classificationDef.getSuperTypes()) {
-                AtlasType type = typeRegistry.getType(superTypeName);
+                AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
 
-                if (type instanceof AtlasClassificationType) {
-                    AtlasClassificationType superType = (AtlasClassificationType) type;
-
+                if (superType != null) {
                     superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, visitedTypes);
                 }
             }
