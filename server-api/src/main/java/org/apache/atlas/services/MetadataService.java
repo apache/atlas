@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
+import org.apache.atlas.utils.ParamChecker;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
@@ -220,6 +221,15 @@ public interface MetadataService {
      * @throws AtlasException if unable to add the trait instance
      */
     void addTrait(String guid, ITypedStruct traitInstance) throws AtlasException;
+
+
+    /**
+     * Adds a new trait to a list of existing entities represented by their respective guids
+     * @param entityGuids   list of guids of entities
+     * @param traitInstance trait instance json that needs to be added to entities
+     * @throws AtlasException
+     */
+    void addTrait(List<String> entityGuids, ITypedStruct traitInstance) throws AtlasException;
 
     /**
      * Create a typed trait instance.

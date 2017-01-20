@@ -23,9 +23,11 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -33,6 +35,7 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.rest.EntitiesREST;
 
+import org.apache.atlas.web.rest.EntityREST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -45,6 +48,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,6 +62,9 @@ public class TestEntitiesREST {
 
     @Inject
     private EntitiesREST entitiesREST;
+
+    @Inject
+    private EntityREST entityREST;
 
     private List<String> createdGuids = new ArrayList<>();
 
@@ -103,6 +110,18 @@ public class TestEntitiesREST {
 
         for (AtlasEntityHeader header : guids) {
             createdGuids.add(header.getGuid());
+        }
+    }
+
+    @Test(dependsOnMethods = "testCreateOrUpdateEntities")
+    public void testTagToMultipleEntities() throws Exception{
+        AtlasClassification tag = new AtlasClassification(TestUtilsV2.CLASSIFICATION, new HashMap<String, Object>() {{ put("tag", "tagName"); }});
+        ClassificationAssociateRequest classificationAssociateRequest = new ClassificationAssociateRequest(createdGuids, tag);
+        entitiesREST.addClassification(classificationAssociateRequest);
+        for (String guid : createdGuids) {
+            final AtlasClassification result_tag = entityREST.getClassification(guid, TestUtilsV2.CLASSIFICATION);
+            Assert.assertNotNull(result_tag);
+            Assert.assertEquals(result_tag, tag);
         }
     }
 

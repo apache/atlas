@@ -71,7 +71,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -565,6 +564,39 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     public List<String> getTraitNames(String guid) throws AtlasException {
         guid = ParamChecker.notEmpty(guid, "entity id");
         return repository.getTraitNames(guid);
+    }
+
+    /**
+     * Adds a new trait to the list of existing entities represented by their respective guids
+     * @param entityGuids   list of guids of entities
+     * @param traitInstance trait instance json that needs to be added to entities
+     * @throws AtlasException
+     */
+    @Override
+    public void addTrait(List<String> entityGuids, ITypedStruct traitInstance) throws AtlasException {
+        Preconditions.checkNotNull(entityGuids, "entityGuids list cannot be null");
+        Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+
+        final String traitName = traitInstance.getTypeName();
+
+        // ensure trait type is already registered with the TypeSystem
+        if (!typeSystem.isRegistered(traitName)) {
+            String msg = String.format("trait=%s should be defined in type system before it can be added", traitName);
+            LOG.error(msg);
+            throw new TypeNotFoundException(msg);
+        }
+
+        //ensure trait is not already registered with any of the given entities
+        for (String entityGuid : entityGuids) {
+            Preconditions.checkArgument(!getTraitNames(entityGuid).contains(traitName),
+                    "trait=%s is already defined for entity=%s", traitName, entityGuid);
+        }
+
+        repository.addTrait(entityGuids, traitInstance);
+
+        for (String entityGuid : entityGuids) {
+            onTraitAddedToEntity(repository.getEntityDefinition(entityGuid), traitInstance);
+        }
     }
 
     /**

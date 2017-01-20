@@ -225,6 +225,26 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return GraphHelper.getTraitNames(instanceVertex);
     }
 
+    /**
+     * Adds a new trait to the list of entities represented by their respective guids
+     * @param entityGuids   list of globally unique identifier for the entities
+     * @param traitInstance trait instance that needs to be added to entities
+     * @throws RepositoryException
+     */
+    @Override
+    @GraphTransaction
+    public void addTrait(List<String> entityGuids, ITypedStruct traitInstance) throws RepositoryException {
+        Preconditions.checkNotNull(entityGuids, "entityGuids list cannot be null");
+        Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding a new trait={} for entities={}", traitInstance.getTypeName(), entityGuids);
+        }
+
+        for (String entityGuid : entityGuids) {
+            addTraitImpl(entityGuid, traitInstance);
+        }
+    }
 
     /**
      * Adds a new trait to an existing entity represented by a guid.
@@ -236,7 +256,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public void addTrait(String guid, ITypedStruct traitInstance) throws RepositoryException {
+        Preconditions.checkNotNull(guid, "guid cannot be null");
         Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+
+        addTraitImpl(guid, traitInstance);
+    }
+
+    private void addTraitImpl(String guid, ITypedStruct traitInstance) throws RepositoryException {
         final String traitName = traitInstance.getTypeName();
 
         if (LOG.isDebugEnabled()) {
@@ -259,7 +285,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                     RequestContext.get().getRequestTime());
             GraphHelper.setProperty(instanceVertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
-            
+
         } catch (RepositoryException e) {
             throw e;
         } catch (Exception e) {

@@ -146,6 +146,14 @@ public interface MetadataRepository {
     void addTrait(String guid, ITypedStruct traitInstance) throws RepositoryException;
 
     /**
+     * Adds a new trait to a list of entities represented by their respective guids
+     * @param entityGuids   list of globally unique identifier for the entities
+     * @param traitInstance trait instance that needs to be added to entities
+     * @throws RepositoryException
+     */
+    void addTrait(List<String> entityGuids, ITypedStruct traitInstance) throws RepositoryException;
+
+    /**
      * Deletes a given trait from an existing entity represented by a guid.
      *
      * @param guid                 globally unique identifier for the entity

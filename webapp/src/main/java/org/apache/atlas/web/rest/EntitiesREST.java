@@ -22,15 +22,19 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.web.adapters.AtlasInstanceRestAdapters;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +50,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -182,6 +187,37 @@ public class EntitiesREST {
         }
 
         return entityHeaders;
+    }
+
+    /**
+     * Bulk API to associate a tag to multiple entities
+     *
+     */
+    @POST
+    @Path("/classification")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void addClassification(ClassificationAssociateRequest request) throws AtlasBaseException {
+        AtlasClassification classification = request == null ? null : request.getClassification();
+        List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
+
+        if (classification == null || StringUtils.isEmpty(classification.getTypeName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
+        }
+
+        if (CollectionUtils.isEmpty(entityGuids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty entity list");
+        }
+
+        final ITypedStruct trait = restAdapters.getTrait(classification);
+
+        try {
+            metadataService.addTrait(entityGuids, trait);
+        } catch (IllegalArgumentException e) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
+        } catch (AtlasException e) {
+            throw toAtlasBaseException(e);
+        }
     }
 
     private SearchFilter getSearchFilter() {
