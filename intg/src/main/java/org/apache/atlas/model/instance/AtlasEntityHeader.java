@@ -18,6 +18,7 @@
 package org.apache.atlas.model.instance;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +50,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String guid       = null;
-    private AtlasEntity.Status status     = AtlasEntity.Status.STATUS_ACTIVE;
+    private AtlasEntity.Status status     = AtlasEntity.Status.ACTIVE;
     private String displayText = null;
 
     public AtlasEntityHeader() {
@@ -66,10 +67,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public AtlasEntityHeader(String typeName, Map<String, Object> attributes) {
         super(typeName, attributes);
-
-        setGuid(null);
-        setStatus(null);
     }
+
+
+    public AtlasEntityHeader(String typeName, String guid,  Map<String, Object> attributes) {
+        super(typeName, attributes);
+        setGuid(guid);
+    }
+
 
     public AtlasEntityHeader(AtlasEntityHeader other) {
         super(other);

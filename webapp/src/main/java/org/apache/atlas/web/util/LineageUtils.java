@@ -69,7 +69,7 @@ public final class LineageUtils {
                     TypeSystem.IdType   idType      = TypeSystem.getInstance().getIdType();
 
                     vertexIdMap.put(idType.idAttrName(), guid);
-                    vertexIdMap.put(idType.stateAttrName(), (entityHeader.getStatus() == AtlasEntity.Status.STATUS_ACTIVE) ? "ACTIVE" : "DELETED");
+                    vertexIdMap.put(idType.stateAttrName(), (entityHeader.getStatus() == AtlasEntity.Status.ACTIVE) ? "ACTIVE" : "DELETED");
                     vertexIdMap.put(idType.typeNameAttrName(), entityHeader.getTypeName());
 
                     Map<String, Object> values = new HashMap<>();

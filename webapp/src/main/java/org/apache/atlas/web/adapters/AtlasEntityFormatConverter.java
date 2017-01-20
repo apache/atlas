@@ -109,9 +109,9 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
     }
 
     private AtlasEntity.Status convertState(EntityState state){
-        Status status = Status.STATUS_ACTIVE;
+        Status status = Status.ACTIVE;
         if(state != null && state.equals(EntityState.DELETED)){
-            status = Status.STATUS_DELETED;
+            status = Status.DELETED;
         }
         LOG.debug("Setting state to {}", state);
         return status;

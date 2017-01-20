@@ -79,7 +79,7 @@ public class TestEntityREST {
         final EntityMutationResponse response = entityREST.createOrUpdate(dbEntity);
 
         Assert.assertNotNull(response);
-        List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE);
+        List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
 
         Assert.assertNotNull(entitiesMutated);
         Assert.assertEquals(entitiesMutated.size(), 1);
@@ -160,7 +160,7 @@ public class TestEntityREST {
         dbEntity.setAttribute(TestUtilsV2.NAME, updatedDBName);
 
         final EntityMutationResponse response = entityREST.partialUpdateByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, prevDBName, dbEntity);
-        String dbGuid = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).get(0).getGuid();
+        String dbGuid = response.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).get(0).getGuid();
         Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
 
         //Get By unique attribute

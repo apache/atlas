@@ -967,7 +967,7 @@ public final class GraphHelper {
         instanceVertex.setListProperty(actualPropertyName, value);        
     }
     
-    public static List<String> getListProperty(AtlasVertex instanceVertex, String propertyName) throws AtlasException {
+    public static List<String> getListProperty(AtlasVertex instanceVertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         return instanceVertex.getListProperty(actualPropertyName);    
     }

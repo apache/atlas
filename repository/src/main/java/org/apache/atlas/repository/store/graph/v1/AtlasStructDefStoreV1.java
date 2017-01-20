@@ -390,13 +390,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         List<String> attrNames = new ArrayList<>(structDef.getAttributeDefs().size());
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            String propertyKey = AtlasGraphUtilsV1.getPropertyKey(structDef, attributeDef.getName());
+            String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef, attributeDef.getName());
 
             AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef, structType));
 
             attrNames.add(attributeDef.getName());
         }
-        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(structDef), attrNames);
+        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef), attrNames);
     }
 
     public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType,
@@ -410,7 +410,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             }
         }
 
-        List<String> currAttrNames = vertex.getProperty(AtlasGraphUtilsV1.getPropertyKey(structDef), List.class);
+        List<String> currAttrNames = vertex.getProperty(AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef), List.class);
 
         // delete attributes that are not present in updated structDef
         if (CollectionUtils.isNotEmpty(currAttrNames)) {
@@ -434,13 +434,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
                     }
                 }
 
-                String propertyKey = AtlasGraphUtilsV1.getPropertyKey(structDef, attributeDef.getName());
+                String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef, attributeDef.getName());
 
                 AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef, structType));
             }
         }
 
-        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(structDef), attrNames);
+        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef), attrNames);
     }
 
     public static void updateVertexAddReferences(AtlasStructDef structDef, AtlasVertex vertex,
@@ -457,11 +457,11 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         typeDefStore.vertexToTypeDef(vertex, ret);
 
         List<AtlasAttributeDef> attributeDefs = new ArrayList<>();
-        List<String> attrNames = vertex.getProperty(AtlasGraphUtilsV1.getPropertyKey(ret), List.class);
+        List<String> attrNames = vertex.getProperty(AtlasGraphUtilsV1.getTypeDefPropertyKey(ret), List.class);
 
         if (CollectionUtils.isNotEmpty(attrNames)) {
             for (String attrName : attrNames) {
-                String propertyKey = AtlasGraphUtilsV1.getPropertyKey(ret, attrName);
+                String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(ret, attrName);
                 String attribJson  = vertex.getProperty(propertyKey, String.class);
 
                 attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attribJson, Map.class),
@@ -586,12 +586,12 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
                     String       refAttributeName = null;
                     List<String> attrNames        = attributeType.getProperty(
-                                                            AtlasGraphUtilsV1.getPropertyKey(attrTypeName), List.class);
+                                                            AtlasGraphUtilsV1.getTypeDefPropertyKey(attrTypeName), List.class);
 
                     if (CollectionUtils.isNotEmpty(attrNames)) {
                         for (String attrName : attrNames) {
                             String attribJson = attributeType.getProperty(
-                                                AtlasGraphUtilsV1.getPropertyKey(attrTypeName, attrName), String.class);
+                                                AtlasGraphUtilsV1.getTypeDefPropertyKey(attrTypeName, attrName), String.class);
 
                             Map    refAttrInfo            = AtlasType.fromJson(attribJson, Map.class);
                             String refAttribType          = (String) refAttrInfo.get("dataType");

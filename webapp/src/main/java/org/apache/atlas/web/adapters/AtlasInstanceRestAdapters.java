@@ -126,13 +126,13 @@ public class AtlasInstanceRestAdapters {
         for (String guid : result.getCreatedEntities()) {
             AtlasEntityHeader header = new AtlasEntityHeader();
             header.setGuid(guid);
-            response.addEntity(EntityMutations.EntityOperation.CREATE_OR_UPDATE, header);
+            response.addEntity(EntityMutations.EntityOperation.CREATE, header);
         }
 
         for (String guid : result.getUpdateEntities()) {
             AtlasEntityHeader header = new AtlasEntityHeader();
             header.setGuid(guid);
-            response.addEntity(EntityMutations.EntityOperation.CREATE_OR_UPDATE, header);
+            response.addEntity(EntityMutations.EntityOperation.UPDATE, header);
         }
 
         for (String guid : result.getDeletedEntities()) {

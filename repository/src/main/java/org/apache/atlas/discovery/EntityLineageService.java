@@ -184,7 +184,7 @@ public class EntityLineageService implements AtlasLineageService {
             ret.setDisplayText(vertex.getProperty(Constants.QUALIFIED_NAME, String.class));
 
             String state  = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
-            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.STATUS_ACTIVE : Status.STATUS_DELETED);
+            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.ACTIVE : Status.DELETED);
             ret.setStatus(status);
         }
 

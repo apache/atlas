@@ -138,7 +138,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
         EntityMutationResponse entity = entitiesClientV2.createEntity(hiveTableInstanceV2);
         assertNotNull(entity);
-        assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
+        assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
         results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, DATABASE_NAME));
         assertEquals(results.length(), 1);
     }
@@ -175,9 +175,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         instance.setAttribute("name", randomString());
         EntityMutationResponse mutationResponse = entitiesClientV2.createEntity(instance);
         assertNotNull(mutationResponse);
-        assertNotNull(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
-        assertEquals(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).size(),1 );
-        String guid = mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).get(0).getGuid();
+        assertNotNull(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
+        assertEquals(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size(),1 );
+        String guid = mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
         //update type - add attribute
         entityDef = AtlasTypeUtil.createClassTypeDef(entityDef.getName(), ImmutableSet.<String>of(),
@@ -352,7 +352,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         entityByGuid.setAttribute(property, value);
         EntityMutationResponse response = entitiesClientV2.updateEntity(entityByGuid);
         assertNotNull(response);
-        assertNotNull(response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
+        assertNotNull(response.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
     }
 
     private AtlasEntity createHiveDB() {
@@ -575,8 +575,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         LOG.debug("Updating entity= " + tableUpdated);
         EntityMutationResponse updateResult = entitiesClientV2.updateEntity(tableEntity.getGuid(), tableUpdated);
         assertNotNull(updateResult);
-        assertNotNull(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
-        assertTrue(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).size() > 0);
+        assertNotNull(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
+        assertTrue(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
 
         AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
         assertNotNull(entityByGuid);
@@ -593,8 +593,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         EntityMutationResponse updateResponse = entitiesClientV2.updateEntityByAttribute(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 (String) tableEntity.getAttribute("name"), tableUpdated);
         assertNotNull(updateResponse);
-        assertNotNull(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
-        assertTrue(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).size() > 0);
+        assertNotNull(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
+        assertTrue(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
 
         entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
         assertNotNull(entityByGuid);
@@ -623,8 +623,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         tableEntity.setAttribute("columns", columns);
         EntityMutationResponse updateEntityResult = entitiesClientV2.updateEntity(tableEntity);
         assertNotNull(updateEntityResult);
-        assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
-        assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).size(), 3);
+        assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
+        assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size(), 3);
 
         AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
         List<AtlasEntity> refs = (List<AtlasEntity>) entityByGuid.getAttribute("columns");

@@ -62,6 +62,7 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_INVALID_PARAMS(404, "ATLAS4046E", "Invalid lineage query parameters passed {0}: {1}"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
     DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
+    INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS4049E", "Invalid instance creation/updation parameters passed : {0}"),
 
 
     // All data conflict errors go here
@@ -72,7 +73,11 @@ public enum AtlasErrorCode {
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
-    INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}");
+    INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
+
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(400, "ATLAS40018E", "Instance {0} with unique attribute {1} does not exist"),
+
+    UNKNOWN_ATTRIBUTE(400, "ATLAS40019E", "Attribute {0} not found for type {1}");
 
     private String errorCode;
     private String errorMessage;

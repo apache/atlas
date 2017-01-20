@@ -75,7 +75,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
         assertEquals(dbEntity.getTypeName(), DATABASE_TYPE);
         assertEquals(dbEntity.getDisplayText(), dbName);
-        assertEquals(dbEntity.getStatus(), Status.STATUS_ACTIVE);
+        assertEquals(dbEntity.getStatus(), Status.ACTIVE);
         assertNotNull(dbEntity.getGuid());
         assertNull(searchResult.getAttributes());
         assertNull(searchResult.getFullTextResult());
@@ -137,7 +137,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
         assertEquals(dbEntity.getTypeName(), DATABASE_TYPE);
         assertEquals(dbEntity.getDisplayText(), dbName);
-        assertEquals(dbEntity.getStatus(), Status.STATUS_ACTIVE);
+        assertEquals(dbEntity.getStatus(), Status.ACTIVE);
 
         assertNotNull(dbEntity.getGuid());
         assertNull(searchResult.getAttributes());

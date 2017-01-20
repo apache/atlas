@@ -355,17 +355,17 @@ public class TestAtlasTypeRegistry {
         } catch (AtlasBaseException excp) {
         }
 
-        Map<String, AtlasAttributeDef> attributeDefs = null;
+        Map<String, AtlasStructType.AtlasAttribute> attributes = null;
 
         if (type != null) {
             if (type instanceof AtlasEntityType) {
-                attributeDefs = ((AtlasEntityType) type).getAllAttributeDefs();
+                attributes = ((AtlasEntityType) type).getAllAttributes();
             } else if (type instanceof AtlasClassificationType) {
-                attributeDefs = ((AtlasClassificationType) type).getAllAttributeDefs();
+                attributes = ((AtlasClassificationType) type).getAllAttributes();
             }
         }
 
-        assertNotNull(attributeDefs);
-        assertEquals(attributeDefs.keySet(), attributeNames);
+        assertNotNull(attributes);
+        assertEquals(attributes.keySet(), attributeNames);
     }
 }

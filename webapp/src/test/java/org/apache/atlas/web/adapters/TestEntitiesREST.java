@@ -96,7 +96,7 @@ public class TestEntitiesREST {
         entities.add(tableEntity);
 
         EntityMutationResponse response = entitiesREST.createOrUpdate(entities);
-        List<AtlasEntityHeader> guids = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE);
+        List<AtlasEntityHeader> guids = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
 
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 3);
@@ -125,7 +125,7 @@ public class TestEntitiesREST {
         newEntities.add(newTableEntity);
         EntityMutationResponse response2 = entitiesREST.createOrUpdate(newEntities);
 
-        List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE);
+        List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
         Assert.assertNotNull(newGuids);
         Assert.assertEquals(newGuids.size(), 3);
     }

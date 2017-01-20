@@ -104,7 +104,7 @@ public class EntitiesREST {
     /*******
      * Entity Updation - Allows full update of the specified entities.
      * Any associations like Classifications, Business Terms will have to be handled through the respective APIs
-     * Null updates are supported i.e Set an attribute value to Null if its an optional attribute  
+     * Null updates are supported i.e Set an attribute value to Null if its an optional attribute
      *******/
     @PUT
     @Consumes(Servlets.JSON_MEDIA_TYPE)

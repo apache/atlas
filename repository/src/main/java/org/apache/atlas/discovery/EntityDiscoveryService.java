@@ -228,7 +228,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         String state = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
         if (state != null) {
-            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.STATUS_ACTIVE : Status.STATUS_DELETED);
+            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.ACTIVE : Status.DELETED);
             ret.setStatus(status);
         }
 

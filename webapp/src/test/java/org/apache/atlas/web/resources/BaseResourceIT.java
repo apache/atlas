@@ -225,9 +225,9 @@ public abstract class BaseResourceIT {
                 entity = entitiesClientV2.updateEntity(atlasEntity);
             }
             assertNotNull(entity);
-            assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE));
-            assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).size() > 0);
-            return entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE_OR_UPDATE).get(0);
+            assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
+            assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
+            return entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).get(0);
         } catch (AtlasServiceException e) {
             LOG.error("Entity {} failed", update ? "update" : "creation", entity);
         }

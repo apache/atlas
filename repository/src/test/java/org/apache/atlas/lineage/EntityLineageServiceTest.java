@@ -258,7 +258,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
         assertEquals(relationsInput.size(), 2);
 
         AtlasEntityHeader tableEntityInput = entitiesInput.get(entityGuid);
-        assertEquals(tableEntityInput.getStatus(), Status.STATUS_ACTIVE);
+        assertEquals(tableEntityInput.getStatus(), Status.ACTIVE);
 
         AtlasLineageInfo outputLineage = getOutputLineageInfo(entityGuid, 5);
         assertNotNull(outputLineage);
@@ -273,7 +273,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
         assertEquals(relationsOutput.size(), 2);
 
         AtlasEntityHeader tableEntityOutput = entitiesOutput.get(entityGuid);
-        assertEquals(tableEntityOutput.getStatus(), Status.STATUS_ACTIVE);
+        assertEquals(tableEntityOutput.getStatus(), Status.ACTIVE);
 
         AtlasLineageInfo bothLineage = getBothLineageInfo(entityGuid, 5);
         assertNotNull(bothLineage);
@@ -288,7 +288,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
         assertEquals(relationsBoth.size(), 4);
 
         AtlasEntityHeader tableEntityBoth = entitiesBoth.get(entityGuid);
-        assertEquals(tableEntityBoth.getStatus(), Status.STATUS_ACTIVE);
+        assertEquals(tableEntityBoth.getStatus(), Status.ACTIVE);
 
         //Delete the table entity. Lineage for entity returns the same results as before.
         //Lineage for table name throws EntityNotFoundException
@@ -297,17 +297,17 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
         inputLineage = getInputLineageInfo(entityGuid, 5);
         tableEntityInput = inputLineage.getGuidEntityMap().get(entityGuid);
-        assertEquals(tableEntityInput.getStatus(), Status.STATUS_DELETED);
+        assertEquals(tableEntityInput.getStatus(), Status.DELETED);
         assertEquals(inputLineage.getGuidEntityMap().size(), 3);
 
         outputLineage = getOutputLineageInfo(entityGuid, 5);
         tableEntityOutput = outputLineage.getGuidEntityMap().get(entityGuid);
-        assertEquals(tableEntityOutput.getStatus(), Status.STATUS_DELETED);
+        assertEquals(tableEntityOutput.getStatus(), Status.DELETED);
         assertEquals(outputLineage.getGuidEntityMap().size(), 3);
 
         bothLineage = getBothLineageInfo(entityGuid, 5);
         tableEntityBoth = bothLineage.getGuidEntityMap().get(entityGuid);
-        assertEquals(tableEntityBoth.getStatus(), Status.STATUS_DELETED);
+        assertEquals(tableEntityBoth.getStatus(), Status.DELETED);
         assertEquals(bothLineage.getGuidEntityMap().size(), 5);
 
     }

@@ -124,20 +124,20 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructDef.AtlasAttributeDef attrDef : getAttributeDefs(structType)) {
-                AtlasType attrType = structType.getAttributeType(attrDef.getName());
+            for (AtlasStructType.AtlasAttribute attr : getAttributes(structType)) {
+                AtlasType attrType = structType.getAttributeType(attr.getAttributeDef().getName());
 
                 if (attrType == null) {
-                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attrDef.getName());
+                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getAttributeDef().getName());
                     continue;
                 }
 
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
 
-                Object v2Value = attributes.get(attrDef.getName());
+                Object v2Value = attributes.get(attr.getAttributeDef().getName());
                 Object v1Value = attrConverter.fromV2ToV1(v2Value, attrType);
 
-                ret.put(attrDef.getName(), v1Value);
+                ret.put(attr.getAttributeDef().getName(), v1Value);
             }
         }
 
@@ -150,29 +150,27 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructDef.AtlasAttributeDef attrDef : getAttributeDefs(structType)) {
-                AtlasType            attrType      = structType.getAttributeType(attrDef.getName());
+            for (AtlasStructType.AtlasAttribute attr : getAttributes(structType)) {
+                AtlasType            attrType      = structType.getAttributeType(attr.getAttributeDef().getName());
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
 
-                Object v1Value = attributes.get(attrDef.getName());
+                Object v1Value = attributes.get(attr.getAttributeDef().getName());
                 Object v2Value = attrConverter.fromV1ToV2(v1Value, attrType);
 
-                ret.put(attrDef.getName(), v2Value);
+                ret.put(attr.getAttributeDef().getName(), v2Value);
             }
         }
 
         return ret;
     }
 
-    private Collection<AtlasAttributeDef> getAttributeDefs(AtlasStructType structType) {
-        Collection<AtlasAttributeDef> ret = null;
+    private Collection<AtlasStructType.AtlasAttribute> getAttributes(AtlasStructType structType) {
+        Collection<AtlasStructType.AtlasAttribute> ret = null;
 
-        if (structType.getTypeCategory() == TypeCategory.STRUCT) {
-            ret = structType.getStructDef().getAttributeDefs();
-        } else if (structType.getTypeCategory() == TypeCategory.CLASSIFICATION) {
-            ret = ((AtlasClassificationType)structType).getAllAttributeDefs().values();
-        } else if (structType.getTypeCategory() == TypeCategory.ENTITY) {
-            ret = ((AtlasEntityType)structType).getAllAttributeDefs().values();
+        if (structType.getTypeCategory() == TypeCategory.STRUCT
+            || structType.getTypeCategory() == TypeCategory.CLASSIFICATION
+            || structType.getTypeCategory() == TypeCategory.ENTITY) {
+            ret = structType.getAllAttributes().values();
         } else {
             ret = Collections.emptyList();
         }

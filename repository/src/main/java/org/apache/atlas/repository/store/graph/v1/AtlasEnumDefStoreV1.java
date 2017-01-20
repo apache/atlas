@@ -283,19 +283,19 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         List<String> values = new ArrayList<>(enumDef.getElementDefs().size());
 
         for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
-            String elemKey = AtlasGraphUtilsV1.getPropertyKey(enumDef, element.getValue());
+            String elemKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(enumDef, element.getValue());
 
             AtlasGraphUtilsV1.setProperty(vertex, elemKey, element.getOrdinal());
 
             if (StringUtils.isNoneBlank(element.getDescription())) {
-                String descKey = AtlasGraphUtilsV1.getPropertyKey(elemKey, "description");
+                String descKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(elemKey, "description");
 
                 AtlasGraphUtilsV1.setProperty(vertex, descKey, element.getDescription());
             }
 
             values.add(element.getValue());
         }
-        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(enumDef), values);
+        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getTypeDefPropertyKey(enumDef), values);
     }
 
     private AtlasEnumDef toEnumDef(AtlasVertex vertex) {
@@ -314,10 +314,10 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         typeDefStore.vertexToTypeDef(vertex, ret);
 
         List<AtlasEnumElementDef> elements = new ArrayList<>();
-        List<String> elemValues = vertex.getProperty(AtlasGraphUtilsV1.getPropertyKey(ret), List.class);
+        List<String> elemValues = vertex.getProperty(AtlasGraphUtilsV1.getTypeDefPropertyKey(ret), List.class);
         for (String elemValue : elemValues) {
-            String elemKey = AtlasGraphUtilsV1.getPropertyKey(ret, elemValue);
-            String descKey = AtlasGraphUtilsV1.getPropertyKey(elemKey, "description");
+            String elemKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(ret, elemValue);
+            String descKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(elemKey, "description");
 
             Integer ordinal = AtlasGraphUtilsV1.getProperty(vertex, elemKey, Integer.class);
             String  desc    = AtlasGraphUtilsV1.getProperty(vertex, descKey, String.class);

@@ -19,6 +19,7 @@ package org.apache.atlas.model.typedef;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,7 +184,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         return findAttribute(attributeDefs, attrName) != null;
     }
 
-    private static AtlasAttributeDef findAttribute(List<AtlasAttributeDef> attributeDefs, String attrName) {
+    public static AtlasAttributeDef findAttribute(Collection<AtlasAttributeDef> attributeDefs, String attrName) {
         AtlasAttributeDef ret = null;
 
         if (CollectionUtils.isNotEmpty(attributeDefs)) {
@@ -450,6 +451,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return toString(new StringBuilder()).toString();
         }
     }
+
+
 
     /**
      * class that captures details of a constraint.

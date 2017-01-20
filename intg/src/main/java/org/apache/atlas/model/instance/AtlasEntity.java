@@ -55,15 +55,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
      */
-    public enum Status { STATUS_ACTIVE, STATUS_DELETED }
+    public enum Status { ACTIVE, DELETED }
 
     private String guid       = null;
-    private Status status     = Status.STATUS_ACTIVE;
+    private Status status     = Status.ACTIVE;
     private String createdBy  = null;
     private String updatedBy  = null;
     private Date   createTime = null;
     private Date   updateTime = null;
-    private Long   version    = null;
+    private Long   version    = new Long(0);
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -89,7 +89,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setUpdatedBy(null);
         setCreateTime(null);
         setUpdateTime(null);
-        setVersion(null);
     }
 
     public AtlasEntity(AtlasEntity other) {
@@ -247,7 +246,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @JsonIgnore
     public boolean isUnassigned() {
-        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
+        return isUnAssigned(guid);
     }
 
     @JsonIgnore
@@ -264,6 +263,11 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
 
         return true;
+    }
+
+    @JsonIgnore
+    public static boolean isUnAssigned(String guid) {
+        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
     }
 
     private String nextInternalId() {

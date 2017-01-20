@@ -27,6 +27,8 @@ import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.commons.configuration.Configuration;
@@ -79,6 +81,16 @@ public class AtlasRepositoryConfiguration {
             Configuration config = ApplicationProperties.get();
             return ApplicationProperties.getClass(config, 
                     DELETE_HANDLER_IMPLEMENTATION_PROPERTY, SoftDeleteHandler.class.getName(), DeleteHandler.class);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Class<? extends DeleteHandlerV1> getDeleteHandlerV1Impl() {
+        try {
+            Configuration config = ApplicationProperties.get();
+            return ApplicationProperties.getClass(config,
+                DELETE_HANDLER_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }

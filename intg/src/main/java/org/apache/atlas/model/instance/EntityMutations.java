@@ -43,7 +43,8 @@ public class EntityMutations implements Serializable {
     private List<EntityMutation> entityMutations = new ArrayList<>();
 
     public enum EntityOperation {
-        CREATE_OR_UPDATE,
+        CREATE,
+        UPDATE,
         PARTIAL_UPDATE,
         DELETE,
     }
