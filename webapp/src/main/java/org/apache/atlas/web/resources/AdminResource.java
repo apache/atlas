@@ -20,6 +20,8 @@ package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
@@ -65,10 +67,12 @@ public class AdminResource {
     private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
     private Response version;
     private ServiceState serviceState;
+    private MetricsService metricsService;
 
     @Inject
-    public AdminResource(ServiceState serviceState) {
+    public AdminResource(ServiceState serviceState, MetricsService metricsService) {
         this.serviceState = serviceState;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -222,5 +226,22 @@ public class AdminResource {
         }
 
         return response;
+    }
+
+    @GET
+    @Path("metrics")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasMetrics getMetrics() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getMetrics()");
+        }
+
+        AtlasMetrics metrics = metricsService.getMetrics();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getMetrics()");
+        }
+
+        return metrics;
     }
 }

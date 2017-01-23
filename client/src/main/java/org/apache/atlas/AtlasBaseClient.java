@@ -26,6 +26,7 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
+import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -54,10 +55,12 @@ public abstract class AtlasBaseClient {
     public static final String TYPES = "types";
     public static final String ADMIN_VERSION = "admin/version";
     public static final String ADMIN_STATUS = "admin/status";
+    public static final String ADMIN_METRICS = "admin/metrics";
     public static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
     //Admin operations
     public static final APIInfo VERSION = new APIInfo(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK);
     public static final APIInfo STATUS = new APIInfo(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK);
+    public static final APIInfo METRICS = new APIInfo(BASE_URI + ADMIN_METRICS, HttpMethod.GET, Response.Status.OK);
     static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     static final String UNKNOWN_STATUS = "Unknown status";
     static final String ATLAS_CLIENT_HA_RETRIES_KEY = "atlas.client.ha.retries";
@@ -364,6 +367,14 @@ public abstract class AtlasBaseClient {
             LOG.error("Exception while parsing admin status response. Returned response {}", response.toString(), e);
         }
         return result;
+    }
+
+    /**
+     * @return Return metrics of the service instance the client is pointing to
+     * @throws AtlasServiceException
+     */
+    public AtlasMetrics getAtlasMetrics () throws AtlasServiceException {
+        return callAPI(METRICS, AtlasMetrics.class, null);
     }
 
     boolean isRetryableException(ClientHandlerException che) {

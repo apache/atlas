@@ -18,6 +18,8 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -44,6 +46,7 @@ import java.util.Arrays;
 public class AtlasAdminClient {
 
     private static final Option STATUS = new Option("status", false, "Get the status of an atlas instance");
+    private static final Option STATS = new Option("stats", false, "Get the metrics of an atlas instance");
     private static final Options OPTIONS = new Options();
 
     private static final int INVALID_OPTIONS_STATUS = 1;
@@ -51,6 +54,7 @@ public class AtlasAdminClient {
 
     static {
         OPTIONS.addOption(STATUS);
+        OPTIONS.addOption(STATS);
     }
 
     public static void main(String[] args) throws AtlasException, ParseException {
@@ -86,6 +90,16 @@ public class AtlasAdminClient {
                 cmdStatus = 0;
             } catch (AtlasServiceException e) {
                 System.err.println("Could not retrieve status of the server at " + Arrays.toString(atlasServerUri));
+                printStandardHttpErrorDetails(e);
+            }
+        } else if (commandLine.hasOption(STATS.getOpt())) {
+            try {
+                AtlasMetrics atlasMetrics = atlasClient.getAtlasMetrics();
+                String json = AtlasType.toJson(atlasMetrics);
+                System.out.println(json);
+                cmdStatus = 0;
+            } catch (AtlasServiceException e) {
+                System.err.println("Could not retrieve metrics of the server at " + Arrays.toString(atlasServerUri));
                 printStandardHttpErrorDetails(e);
             }
         } else {
