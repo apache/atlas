@@ -15,17 +15,19 @@
  * limitations under the License.
 -->
 <div class="row row-margin-bottom">
+    {{#if entityCreate}}
     <div class="col-sm-12">
         <button class="btn btn-atlasAction btn-atlas pull-left" data-id="createEntity"><i class="fa fa-plus"></i> Create Entity</button>
     </div>
+    {{/if}}
     <div class="col-sm-12" style="margin:15px 0px;">
         <div class="row">
             <div class="col-md-6">
                 <span class="pull-left">Text</span>
                 <label class="switch pull-left">
-                   <input type="checkbox" class="switch-input" name="queryType" value="text"/>
-                   <span class="switch-slider"></span>
-                 </label>
+                    <input type="checkbox" class="switch-input" name="queryType" value="text" />
+                    <span class="switch-slider"></span>
+                </label>
                 <span class="pull-left">DSL</span>
             </div>
             <div class="col-md-6">

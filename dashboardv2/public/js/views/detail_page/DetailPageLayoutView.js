@@ -61,15 +61,14 @@ define(['require',
             },
             templateHelpers: function() {
                 return {
-                    taxonomy: Globals.taxonomy
+                    taxonomy: Globals.taxonomy,
+                    entityUpdate: Globals.entityUpdate
                 };
             },
             /** ui events hash */
             events: function() {
                 var events = {};
-                if (Globals.entityCrud) {
-                    events["click " + this.ui.editButton] = 'onClickEditEntity';
-                }
+                events["click " + this.ui.editButton] = 'onClickEditEntity';
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         var scope = $(e.currentTarget);

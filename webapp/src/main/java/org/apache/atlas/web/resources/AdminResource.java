@@ -20,6 +20,9 @@ package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -58,7 +61,8 @@ public class AdminResource {
     private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
     private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
     private static final String isTaxonomyEnabled = "atlas.feature.taxonomy.enable";
-    
+    private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
+    private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
     private Response version;
     private ServiceState serviceState;
 
@@ -179,6 +183,8 @@ public class AdminResource {
         try {
             PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
             Boolean enableTaxonomy = configProperties.getBoolean(isTaxonomyEnabled, false);
+            boolean isEntityUpdateAccessAllowed = false;
+            boolean isEntityCreateAccessAllowed = false;
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userName = null;
             Set<String> groups = new HashSet<>();
@@ -188,15 +194,21 @@ public class AdminResource {
                 for (GrantedAuthority c : authorities) {
                     groups.add(c.getAuthority());
                 }
+                isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
+                        AtlasActionTypes.UPDATE, userName, groups);
+                isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
+                        AtlasActionTypes.CREATE, userName, groups);
             }
 
             JSONObject responseData = new JSONObject();
 
-            responseData.put(isCSRF_ENABLED,  AtlasCSRFPreventionFilter.isCSRF_ENABLED);
+            responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
             responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
             responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
             responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
             responseData.put(isTaxonomyEnabled, enableTaxonomy);
+            responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
+            responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
             responseData.put("userName", userName);
             responseData.put("groups", groups);
 

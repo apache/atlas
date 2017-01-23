@@ -449,7 +449,7 @@ define(['require',
                                     nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
-                                    if (Globals.entityCrud) {
+                                    if (Globals.entityUpdate) {
                                         nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + (model.get('$id$').id || model.get('$id$')) + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
                                     }
                                     return nameHtml;

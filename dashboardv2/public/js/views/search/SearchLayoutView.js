@@ -21,8 +21,9 @@ define(['require',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
     'collection/VTagList',
     'utils/Utils',
-    'utils/UrlLinks'
-], function(require, Backbone, SearchLayoutViewTmpl, VTagList, Utils, UrlLinks) {
+    'utils/UrlLinks',
+    'utils/Globals',
+], function(require, Backbone, SearchLayoutViewTmpl, VTagList, Utils, UrlLinks, Globals) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -45,6 +46,13 @@ define(['require',
                 refreshBtn: '[data-id="refreshBtn"]',
                 createEntity: "[data-id='createEntity']",
             },
+
+            templateHelpers: function() {
+                return {
+                    entityCreate: Globals.entityCreate
+                };
+            },
+
             /** ui events hash */
             events: function() {
                 var events = {},

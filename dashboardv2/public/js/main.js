@@ -174,6 +174,12 @@ require(['App',
             if (response && response['atlas.feature.taxonomy.enable'] !== undefined) {
                 Globals.taxonomy = response['atlas.feature.taxonomy.enable']
             }
+            if (response && response['atlas.entity.create.allowed'] !== undefined) {
+                Globals.entityCreate = response['atlas.entity.create.allowed'];
+            }
+            if (response && response['atlas.entity.update.allowed'] !== undefined) {
+                Globals.entityUpdate = response['atlas.entity.update.allowed'];
+            }
             App.start();
         }
     });

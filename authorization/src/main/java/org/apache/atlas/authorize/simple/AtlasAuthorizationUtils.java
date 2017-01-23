@@ -21,6 +21,10 @@ package org.apache.atlas.authorize.simple;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +119,7 @@ public class AtlasAuthorizationUtils {
                 || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);
         } else if (api.startsWith("entities") || api.startsWith("lineage") ||
-                api.startsWith("discovery") || api.startsWith("entity")) {
+                api.startsWith("discovery") || api.startsWith("entity")  || api.startsWith("search")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
         } else if (api.startsWith("taxonomies")) {
             resourceTypes.add(AtlasResourceTypes.TAXONOMY);
@@ -134,5 +138,24 @@ public class AtlasAuthorizationUtils {
             LOG.debug("<== Returning AtlasResources {} for api {}", resourceTypes, api);
         }
         return resourceTypes;
+    }
+
+    public static boolean isAccessAllowed(AtlasResourceTypes resourcetype, AtlasActionTypes actionType, String userName, Set<String> groups) {
+        AtlasAuthorizer authorizer = null;
+        boolean isaccessAllowed = false;
+
+        Set<AtlasResourceTypes> resourceTypes = new HashSet<>();
+        resourceTypes.add(resourcetype);
+        AtlasAccessRequest atlasRequest = new AtlasAccessRequest(resourceTypes, "*", actionType, userName, groups);
+        try {
+            authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer != null) {
+                isaccessAllowed = authorizer.isAccessAllowed(atlasRequest);
+            }
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer. ", e);
+        }
+
+        return isaccessAllowed;
     }
 }
