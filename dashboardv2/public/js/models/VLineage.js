@@ -34,7 +34,6 @@ define(['require',
 
         initialize: function() {
             this.modelName = 'VLineage';
-            this.bindErrorEvents();
         },
         toString: function() {
             return this.get('id');

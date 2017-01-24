@@ -20,6 +20,7 @@ define(['require'], function(require) {
     'use strict';
 
     var Messages = {
+        defaultErrorMessage: "Something went wrong",
         addSuccessMessage: " has been created successfully",
         addErrorMessage: " could not be Created",
         addTermToEntitySuccessMessage: " has been added to entity",
@@ -34,7 +35,7 @@ define(['require'], function(require) {
         updateTagDescriptionMessage: "Tag description is updated successfully",
         updateTermDescriptionMessage: "Term description is updated successfully",
         editSuccessMessage: " has been updated successfully",
-        assignDeletedEntity: " entity is deleted, Tag cannot be assign"
+        assignDeletedEntity: " entity is deleted, tag cannot be assigned"
     };
     return Messages;
 });

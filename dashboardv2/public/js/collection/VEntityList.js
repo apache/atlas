@@ -33,7 +33,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VEntity';
                 this.modelAttrName = '';
-                this.bindErrorEvents();
             },
             parseRecords: function(resp, options) {
                 try {

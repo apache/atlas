@@ -33,7 +33,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VCommon';
                 this.modelAttrName = '';
-                this.bindErrorEvents();
             },
         },
         //Static Class Members

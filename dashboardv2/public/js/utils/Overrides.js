@@ -16,12 +16,30 @@
  * limitations under the License.
  */
 
-define(['require', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require) {
+define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils) {
     'use strict';
 
     Backbone.$.ajaxSetup({
         cache: false
     });
+
+    var oldBackboneSync = Backbone.sync;
+    Backbone.sync = function(method, model, options) {
+        var that = this;
+        return oldBackboneSync.apply(this, [method, model,
+            _.extend(options, {
+                error: function(response) {
+                    if (!options.skipDefaultError) {
+                        Utils.defaultErrorHandler(that, response);
+                    }
+                    that.trigger("error", that, response);
+                    if (options.cust_error) {
+                        options.cust_error(that, response);
+                    }
+                }
+            })
+        ]);
+    }
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {

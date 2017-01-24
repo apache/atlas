@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnotify) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages'], function(require, Globals, pnotify, Messages) {
     'use strict';
 
     var Utils = {};
@@ -79,43 +79,47 @@ define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnoti
         });
     };
     Utils.defaultErrorHandler = function(model, error) {
-        if (error.status == 401) {
-             if (error.statusText) {
-                var redirectURL;
-                    try {
-                        redirectURL = JSON.parse(error.statusText).knoxssoredirectURL;
-                    } catch(err){
-                    }
-                    if(redirectURL!=undefined && redirectURL!='' ){
-                         window.location.replace(decodeURIComponent(redirectURL));
-                    }else{
-                        window.location = 'login.jsp';
-                    }
-            } else {
-                    window.location = 'login.jsp';
-            }
-        } else if (error.status == 419) {
-            window.location = 'login.jsp'
-        } else if (error.status == 403) {
-            var message = "You are not authorized";
-            if (error.statusText) {
-                message = JSON.parse(error.statusText).AuthorizationError;
-            }
-            Utils.notifyError({
-                content: message
-            });
-        } else if (error.status == "0" && error.statusText != "abort") {
-            var diffTime = (new Date().getTime() - prevNetworkErrorTime);
-            if (diffTime > 3000) {
-                prevNetworkErrorTime = new Date().getTime();
+        if (error && error.status) {
+            if (error.status == 401) {
+                window.location = 'login.jsp'
+            } else if (error.status == 419) {
+                window.location = 'login.jsp'
+            } else if (error.status == 403) {
+                var message = "You are not authorized";
+                if (error.statusText) {
+                    message = JSON.parse(error.statusText).AuthorizationError;
+                }
                 Utils.notifyError({
-                    content: "Network Connection Failure : " +
-                        "It seems you are not connected to the internet. Please check your internet connection and try again"
+                    content: message
                 });
+            } else if (error.status == "0" && error.statusText != "abort") {
+                var diffTime = (new Date().getTime() - prevNetworkErrorTime);
+                if (diffTime > 3000) {
+                    prevNetworkErrorTime = new Date().getTime();
+                    Utils.notifyError({
+                        content: "Network Connection Failure : " +
+                            "It seems you are not connected to the internet. Please check your internet connection and try again"
+                    });
+                }
+            } else {
+                Utils.serverErrorHandler(model, error)
             }
+        } else {
+            Utils.serverErrorHandler(model, error)
         }
     };
-
+    Utils.serverErrorHandler = function(model, response) {
+        var responseJSON = response ? response.responseJSON : response;
+        if (response && responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
+            Utils.notifyError({
+                content: responseJSON.errorMessage || responseJSON.message || responseJSON.error
+            });
+        } else {
+            Utils.notifyError({
+                content: Messages.defaultErrorMessage
+            });
+        }
+    };
     Utils.localStorage = {
         checkLocalStorage: function(key, value) {
             if (typeof(Storage) !== "undefined") {

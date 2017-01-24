@@ -31,7 +31,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VTag';
                 this.modelAttrName = 'list';
-                this.bindErrorEvents();
             },
             parseRecords: function(resp, options) {
                 try {

@@ -34,7 +34,6 @@ define(['require',
 
         initialize: function() {
             this.modelName = 'VEntity';
-            this.bindErrorEvents();
         },
         toString: function() {
             return this.get('name');

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'backbone','utils/CommonViewFunction'], function(require, Utils, Backbone,CommonViewFunction) {
+define(['require', 'utils/Utils', 'backbone', 'utils/CommonViewFunction'], function(require, Utils, Backbone, CommonViewFunction) {
     'use strict';
 
     var BaseModel = Backbone.Model.extend(
@@ -27,12 +27,7 @@ define(['require', 'utils/Utils', 'backbone','utils/CommonViewFunction'], functi
              * @augments Backbone.Model
              * @constructs
              */
-            initialize: function() {
-
-            },
-            bindErrorEvents: function() {
-                this.bind("error", Utils.defaultErrorHandler);
-            },
+            initialize: function() {},
             /**
              * toString for a model. Every model should implement this function.
              */
@@ -60,7 +55,8 @@ define(['require', 'utils/Utils', 'backbone','utils/CommonViewFunction'], functi
              * @return {[type]}               [description]
              */
             nonCrudOperation: function(url, requestMethod, options) {
-                options['beforeSend'] =  CommonViewFunction.addRestCsrfCustomHeader;
+                var that = this;
+                options['beforeSend'] = CommonViewFunction.addRestCsrfCustomHeader;
                 return Backbone.sync.call(this, null, this, _.extend({
                     url: url,
                     type: requestMethod

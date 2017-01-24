@@ -37,6 +37,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var tagModel = new VTag();
             if (options && options.guid && options.tagName) {
                 tagModel.deleteTag(options.guid, options.tagName, {
+                    skipDefaultError: true,
                     success: function(data) {
                         var msg = "Tag " + name.name + Messages.removeSuccessMessage;
                         if (options.tagOrTerm === "term") {
@@ -55,16 +56,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
 
                     },
-                    error: function(error, data, status) {
+                    cust_error: function(model, response) {
                         var message = options.tagName + Messages.deleteErrorMessage;
-                        if (data.error) {
-                            message = data.error;
+                        if (response && response.responseJSON) {
+                            message = response.responseJSON.errorMessage;
                         }
                         Utils.notifyError({
                             content: message
                         });
-                    },
-                    complete: function() {}
+                    }
                 });
             }
         });
@@ -106,7 +106,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             scope.$('td div[data-id="' + id + '"]').append(deleteButton);
                         }
                     },
-                    error: function(error, data, status) {},
                     complete: function() {
                         if (searchTable) {
                             --scope.fetchList;
@@ -375,14 +374,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     });
                     if (options.collection) {
                         options.collection.fetch({ reset: true });
-                    }
-                },
-                error: function(error, data, status) {
-                    if (data && data.responseText) {
-                        var data = JSON.parse(data.responseText);
-                        Utils.notifyError({
-                            content: data.message || data.msgDesc
-                        });
                     }
                 },
                 complete: function() {

@@ -33,7 +33,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VLineage';
                 this.modelAttrName = 'results';
-                this.bindErrorEvents();
             },
             getLineage: function(id, options) {
                 var url = UrlLinks.lineageApiUrl(id);

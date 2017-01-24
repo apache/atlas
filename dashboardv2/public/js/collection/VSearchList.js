@@ -33,7 +33,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VSearch';
                 this.modelAttrName = 'results';
-                this.bindErrorEvents();
             },
             parseRecords: function(resp, options) {
                 this.responseData = {

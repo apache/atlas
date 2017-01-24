@@ -101,7 +101,6 @@ define(['require',
                     str += '<option>' + _.escape(val.get("name")) + '</option>';
                 });
                 that.ui.parentTag.html(str);
-                console.log(platform);
                 // IE9 support
                 if (platform.name === "IE") {
                     that.ui.parentTag.select2({

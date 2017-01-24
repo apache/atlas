@@ -33,7 +33,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VCatalog';
                 this.modelAttrName = '';
-                this.bindErrorEvents();
             },
             fetch: function(options) {
                 //Call Backbone's fetch

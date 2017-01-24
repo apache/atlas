@@ -158,14 +158,6 @@ define(['require',
                         Utils.notifySuccess({
                             content: message
                         });
-                    },
-                    error: function(model, response) {
-                        if (response.responseJSON && response.responseJSON.error) {
-                            that.collection.fetch({ reset: true });
-                            Utils.notifyError({
-                                content: response.responseJSON.error
-                            });
-                        }
                     }
                 });
             }

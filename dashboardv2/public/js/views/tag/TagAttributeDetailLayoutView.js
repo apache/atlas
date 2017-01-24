@@ -147,13 +147,6 @@ define(['require',
                             content: message
                         });
                         that.modal.close();
-                    },
-                    error: function(model, response) {
-                        if (response.responseJSON && response.responseJSON.error) {
-                            Utils.notifyError({
-                                content: response.responseJSON.error
-                            });
-                        }
                     }
                 });
             },

@@ -362,7 +362,6 @@ define(['require',
                                             }
                                         }
                                     },
-                                    error: function(error, data, status) {},
                                     complete: function() {
                                         --that.asyncFetchCounter;
                                         if (that.asyncFetchCounter === 0) {

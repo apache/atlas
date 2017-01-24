@@ -251,13 +251,6 @@ define(['require',
                             content: "Tag " + that.name + Messages.addSuccessMessage
                         });
                         modal.trigger('cancel');
-                    },
-                    error: function(model, response) {
-                        if (response.responseJSON && response.responseJSON.error) {
-                            Utils.notifyError({
-                                content: response.responseJSON.error
-                            });
-                        }
                     }
                 });
             },

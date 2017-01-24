@@ -31,7 +31,6 @@ define(['require',
             initialize: function() {
                 this.modelName = 'VSchema';
                 this.modelAttrName = 'results';
-                this.bindErrorEvents();
             },
             parseRecords: function(resp, options) {
                 try {

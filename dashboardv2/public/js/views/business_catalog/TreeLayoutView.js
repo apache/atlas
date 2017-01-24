@@ -119,19 +119,9 @@ define(['require',
                     this.termSearchData();
                 }, this);
                 this.listenTo(this.childCollection, 'error', function(model, response) {
-                    if (response && response.responseJSON && response.responseJSON.message) {
-                        Utils.notifyError({
-                            content: response.responseJSON.message
-                        });
-                    }
                     this.hideLoader();
                 }, this);
                 this.listenTo(this.parentCollection, 'error', function(model, response) {
-                    if (response && response.responseJSON && response.responseJSON.message) {
-                        Utils.notifyError({
-                            content: response.responseJSON.message
-                        });
-                    }
                     this.hideLoader();
                 }, this);
             },
@@ -515,11 +505,6 @@ define(['require',
                             content: "Term " + view.ui.termName.val() + Messages.addSuccessMessage
                         });
                     },
-                    error: function(model, response) {
-                        Utils.notifyError({
-                            content: "Term " + view.ui.termName.val() + Messages.addErrorMessage
-                        });
-                    },
                     complete: function() {
                         that.hideLoader();
                     }
@@ -550,6 +535,7 @@ define(['require',
                         url = that.$('.taxonomyTree').find('li.active a').data('href');
                     var termName = that.$('.taxonomyTree').find('li.active a').text();
                     termModel.deleteTerm(url, {
+                        skipDefaultError: true,
                         success: function(data) {
                             Utils.notifySuccess({
                                 content: "Term " + termName + Messages.deleteSuccessMessage
@@ -567,10 +553,10 @@ define(['require',
                             }
                             that.fetchCollection(termURL, true);
                         },
-                        error: function(error, data, status) {
+                        cust_error: function(model, response) {
                             var message = "Term " + termName + Messages.deleteErrorMessage;
-                            if (data.error) {
-                                message = data.error;
+                            if (response && response.responseJSON) {
+                                message = response.responseJSON.errorMessage;
                             }
                             Utils.notifyError({
                                 content: message
@@ -652,13 +638,14 @@ define(['require',
                 view.model.url = url + "/" + view.ui.termName.val();
                 this.showLoader();
                 view.model.set({ description: view.ui.termDetail.val() }).save(null, {
+                    skipDefaultError: true,
                     success: function(model, response) {
                         that.fetchCollection(view.model.url, true);
                         Utils.notifySuccess({
                             content: "Default taxonomy " + view.ui.termName.val() + Messages.addSuccessMessage
                         });
                     },
-                    error: function(error, data, status) {
+                    cust_error: function(model, response) {
                         Utils.notifyError({
                             content: "Default taxonomy " + view.ui.termName.val() + Messages.addErrorMessage
                         });

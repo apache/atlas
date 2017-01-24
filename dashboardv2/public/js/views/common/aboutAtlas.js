@@ -56,7 +56,6 @@ define(['require',
                         var str = "<b>Version : </b>" + data.Version;
                         that.ui.atlasVersion.html(str);
                     },
-                    error: function(error, data, status) {},
                     complete: function() {}
                 });
             },

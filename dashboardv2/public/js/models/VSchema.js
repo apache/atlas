@@ -33,7 +33,6 @@ define(['require',
 
         initialize: function() {
             this.modelName = 'VSchema';
-            this.bindErrorEvents();
         },
         toString: function() {
             return this.get('id');

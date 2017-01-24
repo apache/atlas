@@ -33,7 +33,6 @@ define(['require',
 
         initialize: function() {
             this.modelName = 'VSearch';
-            this.bindErrorEvents();
         },
         toString: function() {
             return this.get('name');

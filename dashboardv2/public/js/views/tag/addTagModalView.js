@@ -207,6 +207,7 @@ define(['require',
                     "attributes": tagAttributes
                 }];
             this.entityModel.saveEntity(options.guid, {
+                skipDefaultError: true,
                 data: JSON.stringify(json),
                 success: function(data) {
                     Utils.notifySuccess({
@@ -216,11 +217,10 @@ define(['require',
                         options.modalCollection.fetch({ reset: true });
                     }
                 },
-                error: function(error, data, status) {
+                    cust_error: function(model, response) {
                     var message = "Tag " + tagName + " could not be added";
-                    if (error && error.responseText) {
-                        var data = JSON.parse(error.responseText);
-                        message = data.error;
+                    if (response && response.responseJSON) {
+                        message = response.responseJSON.errorMessage;
                     }
                     Utils.notifyError({
                         content: message

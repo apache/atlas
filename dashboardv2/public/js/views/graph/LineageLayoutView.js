@@ -92,6 +92,7 @@ define(['require',
                 var that = this;
                 this.fromToObj = {};
                 this.collection.getLineage(this.guid, {
+                    skipDefaultError: true,
                     success: function(data) {
                         if (data.relations.length) {
                             that.generateData(data.relations, data.guidEntityMap);
@@ -99,7 +100,7 @@ define(['require',
                             that.noLineage();
                         }
                     },
-                    error: function(error, data, status) {
+                    cust_error: function(model, response) {
                         that.noLineage();
                     },
                     complete: function() {}

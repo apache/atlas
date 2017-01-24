@@ -516,13 +516,6 @@ define(['require',
                                 content: "entity " + Messages[that.guid ? 'editSuccessMessage' : 'addSuccessMessage']
                             });
                         },
-                        error: function(response) {
-                            if (response.responseJSON) {
-                                Utils.notifyError({
-                                    content: response.responseJSON.error || response.responseJSON.errorMessage
-                                });
-                            }
-                        },
                         complete: function() {
                             that.hideLoader();
                         }

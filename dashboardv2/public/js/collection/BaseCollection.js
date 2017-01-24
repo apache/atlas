@@ -36,19 +36,6 @@ define(['require',
             initialize: function() {
                 this.sort_key = 'id';
             },
-            bindErrorEvents: function() {
-                this.bind("error", Utils.defaultErrorHandler);
-            },
-            bindRequest: function() {
-                this.bind('request', function(model, ajaxObj, collectionObj) {
-                    this.ajaxStart(model, ajaxObj, collectionObj);
-                }, this);
-                this.bind('sync', function(model, ajaxObj, collectionObj) {
-                    this.ajaxComplete(model, ajaxObj, collectionObj);
-                }, this);
-            },
-            ajaxStart: function(model, ajaxObj, collectionObj) {},
-            ajaxComplete: function(model, ajaxObj, collectionObj) {},
             comparator: function(key, value) {
                 key = key.get(this.sort_key);
                 value = value.get(this.sort_key);
@@ -140,6 +127,7 @@ define(['require',
                 return retCols;
             },
             nonCrudOperation: function(url, requestMethod, options) {
+                var that = this;
                 options['beforeSend'] = CommonViewFunction.addRestCsrfCustomHeader;
                 return Backbone.sync.call(this, null, this, _.extend({
                     url: url,

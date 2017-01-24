@@ -9,6 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1486 UI updates to handle errors from V2 APIs (Kalyanikashikar via mneethiraj)
+ATLAS-1436 Metrics collection using gremlin (apoorvnaik via mneethiraj)
 ATLAS-1489 Show create/edit entity button based on role (Kalyanikashikar via kevalbhatt)
 ATLAS-1478 REST API to add classification to multiple entities (svimal2106 via mneethiraj)
 ATLAS-1490 added methods to get sub-types of entity and classification types (mneethiraj)
