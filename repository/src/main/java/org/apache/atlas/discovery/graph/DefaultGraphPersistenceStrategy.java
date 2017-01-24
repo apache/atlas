@@ -18,10 +18,8 @@
 
 package org.apache.atlas.discovery.graph;
 
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.query.GraphPersistenceStrategies;
@@ -36,7 +34,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
-import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -51,8 +48,8 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
+import javax.inject.Inject;
+import java.util.List;
 
 /**
  * Default implementation of GraphPersistenceStrategy.
@@ -249,6 +246,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     @Override
     public boolean collectTypeInstancesIntoVar() {
         return GraphPersistenceStrategies$class.collectTypeInstancesIntoVar(this);
+    }
+
+    @Override
+    public boolean filterBySubTypes() {
+        return GraphPersistenceStrategies$class.filterBySubTypes(this);
     }
 
     @Override

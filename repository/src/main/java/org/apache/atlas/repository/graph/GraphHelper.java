@@ -929,6 +929,14 @@ public final class GraphHelper {
         }
         return key;
     }
+
+    public Object getVertexId(String guid) throws EntityNotFoundException {
+        AtlasVertex instanceVertex   = getVertexForGUID(guid);
+        Object      instanceVertexId = instanceVertex.getId();
+
+        return instanceVertexId;
+    }
+
     public static AttributeInfo getAttributeInfoForSystemAttributes(String field) {
         switch (field) {
         case Constants.STATE_PROPERTY_KEY:

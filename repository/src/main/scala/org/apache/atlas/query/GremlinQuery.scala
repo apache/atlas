@@ -255,8 +255,9 @@ class GremlinTranslator(expr: Expression,
     val postStatements = ArrayBuffer[GroovyExpression]()
 
     val wrapAndRule: PartialFunction[Expression, Expression] = {
-        case f: FilterExpression if !f.condExpr.isInstanceOf[LogicalExpression] =>
-            FilterExpression(f.child, new LogicalExpression("and", List(f.condExpr)))
+        case f: FilterExpression if ((!f.condExpr.isInstanceOf[LogicalExpression]) &&
+                                      (f.condExpr.isInstanceOf[isTraitLeafExpression] || !f.namedExpressions.isEmpty)) =>
+          FilterExpression(f.child, new LogicalExpression("and", List(f.condExpr)))
     }
 
     val validateComparisonForm: PartialFunction[Expression, Unit] = {

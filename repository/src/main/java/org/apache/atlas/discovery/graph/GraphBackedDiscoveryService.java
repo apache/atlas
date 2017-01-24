@@ -18,16 +18,6 @@
 
 package org.apache.atlas.discovery.graph;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.script.ScriptException;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
@@ -53,9 +43,18 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import scala.util.Either;
 import scala.util.parsing.combinator.Parsers;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.script.ScriptException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Graph backed implementation of Search.
@@ -125,7 +124,11 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     }
 
     public GremlinQueryResult evaluate(String dslQuery, QueryParams queryParams) throws DiscoveryException {
-        LOG.debug("Executing dsl query={}", dslQuery);
+        
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing dsl query={}", dslQuery);
+        }
+
         try {
             Either<Parsers.NoSuccess, Expressions.Expression> either = QueryParser.apply(dslQuery, queryParams);
             if (either.isRight()) {
@@ -145,13 +148,17 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         //If the final limit is 0, don't launch the query, return with 0 rows
         if (validatedExpression instanceof Expressions.LimitExpression
                 && ((Integer)((Expressions.LimitExpression) validatedExpression).limit().rawValue()) == 0) {
-            return new GremlinQueryResult(dslQuery, validatedExpression.dataType());
+            return new GremlinQueryResult(dslQuery, validatedExpression.dataType(), Collections.emptyList());
         }
 
         GremlinQuery gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
-        LOG.debug("Query = {}", validatedExpression);
-        LOG.debug("Expression Tree = {}", validatedExpression.treeString());
-        LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Query = {}", validatedExpression);
+            LOG.debug("Expression Tree = {}", validatedExpression.treeString());
+            LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
+        }
+
         return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, graph).evaluate();
     }
 

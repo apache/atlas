@@ -139,7 +139,7 @@ public class DataSetLineageService implements LineageService {
                 guid, HIVE_PROCESS_TYPE_NAME,
                 HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                 SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return inputsQuery.graph().toInstanceJson();
+        return inputsQuery.graph(null).toInstanceJson();
     }
 
     @Override
@@ -156,7 +156,7 @@ public class DataSetLineageService implements LineageService {
                 new OutputLineageClosureQuery(AtlasClient.DATA_SET_SUPER_TYPE, SELECT_INSTANCE_GUID, guid, HIVE_PROCESS_TYPE_NAME,
                         HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                         SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return outputsQuery.graph().toInstanceJson();
+        return outputsQuery.graph(null).toInstanceJson();
     }
 
     /**

@@ -17,12 +17,10 @@
  */
 package org.apache.atlas.gremlin;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.groovy.ArithmeticExpression;
+import org.apache.atlas.groovy.ArithmeticExpression.ArithmeticOperator;
 import org.apache.atlas.groovy.CastExpression;
 import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.FieldExpression;
@@ -33,7 +31,6 @@ import org.apache.atlas.groovy.ListExpression;
 import org.apache.atlas.groovy.LiteralExpression;
 import org.apache.atlas.groovy.TypeCoersionExpression;
 import org.apache.atlas.groovy.VariableAssignmentExpression;
-import org.apache.atlas.groovy.ArithmeticExpression.ArithmeticOperator;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.IntSequence;
 import org.apache.atlas.query.TypeUtils.FieldInfo;
@@ -41,6 +38,15 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.cache.TypeCache.TYPE_FILTER;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Factory to generate Groovy expressions representing Gremlin syntax that that
@@ -61,6 +67,7 @@ public abstract class GremlinExpressionFactory {
     private static final String PATH_METHOD = "path";
     private static final String AS_METHOD = "as";
     private static final String FILL_METHOD = "fill";
+    private static final String IN_OPERATOR = "in";
     protected static final String HAS_METHOD = "has";
     protected static final String TO_LOWER_CASE_METHOD = "toLowerCase";
     protected static final String SELECT_METHOD = "select";
@@ -235,12 +242,37 @@ public abstract class GremlinExpressionFactory {
      * The last item in the result will be a graph traversal restricted to only the matching vertices.
      */
     public List<GroovyExpression> generateTypeTestExpression(GraphPersistenceStrategies s, GroovyExpression parent,
-            String typeName, IntSequence intSeq) {
-        if (s.collectTypeInstancesIntoVar()) {
+                                                             String typeName, IntSequence intSeq) throws AtlasException {
+        if (s.filterBySubTypes()) {
+            return typeTestExpressionUsingInFilter(s, parent, typeName);
+        } else if (s.collectTypeInstancesIntoVar()) {
             return typeTestExpressionMultiStep(s, typeName, intSeq);
         } else {
             return typeTestExpressionUsingFilter(s, parent, typeName);
         }
+    }
+
+    private List<GroovyExpression> typeTestExpressionUsingInFilter(GraphPersistenceStrategies s, GroovyExpression parent,
+                                                                   final String typeName) throws AtlasException {
+        List<GroovyExpression> typeNames = new ArrayList<>();
+        typeNames.add(new LiteralExpression(typeName));
+
+        Map<TYPE_FILTER, String> filters = new HashMap<TYPE_FILTER, String>() {{
+            put(TYPE_FILTER.SUPERTYPE, typeName);
+        }};
+
+        ImmutableList<String> subTypes = TypeSystem.getInstance().getTypeNames(filters);
+
+        if (!subTypes.isEmpty()) {
+            for (String subType : subTypes) {
+                typeNames.add(new LiteralExpression(subType));
+            }
+        }
+
+        GroovyExpression inFilterExpr = generateHasExpression(s, parent, s.typeAttributeName(), IN_OPERATOR,
+                                                              new ListExpression(typeNames), null);
+
+        return Collections.singletonList(inFilterExpr);
     }
 
     private List<GroovyExpression> typeTestExpressionMultiStep(GraphPersistenceStrategies s, String typeName,
@@ -277,8 +309,7 @@ public abstract class GremlinExpressionFactory {
         GroovyExpression graphExpr = getAllVerticesExpr();
         GroovyExpression superTypeAttributeNameExpr = new LiteralExpression(s.superTypeAttributeName());
         GroovyExpression typeNameExpr = new LiteralExpression(typeName);
-        GroovyExpression hasExpr = new FunctionCallExpression(graphExpr, HAS_METHOD, superTypeAttributeNameExpr,
-                typeNameExpr);
+        GroovyExpression hasExpr = new FunctionCallExpression(graphExpr, HAS_METHOD, superTypeAttributeNameExpr, typeNameExpr);
         GroovyExpression fillExpr = new FunctionCallExpression(hasExpr, FILL_METHOD, new IdentifierExpression(fillVar));
         return fillExpr;
     }

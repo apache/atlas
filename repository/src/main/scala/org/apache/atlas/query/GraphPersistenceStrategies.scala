@@ -153,6 +153,7 @@ trait GraphPersistenceStrategies {
      */
     def collectTypeInstancesIntoVar = true
 
+    def filterBySubTypes = true
 
     private def propertyValueSet(vertexRef : String, attrName: String) : String = {
         s"""org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils.set(${vertexRef}.values('${attrName})"""

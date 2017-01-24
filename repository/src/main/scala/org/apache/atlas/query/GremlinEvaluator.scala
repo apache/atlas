@@ -20,23 +20,19 @@ package org.apache.atlas.query
 
 
 import org.apache.atlas.query.Expressions._
-import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.query.TypeUtils.ResultWithPathStruct
+import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.typesystem.json._
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
 import org.apache.atlas.typesystem.types._
 import org.json4s._
 import org.json4s.native.Serialization._
+
 import scala.language.existentials
-import org.apache.atlas.query.Expressions._
-import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
 
 case class GremlinQueryResult(query: String,
                               resultDataType: IDataType[_],
-                              rows: List[_]) {
-    def this(query: String,resultDataType: IDataType[_]) {
-      this(query,resultDataType,List.empty)
-    }
-  
+                              rows: java.util.List[_]) {
     def toJson = JsonHelper.toJson(this)
 }
 

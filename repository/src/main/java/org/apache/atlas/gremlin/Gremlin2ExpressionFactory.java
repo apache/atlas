@@ -18,13 +18,11 @@
 
 package org.apache.atlas.gremlin;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.groovy.CastExpression;
 import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.ComparisonExpression;
+import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
 import org.apache.atlas.groovy.ComparisonOperatorExpression;
 import org.apache.atlas.groovy.FieldExpression;
 import org.apache.atlas.groovy.FunctionCallExpression;
@@ -33,14 +31,15 @@ import org.apache.atlas.groovy.IdentifierExpression;
 import org.apache.atlas.groovy.ListExpression;
 import org.apache.atlas.groovy.LiteralExpression;
 import org.apache.atlas.groovy.LogicalExpression;
+import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
 import org.apache.atlas.groovy.RangeExpression;
 import org.apache.atlas.groovy.TernaryOperatorExpression;
-import org.apache.atlas.groovy.TypeCoersionExpression;
-import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
-import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.TypeUtils.FieldInfo;
 import org.apache.atlas.typesystem.types.IDataType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -166,6 +165,9 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
         }
         if(op.equals("<=")) {
             return new FieldExpression(tExpr, "lte");
+        }
+        if(op.equals("in")) {
+            return new FieldExpression(tExpr, "in");
         }
         throw new AtlasException("Comparison operator " + op + " not supported in Gremlin");
     }
