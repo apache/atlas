@@ -61,7 +61,7 @@ public class AtlasMetrics {
     }
 
     @JsonIgnore
-    public void addData(String groupKey, String key, Integer value) {
+    public void addData(String groupKey, String key, Number value) {
         Map<String, Map<String, Number>> data = this.data;
         if (data == null) {
             data = new HashMap<>();
