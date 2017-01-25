@@ -129,6 +129,9 @@ define(['require',
                             if (!this.name && collectionJSON.attributes.qualifiedName) {
                                 this.name = collectionJSON.attributes.qualifiedName;
                             }
+                            if (!this.name && collectionJSON.displayText) {
+                                this.name = collectionJSON.displayText;
+                            }
                             if (this.name && collectionJSON.typeName) {
                                 this.name = this.name + ' (' + collectionJSON.typeName + ')';
                             }
@@ -162,7 +165,7 @@ define(['require',
                             this.addTagToTerms([]);
                         }
                     }
-                    Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
+                    this.hideLoader();
                     this.auditVent.trigger("reset:collection");
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
@@ -234,12 +237,12 @@ define(['require',
                     termData = "";
 
                 _.each(tagObject, function(val) {
-                    var isTerm = Utils.checkTagOrTerm(val);
-                    if (isTerm.tag) {
-                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + isTerm.fullName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
+                    //var isTerm = Utils.checkTagOrTerm(val);
+                    if (val.typeName && val.typeName.split('.').length === 1) {
+                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
                     }
-                    if (isTerm.term) {
-                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + isTerm.fullName + '"><span class="inputValue">' + isTerm.fullName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
+                    if (val.typeName && val.typeName.split('.').length > 1) {
+                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val.typeName + '"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
                     }
                 });
                 this.ui.tagList.find("span.inputTag").remove();
@@ -247,15 +250,26 @@ define(['require',
                 this.ui.tagList.prepend(tagData);
                 this.ui.termList.prepend(termData);
             },
+            hideLoader: function() {
+                Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
+            },
+            showLoader: function() {
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
+            },
             onClickAddTagBtn: function(e) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         vent: that.vent,
                         guid: that.id,
+                        tagList: _.map(that.collection.first().toJSON().classifications, function(obj) {
+                            return obj.typeName;
+                        }),
                         callback: function() {
                             that.fetchCollection();
-                        }
+                        },
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that)
                     });
                     view.modal.on('ok', function() {
                         Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
@@ -271,7 +285,9 @@ define(['require',
                         guid: that.id,
                         callback: function() {
                             that.fetchCollection();
-                        }
+                        },
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that)
                     });
                     view.modal.on('ok', function() {
                         Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));

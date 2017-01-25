@@ -47,7 +47,13 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         entitiesTraitsApiUrl: function(token) {
-            return this.baseUrlV2 + '/entity/guid/' + token + "/classifications"; //this.entitiesApiUrl();
+            if (token) {
+                return this.baseUrlV2 + '/entity/guid/' + token + '/classifications';
+            } else {
+                // For Multiple Assignment
+                return this.baseUrlV2 + '/entities/classification';
+            }
+
         },
         entityCollectionaudit: function(guid) {
             return this.baseUrl + '/entities/' + guid + '/audit';
@@ -82,7 +88,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         searchApiUrl: function(searchtype) {
-            var searchUrl = this.baseUrl + '/discovery/search';
+            var searchUrl = this.baseUrlV2 + '/search';
             if (searchtype) {
                 return searchUrl + '/' + searchtype;
             } else {

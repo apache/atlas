@@ -261,7 +261,8 @@ ul {
 }
 
 .readOnlyLink {
-    display: inline-block;
+    text-overflow: ellipsis;
+    overflow: hidden;
     .deleteBtn {
         padding: 0px 5px;
     }

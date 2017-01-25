@@ -9,6 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1425 Integrate Discovery/Search API in Atlas UI (kevalbhatt via mneethiraj)
+ATLAS-1482 UI update in assigning a tag to multiple entities using single API call (kevalbhatt via mneethiraj)
 ATLAS-1486 UI updates to handle errors from V2 APIs (Kalyanikashikar via mneethiraj)
 ATLAS-1436 Metrics collection using gremlin (apoorvnaik via mneethiraj)
 ATLAS-1489 Show create/edit entity button based on role (Kalyanikashikar via kevalbhatt)

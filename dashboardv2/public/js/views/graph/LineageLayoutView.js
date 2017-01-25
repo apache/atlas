@@ -102,8 +102,7 @@ define(['require',
                     },
                     cust_error: function(model, response) {
                         that.noLineage();
-                    },
-                    complete: function() {}
+                    }
                 })
             },
             noLineage: function() {

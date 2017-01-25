@@ -123,9 +123,14 @@ define(['require',
                     this.schemaCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var term = [];
+                            var obj = {}
+                            obj['displayText'] = item.get("name") || item.get("qualifiedName")
+                            obj['status'] = item.get("$id$").state;
+                            obj['classificationNames'] = _.keys(item.get('$traits$'));
+                            obj['guid'] = item.get("$id$").id || item.get("$id$");
                             that.arr.push({
-                                id: item.get("$id$"),
-                                model: item
+                                id: item.get("$id$").id || item.get("$id$"),
+                                model: obj
                             });
                         }
                     });
@@ -164,6 +169,7 @@ define(['require',
                 var that = this;
                 this.$('.fontLoader').show();
                 this.schemaCollection.fetch({
+                    skipDefaultError: true,
                     success: function() {
                         that.schemaCollection.sortByKey('position');
                         that.renderTableLayoutView();
@@ -172,6 +178,9 @@ define(['require',
                     },
                     silent: true
                 });
+            },
+            hideLoader: function(argument) {
+                this.$('.fontLoader').hide();
             },
             renderTableLayoutView: function() {
                 var that = this,
@@ -318,7 +327,12 @@ define(['require',
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            return CommonViewFunction.tagForTable(model);
+                            return CommonViewFunction.tagForTable({
+                                classificationNames: _.keys(model.get('$traits$')),
+                                guid: model.get('$id$').id || model.get('$id$') || model.get('guid'),
+                                displayText: model.get('name'),
+                                status: model.get('$id$').state
+                            });
                         }
                     })
                 };
@@ -332,7 +346,12 @@ define(['require',
                         className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model, "schema");
+                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker({
+                                    classificationNames: _.keys(model.get('$traits$')),
+                                    guid: model.get('$id$').id || model.get('$id$') || model.get('guid'),
+                                    displayText: model.get('name'),
+                                    status: model.get('$id$').state
+                                });
                                 if (returnObject.object) {
                                     that.bradCrumbList.push(returnObject.object);
                                 }
@@ -379,7 +398,8 @@ define(['require',
                         showLoader: function() {
                             that.$('.fontLoader').show();
                             that.$('.searchTable').hide();
-                        }
+                        },
+                        hideLoader: that.hideLoader.bind(that)
                     });
                     // view.saveTagData = function() {
                     //override saveTagData function 

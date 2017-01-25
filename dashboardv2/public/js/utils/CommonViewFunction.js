@@ -285,28 +285,28 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             });
         }
     }
-    CommonViewFunction.termTableBreadcrumbMaker = function(model) {
-        if (!model) {
+    CommonViewFunction.termTableBreadcrumbMaker = function(obj) {
+        if (!obj) {
             return "";
         }
-        var traits = model.get('$traits$'),
+        var traits = obj.classificationNames,
             url = "",
             deleteHtml = "",
             html = "",
-            id = model.get('$id$').id || model.get('$id$'),
-            terms = [];
-        _.keys(traits).map(function(key) {
-            if (traits[key]) {
-                var tagName = Utils.checkTagOrTerm(traits[key]);
-            }
-            if (tagName.term) {
-                terms.push({
-                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + _.escape(model.get("name")) + '" data-name="' + tagName.fullName + '" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ></i></a>',
-                    url: _.unescape(tagName.fullName).split(".").join("/"),
-                    name: tagName.fullName
-                });
-            }
-        });
+            id = obj.guid,
+            terms = [],
+            entityName = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid);
+        if (traits) {
+            traits.map(function(term) {
+                if (term.split(".").length > 1) {
+                    terms.push({
+                        deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + entityName + '" data-name="' + term + '" data-guid="' + obj.guid + '" ></i></a>',
+                        url: _.unescape(term).split(".").join("/"),
+                        name: term
+                    });
+                }
+            });
+        }
         _.each(terms, function(obj, i) {
             var className = "";
             if (i >= 1) {
@@ -318,10 +318,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         if (terms.length > 1) {
             html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
         }
-        if (model.get('$id$')) {
-            html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
-        } else {
-            html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
+        if (!Enums.entityStateReadOnly[obj.status]) {
+            if (obj.guid) {
+                html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm" data-guid="' + (obj.guid) + '"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
+            } else {
+                html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
+            }
         }
         return {
             html: '<div class="termTableBreadcrumb" dataterm-id="' + id + '">' + html + '</div>',
@@ -329,30 +331,32 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         }
 
     }
-    CommonViewFunction.tagForTable = function(model) {
-        var traits = model.get('$traits$'),
+    CommonViewFunction.tagForTable = function(obj) {
+        var traits = obj.classificationNames,
             atags = "",
             addTag = "",
             popTag = "",
-            count = 0;
-        _.keys(model.get('$traits$')).map(function(key) {
-            if (traits[key]) {
-                var tagName = Utils.checkTagOrTerm(traits[key]);
-            }
-            var className = "inputTag";
-            if (tagName.tag) {
-                if (count >= 1) {
-                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.fullName + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.fullName + '" data-type="tag" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ></i></a>';
-                } else {
-                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.fullName + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName + '"  data-type="tag" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ></i></a>';
+            count = 0,
+            entityName = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid);
+        if (traits) {
+            traits.map(function(tag) {
+                if (tag.split(".").length === 1) {
+                    var className = "inputTag";
+                    if (count >= 1) {
+                        popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                    } else {
+                        atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + entityName + '" data-name="' + tag + '"  data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                    }
+                    ++count;
                 }
-                ++count;
+            });
+        }
+        if (!Enums.entityStateReadOnly[obj.status]) {
+            if (obj.guid) {
+                addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
+            } else {
+                addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
             }
-        });
-        if (model.get('$id$')) {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag" data-guid="' + (model.get('$id$').id || model.get('$id$')) + '" ><i class="fa fa-plus"></i></a>';
-        } else {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
         }
         if (count > 1) {
             addTag += '<div data-id="showMoreLess" class="inputTagAdd assignTag tagDetailPopover"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></div>'

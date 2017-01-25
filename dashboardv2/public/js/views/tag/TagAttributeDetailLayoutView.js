@@ -174,12 +174,20 @@ define(['require',
                         });
                         that.modal.on('ok', function() {
                             var newAttributeList = view.collection.toJSON();
-                            var saveJSON = JSON.parse(JSON.stringify(that.model.toJSON()));
-                            var oldAttributeList = saveJSON.attributeDefs;
+                            try {
+                                var saveJSON = JSON.parse(JSON.stringify(that.model.toJSON()));
+                            } catch (err) {
+                                Utils.serverErrorHandler();
+                            }
+                            if (saveJSON) {
+                                var oldAttributeList = saveJSON.attributeDefs;
+                            }
                             _.each(newAttributeList, function(obj) {
                                 oldAttributeList.push(obj);
                             });
-                            that.onSaveButton(saveJSON, Messages.addAttributeSuccessMessage);
+                            if (saveJSON) {
+                                that.onSaveButton(saveJSON, Messages.addAttributeSuccessMessage);
+                            }
                         });
                         that.modal.on('closeModal', function() {
                             that.modal.trigger('cancel');

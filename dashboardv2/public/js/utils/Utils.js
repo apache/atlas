@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages'], function(require, Globals, pnotify, Messages) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages) {
     'use strict';
 
     var Utils = {};
@@ -49,35 +49,60 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages'], function(requi
     };
 
     var notify = function(options) {
-        new pnotify(_.extend({ icon: true, hide: true, delay: 3000, remove: true }, options));
+        return new pnotify(_.extend({ icon: true, hide: true, delay: 3000, remove: true }, options));
     }
     Utils.notifyInfo = function(options) {
         notify({
             type: "info",
-            text: _.escape(options.content) || "Info message."
+            text: (options.html ? options.content : _.escape(options.content)) || "Info message."
         });
     };
 
     Utils.notifyWarn = function(options) {
         notify({
             type: "notice",
-            text: _.escape(options.content) || "Info message."
+            text: (options.html ? options.content : _.escape(options.content)) || "Info message."
         });
     };
 
     Utils.notifyError = function(options) {
         notify({
             type: "error",
-            text: _.escape(options.content) || "Error occurred."
+            text: (options.html ? options.content : _.escape(options.content)) || "Error occurred."
         });
     };
 
     Utils.notifySuccess = function(options) {
         notify({
             type: "success",
-            text: _.escape(options.content) || "Error occurred."
+            text: (options.html ? options.content : _.escape(options.content)) || "Error occurred."
         });
     };
+
+    Utils.notifyConfirm = function(options) {
+        notify(_.extend({
+            title: 'Confirmation',
+            hide: false,
+            confirm: {
+                confirm: true
+            },
+            buttons: {
+                closer: false,
+                sticker: false
+            },
+            history: {
+                history: false
+            }
+        }, options)).get().on('pnotify.confirm', function() {
+            if (options.ok) {
+                options.ok();
+            }
+        }).on('pnotify.cancel', function() {
+            if (options.cancel) {
+                options.cancel();
+            }
+        });
+    }
     Utils.defaultErrorHandler = function(model, error) {
         if (error && error.status) {
             if (error.status == 401) {
@@ -87,11 +112,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages'], function(requi
             } else if (error.status == 403) {
                 var message = "You are not authorized";
                 if (error.statusText) {
-                    message = JSON.parse(error.statusText).AuthorizationError;
+                    try {
+                        message = JSON.parse(error.statusText).AuthorizationError;
+                    } catch (err) {}
+                    Utils.notifyError({
+                        content: message
+                    });
                 }
-                Utils.notifyError({
-                    content: message
-                });
             } else if (error.status == "0" && error.statusText != "abort") {
                 var diffTime = (new Date().getTime() - prevNetworkErrorTime);
                 if (diffTime > 3000) {

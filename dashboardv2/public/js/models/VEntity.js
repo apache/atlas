@@ -52,8 +52,8 @@ define(['require',
 
             return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
         },
-        saveEntity: function(token, options) {
-            var url = UrlLinks.entitiesTraitsApiUrl(token);
+        saveTraitsEntity: function(options) {
+            var url = UrlLinks.entitiesTraitsApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

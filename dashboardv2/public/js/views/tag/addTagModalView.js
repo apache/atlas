@@ -48,7 +48,7 @@ define(['require',
          */
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader'));
+            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList'));
             this.collection = new VTagList();
             this.commonCollection = new VTagList();
             this.asyncAttrFetchCounter = 0;
@@ -68,38 +68,97 @@ define(['require',
                     var selection = $(item).data("key");
                     tagAttributes[selection] = $(item).val();
                 });
-
+                var obj = {
+                    tagName: tagName,
+                    tagAttributes: tagAttributes,
+                    guid: [],
+                    skipEntity: [],
+                    deletedEntity: []
+                }
                 if (that.multiple) {
-                    that.asyncFetchCounter = 0;
-                    for (var i = 0; i < that.multiple.length; i++) {
-                        if (i == 0) {
-                            that.showLoader();
-                        }
-                        var obj = {
-                            tagName: tagName,
-                            tagAttributes: tagAttributes,
-                            guid: (_.isObject(that.multiple[i].id) ? that.multiple[i].id.id : that.multiple[i].id),
-                            deletedEntity: Enums.entityStateReadOnly[that.multiple[i].id.state],
-                            entityName: that.multiple[i].model.get('name')
-                        }
-                        if (obj.deletedEntity) {
-                            Utils.notifyError({
-                                content: obj.entityName + Messages.assignDeletedEntity
-                            });
-                            if (that.multiple.length === 1 || (that.multiple.length == (i + 1) && that.asyncFetchCounter == 0)) {
-                                that.hideLoader();
-                            }
+                    _.each(that.multiple, function(entity, i) {
+                        var name = (_.escape(entity.model.attributes && entity.model.attributes.name ? entity.model.attributes.name : null) || _.escape(entity.model.displayText) || entity.model.guid)
+                        if (Enums.entityStateReadOnly[entity.model.status]) {
+                            obj.deletedEntity.push(name);
                         } else {
+                            if (_.indexOf(entity.model.classificationNames, tagName) === -1) {
+                                obj.guid.push(entity.model.guid)
+                            } else {
+                                obj.skipEntity.push(name);
+                            }
+
+                        }
+                    });
+                    if (obj.deletedEntity.length) {
+                        Utils.notifyError({
+                            html: true,
+                            content: "<b>" + obj.deletedEntity.join(', ') +
+                                "</b> " + (obj.deletedEntity.length === 1 ? "entity " : "entities ") +
+                                Messages.assignDeletedEntity
+                        });
+                    }
+                    if (obj.skipEntity.length) {
+                        var text = "<b>" + obj.skipEntity.join(', ') +
+                            "</b> <br/> entities selected have already been associated with <b>" + tagName +
+                            "</b> tag, Do you want to associate the tag with other entities ?",
+                            removeCancelButton = false;
+                        if ((obj.skipEntity.length + obj.deletedEntity.length) === that.multiple.length) {
+                            text = (obj.skipEntity.length > 1 ? "All selected" : "Selected") + " entities have already been associated with <b>" + tagName + "</b> tag";
+                            removeCancelButton = true;
+                        }
+                        var notifyObj = {
+                            text: text,
+                            ok: function(argument) {
+                                if (obj.guid.length) {
+                                    that.saveTagData(obj);
+                                } else {
+                                    that.hideLoader();
+                                }
+                            },
+                            cancel: function(argument) {
+                                that.hideLoader();
+                                obj = {
+                                    tagName: tagName,
+                                    tagAttributes: tagAttributes,
+                                    guid: [],
+                                    skipEntity: [],
+                                    deletedEntity: []
+                                }
+                            }
+                        }
+                        if (removeCancelButton) {
+                            notifyObj['confirm'] = {
+                                confirm: true,
+                                buttons: [{
+                                        text: 'Ok',
+                                        addClass: 'btn-primary',
+                                        click: function(notice) {
+                                            notice.remove();
+                                            obj = {
+                                                tagName: tagName,
+                                                tagAttributes: tagAttributes,
+                                                guid: [],
+                                                skipEntity: [],
+                                                deletedEntity: []
+                                            }
+                                        }
+                                    },
+                                    null
+                                ]
+                            }
+                        }
+
+                        Utils.notifyConfirm(notifyObj)
+                    } else {
+                        if (obj.guid.length) {
                             that.saveTagData(obj);
+                        } else {
+                            that.hideLoader();
                         }
                     }
                 } else {
-                    that.asyncFetchCounter = 0;
-                    that.saveTagData({
-                        tagName: tagName,
-                        tagAttributes: tagAttributes,
-                        guid: that.guid
-                    });
+                    obj.guid.push(that.guid);
+                    that.saveTagData(obj);
                 }
             });
             this.on('closeModal', function() {
@@ -126,13 +185,16 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
+            var that = this;
             this.collection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
             }
 
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             this.collection.fullCollection.sort().each(function(obj, key) {
-                str += '<option>' + _.escape(obj.get('name')) + '</option>';
+                if (_.indexOf(that.tagList, obj.get('name')) === -1) {
+                    str += '<option>' + _.escape(obj.get('name')) + '</option>';
+                }
             });
             this.ui.addTagOptions.html(str);
             this.ui.addTagOptions.select2({
@@ -198,26 +260,35 @@ define(['require',
         },
         saveTagData: function(options) {
             var that = this;
-            ++this.asyncFetchCounter;
             this.entityModel = new VEntity();
             var tagName = options.tagName,
                 tagAttributes = options.tagAttributes,
-                json = [{
-                    "typeName": tagName,
-                    "attributes": tagAttributes
-                }];
-            this.entityModel.saveEntity(options.guid, {
+                json = {
+                    "classification": {
+                        "typeName": tagName,
+                        "attributes": tagAttributes
+                    },
+                    "entityGuids": options.guid
+                };
+            if (this.showLoader) {
+                this.showLoader();
+            }
+            this.entityModel.saveTraitsEntity({
                 skipDefaultError: true,
                 data: JSON.stringify(json),
                 success: function(data) {
                     Utils.notifySuccess({
-                        content: "Tag " + tagName + " has been added to entity"
+                        content: "Tag " + tagName + " has been added to " + (that.multiple ? "entities" : "entity")
                     });
                     if (options.modalCollection) {
                         options.modalCollection.fetch({ reset: true });
                     }
+                    if (that.callback) {
+                        that.callback();
+                    }
+
                 },
-                    cust_error: function(model, response) {
+                cust_error: function(model, response) {
                     var message = "Tag " + tagName + " could not be added";
                     if (response && response.responseJSON) {
                         message = response.responseJSON.errorMessage;
@@ -225,12 +296,10 @@ define(['require',
                     Utils.notifyError({
                         content: message
                     });
-                },
-                complete: function() {
-                    --that.asyncFetchCounter;
-                    if (that.callback && that.asyncFetchCounter === 0) {
-                        that.callback();
+                    if (that.hideLoader) {
+                        that.hideLoader();
                     }
+
                 }
             });
         },
