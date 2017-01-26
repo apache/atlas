@@ -19,9 +19,11 @@
 package org.apache.atlas.repository.graph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -306,7 +308,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
         }
-        
+
         AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
         List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
@@ -331,7 +333,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
-    
+
     private void updateTraits(AtlasVertex instanceVertex, List<String> traitNames) {
         // remove the key
         instanceVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
@@ -357,8 +359,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_FULL,
                     entitiesUpdated);
             RequestContext requestContext = RequestContext.get();
-            return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
-                    requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
+            return createEntityResultFromContext(requestContext);
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
@@ -375,12 +376,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);
             RequestContext requestContext = RequestContext.get();
-            return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
-                    requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
+            return createEntityResultFromContext(requestContext);
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
     }
+
+
 
     @Override
     @GraphTransaction
@@ -390,32 +392,41 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
         }
 
-        List<AtlasVertex> vertices = new ArrayList<>(guids.size());
-        for (String guid : guids) {
-            if (guid == null) {
-                LOG.warn("deleteEntities: Ignoring null guid");
-                continue;
-            }
-            try {
-                AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
-                vertices.add(instanceVertex);
-            } catch (EntityNotFoundException e) {
-                // Entity does not exist - treat as non-error, since the caller
-                // wanted to delete the entity and it's already gone.
-                LOG.info("Deletion request ignored for non-existent entity with guid {}", guid);
+        // Retrieve vertices for requested guids.
+        Map<String, AtlasVertex> vertices = graphHelper.getVerticesForGUIDs(guids);
+        Collection<AtlasVertex> deletionCandidates = vertices.values();
+
+        if(LOG.isDebugEnabled()) {
+            for(String guid : guids) {
+                if(! vertices.containsKey(guid)) {
+                    // Entity does not exist - treat as non-error, since the caller
+                    // wanted to delete the entity and it's already gone.
+                    LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+                }
             }
         }
 
+        if (deletionCandidates.isEmpty()) {
+            LOG.info("No deletion candidate entities were found for guids %s", guids);
+            return new AtlasClient.EntityResult(Collections.<String>emptyList(), Collections.<String>emptyList(), Collections.<String>emptyList());
+        }
+
         try {
-            deleteHandler.deleteEntities(vertices);
+            deleteHandler.deleteEntities(deletionCandidates);
         }
         catch (AtlasException e) {
             throw new RepositoryException(e);
         }
 
         RequestContext requestContext = RequestContext.get();
-        return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
-                requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
+        return createEntityResultFromContext(requestContext);
+    }
+
+    private AtlasClient.EntityResult createEntityResultFromContext(RequestContext requestContext) {
+        return new AtlasClient.EntityResult(
+                requestContext.getCreatedEntityIds(),
+                requestContext.getUpdatedEntityIds(),
+                requestContext.getDeletedEntityIds());
     }
 
     public AtlasGraph getGraph() {

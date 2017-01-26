@@ -149,8 +149,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
             LOG.info("JsonRow - {}", row);
             Assert.assertNotNull(row.getString("name"));
             Assert.assertNotNull(row.getString("comment"));
-            Assert.assertNotNull(row.getString("type"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
         }
     }
 
@@ -168,8 +167,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
             LOG.info("JsonRow - {}", row);
             Assert.assertNotNull(row.getString("name"));
             Assert.assertNotNull(row.getString("comment"));
-            Assert.assertNotNull(row.getString("type"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
         }
     }
 

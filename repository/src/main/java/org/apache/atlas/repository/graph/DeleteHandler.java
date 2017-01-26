@@ -22,6 +22,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,7 +71,7 @@ public abstract class DeleteHandler {
      * @param instanceVertices
      * @throws AtlasException
      */
-    public void deleteEntities(List<AtlasVertex> instanceVertices) throws AtlasException {
+    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasException {
        RequestContext requestContext = RequestContext.get();
 
        Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();

@@ -17,10 +17,15 @@
  */
 package org.apache.atlas.repository.graph;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumValue;
@@ -29,23 +34,22 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class FullTextMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapper.class);
 
     private final GraphToTypedInstanceMapper graphToTypedInstanceMapper;
+    private final TypedInstanceToGraphMapper typedInstanceToGraphMapper;
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
     private static final String FULL_TEXT_DELIMITER = " ";
     private final Map<String, ITypedReferenceableInstance> instanceCache;
 
-    FullTextMapper(GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
+    FullTextMapper(TypedInstanceToGraphMapper typedInstanceToGraphMapper,
+            GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
         this.graphToTypedInstanceMapper = graphToTypedInstanceMapper;
+        this.typedInstanceToGraphMapper = typedInstanceToGraphMapper;
         instanceCache = new HashMap<>();
     }
 
@@ -126,8 +130,12 @@ public class FullTextMapper {
 
         case CLASS:
             if (followReferences) {
-                String refGuid = ((ITypedReferenceableInstance) value).getId()._getId();
-                AtlasVertex refVertex = graphHelper.getVertexForGUID(refGuid);
+                Id refId = ((ITypedReferenceableInstance) value).getId();
+                String refGuid = refId._getId();
+                AtlasVertex refVertex = typedInstanceToGraphMapper.lookupVertex(refId);
+                if(refVertex == null) {
+                    refVertex = graphHelper.getVertexForGUID(refGuid);
+                }
                 return mapRecursive(refVertex, false);
             }
             break;

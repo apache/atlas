@@ -18,35 +18,48 @@
 
 package org.apache.atlas.repository.graph;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphHelperTest {
@@ -69,6 +82,9 @@ public class GraphHelperTest {
     }
 
     @Inject
+    private MetadataService metadataService;
+
+    @Inject
     private GraphBackedMetadataRepository repositoryService;
 
     private TypeSystem typeSystem;
@@ -82,7 +98,12 @@ public class GraphHelperTest {
         typeSystem.reset();
 
         new GraphBackedSearchIndexer(typeRegistry);
-
+        TypesDef typesDef = TestUtils.defineHiveTypes();
+        try {
+            metadataService.getTypeDefinition(TestUtils.TABLE_TYPE);
+        } catch (TypeNotFoundException e) {
+            metadataService.createType(TypesSerialization.toJson(typesDef));
+        }
         TestUtils.defineDeptEmployeeTypes(typeSystem);
     }
 
@@ -91,6 +112,43 @@ public class GraphHelperTest {
         AtlasGraphProvider.cleanup();
     }
 
+    @Test
+    public void testGetInstancesByUniqueAttributes() throws Exception {
+
+        GraphHelper helper = GraphHelper.getInstance();
+        List<ITypedReferenceableInstance> instances =  new ArrayList<>();
+        List<String> guids = new ArrayList<>();
+        TypeSystem ts = TypeSystem.getInstance();
+        ClassType dbType = ts.getDataType(ClassType.class, TestUtils.DATABASE_TYPE);
+
+        for(int i = 0; i < 10; i++) {
+            Referenceable db = TestUtils.createDBEntity();
+            String guid = createInstance(db);
+            ITypedReferenceableInstance instance = convert(db, dbType);
+            instances.add(instance);
+            guids.add(guid);
+        }
+
+        //lookup vertices via getVertexForInstanceByUniqueAttributes
+        List<AtlasVertex> vertices = helper.getVerticesForInstancesByUniqueAttribute(dbType, instances);
+        assertEquals(instances.size(), vertices.size());
+        //assert vertex matches the vertex we get through getVertexForGUID
+        for(int i = 0; i < instances.size(); i++) {
+            String guid = guids.get(i);
+            AtlasVertex foundVertex = vertices.get(i);
+            AtlasVertex expectedVertex = helper.getVertexForGUID(guid);
+            assertEquals(foundVertex, expectedVertex);
+        }
+    }
+    @Test
+    public void testGetVerticesForGUIDSWithDuplicates() throws Exception {
+        ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(TypeSystem.getInstance());
+        List<String> result = repositoryService.createEntities(hrDept);
+        String guid = result.get(0);
+        Map<String, AtlasVertex> verticesForGUIDs = GraphHelper.getInstance().getVerticesForGUIDs(Arrays.asList(guid, guid));
+        Assert.assertEquals(verticesForGUIDs.size(), 1);
+        Assert.assertTrue(verticesForGUIDs.containsKey(guid));
+    }
     @Test
     public void testGetCompositeGuidsAndVertices() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
@@ -143,5 +201,23 @@ public class GraphHelperTest {
         assertNull(iterator.next());
         assertFalse(iterator.hasNext());
         assertFalse(iterator.hasNext());
+    }
+
+    private ITypedReferenceableInstance convert(Referenceable instance, ClassType type) throws AtlasException {
+
+        return type.convert(instance, Multiplicity.REQUIRED);
+    }
+
+    private String createInstance(Referenceable entity) throws Exception {
+        TestUtils.resetRequestContext();
+
+        String entityjson = InstanceSerialization.toJson(entity, true);
+        JSONArray entitiesJson = new JSONArray();
+        entitiesJson.put(entityjson);
+        List<String> guids = metadataService.createEntities(entitiesJson.toString());
+        if (guids != null && guids.size() > 0) {
+            return guids.get(guids.size() - 1);
+        }
+        return null;
     }
 }

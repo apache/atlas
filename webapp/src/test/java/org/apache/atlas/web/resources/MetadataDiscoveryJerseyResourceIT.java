@@ -66,7 +66,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSearchByDSL() throws Exception {
-        String dslQuery = "from "+ DATABASE_TYPE + " qualifiedName=\"" + dbName + "\"";
+        String dslQuery = "from "+ DATABASE_TYPE + " name=\"" + dbName + "\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", dslQuery);
         JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.SEARCH_DSL, queryParams);
@@ -89,7 +89,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     public void testSearchDSLLimits() throws Exception {
 
         //search without new parameters of limit and offset should work
-        String dslQuery = "from "+ DATABASE_TYPE + " qualifiedName=\"" + dbName + "\"";
+        String dslQuery = "from "+ DATABASE_TYPE + " name=\"" + dbName + "\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", dslQuery);
         JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.SEARCH_DSL, queryParams);
@@ -146,7 +146,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSearchUsingGremlin() throws Exception {
-        String query = "g.V.has('type', 'hive_db').toList()";
+        String query = "g.V.has('type', '" + BaseResourceIT.HIVE_TABLE_TYPE + "').toList()";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
 
@@ -162,7 +162,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchUsingDSL() throws Exception {
         //String query = "from dsl_test_type";
-        String query = "from "+ DATABASE_TYPE + " qualifiedName=\"" + dbName +"\"";
+        String query = "from "+ DATABASE_TYPE + " name=\"" + dbName +"\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
         JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.SEARCH, queryParams);

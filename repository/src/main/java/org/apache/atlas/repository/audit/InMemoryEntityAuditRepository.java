@@ -18,16 +18,16 @@
 
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
-
-import com.google.inject.Singleton;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
+
+import com.google.inject.Singleton;
 
 /**
  * Entity audit repository where audit events are stored in-memory. Used only for integration tests
@@ -50,8 +50,10 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
         }
     }
 
+    //synchronized to avoid concurrent modification exception that occurs if events are added
+    //while we are iterating through the map
     @Override
-    public List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
+    public synchronized List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
             throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
         String myStartKey = startKey;

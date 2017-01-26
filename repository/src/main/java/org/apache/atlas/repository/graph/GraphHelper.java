@@ -18,9 +18,20 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -51,13 +62,17 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.util.AttributeValueMap;
+import org.apache.atlas.util.IndexedInstance;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 
 /**
  * Utility class for graph operations.
@@ -402,7 +417,7 @@ public final class GraphHelper {
      * Gets the value of a property that is stored in the graph as a single property value.  If
      * a multi-property such as {@link Constants#TRAIT_NAMES_PROPERTY_KEY} or {@link Constants#SUPER_TYPES_PROPERTY_KEY}
      * is used, an exception will be thrown.
-     * 
+     *
      * @param element
      * @param propertyName
      * @param clazz
@@ -414,7 +429,7 @@ public final class GraphHelper {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Reading property {} from {}", actualPropertyName, string(element));
         }
-       
+
         return element.getProperty(actualPropertyName, clazz);
     }
 
@@ -442,8 +457,8 @@ public final class GraphHelper {
         }
 
         return edge.getProperty(actualPropertyName, Object.class);
-    }    
-    
+    }
+
     private static <T extends AtlasElement> String string(T element) {
         if (element instanceof AtlasVertex) {
             return string((AtlasVertex) element);
@@ -452,10 +467,10 @@ public final class GraphHelper {
         }
         return element.toString();
     }
-    
+
     /**
      * Adds an additional value to a multi-property.
-     * 
+     *
      * @param vertex
      * @param propertyName
      * @param value
@@ -514,6 +529,60 @@ public final class GraphHelper {
 
     public AtlasVertex getVertexForGUID(String guid) throws EntityNotFoundException {
         return findVertex(Constants.GUID_PROPERTY_KEY, guid);
+    }
+
+
+    /**
+     * Finds the Vertices that correspond to the given property values.  Property
+     * values that are not found in the graph will not be in the map.
+     *
+     *  @return propertyValue to AtlasVertex map with the result.
+     */
+    private Map<String, AtlasVertex> getVerticesForPropertyValues(String property, List<String> values)
+            throws RepositoryException {
+
+        if(values.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Collection<String> nonNullValues = new HashSet<>(values.size());
+
+        for(String value : values) {
+            if(value != null) {
+                nonNullValues.add(value);
+            }
+        }
+
+        //create graph query that finds vertices with the guids
+        AtlasGraphQuery query = graph.query();
+        query.in(property, nonNullValues);
+        Iterable<AtlasVertex> results = query.vertices();
+
+        Map<String, AtlasVertex> result = new HashMap<>(values.size());
+        //Process the result, using the guidToIndexMap to figure out where
+        //each vertex should go in the result list.
+        for(AtlasVertex vertex : results) {
+            if(vertex.exists()) {
+                String propertyValue = vertex.getProperty(property, String.class);
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("Found a vertex {} with {} =  {}", string(vertex), property, propertyValue);
+                }
+                result.put(propertyValue, vertex);
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Finds the Vertices that correspond to the given GUIDs.  GUIDs
+     * that are not found in the graph will not be in the map.
+     *
+     *  @return GUID to AtlasVertex map with the result.
+     */
+    public Map<String, AtlasVertex> getVerticesForGUIDs(List<String> guids)
+            throws RepositoryException {
+
+        return getVerticesForPropertyValues(Constants.GUID_PROPERTY_KEY, guids);
     }
 
     public static String getQualifiedNameForMapKey(String prefix, String key) {
@@ -637,6 +706,112 @@ public final class GraphHelper {
         return result;
     }
 
+    /**
+     * Finds vertices that match at least one unique attribute of the instances specified.  The AtlasVertex at a given index in the result corresponds
+     * to the IReferencableInstance at that same index that was passed in.  The number of elements in the resultant list is guaranteed to match the
+     * number of instances that were passed in.  If no vertex is found for a given instance, that entry will be null in the resultant list.
+     *
+     *
+     * @param classType
+     * @param instancesForClass
+     * @return
+     * @throws AtlasException
+     */
+    public List<AtlasVertex> getVerticesForInstancesByUniqueAttribute(ClassType classType, List<? extends IReferenceableInstance> instancesForClass) throws AtlasException {
+
+        //For each attribute, need to figure out what values to search for and which instance(s)
+        //those values correspond to.
+        Map<String, AttributeValueMap> map = new HashMap<String, AttributeValueMap>();
+
+        for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
+            if (attributeInfo.isUnique) {
+                String propertyKey = getQualifiedFieldName(classType, attributeInfo.name);
+                AttributeValueMap mapForAttribute = new AttributeValueMap();
+                for(int idx = 0; idx < instancesForClass.size(); idx++) {
+                    IReferenceableInstance instance = instancesForClass.get(idx);
+                    Object value = instance.get(attributeInfo.name);
+                    mapForAttribute.put(value, instance, idx);
+                }
+                map.put(propertyKey, mapForAttribute);
+            }
+        }
+
+        AtlasVertex[] result = new AtlasVertex[instancesForClass.size()];
+        if(map.isEmpty()) {
+            //no unique attributes
+            return Arrays.asList(result);
+        }
+
+        //construct gremlin query
+        AtlasGraphQuery query = graph.query();
+
+        query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getName());
+        query.has(Constants.STATE_PROPERTY_KEY,Id.EntityState.ACTIVE.name());
+
+        List<AtlasGraphQuery> orChildren = new ArrayList<AtlasGraphQuery>();
+
+
+        //build up an or expression to find vertices which match at least one of the unique attribute constraints
+        //For each unique attributes, we add a within clause to match vertices that have a value of that attribute
+        //that matches the value in some instance.
+        for(Map.Entry<String, AttributeValueMap> entry : map.entrySet()) {
+            AtlasGraphQuery orChild = query.createChildQuery();
+            String propertyName = entry.getKey();
+            AttributeValueMap valueMap = entry.getValue();
+            Set<Object> values = valueMap.getAttributeValues();
+            if(values.size() == 1) {
+                orChild.has(propertyName, values.iterator().next());
+            }
+            else if(values.size() > 1) {
+                orChild.in(propertyName, values);
+            }
+            orChildren.add(orChild);
+        }
+
+        if(orChildren.size() == 1) {
+            AtlasGraphQuery child = orChildren.get(0);
+            query.addConditionsFrom(child);
+        }
+        else if(orChildren.size() > 1) {
+            query.or(orChildren);
+        }
+
+        Iterable<AtlasVertex> queryResult = query.vertices();
+
+
+        for(AtlasVertex matchingVertex : queryResult) {
+            Collection<IndexedInstance> matches = getInstancesForVertex(map, matchingVertex);
+            for(IndexedInstance wrapper : matches) {
+                result[wrapper.getIndex()]= matchingVertex;
+            }
+        }
+        return Arrays.asList(result);
+    }
+
+    //finds the instance(s) that correspond to the given vertex
+    private Collection<IndexedInstance> getInstancesForVertex(Map<String, AttributeValueMap> map, AtlasVertex foundVertex) {
+
+        //loop through the unique attributes.  For each attribute, check to see if the vertex property that
+        //corresponds to that attribute has a value from one or more of the instances that were passed in.
+
+        for(Map.Entry<String, AttributeValueMap> entry : map.entrySet()) {
+
+            String propertyName = entry.getKey();
+            AttributeValueMap valueMap = entry.getValue();
+
+            Object vertexValue = foundVertex.getProperty(propertyName, Object.class);
+
+            Collection<IndexedInstance> instances = valueMap.get(vertexValue);
+            if(instances != null && instances.size() > 0) {
+                //return first match.  Let the underling graph determine if this is a problem
+                //(i.e. if the other unique attributes change be changed safely to match what
+                //the user requested).
+                return instances;
+            }
+            //try another attribute
+        }
+        return Collections.emptyList();
+    }
     /**
      * Guid and AtlasVertex combo
      */
@@ -779,9 +954,9 @@ public final class GraphHelper {
     public static ITypedReferenceableInstance getTypedReferenceableInstance(TypeSystem typeSystem, Referenceable entityInstance)
             throws AtlasException {
         final String entityTypeName = ParamChecker.notEmpty(entityInstance.getTypeName(), "Entity type cannot be null");
-    
+
         ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
-    
+
         //Both assigned id and values are required for full update
         //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
         // then replace with original id
@@ -839,7 +1014,7 @@ public final class GraphHelper {
         }
     }
 
-    
+
     public static void dumpToLog(final AtlasGraph<?,?> graph) {
         LOG.debug("*******************Graph Dump****************************");
         LOG.debug("Vertices of {}", graph);
@@ -951,7 +1126,7 @@ public final class GraphHelper {
         }
         return null;
     }
-    
+
     public static boolean elementExists(AtlasElement v) {
         return v != null && v.exists();
     }
@@ -972,12 +1147,12 @@ public final class GraphHelper {
 
     public static void setListProperty(AtlasVertex instanceVertex, String propertyName, ArrayList<String> value) throws AtlasException {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        instanceVertex.setListProperty(actualPropertyName, value);        
+        instanceVertex.setListProperty(actualPropertyName, value);
     }
-    
+
     public static List<String> getListProperty(AtlasVertex instanceVertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        return instanceVertex.getListProperty(actualPropertyName);    
+        return instanceVertex.getListProperty(actualPropertyName);
     }
 
 

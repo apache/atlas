@@ -56,12 +56,12 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         super.setUp();
         dbName = "db" + randomString();
         createTypes();
-        createInstance(createHiveDBInstanceV1(dbName));
+        createInstance(createHiveDBInstanceBuiltIn(dbName));
     }
 
     @Test
     public void testSearchByDSL() throws Exception {
-        String dslQuery = "from "+ DATABASE_TYPE + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
+        String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
 
         AtlasSearchResult searchResult = discoveryClientV2.dslSearch(dslQuery);
         assertNotNull(searchResult);
@@ -73,7 +73,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(entities.size(), 1);
 
         AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
-        assertEquals(dbEntity.getTypeName(), DATABASE_TYPE);
+        assertEquals(dbEntity.getTypeName(), DATABASE_TYPE_BUILTIN);
         assertEquals(dbEntity.getDisplayText(), dbName);
         assertEquals(dbEntity.getStatus(), Status.ACTIVE);
         assertNotNull(dbEntity.getGuid());
@@ -83,7 +83,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSearchDSLLimits() throws Exception {
-        String dslQuery = "from "+ DATABASE_TYPE + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
+        String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
         AtlasSearchResult searchResult = discoveryClientV2.dslSearch(dslQuery);
         assertNotNull(searchResult);
 
@@ -124,7 +124,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSearchUsingDSL() throws Exception {
-        String query = "from "+ DATABASE_TYPE + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
+        String query = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
         AtlasSearchResult searchResult = discoveryClientV2.dslSearch(query);
         assertNotNull(searchResult);
 
@@ -135,7 +135,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(entities.size(), 1);
 
         AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
-        assertEquals(dbEntity.getTypeName(), DATABASE_TYPE);
+        assertEquals(dbEntity.getTypeName(), DATABASE_TYPE_BUILTIN);
         assertEquals(dbEntity.getDisplayText(), dbName);
         assertEquals(dbEntity.getStatus(), Status.ACTIVE);
 
@@ -166,7 +166,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
         AtlasFullTextResult result = fullTextResults.get(0);
         assertNotNull(result.getEntity());
-        assertEquals(result.getEntity().getTypeName(), DATABASE_TYPE);
+        assertEquals(result.getEntity().getTypeName(), DATABASE_TYPE_BUILTIN);
         assertNotNull(result.getScore());
 
         //API works without limit and offset

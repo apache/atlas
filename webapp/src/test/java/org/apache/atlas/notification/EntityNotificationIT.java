@@ -51,8 +51,6 @@ import static org.testng.Assert.assertTrue;
 @Guice(modules = NotificationModule.class)
 public class EntityNotificationIT extends BaseResourceIT {
 
-    private static final String ENTITIES = "api/atlas/entities";
-    private static final String TRAITS = "traits";
     private final String DATABASE_NAME = "db" + randomString();
     private final String TABLE_NAME = "table" + randomString();
     @Inject
@@ -66,7 +64,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
         createTypeDefinitionsV1();
-        Referenceable HiveDBInstance = createHiveDBInstanceV1(DATABASE_NAME);
+        Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(DATABASE_NAME);
         dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
@@ -77,13 +75,13 @@ public class EntityNotificationIT extends BaseResourceIT {
 
     @Test
     public void testCreateEntity() throws Exception {
-        Referenceable tableInstance = createHiveTableInstanceV1(DATABASE_NAME, TABLE_NAME, dbId);
+        Referenceable tableInstance = createHiveTableInstanceBuiltIn(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-                newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE, guid));
+                newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
@@ -96,29 +94,29 @@ public class EntityNotificationIT extends BaseResourceIT {
         atlasClientV1.updateEntityAttribute(guid, property, newValue);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-                newNotificationPredicate(EntityNotification.OperationType.ENTITY_UPDATE, HIVE_TABLE_TYPE, guid));
+                newNotificationPredicate(EntityNotification.OperationType.ENTITY_UPDATE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
     @Test
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
         final String dbName = "db-" + randomString();
-        Referenceable HiveDBInstance = createHiveDBInstanceV1(dbName);
+        Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
         Id dbId = createInstance(HiveDBInstance);
 
-        Referenceable tableInstance = createHiveTableInstanceV1(dbName, tableName, dbId);
+        Referenceable tableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
         final Id tableId = createInstance(tableInstance);
         final String guid = tableId._getId();
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-            newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE, guid));
+            newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE_BUILTIN, guid));
 
         final String name = (String) tableInstance.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
 
-        atlasClientV1.deleteEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        atlasClientV1.deleteEntity(HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-            newNotificationPredicate(EntityNotification.OperationType.ENTITY_DELETE, HIVE_TABLE_TYPE, guid));
+            newNotificationPredicate(EntityNotification.OperationType.ENTITY_DELETE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
@@ -141,7 +139,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         atlasClientV1.addTrait(guid, traitInstance);
 
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-                newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE, guid));
+                newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE_BUILTIN, guid));
 
         IReferenceableInstance entity = entityNotification.getEntity();
         assertTrue(entity.getTraits().contains(traitName));
@@ -166,7 +164,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         atlasClientV1.addTrait(guid, traitInstance);
 
         entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-                newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE, guid));
+                newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE_BUILTIN, guid));
 
         allTraits = entityNotification.getAllTraits();
         allTraitNames = new LinkedList<>();
@@ -187,7 +185,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         atlasClientV1.deleteTrait(guid, traitName);
 
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
-                newNotificationPredicate(EntityNotification.OperationType.TRAIT_DELETE, HIVE_TABLE_TYPE, guid));
+                newNotificationPredicate(EntityNotification.OperationType.TRAIT_DELETE, HIVE_TABLE_TYPE_BUILTIN, guid));
 
         assertFalse(entityNotification.getEntity().getTraits().contains(traitName));
     }

@@ -71,16 +71,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     private final String DATABASE_NAME = "db" + randomString();
     private final String TABLE_NAME = "table" + randomString();
-    private static final String TRAITS = "traits";
-    private static final String TRAIT_DEFINITION = "traitDefinitions";
-
     private String traitName;
 
     private AtlasEntity dbEntity;
-    private AtlasEntityHeader dbEntityHeader;
     private AtlasEntityWithAssociations tableEntity;
-    private AtlasEntityHeader tableEntityHeader;
-
     @Inject
     private NotificationInterface notificationInterface;
     private NotificationConsumer<EntityNotification> notificationConsumer;
@@ -99,7 +93,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSubmitEntity() throws Exception {
-        TypeUtils.Pair dbAndTable = createDBAndTable(DATABASE_NAME, TABLE_NAME);
+        TypeUtils.Pair dbAndTable = createDBAndTable();
         assertNotNull(dbAndTable);
         assertNotNull(dbAndTable.left);
         assertNotNull(dbAndTable.right);
@@ -107,18 +101,18 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testRequestUser() throws Exception {
-        AtlasEntity hiveDBInstanceV2 = createHiveDB(DATABASE_NAME);
+        AtlasEntity hiveDBInstanceV2 = createHiveDB(randomString());
         List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(hiveDBInstanceV2.getGuid(), (short) 10);
-        assertTrue(events.size() > 1);
+        assertEquals(events.size(), 1);
         assertEquals(events.get(0).getUser(), "admin");
     }
 
     @Test
     public void testEntityDeduping() throws Exception {
-        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, DATABASE_NAME));
+        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
         assertEquals(results.length(), 1);
 
-        final AtlasEntity hiveDBInstanceV2 = createHiveDB(DATABASE_NAME);
+        final AtlasEntity hiveDBInstanceV2 = createHiveDB();
         // Do the notification thing here
         waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
             @Override
@@ -128,7 +122,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         });
 
 
-        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, DATABASE_NAME));
+        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
         assertEquals(results.length(), 1);
 
         //Test the same across references
@@ -139,7 +133,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         EntityMutationResponse entity = entitiesClientV2.createEntity(hiveTableInstanceV2);
         assertNotNull(entity);
         assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
-        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, DATABASE_NAME));
+        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
         assertEquals(results.length(), 1);
     }
 
@@ -205,7 +199,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test(dataProvider = "invalidAttrValues")
     public void testEntityInvalidValue(String value) throws Exception {
-        AtlasEntity databaseInstance = new AtlasEntity(DATABASE_TYPE);
+        AtlasEntity databaseInstance = new AtlasEntity(DATABASE_TYPE_V2);
         String dbName = randomString();
         databaseInstance.setAttribute("name", dbName);
         databaseInstance.setAttribute("description", value);
@@ -216,18 +210,18 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetEntityByAttribute() throws Exception {
-        AtlasEntity hiveDB = createHiveDB(DATABASE_NAME);
-        String qualifiedName = (String) hiveDB.getAttribute(QUALIFIED_NAME);
+        AtlasEntity hiveDB = createHiveDB();
+        String qualifiedName = (String) hiveDB.getAttribute(NAME);
         //get entity by attribute
-        AtlasEntity byAttribute = entitiesClientV2.getEntityByAttribute(DATABASE_TYPE, QUALIFIED_NAME, qualifiedName);
-        assertEquals(byAttribute.getTypeName(), DATABASE_TYPE);
-        assertEquals(byAttribute.getAttribute(QUALIFIED_NAME), qualifiedName);
+        AtlasEntity byAttribute = entitiesClientV2.getEntityByAttribute(DATABASE_TYPE_V2, NAME, qualifiedName);
+        assertEquals(byAttribute.getTypeName(), DATABASE_TYPE_V2);
+        assertEquals(byAttribute.getAttribute(NAME), qualifiedName);
     }
 
     @Test
     public void testSubmitEntityWithBadDateFormat() throws Exception {
         AtlasEntity hiveDBInstance = createHiveDBInstanceV2("db" + randomString());
-        AtlasEntityHeader entity = createEntity(hiveDBInstance);
+        createEntity(hiveDBInstance);
 
         AtlasEntity tableInstance = createHiveTableInstanceV2(hiveDBInstance, "table" + randomString());
         tableInstance.setAttribute("lastAccessTime", "2014-07-11");
@@ -239,9 +233,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testAddProperty() throws Exception {
         //add property
         String description = "bar table - new desc";
-        addProperty(tableEntity.getGuid(), "description", description);
+        addProperty(createHiveTable().getGuid(), "description", description);
 
-        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(createHiveTable().getGuid());
         Assert.assertNotNull(entityByGuid);
 
         entityByGuid.setAttribute("description", description);
@@ -260,9 +254,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         String currentTime = String.valueOf(new DateTime());
 
 
-        addProperty(tableEntity.getGuid(), "createTime", currentTime);
+        addProperty(createHiveTable().getGuid(), "createTime", currentTime);
 
-        entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        entityByGuid = entitiesClientV2.getEntityByGuid(createHiveTable().getGuid());
         Assert.assertNotNull(entityByGuid);
     }
 
@@ -271,7 +265,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         // FIXME: Behavior has changed between v1 and v2
         //add property
 //        try {
-            addProperty(tableEntity.getGuid(), "description", null);
+            addProperty(createHiveTable().getGuid(), "description", null);
 //            Assert.fail("Expected AtlasServiceException");
 //        } catch(AtlasServiceException e) {
 //            Assert.assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
@@ -329,7 +323,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
-        AtlasClassifications classifications = entitiesClientV2.getClassifications(tableEntity.getGuid());
+        AtlasClassifications classifications = entitiesClientV2.getClassifications(createHiveTable().getGuid());
         assertNotNull(classifications);
         assertTrue(classifications.getList().size() > 0);
         assertEquals(classifications.getList().size(), 8);
@@ -337,7 +331,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testCommonAttributes() throws Exception{
-        AtlasEntity entity = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        AtlasEntity entity = entitiesClientV2.getEntityByGuid(createHiveTable().getGuid());
         Assert.assertNotNull(entity.getStatus());
         Assert.assertNotNull(entity.getVersion());
         Assert.assertNotNull(entity.getCreatedBy());
@@ -356,11 +350,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     }
 
     private AtlasEntity createHiveDB() {
-        if (dbEntity != null) {
-            return dbEntity;
-        } else {
-            return createHiveDB(DATABASE_NAME);
+        if (dbEntity == null) {
+            dbEntity = createHiveDB(DATABASE_NAME);
         }
+        return dbEntity;
     }
 
     private AtlasEntity createHiveDB(String dbName) {
@@ -369,23 +362,21 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertNotNull(entityHeader);
         assertNotNull(entityHeader.getGuid());
         hiveDBInstanceV2.setGuid(entityHeader.getGuid());
-        dbEntity = hiveDBInstanceV2;
-        dbEntityHeader = entityHeader;
         return hiveDBInstanceV2;
     }
 
-    private TypeUtils.Pair<AtlasEntity, AtlasEntityWithAssociations> createDBAndTable(String dbName, String tableName) throws Exception {
-        AtlasEntity dbInstanceV2 = createHiveDB(dbName);
-        AtlasEntityWithAssociations hiveTableInstanceV2 = createHiveTable(dbInstanceV2, tableName);
+    private TypeUtils.Pair<AtlasEntity, AtlasEntityWithAssociations> createDBAndTable() throws Exception {
+        AtlasEntity dbInstanceV2 = createHiveDB();
+        AtlasEntityWithAssociations hiveTableInstanceV2 = createHiveTable();
         return TypeUtils.Pair.of(dbInstanceV2, hiveTableInstanceV2);
     }
 
     private AtlasEntityWithAssociations createHiveTable() throws Exception {
-        if (tableEntity != null) {
-            return tableEntity;
-        } else {
-            return createHiveTable(createHiveDB(), TABLE_NAME);
+        if (tableEntity == null) {
+            tableEntity = createHiveTable(createHiveDB(), TABLE_NAME);
         }
+        return tableEntity;
+
     }
 
     private AtlasEntityWithAssociations createHiveTable(AtlasEntity dbInstanceV2, String tableName) throws Exception {
@@ -396,7 +387,6 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         hiveTableInstanceV2.setGuid(createdHeader.getGuid());
         entitiesClientV2.addClassifications(createdHeader.getGuid(), hiveTableInstanceV2.getClassifications());
         tableEntity = hiveTableInstanceV2;
-        tableEntityHeader = createdHeader;
         return hiveTableInstanceV2;
     }
 
@@ -409,9 +399,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         typesDef.getClassificationDefs().add(piiTrait);
         createType(typesDef);
 
-        entitiesClientV2.addClassifications(tableEntity.getGuid(), ImmutableList.of(new AtlasClassification(piiTrait.getName())));
+        entitiesClientV2.addClassifications(createHiveTable().getGuid(), ImmutableList.of(new AtlasClassification(piiTrait.getName())));
 
-        assertEntityAudit(tableEntity.getGuid(), EntityAuditEvent.EntityAuditAction.TAG_ADD);
+        assertEntityAudit(createHiveTable().getGuid(), EntityAuditEvent.EntityAuditAction.TAG_ADD);
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -426,13 +416,14 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasClassificationDef classificationByName = typedefClientV2.getClassificationByName(traitName);
         assertNotNull(classificationByName);
 
-        assertEquals(tableEntity.getClassifications().size(), 7);
+        AtlasEntityWithAssociations hiveTable = createHiveTable();
+        assertEquals(hiveTable.getClassifications().size(), 7);
 
         AtlasClassification piiClassification = new AtlasClassification(piiTrait.getName());
 
-        entitiesClientV2.addClassifications(tableEntity.getGuid(), Lists.newArrayList(piiClassification));
+        entitiesClientV2.addClassifications(hiveTable.getGuid(), Lists.newArrayList(piiClassification));
 
-        AtlasClassifications classifications = entitiesClientV2.getClassifications(tableEntity.getGuid());
+        AtlasClassifications classifications = entitiesClientV2.getClassifications(hiveTable.getGuid());
         assertNotNull(classifications);
         assertTrue(classifications.getList().size() > 0);
         assertEquals(classifications.getList().size(), 8);
@@ -452,7 +443,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasClassification traitInstance = new AtlasClassification(traitName);
         traitInstance.setAttribute("type", "SSN");
 
-        final String guid = tableEntity.getGuid();
+        final String guid = createHiveTable().getGuid();
         entitiesClientV2.addClassifications(guid, ImmutableList.of(traitInstance));
 
         // verify the response
@@ -474,8 +465,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testAddTraitWithNoRegistration() throws Exception {
         final String traitName = "PII_Trait" + randomString();
-        AtlasClassificationDef piiTrait =
-                AtlasTypeUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+        AtlasTypeUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
 
         AtlasClassification traitInstance = new AtlasClassification(traitName);
 
@@ -484,7 +474,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
-        final String guid = tableEntity.getGuid();
+        final String guid = createHiveTable().getGuid();
 
         try {
             entitiesClientV2.deleteClassification(guid, traitName);
@@ -512,7 +502,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testDeleteExistentTraitNonExistentForEntity() throws Exception {
 
-        final String guid = tableEntity.getGuid();
+        final String guid = createHiveTable().getGuid();
         final String traitName = "PII_Trait" + randomString();
         AtlasClassificationDef piiTrait = AtlasTypeUtil
                 .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
@@ -562,43 +552,44 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         final List<AtlasEntity> columns = new ArrayList<>();
         Map<String, Object> values = new HashMap<>();
         values.put("name", "col1");
-        values.put(QUALIFIED_NAME, "qualifiedName.col1");
+        values.put(NAME, "qualifiedName.col1");
         values.put("type", "string");
         values.put("comment", "col1 comment");
 
-        AtlasEntity ref = new AtlasEntity(BaseResourceIT.COLUMN_TYPE, values);
+        AtlasEntity ref = new AtlasEntity(BaseResourceIT.COLUMN_TYPE_V2, values);
         columns.add(ref);
+        AtlasEntityWithAssociations hiveTable = createHiveTable();
+        AtlasEntityWithAssociations tableUpdated = hiveTable;
 
-        AtlasEntityWithAssociations tableUpdated = tableEntity;
-        tableEntity.setAttribute("columns", columns);
+        hiveTable.setAttribute("columns", columns);
 
         LOG.debug("Updating entity= " + tableUpdated);
-        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(tableEntity.getGuid(), tableUpdated);
+        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(hiveTable.getGuid(), tableUpdated);
         assertNotNull(updateResult);
         assertNotNull(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertTrue(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
 
-        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(hiveTable.getGuid());
         assertNotNull(entityByGuid);
-        List<AtlasEntity> columns1 = (List<AtlasEntity>) entityByGuid.getAttribute("columns");
+        entityByGuid.getAttribute("columns");
 
         //Update by unique attribute
         values.put("type", "int");
-        ref = new AtlasEntity(BaseResourceIT.COLUMN_TYPE, values);
+        ref = new AtlasEntity(BaseResourceIT.COLUMN_TYPE_V2, values);
         columns.set(0, ref);
-        tableUpdated = tableEntity;
+        tableUpdated = hiveTable;
         tableUpdated.setAttribute("columns", columns);
 
         LOG.debug("Updating entity= " + tableUpdated);
-        EntityMutationResponse updateResponse = entitiesClientV2.updateEntityByAttribute(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                (String) tableEntity.getAttribute("name"), tableUpdated);
+        EntityMutationResponse updateResponse = entitiesClientV2.updateEntityByAttribute(BaseResourceIT.HIVE_TABLE_TYPE_V2, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                (String) hiveTable.getAttribute("name"), tableUpdated);
         assertNotNull(updateResponse);
         assertNotNull(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertTrue(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
 
-        entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        entityByGuid = entitiesClientV2.getEntityByGuid(hiveTable.getGuid());
         assertNotNull(entityByGuid);
-        columns1 = (List<AtlasEntity>) entityByGuid.getAttribute("columns");
+        entityByGuid.getAttribute("columns");
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -606,27 +597,31 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         final List<AtlasEntity> columns = new ArrayList<>();
         Map<String, Object> values1 = new HashMap<>();
         values1.put("name", "col3");
-        values1.put(QUALIFIED_NAME, "qualifiedName.col3");
+        values1.put(NAME, "qualifiedName.col3");
         values1.put("type", "string");
         values1.put("comment", "col3 comment");
 
         Map<String, Object> values2 = new HashMap<>();
         values2.put("name", "col4");
-        values2.put(QUALIFIED_NAME, "qualifiedName.col4");
+        values2.put(NAME, "qualifiedName.col4");
         values2.put("type", "string");
         values2.put("comment", "col4 comment");
 
-        AtlasEntity ref1 = new AtlasEntity(BaseResourceIT.COLUMN_TYPE, values1);
-        AtlasEntity ref2 = new AtlasEntity(BaseResourceIT.COLUMN_TYPE, values2);
+        AtlasEntity ref1 = new AtlasEntity(BaseResourceIT.COLUMN_TYPE_V2, values1);
+        AtlasEntity ref2 = new AtlasEntity(BaseResourceIT.COLUMN_TYPE_V2, values2);
         columns.add(ref1);
         columns.add(ref2);
-        tableEntity.setAttribute("columns", columns);
-        EntityMutationResponse updateEntityResult = entitiesClientV2.updateEntity(tableEntity);
+        AtlasEntityWithAssociations hiveTable = createHiveTable();
+        hiveTable.setAttribute("columns", columns);
+        EntityMutationResponse updateEntityResult = entitiesClientV2.updateEntity(hiveTable);
         assertNotNull(updateEntityResult);
         assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
-        assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size(), 3);
+        assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
+        //2 columns are being created, and 1 hiveTable is being updated
+        assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size(), 1);
+        assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size(), 2);
 
-        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(tableEntity.getGuid());
+        AtlasEntity entityByGuid = entitiesClientV2.getEntityByGuid(hiveTable.getGuid());
         List<AtlasEntity> refs = (List<AtlasEntity>) entityByGuid.getAttribute("columns");
         assertEquals(refs.size(), 2);
     }
@@ -634,17 +629,17 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDeleteEntities() throws Exception {
         // Create 2 database entities
-        AtlasEntity db1 = new AtlasEntity(DATABASE_TYPE);
+        AtlasEntity db1 = new AtlasEntity(DATABASE_TYPE_V2);
         String dbName1 = randomString();
         db1.setAttribute("name", dbName1);
-        db1.setAttribute(QUALIFIED_NAME, dbName1);
+        db1.setAttribute(NAME, dbName1);
         db1.setAttribute("clusterName", randomString());
         db1.setAttribute("description", randomString());
         AtlasEntityHeader entity1Header = createEntity(db1);
-        AtlasEntity db2 = new AtlasEntity(DATABASE_TYPE);
+        AtlasEntity db2 = new AtlasEntity(DATABASE_TYPE_V2);
         String dbName2 = randomString();
         db2.setAttribute("name", dbName2);
-        db2.setAttribute(QUALIFIED_NAME, dbName2);
+        db2.setAttribute(NAME, dbName2);
         db2.setAttribute("clusterName", randomString());
         db2.setAttribute("description", randomString());
         AtlasEntityHeader entity2Header = createEntity(db2);
@@ -664,10 +659,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testDeleteEntityByUniqAttribute() throws Exception {
         // Create database entity
         AtlasEntity hiveDB = createHiveDB(DATABASE_NAME + random());
-        String qualifiedName = (String) hiveDB.getAttribute(QUALIFIED_NAME);
+        String qualifiedName = (String) hiveDB.getAttribute(NAME);
 
         // Delete the database entity
-        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntityByAttribute(DATABASE_TYPE, QUALIFIED_NAME, qualifiedName);
+        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntityByAttribute(DATABASE_TYPE_V2, NAME, qualifiedName);
 
         // Verify that deleteEntities() response has database entity guids
         assertNotNull(deleteResponse);

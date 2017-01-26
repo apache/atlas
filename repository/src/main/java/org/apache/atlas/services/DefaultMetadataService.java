@@ -367,6 +367,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private void validateUniqueAttribute(String entityType, String attributeName) throws AtlasException {
         ClassType type = typeSystem.getDataType(ClassType.class, entityType);
         AttributeInfo attribute = type.fieldMapping().fields.get(attributeName);
+        if(attribute == null) {
+            throw new IllegalArgumentException(
+                String.format("%s is not an attribute in %s", attributeName, entityType));
+        }
         if (!attribute.isUnique) {
             throw new IllegalArgumentException(
                     String.format("%s.%s is not a unique attribute", entityType, attributeName));
