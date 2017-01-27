@@ -328,6 +328,7 @@ public class AtlasStructType extends AtlasType {
 
             if (attribute != null) {
                 AtlasType dataType = attribute.getAttributeType();
+
                 ret = dataType.createDefaultValue();
             }
         }

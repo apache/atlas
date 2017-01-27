@@ -21,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 
 import java.util.ArrayList;
@@ -35,20 +36,20 @@ public class EntityMutationContext {
     private List<AtlasEntity> entitiesUpdated  = new ArrayList<>();
 
     private EntityGraphDiscoveryContext context;
-    private Map<String, AtlasType> entityVsType = new HashMap<>();
+    private Map<String, AtlasEntityType> entityVsType = new HashMap<>();
     private Map<String, AtlasVertex> entityVsVertex = new HashMap<>();
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
     }
 
-    public void addCreated(AtlasEntity entity, AtlasType type, AtlasVertex atlasVertex) {
+    public void addCreated(AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
         entitiesCreated.add(entity);
         entityVsVertex.put(entity.getGuid(), atlasVertex);
         entityVsType.put(entity.getGuid(), type);
     }
 
-    public void addUpdated(AtlasEntity entity, AtlasType type, AtlasVertex atlasVertex) {
+    public void addUpdated(AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
         entitiesUpdated.add(entity);
         entityVsVertex.put(entity.getGuid(), atlasVertex);
         entityVsType.put(entity.getGuid(), type);
@@ -62,7 +63,7 @@ public class EntityMutationContext {
         return entitiesUpdated;
     }
 
-    public AtlasType getType(AtlasEntity entity) {
+    public AtlasEntityType getType(AtlasEntity entity) {
         return entityVsType.get(entity.getGuid());
     }
 

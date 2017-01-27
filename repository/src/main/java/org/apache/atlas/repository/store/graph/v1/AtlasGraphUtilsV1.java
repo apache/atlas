@@ -94,8 +94,12 @@ public class AtlasGraphUtilsV1 {
         return PROPERTY_PREFIX + "edge." + fromNode + "." + toNode;
     }
 
+    public static String getEdgeLabel(String property) {
+        return GraphHelper.EDGE_LABEL_PREFIX + property;
+    }
+
     public static String getAttributeEdgeLabel(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
-        return GraphHelper.EDGE_LABEL_PREFIX + getQualifiedAttributePropertyKey(fromType, attributeName);
+        return getEdgeLabel(getQualifiedAttributePropertyKey(fromType, attributeName));
     }
 
     public static String getQualifiedAttributePropertyKey(AtlasStructType fromType, String attributeName) throws AtlasBaseException {

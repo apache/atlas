@@ -95,7 +95,11 @@ public class AtlasMapType extends AtlasType {
     public Map<Object, Object>  createDefaultValue() {
         Map<Object, Object> ret = new HashMap<>();
 
-        ret.put(keyType.createDefaultValue(), valueType.createDefaultValue());
+        Object key = keyType.createDefaultValue();
+
+        if ( key != null) {
+            ret.put(key, valueType.createDefaultValue());
+        }
 
         return ret;
     }

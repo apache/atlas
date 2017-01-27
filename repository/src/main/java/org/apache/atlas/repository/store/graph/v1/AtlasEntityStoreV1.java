@@ -70,43 +70,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         return createOrUpdate(new ArrayList<AtlasEntity>() {{ add(entity); }});
     }
 
-    public EntityMutationContext preCreateOrUpdate(final List<AtlasEntity> atlasEntities) throws AtlasBaseException {
-
-        EntityGraphDiscoveryContext discoveredEntities = graphDiscoverer.discoverEntities(atlasEntities);
-        EntityMutationContext context = new EntityMutationContext(discoveredEntities);
-        for (AtlasEntity entity : discoveredEntities.getRootEntities()) {
-
-            AtlasVertex vertex = null;
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity);
-            }
-
-            AtlasEntityType entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
-
-            if ( discoveredEntities.isResolved(entity.getGuid()) ) {
-                vertex = discoveredEntities.getResolvedReference(entity.getGuid());
-                context.addUpdated(entity, entityType, vertex);
-
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-                RequestContextV1.get().recordEntityUpdate(guid);
-            } else {
-                //Create vertices which do not exist in the repository
-                vertex = graphMapper.createVertexTemplate(entity, entityType);
-                context.addCreated(entity, entityType, vertex);
-                discoveredEntities.addRepositoryResolvedReference(new AtlasObjectId(entityType.getTypeName(), entity.getGuid()), vertex);
-
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-                RequestContextV1.get().recordEntityCreate(guid);
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity, vertex);
-            }
-        }
-
-        return context;
-    }
-
     @Override
     public EntityMutationResponse updateById(final String guid, final AtlasEntity entity) {
         return null;
@@ -205,15 +168,56 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         return null;
     }
 
+    private EntityMutationContext preCreateOrUpdate(final List<AtlasEntity> atlasEntities) throws AtlasBaseException {
+
+        EntityGraphDiscoveryContext discoveredEntities = graphDiscoverer.discoverEntities(atlasEntities);
+        EntityMutationContext context = new EntityMutationContext(discoveredEntities);
+        for (AtlasEntity entity : discoveredEntities.getRootEntities()) {
+
+            AtlasVertex vertex = null;
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity);
+            }
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+            if ( entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+            }
+
+            if ( discoveredEntities.isResolved(entity.getGuid()) ) {
+                vertex = discoveredEntities.getResolvedReference(entity.getGuid());
+                context.addUpdated(entity, entityType, vertex);
+
+                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+                RequestContextV1.get().recordEntityUpdate(guid);
+            } else {
+                //Create vertices which do not exist in the repository
+                vertex = graphMapper.createVertexTemplate(entity, entityType);
+                context.addCreated(entity, entityType, vertex);
+                discoveredEntities.addRepositoryResolvedReference(new AtlasObjectId(entityType.getTypeName(), entity.getGuid()), vertex);
+
+                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+                RequestContextV1.get().recordEntityCreate(guid);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity, vertex);
+            }
+        }
+
+        return context;
+    }
+
     private List<AtlasEntity> validateAndNormalize(final List<AtlasEntity> entities) throws AtlasBaseException {
 
         List<AtlasEntity> normalizedEntities = new ArrayList<>();
         List<String> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
-            AtlasType type = typeRegistry.getType(entity.getTypeName());
-            if (type.getTypeCategory() != TypeCategory.ENTITY) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, type.getTypeCategory().name(), TypeCategory.ENTITY.name());
+            AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+            if (type == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
             }
 
             type.validateValue(entity, entity.getTypeName(), messages);
@@ -230,16 +234,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         return normalizedEntities;
-    }
-
-    @VisibleForTesting
-    EntityGraphDiscovery getGraphDiscoverer() {
-        return graphDiscoverer;
-    }
-
-    @VisibleForTesting
-    void setGraphDiscoverer(EntityGraphDiscovery discoverer) {
-        this.graphDiscoverer = discoverer;
     }
 
     public void cleanUp() throws AtlasBaseException {

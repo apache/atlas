@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import com.google.common.base.Optional;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -30,6 +31,7 @@ import java.util.Objects;
 public class GraphMutationContext {
 
 
+    private EntityMutations.EntityOperation op;
     /**
      * Atlas Attribute
      */
@@ -65,6 +67,7 @@ public class GraphMutationContext {
 
 
     private GraphMutationContext(final Builder builder) {
+        this.op = builder.op;
         this.attribute = builder.attribute;
         this.currentElementType = builder.elementType;
         this.existingEdge = builder.currentEdge;
@@ -79,7 +82,7 @@ public class GraphMutationContext {
 
     @Override
     public int hashCode() {
-        return Objects.hash(attribute, value, referringVertex, vertexPropertyKey, existingEdge);
+        return Objects.hash(op, attribute, value, referringVertex, vertexPropertyKey, existingEdge);
     }
 
     @Override
@@ -96,12 +99,15 @@ public class GraphMutationContext {
                  && Objects.equals(value, rhs.getValue())
                  && Objects.equals(referringVertex, rhs.getReferringVertex())
                  && Objects.equals(vertexPropertyKey, rhs.getReferringVertex())
-                 && Objects.equals(existingEdge, rhs.getCurrentEdge());
+                 && Objects.equals(existingEdge, rhs.getCurrentEdge())
+                 && Objects.equals(op, rhs.getOp());
         }
     }
 
 
     public static final class Builder {
+
+        private final EntityMutations.EntityOperation op;
 
         private final AtlasStructType.AtlasAttribute attribute;
 
@@ -116,16 +122,15 @@ public class GraphMutationContext {
         private  String vertexPropertyKey;
 
 
-        public Builder(AtlasStructType.AtlasAttribute attribute, AtlasType currentElementType, Object currentValue) {
+        public Builder(EntityMutations.EntityOperation op, AtlasStructType.AtlasAttribute attribute, AtlasType currentElementType, Object currentValue) {
+            this.op = op;
             this.attribute = attribute;
             this.elementType = currentElementType;
             this.currentValue = currentValue;
         }
 
-        public Builder(AtlasStructType.AtlasAttribute attribute, Object currentValue) {
-            this.attribute = attribute;
-            this.elementType = null;
-            this.currentValue = currentValue;
+        public Builder(EntityMutations.EntityOperation op, AtlasStructType.AtlasAttribute attribute, Object currentValue) {
+           this(op, attribute, null, currentValue);
         }
 
         Builder referringVertex(AtlasVertex referringVertex) {
@@ -191,5 +196,13 @@ public class GraphMutationContext {
 
     public AtlasStructType.AtlasAttribute getAttribute() {
         return attribute;
+    }
+
+    public EntityMutations.EntityOperation getOp() {
+        return op;
+    }
+
+    public void setExistingEdge(final Optional<AtlasEdge> existingEdge) {
+        this.existingEdge = existingEdge;
     }
 }

@@ -105,7 +105,7 @@ public class IDBasedEntityResolver implements EntityResolver {
         if ( vertex != null ) {
             return Optional.of(vertex);
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, "Could not find an entity with the specified guid " + typeIdPair.getGuid() + " in Atlas respository");
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, typeIdPair.getGuid());
         }
     }
 

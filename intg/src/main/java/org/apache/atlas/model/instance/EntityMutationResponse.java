@@ -18,9 +18,11 @@
 package org.apache.atlas.model.instance;
 
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -43,7 +45,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityMutationResponse {
 
-    Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> entitiesMutated = new HashMap<>();
+    Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> entitiesMutated;
 
     public EntityMutationResponse() {
     }
@@ -67,15 +69,39 @@ public class EntityMutationResponse {
         return null;
     }
 
+    @JsonIgnore
+    public AtlasEntityHeader getFirstEntityCreated() {
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
+        if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
+            return entitiesByOperation.get(0);
+        }
+
+        return null;
+    }
+
+    @JsonIgnore
+    public AtlasEntityHeader getFirstEntityUpdated() {
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE);
+        if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
+            return entitiesByOperation.get(0);
+        }
+
+        return null;
+    }
+
     public void addEntity(EntityMutations.EntityOperation op, AtlasEntityHeader header) {
         if (entitiesMutated == null) {
             entitiesMutated = new HashMap<>();
         }
 
-        if (entitiesMutated != null && entitiesMutated.get(op) == null) {
-            entitiesMutated.put(op, new ArrayList<AtlasEntityHeader>());
+        List<AtlasEntityHeader> opEntities = entitiesMutated.get(op);
+
+        if (opEntities == null) {
+            opEntities = new ArrayList<>();
+            entitiesMutated.put(op, opEntities);
         }
-        entitiesMutated.get(op).add(header);
+
+        opEntities.add(header);
     }
 
 
@@ -84,24 +110,7 @@ public class EntityMutationResponse {
             sb = new StringBuilder();
         }
 
-        if (MapUtils.isNotEmpty(entitiesMutated)) {
-            int i = 0;
-            for (Map.Entry<EntityMutations.EntityOperation, List<AtlasEntityHeader>> e : entitiesMutated.entrySet()) {
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(e.getKey()).append(":");
-                if (CollectionUtils.isNotEmpty(e.getValue())) {
-                    for (int j = 0; i < e.getValue().size(); j++) {
-                        if (j > 0) {
-                            sb.append(",");
-                        }
-                        e.getValue().get(i).toString(sb);
-                    }
-                }
-                i++;
-            }
-        }
+        AtlasBaseTypeDef.dumpObjects(entitiesMutated, sb);
 
         return sb;
     }

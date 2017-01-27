@@ -33,7 +33,7 @@ import java.util.List;
 public abstract class AtlasType {
 
     private static final Gson GSON =
-            new GsonBuilder().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();
+            new GsonBuilder().serializeNulls().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();
 
     private final String       typeName;
     private final TypeCategory typeCategory;
@@ -58,6 +58,10 @@ public abstract class AtlasType {
     public TypeCategory getTypeCategory() { return typeCategory; }
 
     public abstract Object createDefaultValue();
+
+    public Object createOptionalDefaultValue() {
+        return createDefaultValue();
+    }
 
     public abstract boolean isValidValue(Object obj);
 

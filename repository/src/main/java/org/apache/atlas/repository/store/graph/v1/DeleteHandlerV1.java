@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -129,7 +130,12 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
             result.add(new GraphHelper.VertexInfo(guid, vertex, typeName));
-            AtlasEntityType entityType = (AtlasEntityType) typeRegistry.getType(typeName);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+            }
+
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getAllAttributes().values()) {
                 if (!entityType.isMappedFromRefAttribute(attributeInfo.getAttributeDef().getName())) {
                     continue;

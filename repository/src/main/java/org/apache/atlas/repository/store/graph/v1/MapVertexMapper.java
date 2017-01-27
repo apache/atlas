@@ -97,13 +97,16 @@ public class MapVertexMapper implements InstanceGraphMapper<Map> {
                     String propertyNameForKey = GraphHelper.getQualifiedNameForMapKey(ctx.getVertexPropertyKey(), keyStr);
                     Optional<AtlasEdge> existingEdge = getEdgeIfExists(mapType, currentMap, keyStr);
 
-                    GraphMutationContext mapCtx =  new GraphMutationContext.Builder(ctx.getAttribute(), mapType.getValueType(), entry.getValue())
+                    GraphMutationContext mapCtx =  new GraphMutationContext.Builder(ctx.getOp(), ctx.getAttribute(), mapType.getValueType(), entry.getValue())
                         .referringVertex(ctx.getReferringVertex())
                         .edge(existingEdge)
                         .vertexProperty(propertyNameForKey).build();
 
 
+                    //Add/Update/Remove property value
                     Object newEntry = structVertexMapper.mapCollectionElementsToVertex(mapCtx);
+                    MapVertexMapper.setMapValueProperty(mapType.getValueType(), ctx.getReferringVertex(), propertyNameForKey, newEntry);
+
                     newMap.put(keyStr, newEntry);
                 }
             }
@@ -192,7 +195,9 @@ public class MapVertexMapper implements InstanceGraphMapper<Map> {
     private Optional<AtlasEdge> getEdgeIfExists(AtlasMapType mapType, Map<String, Object> currentMap, String keyStr) {
         Optional<AtlasEdge> existingEdge = Optional.absent();
         if ( AtlasGraphUtilsV1.isReference(mapType.getValueType()) ) {
-            existingEdge = Optional.of((AtlasEdge) currentMap.get(keyStr));
+            if ( currentMap.get(keyStr) != null) {
+                existingEdge = Optional.of((AtlasEdge) currentMap.get(keyStr));
+            }
         }
         
         return existingEdge;

@@ -145,8 +145,8 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                 ret = new Referenceable(entity.getGuid(), entity.getTypeName(),
                                         fromV2ToV1(entityType, entity.getAttributes()));
-            } else if (v2Obj instanceof String) { // transient-id
-                ret = new Referenceable((String) v2Obj, type.getTypeName(), null);
+            } else if (v2Obj instanceof AtlasObjectId) { // transient-id
+                ret = new Referenceable(((AtlasObjectId) v2Obj).getGuid(), type.getTypeName(), null);
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Map or AtlasEntity or String",
                                              v2Obj.getClass().getCanonicalName());

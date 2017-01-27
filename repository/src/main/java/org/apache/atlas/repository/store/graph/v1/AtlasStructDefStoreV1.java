@@ -25,6 +25,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
 import org.apache.atlas.repository.util.FilterUtil;
@@ -462,7 +463,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (CollectionUtils.isNotEmpty(attrNames)) {
             for (String attrName : attrNames) {
                 String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(ret, attrName);
-                String attribJson  = vertex.getProperty(propertyKey, String.class);
+                String attribJson  = vertex.getProperty(GraphHelper.encodePropertyKey(propertyKey), String.class);
 
                 attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attribJson, Map.class),
                                   typeDefStore));

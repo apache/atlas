@@ -190,12 +190,12 @@ public class TestEntitiesREST {
 
         if ( retrievedDBEntity != null) {
             LOG.info("verifying entity of type {} ", dbEntity.getTypeName());
-            verifyAttributes(dbEntity.getAttributes(), retrievedDBEntity.getAttributes());
+            verifyAttributes(retrievedDBEntity.getAttributes(), dbEntity.getAttributes());
         }
 
         if ( retrievedColumnEntity != null) {
             LOG.info("verifying entity of type {} ", columns.get(0).getTypeName());
-            verifyAttributes(columns.get(0).getAttributes(), retrievedColumnEntity.getAttributes());
+            verifyAttributes(retrievedColumnEntity.getAttributes(), columns.get(0).getAttributes());
         }
 
         if ( retrievedTableEntity != null) {
@@ -216,10 +216,13 @@ public class TestEntitiesREST {
         }
     }
 
-    public static void verifyAttributes(Map<String, Object> sourceAttrs, Map<String, Object> targetAttributes) throws Exception {
-        for (String name : sourceAttrs.keySet() ) {
+    public static void verifyAttributes(Map<String, Object> actual, Map<String, Object> expected) throws Exception {
+        for (String name : actual.keySet() ) {
             LOG.info("verifying attribute {} ", name);
-            Assert.assertEquals(targetAttributes.get(name), sourceAttrs.get(name));
+
+            if ( expected.get(name) != null) {
+                Assert.assertEquals(actual.get(name), expected.get(name));
+            }
         }
     }
 

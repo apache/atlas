@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.base.Optional;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasStructDef;
@@ -98,7 +99,12 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
     }
 
     Optional<AtlasVertex> resolveByUniqueAttribute(AtlasEntity entity) throws AtlasBaseException {
-        AtlasEntityType entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        }
+
         for (AtlasStructType.AtlasAttribute attr : entityType.getAllAttributes().values()) {
             if (attr.getAttributeDef().getIsUnique()) {
                 Object attrVal = entity.getAttribute(attr.getAttributeDef().getName());

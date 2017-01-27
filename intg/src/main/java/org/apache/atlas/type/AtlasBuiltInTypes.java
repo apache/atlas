@@ -477,6 +477,7 @@ public class AtlasBuiltInTypes {
      */
     public static class AtlasStringType extends AtlasType {
         private static final String DEFAULT_VALUE = "";
+        private static final String OPTIONAL_DEFAULT_VALUE = null;
 
         public AtlasStringType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_STRING, TypeCategory.PRIMITIVE);
@@ -485,6 +486,11 @@ public class AtlasBuiltInTypes {
         @Override
         public String createDefaultValue() {
             return DEFAULT_VALUE;
+        }
+
+        @Override
+        public Object createOptionalDefaultValue() {
+            return OPTIONAL_DEFAULT_VALUE;
         }
 
         @Override

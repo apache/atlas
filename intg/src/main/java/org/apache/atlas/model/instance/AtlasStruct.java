@@ -146,8 +146,9 @@ public class AtlasStruct implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AtlasStruct that = (AtlasStruct) o;
+
         return Objects.equals(typeName, that.typeName) &&
-                Objects.equals(attributes, that.attributes);
+            Objects.equals(attributes, that.attributes);
     }
 
     @Override

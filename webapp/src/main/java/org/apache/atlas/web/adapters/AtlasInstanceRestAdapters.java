@@ -31,6 +31,8 @@ import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
@@ -106,7 +108,10 @@ public class AtlasInstanceRestAdapters {
 
     public AtlasClassification getClassification(IStruct classification) throws AtlasBaseException {
         AtlasFormatConverter converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
-        AtlasType            classificationType = typeRegistry.getType(classification.getTypeName());
+        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+        if (classificationType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.CLASSIFICATION.name(), classification.getTypeName());
+        }
         AtlasClassification  ret                = (AtlasClassification)converter.fromV1ToV2(classification, classificationType);
 
         return ret;
@@ -114,7 +119,11 @@ public class AtlasInstanceRestAdapters {
 
     public AtlasEntityWithAssociations getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
         AtlasFormatConverter converter  = instanceFormatters.getConverter(TypeCategory.ENTITY);
-        AtlasType            entityType = typeRegistry.getType(referenceable.getTypeName());
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
+        }
+
         AtlasEntityWithAssociations ret = (AtlasEntityWithAssociations)converter.fromV1ToV2(referenceable, entityType);
 
         return ret;

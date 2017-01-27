@@ -71,7 +71,7 @@ public final class TestUtilsV2 {
                 new AtlasEnumDef("OrgLevel", "OrgLevel"+_description, "1.0",
                         Arrays.asList(
                                 new AtlasEnumElementDef("L1", "Element"+_description, 1),
-                                new AtlasEnumElementDef("L1", "Element"+_description, 2)
+                                new AtlasEnumElementDef("L2", "Element"+_description, 2)
                         ));
 
         AtlasStructDef addressDetails =
@@ -149,7 +149,7 @@ public final class TestUtilsV2 {
                 new AtlasEnumDef("OrgLevel", "OrgLevel"+_description, "1.0",
                         Arrays.asList(
                                 new AtlasEnumElementDef("L1", "Element"+ _description, 1),
-                                new AtlasEnumElementDef("L1", "Element"+ _description, 2)
+                                new AtlasEnumElementDef("L2", "Element"+ _description, 2)
                         ));
 
         AtlasStructDef addressDetails =
@@ -443,6 +443,7 @@ public final class TestUtilsV2 {
         AtlasEntityDef databaseTypeDefinition =
                 AtlasTypeUtil.createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,ImmutableSet.of(SUPER_TYPE_NAME),
                         AtlasTypeUtil.createUniqueRequiredAttrDef(NAME, "string"),
+                        AtlasTypeUtil.createOptionalAttrDef("isReplicated", "boolean"),
                         AtlasTypeUtil.createOptionalAttrDef("created", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"));
 
@@ -543,7 +544,7 @@ public final class TestUtilsV2 {
         AtlasEntityDef tableTypeDefinition =
                 AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE + _description, ImmutableSet.of(SUPER_TYPE_NAME),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
-                        AtlasTypeUtil.createRequiredAttrDef("description", "string"),
+                        AtlasTypeUtil.createOptionalAttrDef("description", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("created", "date"),
                         // enum
@@ -582,6 +583,11 @@ public final class TestUtilsV2 {
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
                                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()),
+
+                      // new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                     //add(new AtlasStructDef.AtlasConstraintDef(
+                       // AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, new HashMap<String, Object>()));
+                       //}}),
                         //map of structs
                         new AtlasAttributeDef("partitionsMap",
                                 String.format("map<%s,%s>", "string", "partition_struct_type"),
@@ -646,7 +652,7 @@ public final class TestUtilsV2 {
         entity.setAttribute("description", "random table");
         entity.setAttribute("type", "type");
         entity.setAttribute("tableType", "MANAGED");
-        entity.setAttribute("database", dbId);
+        entity.setAttribute("database", new AtlasObjectId(DATABASE_TYPE, dbId));
         entity.setAttribute("created", new Date());
 
         Map<String, Object> partAttributes = new HashMap<String, Object>() {{

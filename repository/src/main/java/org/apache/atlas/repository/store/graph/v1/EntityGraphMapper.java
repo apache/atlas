@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -36,9 +37,11 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
@@ -86,13 +89,12 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         AtlasEdge result = null;
 
         String guid = getId(ctx.getValue());
-
         AtlasVertex entityVertex = context.getDiscoveryContext().getResolvedReference(guid);
-        String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(ctx.getParentType(), ctx.getAttributeDef().getName());
         if ( ctx.getCurrentEdge().isPresent() ) {
             updateEdge(ctx.getAttributeDef(), ctx.getValue(), ctx.getCurrentEdge().get(), entityVertex);
             result = ctx.getCurrentEdge().get();
-        } else {
+        } else if (ctx.getValue() != null) {
+            String edgeLabel = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexPropertyKey());
             try {
                 result = graphHelper.getOrCreateEdge(ctx.getReferringVertex(), entityVertex, edgeLabel);
             } catch (RepositoryException e) {
@@ -112,7 +114,7 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         LOG.debug("Updating entity reference {} for reference attribute {}",  attributeDef.getName());
         // Update edge if it exists
 
-        AtlasVertex currentVertex = currentEdge.getOutVertex();
+        AtlasVertex currentVertex = currentEdge.getInVertex();
         String currentEntityId = AtlasGraphUtilsV1.getIdFromVertex(currentVertex);
         String newEntityId = getId(value);
         AtlasEdge newEdge = currentEdge;
@@ -140,17 +142,17 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         if (ctx.getCreatedEntities() != null) {
             for (AtlasEntity createdEntity : ctx.getCreatedEntities()) {
                 AtlasVertex vertex = ctx.getVertex(createdEntity);
-                structVertexMapper.mapAttributestoVertex((AtlasStructType) ctx.getType(createdEntity), createdEntity, vertex);
-                resp.addEntity(EntityMutations.EntityOperation.CREATE, constructHeader(createdEntity, vertex));
+                structVertexMapper.mapAttributestoVertex(EntityMutations.EntityOperation.CREATE, ctx.getType(createdEntity), createdEntity, vertex);
+                resp.addEntity(EntityMutations.EntityOperation.CREATE, constructHeader(createdEntity, ctx.getType(createdEntity), vertex));
             }
         }
 
         if (ctx.getUpdatedEntities() != null) {
             for (AtlasEntity updated : ctx.getUpdatedEntities()) {
                 AtlasVertex vertex = ctx.getVertex(updated);
-                structVertexMapper.mapAttributestoVertex((AtlasStructType) ctx.getType(updated), updated, vertex);
+                structVertexMapper.mapAttributestoVertex(EntityMutations.EntityOperation.UPDATE, ctx.getType(updated), updated, vertex);
 
-                resp.addEntity(EntityMutations.EntityOperation.UPDATE, constructHeader(updated, vertex));
+                resp.addEntity(EntityMutations.EntityOperation.UPDATE, constructHeader(updated, ctx.getType(updated), vertex));
             }
         }
 
@@ -165,13 +167,30 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
             } else if (value instanceof AtlasEntity) {
                 return ((AtlasEntity) value).getGuid();
             }
+
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, (String) value);
         }
-        throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, (String) value);
+
+        return null;
     }
 
-    private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex) {
+    private AtlasEntityHeader constructHeader(AtlasEntity entity, final AtlasEntityType type, AtlasVertex vertex) {
         //TODO - enhance to return only selective attributes
-        return new AtlasEntityHeader(entity.getTypeName(), AtlasGraphUtilsV1.getIdFromVertex(vertex), entity.getAttributes());
+        AtlasEntityHeader header = new AtlasEntityHeader(entity.getTypeName(), AtlasGraphUtilsV1.getIdFromVertex(vertex), entity.getAttributes());
+        final Map<String, AtlasStructType.AtlasAttribute> allAttributes = type.getAllAttributes();
+        for (String attribute : allAttributes.keySet()) {
+            AtlasType attributeType = allAttributes.get(attribute).getAttributeType();
+            AtlasStructDef.AtlasAttributeDef attributeDef = allAttributes.get(attribute).getAttributeDef();
+            if ( header.getAttribute(attribute) == null && (TypeCategory.PRIMITIVE == attributeType.getTypeCategory())) {
+
+                if ( attributeDef.getIsOptional()) {
+                    header.setAttribute(attribute, attributeType.createOptionalDefaultValue());
+                } else {
+                    header.setAttribute(attribute, attributeType.createDefaultValue());
+                }
+            }
+        }
+        return header;
     }
 
     public EntityMutationContext getContext() {
@@ -180,6 +199,11 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
 
     public AtlasEntityType getInstanceType(Object val) throws AtlasBaseException {
         String guid = getId(val);
-        return (AtlasEntityType) getContext().getType(guid);
+
+        if ( guid != null) {
+            return (AtlasEntityType) getContext().getType(guid);
+        }
+
+        return null;
     }
 }
