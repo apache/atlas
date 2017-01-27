@@ -124,21 +124,25 @@ public class TestAtlasEntityType {
 
     @Test
     public void testForeignKeyConstraintValid() {
-        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
-        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
-        String               failureMsg   = null;
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        String                     failureMsg   = null;
 
         entityDefs.add(createTableEntityDef());
         entityDefs.add(createColumnEntityDef());
 
         try {
-            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
 
             ttr.addTypes(entityDefs);
 
-            typeRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNull(failureMsg, "failed to create types my_table and my_column");
     }
@@ -151,55 +155,68 @@ public class TestAtlasEntityType {
 
         entityDefs.add(createTableEntityDef());
 
+        AtlasTransientTypeRegistry ttr    = null;
+        boolean                    commit = false;
+
         try {
-            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
 
             ttr.addTypes(entityDefs);
 
-            typeRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in mappedFromRef");
     }
 
     @Test
     public void testForeignKeyConstraintInValidMappedFromRef2() {
-        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
-        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
-        String               failureMsg   = null;
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        String                     failureMsg   = null;
 
         entityDefs.add(createTableEntityDefWithMissingRefAttribute());
         entityDefs.add(createColumnEntityDef());
 
         try {
-            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
 
             ttr.addTypes(entityDefs);
 
-            typeRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid constraint failure - missing refAttribute in mappedFromRef");
     }
 
     @Test
     public void testForeignKeyConstraintInValidForeignKey() {
-        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
-        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
-        String               failureMsg   = null;
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        String                     failureMsg   = null;
 
         entityDefs.add(createColumnEntityDef());
 
         try {
-            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
 
             ttr.addTypes(entityDefs);
 
-            typeRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in foreignKey");
     }

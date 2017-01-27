@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_PREFIX;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_SUFFIX;
@@ -51,15 +53,20 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
 @Singleton
 public class AtlasTypeRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructType.class);
+    private static final int    DEFAULT_LOCK_MAX_WAIT_TIME_IN_SECONDS = 15;
 
-    protected RegistryData registryData;
+    protected       RegistryData                   registryData;
+    private   final TypeRegistryUpdateSynchronizer updateSynchronizer;
 
     public AtlasTypeRegistry() {
-        registryData = new RegistryData();
+        registryData       = new RegistryData();
+        updateSynchronizer = new TypeRegistryUpdateSynchronizer(this);
     }
 
+    // used only by AtlasTransientTypeRegistry
     protected AtlasTypeRegistry(AtlasTypeRegistry other) {
-        registryData = new RegistryData(other.registryData);
+        registryData       = new RegistryData(other.registryData);
+        updateSynchronizer = other.updateSynchronizer;
     }
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
@@ -195,13 +202,18 @@ public class AtlasTypeRegistry {
     public AtlasEntityType getEntityTypeByName(String name) { return registryData.entityDefs.getTypeByName(name); }
 
 
-    public AtlasTransientTypeRegistry createTransientTypeRegistry() {
-        return new AtlasTransientTypeRegistry(this);
+    public AtlasTransientTypeRegistry lockTypeRegistryForUpdate() throws AtlasBaseException {
+        return lockTypeRegistryForUpdate(DEFAULT_LOCK_MAX_WAIT_TIME_IN_SECONDS);
     }
 
-    public void commitTransientTypeRegistry(AtlasTransientTypeRegistry transientTypeRegistry) {
-        this.registryData = transientTypeRegistry.registryData;
+    public AtlasTransientTypeRegistry lockTypeRegistryForUpdate(int lockMaxWaitTimeInSeconds) throws AtlasBaseException {
+        return updateSynchronizer.lockTypeRegistryForUpdate(lockMaxWaitTimeInSeconds);
     }
+
+    public void releaseTypeRegistryForUpdate(AtlasTransientTypeRegistry transientTypeRegistry, boolean commitUpdates) {
+        updateSynchronizer.releaseTypeRegistryForUpdate(transientTypeRegistry, commitUpdates);
+    }
+
 
     static class RegistryData {
         final TypeCache                                                       allTypes;
@@ -519,12 +531,16 @@ public class AtlasTypeRegistry {
         public List<AtlasBaseTypeDef> getDeleteedTypes() { return deletedTypes; }
 
 
-        private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) {
+        private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.addTypeWithNoRefResolve({})", typeDef);
             }
 
             if (typeDef != null) {
+                if (this.isRegisteredType(typeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, typeDef.getName());
+                }
+
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 
@@ -552,7 +568,7 @@ public class AtlasTypeRegistry {
             }
         }
 
-        private void addTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) {
+        private void addTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) throws AtlasBaseException {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.addTypesWithNoRefResolve(length={})",
                           (typeDefs == null ? 0 : typeDefs.size()));
@@ -680,6 +696,89 @@ public class AtlasTypeRegistry {
                                                                               (typeDefs == null ? 0 : typeDefs.size()));
             }
         }
+    }
+
+    static class TypeRegistryUpdateSynchronizer {
+        private final AtlasTypeRegistry typeRegistry;
+        private final ReentrantLock     typeRegistryUpdateLock;
+        private AtlasTransientTypeRegistry typeRegistryUnderUpdate = null;
+        private String                     lockedByThread          = null;
+
+        TypeRegistryUpdateSynchronizer(AtlasTypeRegistry typeRegistry) {
+            this.typeRegistry           = typeRegistry;
+            this.typeRegistryUpdateLock = new ReentrantLock();
+        }
+
+        AtlasTransientTypeRegistry lockTypeRegistryForUpdate(int lockMaxWaitTimeInSeconds) throws AtlasBaseException {
+            LOG.debug("==> lockTypeRegistryForUpdate()");
+
+            boolean alreadyLockedByCurrentThread = typeRegistryUpdateLock.isHeldByCurrentThread();
+
+            if (!alreadyLockedByCurrentThread) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("lockTypeRegistryForUpdate(): waiting for lock to be released by thread {}", lockedByThread);
+                }
+            } else {
+                LOG.warn("lockTypeRegistryForUpdate(): already locked. currentLockCount={}",
+                         typeRegistryUpdateLock.getHoldCount());
+            }
+
+            try {
+                boolean isLocked = typeRegistryUpdateLock.tryLock(lockMaxWaitTimeInSeconds, TimeUnit.SECONDS);
+
+                if (!isLocked) {
+                    throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
+                }
+            } catch (InterruptedException excp) {
+                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK, excp);
+            }
+
+            if (!alreadyLockedByCurrentThread) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("lockTypeRegistryForUpdate(): wait over..got the lock");
+                }
+
+                typeRegistryUnderUpdate = new AtlasTransientTypeRegistry(typeRegistry);
+                lockedByThread          = Thread.currentThread().getName();
+            }
+
+            LOG.debug("<== lockTypeRegistryForUpdate()");
+
+            return typeRegistryUnderUpdate;
+        }
+
+        void releaseTypeRegistryForUpdate(AtlasTransientTypeRegistry ttr, boolean commitUpdates) {
+            LOG.debug("==> releaseTypeRegistryForUpdate()");
+
+            if (typeRegistryUpdateLock.isHeldByCurrentThread()) {
+                try {
+                    if (typeRegistryUnderUpdate != ttr) {
+                        LOG.error("releaseTypeRegistryForUpdate(): incorrect typeRegistry returned for release" +
+                                  ": found=" + ttr + "; expected=" + typeRegistryUnderUpdate,
+                                  new Exception().fillInStackTrace());
+                    } else if (typeRegistryUpdateLock.getHoldCount() == 1) {
+                        if (ttr != null && commitUpdates) {
+                            typeRegistry.registryData = ttr.registryData;
+                        }
+                    }
+
+                    if (typeRegistryUpdateLock.getHoldCount() == 1) {
+                        lockedByThread          = null;
+                        typeRegistryUnderUpdate = null;
+                    } else {
+                        LOG.warn("releaseTypeRegistryForUpdate(): pendingReleaseCount={}", typeRegistryUpdateLock.getHoldCount() - 1);
+                    }
+                } finally {
+                    typeRegistryUpdateLock.unlock();
+                }
+            } else {
+                LOG.error("releaseTypeRegistryForUpdate(): current thread does not hold the lock",
+                          new Exception().fillInStackTrace());
+            }
+
+            LOG.debug("<== releaseTypeRegistryForUpdate()");
+        }
+
     }
 }
 

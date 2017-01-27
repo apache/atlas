@@ -158,16 +158,21 @@ public final class  ModelTestUtil {
             ret.setDefaultValue(ret.getElementDefs().get(idxDefault).getValue());
         }
 
+        AtlasTransientTypeRegistry ttr    = null;
+        boolean                    commit = false;
+
         try {
-            AtlasTransientTypeRegistry ttr = typesRegistry.createTransientTypeRegistry();
+            ttr = typesRegistry.lockTypeRegistryForUpdate();
 
             ttr.addType(ret);
 
-            typesRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create enum-def", excp);
 
             ret = null;
+        } finally {
+            typesRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
 
         return ret;
@@ -186,16 +191,21 @@ public final class  ModelTestUtil {
         ret.setDescription(ret.getName());
         ret.setAttributeDefs(newAttributeDefsWithAllBuiltInTypes(PREFIX_ATTRIBUTE_NAME));
 
+        AtlasTransientTypeRegistry ttr    = null;
+        boolean                    commit = false;
+
         try {
-            AtlasTransientTypeRegistry ttr = typesRegistry.createTransientTypeRegistry();
+            ttr = typesRegistry.lockTypeRegistryForUpdate();
 
             ttr.addType(ret);
 
-            typesRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create struct-def", excp);
 
             ret = null;
+        } finally {
+            typesRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
 
         return ret;
@@ -228,16 +238,21 @@ public final class  ModelTestUtil {
             }
         }
 
+        AtlasTransientTypeRegistry ttr    = null;
+        boolean                    commit = false;
+
         try {
-            AtlasTransientTypeRegistry ttr = typesRegistry.createTransientTypeRegistry();
+            ttr = typesRegistry.lockTypeRegistryForUpdate();
 
             ttr.addType(ret);
 
-            typesRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create entity-def", excp);
 
             ret = null;
+        } finally {
+            typesRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
 
         return ret;
@@ -279,16 +294,21 @@ public final class  ModelTestUtil {
             }
         }
 
+        AtlasTransientTypeRegistry ttr    = null;
+        boolean                    commit = false;
+
         try {
-            AtlasTransientTypeRegistry ttr = typesRegistry.createTransientTypeRegistry();
+            ttr = typesRegistry.lockTypeRegistryForUpdate();
 
             ttr.addType(ret);
 
-            typesRegistry.commitTransientTypeRegistry(ttr);
+            commit = true;
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create classification-def", excp);
 
             ret = null;
+        } finally {
+            typesRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
 
         return ret;

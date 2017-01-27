@@ -19,11 +19,8 @@ package org.apache.atlas.type;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
@@ -31,6 +28,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.*;
 
@@ -82,17 +83,23 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(classifiL2_4);
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addTypes(typesDef);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNull(failureMsg);
 
-        typeRegistry.commitTransientTypeRegistry(ttr);
 
         validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
         validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
@@ -126,13 +133,20 @@ public class TestAtlasTypeRegistry {
         classifiDef1.addSuperType(classifiDef1.getName());
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addType(classifiDef1);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid supertype failure");
     }
@@ -178,13 +192,20 @@ public class TestAtlasTypeRegistry {
         typesDef.getClassificationDefs().add(classifiL2_4);
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addTypes(typesDef);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid supertype failure");
     }
@@ -235,17 +256,22 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL2_4);
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addTypes(typesDef);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNull(failureMsg);
-
-        typeRegistry.commitTransientTypeRegistry(ttr);
 
         validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
         validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
@@ -279,13 +305,20 @@ public class TestAtlasTypeRegistry {
         entDef1.addSuperType(entDef1.getName());
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addType(entDef1);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid supertype failure");
     }
@@ -331,15 +364,141 @@ public class TestAtlasTypeRegistry {
         typesDef.getEntityDefs().add(entL2_4);
 
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
-        AtlasTransientTypeRegistry ttr          = typeRegistry.createTransientTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
         String                     failureMsg   = null;
 
         try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
             ttr.addTypes(typesDef);
+
+            commit = true;
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertNotNull(failureMsg, "expected invalid supertype failure");
+    }
+
+    @Test
+    public void testNestedUpdates() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        String                     failureMsg   = null;
+        AtlasClassificationDef     testTag1     = new AtlasClassificationDef("testTag1");
+        AtlasClassificationDef     testTag2     = new AtlasClassificationDef("testTag2");
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addType(testTag1);
+
+            // changes should not be seen in typeRegistry until lock is released
+            assertFalse(typeRegistry.isRegisteredType(testTag1.getName()),
+                        "type added should be seen in typeRegistry only after commit");
+
+            boolean isNestedUpdateSuccess = addType(typeRegistry, testTag2);
+
+            assertTrue(isNestedUpdateSuccess);
+
+            // changes made in nested commit, inside addType(), should not be seen in typeRegistry until lock is released here
+            assertFalse(typeRegistry.isRegisteredType(testTag2.getName()),
+                        "type added within nested commit should be seen in typeRegistry only after outer commit");
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNull(failureMsg);
+        assertTrue(typeRegistry.isRegisteredType(testTag1.getName()));
+        assertTrue(typeRegistry.isRegisteredType(testTag2.getName()));
+    }
+
+    @Test
+    public void testParallelUpdates() {
+        final int    numOfThreads         =  3;
+        final int    numOfTypesPerKind    = 30;
+        final String enumTypePrefix       = "testEnum-";
+        final String structTypePrefix     = "testStruct-";
+        final String classificationPrefix = "testTag-";
+        final String entityTypePrefix     = "testEntity-";
+
+        ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
+
+        final AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+
+        // update typeRegistry simultaneously in multiple threads
+        for (int threadIdx = 0; threadIdx < numOfThreads; threadIdx++) {
+            executor.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    for (int i = 0; i < numOfTypesPerKind; i++) {
+                        addType(typeRegistry, new AtlasEnumDef(enumTypePrefix + i));
+                    }
+
+                    for (int i = 0; i < numOfTypesPerKind; i++) {
+                        addType(typeRegistry, new AtlasStructDef(structTypePrefix + i));
+                    }
+
+                    for (int i = 0; i < numOfTypesPerKind; i++) {
+                        addType(typeRegistry, new AtlasClassificationDef(classificationPrefix + i));
+                    }
+
+                    for (int i = 0; i < numOfTypesPerKind; i++) {
+                        addType(typeRegistry, new AtlasEntityDef(entityTypePrefix + i));
+                    }
+
+                    return null;
+                }
+            });
+        }
+
+        executor.shutdown();
+
+        try {
+            boolean isCompleted = executor.awaitTermination(60, TimeUnit.SECONDS);
+
+            assertTrue(isCompleted, "threads did not complete updating types");
+        } catch (InterruptedException excp) {
+            // ignore?
+        }
+
+        // verify that all types added are present in the typeRegistry
+        for (int i = 0; i < numOfTypesPerKind; i++) {
+            String enumType           = enumTypePrefix + i;
+            String structType         = structTypePrefix + i;
+            String classificationType = classificationPrefix + i;
+            String entityType         = entityTypePrefix + i;
+
+            assertNotNull(typeRegistry.getEnumDefByName(enumType), enumType + ": enum not found");
+            assertNotNull(typeRegistry.getStructDefByName(structType), structType + ": struct not found");
+            assertNotNull(typeRegistry.getClassificationDefByName(classificationType), classificationType + ": classification not found");
+            assertNotNull(typeRegistry.getEntityDefByName(entityType), entityType + ": entity not found");
+        }
+    }
+
+    private boolean addType(AtlasTypeRegistry typeRegistry, AtlasBaseTypeDef typeDef) {
+        boolean                    ret = false;
+        AtlasTransientTypeRegistry ttr = null;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addType(typeDef);
+
+            ret = true;
+        } catch (AtlasBaseException excp) {
+            // ignore
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, ret);
+        }
+
+        return ret;
     }
 
     private void validateSuperTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSuperTypes) {

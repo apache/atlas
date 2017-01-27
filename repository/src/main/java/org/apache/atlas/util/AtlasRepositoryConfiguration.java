@@ -48,6 +48,10 @@ public class AtlasRepositoryConfiguration {
     private static List<String> skippedOperations = null;
     public static final String SEPARATOR = ":";
 
+    private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
+    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
+    private static Integer typeUpdateLockMaxWaitTimeInSeconds = null;
+
     @SuppressWarnings("unchecked")
     public static Class<? extends TypeCache> getTypeCache() {
         // Get the type cache implementation class from Atlas configuration.
@@ -155,4 +159,21 @@ public class AtlasRepositoryConfiguration {
         skippedOperations = null;
     }
 
+    public static int getTypeUpdateLockMaxWaitTimeInSeconds() {
+        Integer ret = typeUpdateLockMaxWaitTimeInSeconds;
+
+        if (ret == null) {
+            try {
+                Configuration config = ApplicationProperties.get();
+
+                ret = config.getInteger(CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS, DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS);
+
+                typeUpdateLockMaxWaitTimeInSeconds = ret;
+            } catch (AtlasException e) {
+                // ignore
+            }
+        }
+
+        return ret == null ? DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS : ret;
+    }
 }
