@@ -400,7 +400,7 @@
             <roles>
                 <role>committer</role>
             </roles>
-            <organization></organization>
+            <organization>Hortonworks Inc.</organization>
         </developer>
         <developer>
             <id>svimal2106</id>
