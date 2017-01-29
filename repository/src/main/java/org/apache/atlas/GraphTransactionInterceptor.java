@@ -51,7 +51,11 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 Object response = invocation.proceed();
                 graph.commit();
                 isSuccess = true;
-                LOG.info("graph commit");
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("graph commit");
+                }
+
                 return response;
             } catch (Throwable t) {
                 if (logException(t)) {

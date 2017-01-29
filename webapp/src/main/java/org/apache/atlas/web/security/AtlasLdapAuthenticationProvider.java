@@ -25,7 +25,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,8 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AtlasLdapAuthenticationProvider extends
         AtlasAbstractAuthenticationProvider {
-    private static Logger LOG = Logger
-            .getLogger(AtlasLdapAuthenticationProvider.class);
+    private static Logger LOG = LoggerFactory.getLogger(AtlasLdapAuthenticationProvider.class);
 
     private String ldapURL;
     private String ldapUserDNPattern;

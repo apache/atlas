@@ -19,7 +19,8 @@ package org.apache.atlas.web.security;
 import java.util.Collection;
 
 import org.apache.atlas.web.dao.UserDao;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
 
-    private static Logger logger = Logger.getLogger(AtlasFileAuthenticationProvider.class);
+    private static Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
 
     @Autowired
     private UserDetailsService userDetailsService;

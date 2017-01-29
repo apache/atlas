@@ -43,7 +43,10 @@ public class PolicyUtil {
 
         // Iterate over the list of policies to create map
         for (PolicyDef policyDef : policyDefList) {
-            LOG.info("Processing policy def : {}", policyDef);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Processing policy def : {}", policyDef);
+            }
+
             Map<String, List<AtlasActionTypes>> principalMap =
                 principalType.equals(SimpleAtlasAuthorizer.AtlasAccessorTypes.USER) ? policyDef.getUsers() : policyDef
                     .getGroups();
@@ -88,7 +91,10 @@ public class PolicyUtil {
                     userResourceList.put(type, resourceList);
                 }
                 userReadMap.put(username, userResourceList);
-                LOG.info("userReadMap {}", userReadMap);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("userReadMap {}", userReadMap);
+                }
             }
         }
         if (isDebugEnabled) {

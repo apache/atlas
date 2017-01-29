@@ -27,7 +27,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -39,8 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AtlasADAuthenticationProvider extends
         AtlasAbstractAuthenticationProvider {
-    private static Logger LOG = Logger
-            .getLogger(AtlasADAuthenticationProvider.class);
+    private static Logger LOG = LoggerFactory.getLogger(AtlasADAuthenticationProvider.class);
 
     private String adURL;
     private String adDomain;

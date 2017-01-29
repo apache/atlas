@@ -18,7 +18,8 @@
 
 package org.apache.atlas.web.security;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.json.simple.JSONObject;
 import org.springframework.security.core.Authentication;
@@ -32,7 +33,7 @@ import java.io.IOException;
 
 public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-    private static Logger LOG = Logger.getLogger(AuthenticationSuccessHandler.class);
+    private static Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessHandler.class);
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {

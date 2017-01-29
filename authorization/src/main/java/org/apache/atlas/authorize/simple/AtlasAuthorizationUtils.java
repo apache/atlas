@@ -40,7 +40,7 @@ public class AtlasAuthorizationUtils {
 
     public static String getApi(String contextPath) {
         if (isDebugEnabled) {
-            LOG.debug("==> getApi from {}", contextPath);
+            LOG.debug("==> getApi({})", contextPath);
         }
         if (contextPath.startsWith(BASE_URL)) {
             contextPath = contextPath.substring(BASE_URL.length());
@@ -56,7 +56,11 @@ public class AtlasAuthorizationUtils {
         if(Pattern.matches("v\\d", api)) {
             api = split[1];
         }
-        LOG.info("Now returning API : "+api);
+
+        if (isDebugEnabled) {
+            LOG.debug("<== getApi({}): {}", contextPath, api);
+        }
+
         return api;
     }
 

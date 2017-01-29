@@ -26,18 +26,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileReaderUtil {
-    private static Logger LOG = Logger.getLogger(FileReaderUtil.class);
+    private static Logger LOG = LoggerFactory.getLogger(FileReaderUtil.class);
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
 
     public static List<String> readFile(String path) throws IOException {
         if (isDebugEnabled) {
-            LOG.debug("==> FileReaderUtil readFile");
+            LOG.debug("==> FileReaderUtil readFile({})", path);
         }
         List<String> list = new ArrayList<>();
-        LOG.info("reading the file" + path);
         List<String> fileLines = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
         if (fileLines != null) {
             for (String line : fileLines) {
@@ -47,7 +47,7 @@ public class FileReaderUtil {
         }
 
         if (isDebugEnabled) {
-            LOG.debug("<== FileReaderUtil readFile");
+            LOG.debug("<== FileReaderUtil readFile({})", path);
             LOG.debug("Policies read :: " + list);
         }
 

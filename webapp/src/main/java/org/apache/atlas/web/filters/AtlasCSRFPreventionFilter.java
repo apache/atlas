@@ -34,7 +34,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
@@ -42,7 +43,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.json.simple.JSONObject;
 
 public class AtlasCSRFPreventionFilter implements Filter {
-	private static final Logger LOG = Logger.getLogger(AtlasCSRFPreventionFilter.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AtlasCSRFPreventionFilter.class);
 	private static Configuration configuration;
 	
 	static {

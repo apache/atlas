@@ -25,7 +25,8 @@ import java.util.Properties;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.DefaultPropertiesPersister;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -35,7 +36,7 @@ import org.w3c.dom.NodeList;
  * Util class for XMLProperties.
  */
 public class XMLPropertiesUtil extends DefaultPropertiesPersister {
-    private static Logger logger = Logger.getLogger(XMLPropertiesUtil.class);
+    private static Logger logger = LoggerFactory.getLogger(XMLPropertiesUtil.class);
 
     public XMLPropertiesUtil() {
     }

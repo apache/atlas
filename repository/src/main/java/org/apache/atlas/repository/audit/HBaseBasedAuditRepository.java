@@ -121,7 +121,10 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @throws AtlasException
      */
     public void putEvents(List<EntityAuditEvent> events) throws AtlasException {
-        LOG.info("Putting {} events", events.size());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Putting {} events", events.size());
+        }
+
         Table table = null;
         try {
             table = connection.getTable(tableName);
@@ -168,7 +171,10 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      */
     public List<EntityAuditEvent> listEvents(String entityId, String startKey, short n)
             throws AtlasException {
-        LOG.info("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
+        }
+
         Table table = null;
         ResultScanner scanner = null;
         try {
@@ -216,7 +222,11 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 }
                 events.add(event);
             }
-            LOG.info("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
+            }
+
             return events;
         } catch (IOException e) {
             throw new AtlasException(e);
