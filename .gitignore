@@ -36,6 +36,10 @@ pom.xml.releaseBackup
 .externalToolBuilders
 maven-eclipse.xml
 
+#binary files
+**/bin/**
+!distro/src/bin/**
+
 #log files
 logs
 *.log
