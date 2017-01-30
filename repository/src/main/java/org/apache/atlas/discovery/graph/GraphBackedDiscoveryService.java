@@ -18,6 +18,17 @@
 
 package org.apache.atlas.discovery.graph;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.script.ScriptException;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
@@ -38,23 +49,16 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.util.CompiledQueryCacheKey;
+import org.apache.atlas.util.NoopGremlinQuery;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import scala.util.Either;
 import scala.util.parsing.combinator.Parsers;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.script.ScriptException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Graph backed implementation of Search.
@@ -124,42 +128,57 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     }
 
     public GremlinQueryResult evaluate(String dslQuery, QueryParams queryParams) throws DiscoveryException {
-        
-        if (LOG.isDebugEnabled()) {
+        if(LOG.isDebugEnabled()) {
             LOG.debug("Executing dsl query={}", dslQuery);
         }
-
         try {
-            Either<Parsers.NoSuccess, Expressions.Expression> either = QueryParser.apply(dslQuery, queryParams);
-            if (either.isRight()) {
-                Expressions.Expression expression = either.right().get();
-                return evaluate(dslQuery, expression);
-            } else {
-                throw new DiscoveryException("Invalid expression : " + dslQuery + ". " + either.left());
+            GremlinQuery gremlinQuery = parseAndTranslateDsl(dslQuery, queryParams);
+            if(gremlinQuery instanceof NoopGremlinQuery) {
+                return new GremlinQueryResult(dslQuery, ((NoopGremlinQuery)gremlinQuery).getDataType(), Collections.emptyList());
             }
+
+            return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, graph).evaluate();
+
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression : " + dslQuery, e);
         }
     }
 
-    private GremlinQueryResult evaluate(String dslQuery, Expressions.Expression expression) {
-        Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
+    private GremlinQuery parseAndTranslateDsl(String dslQuery, QueryParams queryParams) throws DiscoveryException {
 
-        //If the final limit is 0, don't launch the query, return with 0 rows
-        if (validatedExpression instanceof Expressions.LimitExpression
-                && ((Integer)((Expressions.LimitExpression) validatedExpression).limit().rawValue()) == 0) {
-            return new GremlinQueryResult(dslQuery, validatedExpression.dataType(), Collections.emptyList());
+        CompiledQueryCacheKey entry = new CompiledQueryCacheKey(dslQuery, queryParams);
+        GremlinQuery gremlinQuery = QueryProcessor.compiledQueryCache().get(entry);
+        if(gremlinQuery == null) {
+            Expressions.Expression validatedExpression = parseQuery(dslQuery, queryParams);
+
+            //If the final limit is 0, don't launch the query, return with 0 rows
+            if (validatedExpression instanceof Expressions.LimitExpression
+                    && ((Integer)((Expressions.LimitExpression) validatedExpression).limit().rawValue()) == 0) {
+                gremlinQuery = new NoopGremlinQuery(validatedExpression.dataType());
+            }
+            else {
+                gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Query = {}", validatedExpression);
+                    LOG.debug("Expression Tree = {}", validatedExpression.treeString());
+                    LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
+                }
+            }
+            QueryProcessor.compiledQueryCache().put(entry, gremlinQuery);
+        }
+        return gremlinQuery;
+    }
+
+    private Expressions.Expression parseQuery(String dslQuery, QueryParams queryParams) throws DiscoveryException {
+        Either<Parsers.NoSuccess, Expressions.Expression> either = QueryParser.apply(dslQuery, queryParams);
+        if (either.isRight()) {
+            Expressions.Expression expression = either.right().get();
+            Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
+            return validatedExpression;
+        } else {
+            throw new DiscoveryException("Invalid expression : " + dslQuery + ". " + either.left());
         }
 
-        GremlinQuery gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Query = {}", validatedExpression);
-            LOG.debug("Expression Tree = {}", validatedExpression.treeString());
-            LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
-        }
-
-        return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, graph).evaluate();
     }
 
     /**
@@ -182,12 +201,12 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             throw new DiscoveryException(se);
         }
     }
-    
+
     private List<Map<String, String>> extractResult(final Object o) throws DiscoveryException {
         List<Map<String, String>> result = new ArrayList<>();
         if (o instanceof List) {
             List l = (List) o;
-            
+
             for (Object value : l) {
                 Map<String, String> oRow = new HashMap<>();
                 if (value instanceof Map) {
@@ -205,7 +224,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                             oRow.put(key, propertyValue.toString());
                         }
                     }
-   
+
                 } else if (value instanceof String) {
                     oRow.put("", value.toString());
                 } else if(value instanceof AtlasEdge) {
@@ -220,14 +239,14 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                 } else {
                     throw new DiscoveryException(String.format("Cannot process result %s", String.valueOf(value)));
                 }
-    
+
                 result.add(oRow);
             }
         }
         else {
             result.add(new HashMap<String, String>() {{
                 put("result", o.toString());
-            }}); 
+            }});
         }
         return result;
     }

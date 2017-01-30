@@ -43,6 +43,9 @@ public class AtlasRepositoryConfiguration {
 
     private static Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
 
+    public static final int DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = 0;
+    public static final int DEFAULT_COMPILED_QUERY_CACHE_CAPACITY = 1000;
+
     public static final String TYPE_CACHE_IMPLEMENTATION_PROPERTY = "atlas.TypeCache.impl";
     public static final String AUDIT_EXCLUDED_OPERATIONS = "atlas.audit.excludes";
     private static List<String> skippedOperations = null;
@@ -70,7 +73,7 @@ public class AtlasRepositoryConfiguration {
     public static Class<? extends EntityAuditRepository> getAuditRepositoryImpl() {
         try {
             Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config, 
+            return ApplicationProperties.getClass(config,
                     AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
@@ -83,7 +86,7 @@ public class AtlasRepositoryConfiguration {
     public static Class<? extends DeleteHandler> getDeleteHandlerImpl() {
         try {
             Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config, 
+            return ApplicationProperties.getClass(config,
                     DELETE_HANDLER_IMPLEMENTATION_PROPERTY, SoftDeleteHandler.class.getName(), DeleteHandler.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
@@ -99,15 +102,50 @@ public class AtlasRepositoryConfiguration {
             throw new RuntimeException(e);
         }
     }
-    
+
+    public static final String COMPILED_QUERY_CACHE_CAPACITY = "atlas.CompiledQueryCache.capacity";
+
+    /**
+     * Get the configuration property that specifies the size of the compiled query
+     * cache. This is an optional property. A default is used if it is not
+     * present.
+     *
+     * @return the size to be used when creating the compiled query cache.
+     */
+    public static int getCompiledQueryCacheCapacity() {
+        try {
+            return ApplicationProperties.get().getInt(COMPILED_QUERY_CACHE_CAPACITY, DEFAULT_COMPILED_QUERY_CACHE_CAPACITY);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static final String COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = "atlas.CompiledQueryCache.evictionWarningThrottle";
+
+    /**
+     * Get the configuration property that specifies the number evictions that pass
+     * before a warning is logged. This is an optional property. A default is
+     * used if it is not present.
+     *
+     * @return the number of evictions before a warning is logged.
+     */
+    public static int getCompiledQueryCacheEvictionWarningThrottle() {
+        try {
+            return ApplicationProperties.get().getInt(COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE, DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     private static final String GRAPH_DATABASE_IMPLEMENTATION_PROPERTY = "atlas.graphdb.backend";
     private static final String DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS = "org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase";
-    
+
     @SuppressWarnings("unchecked")
     public static Class<? extends GraphDatabase> getGraphDatabaseImpl() {
         try {
             Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config, 
+            return ApplicationProperties.getClass(config,
                     GRAPH_DATABASE_IMPLEMENTATION_PROPERTY, DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);

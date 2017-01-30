@@ -21,9 +21,17 @@ package org.apache.atlas.query
 import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.query.Expressions._
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.atlas.util.AtlasRepositoryConfiguration
+import org.apache.atlas.utils.LruCache
+import org.apache.atlas.util.CompiledQueryCacheKey
+import java.util.Collections
 
 object QueryProcessor {
     val LOG : Logger = LoggerFactory.getLogger("org.apache.atlas.query.QueryProcessor")
+
+    val compiledQueryCache = Collections.synchronizedMap(new LruCache[CompiledQueryCacheKey, GremlinQuery](
+                        AtlasRepositoryConfiguration.getCompiledQueryCacheCapacity(),
+                        AtlasRepositoryConfiguration.getCompiledQueryCacheEvictionWarningThrottle()));
 
     def evaluate(e: Expression, g: AtlasGraph[_,_], gP : GraphPersistenceStrategies = null):
     GremlinQueryResult = {
@@ -33,11 +41,28 @@ object QueryProcessor {
             strategy = GraphPersistenceStrategy1(g);
         }
 
-        val e1 = validate(e)
-        val q = new GremlinTranslator(e1, strategy).translate()
-        LOG.debug("Query: " + e1)
-        LOG.debug("Expression Tree:\n" + e1.treeString)
-        LOG.debug("Gremlin Query: " + q.queryStr)
+        //convert the query expression to DSL so we can check whether or not it is in the compiled
+        //query cache and avoid validating/translating it again if it is.
+        val dsl = e.toString();
+        val cacheKey = new CompiledQueryCacheKey(dsl);
+        var q = compiledQueryCache.get(cacheKey);
+        if(q == null) {
+
+            //query was not found in the compiled query cache.  Validate
+            //and translate it, then cache the result.
+
+            val e1 = validate(e)
+            q = new GremlinTranslator(e1, strategy).translate()
+            compiledQueryCache.put(cacheKey, q);
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Validated Query: " + e1)
+                LOG.debug("Expression Tree:\n" + e1.treeString);
+            }
+        }
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("DSL Query: " + dsl);
+            LOG.debug("Gremlin Query: " + q.queryStr)
+        }
         new GremlinEvaluator(q, strategy, g).evaluate()
     }
 
