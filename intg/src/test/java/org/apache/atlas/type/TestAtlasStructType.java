@@ -195,6 +195,7 @@ public class TestAtlasStructType {
             fail("invalidStructDef not detected: structDef=" + invalidStructDef + "; structType=" + invalidStructType);
         } catch (AtlasBaseException excp) {
             assertTrue(excp.getAtlasErrorCode() == AtlasErrorCode.INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY);
+            invalidStructDef.removeAttribute("invalidAttributeDef");
         }
     }
 
