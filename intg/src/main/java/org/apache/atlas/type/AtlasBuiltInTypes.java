@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 
@@ -526,9 +527,7 @@ public class AtlasBuiltInTypes {
             if (obj == null || obj instanceof AtlasObjectId) {
                 return true;
             } else if (obj instanceof Map) {
-                Map map = (Map)obj;
-
-                return map.containsKey(AtlasObjectId.KEY_TYPENAME) && map.containsKey(AtlasObjectId.KEY_GUID);
+                return isValidMap((Map)obj);
             }
 
             return getNormalizedValue(obj) != null;
@@ -542,13 +541,29 @@ public class AtlasBuiltInTypes {
                 } else if (obj instanceof Map) {
                     Map map = (Map) obj;
 
-                    if (map.containsKey(AtlasObjectId.KEY_TYPENAME) && map.containsKey(AtlasObjectId.KEY_GUID)) {
+                    if (isValidMap(map)) {
                         return new AtlasObjectId(map);
                     }
                 }
             }
 
             return null;
+        }
+
+        private boolean isValidMap(Map map) {
+            if (map.containsKey(AtlasObjectId.KEY_TYPENAME)) {
+                if (map.containsKey(AtlasObjectId.KEY_GUID)) {
+                    return true;
+                } else {
+                    Object uniqueAttributes = map.get(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES);
+
+                    if (uniqueAttributes instanceof Map && MapUtils.isNotEmpty((Map)uniqueAttributes)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
