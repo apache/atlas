@@ -648,8 +648,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.addTypes(typesDef);
-
         AtlasEnumDefStore           enumDefStore     = getEnumDefStore(ttr);
         AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
         AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
