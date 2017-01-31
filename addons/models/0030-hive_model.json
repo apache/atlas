@@ -233,7 +233,10 @@
                     "cardinality": "SINGLE",
                     "constraintDefs": [
                         {
-                            "type": "foreignKey"
+                            "type": "foreignKey",
+                            "params": {
+                                "onDelete": "update"
+                            }
                         }
                     ],
                     "isIndexable": false,
@@ -254,9 +257,9 @@
                     "cardinality": "SINGLE",
                     "constraintDefs": [
                         {
-                            "type": "mappedFromRef",
+                            "type": "foreignKey",
                             "params": {
-                                "refAttribute": "table"
+                                "onDelete": "update"
                             }
                         }
                     ],

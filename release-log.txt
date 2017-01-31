@@ -9,6 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1507 fixed incorrect relationship specified in hive-model
+ATLAS-1506 updated AtlasObjectId to support unqiueAttributes to identity the object
 ATLAS-1378 Use .gitignore so git does not see binary files as changed (david_radley via dkantor)
 ATLAS-1431 Integration tests added by ATLAS 1311 fail on Eclipse (david_radley via dkantor)
 ATLAS-1387 Compiled Query Cache (jnhagelberg@us.ibm.com via svimal2106)
