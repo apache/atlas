@@ -48,6 +48,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -65,6 +66,8 @@ public class AdminResource {
     private static final String isTaxonomyEnabled = "atlas.feature.taxonomy.enable";
     private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
     private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
+    private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
+    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
     private Response version;
     private ServiceState serviceState;
     private MetricsService metricsService;
@@ -213,6 +216,7 @@ public class AdminResource {
             responseData.put(isTaxonomyEnabled, enableTaxonomy);
             responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
             responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
+            responseData.put(editableEntityTypes, getEditableEntityTypes(configProperties));
             responseData.put("userName", userName);
             responseData.put("groups", groups);
 
@@ -243,5 +247,31 @@ public class AdminResource {
         }
 
         return metrics;
+    }
+
+    private String getEditableEntityTypes(PropertiesConfiguration config) {
+        String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
+
+        if (config.containsKey(editableEntityTypes)) {
+            Object value = config.getProperty(editableEntityTypes);
+
+            if (value instanceof String) {
+                ret = (String)value;
+            } else if (value instanceof Collection) {
+                StringBuilder sb = new StringBuilder();
+
+                for (Object elem : ((Collection)value)) {
+                    if (sb.length() > 0) {
+                        sb.append(",");
+                    }
+
+                    sb.append(elem.toString());
+                }
+
+                ret = sb.toString();
+            }
+        }
+
+        return ret;
     }
 }

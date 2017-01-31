@@ -171,7 +171,6 @@ define([
                         'collection': that.tagCollection
                     }));
                 } else {
-
                     App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
                     App.rSideNav.currentView.selectTab();
                 }
@@ -191,7 +190,9 @@ define([
                 'views/site/Header',
                 'views/business_catalog/BusinessCatalogLayoutView',
                 'views/business_catalog/SideNavLayoutView',
-            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView) {
+                'views/search/SearchDetailLayoutView',
+            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
@@ -206,8 +207,16 @@ define([
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(undefined, true);
                     }
                 }
-                App.rNContent.$el.html('');
-                App.rNContent.destroy();
+                if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
+                    App.rNContent.show(new SearchDetailLayoutView({
+                        'globalVent': that.globalVent,
+                        'value': paramObj,
+                        'initialView': true
+                    }))
+                } else {
+                    App.rNContent.$el.html("");
+                    App.rNContent.destroy();
+                }
             });
         },
         searchResult: function() {
@@ -232,7 +241,8 @@ define([
                 App.rSideNav.currentView.selectTab();
                 App.rNContent.show(new SearchDetailLayoutView({
                     'globalVent': that.globalVent,
-                    'value': paramObj
+                    'value': paramObj,
+                    'initialView': paramObj.query.trim().length === 0
                 }));
             });
         },

@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'value'));
+                _.extend(this, _.pick(options, 'globalVent', 'value', 'initialView'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -63,7 +63,8 @@ define(['require',
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                             value: value,
-                            tag: that.tag
+                            tag: that.tag,
+                            initialView: that.initialView
                         }));
                     }
                 });

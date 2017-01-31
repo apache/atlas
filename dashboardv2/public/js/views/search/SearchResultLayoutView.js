@@ -58,9 +58,14 @@ define(['require',
                 nextData: "[data-id='nextData']",
                 pageRecordText: "[data-id='pageRecordText']",
                 addAssignTag: "[data-id='addAssignTag']",
-                editEntityButton: "[data-id='editEntityButton']"
+                editEntityButton: "[data-id='editEntityButton']",
+                createEntity: "[data-id='createEntity']",
             },
-
+            templateHelpers: function() {
+                return {
+                    entityCreate: Globals.entityCreate
+                };
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
@@ -109,6 +114,7 @@ define(['require',
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
                 events["click " + this.ui.editEntityButton] = "onClickEditEntity";
+                events["click " + this.ui.createEntity] = 'onClickCreateEntity';
                 return events;
             },
             /**
@@ -116,7 +122,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'vent', 'value'));
+                _.extend(this, _.pick(options, 'globalVent', 'vent', 'value', 'initialView'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -178,26 +184,32 @@ define(['require',
                 }, this);
             },
             onRender: function() {
-                var value = {},
-                    that = this;
-                if (this.value) {
-                    value = this.value;
-                } else {
-                    value = {
-                        'query': '',
-                        'searchType': 'fulltext'
-                    };
-                }
-                this.fetchCollection(value);
-                $('body').click(function(e) {
-                    var iconEvnt = e.target.nodeName;
-                    if (that.$('.popoverContainer').length) {
-                        if ($(e.target).hasClass('tagDetailPopover') || iconEvnt == "I") {
-                            return;
-                        }
-                        that.$('.popover.popoverTag').hide();
+                if (!this.initialView) {
+                    var value = {},
+                        that = this;
+                    if (this.value) {
+                        value = this.value;
+                    } else {
+                        value = {
+                            'query': '',
+                            'searchType': 'fulltext'
+                        };
                     }
-                });
+                    this.fetchCollection(value);
+                    $('body').click(function(e) {
+                        var iconEvnt = e.target.nodeName;
+                        if (that.$('.popoverContainer').length) {
+                            if ($(e.target).hasClass('tagDetailPopover') || iconEvnt == "I") {
+                                return;
+                            }
+                            that.$('.popover.popoverTag').hide();
+                        }
+                    });
+                } else {
+                    if (Globals.entityTypeConfList) {
+                        this.$(".entityLink").show();
+                    }
+                }
             },
             fetchCollection: function(value) {
                 var that = this;
@@ -264,13 +276,16 @@ define(['require',
                         }
                         var resultData = 'Results for <b>' + _.escape(that.searchCollection.queryParams.query) + '</b>';
                         var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>';
+                        var resultText = that.searchCollection.queryParams.query;
+                        var multiAssignDataTerm = "",
+                            createEntityTag = "";
                         if (Globals.taxonomy) {
-                            var multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
-                            that.$('.searchResult').html(resultData + multiAssignDataTerm + multiAssignDataTag);
-                        } else {
-                            that.$('.searchResult').html(resultData + multiAssignDataTag);
+                            multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
                         }
-
+                        if (Globals.entityCreate && (resultText.indexOf("\`") != 0) && Globals.entityTypeConfList) {
+                            createEntityTag = "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+                        }
+                        that.$('.searchResult').html(resultData + multiAssignDataTag + multiAssignDataTerm + createEntityTag);
                     },
                     silent: true,
                     reset: true
@@ -341,7 +356,13 @@ define(['require',
                                 return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                             } else {
                                 if (Globals.entityUpdate) {
-                                    nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + obj.guid + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                    if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
+                                        nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + obj.guid + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                    } else {
+                                        if (_.contains(Globals.entityTypeConfList, obj.typeName)) {
+                                            nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + obj.guid + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
+                                        }
+                                    }
                                 }
                                 return nameHtml;
                             }
@@ -601,6 +622,19 @@ define(['require',
                 ], function(CreateEntityLayoutView) {
                     var view = new CreateEntityLayoutView({
                         guid: guid,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
+            },
+            onClickCreateEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
                         callback: function() {
                             that.fetchCollection();
                         }

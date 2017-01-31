@@ -147,7 +147,7 @@ define(['require',
                         that.$('.fontLoader').hide();
                         that.$('.auditTable').show();
                         that.renderOffset(options);
-                        if ((that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
+                        if (that.entityCollection && (that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
                             options.next.attr('disabled', true);
                             options.previous.removeAttr("disabled");
                         } else {

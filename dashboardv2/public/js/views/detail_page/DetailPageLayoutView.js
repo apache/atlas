@@ -164,13 +164,21 @@ define(['require',
                         } else {
                             this.addTagToTerms([]);
                         }
+                        if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
+                            this.ui.editButton.show();
+                        } else {
+                            if (_.contains(Globals.entityTypeConfList, collectionJSON.typeName)) {
+                                this.ui.editButton.show();
+                            }
+                        }
                     }
                     this.hideLoader();
-                    this.auditVent.trigger("reset:collection");
                     this.renderEntityDetailTableLayoutView();
+                    this.renderAuditTableLayoutView(this.id, collectionJSON.attributes);
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
-                    this.renderAuditTableLayoutView(this.id, collectionJSON.attributes);
+                    this.renderLineageLayoutView(this.id);
+                    this.renderSchemaLayoutView(this.id);
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
                     this.$('.fontLoader').hide();
@@ -185,9 +193,6 @@ define(['require',
                 var that = this;
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader').show(); // to show tab loader
-                this.renderLineageLayoutView(this.id);
-                this.renderSchemaLayoutView(this.id);
-
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });

@@ -43,14 +43,7 @@ define(['require',
                 searchBtn: '[data-id="searchBtn"]',
                 clearSearch: '[data-id="clearSearch"]',
                 typeLov: '[data-id="typeLOV"]',
-                refreshBtn: '[data-id="refreshBtn"]',
-                createEntity: "[data-id='createEntity']",
-            },
-
-            templateHelpers: function() {
-                return {
-                    entityCreate: Globals.entityCreate
-                };
+                refreshBtn: '[data-id="refreshBtn"]'
             },
 
             /** ui events hash */
@@ -72,7 +65,6 @@ define(['require',
                 events["click " + this.ui.clearSearch] = 'clearSearchData';
                 events["change " + this.ui.typeLov] = 'onChangeTypeList';
                 events["click " + this.ui.refreshBtn] = 'onRefreshButton';
-                events["click " + this.ui.createEntity] = 'onClickCreateEntity';
                 return events;
             },
             /**
@@ -132,7 +124,9 @@ define(['require',
                     return model.get('name').toLowerCase();
                 }
                 this.typecollection.fullCollection.sort().each(function(model) {
-                    str += '<option>' + _.escape(model.get("name")) + '</option>';
+                    if (model.get('category') == 'ENTITY') {
+                        str += '<option>' + _.escape(model.get("name")) + '</option>';
+                    }
                 });
                 that.ui.typeLov.html(str);
             },
@@ -257,20 +251,7 @@ define(['require',
                     mergeBrowserUrl: false,
                     trigger: true
                 });
-            },
-            onClickCreateEntity: function(e) {
-                var that = this;
-                $(e.currentTarget).blur();
-                require([
-                    'views/entity/CreateEntityLayoutView'
-                ], function(CreateEntityLayoutView) {
-                    var view = new CreateEntityLayoutView({
-                        callback: function() {
-                            that.fetchCollection();
-                        }
-                    });
-                });
-            },
+            }
         });
     return SearchLayoutView;
 });

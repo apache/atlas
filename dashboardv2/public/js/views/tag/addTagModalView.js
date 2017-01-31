@@ -98,8 +98,8 @@ define(['require',
                         });
                     }
                     if (obj.skipEntity.length) {
-                        var text = "<b>" + obj.skipEntity.join(', ') +
-                            "</b> <br/> entities selected have already been associated with <b>" + tagName +
+                        var text = "<b>" + obj.skipEntity.length + " of " + that.multiple.length +
+                            "</b> entities selected have already been associated with <b>" + tagName +
                             "</b> tag, Do you want to associate the tag with other entities ?",
                             removeCancelButton = false;
                         if ((obj.skipEntity.length + obj.deletedEntity.length) === that.multiple.length) {

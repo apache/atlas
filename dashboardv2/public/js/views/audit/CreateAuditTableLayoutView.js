@@ -20,8 +20,9 @@ define(['require',
     'backbone',
     'hbs!tmpl/audit/CreateAuditTableLayoutView_tmpl',
     'utils/Enums',
-    'utils/CommonViewFunction'
-], function(require, Backbone, CreateAuditTableLayoutViewTmpl, Enums, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Utils'
+], function(require, Backbone, CreateAuditTableLayoutViewTmpl, Enums, CommonViewFunction, Utils) {
     'use strict';
 
     var CreateAuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -65,11 +66,17 @@ define(['require',
                 if (this.entityModel.get('details').search('{') >= 0) {
                     var appendedString = "{" + this.entityModel.get('details') + "}";
                     var auditData = appendedString.split('"')[0].split(':')[0].split("{")[1];
-                    var detailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
+                    try {
+                        var detailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
+                    } catch (err) {
+                        Utils.serverErrorHandler();
+                    }
                     //Append string for JSON parse
-                    var valueObject = detailsObject.values;
-                    if (this.action == Enums.auditAction.TAG_ADD) {
-                        this.ui.auditHeaderValue.html('<th>' + Enums.auditAction.TAG_ADD + '</th>');
+                    if (detailsObject) {
+                        var valueObject = detailsObject.values;
+                    }
+                    if ((this.action == Enums.auditAction.TAG_ADD || Enums.auditAction.ENTITY_CREATE) && detailsObject) {
+                        this.ui.auditHeaderValue.html('<th>' + (this.action === Enums.auditAction.ENTITY_CREATE ? Enums.auditAction.ENTITY_CREATE : Enums.auditAction.TAG_ADD) + '</th>');
                         this.ui.auditValue.html("<tr><td>" + _.escape(detailsObject.typeName) + "</td></tr>");
                     } else {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
@@ -84,9 +91,8 @@ define(['require',
                         }
                     }
                 } else if (this.action == Enums.auditAction.TAG_DELETE || Enums.auditAction.ENTITY_DELETE) {
-                    //var appendedString = this.entityModel.get('details').split(':');
-                    this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
-                    this.ui.auditValue.html("<tr><td>" + this.entityObject.name + "</td></tr>");
+                    this.ui.auditHeaderValue.html('<th>' + Enums.auditAction.TAG_DELETE || Enums.auditAction.ENTITY_DELETE + '</th>');
+                    this.ui.auditValue.html("<tr><td>" + (this.entityObject.name || this.entityObject.qualifiedName) + "</td></tr>");
                 }
 
             },

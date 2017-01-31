@@ -40,6 +40,15 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             })
         ]);
     }
+    _.mixin({
+        isEmptyArray: function(val) {
+            if (val && _.isArray(val)) {
+                return _.isEmpty(val);
+            } else {
+                return false;
+            }
+        }
+    });
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
