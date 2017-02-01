@@ -229,4 +229,12 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
         ITypedReferenceableInstance hrDept = repositoryService.getEntityDefinition(hrDeptGuid);
         Assert.assertEquals(hrDept.getId().getState(), EntityState.DELETED);
     }
+
+    @Override
+    protected void verifyTestDeleteEntityWithDuplicateReferenceListElements(List columnsPropertyValue) {
+
+        // With soft deletes enabled, verify that edge IDs for deleted edges
+        // were not removed from the array property list.
+        Assert.assertEquals(columnsPropertyValue.size(), 4);
+    }
 }

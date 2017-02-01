@@ -1048,6 +1048,97 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
             Arrays.asList(mapOwnerGuid, mapValueGuid, mapValueReferencerContainerGuid, mapValueReferencerGuid)));
     }
 
+    @Test
+    public void testDeleteMixOfExistentAndNonExistentEntities() throws Exception {
+        ITypedReferenceableInstance entity1 = compositeMapValueType.createInstance();
+        ITypedReferenceableInstance entity2 = compositeMapValueType.createInstance();
+        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2);
+        Assert.assertEquals(createEntitiesResult.size(), 2);
+        List<String> guids = Arrays.asList(createEntitiesResult.get(0), "non-existent-guid1", "non-existent-guid2", createEntitiesResult.get(1));
+        EntityResult deleteEntitiesResult = repositoryService.deleteEntities(guids);
+        Assert.assertEquals(deleteEntitiesResult.getDeletedEntities().size(), 2);
+        Assert.assertTrue(deleteEntitiesResult.getDeletedEntities().containsAll(createEntitiesResult));
+    }
+
+    @Test
+    public void testDeleteMixOfNullAndNonNullGuids() throws Exception {
+        ITypedReferenceableInstance entity1 = compositeMapValueType.createInstance();
+        ITypedReferenceableInstance entity2 = compositeMapValueType.createInstance();
+        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2);
+        Assert.assertEquals(createEntitiesResult.size(), 2);
+        List<String> guids = Arrays.asList(createEntitiesResult.get(0), null, null, createEntitiesResult.get(1));
+        EntityResult deleteEntitiesResult = repositoryService.deleteEntities(guids);
+        Assert.assertEquals(deleteEntitiesResult.getDeletedEntities().size(), 2);
+        Assert.assertTrue(deleteEntitiesResult.getDeletedEntities().containsAll(createEntitiesResult));
+    }
+
+    @Test
+    public void testDeleteCompositeEntityAndContainer() throws Exception {
+        Referenceable db = createDBEntity();
+        String dbId = createInstance(db);
+
+        Referenceable column = createColumnEntity();
+        String colId = createInstance(column);
+
+        Referenceable table1 = createTableEntity(dbId);
+        table1.set(COLUMNS_ATTR_NAME, Arrays.asList(new Id(colId, 0, COLUMN_TYPE)));
+        String table1Id = createInstance(table1);
+        Referenceable table2 = createTableEntity(dbId);
+        String table2Id = createInstance(table2);
+
+        // Delete the tables and column
+        AtlasClient.EntityResult entityResult = deleteEntities(table1Id, colId, table2Id);
+        Assert.assertEquals(entityResult.getDeletedEntities().size(), 3);
+        Assert.assertTrue(entityResult.getDeletedEntities().containsAll(Arrays.asList(colId, table1Id, table2Id)));
+        assertEntityDeleted(table1Id);
+        assertEntityDeleted(colId);
+        assertEntityDeleted(table2Id);
+    }
+
+    @Test
+    public void testDeleteEntityWithDuplicateReferenceListElements() throws Exception {
+        // Create a table entity, with 2 composite column entities
+        Referenceable dbEntity = createDBEntity();
+        String dbGuid = createInstance(dbEntity);
+        Referenceable table1Entity = createTableEntity(dbGuid);
+        String tableName = TestUtils.randomString();
+        table1Entity.set(NAME, tableName);
+        Referenceable col1 = createColumnEntity();
+        col1.set(NAME, TestUtils.randomString());
+        Referenceable col2 = createColumnEntity();
+        col2.set(NAME, TestUtils.randomString());
+        // Populate columns reference list with duplicates.
+        table1Entity.set(COLUMNS_ATTR_NAME, ImmutableList.of(col1, col2, col1, col2));
+        ClassType dataType = typeSystem.getDataType(ClassType.class, table1Entity.getTypeName());
+        ITypedReferenceableInstance instance = dataType.convert(table1Entity, Multiplicity.REQUIRED);
+        TestUtils.resetRequestContext();
+        List<String> result = repositoryService.createEntities(instance);
+        Assert.assertEquals(result.size(), 3);
+        ITypedReferenceableInstance entityDefinition = repositoryService.getEntityDefinition(TABLE_TYPE, NAME, tableName);
+        String tableGuid = entityDefinition.getId()._getId();
+        Object attrValue = entityDefinition.get(COLUMNS_ATTR_NAME);
+        assertTrue(attrValue instanceof List);
+        List<ITypedReferenceableInstance> columns = (List<ITypedReferenceableInstance>) attrValue;
+        Assert.assertEquals(columns.size(), 4);
+        TestUtils.resetRequestContext();
+        String columnGuid = columns.get(0).getId()._getId();
+
+        // Delete one of the columns.
+        EntityResult deleteResult = repositoryService.deleteEntities(Collections.singletonList(columnGuid));
+        Assert.assertEquals(deleteResult.getDeletedEntities().size(), 1);
+        Assert.assertTrue(deleteResult.getDeletedEntities().contains(columnGuid));
+        Assert.assertEquals(deleteResult.getUpdateEntities().size(), 1);
+        Assert.assertTrue(deleteResult.getUpdateEntities().contains(tableGuid));
+
+        // Verify the duplicate edge IDs were all removed from reference property list.
+        AtlasVertex tableVertex = GraphHelper.getInstance().getVertexForGUID(tableGuid);
+        String columnsPropertyName = GraphHelper.getQualifiedFieldName(dataType, COLUMNS_ATTR_NAME);
+        List columnsPropertyValue = tableVertex.getProperty(columnsPropertyName, List.class);
+        verifyTestDeleteEntityWithDuplicateReferenceListElements(columnsPropertyValue);
+    }
+
+    protected abstract void verifyTestDeleteEntityWithDuplicateReferenceListElements(List columnsPropertyValue);
+
     private String createHrDeptGraph() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
 

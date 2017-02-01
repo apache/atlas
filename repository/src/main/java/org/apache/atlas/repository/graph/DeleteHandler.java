@@ -354,7 +354,10 @@ public abstract class DeleteHandler {
                                         attributeName);
                             }
 
-                            elements.remove(elementEdge.getId().toString());
+                            // Remove all occurrences of the edge ID from the list.
+                            // This prevents dangling edge IDs (i.e. edge IDs for deleted edges)
+                            // from the remaining in the list if there are duplicates.
+                            elements.removeAll(Collections.singletonList(elementEdge.getId().toString()));
                             GraphHelper.setProperty(outVertex, propertyName, elements);
                             break;
 

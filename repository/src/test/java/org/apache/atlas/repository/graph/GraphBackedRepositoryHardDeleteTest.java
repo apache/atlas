@@ -202,4 +202,12 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
             // good
         }
     }
+
+    @Override
+    protected void verifyTestDeleteEntityWithDuplicateReferenceListElements(List columnsPropertyValue) {
+
+        // With hard deletes enabled, verify that duplicate edge IDs for deleted edges
+        // were removed from the array property list.
+        Assert.assertEquals(columnsPropertyValue.size(), 2);
+    }
 }
