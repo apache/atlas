@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.collections.CollectionUtils;
@@ -153,54 +154,54 @@ public class AtlasTypeUtil {
         return new AtlasAttributeDef(name, dataType.getTypeName(), true,
             Cardinality.SINGLE, 0, 1,
             false, false,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createOptionalAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, true,
             Cardinality.SINGLE, 0, 1,
             false, false,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createRequiredAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, false,
             Cardinality.SINGLE, 1, 1,
             false, true,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createListRequiredAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, false,
                 Cardinality.LIST, 1, Integer.MAX_VALUE,
                 false, true,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+                Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createOptionalListAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, true,
                 Cardinality.LIST, 1, Integer.MAX_VALUE,
                 false, true,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+                Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createRequiredListAttrDefWithConstraint(String name, String dataType, String type, Map param) {
         AtlasAttributeDef ret = AtlasTypeUtil.createListRequiredAttrDef(name, dataType);
-        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+        ret.addConstraint(new AtlasConstraintDef(type, param));
 
         return ret;
     }
 
     public static AtlasAttributeDef createRequiredAttrDefWithConstraint(String name, String typeName, String type, Map param) {
         AtlasAttributeDef ret = AtlasTypeUtil.createRequiredAttrDef(name, typeName);
-        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+        ret.addConstraint(new AtlasConstraintDef(type, param));
 
         return ret;
     }
 
     public static AtlasAttributeDef createOptionalAttrDefWithConstraint(String name, String typeName, String type, Map param) {
         AtlasAttributeDef ret = AtlasTypeUtil.createOptionalAttrDef(name, typeName);
-        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+        ret.addConstraint(new AtlasConstraintDef(type, param));
 
         return ret;
     }
@@ -209,21 +210,21 @@ public class AtlasTypeUtil {
         return new AtlasAttributeDef(name, dataType.getTypeName(), false,
             Cardinality.SINGLE, 1, 1,
             true, true,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createUniqueRequiredAttrDef(String name, String typeName) {
         return new AtlasAttributeDef(name, typeName, false,
             Cardinality.SINGLE, 1, 1,
             true, true,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createRequiredAttrDef(String name, AtlasType dataType) {
         return new AtlasAttributeDef(name, dataType.getTypeName(), false,
             Cardinality.SINGLE, 1, 1,
             false, true,
-            Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+            Collections.<AtlasConstraintDef>emptyList());
     }
 
     public static AtlasEnumDef createEnumTypeDef(String name, String description, AtlasEnumElementDef... enumValues) {

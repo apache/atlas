@@ -20,7 +20,6 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -29,7 +28,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -109,7 +108,7 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
     public void cleanUp() throws AtlasBaseException {
     }
 
-    private AtlasEdge updateEdge(AtlasStructDef.AtlasAttributeDef attributeDef, Object value,  AtlasEdge currentEdge, final AtlasVertex entityVertex) throws AtlasBaseException {
+    private AtlasEdge updateEdge(AtlasAttributeDef attributeDef, Object value,  AtlasEdge currentEdge, final AtlasVertex entityVertex) throws AtlasBaseException {
 
         LOG.debug("Updating entity reference {} for reference attribute {}",  attributeDef.getName());
         // Update edge if it exists
@@ -180,7 +179,7 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         final Map<String, AtlasStructType.AtlasAttribute> allAttributes = type.getAllAttributes();
         for (String attribute : allAttributes.keySet()) {
             AtlasType attributeType = allAttributes.get(attribute).getAttributeType();
-            AtlasStructDef.AtlasAttributeDef attributeDef = allAttributes.get(attribute).getAttributeDef();
+            AtlasAttributeDef attributeDef = allAttributes.get(attribute).getAttributeDef();
             if ( header.getAttribute(attribute) == null && (TypeCategory.PRIMITIVE == attributeType.getTypeCategory())) {
 
                 if ( attributeDef.getIsOptional()) {

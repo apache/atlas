@@ -30,6 +30,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -243,7 +244,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testListTypesByFilter() throws Exception {
-        AtlasStructDef.AtlasAttributeDef attr = AtlasTypeUtil.createOptionalAttrDef("attr", "string");
+        AtlasAttributeDef attr = AtlasTypeUtil.createOptionalAttrDef("attr", "string");
         AtlasEntityDef classDefA = AtlasTypeUtil.createClassTypeDef("A" + randomString(), ImmutableSet.<String>of(), attr);
         AtlasEntityDef classDefA1 = AtlasTypeUtil.createClassTypeDef("A1" + randomString(), ImmutableSet.of(classDefA.getName()), attr);
         AtlasEntityDef classDefB = AtlasTypeUtil.createClassTypeDef("B" + randomString(), ImmutableSet.<String>of(), attr);
@@ -296,7 +297,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                                 false,
                                 Cardinality.SINGLE, 1, 1,
                                 true, true,
-                                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()));
+                                Collections.<AtlasConstraintDef>emptyList()));
         atlasTypesDef.getEntityDefs().add(tableTypeDefinition);
 
         AtlasClassificationDef fetlTypeDefinition = AtlasTypeUtil

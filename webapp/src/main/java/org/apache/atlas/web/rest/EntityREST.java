@@ -26,7 +26,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -390,8 +390,9 @@ public class EntityREST {
      * @param attributeName  the name of the attribute
      */
     private void validateUniqueAttribute(AtlasEntityType entityType, String attributeName) throws AtlasBaseException {
-        AtlasStructDef.AtlasAttributeDef attribute = entityType.getAttributeDef(attributeName);
-        if (attribute != null && !attribute.getIsUnique()) {
+        AtlasAttributeDef attribute = entityType.getAttributeDef(attributeName);
+
+        if (attribute == null || !attribute.getIsUnique()) {
             throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
         }
     }

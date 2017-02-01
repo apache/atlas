@@ -124,20 +124,20 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructType.AtlasAttribute attr : getAttributes(structType)) {
-                AtlasType attrType = structType.getAttributeType(attr.getAttributeDef().getName());
+            for (AtlasStructType.AtlasAttribute attr : structType.getAllAttributes().values()) {
+                AtlasType attrType = attr.getAttributeType();
 
                 if (attrType == null) {
-                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getAttributeDef().getName());
+                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getName());
                     continue;
                 }
 
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
 
-                Object v2Value = attributes.get(attr.getAttributeDef().getName());
+                Object v2Value = attributes.get(attr.getName());
                 Object v1Value = attrConverter.fromV2ToV1(v2Value, attrType);
 
-                ret.put(attr.getAttributeDef().getName(), v1Value);
+                ret.put(attr.getName(), v1Value);
             }
         }
 
@@ -150,11 +150,11 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructType.AtlasAttribute attr : getAttributes(structType)) {
-                AtlasType            attrType      = structType.getAttributeType(attr.getAttributeDef().getName());
+            for (AtlasStructType.AtlasAttribute attr : structType.getAllAttributes().values()) {
+                AtlasType            attrType      = attr.getAttributeType();
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
 
-                Object v1Value = attributes.get(attr.getAttributeDef().getName());
+                Object v1Value = attributes.get(attr.getName());
                 Object v2Value = attrConverter.fromV1ToV2(v1Value, attrType);
 
                 ret.put(attr.getAttributeDef().getName(), v2Value);

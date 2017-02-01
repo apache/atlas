@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -496,11 +497,18 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     private static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef, AtlasStructType structType) {
-        boolean isForeignKey      = structType.isForeignKeyAttribute(attributeDef.getName());
-        boolean isMappedFromRef   = structType.isMappedFromRefAttribute(attributeDef.getName());
+        boolean isComposite       = false;
         String  reverseAttribName = null;
 
-        if (isForeignKey) { // check if the referenced entity has foreignKeyRef to this attribute
+        if (structType instanceof AtlasEntityType) {
+            AtlasEntityType entityType = (AtlasEntityType)structType;
+
+            isComposite = entityType.isMappedFromRefAttribute(attributeDef.getName()) ||
+                          entityType.isForeignKeyOnDeleteActionUpdate(attributeDef.getName());
+        }
+
+        // find the attribute in the referenced entity that has mappedFromRef to this attribute
+        if (structType.isForeignKeyAttribute(attributeDef.getName())) {
             AtlasType attribType = structType.getAttributeType(attributeDef.getName());
 
             if (attribType.getTypeCategory() == org.apache.atlas.model.TypeCategory.ARRAY) {
@@ -508,12 +516,12 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             }
 
             if (attribType.getTypeCategory() == org.apache.atlas.model.TypeCategory.ENTITY) {
-                reverseAttribName = ((AtlasStructType)attribType).getMappedFromRefAttribute(structType.getTypeName(),
-                                                                                            attributeDef.getName());
+                AtlasEntityType attribEntityType = (AtlasEntityType)attribType;
+
+                reverseAttribName = attribEntityType.getMappedFromRefAttribute(structType.getTypeName(),
+                                                                               attributeDef.getName());
             }
         }
-
-        boolean isComposite = isMappedFromRef || (isForeignKey && StringUtils.isBlank(reverseAttribName));
 
         Map<String, Object> attribInfo = new HashMap<>();
 

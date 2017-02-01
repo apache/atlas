@@ -20,14 +20,13 @@ package org.apache.atlas.type;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
-
 
 /**
  * class that implements behaviour of a struct-type.
@@ -52,9 +48,8 @@ public class AtlasStructType extends AtlasType {
 
     private final AtlasStructDef structDef;
 
-    private Set<String>                    foreignKeyAttributes    = new HashSet<>();
-    private Map<String, TypeAttributePair> mappedFromRefAttributes = new HashMap<>();
-    protected Map<String, AtlasAttribute>    allAttributes  = Collections.emptyMap();
+    private   Map<String, AtlasConstraintDef> foreignKeyAttributes = Collections.emptyMap();
+    protected Map<String, AtlasAttribute>     allAttributes        = Collections.emptyMap();
 
     public AtlasStructType(AtlasStructDef structDef) {
         super(structDef);
@@ -73,35 +68,51 @@ public class AtlasStructType extends AtlasType {
     public AtlasStructDef getStructDef() { return structDef; }
 
     public AtlasType getAttributeType(String attributeName) {
-        AtlasAttribute attribute = allAttributes.get(attributeName);
+        AtlasAttribute attribute = getAttribute(attributeName);
+
         return attribute != null ? attribute.getAttributeType() : null;
     }
 
-    public AtlasAttributeDef getAttributeDef(String attributeName) { return allAttributes.get(attributeName) != null ? allAttributes.get(attributeName).getAttributeDef() : null; }
+    public AtlasAttributeDef getAttributeDef(String attributeName) {
+        AtlasAttribute attribute = getAttribute(attributeName);
+
+        return attribute != null ? attribute.getAttributeDef() : null;
+    }
+
+    public Set<String> getForeignKeyAttributes() { return foreignKeyAttributes.keySet(); }
 
     public boolean isForeignKeyAttribute(String attributeName) {
-        return foreignKeyAttributes.contains(attributeName);
+        return foreignKeyAttributes.containsKey(attributeName);
     }
 
-    public boolean isMappedFromRefAttribute(String attributeName) {
-        return mappedFromRefAttributes.containsKey(attributeName);
+    public AtlasConstraintDef getForeignKeyConstraint(String attributeName) {
+        return foreignKeyAttributes.get(attributeName);
     }
 
-    public String getMappedFromRefAttribute(String typeName, String attribName) {
+    public String getForeignKeyOnDeleteAction(String attributeName) {
         String ret = null;
 
-        for (Map.Entry<String, TypeAttributePair> e : mappedFromRefAttributes.entrySet()) {
-            String refTypeName   = e.getValue().typeName;
-            String refAttribName = e.getValue().attributeName;
+        AtlasConstraintDef fkConstraint = getForeignKeyConstraint(attributeName);
 
-            if(StringUtils.equals(refTypeName, typeName) && StringUtils.equals(refAttribName, attribName)) {
-                ret = e.getKey();
+        if (fkConstraint != null && MapUtils.isNotEmpty(fkConstraint.getParams())) {
+            Object onDeleteAction = fkConstraint.getParams().get(AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE);
 
-                break;
+            if (onDeleteAction != null) {
+                ret = onDeleteAction.toString();
             }
         }
 
         return ret;
+    }
+
+    public boolean isForeignKeyOnDeleteActionCascade(String attributeName) {
+        return StringUtils.equals(getForeignKeyOnDeleteAction(attributeName),
+                                  AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE);
+    }
+
+    public boolean isForeignKeyOnDeleteActionUpdate(String attributeName) {
+        return StringUtils.equals(getForeignKeyOnDeleteAction(attributeName),
+                                  AtlasConstraintDef.CONSTRAINT_PARAM_VAL_UPDATE);
     }
 
     @Override
@@ -109,11 +120,8 @@ public class AtlasStructType extends AtlasType {
         Map<String, AtlasAttribute> a = new HashMap<>();
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-
-            AtlasType attrType = typeRegistry.getType(attributeDef.getTypeName());
-            AtlasAttribute attribute = new AtlasAttribute(this, structDef, attributeDef, attrType);
-
-            resolveConstraints(attributeDef, attrType);
+            AtlasType      attrType  = typeRegistry.getType(attributeDef.getTypeName());
+            AtlasAttribute attribute = new AtlasAttribute(this, attributeDef, attrType);
 
             Cardinality cardinality = attributeDef.getCardinality();
 
@@ -133,6 +141,25 @@ public class AtlasStructType extends AtlasType {
         }
 
         this.allAttributes = Collections.unmodifiableMap(a);
+
+        foreignKeyAttributes = Collections.unmodifiableMap(resolveForeignKeyConstraints(allAttributes.values()));
+    }
+
+    @Override
+    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        super.resolveReferencesPhase2(typeRegistry);
+
+        for (Map.Entry<String, AtlasConstraintDef> e : foreignKeyAttributes.entrySet()) {
+            String             attributeName = e.getKey();
+            AtlasAttribute     attribute     = getAttribute(attributeName);
+            AtlasConstraintDef constraint    = e.getValue();
+
+            AtlasType attributeType = attribute.getAttributeType();
+
+            if (attributeType instanceof AtlasEntityType) {
+                ((AtlasEntityType)attributeType).addForeignKeyReference(attribute, constraint);
+            }
+        }
     }
 
     @Override
@@ -149,22 +176,7 @@ public class AtlasStructType extends AtlasType {
     }
 
     public AtlasAttribute getAttribute(String attributeName) {
-        return findAttribute(allAttributes.values(), attributeName);
-    }
-
-    public static AtlasAttribute findAttribute(Collection<AtlasAttribute> attributes, String attrName) {
-        AtlasAttribute ret = null;
-
-        if (CollectionUtils.isNotEmpty(attributes)) {
-            for (AtlasAttribute attribute : attributes) {
-                if (org.apache.hadoop.util.StringUtils.equalsIgnoreCase(attribute.getAttributeDef().getName(), attrName)) {
-                    ret = attribute;
-                    break;
-                }
-            }
-        }
-
-        return ret;
+        return allAttributes.get(attributeName);
     }
 
     @Override
@@ -374,116 +386,55 @@ public class AtlasStructType extends AtlasType {
         return null;
     }
 
-    private void resolveConstraints(AtlasAttributeDef attribDef, AtlasType attribType) throws AtlasBaseException {
-        if (attribDef == null || CollectionUtils.isEmpty(attribDef.getConstraintDefs()) || attribType == null) {
-            return;
-        }
-
-        for (AtlasConstraintDef constraintDef : attribDef.getConstraintDefs()) {
-            String constraintType = constraintDef != null ? constraintDef.getType() : null;
-
-            if (StringUtils.isBlank(constraintType)) {
-                continue;
-            }
-
-            switch (constraintType) {
-                case AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY:
-                    resolveForeignKeyConstraint(attribDef, constraintDef, attribType);
-                    break;
-                case CONSTRAINT_TYPE_MAPPED_FROM_REF:
-                    resolveMappedFromRefConstraint(attribDef, constraintDef, attribType);
-                    break;
-                default:
-                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CONSTRAINT, constraintType,
-                            getTypeName(), attribDef.getName());
-            }
-        }
-    }
-
     /*
      * valid conditions for foreign-key constraint:
      *  - supported only in entity-type
      *  - attribute should be an entity-type or an array of entity-type
      */
-    private void resolveForeignKeyConstraint(AtlasAttributeDef attribDef, AtlasConstraintDef constraintDef,
-                                             AtlasType attribType) throws AtlasBaseException {
-        if (this.getTypeCategory() != TypeCategory.ENTITY) {
-            throw new AtlasBaseException(AtlasErrorCode.UNSUPPORTED_CONSTRAINT,
-                    AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY , getTypeName(), attribDef.getName());
+    private Map<String, AtlasConstraintDef> resolveForeignKeyConstraints(Collection<AtlasAttribute> attributes)
+                                                                                            throws AtlasBaseException {
+        Map<String, AtlasConstraintDef> ret = null;
+
+        for (AtlasAttribute attribute : attributes) {
+            AtlasAttributeDef attribDef = attribute.getAttributeDef();
+
+            if (CollectionUtils.isEmpty(attribDef.getConstraintDefs())) {
+                continue;
+            }
+
+            for (AtlasConstraintDef constraintDef : attribDef.getConstraintDefs()) {
+                if (!StringUtils.equals(constraintDef.getType(), AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY)) {
+                    continue;
+                }
+
+                if (this.getTypeCategory() != TypeCategory.ENTITY) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNSUPPORTED_CONSTRAINT,
+                            AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY, getTypeName(), attribute.getName());
+                }
+
+                AtlasType attribType = attribute.getAttributeType();
+
+                if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
+                    attribType = ((AtlasArrayType) attribType).getElementType();
+                }
+
+                if (attribType.getTypeCategory() != TypeCategory.ENTITY) {
+                    throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_SATISFIED,
+                            getTypeName(), attribute.getName(), AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY,
+                            attribType.getTypeName());
+                }
+
+                if (ret == null) {
+                    ret = new HashMap<>();
+                }
+
+                ret.put(attribute.getName(), constraintDef);
+
+                break;
+            }
         }
 
-        if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
-            attribType = ((AtlasArrayType)attribType).getElementType();
-        }
-
-        if (attribType.getTypeCategory() != TypeCategory.ENTITY) {
-            throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_SATISFIED,
-                    getTypeName(), attribDef.getName(), AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY,
-                    attribType.getTypeName());
-        }
-
-        foreignKeyAttributes.add(attribDef.getName());
-    }
-
-    /*
-     * valid conditions for mapped-from-ref constraint:
-     *  - supported only in entity-type
-     *  - attribute should be an entity-type or an array of entity-type
-     *  - attribute's entity-type should have a foreign-key constraint to this type
-     */
-    private void resolveMappedFromRefConstraint(AtlasAttributeDef attribDef, AtlasConstraintDef constraintDef,
-                                                AtlasType attribType) throws AtlasBaseException {
-
-        if (this.getTypeCategory() != TypeCategory.ENTITY) {
-            throw new AtlasBaseException(AtlasErrorCode.UNSUPPORTED_CONSTRAINT, getTypeName(),
-                    attribDef.getName(), CONSTRAINT_TYPE_MAPPED_FROM_REF);
-        }
-
-        if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
-            attribType = ((AtlasArrayType)attribType).getElementType();
-        }
-
-        if (attribType.getTypeCategory() != TypeCategory.ENTITY) {
-            throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_SATISFIED, getTypeName(),
-                    attribDef.getName(), CONSTRAINT_TYPE_MAPPED_FROM_REF, attribDef.getTypeName());
-        }
-
-        String refAttribName = AtlasTypeUtil.getStringValue(constraintDef.getParams(), CONSTRAINT_PARAM_REF_ATTRIBUTE);
-
-        if (StringUtils.isBlank(refAttribName)) {
-            throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_MISSING_PARAMS,
-                    getTypeName(), attribDef.getName(),
-                    CONSTRAINT_PARAM_REF_ATTRIBUTE, CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                    String.valueOf(constraintDef.getParams()));
-        }
-
-        AtlasStructType   structType = (AtlasStructType) attribType;
-        AtlasAttributeDef refAttrib  = structType.getStructDef().getAttribute(refAttribName);
-
-        if (refAttrib == null) {
-            throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_EXIST,
-                    getTypeName(), attribDef.getName(),
-                    CONSTRAINT_PARAM_REF_ATTRIBUTE, structType.getTypeName(), refAttribName);
-        }
-
-        if (!StringUtils.equals(getTypeName(), refAttrib.getTypeName())) {
-            throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_MATCHED,
-                    getTypeName(), attribDef.getName(),
-                    CONSTRAINT_PARAM_REF_ATTRIBUTE, structType.getTypeName(), refAttribName,
-                    getTypeName(), refAttrib.getTypeName());
-        }
-
-        mappedFromRefAttributes.put(attribDef.getName(), new TypeAttributePair(attribType.getTypeName(), refAttribName));
-    }
-
-    private class TypeAttributePair {
-        public final String typeName;
-        public final String attributeName;
-
-        public TypeAttributePair(String typeName, String attributeName) {
-            this.typeName      = typeName;
-            this.attributeName = attributeName;
-        }
+        return ret == null ? Collections.<String, AtlasConstraintDef>emptyMap() : ret;
     }
 
     public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
@@ -496,31 +447,21 @@ public class AtlasStructType extends AtlasType {
 
     public static class AtlasAttribute {
 
-        private final AtlasStructType structType;
-        private final AtlasStructDef structDef;
-        private final AtlasType attributeType;
+        private final AtlasStructType   structType;
+        private final AtlasType         attributeType;
         private final AtlasAttributeDef attributeDef;
-        private final String qualifiedName;
+        private final String            qualifiedName;
 
-        public AtlasAttribute(AtlasStructType structType, AtlasStructDef structDef, AtlasAttributeDef attrDef, AtlasType attributeType) {
-            this.structType = structType;
-            this.structDef = structDef;
-            this.attributeDef = attrDef;
+        public AtlasAttribute(AtlasStructType structType, AtlasAttributeDef attrDef, AtlasType attributeType) {
+            this.structType    = structType;
+            this.attributeDef  = attrDef;
             this.attributeType = attributeType;
-            this.qualifiedName = getQualifiedAttributeName(structDef, attributeDef.getName());
+            this.qualifiedName = getQualifiedAttributeName(structType.getStructDef(), attributeDef.getName());
         }
 
-        public AtlasStructType getStructType() {
-            return structType;
-        }
+        public AtlasStructType getStructType() { return structType; }
 
-        public String getQualifiedName() {
-            return qualifiedName;
-        }
-
-        public AtlasStructDef getStructDef() {
-            return structDef;
-        }
+        public AtlasStructDef getStructDef() { return structType.getStructDef(); }
 
         public AtlasType getAttributeType() {
             return attributeType;
@@ -529,6 +470,12 @@ public class AtlasStructType extends AtlasType {
         public AtlasAttributeDef getAttributeDef() {
             return attributeDef;
         }
+
+        public String getName() { return attributeDef.getName(); }
+
+        public String getTypeName() { return attributeDef.getTypeName(); }
+
+        public String getQualifiedName() { return qualifiedName; }
 
         public String getQualifiedAttributeName() {
             return qualifiedName;

@@ -20,16 +20,13 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
@@ -37,7 +34,6 @@ import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -158,7 +154,7 @@ public class MapVertexMapper implements InstanceGraphMapper<Map> {
     //Remove unused entries from map
     private Map<String, Object> removeUnusedMapEntries(
         AtlasStructType entityType,
-        AtlasMapType mapType, AtlasStructDef.AtlasAttributeDef attributeDef,
+        AtlasMapType mapType, AtlasAttributeDef attributeDef,
         AtlasVertex instanceVertex, String propertyName,
         Map<String, Object> currentMap,
         Map<String, Object> newMap)

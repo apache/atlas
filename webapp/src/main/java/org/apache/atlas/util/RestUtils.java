@@ -479,7 +479,7 @@ public final class RestUtils {
                 // 2. [ foreignKey(onDelete=cascade) -> reverseAttribute ]
                 AtlasStructType structType      = (AtlasStructType) registry.getType(structDef.getName());
                 boolean         isForeignKey    = structType.isForeignKeyAttribute(attrDef.getName());
-                boolean         isMappedFromRef = structType.isMappedFromRefAttribute(attrDef.getName());
+                boolean         isMappedFromRef = (structType instanceof AtlasEntityType) && ((AtlasEntityType)structType).isMappedFromRefAttribute(attrDef.getName());
                 AtlasType       attrType        = structType.getAttributeType(attrDef.getName());
 
                 if (attrType != null && isForeignKey) {
@@ -488,7 +488,7 @@ public final class RestUtils {
                     }
 
                     if (attrType.getTypeCategory() == TypeCategory.ENTITY) {
-                        reverseAttribName = ((AtlasStructType) attrType).
+                        reverseAttribName = ((AtlasEntityType) attrType).
                                                  getMappedFromRefAttribute(structType.getTypeName(), attrDef.getName());
                     }
                 }

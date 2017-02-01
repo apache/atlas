@@ -25,10 +25,9 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -86,7 +85,7 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
     }
 
     public static boolean shouldManageChildReferences(AtlasStructType type, String attributeName) {
-        return type.isMappedFromRefAttribute(attributeName);
+        return (type instanceof AtlasEntityType) && ((AtlasEntityType)type).isMappedFromRefAttribute(attributeName);
     }
 
     /**
@@ -186,7 +185,7 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
         return ctx.getValue();
     }
 
-    private AtlasEdge createVertex(AtlasStructType parentType, AtlasStructType attrType, AtlasStructDef.AtlasAttributeDef attributeDef, AtlasStruct struct, AtlasVertex referringVertex, String edgeLabel) throws AtlasBaseException {
+    private AtlasEdge createVertex(AtlasStructType parentType, AtlasStructType attrType, AtlasAttributeDef attributeDef, AtlasStruct struct, AtlasVertex referringVertex, String edgeLabel) throws AtlasBaseException {
         AtlasVertex vertex = createVertexTemplate(struct, attrType);
         mapAttributestoVertex(EntityMutations.EntityOperation.CREATE, attrType, struct, vertex);
 
@@ -198,7 +197,7 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
         }
     }
 
-    private void updateVertex(AtlasStructType parentType, AtlasStructType structAttributeType, AtlasStructDef.AtlasAttributeDef attributeDef, AtlasStruct value, AtlasVertex structVertex) throws AtlasBaseException {
+    private void updateVertex(AtlasStructType parentType, AtlasStructType structAttributeType, AtlasAttributeDef attributeDef, AtlasStruct value, AtlasVertex structVertex) throws AtlasBaseException {
         mapAttributestoVertex(EntityMutations.EntityOperation.CREATE, structAttributeType, value, structVertex);
     }
 

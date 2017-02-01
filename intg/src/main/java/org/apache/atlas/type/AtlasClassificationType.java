@@ -260,7 +260,7 @@ public class AtlasClassificationType extends AtlasStructType {
         if (CollectionUtils.isNotEmpty(classificationDef.getAttributeDefs())) {
             for (AtlasAttributeDef attributeDef : classificationDef.getAttributeDefs()) {
                 AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
-                allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, classificationDef, attributeDef, type));
+                allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, attributeDef, type));
             }
         }
     }

@@ -20,9 +20,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -111,7 +110,7 @@ public class ArrayVertexMapper implements InstanceGraphMapper<List> {
     //Removes unused edges from the old collection, compared to the new collection
     private List<AtlasEdge> removeUnusedArrayEntries(
         AtlasStructType entityType,
-        AtlasStructDef.AtlasAttributeDef attributeDef,
+        AtlasAttributeDef attributeDef,
         List<AtlasEdge> currentEntries,
         List<AtlasEdge> newEntries,
         AtlasType entryType) throws AtlasBaseException {

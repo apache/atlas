@@ -107,7 +107,7 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
 
         for (AtlasStructType.AtlasAttribute attr : entityType.getAllAttributes().values()) {
             if (attr.getAttributeDef().getIsUnique()) {
-                Object attrVal = entity.getAttribute(attr.getAttributeDef().getName());
+                Object attrVal = entity.getAttribute(attr.getName());
                 if (attrVal != null) {
                     String qualifiedAttrName = attr.getQualifiedAttributeName();
                     AtlasVertex vertex = null;
