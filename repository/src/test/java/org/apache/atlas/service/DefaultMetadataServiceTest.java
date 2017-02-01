@@ -215,7 +215,7 @@ public class DefaultMetadataServiceTest {
         //verify that entity can be created with reserved characters in string value, array value and map key and value
         Referenceable entity = new Referenceable(typeDefinition.typeName);
         entity.set(strAttrName, randomStrWithReservedChars());
-        entity.set(arrayAttrName, new String[]{randomStrWithReservedChars()});
+        entity.set(arrayAttrName, new ArrayList<String>() {{ add(randomStrWithReservedChars()); }});
         entity.set(mapAttrName, new HashMap<String, String>() {{
             put(randomStrWithReservedChars(), randomStrWithReservedChars());
         }});
@@ -244,7 +244,7 @@ public class DefaultMetadataServiceTest {
 
         Referenceable newActual = new Referenceable(expected.getId(), actual.getTypeName(), actual.getValuesMap(),
                 traits, traitsMap);
-        assertEquals(InstanceSerialization.toJson(newActual, true), InstanceSerialization.toJson(expected, true));
+        assertEquals(newActual, expected);
     }
 
     private String randomStrWithReservedChars() {

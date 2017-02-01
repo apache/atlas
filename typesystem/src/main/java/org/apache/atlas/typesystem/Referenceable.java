@@ -162,7 +162,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass() || !super.equalsContents(o)) return false;
         Referenceable that = (Referenceable) o;
         return Objects.equals(id, that.id) &&
                 Objects.equals(traits, that.traits) &&
