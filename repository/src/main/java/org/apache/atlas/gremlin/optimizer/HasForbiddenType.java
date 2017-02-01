@@ -19,11 +19,12 @@ package org.apache.atlas.gremlin.optimizer;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.apache.atlas.gremlin.GremlinExpressionFactory;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.groovy.TraversalStepType;
+
+import com.google.common.base.Function;
 
 /**
  * Function that tests whether the expression is an 'or'
