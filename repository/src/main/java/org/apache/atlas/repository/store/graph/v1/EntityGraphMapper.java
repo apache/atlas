@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -54,8 +55,8 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
     protected final StructVertexMapper structVertexMapper;
 
     @Inject
-    public EntityGraphMapper(ArrayVertexMapper arrayVertexMapper, MapVertexMapper mapVertexMapper) {
-        this.structVertexMapper = new StructVertexMapper(arrayVertexMapper, mapVertexMapper);
+    public EntityGraphMapper(ArrayVertexMapper arrayVertexMapper, MapVertexMapper mapVertexMapper, DeleteHandlerV1 deleteHandler) {
+        this.structVertexMapper = new StructVertexMapper(arrayVertexMapper, mapVertexMapper, deleteHandler);
         arrayVertexMapper.init(structVertexMapper);
         mapVertexMapper.init(structVertexMapper);
     }
@@ -90,8 +91,7 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         String guid = getId(ctx.getValue());
         AtlasVertex entityVertex = context.getDiscoveryContext().getResolvedReference(guid);
         if ( ctx.getCurrentEdge().isPresent() ) {
-            updateEdge(ctx.getAttributeDef(), ctx.getValue(), ctx.getCurrentEdge().get(), entityVertex);
-            result = ctx.getCurrentEdge().get();
+            result = updateEdge(ctx.getAttributeDef(), ctx.getValue(), ctx.getCurrentEdge().get(), entityVertex);
         } else if (ctx.getValue() != null) {
             String edgeLabel = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexPropertyKey());
             try {
@@ -115,13 +115,14 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
 
         AtlasVertex currentVertex = currentEdge.getInVertex();
         String currentEntityId = AtlasGraphUtilsV1.getIdFromVertex(currentVertex);
-        String newEntityId = getId(value);
+        String newEntityId = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
+
         AtlasEdge newEdge = currentEdge;
         if (!currentEntityId.equals(newEntityId)) {
             // add an edge to the class vertex from the instance
             if (entityVertex != null) {
                 try {
-                    newEdge = graphHelper.getOrCreateEdge(currentEdge.getInVertex(), entityVertex, currentEdge.getLabel());
+                    newEdge = graphHelper.getOrCreateEdge(currentEdge.getOutVertex(), entityVertex, currentEdge.getLabel());
                 } catch (RepositoryException e) {
                     throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
                 }
@@ -131,7 +132,8 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
         return newEdge;
     }
 
-    public EntityMutationResponse mapAttributes(EntityMutationContext ctx) throws AtlasBaseException {
+    public EntityMutationResponse
+    mapAttributes(EntityMutationContext ctx) throws AtlasBaseException {
 
         this.context = ctx;
         structVertexMapper.init(this);
@@ -153,6 +155,11 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
 
                 resp.addEntity(EntityMutations.EntityOperation.UPDATE, constructHeader(updated, ctx.getType(updated), vertex));
             }
+        }
+
+        RequestContextV1 req = RequestContextV1.get();
+        for (AtlasObjectId id : req.getDeletedEntityIds()) {
+            resp.addEntity(EntityMutations.EntityOperation.DELETE, constructHeader(id));
         }
 
         return resp;
@@ -190,6 +197,13 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
             }
         }
         return header;
+    }
+
+    private AtlasEntityHeader constructHeader(AtlasObjectId id) {
+        AtlasEntityHeader entity = new AtlasEntityHeader(id.getTypeName());
+        entity.setGuid(id.getGuid());
+
+        return entity;
     }
 
     public EntityMutationContext getContext() {

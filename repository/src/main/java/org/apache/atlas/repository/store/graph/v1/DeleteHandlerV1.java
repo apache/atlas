@@ -24,6 +24,7 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasEdgeLabel;
@@ -96,7 +97,7 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate GUIDs in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : compositeVertices) {
-                requestContext.recordEntityDelete(vertexInfo.getGuid());
+                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getTypeName(), vertexInfo.getGuid()));
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
@@ -206,9 +207,9 @@ public abstract class DeleteHandlerV1 {
         boolean forceDeleteStructTrait) throws AtlasBaseException {
         LOG.debug("Deleting {}", string(edge));
         boolean forceDelete =
-            (AtlasGraphUtilsV1.isReference(typeCategory))
-                ? forceDeleteStructTrait : false;
-        if (AtlasGraphUtilsV1.isReference(typeCategory) && isComposite) {
+            (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
+        if (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION
+            || (typeCategory == TypeCategory.ENTITY && isComposite)) {
             //If the vertex is of type struct/trait, delete the edge and then the reference vertex as the vertex is not shared by any other entities.
             //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
             //through this delete, hence delete the edge and the reference vertex.
@@ -237,14 +238,14 @@ public abstract class DeleteHandlerV1 {
 
             if (parentType instanceof AtlasStructType) {
                 AtlasStructType parentStructType = (AtlasStructType) parentType;
-                if (parentStructType.isForeignKeyAttribute(atlasEdgeLabel.getAttributeName())) {
-                    deleteEdgeBetweenVertices(edge.getInVertex(), edge.getOutVertex(), atlasEdgeLabel.getAttributeName());
-                }
+                //TODO - Fix this later
+//                if (parentStructType.isForeignKeyAttribute(atlasEdgeLabel.getAttributeName())) {
+//                    deleteEdgeBetweenVertices(edge.getInVertex(), edge.getOutVertex(), atlasEdgeLabel.getAttributeName());
+//                }
             }
         }
 
         deleteEdge(edge, force);
-
     }
 
 
@@ -508,7 +509,7 @@ public abstract class DeleteHandlerV1 {
             GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 requestContext.getRequestTime());
             GraphHelper.setProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
-            requestContext.recordEntityUpdate(outId);
+            requestContext.recordEntityUpdate(new AtlasObjectId(typeName, outId));
         }
     }
 

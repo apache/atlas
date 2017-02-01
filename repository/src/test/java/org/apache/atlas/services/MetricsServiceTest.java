@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.services;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -49,7 +50,7 @@ public class MetricsServiceTest {
     private Number mockCount = 10;
 
     @BeforeClass
-    public void init() throws ScriptException {
+    public void init() throws ScriptException, AtlasException {
         Map<String, Object> aMockMap = new HashMap<>();
         Map<String, Object> bMockMap = new HashMap<>();
         Map<String, Object> cMockMap = new HashMap<>();

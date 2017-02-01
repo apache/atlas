@@ -81,7 +81,7 @@ public class TestEntitiesREST {
         dbEntity = TestUtilsV2.createDBEntity();
 
         tableEntity = TestUtilsV2.createTableEntity(dbEntity.getGuid());
-        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity();
+        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
         columns = new ArrayList<AtlasEntity>() {{ add(colEntity); }};
         tableEntity.setAttribute("columns", columns);
     }
@@ -132,7 +132,7 @@ public class TestEntitiesREST {
         AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
         AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity.getGuid());
-        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity();
+        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
         List<AtlasEntity> columns = new ArrayList<AtlasEntity>() {{ add(colEntity); }};
         tableEntity.setAttribute("columns", columns);
 
@@ -195,7 +195,8 @@ public class TestEntitiesREST {
 
         if ( retrievedColumnEntity != null) {
             LOG.info("verifying entity of type {} ", columns.get(0).getTypeName());
-            verifyAttributes(retrievedColumnEntity.getAttributes(), columns.get(0).getAttributes());
+            Assert.assertEquals(columns.get(0).getAttribute(AtlasClient.NAME), retrievedColumnEntity.getAttribute(AtlasClient.NAME));
+            Assert.assertEquals(columns.get(0).getAttribute("type"), retrievedColumnEntity.getAttribute("type"));
         }
 
         if ( retrievedTableEntity != null) {

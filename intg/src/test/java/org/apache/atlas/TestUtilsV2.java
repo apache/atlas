@@ -465,7 +465,17 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE + "_description",
                         ImmutableSet.<String>of(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
-                        AtlasTypeUtil.createRequiredAttrDef("type", "string")
+                        AtlasTypeUtil.createRequiredAttrDef("type", "string"),
+                    new AtlasAttributeDef("table", TABLE_TYPE,
+                        false,
+                        AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                        false, false,
+                        new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                            add(new AtlasStructDef.AtlasConstraintDef(
+                                AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY, new HashMap<String, Object>() {{
+                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE, AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE);
+                            }}));
+                        }})
                         );
 
         AtlasStructDef partitionDefinition = new AtlasStructDef("partition_struct_type", "partition_struct_type" + _description, "1.0",
@@ -564,7 +574,13 @@ public final class TestUtilsV2 {
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
-                                Collections.<AtlasConstraintDef>emptyList()),
+                                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                    add(new AtlasStructDef.AtlasConstraintDef(
+                                            AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF,
+                                            new HashMap<String, Object>() {{
+                                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "table");
+                                        }}));
+                                }}),
                         // array of structs
                         new AtlasAttributeDef("partitions", String.format("array<%s>", "partition_struct_type"),
                                 true,
@@ -583,12 +599,19 @@ public final class TestUtilsV2 {
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
-                                Collections.<AtlasConstraintDef>emptyList()),
-
-                      // new ArrayList<AtlasConstraintDef>() {{
-                     //add(new AtlasConstraintDef(
-                       // AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, new HashMap<String, Object>()));
-                       //}}),
+                                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()
+                                /* TODO - Fix map validation in type store and enable this
+                                 *
+                                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                    add(new AtlasStructDef.AtlasConstraintDef(
+                                            AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF,
+                                            new HashMap<String, Object>() {{
+                                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "table");
+                                        }}));
+                                    }}
+                                  *
+                                  */
+                                ),
                         //map of structs
                         new AtlasAttributeDef("partitionsMap",
                                 String.format("map<%s,%s>", "string", "partition_struct_type"),
@@ -668,10 +691,11 @@ public final class TestUtilsV2 {
         return entity;
     }
 
-    public static AtlasEntity createColumnEntity() {
+    public static AtlasEntity createColumnEntity(String tableId) {
         AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
         entity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
         entity.setAttribute("type", "VARCHAR(32)");
+        entity.setAttribute("table", new AtlasObjectId(TABLE_TYPE, tableId));
         return entity;
     }
 

@@ -336,7 +336,6 @@ public class AtlasTypeDefGraphStoreTest {
     @Test(dependsOnMethods = "testGet")
     public void testCreateWithValidAttributes(){
         AtlasTypesDef hiveTypes = TestUtilsV2.defineHiveTypes();
-
         try {
             AtlasTypesDef createdTypes = typeDefStore.createTypesDef(hiveTypes);
             assertEquals(hiveTypes.getEnumDefs(), createdTypes.getEnumDefs(), "Data integrity issue while persisting");

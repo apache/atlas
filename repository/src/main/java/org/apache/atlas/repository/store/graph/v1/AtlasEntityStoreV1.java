@@ -37,7 +37,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,7 +189,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 context.addUpdated(entity, entityType, vertex);
 
                 String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-                RequestContextV1.get().recordEntityUpdate(guid);
+                RequestContextV1.get().recordEntityUpdate(new AtlasObjectId(entityType.getTypeName(), guid));
             } else {
                 //Create vertices which do not exist in the repository
                 vertex = graphMapper.createVertexTemplate(entity, entityType);
@@ -198,7 +197,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 discoveredEntities.addRepositoryResolvedReference(new AtlasObjectId(entityType.getTypeName(), entity.getGuid()), vertex);
 
                 String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-                RequestContextV1.get().recordEntityCreate(guid);
+                RequestContextV1.get().recordEntityCreate(new AtlasObjectId(entityType.getTypeName(), guid));
             }
 
             if (LOG.isDebugEnabled()) {

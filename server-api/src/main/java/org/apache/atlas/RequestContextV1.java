@@ -21,6 +21,7 @@ package org.apache.atlas;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -39,9 +40,9 @@ public class RequestContextV1 {
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
 
-    private Set<String> createdEntityIds = new LinkedHashSet<>();
-    private Set<String> updatedEntityIds = new LinkedHashSet<>();
-    private Set<String> deletedEntityIds = new LinkedHashSet<>();
+    private Set<AtlasObjectId> createdEntityIds = new LinkedHashSet<>();
+    private Set<AtlasObjectId> updatedEntityIds = new LinkedHashSet<>();
+    private Set<AtlasObjectId> deletedEntityIds = new LinkedHashSet<>();
 
     private String user;
     private final long requestTime;
@@ -77,34 +78,36 @@ public class RequestContextV1 {
         this.user = user;
     }
 
-    public void recordEntityCreate(Collection<String> createdEntityIds) {
+    public void recordEntityCreate(Collection<AtlasObjectId> createdEntityIds) {
         this.createdEntityIds.addAll(createdEntityIds);
     }
 
-    public void recordEntityCreate(String createdEntityId) {
+    public void recordEntityCreate(AtlasObjectId createdEntityId) {
         this.createdEntityIds.add(createdEntityId);
     }
 
-    public void recordEntityUpdate(Collection<String> updatedEntityIds) {
+    public void recordEntityUpdate(Collection<AtlasObjectId> updatedEntityIds) {
         this.updatedEntityIds.addAll(updatedEntityIds);
     }
 
-    public void recordEntityUpdate(String entityId) {
+    public void recordEntityUpdate(AtlasObjectId entityId) {
         this.updatedEntityIds.add(entityId);
     }
-    public void recordEntityDelete(String entityId) {
+
+
+    public void recordEntityDelete(AtlasObjectId entityId) {
         deletedEntityIds.add(entityId);
     }
 
-    public Collection<String> getCreatedEntityIds() {
+    public Collection<AtlasObjectId> getCreatedEntityIds() {
         return createdEntityIds;
     }
 
-    public Collection<String> getUpdatedEntityIds() {
+    public Collection<AtlasObjectId> getUpdatedEntityIds() {
         return updatedEntityIds;
     }
 
-    public Collection<String> getDeletedEntityIds() {
+    public Collection<AtlasObjectId> getDeletedEntityIds() {
         return deletedEntityIds;
     }
 

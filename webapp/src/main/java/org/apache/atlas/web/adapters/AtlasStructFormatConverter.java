@@ -50,7 +50,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public AtlasStruct fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+    public Object fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
         AtlasStruct ret = null;
 
         if (v1Obj != null) {

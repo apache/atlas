@@ -53,12 +53,15 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
 
     private EntityGraphMapper entityVertexMapper;
 
+    private DeleteHandlerV1 deleteHandler;
+
     private static final Logger LOG = LoggerFactory.getLogger(StructVertexMapper.class);
 
-    public StructVertexMapper(ArrayVertexMapper arrayVertexMapper, MapVertexMapper mapVertexMapper) {
+    public StructVertexMapper(ArrayVertexMapper arrayVertexMapper, MapVertexMapper mapVertexMapper, DeleteHandlerV1 deleteHandler) {
         this.graph = AtlasGraphProvider.getGraphInstance();;
         this.mapVertexMapper = mapVertexMapper;
         this.arrVertexMapper = arrayVertexMapper;
+        this.deleteHandler = deleteHandler;
     }
 
     void init(final EntityGraphMapper entityVertexMapper) {
@@ -162,7 +165,12 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
             AtlasEdge currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
             Optional<AtlasEdge> edge = currentEdge != null ? Optional.of(currentEdge) : Optional.<AtlasEdge>absent();
             ctx.setExistingEdge(edge);
-            return toGraph(ctx);
+            AtlasEdge newEdge = toGraph(ctx);
+
+            if (currentEdge != null && !currentEdge.equals(newEdge)) {
+                deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true);
+            }
+            return newEdge;
         case ENTITY:
             edgeLabel = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexPropertyKey());
             currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
@@ -170,7 +178,12 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
             edge = currentEdge != null ? Optional.of(currentEdge) : Optional.<AtlasEdge>absent();
             ctx.setElementType(instanceType);
             ctx.setExistingEdge(edge);
-            return entityVertexMapper.toGraph(ctx);
+            newEdge = entityVertexMapper.toGraph(ctx);
+
+            if (currentEdge != null && !currentEdge.equals(newEdge)) {
+                deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), shouldManageChildReferences(ctx.getParentType(), ctx.getAttributeDef().getName()), true);
+            }
+            return newEdge;
         case MAP:
             return mapVertexMapper.toGraph(ctx);
         case ARRAY:

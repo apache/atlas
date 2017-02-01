@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -51,6 +52,7 @@ import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.StructInstance;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
+import static org.apache.atlas.TestUtils.TABLE_TYPE;
 import static org.apache.atlas.TestUtils.randomString;
 import static org.testng.Assert.assertEquals;
 
@@ -124,8 +128,10 @@ public class AtlasEntityStoreV1Test {
 
         EntityGraphDiscovery graphDiscovery = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityResolvers);
 
-        entityStore = new AtlasEntityStoreV1(new EntityGraphMapper(arrVertexMapper, mapVertexMapper));
+        entityStore = new AtlasEntityStoreV1(new EntityGraphMapper(arrVertexMapper, mapVertexMapper, deleteHandler));
         entityStore.init(typeRegistry, graphDiscovery);
+
+        RequestContextV1.clear();
     }
 
     @Test
@@ -173,8 +179,7 @@ public class AtlasEntityStoreV1Test {
         
         validateMutationResponse(response, EntityMutations.EntityOperation.UPDATE, 5);
         AtlasEntityHeader deptEntity = response.getFirstEntityUpdated();
-        validateAttributes(deptEntity);
-
+        Assert.assertEquals(((List<AtlasEntity>)(((List<AtlasEntity>) deptEntity.getAttribute("employees")).get(1).getAttribute("subordinates"))).size(), 1);
 
         init();
         //add  entity back
@@ -186,28 +191,60 @@ public class AtlasEntityStoreV1Test {
 
         //test array of class with id
         final List<AtlasEntity> columns = new ArrayList<>();
-        Map<String, Object> values = new HashMap<>();
-        values.put(TestUtilsV2.NAME, "col1");
-        values.put("type", "type");
-        AtlasEntity col1 = new AtlasEntity(TestUtilsV2.COLUMN_TYPE, values);
+
+        AtlasEntity col1 = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
+        col1.setAttribute(TestUtilsV2.NAME, "col1");
         columns.add(col1);
         AtlasEntity tableUpdated = new AtlasEntity(tableEntity);
         tableUpdated.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         init();
-        entityStore.createOrUpdate(col1);
+        response = entityStore.createOrUpdate(tableUpdated);
+        AtlasEntityHeader updatedTable = response.getFirstEntityUpdated();
+        validateAttributes(updatedTable);
 
+        //Complete update. Add  array elements - col3,col4
+        AtlasEntity col3 = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
+        col1.setAttribute(TestUtilsV2.NAME, "col3");
+        columns.add(col3);
+
+        AtlasEntity col4 = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
+        col1.setAttribute(TestUtilsV2.NAME, "col4");
+        columns.add(col4);
+
+        tableUpdated.setAttribute(COLUMNS_ATTR_NAME, columns);
         init();
         response = entityStore.createOrUpdate(tableUpdated);
-        final AtlasEntityHeader updateTable = response.getFirstEntityUpdated();
-        validateAttributes(updateTable);
+        updatedTable = response.getFirstEntityUpdated();
+        validateAttributes(updatedTable);
+
+        //Swap elements
+        columns.clear();
+        columns.add(col4);
+        columns.add(col3);
+
+        tableUpdated.setAttribute(COLUMNS_ATTR_NAME, columns);
+        init();
+        response = entityStore.createOrUpdate(tableUpdated);
+        updatedTable = response.getFirstEntityUpdated();
+        Assert.assertEquals(((List<AtlasEntity>) updatedTable.getAttribute(COLUMNS_ATTR_NAME)).size(), 2);
+
+        assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 1);  //col1 is deleted
+
+        //Update array column to null
+        tableUpdated.setAttribute(COLUMNS_ATTR_NAME, null);
+        init();
+        response = entityStore.createOrUpdate(tableUpdated);
+        updatedTable = response.getFirstEntityUpdated();
+        validateAttributes(updatedTable);
+        assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);
 
     }
     
     @Test(dependsOnMethods = "testCreate")
     public void testUpdateEntityWithMap() throws Exception {
 
-        AtlasEntity tableClone = new AtlasEntity(tableEntity);
+        final AtlasEntity tableClone = new AtlasEntity(tableEntity);
         final Map<String, AtlasStruct> partsMap = new HashMap<>();
         partsMap.put("part0", new AtlasStruct(TestUtils.PARTITION_STRUCT_TYPE,
             new HashMap<String, Object>() {{
@@ -219,7 +256,7 @@ public class AtlasEntityStoreV1Test {
 
         init();
         EntityMutationResponse response = entityStore.createOrUpdate(tableClone);
-        AtlasEntityHeader tableDefinition1 = response.getFirstEntityUpdated();
+        final AtlasEntityHeader tableDefinition1 = response.getFirstEntityUpdated();
         validateAttributes(tableDefinition1);
                 
         Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) tableDefinition1.getAttribute("partitionsMap")).get("part0")));
@@ -261,7 +298,7 @@ public class AtlasEntityStoreV1Test {
         AtlasStruct partition2 = partsMap.get("part2");
         partition2.setAttribute(TestUtilsV2.NAME, "test2Updated");
         response = entityStore.createOrUpdate(tableClone);
-        AtlasEntityHeader tableDefinition4 = response.getFirstEntityUpdated();
+        final AtlasEntityHeader tableDefinition4 = response.getFirstEntityUpdated();
         validateAttributes(tableDefinition4);
 
         assertEquals(((Map<String, AtlasStruct>) tableDefinition4.getAttribute("partitionsMap")).size(), 2);
@@ -278,9 +315,8 @@ public class AtlasEntityStoreV1Test {
             new HashMap<String, Object>() {{
                 put(TestUtilsV2.NAME, "test1");
                 put("type", "string");
+                put("table", new AtlasObjectId(TABLE_TYPE, tableDefinition1.getGuid()));
             }});
-
-
         init();
         entityStore.createOrUpdate(col0Type);
 
@@ -288,6 +324,7 @@ public class AtlasEntityStoreV1Test {
             new HashMap<String, Object>() {{
                 put(TestUtilsV2.NAME, "test2");
                 put("type", "string");
+                put("table", new AtlasObjectId(TABLE_TYPE, tableDefinition1.getGuid()));
             }});
 
         init();
@@ -546,8 +583,8 @@ public class AtlasEntityStoreV1Test {
             List actualList = (List) actual;
             List expectedList = (List) expected;
 
-            if (!(expected == null && actualList.size() == 0)) {
-                Assert.assertEquals(actualList.size(), expectedList.size());
+            if (CollectionUtils.isNotEmpty(actualList)) {
+                //actual list could have deleted entities . Hence size may not match.
                 for (int i = 0; i < actualList.size(); i++) {
                     assertAttribute(actualList.get(i), expectedList.get(i), elemType, attrName);
                 }
@@ -679,5 +716,4 @@ public class AtlasEntityStoreV1Test {
         entityStore.createOrUpdate(tableEntity);
         Assert.fail("Expected exception while creating with required attribute null");
     }
-
 }
