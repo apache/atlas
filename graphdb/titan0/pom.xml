@@ -34,6 +34,7 @@
     <properties>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
+	<guava.version>14.0</guava.version>
     </properties>
 
     <dependencies>
@@ -51,6 +52,13 @@
             <artifactId>atlas-graphdb-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>com.google.inject</groupId>

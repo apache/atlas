@@ -25,6 +25,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.query.GremlinQueryResult;
 import org.apache.atlas.query.InputLineageClosureQuery;
 import org.apache.atlas.query.OutputLineageClosureQuery;
 import org.apache.atlas.query.QueryParams;
@@ -139,7 +140,8 @@ public class DataSetLineageService implements LineageService {
                 guid, HIVE_PROCESS_TYPE_NAME,
                 HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                 SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return inputsQuery.graph(null).toInstanceJson();
+        GremlinQueryResult result = inputsQuery.evaluate();
+        return inputsQuery.graph(result).toInstanceJson();
     }
 
     @Override
@@ -156,7 +158,8 @@ public class DataSetLineageService implements LineageService {
                 new OutputLineageClosureQuery(AtlasClient.DATA_SET_SUPER_TYPE, SELECT_INSTANCE_GUID, guid, HIVE_PROCESS_TYPE_NAME,
                         HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                         SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return outputsQuery.graph(null).toInstanceJson();
+        GremlinQueryResult result = outputsQuery.evaluate();
+        return outputsQuery.graph(result).toInstanceJson();
     }
 
     /**

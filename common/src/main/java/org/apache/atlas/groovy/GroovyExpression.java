@@ -18,17 +18,55 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.List;
+
 /**
  * Represents an expression in the Groovy programming language, which
  * is the language that Gremlin scripts are written and interpreted in.
  */
 public interface GroovyExpression  {
-
     /**
-     * Generates a groovy script from the expression.
+     * Generates a Groovy script from the expression.
      *
      * @param context
      */
     void generateGroovy(GroovyGenerationContext context);
 
+    /**
+     * Gets all of the child expressions of this expression.
+     * s
+     * @return
+     */
+    List<GroovyExpression> getChildren();
+
+    /**
+     * Makes a copy of the expression, keeping everything the
+     * same except its child expressions.  These are replaced
+     * with the provided children.  The order of the children
+     * is important.  It is expected that the children provided
+     * here are updated versions of the children returned by
+     * getChildren().  The order of the children must be the
+     * same as the order in which the children were returned
+     * by getChildren()
+     *
+     * @param newChildren
+     * @return
+     */
+    GroovyExpression copy(List<GroovyExpression> newChildren);
+
+    /**
+     * Makes a shallow copy of the GroovyExpression.  This
+     * is equivalent to copy(getChildren());
+     *
+     * @return
+     */
+    GroovyExpression copy();
+
+    /**
+     * Gets the type of traversal step represented by this
+     * expression (or TraversalStepType.NONE if it is not part of a graph traversal).
+     *
+     * @return
+     */
+    TraversalStepType getType();
 }

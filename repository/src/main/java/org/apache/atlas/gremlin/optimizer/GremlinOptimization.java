@@ -15,26 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.groovy;
+package org.apache.atlas.gremlin.optimizer;
 
-import java.util.List;
+import org.apache.atlas.groovy.GroovyExpression;
 
 /**
- * Represents an expression that compares two expressions using
- * the Groovy "spaceship" operator.  This is basically the
- * same as calling left.compareTo(right), except that it has
- * built-in null handling and some other nice features.
- *
+ * An optimization that can be applied to a gremlin query.
  */
-public class ComparisonOperatorExpression extends BinaryExpression {
+public interface GremlinOptimization {
 
-    public ComparisonOperatorExpression(GroovyExpression left, GroovyExpression right) {
-        super(left, "<=>", right);
-    }
+    /**
+     * Whether or not this optimization should be applied to the given expression
+     * @param expr
+     * @param contxt
+     * @return
+     */
+    boolean appliesTo(GroovyExpression expr, OptimizationContext contxt);
+    /**
+     * Whether or not GremlinQueryOptimizer should call this optimization recursively
+     * on the updated children.
+     */
+    boolean isApplyRecursively();
 
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 2;
-        return new ComparisonOperatorExpression(newChildren.get(0), newChildren.get(1));
-    }
+    /**
+     * Applies the optimization.
+     *
+     * @param expr
+     * @param context
+     * @return the optimized expression
+     */
+    GroovyExpression apply(GroovyExpression expr, OptimizationContext context);
 }

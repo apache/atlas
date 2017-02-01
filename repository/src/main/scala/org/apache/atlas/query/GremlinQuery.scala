@@ -32,15 +32,19 @@ import scala.collection.JavaConversions.bufferAsJavaList
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+
 import org.apache.atlas.gremlin.GremlinExpressionFactory
+import org.apache.atlas.gremlin.optimizer.GremlinQueryOptimizer
 import org.apache.atlas.groovy.CastExpression
-import org.apache.atlas.groovy.CodeBlockExpression
+import org.apache.atlas.groovy.ClosureExpression
+import org.apache.atlas.groovy.LabeledExpression
 import org.apache.atlas.groovy.FunctionCallExpression
 import org.apache.atlas.groovy.GroovyExpression
 import org.apache.atlas.groovy.GroovyGenerationContext
 import org.apache.atlas.groovy.IdentifierExpression
 import org.apache.atlas.groovy.ListExpression
 import org.apache.atlas.groovy.LiteralExpression
+import org.apache.atlas.groovy.TraversalStepType
 import org.apache.atlas.query.Expressions.AliasExpression
 import org.apache.atlas.query.Expressions.ArithmeticExpression
 import org.apache.atlas.query.Expressions.BackReference
@@ -78,7 +82,10 @@ import org.apache.atlas.query.Expressions.MaxExpression
 import org.apache.atlas.query.Expressions.MinExpression
 import org.apache.atlas.query.Expressions.SumExpression
 import org.apache.atlas.query.Expressions.CountExpression
+
+import org.apache.atlas.util.AtlasRepositoryConfiguration
 import java.util.HashSet
+
 trait IntSequence {
     def next: Int
 }
@@ -118,6 +125,69 @@ trait SelectExpressionHandling {
             }
             case x => x
         }
+    }
+
+    // Removes back references in comparison expressions that are
+    // right after an alias expression.
+    //
+    //For example:
+    // .as('x').and(select('x').has(y),...) is changed to
+    // .as('x').and(has(y),...)
+    //
+    //This allows the "has" to be extracted out of the and/or by
+    //the GremlinQueryOptimizer so the index can be used to evaluate
+    //the predicate.
+
+     val RemoveUnneededBackReferences : PartialFunction[Expression, Expression] = {
+
+         case filterExpr@FilterExpression(aliasExpr@AliasExpression(_,aliasName), filterChild) => {
+             val updatedChild = removeUnneededBackReferences(filterChild, aliasName)
+             val changed  = !(updatedChild eq filterChild)
+             if(changed) {
+                 FilterExpression(aliasExpr, updatedChild)
+             }
+             else {
+                 filterExpr
+             }
+
+         }
+         case x => x
+     }
+     def removeUnneededBackReferences(expr: Expression, outerAlias: String) : Expression = expr match {
+         case logicalExpr@LogicalExpression(logicalOp,children) => {
+            var changed : Boolean = false;
+            val updatedChildren : List[Expression] = children.map { child =>
+                val updatedChild = removeUnneededBackReferences(child, outerAlias);
+                changed |= ! (updatedChild eq child);
+                updatedChild
+            }
+           if(changed) {
+               LogicalExpression(logicalOp,updatedChildren)
+           }
+           else {
+              logicalExpr
+           }
+        }
+        case comparisonExpr@ComparisonExpression(_,_,_) => {
+            var changed = false
+             val updatedLeft = removeUnneededBackReferences(comparisonExpr.left, outerAlias);
+             changed |= !( updatedLeft eq comparisonExpr.left);
+
+             val updatedRight = removeUnneededBackReferences(comparisonExpr.right, outerAlias);
+             changed |= !(updatedRight eq comparisonExpr.right);
+
+             if (changed) {
+                 ComparisonExpression(comparisonExpr.symbol, updatedLeft, updatedRight)
+             } else {
+                 comparisonExpr
+             }
+        }
+        case FieldExpression(fieldName, fieldInfo, Some(br @ BackReference(brAlias, _, _))) if outerAlias.equals(brAlias) => {
+           //Remove the back reference, since the thing it references is right in front
+           //of the comparison expression we're in
+           FieldExpression(fieldName, fieldInfo, None)
+       }
+       case x => x
     }
 
     //in groupby, convert alias expressions defined in the group by child to BackReferences
@@ -456,7 +526,10 @@ class GremlinTranslator(expr: Expression,
             return translateLiteralValue(l.dataType, l);
         }
         case list: ListLiteral[_] =>  {
-            val  values : java.util.List[GroovyExpression] = translateList(list.rawValue, true); //why hard coded
+            //Here, we are creating a Groovy list literal expression ([value1, value2, value3]).  Because
+            //of this, any gremlin query expressions within the list must start with an anonymous traversal.
+            //We set 'inClosure' to true in this case to make that happen.
+            val  values : java.util.List[GroovyExpression] = translateList(list.rawValue, true);
             return new ListExpression(values);
         }
         case in@TraitInstanceExpression(child) => {
@@ -493,7 +566,7 @@ class GremlinTranslator(expr: Expression,
         case limitOffset@LimitExpression(child, limit, offset) => {
             val childExpr = genQuery(parent, child, inClosure);
             val totalResultRows = limit.value + offset.value;
-            return GremlinExpressionFactory.INSTANCE.generateLimitExpression(childExpr, offset.value, totalResultRows);
+            return GremlinExpressionFactory.INSTANCE.generateRangeExpression(childExpr, offset.value, totalResultRows);
         }
         case count@CountExpression() => {
           val listExpr = GremlinExpressionFactory.INSTANCE.getClosureArgumentValue();
@@ -621,8 +694,7 @@ class GremlinTranslator(expr: Expression,
 
     def genFullQuery(expr: Expression, hasSelect: Boolean): String = {
 
-        var q : GroovyExpression = new FunctionCallExpression(new IdentifierExpression("g"),"V");
-
+        var q : GroovyExpression = new FunctionCallExpression(TraversalStepType.START, new IdentifierExpression(TraversalStepType.SOURCE, "g"),"V");
 
         val debug:Boolean = false
         if(gPersistenceBehavior.addGraphVertexPrefix(preStatements)) {
@@ -631,15 +703,23 @@ class GremlinTranslator(expr: Expression,
 
         q = genQuery(q, expr, false)
 
-        q = new FunctionCallExpression(q, "toList");
+        q = GremlinExpressionFactory.INSTANCE.generateToListExpression(q);
         q = gPersistenceBehavior.getGraph().addOutputTransformationPredicate(q, hasSelect, expr.isInstanceOf[PathExpression]);
 
-        var overallExpression = new CodeBlockExpression();
-        overallExpression.addStatements(preStatements);
-        overallExpression.addStatement(q)
-        overallExpression.addStatements(postStatements);
 
-        var qryStr = generateGremlin(overallExpression);
+        if(AtlasRepositoryConfiguration.isGremlinOptimizerEnabled()) {
+            q = GremlinQueryOptimizer.getInstance().optimize(q);
+        }
+
+	    val closureExpression = new ClosureExpression();
+
+        closureExpression.addStatements(preStatements);
+        closureExpression.addStatement(q)
+        closureExpression.addStatements(postStatements);
+
+	    val overallExpression = new LabeledExpression("L", closureExpression);
+
+        val qryStr = generateGremlin(overallExpression);
 
         if(debug) {
           println(" query " + qryStr)
@@ -666,6 +746,7 @@ class GremlinTranslator(expr: Expression,
         e1 = e1.transformUp(addAliasToLoopInput())
         e1 = e1.transformUp(instanceClauseToTop(e1))
         e1 = e1.transformUp(traitClauseWithInstanceForTop(e1))
+        e1 = e1.transformUp(RemoveUnneededBackReferences)
 
         //Following code extracts the select expressions from expression tree.
 

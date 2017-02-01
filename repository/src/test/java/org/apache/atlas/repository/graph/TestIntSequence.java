@@ -15,26 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.groovy;
+package org.apache.atlas.repository.graph;
 
-import java.util.List;
+import org.apache.atlas.query.IntSequence;
 
 /**
- * Represents an expression that compares two expressions using
- * the Groovy "spaceship" operator.  This is basically the
- * same as calling left.compareTo(right), except that it has
- * built-in null handling and some other nice features.
+ * IntSequence for use in unit tests.
  *
  */
-public class ComparisonOperatorExpression extends BinaryExpression {
+public class TestIntSequence implements IntSequence {
 
-    public ComparisonOperatorExpression(GroovyExpression left, GroovyExpression right) {
-        super(left, "<=>", right);
+    public static final IntSequence INSTANCE = new TestIntSequence();
+    private TestIntSequence() {
     }
-
     @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 2;
-        return new ComparisonOperatorExpression(newChildren.get(0), newChildren.get(1));
+    public int next() {
+        return 0;
     }
 }

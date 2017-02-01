@@ -19,21 +19,25 @@
 package org.apache.atlas.gremlin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.groovy.AbstractFunctionExpression;
 import org.apache.atlas.groovy.CastExpression;
 import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.ComparisonExpression;
+import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
 import org.apache.atlas.groovy.ComparisonOperatorExpression;
 import org.apache.atlas.groovy.FunctionCallExpression;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.groovy.IdentifierExpression;
 import org.apache.atlas.groovy.LiteralExpression;
 import org.apache.atlas.groovy.LogicalExpression;
-import org.apache.atlas.groovy.TypeCoersionExpression;
-import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
 import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
+import org.apache.atlas.groovy.TernaryOperatorExpression;
+import org.apache.atlas.groovy.TraversalStepType;
+import org.apache.atlas.groovy.TypeCoersionExpression;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.TypeUtils.FieldInfo;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -69,27 +73,14 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
     private static final String REPEAT_METHOD = "repeat";
     private static final String RANGE_METHOD = "range";
     private static final String LAST_METHOD = "last";
-    private static final String WHERE_METHOD = "where";
     private static final String TO_STRING_METHOD = "toString";
+
+    private static final GroovyExpression EMPTY_STRING_EXPRESSION = new LiteralExpression("");
 
     @Override
     public GroovyExpression generateLogicalExpression(GroovyExpression parent, String operator,
-            List<GroovyExpression> operands) {
-        if (operands.size() == 1) {
-            // gremlin 3 treats one element expressions as 'false'. Avoid
-            // creating a boolean expression in this case. Inline the expression
-            // note: we can't simply omit it, since it will cause us to traverse
-            // the edge!
-            // use 'where' instead
-            GroovyExpression expr = operands.get(0);
-            // if child is a back expression, that expression becomes an
-            // argument to where
-            return new FunctionCallExpression(parent, WHERE_METHOD, expr);
-        } else {
-            // Gremlin 3 does not support _() syntax
-            //
-            return new FunctionCallExpression(parent, operator, operands);
-        }
+                                                      List<GroovyExpression> operands) {
+        return new FunctionCallExpression(TraversalStepType.FILTER, parent, operator, operands);
     }
 
     @Override
@@ -97,20 +88,20 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
         if (inSelect) {
             return getFieldInSelect();
         } else {
-            return new FunctionCallExpression(parent, SELECT_METHOD, new LiteralExpression(alias));
+            return new FunctionCallExpression(TraversalStepType.MAP_TO_ELEMENT, parent, SELECT_METHOD, new LiteralExpression(alias));
         }
     }
 
     @Override
     public GroovyExpression typeTestExpression(GraphPersistenceStrategies s, String typeName, GroovyExpression itRef) {
-        LiteralExpression typeAttrExpr = new LiteralExpression(s.typeAttributeName());
         LiteralExpression superTypeAttrExpr = new LiteralExpression(s.superTypeAttributeName());
         LiteralExpression typeNameExpr = new LiteralExpression(typeName);
-
-        FunctionCallExpression result = new FunctionCallExpression(HAS_METHOD, typeAttrExpr, new FunctionCallExpression(EQ_METHOD, typeNameExpr));
-        result = new FunctionCallExpression(result, "or");
-        result = new FunctionCallExpression(HAS_METHOD, superTypeAttrExpr, new FunctionCallExpression(EQ_METHOD, typeNameExpr));
+        LiteralExpression typeAttrExpr = new LiteralExpression(s.typeAttributeName());
+        FunctionCallExpression result = new FunctionCallExpression(TraversalStepType.FILTER, HAS_METHOD, typeAttrExpr, new FunctionCallExpression(EQ_METHOD, typeNameExpr));
+        result = new FunctionCallExpression(TraversalStepType.FILTER, result, "or");
+        result = new FunctionCallExpression(TraversalStepType.FILTER, result, HAS_METHOD, superTypeAttrExpr, new FunctionCallExpression(EQ_METHOD, typeNameExpr));
         return result;
+
     }
 
     @Override
@@ -118,41 +109,48 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
 
         GroovyExpression emitExpr = generateLoopEmitExpression(s, dataType);
 
-        GroovyExpression result = new FunctionCallExpression(parent, REPEAT_METHOD, loopExpr);
+        GroovyExpression result = new FunctionCallExpression(TraversalStepType.BRANCH, parent, REPEAT_METHOD, loopExpr);
         if (times != null) {
             GroovyExpression timesExpr = new LiteralExpression(times);
-            result = new FunctionCallExpression(result, TIMES_METHOD, timesExpr);
+            result = new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, result, TIMES_METHOD, timesExpr);
         }
-        result = new FunctionCallExpression(result, EMIT_METHOD, emitExpr);
+        result = new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, result, EMIT_METHOD, emitExpr);
         return result;
 
     }
 
     @Override
     public GroovyExpression getLoopExpressionParent(GroovyExpression inputQry) {
-        return new IdentifierExpression("__");
+        GroovyExpression curTraversal = getAnonymousTraversalStartExpression();
+        return curTraversal;
+    }
+
+    private IdentifierExpression getAnonymousTraversalStartExpression() {
+        return new IdentifierExpression(TraversalStepType.START, "__");
     }
 
     @Override
     public GroovyExpression generateSelectExpression(GroovyExpression parent, List<LiteralExpression> sourceNames,
             List<GroovyExpression> srcExprs) {
-        FunctionCallExpression result = new FunctionCallExpression(parent, SELECT_METHOD, sourceNames);
+        FunctionCallExpression result = new FunctionCallExpression(TraversalStepType.MAP_TO_VALUE, parent, SELECT_METHOD, sourceNames);
 
         for (GroovyExpression expr : srcExprs) {
             GroovyExpression closure = new ClosureExpression(expr);
             GroovyExpression castClosure = new TypeCoersionExpression(closure, FUNCTION_CLASS);
-            result = new FunctionCallExpression(result, BY_METHOD, castClosure);
+            result = new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, result, BY_METHOD, castClosure);
         }
         return result;
     }
 
     @Override
     public GroovyExpression generateFieldExpression(GroovyExpression parent, FieldInfo fInfo,
-            String propertyName, boolean inSelect) {
+            String propertyName, boolean inSelect)  {
 
         AttributeInfo attrInfo = fInfo.attrInfo();
         IDataType attrType = attrInfo.dataType();
         GroovyExpression propertyNameExpr = new LiteralExpression(propertyName);
+        //Whether it is the user or shared graph does not matter here, since we're
+        //just getting the conversion expression.  Ideally that would be moved someplace else.
         AtlasGraph graph = AtlasGraphProvider.getGraphInstance();
         if (inSelect) {
 
@@ -161,13 +159,13 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
             return graph.generatePersisentToLogicalConversionExpression(expr, attrType);
         } else {
 
-            GroovyExpression unmapped = new FunctionCallExpression(parent, VALUES_METHOD, propertyNameExpr);
+            GroovyExpression unmapped = new FunctionCallExpression(TraversalStepType.FLAT_MAP_TO_VALUES, parent, VALUES_METHOD, propertyNameExpr);
             if (graph.isPropertyValueConversionNeeded(attrType)) {
                 GroovyExpression toConvert = new FunctionCallExpression(getItVariable(), GET_METHOD);
 
                 GroovyExpression conversionFunction = graph.generatePersisentToLogicalConversionExpression(toConvert,
                         attrType);
-                return new FunctionCallExpression(unmapped, MAP_METHOD, new ClosureExpression(conversionFunction));
+                return new FunctionCallExpression(TraversalStepType.MAP_TO_VALUE, unmapped, MAP_METHOD, new ClosureExpression(conversionFunction));
             } else {
                 return unmapped;
             }
@@ -238,15 +236,15 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
                     valueMatchesExpr);
 
             GroovyExpression filterFunction = new ClosureExpression(filterCondition);
-            return new FunctionCallExpression(parent, FILTER_METHOD, filterFunction);
+            return new FunctionCallExpression(TraversalStepType.FILTER, parent, FILTER_METHOD, filterFunction);
         } else {
             GroovyExpression valueMatches = new FunctionCallExpression(getComparisonFunction(symbol), requiredValue);
-            return new FunctionCallExpression(parent, HAS_METHOD, propertNameExpr, valueMatches);
+            return new FunctionCallExpression(TraversalStepType.FILTER, parent, HAS_METHOD, propertNameExpr, valueMatches);
         }
     }
 
     @Override
-    protected GroovyExpression initialExpression(GraphPersistenceStrategies s, GroovyExpression varExpr) {
+    protected GroovyExpression initialExpression(GroovyExpression varExpr, GraphPersistenceStrategies s) {
 
         // this bit of groovy magic converts the set of vertices in varName into
         // a String containing the ids of all the vertices. This becomes the
@@ -255,15 +253,61 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
         // _()
         // s"g.V(${varName}.collect{it.id()} as String[])"
 
-        GroovyExpression gExpr = getGraph();
+        GroovyExpression gExpr = getGraphExpression();
         GroovyExpression varRefExpr = new TypeCoersionExpression(varExpr, OBJECT_ARRAY_CLASS);
-        FunctionCallExpression expr = new FunctionCallExpression(gExpr, V_METHOD, varRefExpr);
+        GroovyExpression matchingVerticesExpr = new FunctionCallExpression(TraversalStepType.START, gExpr, V_METHOD, varRefExpr);
+        GroovyExpression isEmpty  = new FunctionCallExpression(varExpr, "isEmpty");
+        GroovyExpression emptyGraph = getEmptyTraversalExpression();
+
+        GroovyExpression expr = new TernaryOperatorExpression(isEmpty, emptyGraph, matchingVerticesExpr);
+
         return s.addInitialQueryCondition(expr);
     }
 
+    private GroovyExpression getEmptyTraversalExpression() {
+        GroovyExpression emptyGraph = new FunctionCallExpression(TraversalStepType.START, getGraphExpression(), V_METHOD, EMPTY_STRING_EXPRESSION);
+        return emptyGraph;
+    }
+
     @Override
-    public GroovyExpression generateLimitExpression(GroovyExpression parent, int offset, int totalRows) {
-        return new FunctionCallExpression(parent, RANGE_METHOD, new LiteralExpression(offset), new LiteralExpression(totalRows));
+    public GroovyExpression generateRangeExpression(GroovyExpression parent, int startIndex, int endIndex) {
+        //treat as barrier step, since limits need to be applied globally (even though it
+        //is technically a filter step)
+        return new FunctionCallExpression(TraversalStepType.BARRIER, parent, RANGE_METHOD, new LiteralExpression(startIndex), new LiteralExpression(endIndex));
+    }
+
+    @Override
+    public boolean isRangeExpression(GroovyExpression expr) {
+
+        return (expr instanceof FunctionCallExpression && ((FunctionCallExpression)expr).getFunctionName().equals(RANGE_METHOD));
+    }
+
+    @Override
+    public int[] getRangeParameters(AbstractFunctionExpression expr) {
+
+        if (isRangeExpression(expr)) {
+            FunctionCallExpression rangeExpression = (FunctionCallExpression) expr;
+            List<GroovyExpression> arguments = rangeExpression.getArguments();
+            int startIndex = (int)((LiteralExpression)arguments.get(0)).getValue();
+            int endIndex = (int)((LiteralExpression)arguments.get(1)).getValue();
+            return new int[]{startIndex, endIndex};
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    public void setRangeParameters(GroovyExpression expr, int startIndex, int endIndex) {
+
+        if (isRangeExpression(expr)) {
+            FunctionCallExpression rangeExpression = (FunctionCallExpression) expr;
+            rangeExpression.setArgument(0, new LiteralExpression(Integer.valueOf(startIndex)));
+            rangeExpression.setArgument(1, new LiteralExpression(Integer.valueOf(endIndex)));
+        }
+        else {
+            throw new IllegalArgumentException(expr + " is not a valid range expression");
+        }
     }
 
     @Override
@@ -295,7 +339,8 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
             comparisonExpr = new ComparisonOperatorExpression(bCompExpr, aCompExpr);
         }
         ClosureExpression comparisonFunction = new ClosureExpression(comparisonExpr, "a", "b");
-        return new FunctionCallExpression(new FunctionCallExpression(parent, ORDER_METHOD), BY_METHOD, orderByClause, comparisonFunction);
+        FunctionCallExpression orderCall = new FunctionCallExpression(TraversalStepType.BARRIER, parent, ORDER_METHOD);
+        return new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, orderCall, BY_METHOD, orderByClause, comparisonFunction);
     }
 
     @Override
@@ -327,10 +372,10 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
     public GroovyExpression generateGroupByExpression(GroovyExpression parent, GroovyExpression groupByExpression,
             GroovyExpression aggregationFunction) {
 
-        GroovyExpression result = new FunctionCallExpression(parent, "group");
+        GroovyExpression result = new FunctionCallExpression(TraversalStepType.BARRIER, parent, "group");
         GroovyExpression groupByClosureExpr = new TypeCoersionExpression(new ClosureExpression(groupByExpression), "Function");
-        result = new FunctionCallExpression(result, "by", groupByClosureExpr);
-        result = new FunctionCallExpression(result, "toList");
+        result = new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, result, "by", groupByClosureExpr);
+        result = new FunctionCallExpression(TraversalStepType.END, result, "toList");
 
         GroovyExpression mapValuesClosure = new ClosureExpression(new FunctionCallExpression(new CastExpression(getItVariable(), "Map"), "values"));
 
@@ -347,8 +392,55 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
         result = new FunctionCallExpression(result, "collect", aggregrationFunctionClosure);
         return result;
     }
+
+    @Override
+    public GroovyExpression generateSeededTraversalExpresssion(boolean isMap, GroovyExpression valueCollection) {
+        GroovyExpression coersedExpression = new TypeCoersionExpression(valueCollection, isMap ? "Map[]" : "Vertex[]");
+        if(isMap) {
+
+            return new FunctionCallExpression(TraversalStepType.START, "__", coersedExpression);
+        }
+        else {
+            //We cannot always use an anonymous traversal because that breaks repeat steps
+            return new FunctionCallExpression(TraversalStepType.START, getEmptyTraversalExpression(), "inject", coersedExpression);
+        }
+    }
+
+    @Override
     public GroovyExpression getGroupBySelectFieldParent() {
         return null;
     }
-}
 
+    @Override
+    public String getTraversalExpressionClass() {
+        return "GraphTraversal";
+    }
+
+    @Override
+    public boolean isSelectGeneratesMap(int aliasCount) {
+        //in Gremlin 3, you only get a map if there is more than 1 alias.
+        return aliasCount > 1;
+    }
+
+    @Override
+    public GroovyExpression generateMapExpression(GroovyExpression parent, ClosureExpression closureExpression) {
+        return new FunctionCallExpression(TraversalStepType.MAP_TO_ELEMENT, parent, "map", closureExpression);
+    }
+
+    @Override
+    public GroovyExpression generateGetSelectedValueExpression(LiteralExpression key,
+            GroovyExpression rowMapExpr) {
+        rowMapExpr = new CastExpression(rowMapExpr, "Map");
+        GroovyExpression getExpr = new FunctionCallExpression(rowMapExpr, "get", key);
+        return getExpr;
+    }
+
+    @Override
+    public GroovyExpression getCurrentTraverserObject(GroovyExpression traverser) {
+        return new FunctionCallExpression(traverser, "get");
+    }
+
+    public List<String> getAliasesRequiredByExpression(GroovyExpression expr) {
+        return Collections.emptyList();
+    }
+}

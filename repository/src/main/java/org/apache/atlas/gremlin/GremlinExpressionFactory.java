@@ -17,8 +17,14 @@
  */
 package org.apache.atlas.gremlin;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.groovy.AbstractFunctionExpression;
 import org.apache.atlas.groovy.ArithmeticExpression;
 import org.apache.atlas.groovy.ArithmeticExpression.ArithmeticOperator;
 import org.apache.atlas.groovy.CastExpression;
@@ -29,6 +35,7 @@ import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.groovy.IdentifierExpression;
 import org.apache.atlas.groovy.ListExpression;
 import org.apache.atlas.groovy.LiteralExpression;
+import org.apache.atlas.groovy.TraversalStepType;
 import org.apache.atlas.groovy.TypeCoersionExpression;
 import org.apache.atlas.groovy.VariableAssignmentExpression;
 import org.apache.atlas.query.GraphPersistenceStrategies;
@@ -40,13 +47,9 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.cache.TypeCache.TYPE_FILTER;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Factory to generate Groovy expressions representing Gremlin syntax that that
@@ -58,7 +61,8 @@ public abstract class GremlinExpressionFactory {
     private static final String G_VARIABLE = "g";
     private static final String IT_VARIABLE = "it";
 
-    private static final String SET_CLASS = "Set";
+    protected static final String SET_CLASS = "Set";
+
 
     private static final String OBJECT_FIELD = "object";
 
@@ -66,16 +70,23 @@ public abstract class GremlinExpressionFactory {
     protected static final String FILTER_METHOD = "filter";
     private static final String PATH_METHOD = "path";
     private static final String AS_METHOD = "as";
-    private static final String FILL_METHOD = "fill";
     private static final String IN_OPERATOR = "in";
     protected static final String HAS_METHOD = "has";
     protected static final String TO_LOWER_CASE_METHOD = "toLowerCase";
     protected static final String SELECT_METHOD = "select";
     protected static final String ORDER_METHOD = "order";
+    protected static final String FILL_METHOD = "fill";
 
     public static final GremlinExpressionFactory INSTANCE = AtlasGraphProvider.getGraphInstance()
             .getSupportedGremlinVersion() == GremlinVersion.THREE ? new Gremlin3ExpressionFactory()
                     : new Gremlin2ExpressionFactory();
+
+    /**
+     * Returns the unqualified name of the class used in this version of gremlin to
+     * represent Gremlin queries as they are being generated.
+     * @return
+     */
+    public abstract String getTraversalExpressionClass();
 
     /**
      * Gets the expression to use as the parent when translating the loop
@@ -172,14 +183,40 @@ public abstract class GremlinExpressionFactory {
             String propertyName, String symbol, GroovyExpression requiredValue, FieldInfo fInfo) throws AtlasException;
 
     /**
-     * Generates a limit expression
+     * Generates a range expression
      *
      * @param parent
-     * @param offset
-     * @param totalRows
+     * @param startIndex
+     * @param endIndex
      * @return
      */
-    public abstract GroovyExpression generateLimitExpression(GroovyExpression parent, int offset, int totalRows);
+    public abstract GroovyExpression generateRangeExpression(GroovyExpression parent, int startIndex, int endIndex);
+
+    /**
+     * Determines if the specified expression is a range method call.
+     *
+     * @param expr
+     * @return
+     */
+    public abstract boolean isRangeExpression(GroovyExpression expr);
+
+    /**
+     * Set the start index and end index of a range expression
+     *
+     * @param expr
+     * @param startIndex
+     * @param endIndex
+     */
+    public abstract void setRangeParameters(GroovyExpression expr, int startIndex, int endIndex);
+
+    /**
+     * If the specified function expression is a range expression, returns the start and end index parameters
+     * otherwise returns null.
+     *
+     * @param expr
+     * @return int array with two elements - element 0 is start index, element 1 is end index
+     */
+    public abstract int[] getRangeParameters(AbstractFunctionExpression expr);
 
     /**
      * Generates an order by expression
@@ -191,6 +228,22 @@ public abstract class GremlinExpressionFactory {
      */
     public abstract GroovyExpression generateOrderByExpression(GroovyExpression parent,
             List<GroovyExpression> translatedOrderBy, boolean isAscending);
+
+    /**
+     * Determines if specified expression is an order method call
+     *
+     * @param expr
+     * @return
+     */
+    public boolean isOrderExpression(GroovyExpression expr) {
+        if (expr instanceof FunctionCallExpression) {
+            FunctionCallExpression functionCallExpression = (FunctionCallExpression) expr;
+            if (functionCallExpression.getFunctionName().equals(ORDER_METHOD)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Returns the Groovy expressions that should be used as the parents when
@@ -207,6 +260,17 @@ public abstract class GremlinExpressionFactory {
      */
     public abstract GroovyExpression getAnonymousTraversalExpression();
 
+    public boolean isLeafAnonymousTraversalExpression(GroovyExpression expr) {
+        if(!(expr instanceof FunctionCallExpression)) {
+            return false;
+        }
+        FunctionCallExpression functionCallExpr = (FunctionCallExpression)expr;
+        if(functionCallExpr.getCaller() != null) {
+            return false;
+        }
+        return functionCallExpr.getFunctionName().equals("_") & functionCallExpr.getArguments().size() == 0;
+    }
+
     /**
      * Returns an expression representing
      *
@@ -216,11 +280,11 @@ public abstract class GremlinExpressionFactory {
 
     /**
      * Generates the expression the serves as the root of the Gremlin query.
-     * @param s
      * @param varExpr variable containing the vertices to traverse
      * @return
      */
-    protected abstract GroovyExpression initialExpression(GraphPersistenceStrategies s, GroovyExpression varExpr);
+    protected abstract GroovyExpression initialExpression(GroovyExpression varExpr, GraphPersistenceStrategies s);
+
 
     /**
      * Generates an expression that tests whether the vertex represented by the 'toTest'
@@ -236,19 +300,37 @@ public abstract class GremlinExpressionFactory {
             GroovyExpression vertexExpr);
 
     /**
+    /**
      * Generates a sequence of groovy expressions that filter the vertices to only
      * those that match the specified type.  If GraphPersistenceStrategies.collectTypeInstancesIntoVar()
-     * is set, the vertices are put into a variable whose name is geneated from the specified IntSequence.
-     * The last item in the result will be a graph traversal restricted to only the matching vertices.
+     * is set and the gremlin optimizer is disabled, the vertices are put into a variable whose name is generated
+     * from the specified IntSequence.  The last item in the result will be a graph traversal restricted to only
+     * the matching vertices.
      */
     public List<GroovyExpression> generateTypeTestExpression(GraphPersistenceStrategies s, GroovyExpression parent,
                                                              String typeName, IntSequence intSeq) throws AtlasException {
-        if (s.filterBySubTypes()) {
-            return typeTestExpressionUsingInFilter(s, parent, typeName);
-        } else if (s.collectTypeInstancesIntoVar()) {
-            return typeTestExpressionMultiStep(s, typeName, intSeq);
-        } else {
-            return typeTestExpressionUsingFilter(s, parent, typeName);
+
+        if(AtlasRepositoryConfiguration.isGremlinOptimizerEnabled()) {
+            GroovyExpression superTypeAttributeNameExpr = new LiteralExpression(s.superTypeAttributeName());
+            GroovyExpression typeNameExpr = new LiteralExpression(typeName);
+            GroovyExpression superTypeMatchesExpr = new FunctionCallExpression(TraversalStepType.FILTER, HAS_METHOD, superTypeAttributeNameExpr,
+                    typeNameExpr);
+
+            GroovyExpression typeAttributeNameExpr = new LiteralExpression(s.typeAttributeName());
+
+            GroovyExpression typeMatchesExpr = new FunctionCallExpression(TraversalStepType.FILTER, HAS_METHOD, typeAttributeNameExpr,
+                    typeNameExpr);
+            GroovyExpression result = new FunctionCallExpression(TraversalStepType.FILTER, parent, "or", typeMatchesExpr, superTypeMatchesExpr);
+            return Collections.singletonList(result);
+        }
+        else {
+            if (s.filterBySubTypes()) {
+                return typeTestExpressionUsingInFilter(s, parent, typeName);
+            } else if (s.collectTypeInstancesIntoVar()) {
+                return typeTestExpressionMultiStep(s, typeName, intSeq);
+            } else {
+                return typeTestExpressionUsingFilter(s, parent, typeName);
+            }
         }
     }
 
@@ -285,7 +367,7 @@ public abstract class GremlinExpressionFactory {
         result.add(newSetVar(varName));
         result.add(fillVarWithTypeInstances(s, typeName, varName));
         result.add(fillVarWithSubTypeInstances(s, typeName, varName));
-        result.add(initialExpression(s, varExpr));
+        result.add(initialExpression(varExpr, s));
 
         return result;
     }
@@ -324,7 +406,6 @@ public abstract class GremlinExpressionFactory {
         return Collections.singletonList(filterExpr);
     }
 
-
     /**
      * Generates an expression which checks whether the vertices in the query have
      * a field with the given name.
@@ -334,7 +415,7 @@ public abstract class GremlinExpressionFactory {
      * @return
      */
     public GroovyExpression generateUnaryHasExpression(GroovyExpression parent, String fieldName) {
-        return new FunctionCallExpression(parent, HAS_METHOD, new LiteralExpression(fieldName));
+        return new FunctionCallExpression(TraversalStepType.FILTER, parent, HAS_METHOD, new LiteralExpression(fieldName));
     }
 
     /**
@@ -344,7 +425,7 @@ public abstract class GremlinExpressionFactory {
      * @return
      */
     public GroovyExpression generatePathExpression(GroovyExpression parent) {
-        return new FunctionCallExpression(parent, PATH_METHOD);
+        return new FunctionCallExpression(TraversalStepType.MAP_TO_VALUE, parent, PATH_METHOD);
     }
 
     /**
@@ -365,7 +446,7 @@ public abstract class GremlinExpressionFactory {
      * @return
      */
     public GroovyExpression generateAliasExpression(GroovyExpression parent, String alias) {
-        return new FunctionCallExpression(parent, AS_METHOD, new LiteralExpression(alias));
+        return new FunctionCallExpression(TraversalStepType.SIDE_EFFECT, parent, AS_METHOD, new LiteralExpression(alias));
     }
 
     /**
@@ -377,19 +458,19 @@ public abstract class GremlinExpressionFactory {
      * @return
      */
     public GroovyExpression generateAdjacentVerticesExpression(GroovyExpression parent, AtlasEdgeDirection dir) {
-        return new FunctionCallExpression(parent, getGremlinFunctionName(dir));
+        return new FunctionCallExpression(TraversalStepType.FLAT_MAP_TO_ELEMENTS, parent, getGremlinFunctionName(dir));
     }
 
     private String getGremlinFunctionName(AtlasEdgeDirection dir) {
         switch(dir) {
-            case IN:
-              return "in";
-            case OUT:
-                return "out";
-            case BOTH:
-                return "both";
-            default:
-                throw new RuntimeException("Unknown Atlas Edge Direction: " + dir);
+        case IN:
+            return "in";
+        case OUT:
+            return "out";
+        case BOTH:
+            return "both";
+        default:
+            throw new RuntimeException("Unknown Atlas Edge Direction: " + dir);
         }
     }
 
@@ -403,7 +484,7 @@ public abstract class GremlinExpressionFactory {
      */
     public GroovyExpression generateAdjacentVerticesExpression(GroovyExpression parent, AtlasEdgeDirection dir,
             String label) {
-        return new FunctionCallExpression(parent, getGremlinFunctionName(dir), new LiteralExpression(label));
+        return new FunctionCallExpression(TraversalStepType.FLAT_MAP_TO_ELEMENTS, parent, getGremlinFunctionName(dir), new LiteralExpression(label));
     }
 
     /**
@@ -423,17 +504,19 @@ public abstract class GremlinExpressionFactory {
     }
 
     protected GroovyExpression getAllVerticesExpr() {
-        GroovyExpression gExpr = getGraph();
-        return new FunctionCallExpression(gExpr, V_METHOD);
+        GroovyExpression gExpr = getGraphExpression();
+        return new FunctionCallExpression(TraversalStepType.START, gExpr, V_METHOD);
     }
 
-    protected IdentifierExpression getGraph() {
-        return new IdentifierExpression(G_VARIABLE);
+    protected IdentifierExpression getGraphExpression() {
+        return new IdentifierExpression(TraversalStepType.SOURCE, G_VARIABLE);
     }
+
 
     protected GroovyExpression getCurrentObjectExpression() {
         return new FieldExpression(getItVariable(), OBJECT_FIELD);
     }
+
     //assumes cast already performed
     public GroovyExpression generateCountExpression(GroovyExpression itExpr) {
         GroovyExpression collectionExpr = new CastExpression(itExpr,"Collection");
@@ -454,11 +537,9 @@ public abstract class GremlinExpressionFactory {
 
     private GroovyExpression getAggregrationExpression(GroovyExpression itExpr,
             GroovyExpression mapFunction, String functionName) {
-        GroovyExpression collectionExpr = new CastExpression(itExpr,
-                "Collection");
+        GroovyExpression collectionExpr = new CastExpression(itExpr,"Collection");
         ClosureExpression collectFunction = new ClosureExpression(mapFunction);
-        GroovyExpression transformedList = new FunctionCallExpression(
-                collectionExpr, "collect", collectFunction);
+        GroovyExpression transformedList = new FunctionCallExpression(collectionExpr, "collect", collectFunction);
         return new FunctionCallExpression(transformedList, functionName);
     }
 
@@ -466,5 +547,106 @@ public abstract class GremlinExpressionFactory {
         return getItVariable();
     }
 
+    /**
+     * Specifies the parent to use when translating the select list in
+     * a group by statement.
+     *
+     * @return
+     */
     public abstract GroovyExpression getGroupBySelectFieldParent();
+
+    public GroovyExpression generateFillExpression(GroovyExpression parent, GroovyExpression variable) {
+        return new FunctionCallExpression(TraversalStepType.END,parent , "fill", variable);
+    }
+
+    /**
+     * Generates an anonymous graph traversal initialized with the specified value.  In Gremlin 3, we need
+     * to use  a different syntax for this when the object is a map, so that information needs to be provided
+     * to this method so that the correct syntax is used.
+     *
+     * @param isMap true if the value contains Map instances, false if it contains Vertex instances
+     * @param valueCollection the source objects to start the traversal from.
+     */
+    public abstract GroovyExpression generateSeededTraversalExpresssion(boolean isMap, GroovyExpression valueCollection);
+
+    /**
+     * Returns the current value of the traverser.  This is used when generating closure expressions that
+     * need to operate on the current value in the graph graversal.
+     *
+     * @param traverser
+     * @return
+     */
+    public abstract GroovyExpression getCurrentTraverserObject(GroovyExpression traverser);
+
+    /**
+     * Generates an expression that transforms the current value of the traverser by
+     * applying the function specified
+     *
+     * @param parent
+     * @param closureExpression
+     * @return
+     */
+    public abstract GroovyExpression generateMapExpression(GroovyExpression parent, ClosureExpression closureExpression);
+
+    /**
+     * Returns whether a select statement generates a map (or Gremlin 2 "Row") when it contains the specified
+     * number of aliases.
+     *
+     */
+    public abstract boolean isSelectGeneratesMap(int aliasCount);
+
+    /**
+     * Generates an expression to get the value of the value from the row map
+     * generated by select() with the specified key.
+     *
+     */
+    public abstract GroovyExpression generateGetSelectedValueExpression(LiteralExpression key,
+            GroovyExpression rowMapExpr);
+
+    public GroovyExpression removeExtraMapFromPathInResult(GroovyExpression parent) {
+        GroovyExpression listItem = getItVariable();
+        GroovyExpression tailExpr = new FunctionCallExpression(listItem, "tail");
+        return new FunctionCallExpression(parent, "collect", new ClosureExpression(tailExpr));
+
+    }
+
+    /**
+     * Generates a toList expression to execute the gremlin query and
+     * store the result in a new list.
+     *
+     * @param expr
+     * @return
+     */
+    public GroovyExpression generateToListExpression(GroovyExpression expr) {
+        return new FunctionCallExpression(TraversalStepType.END, expr, "toList");
+    }
+
+    /**
+     * Finds aliases that absolutely must be brought along with this expression into
+     * the output expression and cannot just be recreated there.  For example, in the
+     * Gremlin 2 loop expression, the loop semantics break of the alias is simply recreated
+     * in the output expression.
+     * @param expr
+     * @return
+     */
+    public abstract List<String> getAliasesRequiredByExpression(GroovyExpression expr);
+
+
+    /**
+     * Checks if the given expression is an alias expression, and if so
+     * returns the alias from the expression.  Otherwise, null is
+     * returned.
+     */
+    public String getAliasNameIfRelevant(GroovyExpression expr) {
+        if(!(expr instanceof FunctionCallExpression)) {
+            return null;
+        }
+        FunctionCallExpression fc = (FunctionCallExpression)expr;
+        if(! fc.getFunctionName().equals(AS_METHOD)) {
+            return null;
+        }
+       LiteralExpression aliasName =  (LiteralExpression)fc.getArguments().get(0);
+       return aliasName.getValue().toString();
+
+    }
 }

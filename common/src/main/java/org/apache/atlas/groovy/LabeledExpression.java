@@ -22,51 +22,33 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Groovy statement that assigns a value to a variable.
+ * Represents a Groovy expression that has a label.
  */
-public class VariableAssignmentExpression extends AbstractGroovyExpression {
+public class LabeledExpression extends AbstractGroovyExpression {
 
-    private String type = null;
-    private String name;
-    private GroovyExpression value;
+    private String label;
+    private GroovyExpression expr;
 
-    /**
-     * @param string
-     * @param v
-     */
-    public VariableAssignmentExpression(String type, String name, GroovyExpression v) {
-        this.type = type;
-        this.name = name;
-        this.value = v;
-    }
-
-    public VariableAssignmentExpression(String name, GroovyExpression v) {
-        this(null, name, v);
+    public LabeledExpression(String label, GroovyExpression expr) {
+        this.label = label;
+        this.expr = expr;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
-        if (type == null) {
-            context.append("def ");
-        } else {
-            context.append(type);
-            context.append(" ");
-        }
-        context.append(name);
-        context.append("=");
-        value.generateGroovy(context);
-
+        context.append(label);
+        context.append(":");
+        expr.generateGroovy(context);
     }
 
     @Override
     public List<GroovyExpression> getChildren() {
-        return Collections.singletonList(value);
+        return Collections.singletonList(expr);
     }
 
     @Override
     public GroovyExpression copy(List<GroovyExpression> newChildren) {
         assert newChildren.size() == 1;
-        return new VariableAssignmentExpression(name, newChildren.get(0));
+        return new LabeledExpression(label, newChildren.get(0));
     }
-
 }

@@ -18,6 +18,9 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Groovy expression that represents a type coersion (e.g obj as Set).
  */
@@ -28,17 +31,29 @@ public class TypeCoersionExpression extends AbstractGroovyExpression {
 
     public TypeCoersionExpression(GroovyExpression expr, String className) {
         this.expr = expr;
-        this.className  =className;
+        this.className  = className;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
 
-        context.append("(");
+        context.append("((");
         expr.generateGroovy(context);
         context.append(")");
         context.append(" as ");
         context.append(className);
+        context.append(")");
+    }
+
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.singletonList(expr);
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 1;
+        return new TypeCoersionExpression(newChildren.get(0), className);
     }
 
 }

@@ -18,6 +18,9 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Groovy expression that represents the ternary operator (expr ? trueValue :
  * falseValue)
@@ -29,7 +32,7 @@ public class TernaryOperatorExpression extends AbstractGroovyExpression {
     private GroovyExpression falseValue;
 
     public TernaryOperatorExpression(GroovyExpression booleanExpr, GroovyExpression trueValue,
-            GroovyExpression falseValue) {
+                                     GroovyExpression falseValue) {
 
         this.booleanExpr = booleanExpr;
         this.trueValue = trueValue;
@@ -41,9 +44,9 @@ public class TernaryOperatorExpression extends AbstractGroovyExpression {
 
         context.append("((");
         booleanExpr.generateGroovy(context);
-        context.append(") ? (");
+        context.append(")?(");
         trueValue.generateGroovy(context);
-        context.append(") : (");
+        context.append("):(");
         falseValue.generateGroovy(context);
         context.append("))");
     }
@@ -52,5 +55,21 @@ public class TernaryOperatorExpression extends AbstractGroovyExpression {
         GroovyGenerationContext context = new GroovyGenerationContext();
         generateGroovy(context);
         return context.getQuery();
+    }
+
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Arrays.asList(booleanExpr, trueValue, falseValue);
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 3;
+        return new TernaryOperatorExpression(newChildren.get(0), newChildren.get(1), newChildren.get(2));
+    }
+
+    @Override
+    public TraversalStepType getType() {
+        return trueValue.getType();
     }
 }

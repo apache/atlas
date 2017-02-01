@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.groovy;
 
+import java.util.List;
+
 /**
  * Represents a logical (and/or) expression.
  *
@@ -42,5 +44,15 @@ public class LogicalExpression extends BinaryExpression {
 
     public LogicalExpression(GroovyExpression left, LogicalOperator op, GroovyExpression right) {
         super(left, op.getGroovyValue(), right);
+    }
+
+    private LogicalExpression(GroovyExpression left, String op, GroovyExpression right) {
+        super(left, op, right);
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 2;
+        return new LogicalExpression(newChildren.get(0), op, newChildren.get(1));
     }
 }

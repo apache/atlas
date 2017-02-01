@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graph;
 
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -59,10 +60,10 @@ public final class GraphToTypedInstanceMapper {
     private static TypeSystem typeSystem = TypeSystem.getInstance();
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    private AtlasGraph graph;
+    private final IAtlasGraphProvider graphProvider;
 
-    public GraphToTypedInstanceMapper(AtlasGraph graph) {
-        this.graph = graph;
+    public GraphToTypedInstanceMapper(IAtlasGraphProvider graphProvider) {
+        this.graphProvider = graphProvider;
     }
 
     public ITypedReferenceableInstance mapGraphToTypedInstance(String guid, AtlasVertex instanceVertex)
@@ -407,7 +408,7 @@ public final class GraphToTypedInstanceMapper {
 
 
     public ITypedInstance getReferredEntity(String edgeId, IDataType<?> referredType) throws AtlasException {
-        final AtlasEdge edge = graph.getEdge(edgeId);
+        final AtlasEdge edge = getGraph().getEdge(edgeId);
         if (edge != null) {
             final AtlasVertex referredVertex = edge.getInVertex();
             if (referredVertex != null) {
@@ -432,6 +433,10 @@ public final class GraphToTypedInstanceMapper {
             }
         }
         return null;
+    }
+
+    private AtlasGraph getGraph() throws RepositoryException {
+        return graphProvider.get();
     }
 }
 

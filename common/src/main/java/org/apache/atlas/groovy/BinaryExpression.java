@@ -18,6 +18,9 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Represents any kind of binary expression.  This could
  * be an arithmetic expression, such as a + 3, a boolean
@@ -30,7 +33,7 @@ public abstract class BinaryExpression extends AbstractGroovyExpression {
 
     private GroovyExpression left;
     private GroovyExpression right;
-    private String op;
+    protected String op;
 
     public BinaryExpression(GroovyExpression left, String op, GroovyExpression right) {
         this.left = left;
@@ -48,4 +51,8 @@ public abstract class BinaryExpression extends AbstractGroovyExpression {
         right.generateGroovy(context);
     }
 
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Arrays.asList(left, right);
+    }
 }
