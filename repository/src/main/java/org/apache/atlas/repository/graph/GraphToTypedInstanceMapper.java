@@ -17,8 +17,18 @@
  */
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Singleton;
+import static org.apache.atlas.repository.graph.GraphHelper.string;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -28,10 +38,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -43,15 +51,7 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.atlas.repository.graph.GraphHelper.string;
+import com.google.inject.Singleton;
 
 @Singleton
 public final class GraphToTypedInstanceMapper {
@@ -69,7 +69,14 @@ public final class GraphToTypedInstanceMapper {
     public ITypedReferenceableInstance mapGraphToTypedInstance(String guid, AtlasVertex instanceVertex)
         throws AtlasException {
 
-        if (LOG.isDebugEnabled()) {
+        if(LOG.isDebugEnabled()) {
+            //We don't do a cache check here since we want that to be at a higher level
+            //where the vertex lookup can also be avoided.  However, this is a convenient
+            //place to add a check to see if there are any places that were missed.
+            if(RequestContext.get().getInstance(guid) != null) {
+                LOG.warn("Looking up previously cached guid at: ", new Exception());
+            }
+
             LOG.debug("Mapping graph root vertex {} to typed instance for guid {}", instanceVertex, guid);
         }
 
@@ -99,7 +106,7 @@ public final class GraphToTypedInstanceMapper {
 
         mapVertexToInstance(instanceVertex, typedInstance, classType.fieldMapping().fields);
         mapVertexToInstanceTraits(instanceVertex, typedInstance, traits);
-
+        RequestContext.get().cache(typedInstance);
         return typedInstance;
     }
 
@@ -209,6 +216,10 @@ public final class GraphToTypedInstanceMapper {
             if (attributeInfo.isComposite) {
                 //Also, when you retrieve a type's instance, you get the complete object graph of the composites
                 LOG.debug("Found composite, mapping vertex to instance");
+                ITypedReferenceableInstance cached = RequestContext.get().getInstance(guid);
+                if(cached != null) {
+                    return cached;
+                }
                 return mapGraphToTypedInstance(guid, referenceVertex);
             } else {
                 String state = GraphHelper.getStateAsString(referenceVertex);

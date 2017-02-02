@@ -114,43 +114,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         new GraphBackedSearchIndexer(new AtlasTypeRegistry());
         final GraphBackedMetadataRepository delegate = new GraphBackedMetadataRepository(getDeleteHandler(typeSystem));
 
-        repositoryService = (MetadataRepository)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
-                new Class[]{MetadataRepository.class}, new InvocationHandler() {
-
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                boolean useTransaction = GraphBackedMetadataRepository.class.getMethod(
-                        method.getName(), method.getParameterTypes())
-                        .isAnnotationPresent(GraphTransaction.class);
-                try {
-
-                    Object result = method.invoke(delegate, args);
-                    if(useTransaction) {
-                        System.out.println("Committing changes");
-                        TestUtils.getGraph().commit();
-                        System.out.println("Commit succeeded.");
-                    }
-                    return result;
-                }
-                catch(InvocationTargetException e) {
-                    e.getCause().printStackTrace();
-                    if(useTransaction) {
-                        System.out.println("Rolling back changes due to exception.");
-                        TestUtils.getGraph().rollback();
-                    }
-                    throw e.getCause();
-                }
-                catch(Throwable t) {
-                    t.printStackTrace();
-                    if(useTransaction) {
-                        System.out.println("Rolling back changes due to exception.");
-                        TestUtils.getGraph().rollback();
-                    }
-                    throw t;
-                }
-            }
-
-        });
+        repositoryService = TestUtils.addTransactionWrapper(delegate);
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);
         TestUtils.createHiveTypes(typeSystem);
@@ -531,7 +495,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     /**
      * Verify deleting an entity which is contained by another
      * entity through a bi-directional composite reference.
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -633,21 +597,21 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     @Test
     public void testDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes() throws Exception {
         // Define class types.
-        HierarchicalTypeDefinition<ClassType> structTargetDef = TypesUtil.createClassTypeDef("StructTarget", 
+        HierarchicalTypeDefinition<ClassType> structTargetDef = TypesUtil.createClassTypeDef("StructTarget",
             ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<ClassType> traitTargetDef = TypesUtil.createClassTypeDef("TraitTarget", 
+        HierarchicalTypeDefinition<ClassType> traitTargetDef = TypesUtil.createClassTypeDef("TraitTarget",
             ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<ClassType> structContainerDef = TypesUtil.createClassTypeDef("StructContainer", 
+        HierarchicalTypeDefinition<ClassType> structContainerDef = TypesUtil.createClassTypeDef("StructContainer",
             ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("struct", "TestStruct"));
 
         // Define struct and trait types which have a unidirectional array reference
         // to a class type.
-        StructTypeDefinition structDef = TypesUtil.createStructTypeDef("TestStruct", 
+        StructTypeDefinition structDef = TypesUtil.createStructTypeDef("TestStruct",
             new AttributeDefinition("target", DataTypes.arrayTypeName("StructTarget"), Multiplicity.OPTIONAL, false, null),
             new AttributeDefinition("nestedStructs", DataTypes.arrayTypeName("NestedStruct"), Multiplicity.OPTIONAL, false, null));
-        StructTypeDefinition nestedStructDef = TypesUtil.createStructTypeDef("NestedStruct", 
+        StructTypeDefinition nestedStructDef = TypesUtil.createStructTypeDef("NestedStruct",
             TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<TraitType> traitDef = TypesUtil.createTraitTypeDef("TestTrait", ImmutableSet.<String>of(), 
+        HierarchicalTypeDefinition<TraitType> traitDef = TypesUtil.createTraitTypeDef("TestTrait", ImmutableSet.<String>of(),
             new AttributeDefinition("target", DataTypes.arrayTypeName("TraitTarget"), Multiplicity.OPTIONAL, false, null));
 
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.of(structDef, nestedStructDef),
@@ -669,9 +633,9 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ClassType traitTargetType = typeSystem.getDataType(ClassType.class, "TraitTarget");
         ClassType structContainerType = typeSystem.getDataType(ClassType.class, "StructContainer");
 
-        ITypedReferenceableInstance structTargetConvertedEntity = 
+        ITypedReferenceableInstance structTargetConvertedEntity =
             structTargetType.convert(structTargetEntity, Multiplicity.REQUIRED);
-        ITypedReferenceableInstance traitTargetConvertedEntity = 
+        ITypedReferenceableInstance traitTargetConvertedEntity =
             traitTargetType.convert(traitTargetEntity, Multiplicity.REQUIRED);
         ITypedReferenceableInstance structContainerConvertedEntity =
             structContainerType.convert(structContainerEntity, Multiplicity.REQUIRED);
@@ -755,13 +719,13 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     @Test
     public void testDisconnectMapReferenceFromClassType() throws Exception {
         // Define type for map value.
-        HierarchicalTypeDefinition<ClassType> mapValueDef = TypesUtil.createClassTypeDef("MapValue", 
+        HierarchicalTypeDefinition<ClassType> mapValueDef = TypesUtil.createClassTypeDef("MapValue",
             ImmutableSet.<String>of(),
             new AttributeDefinition("biMapOwner", "MapOwner", Multiplicity.OPTIONAL, false, "biMap"));
 
         // Define type with unidirectional and bidirectional map references,
         // where the map value is a class reference to MapValue.
-        HierarchicalTypeDefinition<ClassType> mapOwnerDef = TypesUtil.createClassTypeDef("MapOwner", 
+        HierarchicalTypeDefinition<ClassType> mapOwnerDef = TypesUtil.createClassTypeDef("MapOwner",
             ImmutableSet.<String>of(),
             new AttributeDefinition("map", DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                         "MapValue"), Multiplicity.OPTIONAL, false, null),
@@ -811,7 +775,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         }
 
         // Delete the map value instance.
-        // This should disconnect the references from the map owner instance. 
+        // This should disconnect the references from the map owner instance.
         deleteEntities(mapValueGuid);
         assertEntityDeleted(mapValueGuid);
         assertTestDisconnectMapReferenceFromClassType(mapOwnerGuid);

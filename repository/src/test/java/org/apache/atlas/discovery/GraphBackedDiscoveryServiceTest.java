@@ -87,6 +87,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     public void setUp() throws Exception {
         super.setUp();
 
+        repositoryService = TestUtils.addTransactionWrapper(repositoryService);
         final TypeSystem typeSystem = TypeSystem.getInstance();
         Collection<String> oldTypeNames = new HashSet<>();
         oldTypeNames.addAll(typeSystem.getTypeNames());

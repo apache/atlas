@@ -18,9 +18,12 @@
 
 package org.apache.atlas.discovery.graph;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.GraphPersistenceStrategies$class;
@@ -48,8 +51,8 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import java.util.List;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Default implementation of GraphPersistenceStrategy.
@@ -178,9 +181,12 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
             case CLASS:
                 AtlasVertex classVertex = (AtlasVertex) value;
-                ITypedReferenceableInstance classInstance = metadataRepository.getGraphToInstanceMapper()
-                    .mapGraphToTypedInstance(GraphHelper.getSingleValuedProperty(classVertex, Constants.GUID_PROPERTY_KEY, String.class),
-                        classVertex);
+                String guid = classVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+                // Check if the instance we need was previously loaded.
+                ITypedReferenceableInstance classInstance = RequestContext.get().getInstance(guid);
+                if (classInstance == null) {
+                    classInstance = metadataRepository.getGraphToInstanceMapper().mapGraphToTypedInstance(guid, classVertex);
+                }
                 return dataType.convert(classInstance, Multiplicity.OPTIONAL);
 
             default:

@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.repository.graph;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -44,20 +44,19 @@ public class FullTextMapper {
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
     private static final String FULL_TEXT_DELIMITER = " ";
-    private final Map<String, ITypedReferenceableInstance> instanceCache;
 
     FullTextMapper(TypedInstanceToGraphMapper typedInstanceToGraphMapper,
             GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
         this.graphToTypedInstanceMapper = graphToTypedInstanceMapper;
         this.typedInstanceToGraphMapper = typedInstanceToGraphMapper;
-        instanceCache = new HashMap<>();
     }
 
     public String mapRecursive(AtlasVertex instanceVertex, boolean followReferences) throws AtlasException {
         String guid = GraphHelper.getGuid(instanceVertex);
         ITypedReferenceableInstance typedReference;
-        if (instanceCache.containsKey(guid)) {
-            typedReference = instanceCache.get(guid);
+        RequestContext context = RequestContext.get();
+        typedReference = context.getInstance(guid);
+        if (typedReference != null) {
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Cache hit: guid = {}, entityId = {}", guid, typedReference.getId()._getId());
@@ -65,7 +64,7 @@ public class FullTextMapper {
         } else {
             typedReference =
                     graphToTypedInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
-            instanceCache.put(guid, typedReference);
+            context.cache(typedReference);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Cache miss: guid = {}, entityId = {}", guid, typedReference.getId().getId());

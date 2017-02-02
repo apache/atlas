@@ -18,14 +18,33 @@
 
 package org.apache.atlas;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -59,23 +78,9 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Provider;
 
 /**
  * Test utility class.
@@ -505,11 +510,14 @@ public final class TestUtils {
         }
         return null;
     }
-    
-    public static void resetRequestContext() {      
+
+    public static void resetRequestContext() {
+        //reset the context while preserving the user
+        String user = RequestContext.get().getUser();
         RequestContext.createContext();
+        RequestContext.get().setUser(user);
     }
-    
+
     public static void setupGraphProvider(MetadataRepository repo) throws AtlasException {
         TypeCache typeCache = null;
         try {
@@ -538,10 +546,92 @@ public final class TestUtils {
         getGraph().commit();
 
     }
-    
+
     public static AtlasGraph getGraph() {
 
         return AtlasGraphProvider.getGraphInstance();
-       
+
+    }
+
+    /**
+     * Adds a proxy wrapper around the specified MetadataService that automatically
+     * resets the request context before every call.
+     *
+     * @param delegate
+     * @return
+     */
+    public static MetadataService addSessionCleanupWrapper(final MetadataService delegate) {
+
+        return (MetadataService)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
+                new Class[]{MetadataService.class}, new InvocationHandler() {
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
+                try {
+                    resetRequestContext();
+                    Object result = method.invoke(delegate, args);
+
+                    return result;
+                }
+                catch(InvocationTargetException e) {
+                    e.getCause().printStackTrace();
+                    throw e.getCause();
+                }
+                catch(Throwable t) {
+                    t.printStackTrace();
+                    throw t;
+                }
+            }
+
+        });
+    }
+
+    /**
+     * Adds a proxy wrapper around the specified MetadataRepository that automatically
+     * resets the request context before every call and either commits or rolls
+     * back the graph transaction after every call.
+     *
+     * @param delegate
+     * @return
+     */
+    public static MetadataRepository addTransactionWrapper(final MetadataRepository delegate) {
+        return (MetadataRepository)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
+                new Class[]{MetadataRepository.class}, new InvocationHandler() {
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                boolean useTransaction = GraphBackedMetadataRepository.class.getMethod(
+                        method.getName(), method.getParameterTypes())
+                        .isAnnotationPresent(GraphTransaction.class);
+                try {
+                    resetRequestContext();
+                    Object result = method.invoke(delegate, args);
+                    if(useTransaction) {
+                        System.out.println("Committing changes");
+                        getGraph().commit();
+                        System.out.println("Commit succeeded.");
+                    }
+                    return result;
+                }
+                catch(InvocationTargetException e) {
+                    e.getCause().printStackTrace();
+                    if(useTransaction) {
+                        System.out.println("Rolling back changes due to exception.");
+                        getGraph().rollback();
+                    }
+                    throw e.getCause();
+                }
+                catch(Throwable t) {
+                    t.printStackTrace();
+                    if(useTransaction) {
+                        System.out.println("Rolling back changes due to exception.");
+                        getGraph().rollback();
+                    }
+                    throw t;
+                }
+            }
+
+        });
     }
 }

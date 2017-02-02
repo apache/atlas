@@ -18,6 +18,14 @@
 
 package org.apache.atlas;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -25,12 +33,6 @@ import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
@@ -41,6 +43,7 @@ public class RequestContext {
     private Set<String> updatedEntityIds = new LinkedHashSet<>();
     private Set<String> deletedEntityIds = new LinkedHashSet<>();
     private List<ITypedReferenceableInstance> deletedEntities = new ArrayList<>();
+    private Map<String,ITypedReferenceableInstance> entityCache = new HashMap<>();
 
     private String user;
     private long requestTime;
@@ -71,7 +74,27 @@ public class RequestContext {
         return context;
     }
 
+    /**
+     * Adds the specified instance to the cache
+     *
+     */
+    public void cache(ITypedReferenceableInstance instance) {
+        entityCache.put(instance.getId()._getId(), instance);
+    }
+
+    /**
+     * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
+     * or null if it is not in the cache.
+     *
+     * @param guid the guid to find
+     * @return Either the instance or null if it is not in the cache.
+     */
+    public ITypedReferenceableInstance getInstance(String guid) {
+        return entityCache.get(guid);
+    }
+
     public static void clear() {
+        CURRENT_CONTEXT.get().entityCache.clear();
         CURRENT_CONTEXT.remove();
     }
 
@@ -122,7 +145,7 @@ public class RequestContext {
     public long getRequestTime() {
         return requestTime;
     }
-    
+
     public boolean isDeletedEntity(String entityGuid) {
         return deletedEntityIds.contains(entityGuid);
     }

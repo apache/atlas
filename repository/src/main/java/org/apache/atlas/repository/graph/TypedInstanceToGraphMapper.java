@@ -125,6 +125,9 @@ public final class TypedInstanceToGraphMapper {
             throw new UnsupportedOperationException("Not handled - " + operation);
         }
 
+        for(ITypedReferenceableInstance instance : typedInstances) {
+            addToEntityCache(requestContext, instance);
+        }
     }
 
     private Collection<IReferenceableInstance> walkClassInstances(ITypedReferenceableInstance typedInstance)
@@ -824,5 +827,24 @@ public final class TypedInstanceToGraphMapper {
 
     public AtlasVertex lookupVertex(Id refId) {
         return idToVertexMap.get(refId);
+    }
+
+    private void addToEntityCache(RequestContext context, ITypedReferenceableInstance instance)
+            throws EntityNotFoundException {
+
+        Id instanceId = instance.getId();
+        if(instanceId.isUnassigned()) {
+            if(instance instanceof ReferenceableInstance) {
+                //When the id is unassigned, we can only cache the instance of it is
+                //an instance of ReferenceableInstance, since replaceWithNewId is not
+                //currently in the ITypedReferenceableInstance interface.
+                Id id = getId(instance);
+                ((ReferenceableInstance)instance).replaceWithNewId(id);
+                context.cache(instance);
+            }
+        }
+        else {
+            context.cache(instance);
+        }
     }
 }

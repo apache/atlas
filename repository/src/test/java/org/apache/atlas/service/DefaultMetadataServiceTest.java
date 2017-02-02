@@ -18,9 +18,30 @@
 
 package org.apache.atlas.service;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
+import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
+import static org.apache.atlas.TestUtils.COLUMN_TYPE;
+import static org.apache.atlas.TestUtils.PII;
+import static org.apache.atlas.TestUtils.TABLE_TYPE;
+import static org.apache.atlas.TestUtils.createColumnEntity;
+import static org.apache.atlas.TestUtils.createDBEntity;
+import static org.apache.atlas.TestUtils.createInstance;
+import static org.apache.atlas.TestUtils.createTableEntity;
+import static org.apache.atlas.TestUtils.randomString;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -32,6 +53,7 @@ import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
@@ -72,36 +94,16 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
-
-import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
-import static org.apache.atlas.TestUtils.COLUMN_TYPE;
-import static org.apache.atlas.TestUtils.DATABASE_TYPE;
-import static org.apache.atlas.TestUtils.PII;
-import static org.apache.atlas.TestUtils.TABLE_TYPE;
-import static org.apache.atlas.TestUtils.createColumnEntity;
-import static org.apache.atlas.TestUtils.createDBEntity;
-import static org.apache.atlas.TestUtils.createInstance;
-import static org.apache.atlas.TestUtils.createTableEntity;
-import static org.apache.atlas.TestUtils.randomString;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class DefaultMetadataServiceTest {
     @Inject
     private MetadataService metadataService;
+
+    private TypeDefChangeListener typeDefChangeListener;
 
     @Inject
     private EntityAuditRepository auditRepository;
@@ -114,12 +116,16 @@ public class DefaultMetadataServiceTest {
     private Referenceable table;
 
     private Id tableId;
-    
+
     private final String NAME = "name";
 
 
     @BeforeTest
     public void setUp() throws Exception {
+
+        typeDefChangeListener = (DefaultMetadataService)metadataService;
+        metadataService = TestUtils.addSessionCleanupWrapper(metadataService);
+
         if (auditRepository instanceof HBaseBasedAuditRepository) {
             HBaseTestUtils.startCluster();
             ((HBaseBasedAuditRepository) auditRepository).start();
@@ -1218,7 +1224,7 @@ public class DefaultMetadataServiceTest {
             List<String> beforeChangeTypeNames = new ArrayList<>();
             beforeChangeTypeNames.addAll(metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>()));
 
-            ((DefaultMetadataService)metadataService).onChange(new ChangedTypeDefs());
+            typeDefChangeListener.onChange(new ChangedTypeDefs());
 
             List<String> afterChangeTypeNames = new ArrayList<>();
             afterChangeTypeNames.addAll(metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>()));
@@ -1269,7 +1275,7 @@ public class DefaultMetadataServiceTest {
                 deletedEntities.add(entity.getId()._getId());
             }
         }
-        
+
         public List<String> getDeletedEntities() {
             return deletedEntities;
         }

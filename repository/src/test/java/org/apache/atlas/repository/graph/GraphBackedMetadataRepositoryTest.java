@@ -28,6 +28,7 @@ import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -76,7 +77,7 @@ import java.util.concurrent.Future;
 
 import javax.inject.Inject;
 
-import scala.actors.threadpool.Arrays;
+import java.util.Arrays;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
@@ -95,7 +96,7 @@ import static org.testng.Assert.assertTrue;
 public class GraphBackedMetadataRepositoryTest {
 
     @Inject
-    private GraphBackedMetadataRepository repositoryService;
+    private MetadataRepository repositoryService;
 
     @Inject
     private GraphBackedDiscoveryService discoveryService;
@@ -109,6 +110,8 @@ public class GraphBackedMetadataRepositoryTest {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
 
+        assertTrue(repositoryService instanceof GraphBackedMetadataRepository);
+        repositoryService = TestUtils.addTransactionWrapper(repositoryService);
         new GraphBackedSearchIndexer(new AtlasTypeRegistry());
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);

@@ -191,6 +191,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         String guid = GraphHelper.getGuid(instanceVertex);
+        ITypedReferenceableInstance cached = RequestContext.get().getInstance(guid);
+        if(cached != null) {
+            return cached;
+        }
         return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
     }
 
