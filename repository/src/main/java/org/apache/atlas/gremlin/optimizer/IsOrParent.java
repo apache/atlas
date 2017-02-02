@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.gremlin.optimizer;
 
-import com.google.common.base.Function;
+import java.util.function.Function;
 
 import org.apache.atlas.groovy.AbstractFunctionExpression;
 import org.apache.atlas.groovy.FunctionCallExpression;
