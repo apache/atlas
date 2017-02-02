@@ -20,6 +20,7 @@ package org.apache.atlas.groovy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -56,5 +57,16 @@ public class ListExpression extends AbstractGroovyExpression {
         }
         context.append("]");
     }
+
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.unmodifiableList(values);
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        return new ListExpression(newChildren);
+    }
+
 
 }

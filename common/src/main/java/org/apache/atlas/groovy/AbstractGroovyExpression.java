@@ -33,4 +33,13 @@ public abstract class AbstractGroovyExpression implements GroovyExpression {
         return ctx.getQuery();
     }
 
+    @Override
+    public TraversalStepType getType() {
+        return TraversalStepType.NONE;
+    }
+
+    @Override
+    public GroovyExpression copy() {
+        return copy(getChildren());
+    }
 }

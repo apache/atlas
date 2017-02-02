@@ -18,6 +18,12 @@
 
 package org.apache.atlas.discovery;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
@@ -25,6 +31,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.query.GremlinQueryResult;
 import org.apache.atlas.query.InputLineageClosureQuery;
 import org.apache.atlas.query.OutputLineageClosureQuery;
 import org.apache.atlas.query.QueryParams;
@@ -42,15 +49,11 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import scala.Option;
 import scala.Some;
 import scala.collection.JavaConversions;
 import scala.collection.immutable.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  * Hive implementation of Lineage service interface.
@@ -139,7 +142,8 @@ public class DataSetLineageService implements LineageService {
                 guid, HIVE_PROCESS_TYPE_NAME,
                 HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                 SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return inputsQuery.graph(null).toInstanceJson();
+        GremlinQueryResult result = inputsQuery.evaluate();
+        return inputsQuery.graph(result).toInstanceJson();
     }
 
     @Override
@@ -156,7 +160,8 @@ public class DataSetLineageService implements LineageService {
                 new OutputLineageClosureQuery(AtlasClient.DATA_SET_SUPER_TYPE, SELECT_INSTANCE_GUID, guid, HIVE_PROCESS_TYPE_NAME,
                         HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
                         SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
-        return outputsQuery.graph(null).toInstanceJson();
+        GremlinQueryResult result = outputsQuery.evaluate();
+        return outputsQuery.graph(result).toInstanceJson();
     }
 
     /**

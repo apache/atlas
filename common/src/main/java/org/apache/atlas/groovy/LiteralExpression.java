@@ -18,13 +18,15 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Represents a literal value.
  */
-public class LiteralExpression implements GroovyExpression {
+public class LiteralExpression extends AbstractGroovyExpression {
 
     public static final LiteralExpression TRUE = new LiteralExpression(true);
     public static final LiteralExpression FALSE = new LiteralExpression(false);
@@ -37,6 +39,12 @@ public class LiteralExpression implements GroovyExpression {
     public LiteralExpression(Object value, boolean addTypeSuffix) {
         this.value = value;
         this.translateToParameter = value instanceof String;
+        this.addTypeSuffix = addTypeSuffix;
+    }
+
+    public LiteralExpression(Object value, boolean addTypeSuffix, boolean translateToParameter) {
+        this.value = value;
+        this.translateToParameter = translateToParameter;
         this.addTypeSuffix = addTypeSuffix;
     }
 
@@ -86,6 +94,10 @@ public class LiteralExpression implements GroovyExpression {
 
     }
 
+    public Object getValue() {
+        return value;
+    }
+
     private String getEscapedValue() {
         String escapedValue = (String)value;
         escapedValue = escapedValue.replaceAll(Pattern.quote("\\"), Matcher.quoteReplacement("\\\\"));
@@ -95,5 +107,16 @@ public class LiteralExpression implements GroovyExpression {
 
     public void setTranslateToParameter(boolean translateToParameter) {
         this.translateToParameter = translateToParameter;
+    }
+
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 0;
+        return new LiteralExpression(value, addTypeSuffix, translateToParameter);
     }
 }

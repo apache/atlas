@@ -42,7 +42,16 @@
             <artifactId>hbase-server</artifactId>
         </dependency>
     </dependencies>
-
+    <dependencyManagement>
+      <dependencies>
+	<dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>12.0.1</version>
+	</dependency>
+      </dependencies>
+    </dependencyManagement>
+    
     <build>
         <plugins>
             <plugin>

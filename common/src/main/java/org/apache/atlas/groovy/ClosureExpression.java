@@ -20,6 +20,7 @@ package org.apache.atlas.groovy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,28 +29,79 @@ import java.util.List;
  */
 public class ClosureExpression extends AbstractGroovyExpression {
 
-    private List<String> varNames = new ArrayList<>();
-    private GroovyExpression body;
+    /**
+     * Variable declaration in a closure.
+     */
+    public static class VariableDeclaration {
+        private String type;
+        private String varName;
 
-    public ClosureExpression(GroovyExpression body, String... varNames) {
-        this.body = body;
-        this.varNames.addAll(Arrays.asList(varNames));
+        public VariableDeclaration(String type, String varName) {
+            super();
+            this.type = type;
+            this.varName = varName;
+        }
+
+        public VariableDeclaration(String varName) {
+            this.varName = varName;
+        }
+
+        public void append(GroovyGenerationContext context) {
+            if (type != null) {
+                context.append(type);
+                context.append(" ");
+            }
+            context.append(varName);
+        }
+    }
+    private List<VariableDeclaration> vars = new ArrayList<>();
+    private StatementListExpression body = new StatementListExpression();
+
+    public ClosureExpression(String... varNames) {
+        this(null, varNames);
     }
 
-    public ClosureExpression(List<String> varNames, GroovyExpression body) {
-        this.body = body;
-        this.varNames.addAll(varNames);
+    public ClosureExpression(GroovyExpression initialStmt, String... varNames) {
+        this(Arrays.asList(varNames), initialStmt);
+    }
+
+    public ClosureExpression(List<String> varNames, GroovyExpression initialStmt) {
+        if (initialStmt != null) {
+            this.body.addStatement(initialStmt);
+        }
+        for (String varName : varNames) {
+            vars.add(new VariableDeclaration(varName));
+        }
+    }
+
+    public ClosureExpression(GroovyExpression initialStmt, List<VariableDeclaration> varNames) {
+        if (initialStmt != null) {
+            this.body.addStatement(initialStmt);
+        }
+        vars.addAll(varNames);
+    }
+
+    public void addStatement(GroovyExpression expr) {
+        body.addStatement(expr);
+    }
+
+    public void addStatements(List<GroovyExpression> exprs) {
+        body.addStatements(exprs);
+    }
+
+    public void replaceStatement(int index, GroovyExpression newExpr) {
+        body.replaceStatement(index, newExpr);
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
 
         context.append("{");
-        if (!varNames.isEmpty()) {
-            Iterator<String> varIt = varNames.iterator();
+        if (!vars.isEmpty()) {
+            Iterator<VariableDeclaration> varIt = vars.iterator();
             while(varIt.hasNext()) {
-                String varName = varIt.next();
-                context.append(varName);
+                VariableDeclaration var = varIt.next();
+                var.append(context);
                 if (varIt.hasNext()) {
                     context.append(", ");
                 }
@@ -58,6 +110,20 @@ public class ClosureExpression extends AbstractGroovyExpression {
         }
         body.generateGroovy(context);
         context.append("}");
+    }
 
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.<GroovyExpression>singletonList(body);
+    }
+
+    public List<GroovyExpression> getStatements() {
+        return body.getStatements();
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 1;
+        return new ClosureExpression(newChildren.get(0), vars);
     }
 }

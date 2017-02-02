@@ -18,6 +18,9 @@
 
 package org.apache.atlas.groovy;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Groovy expression that represents a cast.
  */
@@ -28,7 +31,7 @@ public class CastExpression extends AbstractGroovyExpression {
 
     public CastExpression(GroovyExpression expr, String className) {
         this.expr = expr;
-        this.className  =className;
+        this.className  = className;
     }
 
     @Override
@@ -41,4 +44,13 @@ public class CastExpression extends AbstractGroovyExpression {
         context.append(")");
     }
 
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.singletonList(expr);
+    }
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 1;
+        return new CastExpression(newChildren.get(0), className);
+    }
 }

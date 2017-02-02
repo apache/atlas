@@ -15,26 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.groovy;
+package org.apache.atlas.gremlin.optimizer;
 
-import java.util.List;
+import com.google.common.base.Function;
+
+import org.apache.atlas.groovy.FunctionCallExpression;
+import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.groovy.TraversalStepType;
 
 /**
- * Represents an expression that compares two expressions using
- * the Groovy "spaceship" operator.  This is basically the
- * same as calling left.compareTo(right), except that it has
- * built-in null handling and some other nice features.
- *
+ * Function that tests whether the expression is an 'or'
+ * graph traversal function.
  */
-public class ComparisonOperatorExpression extends BinaryExpression {
+public final class IsOr implements Function<GroovyExpression, Boolean> {
 
-    public ComparisonOperatorExpression(GroovyExpression left, GroovyExpression right) {
-        super(left, "<=>", right);
+    public static final IsOr INSTANCE = new IsOr();
+
+    private IsOr() {
     }
 
     @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 2;
-        return new ComparisonOperatorExpression(newChildren.get(0), newChildren.get(1));
+    public Boolean apply(GroovyExpression expr) {
+        if (!(expr instanceof FunctionCallExpression)) {
+            return false;
+        }
+        if (expr.getType() != TraversalStepType.FILTER) {
+            return false;
+        }
+        FunctionCallExpression functionCall = (FunctionCallExpression)expr;
+        return functionCall.getFunctionName().equals("or");
     }
 }

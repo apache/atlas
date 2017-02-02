@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.groovy;
 
+import java.util.List;
+
 import org.apache.atlas.AtlasException;
 
 /**
@@ -60,5 +62,15 @@ public class ComparisonExpression extends BinaryExpression {
 
     public ComparisonExpression(GroovyExpression left, ComparisonOperator op, GroovyExpression right) {
         super(left, op.getGroovyValue(), right);
+    }
+
+    private ComparisonExpression(GroovyExpression left, String op, GroovyExpression right) {
+        super(left, op, right);
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        assert newChildren.size() == 2;
+        return new ComparisonExpression(newChildren.get(0), op, newChildren.get(1));
     }
 }

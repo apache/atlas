@@ -15,26 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.groovy;
+package org.apache.atlas.gremlin.optimizer;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents an expression that compares two expressions using
- * the Groovy "spaceship" operator.  This is basically the
- * same as calling left.compareTo(right), except that it has
- * built-in null handling and some other nice features.
- *
- */
-public class ComparisonOperatorExpression extends BinaryExpression {
+import org.apache.atlas.groovy.GroovyExpression;
 
-    public ComparisonOperatorExpression(GroovyExpression left, GroovyExpression right) {
-        super(left, "<=>", right);
+/**
+ * Represents a list of updated expressions.
+ */
+public class UpdatedExpressions {
+
+    private List<List<GroovyExpression>> updatedChildren = new ArrayList<>();
+    private boolean changed = false;
+
+    public UpdatedExpressions(boolean changed, List<List<GroovyExpression>> updatedChildren) {
+        this.changed = changed;
+        this.updatedChildren = updatedChildren;
     }
 
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 2;
-        return new ComparisonOperatorExpression(newChildren.get(0), newChildren.get(1));
+    public List<List<GroovyExpression>> getUpdatedChildren() {
+        return updatedChildren;
+    }
+
+    public boolean hasChanges() {
+        return changed;
     }
 }

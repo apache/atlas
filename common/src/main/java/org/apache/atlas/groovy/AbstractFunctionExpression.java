@@ -15,52 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.groovy;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
- * Groovy expression that references the variable with the given name.
- *
+ * Base class for all expression that can have a caller.
  */
-public class IdentifierExpression extends AbstractGroovyExpression {
+public abstract class AbstractFunctionExpression extends AbstractGroovyExpression {
 
+    // null for global functions
+    private GroovyExpression caller;
     private TraversalStepType type = TraversalStepType.NONE;
-    private String varName;
 
-    public IdentifierExpression(String varName) {
-        this.varName = varName;
+    public AbstractFunctionExpression(GroovyExpression target) {
+        this.caller = target;
     }
 
-    public IdentifierExpression(TraversalStepType type, String varName) {
-        this.varName = varName;
+    public AbstractFunctionExpression(TraversalStepType type, GroovyExpression target) {
+        this.caller = target;
         this.type = type;
     }
 
-
-    public String getVariableName() {
-        return varName;
+    public  GroovyExpression getCaller() {
+        return caller;
     }
 
-    @Override
-    public void generateGroovy(GroovyGenerationContext context) {
-        context.append(varName);
+    public void setCaller(GroovyExpression expr) {
+        caller = expr;
     }
 
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.isEmpty();
-        IdentifierExpression result =  new IdentifierExpression(varName);
-        result.setType(type);
-        return result;
-    }
 
     public void setType(TraversalStepType type) {
         this.type = type;
@@ -70,4 +52,6 @@ public class IdentifierExpression extends AbstractGroovyExpression {
     public TraversalStepType getType() {
         return type;
     }
+
+
 }
