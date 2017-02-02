@@ -18,68 +18,28 @@
 
 package org.apache.atlas.groovy;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Represents an "exclusive" range expression, e.g. [0..&lt;10].
  */
-public class RangeExpression extends AbstractFunctionExpression {
+public class RangeExpression extends AbstractGroovyExpression {
 
-    private TraversalStepType stepType;
-    private int startIndex;
-    private int endIndex;
+    private GroovyExpression parent;
+    private int offset;
+    private int count;
 
-    public RangeExpression(TraversalStepType stepType, GroovyExpression parent, int offset, int count) {
-        super(parent);
-        this.startIndex = offset;
-        this.endIndex = count;
-        this.stepType = stepType;
+    public RangeExpression(GroovyExpression parent, int offset, int count) {
+        this.parent = parent;
+        this.offset = offset;
+        this.count = count;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
-        getCaller().generateGroovy(context);
+        parent.generateGroovy(context);
         context.append(" [");
-        new LiteralExpression(startIndex).generateGroovy(context);
+        new LiteralExpression(offset).generateGroovy(context);
         context.append("..<");
-        new LiteralExpression(endIndex).generateGroovy(context);
+        new LiteralExpression(count).generateGroovy(context);
         context.append("]");
-    }
-
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.singletonList(getCaller());
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
-        return new RangeExpression(stepType, newChildren.get(0), startIndex, endIndex);
-    }
-
-    @Override
-    public TraversalStepType getType() {
-        return stepType;
-    }
-
-    public int getStartIndex() {
-
-        return startIndex;
-    }
-
-    public void setStartIndex(int startIndex) {
-
-        this.startIndex = startIndex;
-    }
-
-    public int getEndIndex() {
-
-        return endIndex;
-    }
-
-    public void setEndIndex(int endIndex) {
-
-        this.endIndex = endIndex;
     }
 }

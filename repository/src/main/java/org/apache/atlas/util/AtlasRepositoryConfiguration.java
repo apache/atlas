@@ -24,11 +24,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
-import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
@@ -139,6 +137,7 @@ public class AtlasRepositoryConfiguration {
         }
     }
 
+
     private static final String GRAPH_DATABASE_IMPLEMENTATION_PROPERTY = "atlas.graphdb.backend";
     private static final String DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS = "org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase";
 
@@ -150,22 +149,6 @@ public class AtlasRepositoryConfiguration {
                     GRAPH_DATABASE_IMPLEMENTATION_PROPERTY, DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * This optimization is configurable as a fail-safe in case issues are found
-     * with the optimizer in production systems.
-     */
-    public static final String GREMLIN_OPTIMIZER_ENABLED_PROPERTY = "atlas.query.gremlinOptimizerEnabled";
-    private static final boolean DEFAULT_GREMLIN_OPTIMZER_ENABLED = true;
-
-    public static boolean isGremlinOptimizerEnabled() {
-        try {
-            return ApplicationProperties.get().getBoolean(GREMLIN_OPTIMIZER_ENABLED_PROPERTY, DEFAULT_GREMLIN_OPTIMZER_ENABLED);
-        } catch (AtlasException e) {
-            LOG.error("Could not determine value of " + GREMLIN_OPTIMIZER_ENABLED_PROPERTY + ".  Defaulting to " + DEFAULT_GREMLIN_OPTIMZER_ENABLED, e);
-            return DEFAULT_GREMLIN_OPTIMZER_ENABLED;
         }
     }
 

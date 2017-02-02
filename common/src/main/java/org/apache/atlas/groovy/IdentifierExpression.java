@@ -18,27 +18,17 @@
 
 package org.apache.atlas.groovy;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Groovy expression that references the variable with the given name.
  *
  */
 public class IdentifierExpression extends AbstractGroovyExpression {
 
-    private TraversalStepType type = TraversalStepType.NONE;
     private String varName;
 
     public IdentifierExpression(String varName) {
         this.varName = varName;
     }
-
-    public IdentifierExpression(TraversalStepType type, String varName) {
-        this.varName = varName;
-        this.type = type;
-    }
-
 
     public String getVariableName() {
         return varName;
@@ -49,25 +39,4 @@ public class IdentifierExpression extends AbstractGroovyExpression {
         context.append(varName);
     }
 
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.isEmpty();
-        IdentifierExpression result =  new IdentifierExpression(varName);
-        result.setType(type);
-        return result;
-    }
-
-    public void setType(TraversalStepType type) {
-        this.type = type;
-    }
-
-    @Override
-    public TraversalStepType getType() {
-        return type;
-    }
 }

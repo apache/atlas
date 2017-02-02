@@ -67,25 +67,18 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
+    private final AtlasGraph graph;
+
     private DeleteHandler deleteHandler;
 
-    private final IAtlasGraphProvider graphProvider;
-    private final GraphToTypedInstanceMapper graphToInstanceMapper;
+    private GraphToTypedInstanceMapper graphToInstanceMapper;
 
     @Inject
     public GraphBackedMetadataRepository(DeleteHandler deleteHandler) {
-        this.graphProvider = new AtlasGraphProvider();
-        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
+        this.graph = AtlasGraphProvider.getGraphInstance();
+        graphToInstanceMapper = new GraphToTypedInstanceMapper(graph);
         this.deleteHandler = deleteHandler;
     }
-
-    //for testing only
-    public GraphBackedMetadataRepository(IAtlasGraphProvider graphProvider, DeleteHandler deleteHandler) {
-        this.graphProvider = graphProvider;
-        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
-        this.deleteHandler = deleteHandler;
-    }
-
 
     public GraphToTypedInstanceMapper getGraphToInstanceMapper() {
         return graphToInstanceMapper;
@@ -201,7 +194,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             LOG.debug("Retrieving entity list for type={}", entityType);
         }
 
-        AtlasGraphQuery query = getGraph().query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
+        AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
         Iterator<AtlasVertex> results = query.vertices().iterator();
         if (!results.hasNext()) {
             return Collections.emptyList();
@@ -436,7 +429,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 requestContext.getDeletedEntityIds());
     }
 
-    public AtlasGraph getGraph() throws RepositoryException {
-        return graphProvider.get();
+    public AtlasGraph getGraph() {
+        return AtlasGraphProvider.getGraphInstance();
     }
 }

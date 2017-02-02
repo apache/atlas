@@ -19,44 +19,42 @@
 package org.apache.atlas.groovy;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Groovy expression that represents a Groovy closure.
+ * Groovy expression that represents a block of code
+ * that contains 0 or more statements that are delimited
+ * by semicolons.
  */
-public class ClosureExpression extends AbstractGroovyExpression {
+public class CodeBlockExpression extends AbstractGroovyExpression {
 
-    private List<String> varNames = new ArrayList<>();
-    private GroovyExpression body;
+    private List<GroovyExpression> body = new ArrayList<>();
 
-    public ClosureExpression(GroovyExpression body, String... varNames) {
-        this.body = body;
-        this.varNames.addAll(Arrays.asList(varNames));
+    public void addStatement(GroovyExpression expr) {
+        body.add(expr);
     }
 
-    public ClosureExpression(List<String> varNames, GroovyExpression body) {
-        this.body = body;
-        this.varNames.addAll(varNames);
+    public void addStatements(List<GroovyExpression> exprs) {
+        body.addAll(exprs);
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
 
-        context.append("{");
-        if (!varNames.isEmpty()) {
-            Iterator<String> varIt = varNames.iterator();
-            while(varIt.hasNext()) {
-                String varName = varIt.next();
-                context.append(varName);
-                if (varIt.hasNext()) {
-                    context.append(", ");
-                }
+        /*
+         * the L:{} represents a groovy code block; the label is needed
+         * to distinguish it from a groovy closure.
+         */
+        context.append("L:{");
+        Iterator<GroovyExpression> stmtIt = body.iterator();
+        while(stmtIt.hasNext()) {
+            GroovyExpression stmt = stmtIt.next();
+            stmt.generateGroovy(context);
+            if (stmtIt.hasNext()) {
+                context.append(";");
             }
-            context.append("->");
         }
-        body.generateGroovy(context);
         context.append("}");
 
     }

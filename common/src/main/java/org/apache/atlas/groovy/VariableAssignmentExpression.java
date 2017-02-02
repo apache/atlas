@@ -18,9 +18,6 @@
 
 package org.apache.atlas.groovy;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Groovy statement that assigns a value to a variable.
  */
@@ -53,20 +50,9 @@ public class VariableAssignmentExpression extends AbstractGroovyExpression {
             context.append(" ");
         }
         context.append(name);
-        context.append("=");
+        context.append(" = ");
         value.generateGroovy(context);
 
-    }
-
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.singletonList(value);
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
-        return new VariableAssignmentExpression(name, newChildren.get(0));
     }
 
 }

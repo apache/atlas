@@ -18,38 +18,27 @@
 
 package org.apache.atlas.groovy;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Groovy expression that accesses a field in an object.
  */
-public class FieldExpression extends AbstractFunctionExpression {
+public class FieldExpression extends AbstractGroovyExpression {
 
+    private GroovyExpression target;
     private String fieldName;
 
     public FieldExpression(GroovyExpression target, String fieldName) {
-        super(target);
+        this.target = target;
         this.fieldName = fieldName;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
-        getCaller().generateGroovy(context);
+
+        target.generateGroovy(context);
         context.append(".'");
 
         context.append(fieldName);
         context.append("'");
     }
 
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.singletonList(getCaller());
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
-        return new FieldExpression(newChildren.get(0), fieldName);
-    }
 }
