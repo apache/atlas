@@ -231,6 +231,8 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_FOREIGN_KEY,
                                           new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE); }}));
 
+        colType.setOptions(new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }});
+
         AtlasEntityDef tblType  = AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE, "1.0", ImmutableSet.of("DataSet"),
                                   AtlasTypeUtil.createRequiredAttrDef("db", DATABASE_TYPE),
                                   AtlasTypeUtil.createRequiredAttrDefWithConstraint("sd", STORAGE_DESC_TYPE, CONSTRAINT_TYPE_MAPPED_FROM_REF,
@@ -245,6 +247,8 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDef("temporary", "boolean"),
                                   AtlasTypeUtil.createRequiredListAttrDefWithConstraint("columns", AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE),
                                           CONSTRAINT_TYPE_MAPPED_FROM_REF, new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_REF_ATTRIBUTE, "table"); }}));
+
+        tblType.setOptions(new HashMap<String, String>() {{ put("schemaElementsAttribute", "columns"); }});
 
         AtlasEntityDef procType = AtlasTypeUtil.createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, "1.0", ImmutableSet.of("Process"),
                                   AtlasTypeUtil.createOptionalAttrDef("userName", "string"),

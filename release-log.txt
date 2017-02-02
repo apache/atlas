@@ -9,7 +9,10 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1517: updated hive_model to include schema related attributes (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1514 Remove duplicates from class array attribute when target is deleted (dkantor)
+ATLAS-1509: fixed issues with deletion during updates (sumasai via mneethiraj)
+ATLAS-1516: fix unit test failure in DefaultMetadataServiceTest.testSpecialCharacters() (mneethiraj)
 ATLAS-1513 updated AtlasEntityType with methods to get foreign-key references; added helper methods in AtlasAttribute (mneethiraj via kevalbhatt)
 ATLAS-1502 added configuration to restrict entity-types editable via UI (Kalyanikashikar via mneethiraj)
 ATLAS-1507 fixed incorrect relationship specified in hive-model
