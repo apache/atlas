@@ -20,12 +20,62 @@ package org.apache.atlas.web.adapters;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.type.AtlasType;
 
-public interface AtlasFormatConverter {
-    Object fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException;
+import java.util.HashMap;
+import java.util.Map;
 
-    Object fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException;
+public interface AtlasFormatConverter {
+    Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException;
+
+    Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext context) throws AtlasBaseException;
 
     TypeCategory getTypeCategory();
+
+    public static class ConverterContext {
+
+        private Map<String, AtlasEntityWithAssociations> entities = null;
+
+        public void addEntity(AtlasEntityWithAssociations entity) {
+            if (entities == null) {
+                entities = new HashMap<>();
+            }
+            entities.put(entity.getGuid(), entity);
+        }
+
+        public void addEntity(AtlasEntity entity) {
+            if (entities == null) {
+                entities = new HashMap<>();
+            }
+            entities.put(entity.getGuid(), new AtlasEntityWithAssociations(entity));
+        }
+
+        public boolean exists(AtlasEntityWithAssociations entity) {
+            return entities != null ? entities.containsKey(entity.getGuid()) : false;
+        }
+
+        public AtlasEntity getById(String guid) {
+
+            if( entities != null) {
+                return entities.get(guid);
+            }
+
+            return null;
+        }
+
+        public Map<String, AtlasEntityWithAssociations> getEntities() {
+            return entities;
+        }
+
+        public void addEntities(Map<String, AtlasEntity> entities) {
+            if (this.entities == null) {
+                this.entities = new HashMap<>(entities.size());
+            }
+            for (String entityId : entities.keySet()) {
+                this.entities.put(entityId, new AtlasEntityWithAssociations(entities.get(entityId)));
+            }
+        }
+    }
 }

@@ -35,7 +35,7 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Map fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+    public Map fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         Map ret = null;
 
         if (v1Obj != null) {
@@ -52,8 +52,8 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
                 for (Object key : v1Map.keySet()) {
                     Object value = v1Map.get(key);
 
-                    Object v2Key   = keyConverter.fromV1ToV2(key, keyType);
-                    Object v2Value = valueConverter.fromV1ToV2(value, valueType);
+                    Object v2Key   = keyConverter.fromV1ToV2(key, keyType, ctx);
+                    Object v2Value = valueConverter.fromV1ToV2(value, valueType, ctx);
 
                     ret.put(v2Key, v2Value);
                 }
@@ -67,7 +67,7 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Map fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException {
+    public Map fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         Map ret = null;
 
         if (v2Obj != null) {
@@ -84,8 +84,8 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
                 for (Object key : v1Map.keySet()) {
                     Object value = v1Map.get(key);
 
-                    Object v2Key   = keyConverter.fromV2ToV1(key, keyType);
-                    Object v2Value = valueConverter.fromV2ToV1(value, valueType);
+                    Object v2Key   = keyConverter.fromV2ToV1(key, keyType, ctx);
+                    Object v2Value = valueConverter.fromV2ToV1(value, valueType, ctx);
 
                     ret.put(v2Key, v2Value);
                 }

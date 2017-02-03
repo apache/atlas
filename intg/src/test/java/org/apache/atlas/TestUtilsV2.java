@@ -284,7 +284,9 @@ public final class TestUtilsV2 {
     public static final String PERSON_TYPE = "Person";
     public static final String EMPLOYEE_TYPE = "Employee";
 
-    public static AtlasEntity createDeptEg1() {
+    public static Map<String, AtlasEntity> createDeptEg1() {
+        Map<String, AtlasEntity> deptEmpEntities = new HashMap<>();
+
         AtlasEntity hrDept = new AtlasEntity(DEPARTMENT_TYPE);
         AtlasEntity john = new AtlasEntity(EMPLOYEE_TYPE);
 
@@ -329,7 +331,8 @@ public final class TestUtilsV2 {
         julius.setAttribute("address", juliusAddr);
         julius.setAttribute("subordinates", ImmutableList.of());
 
-        AtlasObjectId janeId = new AtlasObjectId(jane.getTypeName(), jane.getGuid());
+        AtlasObjectId janeId = jane.getAtlasObjectId();
+        AtlasObjectId johnId = john.getAtlasObjectId();
 
         //TODO - Change to MANAGER_TYPE for JULIUS
         AtlasObjectId maxId = new AtlasObjectId(EMPLOYEE_TYPE, max.getGuid());
@@ -355,15 +358,20 @@ public final class TestUtilsV2 {
 
         john.setAttribute("manager", janeId);
         john.setAttribute("mentor", maxId);
-        hrDept.setAttribute("employees", ImmutableList.of(john, jane, julius, max));
+        hrDept.setAttribute("employees", ImmutableList.of(johnId, janeId, juliusId, maxId));
 
-        jane.setAttribute("subordinates", ImmutableList.of(john, max));
+        jane.setAttribute("subordinates", ImmutableList.of(johnId, maxId));
 
 //        Map<String, Integer> secClearanceLevelMap = new HashMap<>();
 //        secClearanceLevelMap.put("level", 1);
 //        jane.setAttribute("SecurityClearance", secClearanceLevelMap);
 
-        return hrDept;
+        deptEmpEntities.put(jane.getGuid(), jane);
+        deptEmpEntities.put(john.getGuid(), john);
+        deptEmpEntities.put(julius.getGuid(), julius);
+        deptEmpEntities.put(max.getGuid(), max);
+        deptEmpEntities.put(deptId.getGuid(), hrDept);
+        return deptEmpEntities;
     }
 
     public static final String DATABASE_TYPE = "hive_database";
@@ -661,15 +669,20 @@ public final class TestUtilsV2 {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    public static AtlasEntity createDBEntity() {
+    public static Map<String, AtlasEntity> createDBEntity() {
+        Map<String, AtlasEntity> ret = new HashMap<>();
         AtlasEntity entity = new AtlasEntity(DATABASE_TYPE);
         String dbName = RandomStringUtils.randomAlphanumeric(10);
         entity.setAttribute(NAME, dbName);
         entity.setAttribute("description", "us db");
-        return entity;
+
+        ret.put(entity.getGuid(), entity);
+        return ret;
     }
 
-    public static AtlasEntity createTableEntity(String dbId) {
+    public static Map<String, AtlasEntity> createTableEntity(String dbId) {
+        Map<String, AtlasEntity> ret = new HashMap<>();
+
         AtlasEntity entity = new AtlasEntity(TABLE_TYPE);
         String tableName = RandomStringUtils.randomAlphanumeric(10);
         entity.setAttribute(NAME, tableName);
@@ -688,10 +701,13 @@ public final class TestUtilsV2 {
         entity.setAttribute("parametersMap", new java.util.HashMap<String, String>() {{
             put("key1", "value1");
         }});
-        return entity;
+
+        ret.put(entity.getGuid(), entity);
+        return ret;
     }
 
     public static AtlasEntity createColumnEntity(String tableId) {
+
         AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
         entity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
         entity.setAttribute("type", "VARCHAR(32)");

@@ -80,6 +80,8 @@ public enum AtlasErrorCode {
 
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(400, "ATLAS40018E", "Instance {0} with unique attribute {1} does not exist"),
 
+    UNRESOLVED_REFERENCES_FOUND(400, "ATLAS40010E", "Unresolved references: byId={0}; byUniqueAttributes={1}"),
+
     UNKNOWN_ATTRIBUTE(400, "ATLAS40019E", "Attribute {0} not found for type {1}");
 
     private String errorCode;

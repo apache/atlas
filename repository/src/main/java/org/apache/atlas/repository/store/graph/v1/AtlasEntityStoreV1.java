@@ -25,31 +25,29 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
+import java.util.Map;
 
+import com.google.inject.Inject;
 
 
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
-    protected EntityGraphDiscovery graphDiscoverer;
     protected AtlasTypeRegistry typeRegistry;
 
     private EntityGraphMapper graphMapper;
@@ -62,19 +60,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Inject
-    public void init(AtlasTypeRegistry typeRegistry, EntityGraphDiscovery graphDiscoverer) throws AtlasBaseException {
-        this.graphDiscoverer = graphDiscoverer;
+    public void init(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.typeRegistry = typeRegistry;
-    }
-
-    @Override
-    public EntityMutationResponse createOrUpdate(final AtlasEntity entity) throws AtlasBaseException {
-        return createOrUpdate(new ArrayList<AtlasEntity>() {{ add(entity); }});
-    }
-
-    @Override
-    public EntityMutationResponse updateById(final String guid, final AtlasEntity entity) {
-        return null;
     }
 
     @Override
@@ -89,7 +76,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public EntityMutationResponse createOrUpdate(final List<AtlasEntity> entities) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdate(final Map<String, AtlasEntity> entities) throws AtlasBaseException {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityStoreV1.createOrUpdate({}, {})", entities);
@@ -106,11 +93,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         return graphMapper.mapAttributes(ctx);
-    }
-
-    @Override
-    public EntityMutationResponse updateByIds(final String guid, final AtlasEntity entity) throws AtlasBaseException {
-        return null;
     }
 
     @Override
@@ -144,12 +126,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
-    public EntityMutationResponse batchMutate(final EntityMutations mutations) throws AtlasBaseException {
-        return null;
-    }
-
-
-    @Override
     public void addClassifications(final String guid, final List<AtlasClassification> classification) throws AtlasBaseException {
 
     }
@@ -164,42 +140,49 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     }
 
-    @Override
-    public AtlasEntity.AtlasEntities searchEntities(final SearchFilter searchFilter) throws AtlasBaseException {
-        // TODO: Add checks here to ensure that typename and supertype are mandatory in the request
-        return null;
-    }
-
     private EntityMutationContext preCreateOrUpdate(final List<AtlasEntity> atlasEntities) throws AtlasBaseException {
+        List<EntityResolver> entityResolvers = new ArrayList<>();
 
+        entityResolvers.add(new IDBasedEntityResolver());
+        entityResolvers.add(new UniqAttrBasedEntityResolver(typeRegistry));
+
+        EntityGraphDiscovery        graphDiscoverer    = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityResolvers);
         EntityGraphDiscoveryContext discoveredEntities = graphDiscoverer.discoverEntities(atlasEntities);
-        EntityMutationContext context = new EntityMutationContext(discoveredEntities);
-        for (AtlasEntity entity : discoveredEntities.getRootEntities()) {
+        EntityMutationContext       context            = new EntityMutationContext(discoveredEntities);
 
-            AtlasVertex vertex = null;
+        for (AtlasEntity entity : discoveredEntities.getRootEntities()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity);
+                LOG.debug("==> AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity);
             }
 
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
-            if ( entityType == null) {
+            if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
             }
 
-            if ( discoveredEntities.isResolved(entity.getGuid()) ) {
-                vertex = discoveredEntities.getResolvedReference(entity.getGuid());
+            final AtlasVertex vertex;
+            AtlasObjectId     objId = entity.getAtlasObjectId();
+
+            if (discoveredEntities.isResolvedId(objId) ) {
+                vertex = discoveredEntities.getResolvedEntityVertex(objId);
+
                 context.addUpdated(entity, entityType, vertex);
 
                 String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+
                 RequestContextV1.get().recordEntityUpdate(new AtlasObjectId(entityType.getTypeName(), guid));
             } else {
                 //Create vertices which do not exist in the repository
                 vertex = graphMapper.createVertexTemplate(entity, entityType);
+
                 context.addCreated(entity, entityType, vertex);
-                discoveredEntities.addRepositoryResolvedReference(new AtlasObjectId(entityType.getTypeName(), entity.getGuid()), vertex);
+
+                discoveredEntities.addResolvedId(objId, vertex);
+                discoveredEntities.removeUnResolvedId(objId);
 
                 String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+
                 RequestContextV1.get().recordEntityCreate(new AtlasObjectId(entityType.getTypeName(), guid));
             }
 
@@ -211,12 +194,21 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         return context;
     }
 
-    private List<AtlasEntity> validateAndNormalize(final List<AtlasEntity> entities) throws AtlasBaseException {
-
+    private List<AtlasEntity> validateAndNormalize(final Map<String, AtlasEntity> entities) throws AtlasBaseException {
         List<AtlasEntity> normalizedEntities = new ArrayList<>();
-        List<String> messages = new ArrayList<>();
+        List<String>      messages           = new ArrayList<>();
 
-        for (AtlasEntity entity : entities) {
+        for (String entityId : entities.keySet()) {
+            if ( !AtlasEntity.isAssigned(entityId) && !AtlasEntity.isUnAssigned(entityId)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, ": Guid in map key is invalid " + entityId);
+            }
+
+            AtlasEntity entity = entities.get(entityId);
+
+            if ( entity == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, ": Entity is null for guid " + entityId);
+            }
+
             AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
             if (type == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
@@ -227,11 +219,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             if ( !messages.isEmpty()) {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
             }
+
             AtlasEntity normalizedEntity = (AtlasEntity) type.getNormalizedValue(entity);
-            if ( normalizedEntity == null) {
-                //TODO - Fix this. Should not come here. Should ideally fail above
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, "Failed to validate entity");
-            }
+
             normalizedEntities.add(normalizedEntity);
         }
 
@@ -239,6 +229,5 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     public void cleanUp() throws AtlasBaseException {
-        this.graphDiscoverer.cleanUp();
     }
 }

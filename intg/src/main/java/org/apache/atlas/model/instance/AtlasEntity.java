@@ -161,6 +161,41 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.version = version;
     }
 
+    @JsonIgnore
+    public boolean isUnassigned() {
+        return isUnAssigned(guid);
+    }
+
+    @JsonIgnore
+    public boolean isAssigned() {
+        return isAssigned(guid);
+    }
+
+    @JsonIgnore
+    public static boolean isAssigned(String guid) {
+        try {
+            UUID.fromString(guid);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @JsonIgnore
+    public static boolean isUnAssigned(String guid) {
+        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
+    }
+
+    private static String nextInternalId() {
+        return "-" + Long.toString(s_nextId.getAndIncrement());
+    }
+
+    @JsonIgnore
+    public AtlasObjectId getAtlasObjectId() {
+        return new AtlasObjectId(getTypeName(), getGuid());
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -232,45 +267,5 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                              SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
-    }
-
-    @JsonIgnore
-    public boolean validate(String id) {
-        try {
-            long l = Long.parseLong(id);
-            return l < 0;
-        } catch (NumberFormatException ne) {
-            return false;
-        }
-    }
-
-    @JsonIgnore
-    public boolean isUnassigned() {
-        return isUnAssigned(guid);
-    }
-
-    @JsonIgnore
-    public boolean isAssigned() {
-        return isAssigned(guid);
-    }
-
-    @JsonIgnore
-    public static boolean isAssigned(String guid) {
-        try {
-            UUID.fromString(guid);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @JsonIgnore
-    public static boolean isUnAssigned(String guid) {
-        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
-    }
-
-    private String nextInternalId() {
-        return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 }

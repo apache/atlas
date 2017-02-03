@@ -30,10 +30,13 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -55,6 +58,12 @@ public class AtlasObjectId  implements Serializable {
     private String              typeName;
     private String              guid;
     private Map<String, Object> uniqueAttributes;
+
+    @JsonIgnore
+    private boolean isAssignedGuid = false;
+
+    @JsonIgnore
+    private boolean isUnAssignedGuid = false;
 
     public AtlasObjectId() {
         this(null, null, null);
@@ -120,6 +129,10 @@ public class AtlasObjectId  implements Serializable {
 
     public void setGuid(String guid) {
         this.guid = guid;
+        if ( guid != null) {
+            this.isAssignedGuid = AtlasEntity.isAssigned(guid);
+            this.isUnAssignedGuid = AtlasEntity.isUnAssigned(guid);
+        }
     }
 
     public Map<String, Object> getUniqueAttributes() {
@@ -128,6 +141,31 @@ public class AtlasObjectId  implements Serializable {
 
     public void setUniqueAttributes(Map<String, Object> uniqueAttributes) {
         this.uniqueAttributes = uniqueAttributes;
+    }
+
+    @JsonIgnore
+    public boolean isAssignedGuid() {
+        return isAssignedGuid;
+    }
+
+    @JsonIgnore
+    public boolean isUnAssignedGuid() {
+        return isUnAssignedGuid;
+    }
+
+    @JsonIgnore
+    public boolean isValid() {
+        if (StringUtils.isEmpty(typeName)) {
+            return false;
+        } else if (StringUtils.isNotEmpty(guid)) {
+            if (!isAssignedGuid && !isUnAssignedGuid) {
+                return false;
+            }
+        } else if (MapUtils.isEmpty(uniqueAttributes)) {
+            return false;
+        }
+
+        return true;
     }
 
     public StringBuilder toString(StringBuilder sb) {

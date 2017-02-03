@@ -88,8 +88,8 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
     public AtlasEdge toGraph(GraphMutationContext ctx) throws AtlasBaseException {
         AtlasEdge result = null;
 
-        String guid = getId(ctx.getValue());
-        AtlasVertex entityVertex = context.getDiscoveryContext().getResolvedReference(guid);
+        AtlasObjectId guid = getId(ctx.getValue());
+        AtlasVertex entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(guid);
         if ( ctx.getCurrentEdge().isPresent() ) {
             result = updateEdge(ctx.getAttributeDef(), ctx.getValue(), ctx.getCurrentEdge().get(), entityVertex);
         } else if (ctx.getValue() != null) {
@@ -166,12 +166,18 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
     }
 
 
-    public String getId(Object value) throws AtlasBaseException {
-        if ( value != null) {
+    public AtlasObjectId getId(Object value) throws AtlasBaseException {
+        if (value != null) {
             if ( value instanceof  AtlasObjectId) {
-                return ((AtlasObjectId) value).getGuid();
+                return ((AtlasObjectId) value);
             } else if (value instanceof AtlasEntity) {
-                return ((AtlasEntity) value).getGuid();
+                return ((AtlasEntity) value).getAtlasObjectId();
+            } else if (value instanceof Map) {
+                AtlasObjectId ret = new AtlasObjectId((Map)value);
+
+                if (ret.isValid()) {
+                    return ret;
+                }
             }
 
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, (String) value);
@@ -211,7 +217,7 @@ public class EntityGraphMapper implements InstanceGraphMapper<AtlasEdge> {
     }
 
     public AtlasEntityType getInstanceType(Object val) throws AtlasBaseException {
-        String guid = getId(val);
+        AtlasObjectId guid = getId(val);
 
         if ( guid != null) {
             return (AtlasEntityType) getContext().getType(guid);

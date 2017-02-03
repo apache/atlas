@@ -38,7 +38,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Collection fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+    public Collection fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         Collection ret = null;
 
         if (v1Obj != null) {
@@ -57,7 +57,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             Collection           v1List        = (Collection) v1Obj;
 
             for (Object v1Elem : v1List) {
-                Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType);
+                Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType, ctx);
 
                 ret.add(convertedVal);
             }
@@ -67,7 +67,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Collection fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException {
+    public Collection fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         Collection ret = null;
 
         if (v2Obj != null) {
@@ -86,7 +86,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             Collection           v2List        = (Collection) v2Obj;
 
             for (Object v2Elem : v2List) {
-                Object convertedVal = elemConverter.fromV2ToV1(v2Elem, elemType);
+                Object convertedVal = elemConverter.fromV2ToV1(v2Elem, elemType, ctx);
 
                 ret.add(convertedVal);
             }

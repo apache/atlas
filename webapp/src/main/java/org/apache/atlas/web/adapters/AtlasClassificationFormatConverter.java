@@ -40,7 +40,7 @@ public class AtlasClassificationFormatConverter extends AtlasStructFormatConvert
     }
 
     @Override
-    public AtlasClassification fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+    public AtlasClassification fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         AtlasClassification ret = null;
 
         if (v1Obj != null) {
@@ -51,7 +51,7 @@ public class AtlasClassificationFormatConverter extends AtlasStructFormatConvert
                 final Map v1Attribs = (Map) v1Map.get(ATTRIBUTES_PROPERTY_KEY);
 
                 if (MapUtils.isNotEmpty(v1Attribs)) {
-                    ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, v1Attribs));
+                    ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, v1Attribs, ctx));
                 } else {
                     ret = new AtlasClassification(type.getTypeName());
                 }
@@ -65,7 +65,7 @@ public class AtlasClassificationFormatConverter extends AtlasStructFormatConvert
                     LOG.error("IStruct.getValuesMap() failed", excp);
                 }
 
-                ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, v1Attribs));
+                ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, v1Attribs, ctx));
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Map or IStruct",
                                              v1Obj.getClass().getCanonicalName());

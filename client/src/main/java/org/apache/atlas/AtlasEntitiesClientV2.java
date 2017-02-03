@@ -32,7 +32,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
 
@@ -43,12 +45,11 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
 
     private static final APIInfo GET_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo GET_ENTITY_WITH_ASSOCIATION_BY_GUID = new APIInfo(ENTITY_API + "guid/%s/associations", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ENTITY = new APIInfo(ENTITY_API, HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo CREATE_ENTITY = new APIInfo(ENTITIES_API, HttpMethod.POST, Response.Status.OK);
     private static final APIInfo UPDATE_ENTITY = CREATE_ENTITY;
     private static final APIInfo GET_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.PUT, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.DELETE, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.PUT, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_GUIDS = new APIInfo(ENTITIES_API + "guids/", HttpMethod.DELETE, Response.Status.OK);
     private static final APIInfo GET_CLASSIFICATIONS = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
@@ -113,16 +114,12 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         return callAPI(formatPathForPathParams(DELETE_ENTITY_BY_ATTRIBUTE, type, attribute), null, EntityMutationResponse.class, queryParams);
     }
 
-    public EntityMutationResponse createEntity(AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITY, atlasEntity, EntityMutationResponse.class);
+    public EntityMutationResponse createEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
+        return callAPI(CREATE_ENTITY, new HashMap<String, AtlasEntity>() {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
     }
 
-    public EntityMutationResponse updateEntity(AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITY, atlasEntity, EntityMutationResponse.class);
-    }
-
-    public EntityMutationResponse updateEntity(String guid, AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITY_BY_GUID, atlasEntity, EntityMutationResponse.class, guid);
+    public EntityMutationResponse updateEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
+        return callAPI(UPDATE_ENTITY, new HashMap<String, AtlasEntity>() {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
     }
 
     public AtlasEntity deleteEntityByGuid(String guid) throws AtlasServiceException {
@@ -159,15 +156,11 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         return null;
     }
 
-    public List<AtlasEntity> createEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
+    public List<AtlasEntity> createEntities(Map<String, AtlasEntity> atlasEntities) throws AtlasServiceException {
         return (List<AtlasEntity>)callAPI(CREATE_ENTITIES, atlasEntities, List.class);
     }
 
-    public List<AtlasEntity> updateEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
+    public List<AtlasEntity> updateEntities(Map<String, AtlasEntity> atlasEntities) throws AtlasServiceException {
         return (List<AtlasEntity>)callAPI(UPDATE_ENTITIES, atlasEntities, List.class);
-    }
-
-    public AtlasEntity.AtlasEntities searchEntities(SearchFilter searchFilter) throws AtlasServiceException {
-        return callAPI(GET_ENTITIES, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
     }
 }

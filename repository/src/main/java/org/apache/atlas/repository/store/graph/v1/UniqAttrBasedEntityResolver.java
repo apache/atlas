@@ -23,7 +23,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -33,21 +32,20 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class UniqAttrBasedEntityResolver implements EntityResolver {
-
     private static final Logger LOG = LoggerFactory.getLogger(UniqAttrBasedEntityResolver.class);
 
-    private final AtlasTypeRegistry typeRegistry;
-
-    private final GraphHelper graphHelper = GraphHelper.getInstance();
-
+    private final GraphHelper           graphHelper = GraphHelper.getInstance();
+    private final AtlasTypeRegistry     typeRegistry;
     private EntityGraphDiscoveryContext context;
 
     @Inject
@@ -56,41 +54,41 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
     }
 
     @Override
-    public void init(EntityGraphDiscoveryContext entities) throws AtlasBaseException {
-        this.context = entities;
+    public void init(EntityGraphDiscoveryContext context) throws AtlasBaseException {
+        this.context = context;
     }
 
     @Override
     public EntityGraphDiscoveryContext resolveEntityReferences() throws AtlasBaseException {
-
-        if ( context == null) {
+        if (context == null) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Unique attribute based entity resolver not initialized");
         }
 
         //Resolve attribute references
-        List<AtlasEntity> resolvedReferences = new ArrayList<>();
+        List<AtlasObjectId> resolvedReferences = new ArrayList<>();
 
-        for (AtlasEntity entity : context.getUnResolvedEntityReferences()) {
+        for (AtlasObjectId entityId : context.getUnresolvedIdsByUniqAttribs()) {
             //query in graph repo that given unique attribute - check for deleted also?
-            Optional<AtlasVertex> vertex = resolveByUniqueAttribute(entity);
+            Optional<AtlasVertex> vertex = resolveByUniqueAttribute(entityId);
+
             if (vertex.isPresent()) {
-                context.addRepositoryResolvedReference(new AtlasObjectId(entity.getTypeName(), entity.getGuid()), vertex.get());
-                resolvedReferences.add(entity);
+                context.addResolvedId(entityId, vertex.get());
+                resolvedReferences.add(entityId);
             }
         }
 
-        context.removeUnResolvedEntityReferences(resolvedReferences);
-
-        if (context.getUnResolvedEntityReferences().size() > 0) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, context.getUnResolvedEntityReferences().toString());
-        }
+        context.removeUnresolvedIdsByUniqAttribs(resolvedReferences);
 
         //Resolve root references
         for (AtlasEntity entity : context.getRootEntities()) {
-            if ( !context.isResolved(entity.getGuid()) ) {
+            AtlasObjectId entityId = entity.getAtlasObjectId();
+
+            if (!context.isResolvedId(entityId) ) {
                 Optional<AtlasVertex> vertex = resolveByUniqueAttribute(entity);
+
                 if (vertex.isPresent()) {
-                    context.addRepositoryResolvedReference(new AtlasObjectId(entity.getTypeName(), entity.getGuid()), vertex.get());
+                    context.addResolvedId(entityId, vertex.get());
+                    context.removeUnResolvedId(entityId);
                 }
             }
         }
@@ -108,26 +106,100 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
         for (AtlasStructType.AtlasAttribute attr : entityType.getAllAttributes().values()) {
             if (attr.getAttributeDef().getIsUnique()) {
                 Object attrVal = entity.getAttribute(attr.getName());
-                if (attrVal != null) {
-                    String qualifiedAttrName = attr.getQualifiedAttributeName();
-                    AtlasVertex vertex = null;
-                    try {
-                        vertex = graphHelper.findVertex(qualifiedAttrName, attrVal,
-                            Constants.ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName(),
-                            Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE
-                                .name());
 
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Found vertex by unique attribute : " + qualifiedAttrName + "=" + attrVal);
-                        }
-                        if (vertex != null) {
-                            return Optional.of(vertex);
-                        }
-                    } catch (EntityNotFoundException e) {
-                        //Ignore if not found
+                if (attrVal == null) {
+                    continue;
+                }
+
+                Optional<AtlasVertex> vertex = findByTypeAndQualifiedName(entityType.getTypeName(), attr.getQualifiedAttributeName(), attrVal);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Found vertex by unique attribute : " + attr.getQualifiedAttributeName() + "=" + attrVal);
+                }
+
+                if (!vertex.isPresent()) {
+                    vertex = findBySuperTypeAndQualifiedName(entityType.getTypeName(), attr.getQualifiedAttributeName(), attrVal);
+                }
+
+                if (vertex.isPresent()) {
+                    return vertex;
+                }
+            }
+        }
+
+        return Optional.absent();
+    }
+
+    Optional<AtlasVertex> resolveByUniqueAttribute(AtlasObjectId entityId) throws AtlasBaseException {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityId.getTypeName());
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entityId.getTypeName());
+        }
+
+        final Map<String, Object> uniqueAttributes = entityId.getUniqueAttributes();
+        if (MapUtils.isNotEmpty(uniqueAttributes)) {
+            for (String attrName : uniqueAttributes.keySet()) {
+                AtlasStructType.AtlasAttribute attr = entityType.getAttribute(attrName);
+
+                if (attr.getAttributeDef().getIsUnique()) {
+                    Object attrVal = uniqueAttributes.get(attr.getName());
+
+                    if (attrVal == null) {
+                        continue;
+                    }
+
+                    Optional<AtlasVertex> vertex = findByTypeAndQualifiedName(entityId.getTypeName(), attr.getQualifiedAttributeName(), attrVal);
+
+                    if (!vertex.isPresent()) {
+                        vertex = findBySuperTypeAndQualifiedName(entityId.getTypeName(), attr.getQualifiedAttributeName(), attrVal);
+                    }
+
+                    if (vertex.isPresent()) {
+                        return vertex;
                     }
                 }
             }
+        }
+        return Optional.absent();
+    }
+
+    Optional<AtlasVertex> findByTypeAndQualifiedName(String typeName, String qualifiedAttrName, Object attrVal) {
+        AtlasVertex vertex = null;
+        try {
+            vertex = graphHelper.findVertex(qualifiedAttrName, attrVal,
+                Constants.ENTITY_TYPE_PROPERTY_KEY, typeName,
+                Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE
+                    .name());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Found vertex by unique attribute and type {} {} ", qualifiedAttrName + "=" + attrVal, typeName);
+            }
+            if (vertex != null) {
+                return Optional.of(vertex);
+            }
+        } catch (EntityNotFoundException e) {
+            //Ignore if not found
+        }
+        return Optional.absent();
+    }
+
+    Optional<AtlasVertex> findBySuperTypeAndQualifiedName(String typeName, String qualifiedAttrName, Object attrVal) {
+        AtlasVertex vertex = null;
+        try {
+            vertex = graphHelper.findVertex(qualifiedAttrName, attrVal,
+                Constants.SUPER_TYPES_PROPERTY_KEY, typeName,
+                Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE
+                    .name());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Found vertex by unique attribute and supertype {} ", qualifiedAttrName + "=" + attrVal, typeName);
+            }
+            if (vertex != null) {
+                return Optional.of(vertex);
+            }
+        } catch (EntityNotFoundException e) {
+            //Ignore if not found
         }
         return Optional.absent();
     }

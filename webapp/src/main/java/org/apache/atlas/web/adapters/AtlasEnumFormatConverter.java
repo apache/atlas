@@ -30,12 +30,12 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Object fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+    public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         return type.getNormalizedValue(v1Obj);
     }
 
     @Override
-    public Object fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException {
+    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
         return type.getNormalizedValue(v2Obj);
     }
 }

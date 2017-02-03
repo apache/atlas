@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -479,6 +478,22 @@ public class AtlasStructType extends AtlasType {
 
         public String getQualifiedAttributeName() {
             return qualifiedName;
+        }
+
+        /*
+         * "isContainedAttribute" can not be computed and cached in the constructor - as structType is not fully
+         * populated at the time AtlasAttribute object is constructed.
+         */
+        public boolean isContainedAttribute() {
+            if ( structType.isForeignKeyOnDeleteActionUpdate(attributeDef.getName()) ) {
+                return true;
+            }
+
+            if ( structType instanceof AtlasEntityType) {
+                return ((AtlasEntityType) structType).isMappedFromRefAttribute(attributeDef.getName());
+            }
+
+            return false;
         }
 
         public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {

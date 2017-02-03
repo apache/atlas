@@ -564,7 +564,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         hiveTable.setAttribute("columns", columns);
 
         LOG.debug("Updating entity= " + tableUpdated);
-        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(hiveTable.getGuid(), tableUpdated);
+        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(tableUpdated);
         assertNotNull(updateResult);
         assertNotNull(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertTrue(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);

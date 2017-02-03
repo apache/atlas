@@ -37,67 +37,70 @@ import java.util.Map;
 
 public class IDBasedEntityResolver implements EntityResolver {
 
-    private Map<String, AtlasEntity> idToEntityMap = new HashMap<>();
-
-    private final GraphHelper graphHelper = GraphHelper.getInstance();
-
-    private EntityGraphDiscoveryContext context;
+    private final GraphHelper              graphHelper   = GraphHelper.getInstance();
+    private final Map<String, AtlasEntity> idToEntityMap = new HashMap<>();
+    private EntityGraphDiscoveryContext    context;
 
     @Override
     public void init(EntityGraphDiscoveryContext context) throws AtlasBaseException {
         this.context = context;
+
         for (AtlasEntity entity : context.getRootEntities()) {
             idToEntityMap.put(entity.getGuid(), entity);
         }
     }
 
     public EntityGraphDiscoveryContext resolveEntityReferences() throws AtlasBaseException {
-
-        if ( context == null) {
+        if (context == null) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Entity resolver not initialized");
         }
 
         List<AtlasObjectId> resolvedReferences = new ArrayList<>();
 
-        for (AtlasObjectId typeIdPair : context.getUnresolvedIdReferences()) {
-            if ( AtlasEntity.isAssigned(typeIdPair.getGuid())) {
+        for (AtlasObjectId objId : context.getUnresolvedIds()) {
+            if (objId.isAssignedGuid()) {
                 //validate in graph repo that given guid, typename exists
-                Optional<AtlasVertex> vertex = resolveGuid(typeIdPair);
+                Optional<AtlasVertex> vertex = resolveGuid(objId);
 
-                if ( vertex.isPresent() ) {
-                    context.addRepositoryResolvedReference(typeIdPair, vertex.get());
-                    resolvedReferences.add(typeIdPair);
+                if (vertex.isPresent()) {
+                    context.addResolvedId(objId, vertex.get());
+                    resolvedReferences.add(objId);
                 }
             } else {
                 //check if root references have this temporary id
-               if (!idToEntityMap.containsKey(typeIdPair.getGuid()) ) {
-                   throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, "Could not find an entity with the specified id " + typeIdPair + " in the request");
+               if (!idToEntityMap.containsKey(objId.getGuid()) ) {
+                   throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, objId.toString());
                }
+                resolvedReferences.add(objId);
             }
+
         }
 
-        context.removeUnResolvedIdReferences(resolvedReferences);
+        context.removeUnResolvedIds(resolvedReferences);
 
         //Resolve root references
         for (AtlasEntity entity : context.getRootEntities()) {
-            if ( !context.isResolved(entity.getGuid()) && AtlasEntity.isAssigned(entity.getGuid())) {
-                AtlasObjectId typeIdPair = new AtlasObjectId(entity.getTypeName(), entity.getGuid());
-                Optional<AtlasVertex> vertex = resolveGuid(typeIdPair);
+            AtlasObjectId objId = entity.getAtlasObjectId();
+
+            if (!context.isResolvedId(objId) && AtlasEntity.isAssigned(entity.getGuid())) {
+                Optional<AtlasVertex> vertex = resolveGuid(objId);
+
                 if (vertex.isPresent()) {
-                    context.addRepositoryResolvedReference(typeIdPair, vertex.get());
-                    context.removeUnResolvedIdReference(typeIdPair);
+                    context.addResolvedId(objId, vertex.get());
+                    context.removeUnResolvedId(objId);
                 }
             }
         }
+
         return context;
     }
 
-    private Optional<AtlasVertex> resolveGuid(AtlasObjectId typeIdPair) throws AtlasBaseException {
+    private Optional<AtlasVertex> resolveGuid(AtlasObjectId objId) throws AtlasBaseException {
         //validate in graph repo that given guid, typename exists
         AtlasVertex vertex = null;
         try {
-            vertex = graphHelper.findVertex(Constants.GUID_PROPERTY_KEY, typeIdPair.getGuid(),
-                Constants.TYPE_NAME_PROPERTY_KEY, typeIdPair.getTypeName(),
+            vertex = graphHelper.findVertex(Constants.GUID_PROPERTY_KEY, objId.getGuid(),
+                Constants.TYPE_NAME_PROPERTY_KEY, objId.getTypeName(),
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
         } catch (EntityNotFoundException e) {
             //Ignore
@@ -105,7 +108,7 @@ public class IDBasedEntityResolver implements EntityResolver {
         if ( vertex != null ) {
             return Optional.of(vertex);
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, typeIdPair.getGuid());
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, objId.getGuid());
         }
     }
 

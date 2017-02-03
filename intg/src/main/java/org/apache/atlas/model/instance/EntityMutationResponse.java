@@ -89,6 +89,34 @@ public class EntityMutationResponse {
         return null;
     }
 
+    @JsonIgnore
+    public AtlasEntityHeader getFirstCreatedEntityByTypeName(String typeName) {
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
+        if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
+            for (AtlasEntityHeader header : entitiesByOperation) {
+                if ( header.getTypeName().equals(typeName)) {
+                    return header;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @JsonIgnore
+    public AtlasEntityHeader getFirstUpdatedEntityByTypeName(String typeName) {
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE);
+        if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
+            for (AtlasEntityHeader header : entitiesByOperation) {
+                if ( header.getTypeName().equals(typeName)) {
+                    return header;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public void addEntity(EntityMutations.EntityOperation op, AtlasEntityHeader header) {
         if (entitiesMutated == null) {
             entitiesMutated = new HashMap<>();

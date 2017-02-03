@@ -193,7 +193,7 @@ public class AtlasEntityType extends AtlasStructType {
         if (obj != null) {
             if (obj instanceof AtlasObjectId) {
                 AtlasObjectId objId = (AtlasObjectId ) obj;
-                return validateAtlasObjectId(objId);
+                return isAssignableFrom(objId);
             } else {
                 for (AtlasEntityType superType : superTypes) {
                     if (!superType.isValidValue(obj)) {
@@ -240,7 +240,7 @@ public class AtlasEntityType extends AtlasStructType {
         if (obj != null) {
             if (obj instanceof AtlasObjectId) {
                 AtlasObjectId objId = (AtlasObjectId ) obj;
-                return validateAtlasObjectId(objId);
+                return isAssignableFrom(objId);
             }
 
             for (AtlasEntityType superType : superTypes) {
@@ -406,16 +406,10 @@ public class AtlasEntityType extends AtlasStructType {
         return ret == null ? Collections.<String, AtlasAttribute>emptyMap() : ret;
     }
 
-    private boolean validateAtlasObjectId(AtlasObjectId objId) {
-        if (StringUtils.isEmpty(objId.getTypeName()) || StringUtils.isEmpty(objId.getGuid())) {
-            return false;
-        } else {
-            String typeName = objId.getTypeName();
-            if (!typeName.equals(getTypeName()) && !isSuperTypeOf(typeName)) {
-                return false;
-            }
-        }
-        return AtlasEntity.isAssigned(objId.getGuid()) || AtlasEntity.isUnAssigned((objId.getGuid()));
+    boolean isAssignableFrom(AtlasObjectId objId) {
+        boolean ret = objId.isValid() && (StringUtils.equals(objId.getTypeName(), getTypeName()) || isSuperTypeOf(objId.getTypeName()));
+
+        return ret;
     }
 
     public static class ForeignKeyReference {
