@@ -21,14 +21,17 @@ package org.apache.atlas.repository.typestore;
 import static org.apache.atlas.repository.graph.GraphHelper.setProperty;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -57,8 +60,10 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -82,25 +87,37 @@ public class GraphBackedTypeStore implements ITypeStore {
     @Override
     @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws AtlasException {
+
+        //Pre-create the vertices that are needed for the types.  This allows us to execute
+        //one query to determine all of the vertices that already exist.
+        Map<String, AtlasVertex> typeVertices = getOrCreateTypeVertices(typeSystem, typeNames);
+
+        //Complete the storage process by adding properties and edges to the vertices
+        //that were created.
+        TypePersistenceVisitor visitor = new TypePersistenceVisitor(this, typeVertices, typeSystem);
+        processTypes(typeNames, typeSystem, visitor);
+    }
+
+    private void processTypes(ImmutableList<String> typeNames, TypeSystem typeSystem, TypeVisitor visitor) throws AtlasException {
         for (String typeName : typeNames) {
             IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
             LOG.debug("Processing {}.{}.{} in type store", dataType.getTypeCategory(), dataType.getName(), dataType.getDescription());
             switch (dataType.getTypeCategory()) {
             case ENUM:
-                storeInGraph((EnumType) dataType);
+                visitor.visitEnumeration((EnumType)dataType);
                 break;
 
             case STRUCT:
                 StructType structType = (StructType) dataType;
-                storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(), dataType.getDescription(),
-                        ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableSet.<String>of());
+                processType(typeSystem, dataType.getTypeCategory(), dataType.getName(), dataType.getDescription(),
+                        ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableSet.<String>of(), visitor);
                 break;
 
             case TRAIT:
             case CLASS:
                 HierarchicalType type = (HierarchicalType) dataType;
-                storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(), type.getDescription(), type.immediateAttrs,
-                        type.superTypes);
+                processType(typeSystem, dataType.getTypeCategory(), dataType.getName(), type.getDescription(), type.immediateAttrs,
+                        type.superTypes, visitor);
                 break;
 
             default:    //Ignore primitive/collection types as they are covered under references
@@ -109,63 +126,70 @@ public class GraphBackedTypeStore implements ITypeStore {
         }
     }
 
-    private void storeInGraph(EnumType dataType) {
-        AtlasVertex AtlasVertex = createVertex(dataType.getTypeCategory(), dataType.getName(), dataType.getDescription());
-        List<String> values = new ArrayList<>(dataType.values().size());
-        for (EnumValue enumValue : dataType.values()) {
-            String key = getPropertyKey(dataType.getName(), enumValue.value);
-            setProperty(AtlasVertex, key, enumValue.ordinal);
-            values.add(enumValue.value);
+    private Map<String, AtlasVertex> getOrCreateTypeVertices(TypeSystem typeSystem, ImmutableList<String> typeNames) throws AtlasException {
+
+        //examine the types to determine what type vertices are needed
+        TypeVertexFinder vertexFinder = new TypeVertexFinder(typeSystem);
+        processTypes(typeNames, typeSystem, vertexFinder);
+        List<TypeVertexInfo> typeVerticesNeeded = vertexFinder.getVerticesToCreate();
+
+        //find or create the type vertices
+        List<AtlasVertex> vertices = createVertices(typeVerticesNeeded);
+
+        //Create a type name->AtlasVertex map with the result
+        Map<String, AtlasVertex> result = new HashMap<String,AtlasVertex>(typeVerticesNeeded.size());
+        for(int i = 0 ; i < typeVerticesNeeded.size(); i++) {
+            TypeVertexInfo createdVertexInfo = typeVerticesNeeded.get(i);
+            AtlasVertex createdVertex = vertices.get(i);
+            result.put(createdVertexInfo.getTypeName(), createdVertex);
         }
-        setProperty(AtlasVertex, getPropertyKey(dataType.getName()), values);
+        return result;
+
     }
 
-    private String getPropertyKey(String name) {
+
+    static String getPropertyKey(String name) {
         return PROPERTY_PREFIX + name;
     }
 
-    private String getPropertyKey(String parent, String child) {
+    static String getPropertyKey(String parent, String child) {
         return PROPERTY_PREFIX + parent + "." + child;
     }
 
-    String getEdgeLabel(String parent, String child) {
+    static String getEdgeLabel(String parent, String child) {
         return PROPERTY_PREFIX + "edge." + parent + "." + child;
     }
 
-    private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName, String typeDescription,
-            ImmutableList<AttributeInfo> attributes, ImmutableSet<String> superTypes) throws AtlasException {
-        AtlasVertex vertex = createVertex(category, typeName, typeDescription);
+    private void processType(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName, String typeDescription,
+            ImmutableList<AttributeInfo> attributes, ImmutableSet<String> superTypes, TypeVisitor visitor) throws AtlasException {
+
+        visitor.visitDataType(category, typeName, typeDescription);
+
         List<String> attrNames = new ArrayList<>();
         if (attributes != null) {
             for (AttributeInfo attribute : attributes) {
-                String propertyKey = getPropertyKey(typeName, attribute.name);
-                try {
-                    setProperty(vertex, propertyKey, attribute.toJson());
-                } catch (JSONException e) {
-                    throw new StorageException(typeName, e);
-                }
+                visitor.visitAttribute(typeName, attribute);
                 attrNames.add(attribute.name);
-                addReferencesForAttribute(typeSystem, vertex, attribute);
+                processsAttribute(typeSystem,  typeName, attribute, visitor);
             }
         }
-        setProperty(vertex, getPropertyKey(typeName), attrNames);
+        visitor.visitAttributeNames(typeName, attrNames);
 
         //Add edges for hierarchy
         if (superTypes != null) {
             for (String superTypeName : superTypes) {
-                HierarchicalType superType = typeSystem.getDataType(HierarchicalType.class, superTypeName);
-                AtlasVertex superVertex = createVertex(superType.getTypeCategory(), superTypeName, superType.getDescription());
-                graphHelper.getOrCreateEdge(vertex, superVertex, SUPERTYPE_EDGE_LABEL);
+                visitor.visitSuperType(typeName, superTypeName);
             }
         }
     }
 
-    private void addReferencesForAttribute(TypeSystem typeSystem, AtlasVertex vertex, AttributeInfo attribute)
+    private void processsAttribute(TypeSystem typeSystem, String typeName, AttributeInfo attribute, TypeVisitor visitor)
             throws AtlasException {
+
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         List<IDataType> attrDataTypes = new ArrayList<>();
         IDataType attrDataType = attribute.dataType();
-        String vertexTypeName = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
+
 
         switch (attrDataType.getTypeCategory()) {
         case ARRAY:
@@ -200,11 +224,10 @@ public class GraphBackedTypeStore implements ITypeStore {
                     "Attribute cannot reference instances of type : " + attrDataType.getTypeCategory());
         }
 
+
         for (IDataType attrType : attrDataTypes) {
             if (!coreTypes.contains(attrType.getName())) {
-                AtlasVertex attrVertex = createVertex(attrType.getTypeCategory(), attrType.getName(), attrType.getDescription());
-                String label = getEdgeLabel(vertexTypeName, attribute.name);
-                graphHelper.getOrCreateEdge(vertex, attrVertex, label);
+                visitor.visitAttributeDataType(typeName, attribute, attrType);
             }
         }
     }
@@ -328,23 +351,54 @@ public class GraphBackedTypeStore implements ITypeStore {
         return vertex;
     }
 
-    private AtlasVertex createVertex(DataTypes.TypeCategory category, String typeName, String typeDescription) {
-        AtlasVertex vertex = findVertex(category, typeName);
-        if (vertex == null) {
-            LOG.debug("Adding vertex {}{}", PROPERTY_PREFIX, typeName);
-            vertex = graph.addVertex();
-            setProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type AtlasVertex
-            setProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, category);
-            setProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, typeName);
-        }
-        if (typeDescription != null) {
-            String oldDescription = getPropertyKey(Constants.TYPEDESCRIPTION_PROPERTY_KEY);
-            if (!typeDescription.equals(oldDescription)) {
-                setProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDescription);
+  //package-private for testing
+   Map<String, AtlasVertex> findVertices(List<String> typeNames) throws RepositoryException {
+        LOG.debug("Finding vertices for {}", typeNames.toString());
+        Map<String, AtlasVertex> foundVertices = graphHelper.getVerticesForPropertyValues(Constants.TYPENAME_PROPERTY_KEY, typeNames);
+        return foundVertices;
+
+    }
+
+
+    /**
+     * Finds or creates type vertices with the information specified.
+     *
+     * @param infoList
+     * @return list with the vertices corresponding to the types in the list.
+     * @throws AtlasException
+     */
+    private List<AtlasVertex> createVertices(List<TypeVertexInfo> infoList) throws AtlasException {
+
+        List<AtlasVertex> result = new ArrayList<>(infoList.size());
+        List<String> typeNames = Lists.transform(infoList, new Function<TypeVertexInfo,String>() {
+
+            @Override
+            public String apply(TypeVertexInfo input) {
+                return input.getTypeName();
             }
-        } else {
-            LOG.debug(" type description is null ");
+        });
+        Map<String, AtlasVertex> vertices = findVertices(typeNames);
+
+        for(TypeVertexInfo info : infoList) {
+            AtlasVertex vertex = vertices.get(info.getTypeName());
+            if (! GraphHelper.elementExists(vertex)) {
+                LOG.debug("Adding vertex {}{}", PROPERTY_PREFIX, info.getTypeName());
+                vertex = graph.addVertex();
+                setProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type AtlasVertex
+                setProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, info.getCategory());
+                setProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, info.getTypeName());
+            }
+            String newDescription = info.getTypeDescription();
+            if (newDescription != null) {
+                String oldDescription = getPropertyKey(Constants.TYPEDESCRIPTION_PROPERTY_KEY);
+                if (!newDescription.equals(oldDescription)) {
+                    setProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, newDescription);
+                }
+            } else {
+                LOG.debug(" type description is null ");
+            }
+            result.add(vertex);
         }
-        return vertex;
+        return result;
     }
 }

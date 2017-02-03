@@ -538,7 +538,7 @@ public final class GraphHelper {
      *
      *  @return propertyValue to AtlasVertex map with the result.
      */
-    private Map<String, AtlasVertex> getVerticesForPropertyValues(String property, List<String> values)
+    public Map<String, AtlasVertex> getVerticesForPropertyValues(String property, List<String> values)
             throws RepositoryException {
 
         if(values.isEmpty()) {

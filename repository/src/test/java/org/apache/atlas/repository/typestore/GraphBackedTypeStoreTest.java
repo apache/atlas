@@ -23,6 +23,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAt
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import javax.inject.Inject;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -200,11 +202,11 @@ public class GraphBackedTypeStoreTest {
         verifyEdges();
     }
 
-    private void verifyEdges() {
+    private void verifyEdges() throws RepositoryException {
         // ATLAS-474: verify that type update did not write duplicate edges to the type store.
         if (typeStore instanceof GraphBackedTypeStore) {
             GraphBackedTypeStore gbTypeStore = (GraphBackedTypeStore) typeStore;
-            AtlasVertex typeVertex = gbTypeStore.findVertex(TypeCategory.CLASS, "Department");
+            AtlasVertex typeVertex = gbTypeStore.findVertices(Collections.singletonList("Department")).get("Department");
             int edgeCount = countOutgoingEdges(typeVertex, gbTypeStore.getEdgeLabel("Department", "employees"));
             Assert.assertEquals(edgeCount, 1, "Should only be 1 edge for employees attribute on Department type AtlasVertex");
         }
