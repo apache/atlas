@@ -57,7 +57,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'vent', 'entityObject'));
+                _.extend(this, _.pick(options, 'guid', 'entity'));
                 this.entityCollection = new VEntityList();
                 this.count = 26;
                 this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
@@ -78,7 +78,6 @@ define(['require',
                     paginatorOpts: {}
                 };
                 this.currPage = 1;
-                this.bindEvents();
             },
             onRender: function() {
                 $.extend(this.entityCollection.queryParams, { count: this.count });
@@ -89,17 +88,7 @@ define(['require',
                 });
                 this.renderTableLayoutView();
             },
-            bindEvents: function() {
-                var that = this;
-                this.listenTo(this.vent, "reset:collection", function() {
-                    this.fetchCollection({
-                        next: this.ui.nextAuditData,
-                        nextClick: false,
-                        previous: this.ui.previousAuditData
-                    });
-                }, this);
-
-            },
+            bindEvents: function() {},
             getToOffset: function() {
                 var toOffset = 0;
                 if (this.entityCollection.models.length < this.count) {
@@ -169,7 +158,6 @@ define(['require',
                 require(['utils/TableLayout'], function(TableLayout) {
                     var cols = new Backgrid.Columns(that.getAuditTableColumns());
                     that.RAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        globalVent: that.globalVent,
                         columns: cols
                     })));
                     if (!(that.entityCollection.models.length < that.count)) {
@@ -236,7 +224,7 @@ define(['require',
                     that.action = $(e.target).data("action");
                     var eventModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
                         collectionModel = new that.entityCollection.model(eventModel),
-                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entityObject: that.entityObject });
+                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity });
                     var modal = new Modal({
                         title: that.action,
                         content: view,

@@ -19,8 +19,9 @@
 define(['require',
     'backbone',
     'hbs!tmpl/entity/EntityDetailTableLayoutView_tmpl',
-    'utils/CommonViewFunction'
-], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'models/VEntity',
+], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity) {
     'use strict';
 
     var EntityDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -47,9 +48,8 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection'));
-                this.collectionObject = this.collection.toJSON();
-                this.entityModel = new this.collection.model();
+                _.extend(this, _.pick(options, 'entity', 'referredEntities'));
+                this.entityModel = new VEntity({});
             },
             bindEvents: function() {},
             onRender: function() {
@@ -57,13 +57,14 @@ define(['require',
             },
             entityTableGenerate: function() {
                 var that = this,
-                    attributeObject = this.collection.first().toJSON().attributes;
-                if (attributeObject) {
+                    attributeObject = this.entity.attributes;
+                CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
+                if (attributeObject && attributeObject.columns) {
                     var valueSorted = _.sortBy(attributeObject.columns, function(val) {
                         return val.attributes.position
                     });
+                    attributeObject.columns = valueSorted;
                 }
-                attributeObject.columns = valueSorted;
                 var table = CommonViewFunction.propertyTable(attributeObject, this);
                 that.ui.detailValue.append(table);
             }

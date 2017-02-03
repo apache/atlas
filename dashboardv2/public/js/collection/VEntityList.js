@@ -39,22 +39,33 @@ define(['require',
                     // if (!this.modelAttrName) {
                     //     throw new Error("this.modelAttrName not defined for " + this);
                     // }
-                    if (this.modelAttrName && this.modelAttrName === "createEntity") {
-                        var arr = [];
-                        arr.push({
-                            attributes: resp.attributes,
-                            classifications: resp.classifications,
-                            guid: resp.guid,
-                            typeName: resp.typeName
-                        });
-                        return arr;
-                    } else {
-                        if (resp[this.modelAttrName]) {
-                            return resp[this.modelAttrName];
-                        } else {
-                            return resp
+                    if (resp.entity && resp.referredEntities) {
+                        var obj = {
+                            entity: resp.entity,
+                            referredEntities: resp.referredEntities
                         }
+                        return obj;
+                    } else if (resp[this.modelAttrName]) {
+                        return resp[this.modelAttrName];
+                    } else {
+                        return resp
                     }
+                    // if (this.modelAttrName && this.modelAttrName === "createEntity") {
+                    //     var arr = [];
+                    //     arr.push({
+                    //         attributes: resp.attributes,
+                    //         classifications: resp.classifications,
+                    //         guid: resp.guid,
+                    //         typeName: resp.typeName
+                    //     });
+                    //     return arr;
+                    // } else {
+                    //     if (resp[this.modelAttrName]) {
+                    //         return resp[this.modelAttrName];
+                    //     } else {
+                    //         return resp
+                    //     }
+                    // }
 
                 } catch (e) {
                     console.log(e);

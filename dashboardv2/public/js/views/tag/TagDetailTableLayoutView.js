@@ -60,8 +60,8 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid', 'term', 'assetName'));
-                this.collectionObject = this.collection.first().toJSON();
+                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'assetName'));
+                this.collectionObject = this.entity;
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject.classifications),
                     tagTermList = [],
@@ -102,7 +102,6 @@ define(['require',
                 require(['utils/TableLayout'], function(TableLayout) {
                     var cols = new Backgrid.Columns(that.getSchemaTableColumns());
                     that.RTagTermTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        globalVent: that.globalVent,
                         columns: cols
                     })));
                 });
@@ -164,7 +163,6 @@ define(['require',
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
-                        vent: that.vent,
                         guid: that.guid,
                         modalCollection: that.collection
                     });

@@ -58,7 +58,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'tag', 'collection'));
+                _.extend(this, _.pick(options, 'tag', 'collection'));
             },
             bindEvents: function() {
                 var that = this;
@@ -143,7 +143,10 @@ define(['require',
                     return model.get('name').toLowerCase();
                 };
                 that.collection.fullCollection.sort().each(function(model) {
-                    var name = _.escape(model.get('name'))
+                    var name = _.escape(model.get('name'));
+                    if (name.indexOf(".") > -1) {
+                        return;
+                    }
                     if (searchString) {
                         if (name.search(new RegExp(searchString, "i")) != -1) {
                             // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
@@ -165,7 +168,7 @@ define(['require',
             },
             onClickCreateTag: function(e) {
                 var that = this;
-                $(e.currentTarget).blur();
+                $(e.currentTarget).attr("disabled", "true");
                 require([
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
@@ -184,7 +187,7 @@ define(['require',
                         modal.$el.find('button.ok').removeAttr("disabled");
                     });
                     view.ui.tagName.on('keyup', function(e) {
-                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value == "") {
+                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
                             modal.$el.find('button.ok').attr("disabled", "true");
                         }
                     });
@@ -196,10 +199,12 @@ define(['require',
                         });
                     });
                     modal.on('ok', function() {
+                        modal.$el.find('button.ok').attr("disabled", "true");
                         that.onCreateButton(view, modal);
                     });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
+                        that.ui.createTag.removeAttr("disabled");
                     });
                 });
             },
@@ -243,6 +248,7 @@ define(['require',
                 };
                 new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
+                        that.ui.createTag.removeAttr("disabled");
                         that.createTag = true;
                         that.fetchCollections();
                         that.collection.add(model)

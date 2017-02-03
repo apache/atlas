@@ -92,7 +92,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'url', 'viewBased'));
+                _.extend(this, _.pick(options, 'url', 'viewBased'));
                 this.parentCollection = new VCatalogList();
                 this.childCollection = new VCatalogList();
                 this.taxanomy = new VCatalogList();

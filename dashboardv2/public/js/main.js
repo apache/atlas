@@ -160,12 +160,27 @@ require(['App',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/UrlLinks',
+    'collection/VEntityList',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, CommonViewFunction, Globals, UrlLinks) {
-    App.appRouter = new Router();
+], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList) {
+    var that = this;
+    this.asyncFetchCounter = 2;
+    this.entityDefCollection = new VEntityList();
+    that.entityDefCollection.url = UrlLinks.entitiesDefApiUrl()
+    that.entityDefCollection.modelAttrName = 'list';
+
+    App.appRouter = new Router({
+        entityDefCollection: this.entityDefCollection
+    });
+
+    var startApp = function() {
+        if (that.asyncFetchCounter === 0) {
+            App.start();
+        }
+    };
     CommonViewFunction.userDataFetch({
         url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
@@ -192,7 +207,14 @@ require(['App',
                     }
                 }
             }
-            App.start();
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+    that.entityDefCollection.fetch({
+        complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
         }
     });
 });

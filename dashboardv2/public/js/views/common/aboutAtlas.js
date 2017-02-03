@@ -41,7 +41,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent'));
+                _.extend(this, options);
             },
             bindEvents: function() {
 

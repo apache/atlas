@@ -82,6 +82,7 @@ define(function(require) {
                 okCloses: true,
                 cancelText: 'Cancel',
                 allowCancel: false,
+                allowBackdrop: true,
                 showFooter: true,
                 escape: true,
                 animate: true,
@@ -145,7 +146,7 @@ define(function(require) {
             //Create it
             $el.modal(_.extend({
                 keyboard: this.options.allowCancel,
-                backdrop: this.options.allowCancel ? true : 'static'
+                backdrop: this.options.allowBackdrop ? 'static' : true
             }, this.options.modalOptions));
 
             //Focus OK button

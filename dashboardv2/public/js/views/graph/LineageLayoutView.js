@@ -56,7 +56,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid'));
+                _.extend(this, _.pick(options, 'guid'));
                 this.entityModel = new VEntity();
                 this.collection = new VLineageList();
                 this.typeMap = {};

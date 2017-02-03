@@ -72,7 +72,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'value'));
+                _.extend(this, _.pick(options, 'value'));
                 this.typecollection = new VTagList([], {});
                 this.typecollection.url = UrlLinks.typesApiUrl();
                 this.type = "fulltext";

@@ -36,6 +36,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         require(['models/VTag'], function(VTag) {
             var tagModel = new VTag();
             if (options && options.guid && options.tagName) {
+                if (options.showLoader) {
+                    options.showLoader();
+                }
                 tagModel.deleteTag(options.guid, options.tagName, {
                     skipDefaultError: true,
                     success: function(data) {
@@ -61,6 +64,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if (response && response.responseJSON) {
                             message = response.responseJSON.errorMessage;
                         }
+                        if (options.hideLoader) {
+                            options.hideLoader();
+                        }
                         Utils.notifyError({
                             content: message
                         });
@@ -69,6 +75,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         });
     };
+    CommonViewFunction.findAndmergeRefEntity = function(attributeObject, referredEntities) {
+        _.each(attributeObject, function(obj, key) {
+            if (_.isObject(obj)) {
+                if (_.isArray(obj)) {
+                    _.each(obj, function(value) {
+                        _.extend(value, referredEntities[value.guid]);
+                    });
+                } else {
+                    _.extend(obj, referredEntities[obj.guid]);
+                }
+            }
+        });
+    }
     CommonViewFunction.propertyTable = function(valueObject, scope, searchTable) {
         var table = "",
             fetchInputOutputValue = function(id) {
@@ -77,9 +96,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     ++scope.fetchList
                 }
                 scope.entityModel.getEntity(id, {
-                    success: function(data) {
+                    success: function(serverData) {
                         var value = "",
-                            deleteButton = "";
+                            deleteButton = "",
+                            data = serverData.entity;
                         if (data && data.attributes) {
                             if (data.attributes.name) {
                                 value = data.attributes.name;
@@ -118,18 +138,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             key = _.escape(key)
             var keyValue = valueObject[key],
                 valueOfArray = [];
-            if (_.isArray(keyValue) || _.isObject(keyValue)) {
+            if (_.isObject(keyValue)) {
                 if (!_.isArray(keyValue) && _.isObject(keyValue)) {
                     keyValue = [keyValue];
                 }
                 var subLink = "";
                 for (var i = 0; i < keyValue.length; i++) {
                     var inputOutputField = keyValue[i],
-                        id = inputOutputField.guid || inputOutputField.id,
+                        id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
                         tempLink = "",
-                        readOnly = false;
-                    if (Enums.entityStateReadOnly[inputOutputField.status]) {
-                        readOnly = inputOutputField.status
+                        status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
+                        readOnly = Enums.entityStateReadOnly[status];
+                    if (!inputOutputField.attributes && inputOutputField.values) {
+                        inputOutputField['attributes'] = inputOutputField.values;
                     }
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         if (inputOutputField.indexOf("$") == -1) {
@@ -289,7 +310,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         if (!obj) {
             return "";
         }
-        var traits = obj.classificationNames,
+        var traits = obj.classificationNames || _.pluck(obj.classifications, 'typeName'),
             url = "",
             deleteHtml = "",
             html = "",
@@ -332,7 +353,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
     }
     CommonViewFunction.tagForTable = function(obj) {
-        var traits = obj.classificationNames,
+        var traits = obj.classificationNames || _.pluck(obj.classifications, 'typeName'),
             atags = "",
             addTag = "",
             popTag = "",

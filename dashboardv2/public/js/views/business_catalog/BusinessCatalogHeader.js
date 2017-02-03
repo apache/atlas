@@ -29,7 +29,7 @@ define(['require',
         regions: {},
         events: {},
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'globalVent', 'url', 'collection'));
+            _.extend(this, _.pick(options, 'url', 'collection'));
             this.value = [];
         },
         /**

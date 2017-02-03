@@ -66,7 +66,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'globalVent', 'url', 'value', 'tag', 'selectFirst','collection'));
+            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'collection'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -88,7 +88,6 @@ define(['require',
             var that = this;
             require(['views/business_catalog/BusinessCatalogLayoutView'], function(BusinessCatalogLayoutView) {
                 that.RBusinessCatalogLayoutView.show(new BusinessCatalogLayoutView({
-                    globalVent: that.globalVent,
                     url: that.url
                 }));
             });
@@ -97,7 +96,6 @@ define(['require',
             var that = this;
             require(['views/tag/TagLayoutView'], function(TagLayoutView) {
                 that.RTagLayoutView.show(new TagLayoutView({
-                    globalVent: that.globalVent,
                     collection: that.collection,
                     tag: that.tag
                 }));
@@ -107,8 +105,6 @@ define(['require',
             var that = this;
             require(['views/search/SearchLayoutView'], function(SearchLayoutView) {
                 that.RSearchLayoutView.show(new SearchLayoutView({
-                    globalVent: that.globalVent,
-                    vent: that.vent,
                     value: that.value
                 }));
             });

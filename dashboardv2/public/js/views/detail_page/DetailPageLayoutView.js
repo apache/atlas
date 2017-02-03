@@ -102,14 +102,14 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent', 'id'));
+                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection'));
                 this.bindEvents();
-                this.auditVent = new Backbone.Wreqr.EventAggregator();
             },
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
-                    var collectionJSON = this.collection.first().toJSON();
+                    var entityObject = this.collection.first().toJSON();
+                    var collectionJSON = entityObject.entity;
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -123,23 +123,12 @@ define(['require',
                     }
                     if (collectionJSON) {
                         if (collectionJSON.attributes) {
-                            if (collectionJSON.attributes.name) {
-                                this.name = collectionJSON.attributes.name
-                            }
-                            if (!this.name && collectionJSON.attributes.qualifiedName) {
-                                this.name = collectionJSON.attributes.qualifiedName;
-                            }
-                            if (!this.name && collectionJSON.displayText) {
-                                this.name = collectionJSON.displayText;
-                            }
+                            this.name = (_.escape(collectionJSON.attributes && collectionJSON.attributes.name ? collectionJSON.attributes.name : null) || _.escape(collectionJSON.displayText) || collectionJSON.guid);
                             if (this.name && collectionJSON.typeName) {
                                 this.name = this.name + ' (' + collectionJSON.typeName + ')';
                             }
                             if (!this.name && collectionJSON.typeName) {
                                 this.name = collectionJSON.typeName;
-                            }
-                            if (!this.name && this.id) {
-                                this.name = this.id;
                             }
                             this.description = collectionJSON.attributes.description;
                             if (this.name) {
@@ -173,12 +162,27 @@ define(['require',
                         }
                     }
                     this.hideLoader();
-                    this.renderEntityDetailTableLayoutView();
-                    this.renderAuditTableLayoutView(this.id, collectionJSON.attributes);
-                    this.renderTagTableLayoutView(tagGuid);
-                    this.renderTermTableLayoutView(tagGuid);
-                    this.renderLineageLayoutView(this.id);
-                    this.renderSchemaLayoutView(this.id);
+                    var obj = {
+                        entity: collectionJSON,
+                        referredEntities: entityObject.referredEntities,
+                        guid: this.id,
+                        assetName: this.name,
+                        entityDefCollection: this.entityDefCollection,
+                        fetchCollection: this.fetchCollection.bind(that)
+                    }
+                    this.renderEntityDetailTableLayoutView(obj);
+                    this.renderAuditTableLayoutView(obj);
+                    this.renderTagTableLayoutView(obj);
+                    this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
+                    this.renderLineageLayoutView(obj);
+                    // To render Schema check attribute "schemaElementsAttribute"
+                    var schemaOptions = this.entityDefCollection.find({ name: collectionJSON.typeName }).get('options');
+                    if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
+                        this.$('.schemaTable').show();
+                        this.renderSchemaLayoutView(_.extend({}, obj, {
+                            attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
+                        }));
+                    }
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
                     this.$('.fontLoader').hide();
@@ -265,7 +269,6 @@ define(['require',
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
-                        vent: that.vent,
                         guid: that.id,
                         tagList: _.map(that.collection.first().toJSON().classifications, function(obj) {
                             return obj.typeName;
@@ -300,65 +303,40 @@ define(['require',
                 });
 
             },
-            renderEntityDetailTableLayoutView: function() {
+            renderEntityDetailTableLayoutView: function(obj) {
                 var that = this;
                 require(['views/entity/EntityDetailTableLayoutView'], function(EntityDetailTableLayoutView) {
-                    that.REntityDetailTableLayoutView.show(new EntityDetailTableLayoutView({
-                        globalVent: that.globalVent,
-                        collection: that.collection
-                    }));
+                    that.REntityDetailTableLayoutView.show(new EntityDetailTableLayoutView(obj));
                 });
             },
-            renderTagTableLayoutView: function(tagGuid) {
+            renderTagTableLayoutView: function(obj) {
                 var that = this;
                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
-                    that.RTagTableLayoutView.show(new TagDetailTableLayoutView({
-                        globalVent: that.globalVent,
-                        collection: that.collection,
-                        guid: tagGuid,
-                        assetName: that.name
-                    }));
+                    that.RTagTableLayoutView.show(new TagDetailTableLayoutView(obj));
                 });
             },
-            renderLineageLayoutView: function(tagGuid) {
+            renderTermTableLayoutView: function(obj) {
+                var that = this;
+                require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
+                    that.RTermTableLayoutView.show(new TagDetailTableLayoutView(obj));
+                });
+            },
+            renderLineageLayoutView: function(obj) {
                 var that = this;
                 require(['views/graph/LineageLayoutView'], function(LineageLayoutView) {
-                    that.RLineageLayoutView.show(new LineageLayoutView({
-                        globalVent: that.globalVent,
-                        guid: tagGuid
-                    }));
+                    that.RLineageLayoutView.show(new LineageLayoutView(obj));
                 });
             },
-            renderSchemaLayoutView: function(tagGuid) {
+            renderSchemaLayoutView: function(obj) {
                 var that = this;
                 require(['views/schema/SchemaLayoutView'], function(SchemaLayoutView) {
-                    that.RSchemaTableLayoutView.show(new SchemaLayoutView({
-                        globalVent: that.globalVent,
-                        guid: tagGuid
-                    }));
+                    that.RSchemaTableLayoutView.show(new SchemaLayoutView(obj));
                 });
             },
-            renderAuditTableLayoutView: function(tagGuid, entityObject) {
+            renderAuditTableLayoutView: function(obj) {
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
-                    that.RAuditTableLayoutView.show(new AuditTableLayoutView({
-                        globalVent: that.globalVent,
-                        guid: tagGuid,
-                        vent: that.auditVent,
-                        entityObject: entityObject
-                    }));
-                });
-            },
-            renderTermTableLayoutView: function(tagGuid) {
-                var that = this;
-                require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
-                    that.RTermTableLayoutView.show(new TagDetailTableLayoutView({
-                        globalVent: that.globalVent,
-                        collection: that.collection,
-                        guid: tagGuid,
-                        assetName: that.name,
-                        term: true
-                    }));
+                    that.RAuditTableLayoutView.show(new AuditTableLayoutView(obj));
                 });
             },
             onClickEditEntity: function(e) {

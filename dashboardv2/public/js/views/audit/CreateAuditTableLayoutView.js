@@ -54,7 +54,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'entityModel', 'action', 'entityObject'));
+                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -63,24 +63,27 @@ define(['require',
             auditTableGenerate: function() {
                 var that = this,
                     table = "";
-                if (this.entityModel.get('details').search('{') >= 0) {
-                    var appendedString = "{" + this.entityModel.get('details') + "}";
+                var detailObj = this.entityModel.get('details');
+                if (detailObj && detailObj.search(':') >= 0) {
+                    var parseDetailsObject = detailObj;
+                    var appendedString = "{" + detailObj + "}";
                     var auditData = appendedString.split('"')[0].split(':')[0].split("{")[1];
                     try {
-                        var detailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
+                        parseDetailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
+                        var name = _.escape(parseDetailsObject.typeName);
                     } catch (err) {
-                        Utils.serverErrorHandler();
+                        if (parseDetailsObject.search(':') >= 0) {
+                            var name = parseDetailsObject.split(":")[1];
+                        }
                     }
-                    //Append string for JSON parse
-                    if (detailsObject) {
-                        var valueObject = detailsObject.values;
-                    }
-                    if ((this.action == Enums.auditAction.TAG_ADD || Enums.auditAction.ENTITY_CREATE) && detailsObject) {
-                        this.ui.auditHeaderValue.html('<th>' + (this.action === Enums.auditAction.ENTITY_CREATE ? Enums.auditAction.ENTITY_CREATE : Enums.auditAction.TAG_ADD) + '</th>');
-                        this.ui.auditValue.html("<tr><td>" + _.escape(detailsObject.typeName) + "</td></tr>");
-                    } else {
+                    var values = parseDetailsObject.values;
+                    if (this.action && (Enums.auditAction.ENTITY_CREATE !== this.action && Enums.auditAction.ENTITY_UPDATE !== this.action) && name) {
+                        this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
+                        this.ui.auditValue.html("<tr><td>" + name + "</td></tr>");
+                    } else if (parseDetailsObject && parseDetailsObject.values) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        table = CommonViewFunction.propertyTable(valueObject, this);
+                        //CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
+                        table = CommonViewFunction.propertyTable(values, this);
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
@@ -90,9 +93,6 @@ define(['require',
                             this.ui.tableAudit.hide();
                         }
                     }
-                } else if (this.action == Enums.auditAction.TAG_DELETE || Enums.auditAction.ENTITY_DELETE) {
-                    this.ui.auditHeaderValue.html('<th>' + Enums.auditAction.TAG_DELETE || Enums.auditAction.ENTITY_DELETE + '</th>');
-                    this.ui.auditValue.html("<tr><td>" + (this.entityObject.name || this.entityObject.qualifiedName) + "</td></tr>");
                 }
 
             },

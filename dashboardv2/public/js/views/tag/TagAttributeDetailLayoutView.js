@@ -59,7 +59,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'tag', 'collection'));
+                _.extend(this, _.pick(options, 'tag', 'collection'));
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {

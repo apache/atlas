@@ -41,13 +41,11 @@ define([
             // Default
             '*actions': 'defaultAction'
         },
-        initialize: function() {
+        initialize: function(options) {
+            _.extend(this, _.pick(options, 'entityDefCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
-            this.globalVent = new Backbone.Wreqr.EventAggregator();
-            this.catalogVent = new Backbone.Wreqr.EventAggregator();
-            this.tagVent = new Backbone.Wreqr.EventAggregator();
             this.tagCollection = new VTagList();
         },
         bindCommonEvents: function() {
@@ -111,15 +109,14 @@ define([
                     var paramObj = Utils.getUrlState.getQueryParams();
                     this.collection = new VCatalogList();
                     this.collection.url = url;
-                    App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
+                    App.rNHeader.show(new BusinessCatalogHeader({ 'url': url, 'collection': this.collection }));
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url, 'collection': that.tagCollection }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'url': url, 'collection': that.tagCollection }));
                     } else {
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
                         App.rSideNav.currentView.selectTab();
                     }
                     App.rNContent.show(new BusinessCatalogDetailLayoutView({
-                        'globalVent': that.globalVent,
                         'url': url,
                         'collection': this.collection
                     }));
@@ -139,16 +136,16 @@ define([
                     'collection/VEntityList'
                 ], function(Header, DetailPageLayoutView, SideNavLayoutView, VEntityList) {
                     this.entityCollection = new VEntityList([], {});
-                    App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
+                    App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'collection': that.tagCollection }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'collection': that.tagCollection }));
                     } else {
                         App.rSideNav.currentView.selectTab();
                     }
                     App.rNContent.show(new DetailPageLayoutView({
-                        'globalVent': that.globalVent,
                         'collection': this.entityCollection,
                         'id': id,
+                        'entityDefCollection': that.entityDefCollection,
                     }));
                     this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });
@@ -163,10 +160,9 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/tag/TagDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, TagDetailLayoutView) {
-                App.rNHeader.show(new Header({ 'globalVent': that.globalVent, 'vent': that.catalogVent }));
+                App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
-                        'globalVent': that.globalVent,
                         'tag': tagName,
                         'collection': that.tagCollection
                     }));
@@ -177,7 +173,6 @@ define([
 
                 if (tagName) {
                     App.rNContent.show(new TagDetailLayoutView({
-                        'globalVent': that.globalVent,
                         'tag': tagName,
                         'collection': that.tagCollection
                     }));
@@ -193,10 +188,9 @@ define([
                 'views/search/SearchDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
-                App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
+                App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
-                        'globalVent': that.globalVent,
                         'collection': that.tagCollection
                     }));
                 } else {
@@ -209,8 +203,8 @@ define([
                 }
                 if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
                     App.rNContent.show(new SearchDetailLayoutView({
-                        'globalVent': that.globalVent,
                         'value': paramObj,
+                        'entityDefCollection': that.entityDefCollection,
                         'initialView': true
                     }))
                 } else {
@@ -228,10 +222,9 @@ define([
                 'views/search/SearchDetailLayoutView'
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
-                App.rNHeader.show(new Header({ 'globalVent': that.globalVent, 'vent': that.catalogVent }));
+                App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
-                        'globalVent': that.globalVent,
                         'value': paramObj,
                         'collection': that.tagCollection
                     }));
@@ -240,8 +233,8 @@ define([
                 }
                 App.rSideNav.currentView.selectTab();
                 App.rNContent.show(new SearchDetailLayoutView({
-                    'globalVent': that.globalVent,
                     'value': paramObj,
+                    'entityDefCollection': that.entityDefCollection,
                     'initialView': paramObj.query.trim().length === 0
                 }));
             });
