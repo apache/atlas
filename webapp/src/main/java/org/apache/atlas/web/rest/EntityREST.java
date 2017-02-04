@@ -84,13 +84,11 @@ public class EntityREST {
     @Path("/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasEntityWithAssociations> getById(@PathParam("guid") String guid) throws AtlasBaseException {
-        List<AtlasEntityWithAssociations> entityList = new ArrayList<>();
-
         try {
-            ITypedReferenceableInstance ref = metadataService.getEntityDefinition(guid);
-            Map<String, AtlasEntityWithAssociations> entityRet = restAdapters.getAtlasEntity(ref);
-            entityList.addAll(entityRet.values());
-            return entityList;
+            ITypedReferenceableInstance              ref      = metadataService.getEntityDefinition(guid);
+            Map<String, AtlasEntityWithAssociations> entities = restAdapters.getAtlasEntity(ref);
+
+            return getOrderedEntityList(entities, guid);
         } catch (AtlasException e) {
             throw toAtlasBaseException(e);
         }
@@ -106,19 +104,8 @@ public class EntityREST {
     @Path("/guid/{guid}/associations")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasEntityWithAssociations> getWithAssociationsByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
-
-        List<AtlasEntityWithAssociations> entityList = new ArrayList<>();
-        try {
-            ITypedReferenceableInstance ref = metadataService.getEntityDefinition(guid);
-            Map<String, AtlasEntityWithAssociations> entityRet = restAdapters.getAtlasEntity(ref);
-            entityList.addAll(entityRet.values());
-            return entityList;
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
+        return this.getById(guid);
     }
-
-
 
     /**
      * Delete an entity identified by its GUID
@@ -211,7 +198,6 @@ public class EntityREST {
 
         return entityList;
     }
-
 
     /**
      * Gets the list of classifications for a given entity represented by a guid.
@@ -372,5 +358,19 @@ public class EntityREST {
         if (attribute == null || !attribute.getIsUnique()) {
             throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
         }
+    }
+
+    private List<AtlasEntityWithAssociations> getOrderedEntityList(Map<String, AtlasEntityWithAssociations> entities, String firstItemGuid) {
+        List<AtlasEntityWithAssociations> ret = new ArrayList<>(entities.size());
+
+        for (AtlasEntityWithAssociations entity : entities.values()) {
+            if (StringUtils.equals(entity.getGuid(), firstItemGuid)) {
+                ret.add(0, entity);
+            } else {
+                ret.add(entity);
+            }
+        }
+
+        return ret;
     }
 }

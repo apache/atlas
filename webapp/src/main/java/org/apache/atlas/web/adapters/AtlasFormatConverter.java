@@ -46,18 +46,14 @@ public interface AtlasFormatConverter {
         }
 
         public void addEntity(AtlasEntity entity) {
-            if (entities == null) {
-                entities = new HashMap<>();
+            if (entity instanceof AtlasEntityWithAssociations) {
+                this.addEntity((AtlasEntityWithAssociations)entity);
+            } else {
+                this.addEntity(new AtlasEntityWithAssociations(entity));
             }
-            entities.put(entity.getGuid(), new AtlasEntityWithAssociations(entity));
         }
 
-        public boolean exists(AtlasEntityWithAssociations entity) {
-            return entities != null ? entities.containsKey(entity.getGuid()) : false;
-        }
-
-        public AtlasEntity getById(String guid) {
-
+        public AtlasEntityWithAssociations getById(String guid) {
             if( entities != null) {
                 return entities.get(guid);
             }
@@ -65,17 +61,10 @@ public interface AtlasFormatConverter {
             return null;
         }
 
+        public boolean entityExists(String guid) { return entities != null && entities.containsKey(guid); }
+
         public Map<String, AtlasEntityWithAssociations> getEntities() {
             return entities;
-        }
-
-        public void addEntities(Map<String, AtlasEntity> entities) {
-            if (this.entities == null) {
-                this.entities = new HashMap<>(entities.size());
-            }
-            for (String entityId : entities.keySet()) {
-                this.entities.put(entityId, new AtlasEntityWithAssociations(entities.get(entityId)));
-            }
         }
     }
 }

@@ -157,24 +157,17 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
             ret = new HashMap<>();
 
             for (AtlasStructType.AtlasAttribute attr : structType.getAllAttributes().values()) {
-                AtlasType            attrType      = attr.getAttributeType();
+                AtlasType attrType = attr.getAttributeType();
 
                 if (attrType == null) {
                     LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getName());
                     continue;
                 }
 
-                Object v1Value = attributes.get(attr.getName());
-                Object v2Value = null;
+                AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
+                Object               v1Value       = attributes.get(attr.getName());
+                Object               v2Value       = attrConverter.fromV1ToV2(v1Value, attrType, context);
 
-                AtlasFormatConverter attrConverter = null;
-                if (attrType.getTypeCategory() == TypeCategory.ENTITY && !attr.isContainedAttribute()) {
-                    attrConverter = new AtlasObjectIdConverter(converterRegistry, typeRegistry);
-                    v2Value = attrConverter.fromV1ToV2(v1Value, attrType, context);
-                } else {
-                    attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
-                    v2Value = attrConverter.fromV1ToV2(v1Value, attrType, context);
-                }
                 ret.put(attr.getAttributeDef().getName(), v2Value);
             }
         }

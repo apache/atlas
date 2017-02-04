@@ -129,13 +129,16 @@ public class AtlasInstanceRestAdapters {
     public Map<String, AtlasEntityWithAssociations> getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
 
         AtlasFormatConverter converter  = instanceFormatters.getConverter(TypeCategory.ENTITY);
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
+        AtlasEntityType      entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
+
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
         }
 
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
+
         converter.fromV1ToV2(referenceable, entityType, ctx);
+
         return ctx.getEntities();
     }
 
