@@ -32,9 +32,13 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.v1.AtlasStructDefStoreV1;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -72,51 +76,72 @@ public final class RestUtils {
     private RestUtils() {}
     private static final Logger LOG = LoggerFactory.getLogger(RestUtils.class);
 
-    public static TypesDef toTypesDef(AtlasEnumDef enumDef) {
-        TypesDef ret = null;
+    public static TypesDef toTypesDef(AtlasType type, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        final TypesDef ret;
 
-        if (enumDef != null) {
-            String      enumName    = enumDef.getName();
-            String      enumDesc    = enumDef.getDescription();
-            String      enumVersion = enumDef.getTypeVersion();
-            EnumValue[] enumValues  = getEnumValues(enumDef.getElementDefs());
-
-            if (enumName != null && enumValues != null && enumValues.length > 0) {
-                EnumTypeDefinition enumTypeDef = new EnumTypeDefinition(enumName, enumDesc, enumVersion, enumValues);
-
-                ret = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDef),
-                                            ImmutableList.<StructTypeDefinition>of(),
-                                            ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                                            ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
-            }
+        if (type instanceof AtlasEnumType) {
+            ret = RestUtils.enumToTypesDef((AtlasEnumType)type);
+        } else if (type instanceof AtlasEntityType) {
+            ret = RestUtils.entityToTypesDef((AtlasEntityType)type, typeRegistry);
+        } else if (type instanceof AtlasClassificationType) {
+            ret = RestUtils.classificationToTypesDef((AtlasClassificationType)type, typeRegistry);
+        } else if (type instanceof AtlasStructType) {
+            ret = RestUtils.structToTypesDef((AtlasStructType)type, typeRegistry);
+        } else {
+            ret = new TypesDef();
         }
 
         return ret;
     }
 
-    public static TypesDef toTypesDef(AtlasStructDef structDef, AtlasTypeRegistry registry) throws AtlasBaseException {
-        String                typeName   = structDef.getName();
-        String                typeDesc   = structDef.getDescription();
-        AttributeDefinition[] attributes = getAttributes(structDef, registry);
-        StructTypeDefinition  structType = TypesUtil.createStructTypeDef(typeName, typeDesc, attributes);
+    private static TypesDef enumToTypesDef(AtlasEnumType enumType) {
+        TypesDef ret = null;
+
+        AtlasEnumDef enumDef = enumType.getEnumDef();
+
+        String      enumName    = enumDef.getName();
+        String      enumDesc    = enumDef.getDescription();
+        String      enumVersion = enumDef.getTypeVersion();
+        EnumValue[] enumValues  = getEnumValues(enumDef.getElementDefs());
+
+        if (enumName != null && enumValues != null && enumValues.length > 0) {
+            EnumTypeDefinition enumTypeDef = new EnumTypeDefinition(enumName, enumDesc, enumVersion, enumValues);
+
+            ret = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDef),
+                                        ImmutableList.<StructTypeDefinition>of(),
+                                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                                        ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+        }
+
+        return ret;
+    }
+
+    private static TypesDef structToTypesDef(AtlasStructType structType, AtlasTypeRegistry registry)
+                                                                                            throws AtlasBaseException {
+        String                typeName      = structType.getStructDef().getName();
+        String                typeDesc      = structType.getStructDef().getDescription();
+        String                typeVersion   = structType.getStructDef().getTypeVersion();
+        AttributeDefinition[] attributes    = getAttributes(structType, registry);
+        StructTypeDefinition  structTypeDef = TypesUtil.createStructTypeDef(typeName, typeDesc, typeVersion, attributes);
 
         TypesDef ret = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
-                                             ImmutableList.of(structType),
+                                             ImmutableList.of(structTypeDef),
                                              ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                                              ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
         return ret;
     }
 
-    public static TypesDef toTypesDef(AtlasEntityDef entityDef, AtlasTypeRegistry registry) throws AtlasBaseException {
-        String                typeName    = entityDef.getName();
-        String                typeDesc    = entityDef.getDescription();
-        String                typeVersion = entityDef.getTypeVersion();
-        ImmutableSet          superTypes  = ImmutableSet.copyOf(entityDef.getSuperTypes());
-        AttributeDefinition[] attributes  = getAttributes(entityDef, registry);
+    private static TypesDef entityToTypesDef(AtlasEntityType entityType, AtlasTypeRegistry registry)
+                                                                                             throws AtlasBaseException {
+        String                typeName    = entityType.getEntityDef().getName();
+        String                typeDesc    = entityType.getEntityDef().getDescription();
+        String                typeVersion = entityType.getEntityDef().getTypeVersion();
+        ImmutableSet          superTypes  = ImmutableSet.copyOf(entityType.getEntityDef().getSuperTypes());
+        AttributeDefinition[] attributes  = getAttributes(entityType, registry);
 
         HierarchicalTypeDefinition<ClassType> classType = TypesUtil.createClassTypeDef(typeName, typeDesc, typeVersion,
-                                                                                        superTypes, attributes);
+                                                                                       superTypes, attributes);
         TypesDef ret = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
                                              ImmutableList.<StructTypeDefinition>of(),
                                              ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
@@ -125,12 +150,13 @@ public final class RestUtils {
         return ret;
     }
 
-    public static TypesDef toTypesDef(AtlasClassificationDef classifDef, AtlasTypeRegistry registry) throws AtlasBaseException {
-        String                typeName    = classifDef.getName();
-        String                typeDesc    = classifDef.getDescription();
-        String                typeVersion = classifDef.getTypeVersion();
-        ImmutableSet          superTypes  = ImmutableSet.copyOf(classifDef.getSuperTypes());
-        AttributeDefinition[] attributes  = getAttributes(classifDef, registry);
+    private static TypesDef classificationToTypesDef(AtlasClassificationType classificationType,
+                                                     AtlasTypeRegistry registry) throws AtlasBaseException {
+        String                typeName    = classificationType.getClassificationDef().getName();
+        String                typeDesc    = classificationType.getClassificationDef().getDescription();
+        String                typeVersion = classificationType.getClassificationDef().getTypeVersion();
+        ImmutableSet          superTypes  = ImmutableSet.copyOf(classificationType.getClassificationDef().getSuperTypes());
+        AttributeDefinition[] attributes  = getAttributes(classificationType, registry);
 
         HierarchicalTypeDefinition traitType = TypesUtil.createTraitTypeDef(typeName, typeDesc, typeVersion, superTypes,
                                                                              attributes);
@@ -441,59 +467,15 @@ public final class RestUtils {
         return ret;
     }
 
-    private static AttributeDefinition[] getAttributes(AtlasStructDef structDef, AtlasTypeRegistry registry) throws AtlasBaseException {
+    private static AttributeDefinition[] getAttributes(AtlasStructType structType, AtlasTypeRegistry registry) throws AtlasBaseException {
         List<AttributeDefinition> ret      = new ArrayList<>();
-        List<AtlasAttributeDef>   attrDefs = structDef.getAttributeDefs();
+        List<AtlasAttributeDef>   attrDefs = structType.getStructDef().getAttributeDefs();
 
         if (CollectionUtils.isNotEmpty(attrDefs)) {
-
             for (AtlasAttributeDef attrDef : attrDefs) {
-                String  name              = attrDef.getName();
-                String  dataTypeName      = attrDef.getTypeName();
-                Boolean isUnique          = attrDef.getIsUnique();
-                Boolean isIndexable       = attrDef.getIsIndexable();
-                String  reverseAttribName = null;
-                boolean isComposite;
+                AtlasAttribute attribute = structType.getAttribute(attrDef.getName());
 
-                // Multiplicity mapping
-                final int lower;
-                final int upper;
-
-                if (attrDef.getCardinality() == Cardinality.SINGLE) {
-                    lower = attrDef.getIsOptional() ? 0 : 1;
-                    upper = 1;
-                } else {
-                    if(attrDef.getIsOptional()) {
-                        lower = 0;
-                    } else {
-                        lower = attrDef.getValuesMinCount() < 1 ? 1 : attrDef.getValuesMinCount();
-                    }
-
-                    upper = attrDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attrDef.getValuesMaxCount();
-                }
-                
-                Multiplicity multiplicity = new Multiplicity(lower, upper, Cardinality.SET.equals(attrDef.getCardinality()));
-
-                // Constraint checks:
-                // 1. [ mappedFromRef -> isComposite ]
-                // 2. [ foreignKey(onDelete=cascade) -> reverseAttribute ]
-                AtlasStructType structType      = (AtlasStructType) registry.getType(structDef.getName());
-                boolean         isForeignKey    = structType.isForeignKeyAttribute(attrDef.getName());
-                boolean         isMappedFromRef = (structType instanceof AtlasEntityType) && ((AtlasEntityType)structType).isMappedFromRefAttribute(attrDef.getName());
-                AtlasType       attrType        = structType.getAttributeType(attrDef.getName());
-
-                if (attrType != null && isForeignKey) {
-                    if (attrType.getTypeCategory() == TypeCategory.ARRAY) {
-                        attrType = ((AtlasArrayType) attrType).getElementType();
-                    }
-
-                    if (attrType.getTypeCategory() == TypeCategory.ENTITY) {
-                        reverseAttribName = ((AtlasEntityType) attrType).
-                                                 getMappedFromRefAttribute(structType.getTypeName(), attrDef.getName());
-                    }
-                }
-                isComposite = isMappedFromRef || (isForeignKey && StringUtils.isBlank(reverseAttribName));
-                ret.add(new AttributeDefinition(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable, reverseAttribName));
+                ret.add(AtlasStructDefStoreV1.toAttributeDefintion(attribute));
             }
         }
 

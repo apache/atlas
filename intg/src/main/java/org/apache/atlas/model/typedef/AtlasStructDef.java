@@ -470,7 +470,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final String CONSTRAINT_PARAM_REF_ATTRIBUTE  = "refAttribute";
         public static final String CONSTRAINT_PARAM_ON_DELETE      = "onDelete";
         public static final String CONSTRAINT_PARAM_VAL_CASCADE    = "cascade";
-        public static final String CONSTRAINT_PARAM_VAL_UPDATE     = "update";
 
         private String              type;   // foreignKey/mappedFromRef/valueInRange
         private Map<String, Object> params; // onDelete=cascade/refAttribute=attr2/min=0,max=23

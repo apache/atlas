@@ -54,11 +54,7 @@
                     "name": "nodes",
                     "typeName": "array<storm_node>",
                     "cardinality": "LIST",
-                    "constraintDefs": [
-                        {
-                            "type": "foreignKey"
-                        }
-                    ],
+                    "constraintDefs": [],
                     "isIndexable": false,
                     "isOptional": false,
                     "isUnique": false

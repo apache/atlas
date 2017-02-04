@@ -136,7 +136,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 Object v1Value = null;
 
                 AtlasFormatConverter attrConverter = null;
-                if (attrType.getTypeCategory() == TypeCategory.ENTITY && !attr.isContainedAttribute()) {
+                if (attrType.getTypeCategory() == TypeCategory.ENTITY && !attr.legacyIsComposite()) {
                     attrConverter = new AtlasObjectIdConverter(converterRegistry, typeRegistry);
                     v1Value = attrConverter.fromV2ToV1(v2Value, attrType, context);
                 } else {

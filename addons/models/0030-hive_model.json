@@ -231,14 +231,7 @@
                     "name": "partitionKeys",
                     "typeName": "array<hive_column>",
                     "cardinality": "SINGLE",
-                    "constraintDefs": [
-                        {
-                            "type": "foreignKey",
-                            "params": {
-                                "onDelete": "update"
-                            }
-                        }
-                    ],
+                    "constraintDefs": [],
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -255,14 +248,7 @@
                     "name": "columns",
                     "typeName": "array<hive_column>",
                     "cardinality": "SINGLE",
-                    "constraintDefs": [
-                        {
-                            "type": "foreignKey",
-                            "params": {
-                                "onDelete": "update"
-                            }
-                        }
-                    ],
+                    "constraintDefs": [],
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false

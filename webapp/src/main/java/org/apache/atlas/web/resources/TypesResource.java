@@ -21,17 +21,10 @@ package org.apache.atlas.web.resources;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.util.RestUtils;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -231,38 +224,12 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
         }
 
-        TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONObject response = new JSONObject();
 
         try {
-            TypeCategory typeCategory = typeRegistry.getType(typeName).getTypeCategory();
-            TypesDef typesDef = null;
+            TypesDef typesDef       = RestUtils.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
+            String   typeDefinition = TypesSerialization.toJson(typesDef);
 
-            if (typeCategory != null) {
-                switch (typeCategory) {
-                    case ENUM:
-                        AtlasEnumDef enumDef = typesRest.getEnumDefByName(typeName);
-                        typesDef = RestUtils.toTypesDef(enumDef);
-                        break;
-                    case STRUCT:
-                        AtlasStructDef structDef = typesRest.getStructDefByName(typeName);
-                        typesDef = RestUtils.toTypesDef(structDef, typeRegistry);
-                        break;
-                    case ENTITY:
-                        AtlasEntityDef entityDef = typesRest.getEntityDefByName(typeName);
-                        typesDef = RestUtils.toTypesDef(entityDef, typeRegistry);
-                        break;
-                    case CLASSIFICATION:
-                        AtlasClassificationDef classificationDef = typesRest.getClassificationDefByName(typeName);
-                        typesDef = RestUtils.toTypesDef(classificationDef, typeRegistry);
-                        break;
-                    default:
-                        typesDef = new TypesDef();
-                        break;
-                }
-            }
-
-            final String typeDefinition = TypesSerialization.toJson(typesDef);
             response.put(AtlasClient.TYPENAME, typeName);
             response.put(AtlasClient.DEFINITION, new JSONObject(typeDefinition));
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());

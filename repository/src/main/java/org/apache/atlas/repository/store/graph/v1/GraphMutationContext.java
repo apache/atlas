@@ -160,11 +160,11 @@ public class GraphMutationContext {
     }
 
     public AtlasStructType getParentType() {
-        return attribute.getStructType();
+        return attribute.getDefinedInType();
     }
 
     public AtlasStructDef getStructDef() {
-        return attribute.getStructDef();
+        return attribute.getDefinedInDef();
     }
 
     public AtlasAttributeDef getAttributeDef() {

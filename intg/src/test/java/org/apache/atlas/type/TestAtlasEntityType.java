@@ -154,7 +154,6 @@ public class TestAtlasEntityType {
             assertEquals(fkRef.fromAttributeName(), ATTR_TABLE);
             assertEquals(fkRef.toTypeName(), TYPE_TABLE);
             assertTrue(fkRef.isOnDeleteCascade());
-            assertFalse(fkRef.isOnDeleteUpdate());
 
             assertEquals(typeTable.getForeignKeyAttributes().size(), 0);
             assertEquals(typeTable.getMappedFromRefAttributes().size(), 1);

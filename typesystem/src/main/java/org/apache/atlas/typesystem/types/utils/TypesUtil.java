@@ -93,6 +93,10 @@ public class TypesUtil {
         return new StructTypeDefinition(name, description, attrDefs);
     }
 
+    public static StructTypeDefinition createStructTypeDef(String name, String description, String version, AttributeDefinition... attrDefs) {
+        return new StructTypeDefinition(name, description, version, attrDefs);
+    }
+
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
             ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return createClassTypeDef(name, null, superTypes, attrDefs);
