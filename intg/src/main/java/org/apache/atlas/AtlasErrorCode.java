@@ -61,6 +61,9 @@ public enum AtlasErrorCode {
     CONSTRAINT_OWNED_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40030E", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),
     CANNOT_MAP_ATTRIBUTE(400, "ATLAS40031E", "cannot map attribute: {0} of type: {1} from vertex"),
     INVALID_OBJECT_ID(400, "ATLAS40032E", "ObjectId is not valid {0}"),
+    UNRESOLVED_REFERENCES_FOUND(400, "ATLAS40033E", "Unresolved references: byId={0}; byUniqueAttributes={1}"),
+    UNKNOWN_ATTRIBUTE(400, "ATLAS40034E", "Attribute {0} not found for type {1}"),
+    SYSTEM_TYPE(400, "ATLAS40035E", "{0} is a System-type"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
@@ -71,6 +74,7 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
     DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
     INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS4049E", "Invalid instance creation/updation parameters passed : {0}"),
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS40410E", "Instance {0} with unique attribute {1}={2} does not exist"),
 
 
     // All data conflict errors go here
@@ -82,13 +86,7 @@ public enum AtlasErrorCode {
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
-    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again"),
-
-    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(400, "ATLAS40018E", "Instance {0} with unique attribute {1}={2} does not exist"),
-
-    UNRESOLVED_REFERENCES_FOUND(400, "ATLAS40010E", "Unresolved references: byId={0}; byUniqueAttributes={1}"),
-
-    UNKNOWN_ATTRIBUTE(400, "ATLAS40019E", "Attribute {0} not found for type {1}");
+    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again");
 
     private String errorCode;
     private String errorMessage;

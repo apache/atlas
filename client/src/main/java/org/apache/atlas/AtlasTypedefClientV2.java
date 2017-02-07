@@ -117,21 +117,45 @@ public class AtlasTypedefClientV2 extends AtlasBaseClient {
         return getTypeDefByGuid(guid, AtlasEntityDef.class);
     }
 
+    @Deprecated
     public AtlasEnumDef createEnumDef(AtlasEnumDef enumDef) throws AtlasServiceException {
-        return callAPI(CREATE_ENUM_DEF, AtlasType.toJson(enumDef), AtlasEnumDef.class);
+        AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
+        atlasTypesDef.getEnumDefs().add(enumDef);
+        AtlasTypesDef created = createAtlasTypeDefs(atlasTypesDef);
+        assert created != null;
+        assert created.getEnumDefs() != null;
+        return created.getEnumDefs().get(0);
     }
 
+    @Deprecated
     public AtlasStructDef createStructDef(AtlasStructDef structDef) throws AtlasServiceException {
-        return callAPI(CREATE_STRUCT_DEF, AtlasType.toJson(structDef), AtlasStructDef.class);
+        AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
+        atlasTypesDef.getStructDefs().add(structDef);
+        AtlasTypesDef created = createAtlasTypeDefs(atlasTypesDef);
+        assert created != null;
+        assert created.getStructDefs() != null;
+        return created.getStructDefs().get(0);
     }
 
+    @Deprecated
     public AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITY_DEF, AtlasType.toJson(entityDef), AtlasEntityDef.class);
+        AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
+        atlasTypesDef.getEntityDefs().add(entityDef);
+        AtlasTypesDef created = createAtlasTypeDefs(atlasTypesDef);
+        assert created != null;
+        assert created.getEntityDefs() != null;
+        return created.getEntityDefs().get(0);
     }
 
+    @Deprecated
     public AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef)
             throws AtlasServiceException {
-        return callAPI(CREATE_CLASSIFICATION_DEF, AtlasType.toJson(classificationDef), AtlasClassificationDef.class);
+        AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
+        atlasTypesDef.getClassificationDefs().add(classificationDef);
+        AtlasTypesDef created = createAtlasTypeDefs(atlasTypesDef);
+        assert created != null;
+        assert created.getClassificationDefs() != null;
+        return created.getClassificationDefs().get(0);
     }
 
 

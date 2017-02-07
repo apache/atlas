@@ -283,7 +283,7 @@ public class TypesResource {
         TypesREST typesRest  = resourceContext.getResource(TypesREST.class);
         JSONObject response  = new JSONObject();
         try {
-            List<String> result = RestUtils.getTypeNames(typesRest.getTypeDefHeaders());
+            List<String> result = RestUtils.getTypeNames(typesRest.getTypeDefHeaders(request));
 
             response.put(AtlasClient.RESULTS, new JSONArray(result));
             response.put(AtlasClient.COUNT, result.size());

@@ -64,6 +64,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -737,7 +738,8 @@ public class AtlasEntityStoreV1Test {
                 AtlasTypeUtil.createOptionalAttrDef(arrayAttrName, "array<string>"),
                 AtlasTypeUtil.createOptionalAttrDef(mapAttrName, "map<string,string>"));
 
-        typeDefStore.createEntityDef(typeDefinition);
+        AtlasTypesDef atlasTypesDef = new AtlasTypesDef(null, null, null, Arrays.asList(typeDefinition));
+        typeDefStore.createTypesDef(atlasTypesDef);
 
         //verify that entity can be created with reserved characters in string value, array value and map key and value
         Map<String, AtlasEntity> entityCloneMap = new HashMap<>();

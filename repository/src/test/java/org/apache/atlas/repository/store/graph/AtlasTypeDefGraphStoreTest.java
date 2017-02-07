@@ -38,6 +38,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -64,36 +65,16 @@ public class AtlasTypeDefGraphStoreTest {
     @Test(priority = 1)
     public void testGet() {
         try {
-            List<AtlasEnumDef> allEnumDefs = typeDefStore.getAllEnumDefs();
-            assertNotNull(allEnumDefs);
-            assertEquals(allEnumDefs.size(), 0);
+            AtlasTypesDef typesDef = typeDefStore.searchTypesDef(new SearchFilter());
+            assertNotNull(typesDef.getEnumDefs());
+            assertEquals(typesDef.getStructDefs().size(), 0);
+            assertNotNull(typesDef.getStructDefs());
+            assertEquals(typesDef.getClassificationDefs().size(), 0);
+            assertNotNull(typesDef.getClassificationDefs());
+            assertEquals(typesDef.getEntityDefs().size(), 0);
+            assertNotNull(typesDef.getEntityDefs());
         } catch (AtlasBaseException e) {
-            fail("Get should've succeeded", e);
-        }
-
-        try {
-            List<AtlasClassificationDef> allClassificationDefs = typeDefStore.getAllClassificationDefs();
-            assertNotNull(allClassificationDefs);
-            assertEquals(allClassificationDefs.size(), 0);
-        } catch (AtlasBaseException e) {
-            fail("Get should've succeeded", e);
-        }
-
-        try {
-            List<AtlasStructDef> allStructDefs = typeDefStore.getAllStructDefs();
-            assertNotNull(allStructDefs);
-            assertEquals(allStructDefs.size(), 0);
-        } catch (AtlasBaseException e) {
-            fail("Get should've succeeded", e);
-        }
-
-        try {
-            List<AtlasEntityDef> allEntityDefs = typeDefStore.getAllEntityDefs();
-            assertNotNull(allEntityDefs);
-            // For some reason this keeps on toggling b/w 0 and 5, need to investigate
-            assertTrue(allEntityDefs.size()>= 0);
-        } catch (AtlasBaseException e) {
-            fail("Get should've succeeded", e);
+            fail("Search of types shouldn't have failed");
         }
     }
 
@@ -385,17 +366,25 @@ public class AtlasTypeDefGraphStoreTest {
 
     @Test(dependsOnMethods = "testGet")
     public void testCreateWithInvalidSuperTypes(){
+        AtlasTypesDef typesDef;
+
         // Test Classification with supertype
         AtlasClassificationDef classificationDef = TestUtilsV2.getClassificationWithInvalidSuperType();
+        typesDef = new AtlasTypesDef();
+        typesDef.getClassificationDefs().add(classificationDef);
         try {
-            AtlasClassificationDef created = typeDefStore.createClassificationDef(classificationDef);
+            AtlasTypesDef created = typeDefStore.createTypesDef(typesDef);
             fail("Classification creation with invalid supertype should've failed");
-        } catch (AtlasBaseException e) {}
+        } catch (AtlasBaseException e) {
+            typesDef = null;
+        }
 
         // Test Entity with supertype
         AtlasEntityDef entityDef = TestUtilsV2.getEntityWithInvalidSuperType();
+        typesDef = new AtlasTypesDef();
+        typesDef.getEntityDefs().add(entityDef);
         try {
-            AtlasEntityDef created = typeDefStore.createEntityDef(entityDef);
+            AtlasTypesDef created = typeDefStore.createTypesDef(typesDef);
             fail("Entity creation with invalid supertype should've failed");
         } catch (AtlasBaseException e) {}
 
