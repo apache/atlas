@@ -22,11 +22,8 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -54,9 +51,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -138,8 +133,8 @@ public class EntitiesREST {
 
         for (String guid : guids) {
             try {
-               ITypedReferenceableInstance ref = metadataService.getEntityDefinition(guid);
-               Map<String, AtlasEntityWithAssociations> entityRet = restAdapters.getAtlasEntity(ref);
+               ITypedReferenceableInstance ref       = metadataService.getEntityDefinition(guid);
+               Map<String, AtlasEntity>    entityRet = restAdapters.getAtlasEntity(ref);
 
                addToEntityList(entityList, entityRet.values());
 
@@ -152,8 +147,8 @@ public class EntitiesREST {
         return entities;
     }
 
-    private void addToEntityList(final List<AtlasEntity> entityList, final Collection<AtlasEntityWithAssociations> values) {
-        for (AtlasEntityWithAssociations val : values) {
+    private void addToEntityList(final List<AtlasEntity> entityList, final Collection<AtlasEntity> values) {
+        for (AtlasEntity val : values) {
             if ( !entityList.contains(val)) {
                 entityList.add(val);
             }

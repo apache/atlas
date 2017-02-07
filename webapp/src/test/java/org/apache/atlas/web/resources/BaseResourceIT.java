@@ -40,7 +40,6 @@ import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
@@ -561,9 +560,8 @@ public abstract class BaseResourceIT {
         return tableInstance;
     }
 
-    protected AtlasEntityWithAssociations createHiveTableInstanceV2(AtlasEntity databaseInstance, String tableName) throws Exception {
-        AtlasEntityWithAssociations tableInstance =
-                new AtlasEntityWithAssociations(HIVE_TABLE_TYPE_V2);
+    protected AtlasEntity createHiveTableInstanceV2(AtlasEntity databaseInstance, String tableName) throws Exception {
+        AtlasEntity tableInstance = new AtlasEntity(HIVE_TABLE_TYPE_V2);
         tableInstance.setClassifications(
                 Arrays.asList(new AtlasClassification("classification"),
                         new AtlasClassification("pii"),

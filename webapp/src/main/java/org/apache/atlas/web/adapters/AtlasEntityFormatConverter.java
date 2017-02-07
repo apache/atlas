@@ -24,7 +24,6 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -32,7 +31,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.Id.EntityState;
 import org.apache.commons.collections.CollectionUtils;
@@ -77,8 +75,8 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                         LOG.error("IReferenceableInstance.getValuesMap() failed", excp);
                     }
 
-                    AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(entRef.getTypeName(),
-                                                                      super.fromV1ToV2(entityType, v1Attribs, context));
+                    AtlasEntity entity = new AtlasEntity(entRef.getTypeName(),
+                                                         super.fromV1ToV2(entityType, v1Attribs, context));
                     entity.setGuid(entRef.getId()._getId());
                     entity.setStatus(convertState(entRef.getId().getState()));
                     entity.setCreatedBy(entRef.getSystemAttributes().createdBy);

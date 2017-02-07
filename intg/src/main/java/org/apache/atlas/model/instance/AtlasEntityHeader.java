@@ -18,7 +18,6 @@
 package org.apache.atlas.model.instance;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,9 +48,10 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String guid       = null;
-    private AtlasEntity.Status status     = AtlasEntity.Status.ACTIVE;
-    private String displayText = null;
+    private String             guid                = null;
+    private AtlasEntity.Status status              = AtlasEntity.Status.ACTIVE;
+    private String             displayText         = null;
+    private List<String>       classificationNames = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -67,12 +67,15 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public AtlasEntityHeader(String typeName, Map<String, Object> attributes) {
         super(typeName, attributes);
+
+        setClassificationNames(null);
     }
 
 
     public AtlasEntityHeader(String typeName, String guid,  Map<String, Object> attributes) {
         super(typeName, attributes);
         setGuid(guid);
+        setClassificationNames(null);
     }
 
 
@@ -83,6 +86,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setGuid(other.getGuid());
             setStatus(other.getStatus());
             setDisplayText(other.getDisplayText());
+            setClassificationNames(other.getClassificationNames());
         }
     }
 
@@ -110,6 +114,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.displayText = displayText;
     }
 
+    public List<String> getClassificationNames(){
+        return classificationNames;
+    }
+
+    public void setClassificationNames(List<String> classificationNames) {
+        this.classificationNames = classificationNames;
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -120,6 +132,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         sb.append("guid='").append(guid).append('\'');
         sb.append(", status=").append(status);
         sb.append(", displayText=").append(displayText);
+        sb.append(", classificationNames=[");
+        dumpObjects(classificationNames, sb);
+        sb.append("],");
         sb.append(", ");
         super.toString(sb);
         sb.append('}');
@@ -135,12 +150,13 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         AtlasEntityHeader that = (AtlasEntityHeader) o;
         return Objects.equals(guid, that.guid) &&
                 status == that.status &&
-                Objects.equals(displayText, that.displayText);
+                Objects.equals(displayText, that.displayText) &&
+                Objects.equals(classificationNames, that.classificationNames);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, displayText);
+        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames);
     }
 
     @Override

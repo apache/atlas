@@ -32,6 +32,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +57,9 @@ public class QuickStartV2IT extends BaseResourceIT {
     }
 
     private AtlasEntity getDB(String dbName) throws AtlasServiceException, JSONException {
-        AtlasEntity dbEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.DATABASE_TYPE, "name", dbName).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("name", dbName);
+        AtlasEntity dbEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.DATABASE_TYPE, attributes).getEntity();
         return dbEntity;
     }
 
@@ -73,12 +76,16 @@ public class QuickStartV2IT extends BaseResourceIT {
     }
 
     private AtlasEntity getTable(String tableName) throws AtlasServiceException {
-        AtlasEntity tableEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
+        AtlasEntity tableEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.TABLE_TYPE, attributes).getEntity();
         return tableEntity;
     }
 
     private AtlasEntity getProcess(String processName) throws AtlasServiceException {
-        AtlasEntity processEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName);
+        AtlasEntity processEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
         return processEntity;
     }
      
@@ -115,8 +122,9 @@ public class QuickStartV2IT extends BaseResourceIT {
 
     @Test
     public void testProcessIsAdded() throws AtlasServiceException, JSONException {
-        AtlasEntity loadProcess = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                QuickStartV2.LOAD_SALES_DAILY_PROCESS).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.LOAD_SALES_DAILY_PROCESS);
+        AtlasEntity loadProcess = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
 
         Map loadProcessAttribs = loadProcess.getAttributes();
         assertEquals(QuickStartV2.LOAD_SALES_DAILY_PROCESS, loadProcessAttribs.get(AtlasClient.NAME));
@@ -169,7 +177,9 @@ public class QuickStartV2IT extends BaseResourceIT {
 
     @Test
     public void testViewIsAdded() throws AtlasServiceException, JSONException {
-        AtlasEntity view = entitiesClientV2.getEntityByAttribute(QuickStartV2.VIEW_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.PRODUCT_DIM_VIEW).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.PRODUCT_DIM_VIEW);
+        AtlasEntity view = entitiesClientV2.getEntityByAttribute(QuickStartV2.VIEW_TYPE, attributes).getEntity();
         Map<String, Object> viewAttributes = view.getAttributes();
         assertEquals(QuickStartV2.PRODUCT_DIM_VIEW, viewAttributes.get(AtlasClient.NAME));
 

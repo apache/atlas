@@ -26,7 +26,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
-import org.apache.atlas.model.instance.AtlasEntityHeaderWithAssociations;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -68,11 +68,11 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(searchResult.getQueryText(), dslQuery);
         assertEquals(searchResult.getQueryType(), AtlasQueryType.DSL);
 
-        List<AtlasEntityHeaderWithAssociations> entities = searchResult.getEntities();
+        List<AtlasEntityHeader> entities = searchResult.getEntities();
         assertNotNull(entities);
         assertEquals(entities.size(), 1);
 
-        AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
+        AtlasEntityHeader dbEntity = entities.get(0);
         assertEquals(dbEntity.getTypeName(), DATABASE_TYPE_BUILTIN);
         assertEquals(dbEntity.getDisplayText(), dbName);
         assertEquals(dbEntity.getStatus(), Status.ACTIVE);
@@ -130,11 +130,11 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
         assertEquals(searchResult.getQueryText(), query);
         assertEquals(searchResult.getQueryType(), AtlasQueryType.DSL);
-        List<AtlasEntityHeaderWithAssociations> entities = searchResult.getEntities();
+        List<AtlasEntityHeader> entities = searchResult.getEntities();
         assertNotNull(entities);
         assertEquals(entities.size(), 1);
 
-        AtlasEntityHeaderWithAssociations dbEntity = entities.get(0);
+        AtlasEntityHeader dbEntity = entities.get(0);
         assertEquals(dbEntity.getTypeName(), DATABASE_TYPE_BUILTIN);
         assertEquals(dbEntity.getDisplayText(), dbName);
         assertEquals(dbEntity.getStatus(), Status.ACTIVE);

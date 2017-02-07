@@ -35,8 +35,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
-import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasArrayType;
@@ -135,7 +133,7 @@ public class AtlasEntityStoreV1Test {
         MapVertexMapper mapVertexMapper = new MapVertexMapper(deleteHandler);
 
 
-        entityStore = new AtlasEntityStoreV1(new EntityGraphMapper(arrVertexMapper, mapVertexMapper, deleteHandler));
+        entityStore = new AtlasEntityStoreV1(new EntityGraphMapper(arrVertexMapper, mapVertexMapper, deleteHandler), new GraphEntityMapper());
         entityStore.init(typeRegistry);
 
         RequestContextV1.clear();

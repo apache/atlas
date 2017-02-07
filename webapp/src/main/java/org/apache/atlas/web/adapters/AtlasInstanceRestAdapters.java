@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.web.adapters;
 
-import java.util.List;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -28,7 +26,6 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.GuidMapping;
@@ -50,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -129,7 +125,7 @@ public class AtlasInstanceRestAdapters {
         return ret;
     }
 
-    public Map<String, AtlasEntityWithAssociations> getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
+    public Map<String, AtlasEntity> getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
 
         AtlasFormatConverter converter  = instanceFormatters.getConverter(TypeCategory.ENTITY);
         AtlasEntityType      entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());

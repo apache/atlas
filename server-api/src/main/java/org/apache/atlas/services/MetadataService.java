@@ -29,7 +29,6 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
-import org.apache.atlas.utils.ParamChecker;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
@@ -49,7 +48,7 @@ public interface MetadataService {
      */
     JSONObject createType(String typeDefinition) throws AtlasException;
 
-    /**
+    /**z
      * Updates the given types in the type definition
      * @param typeDefinition
      * @return

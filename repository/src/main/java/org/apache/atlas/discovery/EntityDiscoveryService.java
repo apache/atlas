@@ -26,7 +26,7 @@ import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
-import org.apache.atlas.model.instance.AtlasEntityHeaderWithAssociations;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.query.Expressions.AliasExpression;
 import org.apache.atlas.query.Expressions.Expression;
@@ -97,7 +97,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (firstElement instanceof AtlasVertex) {
                     for (Object element : queryResult) {
                         if (element instanceof AtlasVertex) {
-                            ret.addEntity(toAtlasEntityHeaderwithAssociations((AtlasVertex)element));
+                            ret.addEntity(toAtlasEntityHeader((AtlasVertex)element));
                         } else {
                             LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
                         }
@@ -115,7 +115,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                     Object entry = ((List)value).get(0);
 
                                     if (entry instanceof AtlasVertex) {
-                                        ret.addEntity(toAtlasEntityHeaderwithAssociations((AtlasVertex)entry));
+                                        ret.addEntity(toAtlasEntityHeader((AtlasVertex)entry));
                                     }
                                 }
                             }
@@ -159,7 +159,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String guid = vertex != null ? vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) : null;
 
             if (guid != null) {
-                AtlasEntityHeaderWithAssociations entity = toAtlasEntityHeaderwithAssociations(vertex);
+                AtlasEntityHeader entity = toAtlasEntityHeader(vertex);
                 Double score = idxQueryResult.getScore();
                 ret.add(new AtlasFullTextResult(entity, score));
             }
@@ -204,12 +204,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return new QueryParams(limit, offset);
     }
 
-    private AtlasEntityHeaderWithAssociations toAtlasEntityHeaderwithAssociations(AtlasVertex vertex) {
+    private AtlasEntityHeader toAtlasEntityHeader(AtlasVertex vertex) {
         if (vertex == null) {
             return null;
         }
 
-        AtlasEntityHeaderWithAssociations ret = new AtlasEntityHeaderWithAssociations();
+        AtlasEntityHeader ret = new AtlasEntityHeader();
 
         String typeName = vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
 

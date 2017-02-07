@@ -59,6 +59,7 @@ public enum AtlasErrorCode {
     CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_NON_EXISTING(400, "ATLAS40028E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} does not exist"),
     CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40029E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} is not an entity type"),
     CONSTRAINT_OWNED_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40030E", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),
+    CANNOT_MAP_ATTRIBUTE(400, "ATLAS40027E", "cannot map attribute: {0} of type: {1} from vertex"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
@@ -82,7 +83,7 @@ public enum AtlasErrorCode {
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again"),
 
-    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(400, "ATLAS40018E", "Instance {0} with unique attribute {1} does not exist"),
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(400, "ATLAS40018E", "Instance {0} with unique attribute {1}={2} does not exist"),
 
     UNRESOLVED_REFERENCES_FOUND(400, "ATLAS40010E", "Unresolved references: byId={0}; byUniqueAttributes={1}"),
 

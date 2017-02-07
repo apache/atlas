@@ -30,8 +30,9 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 
@@ -42,15 +43,14 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class AtlasEntitiesClientV2 extends AtlasBaseClient {
 
-    private static final GenericType<List<AtlasEntityWithAssociations>> ENTITY_WITH_ASSOCIATIONS_LIST_TYPE = new GenericType<List<AtlasEntityWithAssociations>>(){};
+    private static final GenericType<List<AtlasEntity>> ENTITY_LIST_TYPE = new GenericType<List<AtlasEntity>>(){};
     public static final String ENTITY_API = BASE_URI + "v2/entity/";
     public static final String ENTITIES_API = BASE_URI + "v2/entities/";
 
     private static final APIInfo GET_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo GET_ENTITY_WITH_ASSOCIATION_BY_GUID = new APIInfo(ENTITY_API + "guid/%s/associations", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo CREATE_ENTITY = new APIInfo(ENTITIES_API, HttpMethod.POST, Response.Status.OK);
     private static final APIInfo UPDATE_ENTITY = CREATE_ENTITY;
-    private static final APIInfo GET_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo GET_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.PUT, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.DELETE, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
@@ -87,25 +87,21 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         super(service, configuration);
     }
 
-    public List<AtlasEntityWithAssociations> getEntityByGuid(String guid) throws AtlasServiceException {
+    public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
 
-        return callAPI(GET_ENTITY_BY_GUID, null, ENTITY_WITH_ASSOCIATIONS_LIST_TYPE, guid);
+        return callAPI(GET_ENTITY_BY_GUID, null, AtlasEntityWithExtInfo.class, guid);
     }
 
     public AtlasEntities getEntityByGuids(List<String> guids) throws AtlasServiceException {
         return callAPI(GET_ENTITY_BY_GUID, AtlasEntities.class, "guid", guids);
     }
 
-    public List<AtlasEntityWithAssociations> getEntityWithAssociationByGuid(String guid) throws AtlasServiceException {
+    public static final String PREFIX_ATTR = "attr:";
 
-        return callAPI(formatPathForPathParams(GET_ENTITY_WITH_ASSOCIATION_BY_GUID, guid), null, ENTITY_WITH_ASSOCIATIONS_LIST_TYPE);
-    }
+    public AtlasEntityWithExtInfo getEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
 
-    public List<AtlasEntityWithAssociations> getEntityByAttribute(String type, String attribute, String value) throws AtlasServiceException {
-
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("value", value);
-        return callAPI(formatPathForPathParams(GET_ENTITY_BY_ATTRIBUTE, type, attribute), ENTITY_WITH_ASSOCIATIONS_LIST_TYPE, queryParams);
+        return callAPI(formatPathForPathParams(GET_ENTITY_BY_ATTRIBUTE, type), AtlasEntityWithExtInfo.class, queryParams);
     }
 
     public EntityMutationResponse updateEntityByAttribute(String type, String attribute, String value, AtlasEntity entity) throws AtlasServiceException {
@@ -181,5 +177,24 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
 
     public AtlasEntity.AtlasEntities searchEntities(SearchFilter searchFilter) throws AtlasServiceException {
         return callAPI(GET_ENTITIES, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
+    }
+
+    private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String> attributes) {
+        return attributesToQueryParams(attributes, null);
+    }
+
+    private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String>            attributes,
+                                                                   MultivaluedMap<String, String> queryParams) {
+        if (queryParams == null) {
+            queryParams = new MultivaluedMapImpl();
+        }
+
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (Map.Entry<String, String> e : attributes.entrySet()) {
+                queryParams.putSingle(PREFIX_ATTR + e.getKey(), e.getValue());
+            }
+        }
+
+        return queryParams;
     }
 }

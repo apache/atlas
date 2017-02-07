@@ -18,23 +18,13 @@
 
 package org.apache.atlas.repository.graph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.UUID;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -43,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -70,9 +61,19 @@ import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
 
 /**
  * Utility class for graph operations.
@@ -596,8 +597,8 @@ public final class GraphHelper {
 
     public static String getQualifiedFieldName(IDataType dataType, String attributeName) throws AtlasException {
         return dataType.getTypeCategory() == DataTypes.TypeCategory.STRUCT ? dataType.getName() + "." + attributeName
-            // else class or trait
-            : ((HierarchicalType) dataType).getQualifiedName(attributeName);
+                // else class or trait
+                : ((HierarchicalType) dataType).getQualifiedName(attributeName);
     }
 
     public static String getTraitLabel(String typeName, String attrName) {
@@ -649,10 +650,15 @@ public final class GraphHelper {
         return element.getProperty(Constants.VERSION_PROPERTY_KEY, Integer.class);
     }
 
+
+
     public static String getStateAsString(AtlasElement element) {
         return element.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
     }
 
+    public static Status getStatus(AtlasElement element) {
+        return (getState(element) == Id.EntityState.DELETED) ? Status.DELETED : Status.ACTIVE;
+    }
 
     //Added conditions in fetching system attributes to handle test failures in GremlinTest where these properties are not set
     public static String getCreatedByAsString(AtlasElement element){
@@ -812,6 +818,7 @@ public final class GraphHelper {
         }
         return Collections.emptyList();
     }
+
     /**
      * Guid and AtlasVertex combo
      */
@@ -974,6 +981,12 @@ public final class GraphHelper {
 
     }
 
+    public static boolean isReference(AtlasType type) {
+        return ((type.getTypeCategory() == org.apache.atlas.model.TypeCategory.STRUCT) ||
+                (type.getTypeCategory() == org.apache.atlas.model.TypeCategory.ENTITY));
+
+    }
+
     public static void setArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -1004,6 +1017,27 @@ public final class GraphHelper {
         }
     }
 
+    public static Object getMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
+        String vertexPropertyName = GraphHelper.encodePropertyKey(propertyName);
+
+        if (GraphHelper.isReference(elementType)) {
+            return instanceVertex.getProperty(vertexPropertyName, AtlasEdge.class);
+        } else {
+            return instanceVertex.getProperty(vertexPropertyName, Object.class).toString();
+        }
+    }
+
+    // newly added
+    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
+        String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        if(GraphHelper.isReference(elementType)) {
+            return (List)instanceVertex.getListProperty(encodedPropertyName, AtlasEdge.class);
+        }
+        else {
+            return (List)instanceVertex.getListProperty(encodedPropertyName);
+        }
+    }
+
     public static List<Object> getArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -1013,7 +1047,6 @@ public final class GraphHelper {
             return (List)instanceVertex.getListProperty(actualPropertyName);
         }
     }
-
 
     public static void dumpToLog(final AtlasGraph<?,?> graph) {
         LOG.debug("*******************Graph Dump****************************");

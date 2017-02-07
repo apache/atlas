@@ -21,7 +21,6 @@ package org.apache.atlas.web.adapters;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.type.AtlasType;
 
 import java.util.HashMap;
@@ -36,24 +35,16 @@ public interface AtlasFormatConverter {
 
     public static class ConverterContext {
 
-        private Map<String, AtlasEntityWithAssociations> entities = null;
+        private Map<String, AtlasEntity> entities = null;
 
-        public void addEntity(AtlasEntityWithAssociations entity) {
+        public void addEntity(AtlasEntity entity) {
             if (entities == null) {
                 entities = new HashMap<>();
             }
             entities.put(entity.getGuid(), entity);
         }
 
-        public void addEntity(AtlasEntity entity) {
-            if (entity instanceof AtlasEntityWithAssociations) {
-                this.addEntity((AtlasEntityWithAssociations)entity);
-            } else {
-                this.addEntity(new AtlasEntityWithAssociations(entity));
-            }
-        }
-
-        public AtlasEntityWithAssociations getById(String guid) {
+        public AtlasEntity getById(String guid) {
             if( entities != null) {
                 return entities.get(guid);
             }
@@ -63,7 +54,7 @@ public interface AtlasFormatConverter {
 
         public boolean entityExists(String guid) { return entities != null && entities.containsKey(guid); }
 
-        public Map<String, AtlasEntityWithAssociations> getEntities() {
+        public Map<String, AtlasEntity> getEntities() {
             return entities;
         }
     }

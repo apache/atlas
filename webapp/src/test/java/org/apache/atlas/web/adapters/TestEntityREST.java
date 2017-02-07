@@ -22,8 +22,8 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -98,10 +98,11 @@ public class TestEntityREST {
     @Test
     public void testGetEntityById() throws Exception {
         createOrUpdateEntity();
-        final List<AtlasEntityWithAssociations> response = entityREST.getById(dbGuid);
+        AtlasEntityWithExtInfo response = entityREST.getById(dbGuid);
 
         Assert.assertNotNull(response);
-        TestEntitiesREST.verifyAttributes(response.get(0).getAttributes(), dbEntity.getAttributes());
+        Assert.assertNotNull(response.getEntity());
+        TestEntitiesREST.verifyAttributes(response.getEntity().getAttributes(), dbEntity.getAttributes());
     }
 
     @Test
@@ -130,8 +131,8 @@ public class TestEntityREST {
     @Test(dependsOnMethods = "testAddAndGetClassification")
     public void  testGetEntityWithAssociations() throws Exception {
 
-        List<AtlasEntityWithAssociations> entity = entityREST.getWithAssociationsByGuid(dbGuid);
-        final List<AtlasClassification> retrievedClassifications = entity.get(0).getClassifications();
+        AtlasEntityWithExtInfo entity = entityREST.getById(dbGuid);
+        final List<AtlasClassification> retrievedClassifications = entity.getEntity().getClassifications();
 
         Assert.assertNotNull(retrievedClassifications);
         Assert.assertEquals(new ArrayList<AtlasClassification>() {{ add(testClassification); }}, retrievedClassifications);
@@ -172,7 +173,7 @@ public class TestEntityREST {
         Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
 
         //Get By unique attribute
-        List<AtlasEntityWithAssociations> entities = entityREST.getByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, updatedDBName);
+        List<AtlasEntity> entities = entityREST.getByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, updatedDBName);
         Assert.assertNotNull(entities);
         Assert.assertNotNull(entities.get(0).getGuid());
         Assert.assertEquals(entities.get(0).getGuid(), dbGuid);

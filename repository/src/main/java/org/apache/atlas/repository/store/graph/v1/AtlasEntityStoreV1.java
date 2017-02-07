@@ -18,9 +18,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
@@ -28,9 +26,16 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -41,22 +46,28 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-
-import com.google.inject.Inject;
 
 
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     protected AtlasTypeRegistry typeRegistry;
+    protected final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    private EntityGraphMapper graphMapper;
+    private final EntityGraphMapper graphMapper;
+    private final GraphEntityMapper entityMapper;
+    private final AtlasGraph        graph;
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
     @Inject
-    public AtlasEntityStoreV1(EntityGraphMapper vertexMapper) {
-        this.graphMapper = vertexMapper;
+    public AtlasEntityStoreV1(EntityGraphMapper vertexMapper, GraphEntityMapper entityMapper) {
+        this.graphMapper  = vertexMapper;
+        this.entityMapper = entityMapper;
+        this.graph        = AtlasGraphProvider.getGraphInstance();
     }
 
     @Inject
@@ -65,8 +76,43 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
-    public AtlasEntity getById(final String guid) {
-        return null;
+    public AtlasEntityWithExtInfo getById(final String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving entity with guid={}", guid);
+        }
+
+        return entityMapper.toAtlasEntity(guid, true);
+    }
+
+    @Override
+    public AtlasEntityWithExtInfo getByUniqueAttribute(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException {
+        String entityTypeName = entityType.getTypeName();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retrieving entity with type={} and attributes={}: values={}", entityTypeName, uniqAttributes);
+        }
+
+        AtlasGraphQuery query = graph.query();
+
+        for (Map.Entry<String, Object> e : uniqAttributes.entrySet()) {
+            String attrName = e.getKey();
+            Object attrValue = e.getValue();
+
+            query = query.has(entityType.getQualifiedAttributeName(attrName), attrValue);
+        }
+
+        Iterator<AtlasVertex> result = query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityTypeName)
+                                            .has(Constants.STATE_PROPERTY_KEY, Status.ACTIVE.name())
+                                            .vertices().iterator();
+        AtlasVertex entityVertex = result.hasNext() ? result.next() : null;
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityTypeName, uniqAttributes.keySet().toString(), uniqAttributes.values().toString());
+        }
+
+        String guid = GraphHelper.getGuid(entityVertex);
+
+        return entityMapper.toAtlasEntity(guid, true);
     }
 
     @Override
@@ -96,22 +142,12 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
-    public AtlasEntity.AtlasEntities getByIds(final List<String> guid) throws AtlasBaseException {
-        return null;
-    }
-
-    @Override
-    public AtlasEntityWithAssociations getWithAssociationsByIds(final List<String> guid) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo getByIds(final List<String> guids) throws AtlasBaseException {
         return null;
     }
 
     @Override
     public EntityMutationResponse deleteByIds(final List<String> guid) throws AtlasBaseException {
-        return null;
-    }
-
-    @Override
-    public AtlasEntity getByUniqueAttribute(final String typeName, final String attrName, final String attrValue) {
         return null;
     }
 

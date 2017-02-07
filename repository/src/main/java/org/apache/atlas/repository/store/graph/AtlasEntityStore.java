@@ -19,12 +19,12 @@ package org.apache.atlas.repository.store.graph;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
-import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.util.List;
@@ -45,9 +45,9 @@ public interface AtlasEntityStore {
      *
      * Get entity definition by its guid
      * @param guid
-     * @return
+     * @return AtlasEntity
      */
-    AtlasEntity   getById(String guid);
+    AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException;
 
     /**
      * Delete an entity by its guid
@@ -71,15 +71,7 @@ public interface AtlasEntityStore {
      * @return
      * @throws AtlasBaseException
      */
-    AtlasEntity.AtlasEntities getByIds(List<String> guid) throws AtlasBaseException;
-
-    /**
-     * Batch GET to retrieve entities and their associations by their ID
-     * @param guid
-     * @return
-     * @throws AtlasBaseException
-     */
-    AtlasEntityWithAssociations getWithAssociationsByIds(List<String> guid) throws AtlasBaseException;
+    AtlasEntitiesWithExtInfo getByIds(List<String> guid) throws AtlasBaseException;
 
     /*
      * Return list of deleted entity guids
@@ -89,12 +81,12 @@ public interface AtlasEntityStore {
     /**
      *
      * Get an eneity by its unique attribute
-     * @param typeName
-     * @param attrName
-     * @param attrValue
-     * @return
+     * @param entityType
+     * @param uniqAttributes
+     * @return AtlasEntity
      */
-    AtlasEntity  getByUniqueAttribute(String typeName, String attrName, String attrValue);
+    AtlasEntityWithExtInfo getByUniqueAttribute(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+                                                                                             throws AtlasBaseException;
 
     /**
      * @deprecated
@@ -134,5 +126,4 @@ public interface AtlasEntityStore {
      * Delete classification(s)
      */
     void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException;
-
 }

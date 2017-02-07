@@ -34,12 +34,8 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaderWithAssociations;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
-import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -57,11 +53,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
 
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
@@ -227,7 +219,7 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDef("dataType", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("comment", "string"),
                                   AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_INVERSE_REF,
-                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ATTRIBUTE, "table"); }}));
+                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ATTRIBUTE, "columns"); }}));
 
         colType.setOptions(new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }});
 
@@ -353,8 +345,8 @@ public class QuickStartV2 {
         List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
 
         if (CollectionUtils.isNotEmpty(entities)) {
-            List<AtlasEntityWithAssociations> getByGuidResponse = entitiesClient.getEntityByGuid(entities.get(0).getGuid()); 
-            ret = getByGuidResponse.get(0);
+            AtlasEntityWithExtInfo getByGuidResponse = entitiesClient.getEntityByGuid(entities.get(0).getGuid());
+            ret = getByGuidResponse.getEntity();
             System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
         }
 
@@ -367,7 +359,7 @@ public class QuickStartV2 {
 
     AtlasEntity createDatabase(String name, String description, String owner, String locationUri, String... traitNames)
             throws Exception {
-        AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(DATABASE_TYPE);
+        AtlasEntity entity = new AtlasEntity(DATABASE_TYPE);
 
         entity.setClassifications(toAtlasClassifications(traitNames));
         entity.setAttribute("name", name);
@@ -406,7 +398,7 @@ public class QuickStartV2 {
 
     AtlasEntity createColumn(String name, String dataType, String comment, String... traitNames) throws Exception {
 
-        AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(COLUMN_TYPE);
+        AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
         entity.setClassifications(toAtlasClassifications(traitNames));
         entity.setAttribute("name", name);
         entity.setAttribute("dataType", dataType);
@@ -417,7 +409,7 @@ public class QuickStartV2 {
 
     AtlasEntity createTable(String name, String description, AtlasEntity db, AtlasEntity sd, String owner, String tableType,
                             List<AtlasEntity> columns, String... traitNames) throws Exception {
-        AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(TABLE_TYPE);
+        AtlasEntity entity = new AtlasEntity(TABLE_TYPE);
 
         entity.setClassifications(toAtlasClassifications(traitNames));
         entity.setAttribute("name", name);
@@ -428,16 +420,16 @@ public class QuickStartV2 {
         entity.setAttribute("createTime", System.currentTimeMillis());
         entity.setAttribute("lastAccessTime", System.currentTimeMillis());
         entity.setAttribute("retention", System.currentTimeMillis());
-        entity.setAttribute("db", db);
-        entity.setAttribute("sd", sd);
-        entity.setAttribute("columns", columns);
+        entity.setAttribute("db", db.getAtlasObjectId());
+        entity.setAttribute("sd", sd.getAtlasObjectId());
+        entity.setAttribute("columns", getObjectIds(columns));
 
         return createInstance(entity, traitNames);
     }
 
     AtlasEntity createProcess(String name, String description, String user, List<AtlasEntity> inputs, List<AtlasEntity> outputs,
             String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames) throws Exception {
-        AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(LOAD_PROCESS_TYPE);
+        AtlasEntity entity = new AtlasEntity(LOAD_PROCESS_TYPE);
 
         entity.setClassifications(toAtlasClassifications(traitNames));
         entity.setAttribute(AtlasClient.NAME, name);
@@ -457,7 +449,7 @@ public class QuickStartV2 {
     }
 
     AtlasEntity createView(String name, AtlasEntity db, List<AtlasEntity> inputTables, String... traitNames) throws Exception {
-        AtlasEntityWithAssociations entity = new AtlasEntityWithAssociations(VIEW_TYPE);
+        AtlasEntity entity = new AtlasEntity(VIEW_TYPE);
 
         entity.setClassifications(toAtlasClassifications(traitNames));
         entity.setAttribute("name", name);
@@ -531,7 +523,7 @@ public class QuickStartV2 {
             AtlasSearchResult results = discoveryClient.dslSearchWithParams(dslQuery, 10, 0);
 
             if (results != null) {
-                List<AtlasEntityHeaderWithAssociations> entitiesResult  = results.getEntities();
+                List<AtlasEntityHeader>   entitiesResult  = results.getEntities();
                 List<AtlasFullTextResult> fullTextResults = results.getFullTextResult();
                 AttributeSearchResult     attribResult    = results.getAttributes();
 
@@ -565,7 +557,24 @@ public class QuickStartV2 {
     }
 
     private String getTableId(String tableName) throws AtlasServiceException {
-        AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName).get(0);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
+
+        AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, attributes).getEntity();
         return tableEntity.getGuid();
+    }
+
+    private Collection<AtlasObjectId> getObjectIds(Collection<AtlasEntity> entities) {
+        List<AtlasObjectId> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            for (AtlasEntity entity : entities) {
+                if (entity != null) {
+                    ret.add(entity.getAtlasObjectId());
+                }
+            }
+        }
+
+        return ret;
     }
 }
