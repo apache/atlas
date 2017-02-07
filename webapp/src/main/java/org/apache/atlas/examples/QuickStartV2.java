@@ -63,11 +63,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 
 /**
  * A driver that sets up sample types and entities using v2 types and entity model for testing purposes.
@@ -217,8 +215,8 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDef("createTime", "long"));
 
         AtlasEntityDef sdType   = AtlasTypeUtil.createClassTypeDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE, "1.0", null,
-                                  AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_FOREIGN_KEY,
-                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE); }}),
+                                  AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_INVERSE_REF,
+                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ATTRIBUTE, "sd"); }}),
                                   AtlasTypeUtil.createOptionalAttrDef("location", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("inputFormat", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("outputFormat", "string"),
@@ -228,15 +226,14 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDef("name", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("dataType", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("comment", "string"),
-                                  AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_FOREIGN_KEY,
-                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE); }}));
+                                  AtlasTypeUtil.createOptionalAttrDefWithConstraint("table", TABLE_TYPE, CONSTRAINT_TYPE_INVERSE_REF,
+                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_ATTRIBUTE, "table"); }}));
 
         colType.setOptions(new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }});
 
         AtlasEntityDef tblType  = AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE, "1.0", ImmutableSet.of("DataSet"),
                                   AtlasTypeUtil.createRequiredAttrDef("db", DATABASE_TYPE),
-                                  AtlasTypeUtil.createRequiredAttrDefWithConstraint("sd", STORAGE_DESC_TYPE, CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                                          new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_REF_ATTRIBUTE, "table"); }}),
+                                  AtlasTypeUtil.createRequiredAttrDefWithConstraint("sd", STORAGE_DESC_TYPE, CONSTRAINT_TYPE_OWNED_REF, null),
                                   AtlasTypeUtil.createOptionalAttrDef("owner", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("createTime", "long"),
                                   AtlasTypeUtil.createOptionalAttrDef("lastAccessTime", "long"),
@@ -246,7 +243,7 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createOptionalAttrDef("tableType", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("temporary", "boolean"),
                                   AtlasTypeUtil.createRequiredListAttrDefWithConstraint("columns", AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE),
-                                          CONSTRAINT_TYPE_MAPPED_FROM_REF, new HashMap<String, Object>() {{ put(CONSTRAINT_PARAM_REF_ATTRIBUTE, "table"); }}));
+                                          CONSTRAINT_TYPE_OWNED_REF, null));
 
         tblType.setOptions(new HashMap<String, String>() {{ put("schemaElementsAttribute", "columns"); }});
 

@@ -17,7 +17,20 @@
                     "isIndexable": false,
                     "isOptional": false,
                     "isUnique": false
-                }
+                },
+                {
+                    "name": "column_families",
+                    "typeName": "array<hbase_column_family>",
+                    "cardinality": "SINGLE",
+                    "constraints": [
+                        {
+                            "type": "ownedRef"
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
             ]
         },
         {
@@ -33,14 +46,27 @@
                     "isIndexable": false,
                     "isOptional": false,
                     "isUnique": false,
-                    "constraintDefs": [
+                    "constraints": [
                         {
-                            "type": "foreignKey",
+                            "type": "inverseRef",
                             "params": {
-                                "onDelete": "cascade"
+                                "attribute": "column_families"
                             }
                         }
                     ]
+                },
+                {
+                    "name": "columns",
+                    "typeName": "array<hbase_column>",
+                    "cardinality": "SINGLE",
+                    "constraints": [
+                        {
+                            "type": "ownedRef"
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
                 }
             ],
             "typeVersion": "1.0"
@@ -58,11 +84,11 @@
                     "isIndexable": false,
                     "isOptional": false,
                     "isUnique": false,
-                    "constraintDefs": [
+                    "constraints": [
                         {
-                            "type": "foreignKey",
+                            "type": "inverseRef",
                             "params": {
-                                "onDelete": "cascade"
+                                "attribute": "columns"
                             }
                         }
                     ]

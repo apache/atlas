@@ -19,21 +19,18 @@
 package org.apache.atlas.util;
 
 import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -45,7 +42,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v1.AtlasStructDefStoreV1;
-import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -73,6 +69,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
+import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 
 
 public final class RestUtils {
@@ -307,85 +310,6 @@ public final class RestUtils {
             AttributeDefinition[] attrDefinitions = classType.attributeDefinitions;
             for (AttributeDefinition oldAttr : attrDefinitions) {
                 AtlasAttributeDef newAttr = toAtlasAttributeDef(oldAttr);
-
-                // isComposite and reverseAttributeName applicable only for entities/classes.
-                if (oldAttr.isComposite) {
-                    String attrType = oldAttr.dataTypeName;
-                    attrType = isArrayType(attrType) ? getArrayTypeName(attrType) : attrType;
-
-                    if (!AtlasTypeUtil.isBuiltInType(attrType)) {
-                        String refAttrName = null;
-
-                        // 1. Check if attribute datatype is present in payload definition, if present get the typeDefinition,
-                        // check all its attributes and find attribute that matches with classTypeDefName and reverseAttributeName
-                        HierarchicalTypeDefinition<ClassType> refType = findClassType(classTypeDefinitions, attrType);
-                        if (refType != null) {
-                            for (AttributeDefinition refAttr : refType.attributeDefinitions) {
-                                String refAttrDataTypeName = refAttr.dataTypeName;
-                                String refAttrRevAttrName  = refAttr.reverseAttributeName;
-
-                                if (StringUtils.equals(refAttrDataTypeName, classTypeDefName) &&
-                                        StringUtils.equals(refAttrRevAttrName, oldAttr.name)) {
-                                    refAttrName = refAttr.name;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // 2. Check if attribute present in typeRegistry. If present fetch all attributes associated with the type and
-                        // check revAttrName equals base type attr name AND classTypeDefName equals attribute name
-                        else {
-                            if (registry.isRegisteredType(attrType)) {
-                                AtlasType atlasType = registry.getType(attrType);
-
-                                if (isEntity(atlasType)) {
-                                    AtlasEntityType         entityType    = (AtlasEntityType) atlasType;
-                                    List<AtlasAttributeDef> atlasAttrDefs = entityType.getEntityDef().getAttributeDefs();
-
-                                    for (AtlasAttributeDef attrDef : atlasAttrDefs) {
-                                        boolean isForeignKey = entityType.isForeignKeyAttribute(attrDef.getName());
-
-                                        if (isForeignKey) {
-                                            AtlasType attribType = entityType.getAttributeType(attrDef.getName());
-
-                                            if (attribType != null) {
-                                                if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
-                                                    attribType = ((AtlasArrayType) attribType).getElementType();
-                                                }
-
-                                                if (attribType.getTypeCategory() == TypeCategory.ENTITY) {
-                                                    String revAttrName = ((AtlasEntityType) attribType).
-                                                            getMappedFromRefAttribute(entityType.getTypeName(), attrDef.getName());
-
-                                                    if (StringUtils.equals(classTypeDefName, attrDef.getTypeName()) &&
-                                                            StringUtils.equals(oldAttr.name, revAttrName)) {
-                                                        refAttrName = attrDef.getName();
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
-                        }
-
-                        if (StringUtils.isNotBlank(refAttrName)) { // ex: hive_table.columns, hive_column.table
-                            Map<String, Object> params = new HashMap<>();
-                            params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, refAttrName);
-
-                            newAttr.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
-                        } else { // ex: hive_table.partitionKeys, with no reverseAttribute-reference
-                            newAttr.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY));
-                        }
-                    }
-
-                } else if (StringUtils.isNotEmpty(oldAttr.reverseAttributeName)) {
-                    Map<String, Object> params = new HashMap<>();
-                    params.put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE);
-
-                    newAttr.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY, params));
-                }
                 attrDefs.add(newAttr);
             }
 
@@ -432,13 +356,23 @@ public final class RestUtils {
         return ret.toArray(new EnumValue[ret.size()]);
     }
 
-    private static AtlasAttributeDef toAtlasAttributeDef(AttributeDefinition attrDefinition) {
+    private static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
         AtlasAttributeDef ret = new AtlasAttributeDef();
 
         ret.setName(attrDefinition.name);
         ret.setTypeName(attrDefinition.dataTypeName);
         ret.setIsIndexable(attrDefinition.isIndexable);
         ret.setIsUnique(attrDefinition.isUnique);
+        if (attrDefinition.isComposite) {
+            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF));
+        }
+
+        if (StringUtils.isNotBlank(attrDefinition.reverseAttributeName)) {
+            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF,
+                                       new HashMap<String, Object>() {{
+                                           put(CONSTRAINT_PARAM_ATTRIBUTE, attrDefinition.reverseAttributeName);
+                                       }}));
+        }
 
         // Multiplicity attribute mapping
         Multiplicity multiplicity = attrDefinition.multiplicity;

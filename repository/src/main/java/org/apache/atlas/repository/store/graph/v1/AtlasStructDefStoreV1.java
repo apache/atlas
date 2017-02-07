@@ -52,11 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
-
 /**
  * StructDef store in v1 format.
  */
@@ -502,19 +497,15 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
     @VisibleForTesting
     public static String toJsonFromAttribute(AtlasAttribute attribute) {
-        AtlasAttributeDef attributeDef      = attribute.getAttributeDef();
-        boolean           isComposite       = attribute.legacyIsComposite();
-        String            reverseAttribName = attribute.legacyReverseAttribute();
-
-        Map<String, Object> attribInfo = new HashMap<>();
+        AtlasAttributeDef   attributeDef = attribute.getAttributeDef();
+        Map<String, Object> attribInfo   = new HashMap<>();
 
         attribInfo.put("name", attributeDef.getName());
         attribInfo.put("dataType", attributeDef.getTypeName());
         attribInfo.put("isUnique", attributeDef.getIsUnique());
         attribInfo.put("isIndexable", attributeDef.getIsIndexable());
-        attribInfo.put("isComposite", isComposite);
-        attribInfo.put("reverseAttributeName", reverseAttribName);
-        attribInfo.put("isForeignKeyWithOnDeleteCascade", attribute.isForeignKeyWithOnDeleteCascade());
+        attribInfo.put("isComposite", attribute.isOwnedRef());
+        attribInfo.put("reverseAttributeName", attribute.getInverseRefAttribute());
 
         final int lower;
         final int upper;
@@ -554,111 +545,16 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         ret.setIsUnique((Boolean) attribInfo.get("isUnique"));
         ret.setIsIndexable((Boolean) attribInfo.get("isIndexable"));
 
-        String attrTypeName = ret.getTypeName();
-
-        if (AtlasTypeUtil.isArrayType(attrTypeName)) {
-            Set<String> typeNames = AtlasTypeUtil.getReferencedTypeNames(attrTypeName);
-
-            if (typeNames.size() > 0) {
-                attrTypeName = typeNames.iterator().next();
-            }
+        if ((Boolean)attribInfo.get("isComposite")) {
+            ret.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
         }
 
-        if (!AtlasTypeUtil.isBuiltInType(attrTypeName)) {
-            AtlasVertex attributeType = typeDefStore.findTypeVertexByName(attrTypeName);
-
-            /* determine constraints to add to this attribute
-                 - add mappedFromRef if attribute-type has an attribute that refers to this attribute via reverseAttributeName
-                     example: hive_table.sd referenced from hive_storagedesc.table with reverseAttributeName=sd
-                 - add foreignKey(onDelete=cascade) if attribute-type has an attribute that refers to this struct with isComposite=true
-                     example: hive_storagedesc referenced from hive_table.sd      with isComposite=true
-                     example: hive_column      referenced from hive_table.columns with isComposite=true
-             */
-            if (attributeType != null && typeDefStore.isTypeVertex(attributeType, TypeCategory.CLASS)) {
-                boolean attributeTypeHasIsCompositeRef = false;
-                String  attributeTypeRevAttribRefFrom  = null;
-
-                List<String> attrNames = attributeType.getProperty(AtlasGraphUtilsV1.getTypeDefPropertyKey(attrTypeName), List.class);
-
-                if (CollectionUtils.isNotEmpty(attrNames)) {
-                    for (String attrName : attrNames) {
-                        String attribJson = attributeType.getProperty(
-                                        AtlasGraphUtilsV1.getTypeDefPropertyKey(attrTypeName, attrName), String.class);
-
-                        if (StringUtils.isBlank(attribJson)) {
-                            continue;
-                        }
-
-                        Map refAttrInfo = AtlasType.fromJson(attribJson, Map.class);
-
-                        if (refAttrInfo == null) {
-                            continue;
-                        }
-
-                        String refAttribType = (String) refAttrInfo.get("dataType");
-
-                        if (AtlasTypeUtil.isArrayType(refAttribType)) {
-                            Set<String> typeNames = AtlasTypeUtil.getReferencedTypeNames(refAttribType);
-
-                            if (typeNames.size() > 0) {
-                                refAttribType = typeNames.iterator().next();
-                            }
-                        }
-
-                        if (!StringUtils.equals(refAttribType, structDef.getName())) {
-                            continue;
-                        }
-
-                        if (StringUtils.isBlank(attributeTypeRevAttribRefFrom)) {
-                            String refAttribRevAttribName = (String) refAttrInfo.get("reverseAttributeName");
-
-                            if (StringUtils.equals(refAttribRevAttribName, ret.getName())) {
-                                attributeTypeRevAttribRefFrom = (String) refAttrInfo.get("name");
-                            }
-                        }
-
-                        if (!attributeTypeHasIsCompositeRef) {
-                            Object val = refAttrInfo.get("isComposite");
-
-                            if (val instanceof Boolean) {
-                                attributeTypeHasIsCompositeRef = (Boolean) val;
-                            } if (val != null) {
-                                attributeTypeHasIsCompositeRef = Boolean.parseBoolean(val.toString());
-                            }
-                        }
-
-                        if (StringUtils.isNotBlank(attributeTypeRevAttribRefFrom) && attributeTypeHasIsCompositeRef) {
-                            break;
-                        }
-                    }
-                }
-
-                boolean isForeignKeyWithOnDeleteCascade = attributeTypeHasIsCompositeRef;
-
-                if (!isForeignKeyWithOnDeleteCascade) {
-                    Object val = attribInfo.get("isForeignKeyWithOnDeleteCascade");
-
-                    if (val instanceof Boolean) {
-                        isForeignKeyWithOnDeleteCascade = (Boolean) val;
-                    } else if (val != null) {
-                        isForeignKeyWithOnDeleteCascade = Boolean.parseBoolean(val.toString());
-                    }
-                }
-
-                if (StringUtils.isNotBlank(attributeTypeRevAttribRefFrom)) {
-                    Map<String, Object> params = new HashMap<>();
-                    params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, attributeTypeRevAttribRefFrom);
-
-                    ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
-                }
-
-                if (isForeignKeyWithOnDeleteCascade) { // ex: hive_column.table
-                    Map<String, Object> params = new HashMap<>();
-                    params.put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE);
-
-                    ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY, params));
-                }
-            }
+        final String reverseAttributeName = (String) attribInfo.get("reverseAttributeName");
+        if (StringUtils.isNotBlank(reverseAttributeName)) {
+            ret.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF,
+                    new HashMap<String, Object>() {{
+                        put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, reverseAttributeName);
+                    }}));
         }
 
         Map     multiplicity = AtlasType.fromJson((String) attribInfo.get("multiplicity"), Map.class);

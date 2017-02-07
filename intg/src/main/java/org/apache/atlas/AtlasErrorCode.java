@@ -55,6 +55,10 @@ public enum AtlasErrorCode {
     TYPE_NAME_INVALID_FORMAT(400, "ATLAS40025E", "{0}: invalid name for {1}.  Names must consist of a letter followed by a sequence of letter, number, or '_' characters"),
     INVALID_PARAMETERS(400, "ATLAS40025E", "invalid parameters: {0}"),
     CLASSIFICATION_ALREADY_ASSOCIATED(400, "ATLAS40026E", "instance {0} already is associated with classification {1}"),
+    CONSTRAINT_INVERSE_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40027E", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),
+    CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_NON_EXISTING(400, "ATLAS40028E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} does not exist"),
+    CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40029E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} is not an entity type"),
+    CONSTRAINT_OWNED_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40030E", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),

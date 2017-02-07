@@ -88,7 +88,9 @@ public class StructVertexMapper implements InstanceGraphMapper<AtlasEdge> {
     }
 
     public static boolean shouldManageChildReferences(AtlasStructType type, String attributeName) {
-        return (type instanceof AtlasEntityType) && ((AtlasEntityType)type).isMappedFromRefAttribute(attributeName);
+        AtlasStructType.AtlasAttribute attribute = type.getAttribute(attributeName);
+
+        return attribute != null ? attribute.isOwnedRef() : false;
     }
 
     /**

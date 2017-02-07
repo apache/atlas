@@ -87,12 +87,6 @@ public final class TestUtilsV2 {
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
                                 new ArrayList<AtlasConstraintDef>()));
 
-        deptTypeDef.getAttribute("employees").addConstraint(
-            new AtlasConstraintDef(
-                AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, new HashMap<String, Object>() {{
-                put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "department");
-            }}));
-
         AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("address", "Address"),
@@ -126,8 +120,8 @@ public final class TestUtilsV2 {
 
         employeeTypeDef.getAttribute("department").addConstraint(
             new AtlasConstraintDef(
-                AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY, new HashMap<String, Object>() {{
-                put(AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE, AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE);
+                AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "employees");
             }}));
 
         AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description, ImmutableSet.of("Employee"),
@@ -480,8 +474,8 @@ public final class TestUtilsV2 {
                         false, false,
                         new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                             add(new AtlasStructDef.AtlasConstraintDef(
-                                AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY, new HashMap<String, Object>() {{
-                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE, AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE);
+                                AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                                put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "columns");
                             }}));
                         }})
                         );
@@ -583,11 +577,7 @@ public final class TestUtilsV2 {
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
                                 new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
-                                    add(new AtlasStructDef.AtlasConstraintDef(
-                                            AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                                            new HashMap<String, Object>() {{
-                                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "table");
-                                        }}));
+                                    add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                                 }}),
                         // array of structs
                         new AtlasAttributeDef("partitions", String.format("array<%s>", "partition_struct_type"),

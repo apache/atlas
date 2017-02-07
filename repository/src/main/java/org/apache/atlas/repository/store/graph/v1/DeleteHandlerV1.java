@@ -139,7 +139,7 @@ public abstract class DeleteHandlerV1 {
             }
 
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getAllAttributes().values()) {
-                if (!entityType.isMappedFromRefAttribute(attributeInfo.getName())) {
+                if (! attributeInfo.isOwnedRef()) {
                     continue;
                 }
                 String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(entityType, attributeInfo.getName());
@@ -284,7 +284,7 @@ public abstract class DeleteHandlerV1 {
 
             for (AtlasStructType.AtlasAttribute attributeInfo : getAttributes(structType)) {
                 LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
-                boolean isComposite = isEntityType && ((AtlasEntityType)structType).isMappedFromRefAttribute(attributeInfo.getName());
+                boolean isComposite = isEntityType && attributeInfo.isOwnedRef();
 
                 AtlasType attrType = typeRegistry.getType(attributeInfo.getTypeName());
 

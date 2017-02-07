@@ -24,15 +24,12 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.*;
 
 /**
  * class that implements behaviour of an entity-type.
@@ -53,8 +49,6 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasEntityType>       superTypes              = Collections.emptyList();
     private Set<String>                 allSuperTypes           = Collections.emptySet();
     private Set<String>                 allSubTypes             = Collections.emptySet();
-    private Map<String, AtlasAttribute> mappedFromRefAttributes = new HashMap<>();
-    private List<ForeignKeyReference>   foreignKeyReferences    = Collections.emptyList();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -96,14 +90,11 @@ public class AtlasEntityType extends AtlasStructType {
         this.allSuperTypes = Collections.unmodifiableSet(allS);
         this.allAttributes = Collections.unmodifiableMap(allA);
         this.allSubTypes          = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
-        this.foreignKeyReferences = new ArrayList<>(); // this will be populated in resolveReferencesPhase2()
     }
 
     @Override
     public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
-
-        mappedFromRefAttributes = Collections.unmodifiableMap(resolveMappedFromRefConstraint(allAttributes.values()));
 
         for (String superTypeName : allSuperTypes) {
             AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
@@ -120,47 +111,6 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     public Set<String> getAllSubTypes() { return Collections.unmodifiableSet(allSubTypes); }
-
-    public Collection<String> getMappedFromRefAttributes() { return mappedFromRefAttributes.keySet(); }
-
-    public boolean isMappedFromRefAttribute(String attributeName) {
-        return mappedFromRefAttributes.containsKey(attributeName);
-    }
-
-    public String getMappedFromRefAttribute(String typeName, String attribName) {
-        String ret = null;
-
-        for (Map.Entry<String, AtlasAttribute> e : mappedFromRefAttributes.entrySet()) {
-            AtlasAttribute attribute = e.getValue();
-
-            if(StringUtils.equals(attribute.getDefinedInType().getTypeName(), typeName) && StringUtils.equals(attribute.getName(), attribName)) {
-                ret = e.getKey();
-
-                break;
-            }
-        }
-
-        return ret;
-    }
-
-    public List<ForeignKeyReference> getForeignKeyReferences() {
-        return Collections.unmodifiableList(foreignKeyReferences);
-    }
-
-    public ForeignKeyReference getForeignKeyReference(String fromTypeName, String fromAttributeName) {
-        ForeignKeyReference ret = null;
-
-        for (ForeignKeyReference fkRef : foreignKeyReferences) {
-            if (StringUtils.equals(fkRef.fromTypeName(), fromTypeName) &&
-                StringUtils.equals(fkRef.fromAttributeName(), fromAttributeName)) {
-                ret = fkRef;
-
-                break;
-            }
-        }
-
-        return ret;
-    }
 
     public boolean isSuperTypeOf(AtlasEntityType entityType) {
         return entityType != null && allSubTypes.contains(entityType.getTypeName());
@@ -283,10 +233,6 @@ public class AtlasEntityType extends AtlasStructType {
         }
     }
 
-    void addForeignKeyReference(AtlasAttribute attribute, AtlasConstraintDef refConstraint) {
-        foreignKeyReferences.add(new ForeignKeyReference(attribute, refConstraint));
-    }
-
     private void addSubType(AtlasEntityType subType) {
         allSubTypes.add(subType.getTypeName());
     }
@@ -334,128 +280,9 @@ public class AtlasEntityType extends AtlasStructType {
         }
     }
 
-    /*
-     * valid conditions for mapped-from-ref constraint:
-     *  - supported only in entity-type
-     *  - attribute should be an entity-type or an array of entity-type
-     *  - attribute's entity-type should have a foreign-key constraint to this type
-     */
-    private Map<String, AtlasAttribute> resolveMappedFromRefConstraint(Collection<AtlasAttribute> attributes) throws AtlasBaseException {
-        Map<String, AtlasAttribute> ret = null;
-
-        for (AtlasAttribute attribute : attributes) {
-            AtlasAttributeDef attribDef = attribute.getAttributeDef();
-
-            if (CollectionUtils.isEmpty(attribDef.getConstraintDefs())) {
-                continue;
-            }
-
-            for (AtlasConstraintDef constraintDef : attribDef.getConstraintDefs()) {
-                if (!StringUtils.equals(constraintDef.getType(), CONSTRAINT_TYPE_MAPPED_FROM_REF)) {
-                    continue;
-                }
-
-                AtlasType attribType = attribute.getAttributeType();
-
-                if (attribType instanceof AtlasArrayType) {
-                    attribType = ((AtlasArrayType)attribType).getElementType();
-                }
-
-                if (!(attribType instanceof AtlasEntityType)) {
-                    throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_SATISFIED, getTypeName(),
-                                                 attribDef.getName(), CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                                                 attribDef.getTypeName());
-                }
-
-                String refAttribName = AtlasTypeUtil.getStringValue(constraintDef.getParams(), CONSTRAINT_PARAM_REF_ATTRIBUTE);
-
-                if (StringUtils.isBlank(refAttribName)) {
-                    throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_MISSING_PARAMS,
-                                                 getTypeName(), attribDef.getName(),
-                                                 CONSTRAINT_PARAM_REF_ATTRIBUTE, CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                                                 String.valueOf(constraintDef.getParams()));
-                }
-
-                AtlasEntityType entityType = (AtlasEntityType) attribType;
-                AtlasAttribute  refAttrib  = entityType.getAttribute(refAttribName);
-
-                if (refAttrib == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_EXIST,
-                                                 getTypeName(), attribDef.getName(), CONSTRAINT_PARAM_REF_ATTRIBUTE,
-                                                 entityType.getTypeName(), refAttribName);
-                }
-
-                if (!StringUtils.equals(getTypeName(), refAttrib.getTypeName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_MATCHED,
-                                                 getTypeName(), attribDef.getName(), CONSTRAINT_PARAM_REF_ATTRIBUTE,
-                                                 entityType.getTypeName(), refAttribName, getTypeName(),
-                                                 refAttrib.getTypeName());
-                }
-
-                if (ret == null) {
-                    ret = new HashMap<>();
-                }
-
-                ret.put(attribDef.getName(), refAttrib);
-
-                break;
-            }
-        }
-
-        return ret == null ? Collections.<String, AtlasAttribute>emptyMap() : ret;
-    }
-
     boolean isAssignableFrom(AtlasObjectId objId) {
         boolean ret = objId.isValid() && (StringUtils.equals(objId.getTypeName(), getTypeName()) || isSuperTypeOf(objId.getTypeName()));
 
         return ret;
-    }
-
-    public static class ForeignKeyReference {
-        private final AtlasAttribute     fromAttribute;
-        private final AtlasConstraintDef refConstraint;
-
-        public ForeignKeyReference(AtlasAttribute fromAttribute, AtlasConstraintDef refConstraint) {
-            this.fromAttribute = fromAttribute;
-            this.refConstraint = refConstraint;
-        }
-
-        public String fromTypeName() { return fromType().getTypeName(); }
-
-        public String fromAttributeName() { return fromAttribute.getName(); }
-
-        public String toTypeName() { return fromAttribute.getTypeName(); }
-
-        public AtlasStructType fromType() { return fromAttribute.getDefinedInType(); }
-
-        public AtlasAttribute fromAttribute() { return fromAttribute; }
-
-        public AtlasEntityType toType() {
-            AtlasType attrType = fromAttribute.getAttributeType();
-
-            if (attrType instanceof AtlasArrayType) {
-                attrType = ((AtlasArrayType)attrType).getElementType();
-            }
-
-            if (attrType instanceof AtlasEntityType) {
-                return (AtlasEntityType)attrType;
-            }
-
-            return null;
-        }
-
-        public AtlasConstraintDef getConstraint() { return refConstraint; }
-
-        public boolean isOnDeleteCascade() {
-            return StringUtils.equals(getOnDeleteAction(), CONSTRAINT_PARAM_VAL_CASCADE);
-        }
-
-        private String getOnDeleteAction() {
-            Map<String, Object> params = refConstraint.getParams();
-
-            Object action = MapUtils.isNotEmpty(params) ? params.get(AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE) : null;
-
-            return (action != null) ? action.toString() : null;
-        }
     }
 }

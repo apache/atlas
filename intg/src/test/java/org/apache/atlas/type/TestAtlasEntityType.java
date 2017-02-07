@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.ModelTestUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -31,7 +32,6 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
-import org.apache.atlas.type.AtlasEntityType.ForeignKeyReference;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
@@ -42,6 +42,7 @@ public class TestAtlasEntityType {
     private static final String TYPE_COLUMN  = "my_column";
     private static final String ATTR_TABLE   = "table";
     private static final String ATTR_COLUMNS = "columns";
+    private static final String ATTR_NAME    = "name";
 
     private final AtlasEntityType entityType;
     private final List<Object>    validValues   = new ArrayList<>();
@@ -129,7 +130,7 @@ public class TestAtlasEntityType {
     }
 
     @Test
-    public void testForeignKeyConstraintValid() {
+    public void testValidConstraints() {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
@@ -147,22 +148,10 @@ public class TestAtlasEntityType {
             AtlasEntityType typeTable  = ttr.getEntityTypeByName(TYPE_TABLE);
             AtlasEntityType typeColumn = ttr.getEntityTypeByName(TYPE_COLUMN);
 
-            assertEquals(typeTable.getForeignKeyReferences().size(), 1);
-
-            ForeignKeyReference fkRef = typeTable.getForeignKeyReferences().get(0);
-            assertEquals(fkRef.fromTypeName(), TYPE_COLUMN);
-            assertEquals(fkRef.fromAttributeName(), ATTR_TABLE);
-            assertEquals(fkRef.toTypeName(), TYPE_TABLE);
-            assertTrue(fkRef.isOnDeleteCascade());
-
-            assertEquals(typeTable.getForeignKeyAttributes().size(), 0);
-            assertEquals(typeTable.getMappedFromRefAttributes().size(), 1);
-            assertTrue(typeTable.getMappedFromRefAttributes().contains(ATTR_COLUMNS));
-
-            assertEquals(typeColumn.getForeignKeyReferences().size(), 0);
-            assertEquals(typeColumn.getForeignKeyAttributes().size(), 1);
-            assertTrue(typeColumn.getForeignKeyAttributes().contains(ATTR_TABLE));
-            assertEquals(typeColumn.getMappedFromRefAttributes().size(), 0);
+            assertTrue(typeTable.getAttribute(ATTR_COLUMNS).isOwnedRef());
+            assertNull(typeTable.getAttribute(ATTR_COLUMNS).getInverseRefAttribute());
+            assertFalse(typeColumn.getAttribute(ATTR_TABLE).isOwnedRef());
+            assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttribute(), ATTR_COLUMNS);
 
             commit = true;
         } catch (AtlasBaseException excp) {
@@ -174,15 +163,40 @@ public class TestAtlasEntityType {
     }
 
     @Test
-    public void testForeignKeyConstraintInValidMappedFromRef() {
-        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
-        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
-        String               failureMsg   = null;
+    public void testConstraintInvalidOwnedRef_InvalidAttributeType() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        AtlasErrorCode             errorCode   = null;
+
+        entityDefs.add(createTableEntityDefWithOwnedRefOnInvalidType());
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(entityDefs);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            errorCode = excp.getAtlasErrorCode();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_OWNED_REF_ATTRIBUTE_INVALID_TYPE,
+                "expected invalid constraint failure - missing refAttribute");
+    }
+
+    @Test
+    public void testConstraintInValidInverseRef_MissingParams() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        AtlasErrorCode             errorCode   = null;
 
         entityDefs.add(createTableEntityDef());
-
-        AtlasTransientTypeRegistry ttr    = null;
-        boolean                    commit = false;
+        entityDefs.add(createColumnEntityDefWithMissingInverseAttribute());
 
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate();
@@ -191,23 +205,24 @@ public class TestAtlasEntityType {
 
             commit = true;
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
+            errorCode = excp.getAtlasErrorCode();
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
-        assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in mappedFromRef");
+        assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_MISSING_PARAMS,
+                "expected invalid constraint failure - missing refAttribute");
     }
 
     @Test
-    public void testForeignKeyConstraintInValidMappedFromRef2() {
+    public void testConstraintInValidInverseRef_InvalidAttributeTypeForInverseAttribute() {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        String                     failureMsg   = null;
+        AtlasErrorCode             errorCode   = null;
 
-        entityDefs.add(createTableEntityDefWithMissingRefAttribute());
-        entityDefs.add(createColumnEntityDef());
+        entityDefs.add(createTableEntityDef());
+        entityDefs.add(createColumnEntityDefWithInvaidAttributeTypeForInverseAttribute());
 
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate();
@@ -216,22 +231,24 @@ public class TestAtlasEntityType {
 
             commit = true;
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
+            errorCode = excp.getAtlasErrorCode();
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
-        assertNotNull(failureMsg, "expected invalid constraint failure - missing refAttribute in mappedFromRef");
+        assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_INVERSE_REF_ATTRIBUTE_INVALID_TYPE,
+                "expected invalid constraint failure - missing refAttribute");
     }
 
     @Test
-    public void testForeignKeyConstraintInValidForeignKey() {
+    public void testConstraintInValidInverseRef_InvalidAttributeType() {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        String                     failureMsg   = null;
+        AtlasErrorCode             errorCode   = null;
 
-        entityDefs.add(createColumnEntityDef());
+        entityDefs.add(createTableEntityDef());
+        entityDefs.add(createColumnEntityDefWithInvalidInverseAttributeType());
 
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate();
@@ -240,11 +257,38 @@ public class TestAtlasEntityType {
 
             commit = true;
         } catch (AtlasBaseException excp) {
-            failureMsg = excp.getMessage();
+            errorCode = excp.getAtlasErrorCode();
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
-        assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in foreignKey");
+        assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_INVALID_TYPE,
+                "expected invalid constraint failure - invalid refAttribute type");
+    }
+
+    @Test
+    public void testConstraintInValidInverseRef_NonExistingAttribute() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        AtlasErrorCode             errorCode   = null;
+
+        entityDefs.add(createTableEntityDef());
+        entityDefs.add(createColumnEntityDefWithNonExistingInverseAttribute());
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(entityDefs);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            errorCode = excp.getAtlasErrorCode();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_NON_EXISTING,
+                     "expected invalid constraint failure - non-existing refAttribute");
     }
 
     private static AtlasEntityType getEntityType(AtlasEntityDef entityDef) {
@@ -257,27 +301,76 @@ public class TestAtlasEntityType {
 
     private AtlasEntityDef createTableEntityDef() {
         AtlasEntityDef    table       = new AtlasEntityDef(TYPE_TABLE);
+        AtlasAttributeDef attrName    = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
         AtlasAttributeDef attrColumns = new AtlasAttributeDef(ATTR_COLUMNS,
                                                               AtlasBaseTypeDef.getArrayTypeName(TYPE_COLUMN));
 
-        Map<String, Object> params = new HashMap<>();
-        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, ATTR_TABLE);
+        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
 
-        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
+        table.addAttribute(attrName);
         table.addAttribute(attrColumns);
 
         return table;
     }
 
-    private AtlasEntityDef createTableEntityDefWithMissingRefAttribute() {
-        AtlasEntityDef    table       = new AtlasEntityDef(TYPE_TABLE);
-        AtlasAttributeDef attrColumns = new AtlasAttributeDef(ATTR_COLUMNS,
-                                                              AtlasBaseTypeDef.getArrayTypeName(TYPE_COLUMN));
+    private AtlasEntityDef createTableEntityDefWithOwnedRefOnInvalidType() {
+        AtlasEntityDef    table    = new AtlasEntityDef(TYPE_TABLE);
+        AtlasAttributeDef attrName = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
 
-        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, null));
-        table.addAttribute(attrColumns);
+        attrName.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+
+        table.addAttribute(attrName);
 
         return table;
+    }
+
+    private AtlasEntityDef createColumnEntityDefWithMissingInverseAttribute() {
+        AtlasEntityDef    column    = new AtlasEntityDef(TYPE_COLUMN);
+        AtlasAttributeDef attrTable = new AtlasAttributeDef(ATTR_TABLE, TYPE_TABLE);
+
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF));
+        column.addAttribute(attrTable);
+
+        return column;
+    }
+
+    private AtlasEntityDef createColumnEntityDefWithInvaidAttributeTypeForInverseAttribute() {
+        AtlasEntityDef    column    = new AtlasEntityDef(TYPE_COLUMN);
+        AtlasAttributeDef attrTable = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, ATTR_NAME);
+
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, params));
+        column.addAttribute(attrTable);
+
+        return column;
+    }
+
+    private AtlasEntityDef createColumnEntityDefWithNonExistingInverseAttribute() {
+        AtlasEntityDef    column    = new AtlasEntityDef(TYPE_COLUMN);
+        AtlasAttributeDef attrTable = new AtlasAttributeDef(ATTR_TABLE, TYPE_TABLE);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "non-existing:" + ATTR_COLUMNS);
+
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, params));
+        column.addAttribute(attrTable);
+
+        return column;
+    }
+
+    private AtlasEntityDef createColumnEntityDefWithInvalidInverseAttributeType() {
+        AtlasEntityDef    column    = new AtlasEntityDef(TYPE_COLUMN);
+        AtlasAttributeDef attrTable = new AtlasAttributeDef(ATTR_TABLE, TYPE_TABLE);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, ATTR_NAME);
+
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, params));
+        column.addAttribute(attrTable);
+
+        return column;
     }
 
     private AtlasEntityDef createColumnEntityDef() {
@@ -285,9 +378,9 @@ public class TestAtlasEntityType {
         AtlasAttributeDef attrTable = new AtlasAttributeDef(ATTR_TABLE, TYPE_TABLE);
 
         Map<String, Object> params = new HashMap<>();
-        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE, AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE);
+        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, ATTR_COLUMNS);
 
-        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY, params));
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, params));
         column.addAttribute(attrTable);
 
         return column;

@@ -54,7 +54,7 @@
                     "name": "nodes",
                     "typeName": "array<storm_node>",
                     "cardinality": "LIST",
-                    "constraintDefs": [],
+                    "constraints": [],
                     "isIndexable": false,
                     "isOptional": false,
                     "isUnique": false
