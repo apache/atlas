@@ -17,29 +17,32 @@
  */
 package org.apache.atlas;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
 import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
+import com.google.common.annotations.VisibleForTesting;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class AtlasEntitiesClientV2 extends AtlasBaseClient {
 
+    private static final GenericType<List<AtlasEntityWithAssociations>> ENTITY_WITH_ASSOCIATIONS_LIST_TYPE = new GenericType<List<AtlasEntityWithAssociations>>(){};
     public static final String ENTITY_API = BASE_URI + "v2/entity/";
     public static final String ENTITIES_API = BASE_URI + "v2/entities/";
 
@@ -84,22 +87,25 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         super(service, configuration);
     }
 
-    public AtlasEntity getEntityByGuid(String guid) throws AtlasServiceException {
-        return callAPI(GET_ENTITY_BY_GUID, null, AtlasEntity.class, guid);
+    public List<AtlasEntityWithAssociations> getEntityByGuid(String guid) throws AtlasServiceException {
+
+        return callAPI(GET_ENTITY_BY_GUID, null, ENTITY_WITH_ASSOCIATIONS_LIST_TYPE, guid);
     }
 
     public AtlasEntities getEntityByGuids(List<String> guids) throws AtlasServiceException {
         return callAPI(GET_ENTITY_BY_GUID, AtlasEntities.class, "guid", guids);
     }
 
-    public AtlasEntityWithAssociations getEntityWithAssociationByGuid(String guid) throws AtlasServiceException {
-        return callAPI(formatPathForPathParams(GET_ENTITY_WITH_ASSOCIATION_BY_GUID, guid), null, AtlasEntityWithAssociations.class);
+    public List<AtlasEntityWithAssociations> getEntityWithAssociationByGuid(String guid) throws AtlasServiceException {
+
+        return callAPI(formatPathForPathParams(GET_ENTITY_WITH_ASSOCIATION_BY_GUID, guid), null, ENTITY_WITH_ASSOCIATIONS_LIST_TYPE);
     }
 
-    public AtlasEntity getEntityByAttribute(String type, String attribute, String value) throws AtlasServiceException {
+    public List<AtlasEntityWithAssociations> getEntityByAttribute(String type, String attribute, String value) throws AtlasServiceException {
+
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("value", value);
-        return callAPI(formatPathForPathParams(GET_ENTITY_BY_ATTRIBUTE, type, attribute), AtlasEntity.class, queryParams);
+        return callAPI(formatPathForPathParams(GET_ENTITY_BY_ATTRIBUTE, type, attribute), ENTITY_WITH_ASSOCIATIONS_LIST_TYPE, queryParams);
     }
 
     public EntityMutationResponse updateEntityByAttribute(String type, String attribute, String value, AtlasEntity entity) throws AtlasServiceException {
@@ -115,11 +121,11 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
     }
 
     public EntityMutationResponse createEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITY, new HashMap<String, AtlasEntity>() {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
+        return callAPI(CREATE_ENTITY, new HashMap<String, AtlasEntity>(1) {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
     }
 
     public EntityMutationResponse updateEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITY, new HashMap<String, AtlasEntity>() {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
+        return callAPI(UPDATE_ENTITY, new HashMap<String, AtlasEntity>(1) {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
     }
 
     public AtlasEntity deleteEntityByGuid(String guid) throws AtlasServiceException {
@@ -135,7 +141,7 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
     }
 
     public void addClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathForPathParams(ADD_CLASSIFICATIONS, guid), classifications, null, (String[]) null);
+        callAPI(formatPathForPathParams(ADD_CLASSIFICATIONS, guid), classifications, (Class<?>)null, (String[]) null);
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
@@ -156,11 +162,24 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         return null;
     }
 
-    public List<AtlasEntity> createEntities(Map<String, AtlasEntity> atlasEntities) throws AtlasServiceException {
-        return (List<AtlasEntity>)callAPI(CREATE_ENTITIES, atlasEntities, List.class);
+    public EntityMutationResponse createEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
+
+        return callAPI(CREATE_ENTITIES, entityListToMap(atlasEntities), EntityMutationResponse.class);
     }
 
-    public List<AtlasEntity> updateEntities(Map<String, AtlasEntity> atlasEntities) throws AtlasServiceException {
-        return (List<AtlasEntity>)callAPI(UPDATE_ENTITIES, atlasEntities, List.class);
+    private Map<String, AtlasEntity> entityListToMap(List<AtlasEntity> atlasEntities) {
+        Map<String,AtlasEntity> toSend = new HashMap<String, AtlasEntity>(atlasEntities.size());
+        for(AtlasEntity entity : atlasEntities) {
+            toSend.put(entity.getGuid(), entity);
+        }
+        return toSend;
+    }
+
+    public EntityMutationResponse updateEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
+        return callAPI(UPDATE_ENTITIES, entityListToMap(atlasEntities), EntityMutationResponse.class);
+    }
+
+    public AtlasEntity.AtlasEntities searchEntities(SearchFilter searchFilter) throws AtlasServiceException {
+        return callAPI(GET_ENTITIES, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
     }
 }

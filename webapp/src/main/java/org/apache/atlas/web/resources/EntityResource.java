@@ -23,7 +23,10 @@ import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.AtlasClient.EntityResult;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
@@ -127,13 +130,13 @@ public class EntityResource {
                 LOG.debug("submitting entities {} ", entityJson);
             }
 
-            final List<String> guids = metadataService.createEntities(entities);
-
+            final CreateUpdateEntitiesResult result = metadataService.createEntities(entities);
+            final List<String> guids = result.getEntityResult().getCreatedEntities();
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Created entities {}", guids);
             }
 
-            JSONObject response = getResponse(new AtlasClient.EntityResult(guids, null, null));
+            JSONObject response = getResponse(result);
 
             URI locationURI = getLocationURI(guids);
 
@@ -179,13 +182,26 @@ public class EntityResource {
     }
 
     private JSONObject getResponse(AtlasClient.EntityResult entityResult) throws AtlasException, JSONException {
+        CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
+        result.setEntityResult(entityResult);
+        return getResponse(result);
+
+    }
+    private JSONObject getResponse(CreateUpdateEntitiesResult result) throws AtlasException, JSONException {
         JSONObject response = new JSONObject();
+        EntityResult entityResult = result.getEntityResult();
+        GuidMapping mapping = result.getGuidMapping();
         response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-        response.put(AtlasClient.ENTITIES, new JSONObject(entityResult.toString()).get(AtlasClient.ENTITIES));
-        String sampleEntityId = getSample(entityResult);
-        if (sampleEntityId != null) {
-            String entityDefinition = metadataService.getEntityDefinitionJson(sampleEntityId);
-            response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
+        if(entityResult != null) {
+            response.put(AtlasClient.ENTITIES, new JSONObject(entityResult.toString()).get(AtlasClient.ENTITIES));
+            String sampleEntityId = getSample(result.getEntityResult());
+            if (sampleEntityId != null) {
+                String entityDefinition = metadataService.getEntityDefinitionJson(sampleEntityId);
+                response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
+            }
+        }
+        if(mapping != null) {
+            response.put(AtlasClient.GUID_ASSIGNMENTS, new JSONObject(mapping.toString()).get(AtlasClient.GUID_ASSIGNMENTS));
         }
         return response;
     }
@@ -218,13 +234,13 @@ public class EntityResource {
                 LOG.info("updating entities {} ", entityJson);
             }
 
-            AtlasClient.EntityResult entityResult = metadataService.updateEntities(entities);
+            CreateUpdateEntitiesResult result = metadataService.updateEntities(entities);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Updated entities: {}", entityResult);
+                LOG.debug("Updated entities: {}", result.getEntityResult());
             }
 
-            JSONObject response = getResponse(entityResult);
+            JSONObject response = getResponse(result);
             return Response.ok(response).build();
         } catch(EntityExistsException e) {
             LOG.error("Unique constraint violation for entityDef={}", entityJson, e);
@@ -303,14 +319,14 @@ public class EntityResource {
             Referenceable updatedEntity =
                 InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
-            AtlasClient.EntityResult entityResult =
+            CreateUpdateEntitiesResult result =
                     metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, updatedEntity);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Updated entities: {}", entityResult);
+                LOG.debug("Updated entities: {}", result.getEntityResult());
             }
 
-            JSONObject response = getResponse(entityResult);
+            JSONObject response = getResponse(result);
             return Response.ok(response).build();
         } catch (ValueConversionException ve) {
             LOG.error("Unable to persist entity instance due to a deserialization error {} ", entityJson, ve);
@@ -388,13 +404,13 @@ public class EntityResource {
             Referenceable updatedEntity =
                     InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
-            AtlasClient.EntityResult entityResult = metadataService.updateEntityPartialByGuid(guid, updatedEntity);
+            CreateUpdateEntitiesResult result = metadataService.updateEntityPartialByGuid(guid, updatedEntity);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Updated entities: {}", entityResult);
+                LOG.debug("Updated entities: {}", result.getEntityResult());
             }
 
-            JSONObject response = getResponse(entityResult);
+            JSONObject response = getResponse(result);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist {} ", guid, entityJson, e);
@@ -429,13 +445,13 @@ public class EntityResource {
                 LOG.debug("Updating entity {} for property {} = {}", guid, property, value);
             }
 
-            AtlasClient.EntityResult entityResult = metadataService.updateEntityAttributeByGuid(guid, property, value);
+            CreateUpdateEntitiesResult result = metadataService.updateEntityAttributeByGuid(guid, property, value);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Updated entities: {}", entityResult);
+                LOG.debug("Updated entities: {}", result.getEntityResult());
             }
 
-            JSONObject response = getResponse(entityResult);
+            JSONObject response = getResponse(result);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist {} ", guid, value, e);
@@ -453,7 +469,7 @@ public class EntityResource {
      * Delete entities from the repository identified by their guids (including their composite references)
      * or
      * Deletes a single entity identified by its type and unique attribute value from the repository (including their composite references)
-     * 
+     *
      * @param guids list of deletion candidate guids
      *              or
      * @param entityType the entity type

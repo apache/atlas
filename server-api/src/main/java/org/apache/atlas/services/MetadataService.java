@@ -20,6 +20,7 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -78,9 +79,9 @@ public interface MetadataService {
      * Creates an entity, instance of the type.
      *
      * @param entityDefinition definition
-     * @return json array of guids of entities created
+     * @return CreateUpdateEntitiesResult with the guids of the entities created
      */
-    List<String> createEntities(String entityDefinition) throws AtlasException;
+   CreateUpdateEntitiesResult createEntities(String entityDefinition) throws AtlasException;
 
     /**
      * Get a typed entity instance.
@@ -96,11 +97,11 @@ public interface MetadataService {
      * Create entity instances.
      *
      * @param typedInstances  instance to create
-     * @return collection of guids for created entities
+     * @return CreateUpdateEntitiesResult with the guids of the entities created
      *
      * @throws AtlasException if unable to create the entities
      */
-    List<String> createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException;
+    CreateUpdateEntitiesResult createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException;
 
 
     /**
@@ -148,36 +149,36 @@ public interface MetadataService {
      *  @param guid entity id
      * @param attribute property name
      * @param value    property value
-     * @return json array of guids of entities created/updated
+     * @return {@link CreateUpdateEntitiesResult} with the guids of the entities that were created/updated
      */
-    AtlasClient.EntityResult updateEntityAttributeByGuid(String guid, String attribute, String value) throws AtlasException;
+    CreateUpdateEntitiesResult updateEntityAttributeByGuid(String guid, String attribute, String value) throws AtlasException;
 
     /**
      * Supports Partial updates of an entity. Users can update a subset of attributes for an entity identified by its guid
      * Note however that it cannot be used to set attribute values to null or delete attrbute values
      * @param guid entity id
      * @param entity
-     * @return json array of guids of entities created/updated
+     * @return {@link CreateUpdateEntitiesResult} with the guids of the entities that were created/updated
      * @throws AtlasException
      */
-    AtlasClient.EntityResult updateEntityPartialByGuid(String guid, Referenceable entity) throws AtlasException;
+    CreateUpdateEntitiesResult updateEntityPartialByGuid(String guid, Referenceable entity) throws AtlasException;
 
     /**
      * Batch API - Adds/Updates the given entity id(guid).
      *
      * @param entityJson entity json
-     * @return json array of guids of entities created/updated
+     * @return {@link CreateUpdateEntitiesResult} with the guids of the entities that were created/updated
      */
-    AtlasClient.EntityResult updateEntities(String entityJson) throws AtlasException;
+    CreateUpdateEntitiesResult updateEntities(String entityJson) throws AtlasException;
 
 
     /**
      * Batch API - Adds/Updates the given entity id(guid).
      *
      * @param entityJson entity json
-     * @return json array of guids of entities created/updated
+     * @return {@link CreateUpdateEntitiesResult} with the guids of the entities that were created/updated
      */
-    AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance[] iTypedReferenceableInstances) throws AtlasException;
+    CreateUpdateEntitiesResult updateEntities(ITypedReferenceableInstance[] iTypedReferenceableInstances) throws AtlasException;
 
     // Trait management functions
 
@@ -191,7 +192,7 @@ public interface MetadataService {
      * @return Guid of updated entity
      * @throws AtlasException
      */
-    AtlasClient.EntityResult updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
+    CreateUpdateEntitiesResult updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
                                                            String attrValue,
                                                            Referenceable updatedEntity) throws AtlasException;
 

@@ -18,16 +18,24 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.inject.Inject;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
@@ -61,18 +69,13 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.inject.Inject;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 
 /**
@@ -108,6 +111,66 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         notificationConsumer = consumers.iterator().next();
     }
+
+    @Test
+    public void testCreateNestedEntities() throws Exception {
+
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", "db1");
+        databaseInstance.set("description", "foo database");
+
+        int nTables = 5;
+        int colsPerTable=3;
+        List<Referenceable> tables = new ArrayList<>();
+        List<Referenceable> allColumns = new ArrayList<>();
+
+        for(int i = 0; i < nTables; i++) {
+            String tableName = "db1-table-" + i;
+
+            Referenceable tableInstance =
+                    new Referenceable(HIVE_TABLE_TYPE);
+            tableInstance.set("name", tableName);
+            tableInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
+            tableInstance.set("db", databaseInstance);
+            tableInstance.set("description", tableName + " table");
+            tables.add(tableInstance);
+
+            List<Referenceable> columns = new ArrayList<>();
+            for(int j = 0; j < colsPerTable; j++) {
+                Referenceable columnInstance = new Referenceable(COLUMN_TYPE);
+                columnInstance.set("name", tableName + "-col-" + j);
+                columnInstance.set("dataType", "String");
+                columnInstance.set("comment", "column " + j + " for table " + i);
+                allColumns.add(columnInstance);
+                columns.add(columnInstance);
+            }
+            tableInstance.set("columns", columns);
+        }
+
+        //Create the tables.  The database and columns should be created automatically, since
+        //the tables reference them.
+        JSONArray entityArray = new JSONArray(tables.size());
+        for(int i = 0; i < tables.size(); i++) {
+            Referenceable table = tables.get(i);
+            entityArray.put(InstanceSerialization.toJson(table, true));
+        }
+        String json = entityArray.toString();
+
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, json);
+
+        GuidMapping guidMapping = GuidMapping.fromString(response.toString());
+
+        Map<String,String> guidsCreated = guidMapping.getGuidAssignments();
+        assertEquals(guidsCreated.size(), nTables * colsPerTable + nTables + 1);
+        assertNotNull(guidsCreated.get(databaseInstance.getId()._getId()));
+        for(Referenceable r : allColumns) {
+            assertNotNull(guidsCreated.get(r.getId()._getId()));
+        }
+        for(Referenceable r : tables) {
+            assertNotNull(guidsCreated.get(r.getId()._getId()));
+        }
+    }
+
 
     @Test
     public void testSubmitEntity() throws Exception {

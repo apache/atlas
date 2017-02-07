@@ -61,6 +61,7 @@ public class AtlasClient extends AtlasBaseClient {
     public static final String TYPENAME = "typeName";
     public static final String GUID = "GUID";
     public static final String ENTITIES = "entities";
+    public static final String GUID_ASSIGNMENTS = "guidAssignments";
 
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
@@ -616,7 +617,7 @@ public class AtlasClient extends AtlasBaseClient {
 
     /**
      * Delete the specified entities from the repository
-     * 
+     *
      * @param guids guids of entities to delete
      * @return List of entity ids updated/deleted
      * @throws AtlasServiceException

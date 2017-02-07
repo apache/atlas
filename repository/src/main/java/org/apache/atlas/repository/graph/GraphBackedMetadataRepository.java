@@ -27,8 +27,10 @@ import java.util.Map;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
@@ -143,7 +145,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public List<String> createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
+    public CreateUpdateEntitiesResult createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
         EntityExistsException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("adding entities={}", entities);
@@ -152,7 +154,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.CREATE, entities);
-            return RequestContext.get().getCreatedEntityIds();
+            List<String> createdGuids = RequestContext.get().getCreatedEntityIds();
+            CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
+            AtlasClient.EntityResult entityResult = new AtlasClient.EntityResult(createdGuids, null,  null);
+            GuidMapping mapping = instanceToGraphMapper.createGuidMapping();
+            result.setEntityResult(entityResult);
+            result.setGuidMapping(mapping);
+            return result;
         } catch (EntityExistsException e) {
             throw e;
         } catch (AtlasException e) {
@@ -360,7 +368,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
+    public CreateUpdateEntitiesResult updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("updating entity {}", entitiesUpdated);
         }
@@ -369,8 +377,12 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_FULL,
                     entitiesUpdated);
+            CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
             RequestContext requestContext = RequestContext.get();
-            return createEntityResultFromContext(requestContext);
+            result.setEntityResult(createEntityResultFromContext(requestContext));
+            GuidMapping mapping = instanceToGraphMapper.createGuidMapping();
+            result.setGuidMapping(mapping);
+            return result;
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
@@ -378,7 +390,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
+    public CreateUpdateEntitiesResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("updating entity {}", entity);
         }
@@ -387,7 +399,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);
             RequestContext requestContext = RequestContext.get();
-            return createEntityResultFromContext(requestContext);
+            CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
+            GuidMapping mapping = instanceToGraphMapper.createGuidMapping();
+            result.setEntityResult(createEntityResultFromContext(requestContext));
+            result.setGuidMapping(mapping);
+            return result;
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }

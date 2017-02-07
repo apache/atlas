@@ -32,6 +32,7 @@ import java.util.Set;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -846,5 +847,17 @@ public final class TypedInstanceToGraphMapper {
         else {
             context.cache(instance);
         }
+    }
+
+    public GuidMapping createGuidMapping() {
+        Map<String,String> mapping = new HashMap<>(idToVertexMap.size());
+        for(Map.Entry<Id, AtlasVertex> entry : idToVertexMap.entrySet()) {
+            Id id = entry.getKey();
+            if (id.isUnassigned()) {
+                AtlasVertex classVertex = entry.getValue();
+                mapping.put(id._getId(), GraphHelper.getGuid(classVertex));
+            }
+        }
+        return new GuidMapping(mapping);
     }
 }

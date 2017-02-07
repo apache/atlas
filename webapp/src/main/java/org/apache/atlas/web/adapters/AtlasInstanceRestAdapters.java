@@ -17,11 +17,12 @@
  */
 package org.apache.atlas.web.adapters;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import java.util.List;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -30,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -50,7 +52,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.Map;
 
 @Singleton
@@ -142,8 +145,14 @@ public class AtlasInstanceRestAdapters {
         return ctx.getEntities();
     }
 
+    public static EntityMutationResponse toEntityMutationResponse(AtlasClient.EntityResult entityResult) {
 
-    public static EntityMutationResponse toEntityMutationResponse(AtlasClient.EntityResult result) {
+        CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
+        result.setEntityResult(entityResult);
+        return toEntityMutationResponse(result);
+    }
+
+    public static EntityMutationResponse toEntityMutationResponse(CreateUpdateEntitiesResult result) {
         EntityMutationResponse response = new EntityMutationResponse();
         for (String guid : result.getCreatedEntities()) {
             AtlasEntityHeader header = new AtlasEntityHeader();
@@ -151,7 +160,7 @@ public class AtlasInstanceRestAdapters {
             response.addEntity(EntityMutations.EntityOperation.CREATE, header);
         }
 
-        for (String guid : result.getUpdateEntities()) {
+        for (String guid : result.getUpdatedEntities()) {
             AtlasEntityHeader header = new AtlasEntityHeader();
             header.setGuid(guid);
             response.addEntity(EntityMutations.EntityOperation.UPDATE, header);
@@ -161,6 +170,10 @@ public class AtlasInstanceRestAdapters {
             AtlasEntityHeader header = new AtlasEntityHeader();
             header.setGuid(guid);
             response.addEntity(EntityMutations.EntityOperation.DELETE, header);
+        }
+        GuidMapping guidMapping = result.getGuidMapping();
+        if(guidMapping != null) {
+            response.setGuidAssignments(guidMapping.getGuidAssignments());
         }
         return response;
     }

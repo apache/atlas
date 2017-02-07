@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
@@ -110,7 +111,8 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
     AtlasGraph getAtlasGraph() { return atlasGraph; }
 
-    AtlasVertex findTypeVertexByName(String typeName) {
+    @VisibleForTesting
+    public AtlasVertex findTypeVertexByName(String typeName) {
         Iterator results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                                              .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
                                              .vertices().iterator();
@@ -276,7 +278,8 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         return VERTEX_TYPE.equals(vertexType);
     }
 
-    boolean isTypeVertex(AtlasVertex vertex, TypeCategory category) {
+    @VisibleForTesting
+    public boolean isTypeVertex(AtlasVertex vertex, TypeCategory category) {
         boolean ret = false;
 
         if (isTypeVertex(vertex)) {

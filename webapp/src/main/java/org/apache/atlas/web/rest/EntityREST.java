@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -151,7 +152,7 @@ public class EntityREST {
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
         ctx.addEntity(entity);
         Referenceable ref = restAdapters.getReferenceable(entity, ctx);
-        AtlasClient.EntityResult result = metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, ref);
+        CreateUpdateEntitiesResult result = metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, ref);
         return toEntityMutationResponse(result);
     }
 

@@ -257,7 +257,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     private String createInstance(Referenceable entity) throws Exception {
         ClassType dataType = typeSystem.getDataType(ClassType.class, entity.getTypeName());
         ITypedReferenceableInstance instance = dataType.convert(entity, Multiplicity.REQUIRED);
-        List<String> results = repositoryService.createEntities(instance);
+        List<String> results = repositoryService.createEntities(instance).getCreatedEntities();
         return results.get(results.size() - 1);
     }
 
@@ -403,7 +403,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ITypedReferenceableInstance mapValueInstance = compositeMapValueType.createInstance();
         mapValueInstance.set(NAME, TestUtils.randomString());
         mapOwnerInstance.set("map", Collections.singletonMap("value1", mapValueInstance));
-        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance);
+        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 2);
         ITypedReferenceableInstance entityDefinition = repositoryService.getEntityDefinition("CompositeMapOwner",
             NAME, mapOwnerInstance.get(NAME));
@@ -412,7 +412,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
     private AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         RequestContext.createContext();
-        return repositoryService.updatePartial(entity);
+        return repositoryService.updatePartial(entity).getEntityResult();
     }
 
     @Test
@@ -641,7 +641,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
             structContainerType.convert(structContainerEntity, Multiplicity.REQUIRED);
 
         List<String> guids = repositoryService.createEntities(
-            structTargetConvertedEntity, traitTargetConvertedEntity, structContainerConvertedEntity);
+            structTargetConvertedEntity, traitTargetConvertedEntity, structContainerConvertedEntity).getCreatedEntities();
         Assert.assertEquals(guids.size(), 3);
 
         guids = repositoryService.getEntityList("StructTarget");
@@ -746,7 +746,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         mapOwnerInstance.set("biMap", Collections.singletonMap("value1", mapValueInstance));
         // Set biMapOwner reverse reference on MapValue.
         mapValueInstance.set("biMapOwner", mapOwnerInstance);
-        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance);
+        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 2);
         List<String> guids = repositoryService.getEntityList("MapOwner");
         Assert.assertEquals(guids.size(), 1);
@@ -856,7 +856,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ITypedReferenceableInstance mapOwnerInstance = mapOwnerType.createInstance();
         ITypedReferenceableInstance mapValueInstance = mapValueType.createInstance();
         mapOwnerInstance.set("map", Collections.singletonMap("value1", mapValueInstance));
-        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance);
+        List<String> createEntitiesResult = repositoryService.createEntities(mapOwnerInstance, mapValueInstance).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 2);
         List<String> guids = repositoryService.getEntityList("RequiredMapOwner");
         Assert.assertEquals(guids.size(), 1);
@@ -985,7 +985,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         // Create instance of MapValueReferencerContainer
         RequestContext.createContext();
         ITypedReferenceableInstance mapValueReferencerContainer = mapValueReferencerContainerType.createInstance();
-        List<String> createdEntities = repositoryService.createEntities(mapValueReferencerContainer);
+        List<String> createdEntities = repositoryService.createEntities(mapValueReferencerContainer).getCreatedEntities();
         Assert.assertEquals(createdEntities.size(), 1);
         String mapValueReferencerContainerGuid = createdEntities.get(0);
         mapValueReferencerContainer = repositoryService.getEntityDefinition(createdEntities.get(0));
@@ -997,7 +997,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         mapValueReferencer.set("refToMapValue", mapValueInstance.getId());
 
         RequestContext.createContext();
-        EntityResult updateEntitiesResult = repositoryService.updateEntities(mapValueReferencerContainer);
+        EntityResult updateEntitiesResult = repositoryService.updateEntities(mapValueReferencerContainer).getEntityResult();
         Assert.assertEquals(updateEntitiesResult.getCreatedEntities().size(), 1);
         Assert.assertEquals(updateEntitiesResult.getUpdateEntities().size(), 1);
         Assert.assertEquals(updateEntitiesResult.getUpdateEntities().get(0), mapValueReferencerContainerGuid);
@@ -1016,7 +1016,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     public void testDeleteMixOfExistentAndNonExistentEntities() throws Exception {
         ITypedReferenceableInstance entity1 = compositeMapValueType.createInstance();
         ITypedReferenceableInstance entity2 = compositeMapValueType.createInstance();
-        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2);
+        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 2);
         List<String> guids = Arrays.asList(createEntitiesResult.get(0), "non-existent-guid1", "non-existent-guid2", createEntitiesResult.get(1));
         EntityResult deleteEntitiesResult = repositoryService.deleteEntities(guids);
@@ -1028,7 +1028,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     public void testDeleteMixOfNullAndNonNullGuids() throws Exception {
         ITypedReferenceableInstance entity1 = compositeMapValueType.createInstance();
         ITypedReferenceableInstance entity2 = compositeMapValueType.createInstance();
-        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2);
+        List<String> createEntitiesResult = repositoryService.createEntities(entity1, entity2).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 2);
         List<String> guids = Arrays.asList(createEntitiesResult.get(0), null, null, createEntitiesResult.get(1));
         EntityResult deleteEntitiesResult = repositoryService.deleteEntities(guids);
@@ -1076,7 +1076,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ClassType dataType = typeSystem.getDataType(ClassType.class, table1Entity.getTypeName());
         ITypedReferenceableInstance instance = dataType.convert(table1Entity, Multiplicity.REQUIRED);
         TestUtils.resetRequestContext();
-        List<String> result = repositoryService.createEntities(instance);
+        List<String> result = repositoryService.createEntities(instance).getCreatedEntities();
         Assert.assertEquals(result.size(), 3);
         ITypedReferenceableInstance entityDefinition = repositoryService.getEntityDefinition(TABLE_TYPE, NAME, tableName);
         String tableGuid = entityDefinition.getId()._getId();
@@ -1106,7 +1106,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     private String createHrDeptGraph() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
 
-        List<String> guids = repositoryService.createEntities(hrDept);
+        List<String> guids = repositoryService.createEntities(hrDept).getCreatedEntities();
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 5);
 

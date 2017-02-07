@@ -26,6 +26,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -293,7 +294,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      * @return guids - list of guids
      */
     @Override
-    public List<String> createEntities(String entityInstanceDefinition) throws AtlasException {
+    public CreateUpdateEntitiesResult createEntities(String entityInstanceDefinition) throws AtlasException {
         entityInstanceDefinition = ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
 
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
@@ -301,10 +302,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         return createEntities(typedInstances);
     }
 
-    public List<String> createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException {
-        final List<String> guids = repository.createEntities(typedInstances);
-        onEntitiesAdded(guids);
-        return guids;
+    public CreateUpdateEntitiesResult createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException {
+        final CreateUpdateEntitiesResult result = repository.createEntities(typedInstances);
+        onEntitiesAdded(result.getCreatedEntities());
+        return result;
     }
 
     private ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition) throws AtlasException {
@@ -397,13 +398,13 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      * @return guids - json array of guids
      */
     @Override
-    public AtlasClient.EntityResult updateEntities(String entityInstanceDefinition) throws AtlasException {
+    public CreateUpdateEntitiesResult updateEntities(String entityInstanceDefinition) throws AtlasException {
         entityInstanceDefinition = ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
-        AtlasClient.EntityResult entityResult = repository.updateEntities(typedInstances);
-        onEntitiesAddedUpdated(entityResult);
-        return entityResult;
+        CreateUpdateEntitiesResult result = repository.updateEntities(typedInstances);
+        onEntitiesAddedUpdated(result.getEntityResult());
+        return result;
     }
 
     /**
@@ -413,10 +414,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      * @return guids - json array of guids
      */
     @Override
-    public AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance[] entityInstanceDefinitions) throws AtlasException {
-        AtlasClient.EntityResult entityResult = repository.updateEntities(entityInstanceDefinitions);
-        onEntitiesAddedUpdated(entityResult);
-        return entityResult;
+    public CreateUpdateEntitiesResult updateEntities(ITypedReferenceableInstance[] entityInstanceDefinitions) throws AtlasException {
+        CreateUpdateEntitiesResult result = repository.updateEntities(entityInstanceDefinitions);
+        onEntitiesAddedUpdated(result.getEntityResult());
+        return result;
     }
 
     private void onEntitiesAddedUpdated(AtlasClient.EntityResult entityResult) throws AtlasException {
@@ -427,7 +428,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public AtlasClient.EntityResult updateEntityAttributeByGuid(String guid, String attributeName,
+    public CreateUpdateEntitiesResult updateEntityAttributeByGuid(String guid, String attributeName,
                                                                 String value) throws AtlasException {
         guid          = ParamChecker.notEmpty(guid, "entity id");
         attributeName = ParamChecker.notEmpty(attributeName, "attribute name");
@@ -457,9 +458,9 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         }
 
         ((ReferenceableInstance)newInstance).replaceWithNewId(new Id(guid, 0, newInstance.getTypeName()));
-        AtlasClient.EntityResult entityResult = repository.updatePartial(newInstance);
-        onEntitiesAddedUpdated(entityResult);
-        return entityResult;
+        CreateUpdateEntitiesResult result = repository.updatePartial(newInstance);
+        onEntitiesAddedUpdated(result.getEntityResult());
+        return result;
     }
 
     private ITypedReferenceableInstance validateEntityExists(String guid)
@@ -472,7 +473,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public AtlasClient.EntityResult updateEntityPartialByGuid(String guid, Referenceable newEntity)
+    public CreateUpdateEntitiesResult updateEntityPartialByGuid(String guid, Referenceable newEntity)
             throws AtlasException {
         guid      = ParamChecker.notEmpty(guid, "guid cannot be null");
         newEntity = ParamChecker.notNull(newEntity, "updatedEntity cannot be null");
@@ -481,9 +482,9 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         ITypedReferenceableInstance newInstance = convertToTypedInstance(newEntity, existInstance.getTypeName());
         ((ReferenceableInstance)newInstance).replaceWithNewId(new Id(guid, 0, newInstance.getTypeName()));
 
-        AtlasClient.EntityResult entityResult = repository.updatePartial(newInstance);
-        onEntitiesAddedUpdated(entityResult);
-        return entityResult;
+        CreateUpdateEntitiesResult result = repository.updatePartial(newInstance);
+        onEntitiesAddedUpdated(result.getEntityResult());
+        return result;
     }
 
     private ITypedReferenceableInstance convertToTypedInstance(Referenceable updatedEntity, String typeName)
@@ -530,7 +531,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public AtlasClient.EntityResult updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
+    public CreateUpdateEntitiesResult updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
                                                                   String attrValue,
                                                                   Referenceable updatedEntity) throws AtlasException {
         typeName            = ParamChecker.notEmpty(typeName, "typeName");
@@ -543,9 +544,9 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         final ITypedReferenceableInstance newInstance = convertToTypedInstance(updatedEntity, typeName);
         ((ReferenceableInstance)newInstance).replaceWithNewId(oldInstance.getId());
 
-        AtlasClient.EntityResult entityResult = repository.updatePartial(newInstance);
-        onEntitiesAddedUpdated(entityResult);
-        return entityResult;
+        CreateUpdateEntitiesResult result = repository.updatePartial(newInstance);
+        onEntitiesAddedUpdated(result.getEntityResult());
+        return result;
     }
 
     private void validateTypeExists(String entityType) throws AtlasException {

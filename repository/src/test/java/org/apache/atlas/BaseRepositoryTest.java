@@ -395,7 +395,7 @@ public class BaseRepositoryTest {
     }
     private Id createInstance(Referenceable referenceable, ClassType clsType) throws Exception {
         ITypedReferenceableInstance typedInstance = clsType.convert(referenceable, Multiplicity.REQUIRED);
-        List<String> guids = repository.createEntities(typedInstance);
+        List<String> guids = repository.createEntities(typedInstance).getCreatedEntities();
 
         // return the reference to created instance with guid
         return new Id(guids.get(guids.size() - 1), 0, referenceable.getTypeName());

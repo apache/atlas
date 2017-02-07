@@ -18,9 +18,29 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import javax.inject.Inject;
+
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
@@ -64,27 +84,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import javax.inject.Inject;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
-
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 /**
  * GraphBackedMetadataRepository test
@@ -197,12 +200,189 @@ public class GraphBackedMetadataRepositoryTest {
     public void testSubmitEntity() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
 
-        List<String> guids = repositoryService.createEntities(hrDept);
+        List<String> guids = repositoryService.createEntities(hrDept).getCreatedEntities();
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 5);
         guid = guids.get(4);
         Assert.assertNotNull(guid);
     }
+
+    @Test
+    public void testCreateEntityWithOneNestingLevel() throws AtlasException {
+
+        List<Referenceable> toValidate = new ArrayList<>();
+        Referenceable dept = new Referenceable(TestUtils.DEPARTMENT_TYPE);
+        toValidate.add(dept);
+        dept.set(TestUtils.NAME, "test1");
+
+        Referenceable mike = new Referenceable(TestUtils.PERSON_TYPE);
+        toValidate.add(mike);
+
+        mike.set(TestUtils.NAME, "Mike");
+        mike.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        Referenceable mark = new Referenceable(TestUtils.PERSON_TYPE);
+        toValidate.add(mark);
+        mark.set(TestUtils.NAME, "Mark");
+        mark.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        dept.set(TestUtils.EMPLOYEES_ATTR, ImmutableList.of(mike, mark));
+        Map<String,Referenceable> positions = new HashMap<>();
+        final String JANITOR = "janitor";
+        final String RECEPTIONIST = "receptionist";
+        positions.put(JANITOR, mike);
+        positions.put(RECEPTIONIST, mark);
+        dept.set(TestUtils.POSITIONS_ATTR, positions);
+
+
+        ClassType deptType = TypeSystem.getInstance().getDataType(ClassType.class, TestUtils.DEPARTMENT_TYPE);
+        ITypedReferenceableInstance deptInstance = deptType.convert(dept, Multiplicity.REQUIRED);
+
+        CreateUpdateEntitiesResult result = repositoryService.createEntities(deptInstance);
+
+        System.out.println(result.getGuidMapping().toString());
+        validateGuidMapping(toValidate, result);
+    }
+
+
+    @Test
+    public void testCreateEntityWithTwoNestingLevels() throws AtlasException {
+
+        List<Referenceable> toVerify = new ArrayList<>();
+        Referenceable dept = new Referenceable(TestUtils.DEPARTMENT_TYPE);
+        toVerify.add(dept);
+        dept.set(TestUtils.NAME, "test2");
+
+        Referenceable wallace = new Referenceable(TestUtils.PERSON_TYPE);
+        toVerify.add(wallace);
+        wallace.set(TestUtils.NAME, "Wallace");
+        wallace.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        Referenceable wallaceComputer = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(wallaceComputer);
+        wallaceComputer.set("name", "wallaceComputer");
+        wallace.set(TestUtils.ASSETS_ATTR, ImmutableList.of(wallaceComputer));
+
+        Referenceable jordan = new Referenceable(TestUtils.PERSON_TYPE);
+        toVerify.add(jordan);
+        jordan.set(TestUtils.NAME, "Jordan");
+        jordan.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        Referenceable jordanComputer = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(jordanComputer);
+        jordanComputer.set("name", "jordanComputer");
+        jordan.set(TestUtils.ASSETS_ATTR, ImmutableList.of(jordanComputer));
+
+        dept.set(TestUtils.EMPLOYEES_ATTR, ImmutableList.of(wallace, jordan));
+        Map<String,Referenceable> positions = new HashMap<>();
+        final String JANITOR = "janitor";
+        final String RECEPTIONIST = "receptionist";
+        positions.put(JANITOR, wallace);
+        positions.put(RECEPTIONIST, jordan);
+        dept.set(TestUtils.POSITIONS_ATTR, positions);
+
+
+        ClassType deptType = TypeSystem.getInstance().getDataType(ClassType.class, TestUtils.DEPARTMENT_TYPE);
+        ITypedReferenceableInstance deptInstance = deptType.convert(dept, Multiplicity.REQUIRED);
+
+        CreateUpdateEntitiesResult result = repositoryService.createEntities(deptInstance);
+        validateGuidMapping(toVerify, result);
+    }
+
+
+    @Test
+    public void testCreateEntityWithThreeNestingLevels() throws AtlasException {
+
+        List<Referenceable> toVerify = new ArrayList<>();
+
+        Referenceable dept = new Referenceable(TestUtils.DEPARTMENT_TYPE);
+        toVerify.add(dept);
+        dept.set(TestUtils.NAME, "test3");
+
+        Referenceable barry = new Referenceable(TestUtils.PERSON_TYPE);
+        toVerify.add(barry);
+        barry.set(TestUtils.NAME, "barry");
+        barry.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        Referenceable barryComputer = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(barryComputer);
+        barryComputer.set("name", "barryComputer");
+        barry.set(TestUtils.ASSETS_ATTR, ImmutableList.of(barryComputer));
+
+        Referenceable barryHardDrive = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(barryHardDrive);
+        barryHardDrive.set("name", "barryHardDrive");
+
+        Referenceable barryCpuFan = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(barryCpuFan);
+        barryCpuFan.set("name", "barryCpuFan");
+
+        Referenceable barryVideoCard = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(barryVideoCard);
+        barryVideoCard.set("name", "barryVideoCard");
+
+        barryComputer.set("childAssets", ImmutableList.of(barryHardDrive, barryVideoCard, barryCpuFan));
+
+
+        Referenceable jacob = new Referenceable(TestUtils.PERSON_TYPE);
+        toVerify.add(jacob);
+        jacob.set(TestUtils.NAME, "jacob");
+        jacob.set(TestUtils.DEPARTMENT_ATTR, dept);
+
+        Referenceable jacobComputer = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(jacobComputer);
+        jacobComputer.set("name", "jacobComputer");
+        jacob.set(TestUtils.ASSETS_ATTR, ImmutableList.of(jacobComputer));
+
+        Referenceable jacobHardDrive = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(jacobHardDrive);
+        jacobHardDrive.set("name", "jacobHardDrive");
+
+        Referenceable jacobCpuFan = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(jacobCpuFan);
+        jacobCpuFan.set("name", "jacobCpuFan");
+
+        Referenceable jacobVideoCard = new Referenceable(TestUtils.ASSET_TYPE);
+        toVerify.add(jacobVideoCard);
+        jacobVideoCard.set("name", "jacobVideoCard");
+
+        jacobComputer.set("childAssets", ImmutableList.of(jacobHardDrive, jacobVideoCard, jacobCpuFan));
+
+        dept.set(TestUtils.EMPLOYEES_ATTR, ImmutableList.of(barry, jacob));
+        Map<String,Referenceable> positions = new HashMap<>();
+        final String JANITOR = "janitor";
+        final String RECEPTIONIST = "receptionist";
+        positions.put(JANITOR, barry);
+        positions.put(RECEPTIONIST, jacob);
+        dept.set(TestUtils.POSITIONS_ATTR, positions);
+
+
+        ClassType deptType = TypeSystem.getInstance().getDataType(ClassType.class, TestUtils.DEPARTMENT_TYPE);
+        ITypedReferenceableInstance deptInstance = deptType.convert(dept, Multiplicity.REQUIRED);
+
+        CreateUpdateEntitiesResult result = repositoryService.createEntities(deptInstance);
+
+        System.out.println(result.getGuidMapping().toString());
+        assertEquals(result.getCreatedEntities().size(), toVerify.size());
+
+        validateGuidMapping(toVerify, result);
+    }
+
+    private void validateGuidMapping(List<Referenceable> toVerify, CreateUpdateEntitiesResult result)
+            throws AtlasException {
+        Map<String,String> guids = result.getGuidMapping().getGuidAssignments();
+
+        TestUtils.assertContentsSame(result.getCreatedEntities(), guids.values());
+        assertEquals(guids.size(), toVerify.size());
+        for(Referenceable r : toVerify) {
+            loadAndDoSimpleValidation(guids.get(r.getId()._getId()), r);
+        }
+    }
+
+    private ITypedReferenceableInstance loadAndDoSimpleValidation(String guid, Referenceable inst) throws AtlasException {
+        return TestUtils.loadAndDoSimpleValidation(guid, inst, repositoryService);
+    }
+
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinitionForDepartment() throws Exception {
@@ -279,7 +459,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     private List<String> createEntities(ITypedReferenceableInstance... instances) throws Exception {
         RequestContext.createContext();
-        return repositoryService.createEntities(instances);
+        return repositoryService.createEntities(instances).getCreatedEntities();
     }
 
     private List<String> createEntity(Referenceable entity) throws Exception {
@@ -385,7 +565,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 2);
         Assert.assertTrue(traitNames.contains(TestUtils.PII));
         Assert.assertTrue(traitNames.contains(TestUtils.CLASSIFICATION));
-        
+
         // Verify modification timestamp was updated.
         GraphHelper.getInstance().getVertexForGUID(aGUID);
         Long modificationTimestampPostUpdate = GraphHelper.getSingleValuedProperty(AtlasVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
@@ -454,7 +634,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 2);
         Assert.assertTrue(traitNames.contains(TestUtils.CLASSIFICATION));
         Assert.assertFalse(traitNames.contains(TestUtils.PII));
-        
+
         // Verify modification timestamp was updated.
         GraphHelper.getInstance().getVertexForGUID(aGUID);
         Long modificationTimestampPostUpdate = GraphHelper.getSingleValuedProperty(AtlasVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
@@ -729,7 +909,7 @@ public class GraphBackedMetadataRepositoryTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        List<String> guids = repositoryService.createEntities(hrDept2);
+        List<String> guids = repositoryService.createEntities(hrDept2).getCreatedEntities();
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 2);
         Assert.assertNotNull(guids.get(0));

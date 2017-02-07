@@ -105,7 +105,8 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
             entity.set(TaxonomyResourceProvider.NAMESPACE_ATTRIBUTE_NAME, TaxonomyResourceProvider.TAXONOMY_NS);
 
             ITypedReferenceableInstance typedInstance = metadataService.getTypedReferenceableInstance(entity);
-            final List<String> entities = metadataService.createEntities(Collections.singletonList(typedInstance).toArray(new ITypedReferenceableInstance[1]));
+            ITypedReferenceableInstance[] entitiesToCreate = Collections.singletonList(typedInstance).toArray(new ITypedReferenceableInstance[1]);
+            final List<String> entities = metadataService.createEntities(entitiesToCreate).getCreatedEntities();
             return entities != null && entities.size() > 0 ? entities.get(0) : null;
         } catch (EntityExistsException e) {
             throw new ResourceAlreadyExistsException(

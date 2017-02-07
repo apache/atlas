@@ -170,7 +170,7 @@ public class DefaultMetadataServiceTest {
         String entityjson = InstanceSerialization.toJson(entity, true);
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
-        return metadataService.updateEntities(entitiesJson.toString());
+        return metadataService.updateEntities(entitiesJson.toString()).getEntityResult();
     }
 
     @Test(expectedExceptions = TypeNotFoundException.class)
@@ -544,7 +544,7 @@ public class DefaultMetadataServiceTest {
 
     private AtlasClient.EntityResult updateEntityPartial(String guid, Referenceable entity) throws AtlasException {
         RequestContext.createContext();
-        return metadataService.updateEntityPartialByGuid(guid, entity);
+        return metadataService.updateEntityPartialByGuid(guid, entity).getEntityResult();
     }
 
     @Test

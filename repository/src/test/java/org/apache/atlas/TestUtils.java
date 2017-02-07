@@ -24,6 +24,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAt
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,7 +39,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
@@ -53,14 +58,17 @@ import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.IInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
@@ -88,6 +96,32 @@ import com.google.inject.Provider;
 public final class TestUtils {
 
     public static final long TEST_DATE_IN_LONG = 1418265358440L;
+
+
+    public static final String EMPLOYEES_ATTR = "employees";
+    public static final String DEPARTMENT_ATTR = "department";
+    public static final String ASSETS_ATTR = "assets";
+
+    public static final String POSITIONS_ATTR = "positions";
+    public static final String ASSET_TYPE = "TestAsset";
+
+    public static final String DATABASE_TYPE = "hive_database";
+    public static final String DATABASE_NAME = "foo";
+    public static final String TABLE_TYPE = "hive_table";
+    public static final String PROCESS_TYPE = "hive_process";
+    public static final String COLUMN_TYPE = "column_type";
+    public static final String TABLE_NAME = "bar";
+    public static final String CLASSIFICATION = "classification";
+    public static final String PII = "PII";
+    public static final String SUPER_TYPE_NAME = "Base";
+    public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
+    public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
+    public static final String PARTITION_CLASS_TYPE = "partition_class_type";
+    public static final String SERDE_TYPE = "serdeType";
+    public static final String COLUMNS_MAP = "columnsMap";
+    public static final String COLUMNS_ATTR_NAME = "columns";
+
+    public static final String NAME = "name";
 
     private TestUtils() {
     }
@@ -141,17 +175,21 @@ public final class TestUtils {
                         createRequiredAttrDef("city", DataTypes.STRING_TYPE));
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, ImmutableSet.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
-                        true, "department"));
+                createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
+                new AttributeDefinition(EMPLOYEES_ATTR, String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
+                        true, DEPARTMENT_ATTR),
+                new AttributeDefinition(POSITIONS_ATTR, String.format("map<%s,%s>", DataTypes.STRING_TYPE.getName(), "Person"), Multiplicity.OPTIONAL,
+                        false, null)
+                );
 
         HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                 createOptionalAttrDef("orgLevel", "OrgLevel"),
                 createOptionalAttrDef("address", "Address"),
-                new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+                new AttributeDefinition(DEPARTMENT_ATTR, "Department", Multiplicity.REQUIRED, false, EMPLOYEES_ATTR),
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"),
                 new AttributeDefinition("mentor", "Person", Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(ASSETS_ATTR, String.format("array<%s>", ASSET_TYPE) , Multiplicity.OPTIONAL, false, null),
                 createOptionalAttrDef("birthday", DataTypes.DATE_TYPE),
                 createOptionalAttrDef("hasPets", DataTypes.BOOLEAN_TYPE),
                 createOptionalAttrDef("numberOfCars", DataTypes.BYTE_TYPE),
@@ -165,6 +203,12 @@ public final class TestUtils {
                 createOptionalAttrDef("isOrganDonor", DataTypes.BOOLEAN_TYPE)
                 );
 
+
+        HierarchicalTypeDefinition<ClassType> assetTypeDef = createClassTypeDef(ASSET_TYPE, "Asset"+_description, ImmutableSet.<String>of(),
+                createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
+                new AttributeDefinition("childAssets", String.format("array<%s>", ASSET_TYPE) , Multiplicity.OPTIONAL, false, null)
+                );
+
         HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", "Manager"+_description, ImmutableSet.of("Person"),
                 new AttributeDefinition("subordinates", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
                         false, "manager"));
@@ -175,7 +219,7 @@ public final class TestUtils {
 
         ts.defineTypes(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
                 ImmutableList.of(securityClearanceTypeDef),
-                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
+                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef, assetTypeDef));
     }
 
     public static final String DEPARTMENT_TYPE = "Department";
@@ -193,9 +237,9 @@ public final class TestUtils {
         Referenceable max = new Referenceable("Person");
         Referenceable maxAddr = new Referenceable("Address");
 
-        hrDept.set("name", "hr");
-        john.set("name", "John");
-        john.set("department", hrDept);
+        hrDept.set(NAME, "hr");
+        john.set(NAME, "John");
+        john.set(DEPARTMENT_ATTR, hrDept);
         johnAddr.set("street", "Stewart Drive");
         johnAddr.set("city", "Sunnyvale");
         john.set("address", johnAddr);
@@ -212,22 +256,22 @@ public final class TestUtils {
         john.set("numberOfStarsEstimate", new BigInteger("1000000000000000000000"));
         john.set("approximationOfPi", new BigDecimal("3.141592653589793238462643383279502884197169399375105820974944592307816406286"));
 
-        jane.set("name", "Jane");
-        jane.set("department", hrDept);
+        jane.set(NAME, "Jane");
+        jane.set(DEPARTMENT_ATTR, hrDept);
         janeAddr.set("street", "Great America Parkway");
         janeAddr.set("city", "Santa Clara");
         jane.set("address", janeAddr);
         janeAddr.set("street", "Great America Parkway");
 
-        julius.set("name", "Julius");
-        julius.set("department", hrDept);
+        julius.set(NAME, "Julius");
+        julius.set(DEPARTMENT_ATTR, hrDept);
         juliusAddr.set("street", "Madison Ave");
         juliusAddr.set("city", "Newtonville");
         julius.set("address", juliusAddr);
         julius.set("subordinates", ImmutableList.<Referenceable>of());
 
-        max.set("name", "Max");
-        max.set("department", hrDept);
+        max.set(NAME, "Max");
+        max.set(DEPARTMENT_ATTR, hrDept);
         maxAddr.set("street", "Ripley St");
         maxAddr.set("city", "Newton");
         max.set("address", maxAddr);
@@ -247,7 +291,7 @@ public final class TestUtils {
 
         john.set("manager", jane);
         john.set("mentor", max);
-        hrDept.set("employees", ImmutableList.of(john, jane, julius, max));
+        hrDept.set(EMPLOYEES_ATTR, ImmutableList.of(john, jane, julius, max));
 
         jane.set("subordinates", ImmutableList.of(john, max));
 
@@ -260,23 +304,7 @@ public final class TestUtils {
         return hrDept2;
     }
 
-    public static final String DATABASE_TYPE = "hive_database";
-    public static final String DATABASE_NAME = "foo";
-    public static final String TABLE_TYPE = "hive_table";
-    public static final String PROCESS_TYPE = "hive_process";
-    public static final String COLUMN_TYPE = "column_type";
-    public static final String TABLE_NAME = "bar";
-    public static final String CLASSIFICATION = "classification";
-    public static final String PII = "PII";
-    public static final String SUPER_TYPE_NAME = "Base";
-    public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
-    public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
-    public static final String PARTITION_CLASS_TYPE = "partition_class_type";
-    public static final String SERDE_TYPE = "serdeType";
-    public static final String COLUMNS_MAP = "columnsMap";
-    public static final String COLUMNS_ATTR_NAME = "columns";
 
-    public static final String NAME = "name";
 
     public static TypesDef simpleType(){
         HierarchicalTypeDefinition<ClassType> superTypeDefinition =
@@ -284,7 +312,7 @@ public final class TestUtils {
                         createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("s_type", "structType",
-                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE)});
+                new AttributeDefinition[]{createRequiredAttrDef(NAME, DataTypes.STRING_TYPE)});
 
         HierarchicalTypeDefinition<TraitType> traitTypeDefinition =
                 createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
@@ -306,7 +334,7 @@ public final class TestUtils {
                         createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("s_type", "structType",
-                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE)});
+                new AttributeDefinition[]{createRequiredAttrDef(NAME, DataTypes.STRING_TYPE)});
 
         HierarchicalTypeDefinition<TraitType> traitTypeDefinition =
                 createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
@@ -344,7 +372,7 @@ public final class TestUtils {
 
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType", "serdeType" + _description,
-                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                new AttributeDefinition[]{createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                     createRequiredAttrDef("serde", DataTypes.STRING_TYPE),
                     createOptionalAttrDef("description", DataTypes.STRING_TYPE)});
 
@@ -354,11 +382,11 @@ public final class TestUtils {
 
         HierarchicalTypeDefinition<ClassType> columnsDefinition =
                 createClassTypeDef(COLUMN_TYPE, ImmutableSet.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
         StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_struct_type", "partition_struct_type" + _description,
-                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
+                new AttributeDefinition[]{createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),});
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
             new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -403,7 +431,7 @@ public final class TestUtils {
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
                 createClassTypeDef(TABLE_TYPE, TABLE_TYPE + _description, ImmutableSet.of(SUPER_TYPE_NAME),
-                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("created", DataTypes.DATE_TYPE),
@@ -498,19 +526,75 @@ public final class TestUtils {
         return entity;
     }
 
+    /**
+     * Creates an entity in the graph and does basic validation
+     * of the GuidMapping that was created in the process.
+     *
+     */
     public static String createInstance(MetadataService metadataService, Referenceable entity) throws Exception {
         RequestContext.createContext();
 
         String entityjson = InstanceSerialization.toJson(entity, true);
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
-        List<String> guids = metadataService.createEntities(entitiesJson.toString());
+        CreateUpdateEntitiesResult creationResult = metadataService.createEntities(entitiesJson.toString());
+        Map<String,String> guidMap = creationResult.getGuidMapping().getGuidAssignments();
+        Map<Id, Referenceable> referencedObjects = findReferencedObjects(entity);
+
+        for(Map.Entry<Id,Referenceable> entry : referencedObjects.entrySet()) {
+            Id foundId = entry.getKey();
+            if(foundId.isUnassigned()) {
+                String guid = guidMap.get(entry.getKey()._getId());
+                Referenceable obj = entry.getValue();
+                loadAndDoSimpleValidation(guid,obj, metadataService);
+            }
+        }
+        List<String> guids = creationResult.getCreatedEntities();
         if (guids != null && guids.size() > 0) {
             return guids.get(guids.size() - 1);
         }
         return null;
     }
 
+    private static Map<Id,Referenceable> findReferencedObjects(Referenceable ref) {
+        Map<Id, Referenceable> result = new HashMap<>();
+        findReferencedObjects(ref, result);
+        return result;
+    }
+
+    private static void findReferencedObjects(Referenceable ref, Map<Id, Referenceable> seen) {
+
+        Id guid = ref.getId();
+        if(seen.containsKey(guid)) {
+            return;
+        }
+        seen.put(guid, ref);
+        for(Map.Entry<String, Object> attr : ref.getValuesMap().entrySet()) {
+            Object value = attr.getValue();
+            if(value instanceof Referenceable) {
+                findReferencedObjects((Referenceable)value, seen);
+            }
+            else if(value instanceof List) {
+                for(Object o : (List)value) {
+                    if(o instanceof Referenceable) {
+                        findReferencedObjects((Referenceable)o, seen);
+                    }
+                }
+            }
+            else if(value instanceof Map) {
+                for(Object o : ((Map)value).values()) {
+                    if(o instanceof Referenceable) {
+                        findReferencedObjects((Referenceable)o, seen);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears the state in the request context.
+     *
+     */
     public static void resetRequestContext() {
         //reset the context while preserving the user
         String user = RequestContext.get().getUser();
@@ -518,6 +602,10 @@ public final class TestUtils {
         RequestContext.get().setUser(user);
     }
 
+    /**
+     * Triggers the Atlas initialization process using the specified MetadataRepository.
+     * This causes the built-in types and their indices to be created.
+     */
     public static void setupGraphProvider(MetadataRepository repo) throws AtlasException {
         TypeCache typeCache = null;
         try {
@@ -633,5 +721,61 @@ public final class TestUtils {
             }
 
         });
+    }
+
+    /**
+     * Loads the entity and does sanity testing of the GuidMapping  that was
+     * created during the operation.
+     *
+     */
+    public static ITypedReferenceableInstance loadAndDoSimpleValidation(String guid, Referenceable original, MetadataRepository repositoryService) throws AtlasException {
+        ITypedReferenceableInstance loaded = repositoryService.getEntityDefinition(guid);
+        doSimpleValidation(original,  loaded);
+        return loaded;
+    }
+
+    /**
+     * Loads the entity and does sanity testing of the GuidMapping that was
+     * created during the operation.
+     *
+     */
+    public static ITypedReferenceableInstance loadAndDoSimpleValidation(String guid, Referenceable original, MetadataService repositoryService) throws AtlasException {
+        ITypedReferenceableInstance loaded = repositoryService.getEntityDefinition(guid);
+        doSimpleValidation(original,  loaded);
+        return loaded;
+
+    }
+
+    private static void doSimpleValidation(Referenceable original, IInstance loaded) throws AtlasException {
+
+        assertEquals(loaded.getTypeName(), original.getTypeName());
+        ClassType ct = TypeSystem.getInstance().getDataType(ClassType.class, loaded.getTypeName());
+
+        //compare primitive fields
+        for(AttributeInfo field : ct.fieldMapping.fields.values()) {
+            if(field.dataType().getTypeCategory() == TypeCategory.PRIMITIVE) {
+                if(original.get(field.name) != null) {
+                    Object rawLoadedValue = loaded.get(field.name);
+                    Object rawProvidedValue = original.get(field.name);
+                    Object convertedLoadedValue = field.dataType().convert(rawLoadedValue, Multiplicity.REQUIRED);
+                    Object convertedProvidedValue = field.dataType().convert(rawProvidedValue, Multiplicity.REQUIRED);
+
+                    assertEquals(convertedLoadedValue, convertedProvidedValue);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates that the two String Collections contain the same items, without
+     * regard to order.
+     *
+     */
+    public static void assertContentsSame(Collection<String> actual, Collection<String> expected) {
+        assertEquals(actual.size(), expected.size());
+        Set<String> checker = new HashSet<>();
+        checker.addAll(expected);
+        checker.removeAll(actual);
+        assertEquals(checker.size(), 0);
     }
 }

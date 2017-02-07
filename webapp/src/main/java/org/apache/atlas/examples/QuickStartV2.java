@@ -356,7 +356,8 @@ public class QuickStartV2 {
         List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
 
         if (CollectionUtils.isNotEmpty(entities)) {
-            ret = entitiesClient.getEntityByGuid(entities.get(0).getGuid());
+            List<AtlasEntityWithAssociations> getByGuidResponse = entitiesClient.getEntityByGuid(entities.get(0).getGuid()); 
+            ret = getByGuidResponse.get(0);
             System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
         }
 
@@ -567,7 +568,7 @@ public class QuickStartV2 {
     }
 
     private String getTableId(String tableName) throws AtlasServiceException {
-        AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
+        AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName).get(0);
         return tableEntity.getGuid();
     }
 }

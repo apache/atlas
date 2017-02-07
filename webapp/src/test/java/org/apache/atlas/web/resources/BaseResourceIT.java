@@ -18,10 +18,18 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import kafka.consumer.ConsumerTimeoutException;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasDiscoveryClientV2;
@@ -40,6 +48,9 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.entity.EntityNotification;
@@ -50,7 +61,17 @@ import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.*;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.EnumTypeDefinition;
+import org.apache.atlas.typesystem.types.EnumValue;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructTypeDefinition;
+import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
@@ -62,14 +83,11 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import kafka.consumer.ConsumerTimeoutException;
 
 /**
  * Base class for integration tests.
@@ -125,6 +143,45 @@ public abstract class BaseResourceIT {
         }
     }
 
+    protected void batchCreateTypes(AtlasTypesDef typesDef) throws AtlasServiceException { 
+        for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
+            try {
+                typedefClientV2.createEnumDef(enumDef);
+            } catch (AtlasServiceException ex) {
+                LOG.warn("EnumDef creation failed for {}", enumDef.getName());
+            }
+        }
+        for (AtlasStructDef structDef : typesDef.getStructDefs()) {
+            try {
+                typedefClientV2.createStructDef(structDef);
+            } catch (AtlasServiceException ex) {
+                LOG.warn("StructDef creation failed for {}", structDef.getName());
+            }
+        }
+        
+            AtlasTypesDef entityDefs = new AtlasTypesDef(
+            Collections.<AtlasEnumDef>emptyList(),
+            Collections.<AtlasStructDef>emptyList(),
+            Collections.<AtlasClassificationDef>emptyList(),
+            typesDef.getEntityDefs());
+        try {
+            typedefClientV2.createAtlasTypeDefs(entityDefs);
+        }
+        catch(AtlasServiceException e) {
+            LOG.warn("Type creation failed for {}", typesDef.toString());
+            LOG.warn(e.toString());
+        }
+        
+        for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+            try {
+                typedefClientV2.createClassificationDef(classificationDef);
+            } catch (AtlasServiceException ex) {
+                LOG.warn("ClassificationDef creation failed for {}", classificationDef.getName());
+            }
+        }
+
+    }
+    
     protected void createType(AtlasTypesDef typesDef) {
         // Since the bulk create bails out on a single failure, this has to be done as a workaround
         for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
@@ -182,7 +239,7 @@ public abstract class BaseResourceIT {
             }
             LOG.info("Types already exist. Skipping type creation");
         } catch(AtlasServiceException ase) {
-            //Expected if type doesnt exist
+            //Expected if type doesn't exist
             String typesAsJSON = TypesSerialization.toJson(typesDef);
             createType(typesAsJSON);
         }
@@ -278,7 +335,10 @@ public abstract class BaseResourceIT {
                         TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef(DESCRIPTION, DataTypes.STRING_TYPE),
                         attrDef("locationUri", DataTypes.STRING_TYPE),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE));
+                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE),
+                        new AttributeDefinition("tables", DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
+                                Multiplicity.OPTIONAL, false, "db")
+                        );
 
         HierarchicalTypeDefinition<ClassType> columnClsDef = TypesUtil
                 .createClassTypeDef(COLUMN_TYPE, null, attrDef(NAME, DataTypes.STRING_TYPE),
@@ -297,7 +357,7 @@ public abstract class BaseResourceIT {
                         attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE),
                         attrDef("lastAccessTime", DataTypes.DATE_TYPE),
                         attrDef("temporary", DataTypes.BOOLEAN_TYPE),
-                        new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, true, null),
+                        new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.OPTIONAL, true, "tables"),
                         new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
                                 Multiplicity.OPTIONAL, true, null),
                         new AttributeDefinition("tableType", "tableType", Multiplicity.OPTIONAL, false, null),
@@ -347,6 +407,13 @@ public abstract class BaseResourceIT {
     }
 
     protected void createTypeDefinitionsV2() throws Exception {
+        
+        AtlasConstraintDef isCompositeSourceConstraint = new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY,
+                Collections.<String, Object>singletonMap(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE));
+        
+        AtlasConstraintDef isCompositeTargetConstraint = new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY,
+                Collections.<String, Object>emptyMap());
+        
         AtlasEntityDef dbClsTypeDef = AtlasTypeUtil.createClassTypeDef(
                 DATABASE_TYPE_V2,
                 null,
@@ -354,7 +421,15 @@ public abstract class BaseResourceIT {
                 AtlasTypeUtil.createRequiredAttrDef(DESCRIPTION, "string"),
                 AtlasTypeUtil.createOptionalAttrDef("locationUri", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("owner", "string"),
-                AtlasTypeUtil.createOptionalAttrDef("createTime", "int"));
+                AtlasTypeUtil.createOptionalAttrDef("createTime", "int"),
+                AtlasTypeUtil.createOptionalAttrDef("createTime", "int"), 
+                //there is a serializ
+                new AtlasAttributeDef("randomTable", 
+                        DataTypes.arrayTypeName(HIVE_TABLE_TYPE_V2),
+                        true,
+                        Cardinality.SET,
+                        0, -1, false, true, Collections.singletonList(isCompositeSourceConstraint))
+        );
 
         AtlasEntityDef columnClsDef = AtlasTypeUtil
                 .createClassTypeDef(COLUMN_TYPE_V2, null,
@@ -379,7 +454,12 @@ public abstract class BaseResourceIT {
                         AtlasTypeUtil.createOptionalAttrDef("createTime", "long"),
                         AtlasTypeUtil.createOptionalAttrDef("lastAccessTime", "date"),
                         AtlasTypeUtil.createOptionalAttrDef("temporary", "boolean"),
-                        AtlasTypeUtil.createRequiredAttrDef("db", DATABASE_TYPE_V2),
+                        new AtlasAttributeDef("db", 
+                                DATABASE_TYPE_V2,
+                                true,
+                                Cardinality.SINGLE,
+                                0, 1, false, true, Collections.singletonList(isCompositeTargetConstraint)),
+                        
                         //some tests don't set the columns field or set it to null...
                         AtlasTypeUtil.createOptionalAttrDef("columns", DataTypes.arrayTypeName(COLUMN_TYPE_V2)),
                         AtlasTypeUtil.createOptionalAttrDef("tableType", "tableType"),
@@ -418,7 +498,7 @@ public abstract class BaseResourceIT {
                 ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait),
                 ImmutableList.of(dbClsTypeDef, columnClsDef, tblClsDef, loadProcessClsDef));
 
-        createType(typesDef);
+        batchCreateTypes(typesDef);
     }
 
     AttributeDefinition attrDef(String name, IDataType dT) {

@@ -121,7 +121,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
             }
 
         }
-      
+
         //We need to commit the transaction before creating the indices to release the locks held by the transaction.
         //otherwise, the index commit will fail while waiting for the those locks to be released.
         AtlasGraphProvider.getGraphInstance().commit();
@@ -302,7 +302,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         for (String name : Arrays.asList("John", "Max")) {
             Assert.assertTrue(names.contains(name));
         }
-        
+
         // Query for all Vertices modified after 01/01/2015 00:00:00 GMT
         r = discoveryService.searchByGremlin("g.V.filter{it." + Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY + " > 1420070400000}.toList()");
         Assert.assertTrue(r instanceof List);
@@ -524,55 +524,55 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db, hive_table limit 5", 5},
                 {"hive_db, hive_table limit 5 offset 0", 5},
                 {"hive_db, hive_table limit 5 offset 5", 5},
-                
+
                 {"View is JdbcAccess", 2},
                 {"View is JdbcAccess limit 1", 1},
                 {"View is JdbcAccess limit 2 offset 1", 1},
                 {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
-                
-                
+
+
                 {"from hive_table", 10},
                 {"from hive_table limit 5", 5},
                 {"from hive_table limit 5 offset 5", 5},
-                
+
                 {"hive_table", 10},
                 {"hive_table limit 5", 5},
                 {"hive_table limit 5 offset 5", 5},
-                
+
                 {"hive_table isa Dimension", 3},
                 {"hive_table isa Dimension limit 2", 2},
                 {"hive_table isa Dimension limit 2 offset 0", 2},
                 {"hive_table isa Dimension limit 2 offset 1", 2},
                 {"hive_table isa Dimension limit 3 offset 1", 2},
-                
+
                 {"hive_column where hive_column isa PII", 8},
                 {"hive_column where hive_column isa PII limit 5", 5},
                 {"hive_column where hive_column isa PII limit 5 offset 1", 5},
                 {"hive_column where hive_column isa PII limit 5 offset 5", 3},
-                
-                
+
+
                 {"View is Dimension" , 2},
                 {"View is Dimension limit 1" , 1},
                 {"View is Dimension limit 1 offset 1" , 1},
                 {"View is Dimension limit 10 offset 1" , 1},
-                
+
                 {"hive_column select hive_column.name", 37},
                 {"hive_column select hive_column.name limit 5", 5},
                 {"hive_column select hive_column.name limit 5 offset 36", 1},
-                
+
                 {"hive_column select name", 37},
                 {"hive_column select name limit 5", 5},
                 {"hive_column select name limit 5 offset 36 ", 1},
-                
+
                 {"hive_column where hive_column.name=\"customer_id\"", 6},
                 {"hive_column where hive_column.name=\"customer_id\" limit 2", 2},
                 {"hive_column where hive_column.name=\"customer_id\" limit 2 offset 1", 2},
                 {"hive_column where hive_column.name=\"customer_id\" limit 10 offset 3", 3},
-                
+
                 {"from hive_table select hive_table.name", 10},
                 {"from hive_table select hive_table.name limit 5", 5},
                 {"from hive_table select hive_table.name limit 5 offset 5", 5},
-                
+
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") limit 10", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
@@ -585,18 +585,18 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where hive_db has name limit 5", 3},
                 {"hive_db where hive_db has name limit 2 offset 0", 2},
                 {"hive_db where hive_db has name limit 2 offset 1", 2},
-                
+
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 limit 10", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 limit 10 offset 1", 0},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 limit 10 offset 0", 1},
-                
+
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 5", 0},
-                
+
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 1", 0},
@@ -608,25 +608,25 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"Dimension limit 2", 2},
                 {"Dimension limit 2 offset 1", 2},
                 {"Dimension limit 5 offset 4", 1},
-                
+
                 {"JdbcAccess", 2},
                 {"JdbcAccess limit 5 offset 0", 2},
                 {"JdbcAccess limit 2 offset 1", 1},
                 {"JdbcAccess limit 1", 1},
-                
+
                 {"ETL", 5},
                 {"ETL limit 2", 2},
                 {"ETL limit 1", 1},
                 {"ETL limit 1 offset 0", 1},
                 {"ETL limit 2 offset 1", 2},
-                
+
                 {"Metric", 9},
                 {"Metric limit 10", 9},
                 {"Metric limit 2", 2},
                 {"Metric limit 10 offset 1", 8},
-                
-                
-                
+
+
+
                 {"PII", 8},
                 {"PII limit 10", 8},
                 {"PII limit 2", 2},
@@ -933,7 +933,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
-    
+
     @Test(dataProvider = "dslQueriesProvider")
     public void  testSearchByDSLQueries(String dslQuery, Integer expectedNumRows) throws Exception {
         runQuery(dslQuery, expectedNumRows, 40, 0);
@@ -1205,6 +1205,27 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
             }
         }
 
+    }
+
+    @Test
+    public void testSearchForTypeWithNoInstances() throws Exception {
+
+        HierarchicalTypeDefinition EMPTY = createClassTypeDef("EmptyType", null,
+                createRequiredAttrDef("a", DataTypes.INT_TYPE));
+        TypeSystem.getInstance().defineClassTypes(EMPTY);
+
+        String dslQuery = "EmptyType";
+        String jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+        JSONObject results = new JSONObject(jsonResults);
+
+        assertEquals(results.length(), 3);
+
+        JSONArray rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+
+        // query should not return any rows
+        assertEquals(rows.length(), 0);
     }
 
     private FieldValueValidator makeCountValidator(int count) {

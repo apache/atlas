@@ -143,7 +143,7 @@ public class GraphHelperTest {
     @Test
     public void testGetVerticesForGUIDSWithDuplicates() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(TypeSystem.getInstance());
-        List<String> result = repositoryService.createEntities(hrDept);
+        List<String> result = repositoryService.createEntities(hrDept).getCreatedEntities();
         String guid = result.get(0);
         Map<String, AtlasVertex> verticesForGUIDs = GraphHelper.getInstance().getVerticesForGUIDs(Arrays.asList(guid, guid));
         Assert.assertEquals(verticesForGUIDs.size(), 1);
@@ -152,7 +152,7 @@ public class GraphHelperTest {
     @Test
     public void testGetCompositeGuidsAndVertices() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
-        List<String> createdGuids = repositoryService.createEntities(hrDept);
+        List<String> createdGuids = repositoryService.createEntities(hrDept).getCreatedEntities();
         String deptGuid = null;
         Set<String> expectedGuids = new HashSet<>();
 
@@ -214,7 +214,7 @@ public class GraphHelperTest {
         String entityjson = InstanceSerialization.toJson(entity, true);
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
-        List<String> guids = metadataService.createEntities(entitiesJson.toString());
+        List<String> guids = metadataService.createEntities(entitiesJson.toString()).getCreatedEntities();
         if (guids != null && guids.size() > 0) {
             return guids.get(guids.size() - 1);
         }

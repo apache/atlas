@@ -19,10 +19,12 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
@@ -32,6 +34,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
@@ -100,14 +103,19 @@ public class GraphRepoMapperScaleTest {
         ClassType dbType = typeSystem.getDataType(ClassType.class, TestUtils.DATABASE_TYPE);
         ITypedReferenceableInstance db = dbType.convert(databaseInstance, Multiplicity.REQUIRED);
 
-        dbGUID = repositoryService.createEntities(db).get(0);
+        dbGUID = result(db).getCreatedEntities().get(0);
 
         Referenceable dbInstance = new Referenceable(dbGUID, TestUtils.DATABASE_TYPE, databaseInstance.getValuesMap());
 
         for (int index = 0; index < 1000; index++) {
             ITypedReferenceableInstance table = createHiveTableInstance(dbInstance, index);
-            repositoryService.createEntities(table);
+            result(table);
         }
+    }
+
+    private CreateUpdateEntitiesResult result(ITypedReferenceableInstance db)
+            throws RepositoryException, EntityExistsException {
+        return repositoryService.createEntities(db);
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")

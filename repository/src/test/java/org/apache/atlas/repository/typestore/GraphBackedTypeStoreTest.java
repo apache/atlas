@@ -165,7 +165,8 @@ public class GraphBackedTypeStoreTest {
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", "Department"+_description,
             ImmutableSet.<String>of(), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
-                        true, "department"));
+                        true, "department"),
+                new AttributeDefinition("positions", String.format("map<%s,%s>", DataTypes.STRING_TYPE.getName(), "Person"), Multiplicity.OPTIONAL, false, null));
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.of(deptTypeDef));

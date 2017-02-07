@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -100,7 +101,7 @@ public class EntitiesREST {
         ITypedReferenceableInstance[] entitiesInOldFormat = restAdapters.getITypedReferenceables(entities.values());
 
         try {
-            final AtlasClient.EntityResult result = metadataService.updateEntities(entitiesInOldFormat);
+            final CreateUpdateEntitiesResult result = metadataService.updateEntities(entitiesInOldFormat);
             response = toEntityMutationResponse(result);
         } catch (AtlasException e) {
             LOG.error("Exception while getting a typed reference for the entity ", e);

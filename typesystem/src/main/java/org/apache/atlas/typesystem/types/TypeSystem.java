@@ -618,7 +618,7 @@ public class TypeSystem {
                 try {
                     oldType = TypeSystem.this.getDataType(IDataType.class, newType.getName());
                 } catch (TypeNotFoundException e) {
-                    LOG.debug("No existing type %s found - update OK", newType.getName());
+                    LOG.debug(String.format("No existing type %s found - update OK", newType.getName()));
                 }
                 if (oldType != null) {
                     oldType.validateUpdate(newType);

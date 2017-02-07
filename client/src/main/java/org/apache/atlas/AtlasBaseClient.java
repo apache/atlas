@@ -17,15 +17,19 @@
  */
 package org.apache.atlas;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
-import com.sun.jersey.api.json.JSONConfiguration;
-import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
+import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.type.AtlasType;
@@ -38,17 +42,16 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+import com.google.common.annotations.VisibleForTesting;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
+import com.sun.jersey.api.json.JSONConfiguration;
+import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 
 public abstract class AtlasBaseClient {
     public static final String BASE_URI = "api/atlas/";
@@ -277,6 +280,14 @@ public abstract class AtlasBaseClient {
     }
 
     protected <T> T callAPIWithResource(APIInfo api, WebResource resource, Object requestObject, Class<T> responseType) throws AtlasServiceException {
+        GenericType<T> genericType = null;
+        if(responseType != null) {
+            genericType = new GenericType<>(responseType);
+        }
+        return callAPIWithResource(api, resource, requestObject, genericType);
+    }
+
+    protected <T> T callAPIWithResource(APIInfo api, WebResource resource, Object requestObject, GenericType<T> responseType) throws AtlasServiceException {
         ClientResponse clientResponse = null;
         int i = 0;
         do {
@@ -297,7 +308,7 @@ public abstract class AtlasBaseClient {
                     return null;
                 }
                 try {
-                    if (responseType == JSONObject.class) {
+                    if (responseType.getRawClass() == JSONObject.class) {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
                             JSONObject jsonObject = new JSONObject(stringEntity);
@@ -419,6 +430,12 @@ public abstract class AtlasBaseClient {
         return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
     }
 
+    public <T> T callAPI(APIInfo api, Object requestObject, GenericType<T> responseType, String... params)
+            throws AtlasServiceException {
+        return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
+    }
+
+
     public <T> T callAPI(APIInfo api, Object requestBody, Class<T> responseType,
                          MultivaluedMap<String, String> queryParams, String... params) throws AtlasServiceException {
         WebResource resource = getResource(api, queryParams, params);
@@ -426,6 +443,12 @@ public abstract class AtlasBaseClient {
     }
 
     public <T> T callAPI(APIInfo api, Class<T> responseType, MultivaluedMap<String, String> queryParams, String... params)
+            throws AtlasServiceException {
+        WebResource resource = getResource(api, queryParams, params);
+        return callAPIWithResource(api, resource, null, responseType);
+    }
+
+    public <T> T callAPI(APIInfo api, GenericType<T> responseType, MultivaluedMap<String, String> queryParams, String... params)
             throws AtlasServiceException {
         WebResource resource = getResource(api, queryParams, params);
         return callAPIWithResource(api, resource, null, responseType);

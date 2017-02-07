@@ -43,6 +43,8 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -498,7 +500,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         }
     }
 
-    private static String toJsonFromAttribute(AtlasAttribute attribute) {
+    @VisibleForTesting
+    public static String toJsonFromAttribute(AtlasAttribute attribute) {
         AtlasAttributeDef attributeDef      = attribute.getAttributeDef();
         boolean           isComposite       = attribute.legacyIsComposite();
         String            reverseAttribName = attribute.legacyReverseAttribute();
@@ -539,7 +542,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         return AtlasType.toJson(attribInfo);
     }
 
-    private static AtlasAttributeDef toAttributeDefFromJson(AtlasStructDef           structDef,
+    @VisibleForTesting
+    public static AtlasAttributeDef toAttributeDefFromJson(AtlasStructDef           structDef,
                                                             Map                      attribInfo,
                                                             AtlasTypeDefGraphStoreV1 typeDefStore)
         throws AtlasBaseException {
