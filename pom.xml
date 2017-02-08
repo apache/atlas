@@ -98,8 +98,8 @@
                 <role>committer</role>
                 <role>PPMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>rhbutani</id>
@@ -111,7 +111,7 @@
                 <role>PPMC</role>
             </roles>
             <organization></organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>shwethags</id>
@@ -128,26 +128,26 @@
         <developer>
             <id>jmaron</id>
             <name>Jon Maron</name>
-            <email>jmaron@hortonworks.com</email>
+            <email></email>
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>AAhn</id>
             <name>Andrew Ahn</name>
-            <email>aahn@hortonworks.com</email>
+            <email></email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>dkaspar</id>
@@ -403,6 +403,27 @@
                 <role>committer</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
+        </developer>
+        <developer>
+            <id>svimal2106</id>
+            <name>Vimal Sharma</name>
+            <email>svimal2106@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+        </developer>
+        <developer>
+            <id>jnhagelberg</id>
+            <name>Jeffrey Hagelberg</name>
+            <email>jnhagelberg@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>IBM Corporation</organization>
+            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
         </developer>
     </developers>
 
