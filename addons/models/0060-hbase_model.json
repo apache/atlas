@@ -30,7 +30,7 @@
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
-                },
+                }
             ]
         },
         {
