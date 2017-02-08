@@ -97,18 +97,30 @@ public abstract class AtlasAbstractAuthenticationProvider implements
 
     public static List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
         List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
-        Configuration config = new Configuration();
 
-        try {
-            Groups gp = new Groups(config);
-            List<String> userGroups = gp.getGroups(userName);
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(userName);
+        if (ugi != null) {
+            String[] userGroups = ugi.getGroupNames();
             if (userGroups != null) {
                 for (String group : userGroups) {
                     grantedAuths.add(new SimpleGrantedAuthority(group));
                 }
             }
-        } catch (java.io.IOException e) {
-            LOG.error("Exception while fetching groups ", e);
+        }
+        // if group empty take groups from UGI LDAP-based group mapping
+        if (grantedAuths != null && grantedAuths.isEmpty()) {
+            try {
+                Configuration config = new Configuration();
+                Groups gp = new Groups(config);
+                List<String> userGroups = gp.getGroups(userName);
+                if (userGroups != null) {
+                    for (String group : userGroups) {
+                        grantedAuths.add(new SimpleGrantedAuthority(group));
+                    }
+                }
+            } catch (java.io.IOException e) {
+                LOG.error("Exception while fetching groups ", e);
+            }
         }
         return grantedAuths;
     }
