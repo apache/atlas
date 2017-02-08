@@ -144,7 +144,7 @@ define(['require',
             onRender: function() {
                 var that = this;
                 _.each(this.attribute, function(obj) {
-                    var defObj = that.entityDefCollection.find({ name: obj.typeName });
+                    var defObj = that.entityDefCollection.fullCollection.find({ name: obj.typeName });
                     if (defObj && defObj.get('options') && defObj.get('options').schemaAttributes) {
                         try {
                             var mapObj = JSON.parse(defObj.get('options').schemaAttributes);

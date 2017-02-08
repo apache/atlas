@@ -60,7 +60,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'assetName'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName'));
                 this.collectionObject = this.entity;
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject.classifications),
@@ -176,13 +176,13 @@ define(['require',
                     that = this;
                 if (that.term) {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove",
                     });
                 } else {
                     var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove",
                     });

@@ -54,7 +54,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity'));
+                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -79,7 +79,7 @@ define(['require',
                     var values = parseDetailsObject.values;
                     if (this.action && (Enums.auditAction.ENTITY_CREATE !== this.action && Enums.auditAction.ENTITY_UPDATE !== this.action) && name) {
                         this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
-                        this.ui.auditValue.html("<tr><td>" + name + "</td></tr>");
+                        this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
                     } else if (parseDetailsObject && parseDetailsObject.values) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
                         //CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
@@ -92,6 +92,11 @@ define(['require',
                             this.ui.noData.show();
                             this.ui.tableAudit.hide();
                         }
+                    }
+                } else {
+                    if (Enums.auditAction.ENTITY_DELETE === this.action) {
+                        this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
+                        this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
                     }
                 }
 

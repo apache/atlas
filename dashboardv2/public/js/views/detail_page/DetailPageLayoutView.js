@@ -166,7 +166,7 @@ define(['require',
                         entity: collectionJSON,
                         referredEntities: entityObject.referredEntities,
                         guid: this.id,
-                        assetName: this.name,
+                        entityName: this.name,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that)
                     }
@@ -176,7 +176,7 @@ define(['require',
                     this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
                     this.renderLineageLayoutView(obj);
                     // To render Schema check attribute "schemaElementsAttribute"
-                    var schemaOptions = this.entityDefCollection.find({ name: collectionJSON.typeName }).get('options');
+                    var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
                     if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
                         this.$('.schemaTable').show();
                         this.renderSchemaLayoutView(_.extend({}, obj, {
