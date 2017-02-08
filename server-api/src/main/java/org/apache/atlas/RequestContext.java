@@ -94,7 +94,14 @@ public class RequestContext {
     }
 
     public static void clear() {
-        CURRENT_CONTEXT.get().entityCache.clear();
+        RequestContext instance = CURRENT_CONTEXT.get();
+
+        if (instance != null) {
+            if (instance.entityCache != null) {
+                instance.entityCache.clear();
+            }
+        }
+
         CURRENT_CONTEXT.remove();
     }
 
