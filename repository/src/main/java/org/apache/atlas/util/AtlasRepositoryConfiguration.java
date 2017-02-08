@@ -57,6 +57,17 @@ public class AtlasRepositoryConfiguration {
     private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
     private static Integer typeUpdateLockMaxWaitTimeInSeconds = null;
 
+    private static final String ENABLE_FULLTEXT_SEARCH_PROPERTY = "atlas.search.fulltext.enable";
+
+    /**
+     * Configures whether the full text vertex property is populated.  Turning this off
+     * effectively disables full text searches, since all no entities created or updated after
+     * turning this off will match full text searches.
+     */
+    public static boolean isFullTextSearchEnabled() throws AtlasException {
+        return ApplicationProperties.get().getBoolean(ENABLE_FULLTEXT_SEARCH_PROPERTY, true);
+    }
+
     @SuppressWarnings("unchecked")
     public static Class<? extends TypeCache> getTypeCache() {
         // Get the type cache implementation class from Atlas configuration.

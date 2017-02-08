@@ -56,6 +56,7 @@ import org.apache.atlas.typesystem.types.ObjectGraphWalker;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.utils.MD5Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -373,6 +374,11 @@ public final class TypedInstanceToGraphMapper {
 
 
     private void addFullTextProperty(List<ITypedReferenceableInstance> instances, FullTextMapper fulltextMapper) throws AtlasException {
+
+        if(! AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
+            return;
+        }
+
         for (ITypedReferenceableInstance typedInstance : instances) { // Traverse
             AtlasVertex instanceVertex = getClassVertex(typedInstance);
             String fullText = fulltextMapper.mapRecursive(instanceVertex, true);
