@@ -55,18 +55,15 @@ import java.util.Map;
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     protected AtlasTypeRegistry typeRegistry;
-    protected final GraphHelper graphHelper = GraphHelper.getInstance();
 
     private final EntityGraphMapper graphMapper;
-    private final GraphEntityMapper entityMapper;
     private final AtlasGraph        graph;
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
     @Inject
-    public AtlasEntityStoreV1(EntityGraphMapper vertexMapper, GraphEntityMapper entityMapper) {
+    public AtlasEntityStoreV1(EntityGraphMapper vertexMapper) {
         this.graphMapper  = vertexMapper;
-        this.entityMapper = entityMapper;
         this.graph        = AtlasGraphProvider.getGraphInstance();
     }
 
@@ -81,7 +78,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Retrieving entity with guid={}", guid);
         }
 
-        return entityMapper.toAtlasEntity(guid, true);
+        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+
+        return entityRetriever.toAtlasEntityWithExtInfo(guid);
     }
 
     @Override
@@ -112,7 +111,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         String guid = GraphHelper.getGuid(entityVertex);
 
-        return entityMapper.toAtlasEntity(guid, true);
+        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+
+        return entityRetriever.toAtlasEntityWithExtInfo(guid);
     }
 
     @Override
