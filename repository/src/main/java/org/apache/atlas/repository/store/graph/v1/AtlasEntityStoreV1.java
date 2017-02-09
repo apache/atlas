@@ -91,29 +91,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Retrieving entity with type={} and attributes={}: values={}", entityTypeName, uniqAttributes);
         }
 
-        AtlasGraphQuery query = graph.query();
-
-        for (Map.Entry<String, Object> e : uniqAttributes.entrySet()) {
-            String attrName = e.getKey();
-            Object attrValue = e.getValue();
-
-            query = query.has(entityType.getQualifiedAttributeName(attrName), attrValue);
-        }
-
-        Iterator<AtlasVertex> result = query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityTypeName)
-                                            .has(Constants.STATE_PROPERTY_KEY, Status.ACTIVE.name())
-                                            .vertices().iterator();
-        AtlasVertex entityVertex = result.hasNext() ? result.next() : null;
-
-        if (entityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityTypeName, uniqAttributes.keySet().toString(), uniqAttributes.values().toString());
-        }
-
-        String guid = GraphHelper.getGuid(entityVertex);
+        AtlasVertex entityVertex = AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
 
-        return entityRetriever.toAtlasEntityWithExtInfo(guid);
+        return entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
     }
 
     @Override

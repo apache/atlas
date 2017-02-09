@@ -24,6 +24,7 @@ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -45,20 +46,22 @@ public class AtlasTypesDef {
     private List<AtlasEntityDef>         entityDefs;
 
     public AtlasTypesDef() {
-        enumDefs = new ArrayList<>();
-        structDefs = new ArrayList<>();
+        enumDefs           = new ArrayList<>();
+        structDefs         = new ArrayList<>();
         classificationDefs = new ArrayList<>();
-        entityDefs = new ArrayList<>();
+        entityDefs         = new ArrayList<>();
     }
 
-    public AtlasTypesDef(List<AtlasEnumDef> enumDefs, List<AtlasStructDef> structDefs,
+    public AtlasTypesDef(List<AtlasEnumDef>           enumDefs,
+                         List<AtlasStructDef>         structDefs,
                          List<AtlasClassificationDef> classificationDefs,
-                         List<AtlasEntityDef> entityDefs) {
+                         List<AtlasEntityDef>         entityDefs) {
         this.enumDefs           = enumDefs;
         this.structDefs         = structDefs;
         this.classificationDefs = classificationDefs;
         this.entityDefs         = entityDefs;
     }
+
 
     public List<AtlasEnumDef> getEnumDefs() {
         return enumDefs;
@@ -80,10 +83,6 @@ public class AtlasTypesDef {
         return classificationDefs;
     }
 
-    public void setClassificationDefs(List<AtlasClassificationDef> classificationDefs) {
-        this.classificationDefs = classificationDefs;
-    }
-
     public List<AtlasEntityDef> getEntityDefs() {
         return entityDefs;
     }
@@ -92,11 +91,90 @@ public class AtlasTypesDef {
         this.entityDefs = entityDefs;
     }
 
+    public void setClassificationDefs(List<AtlasClassificationDef> classificationDefs) {
+        this.classificationDefs = classificationDefs;
+    }
+
+
+    public boolean hasClassificationDef(String name) {
+        return hasTypeDef(classificationDefs, name);
+    }
+
+    public boolean hasEnumDef(String name) {
+        return hasTypeDef(enumDefs, name);
+    }
+
+    public boolean hasStructDef(String name) {
+        return hasTypeDef(structDefs, name);
+    }
+
+    public boolean hasEntityDef(String name) {
+        return hasTypeDef(entityDefs, name);
+    }
+
+
+    private <T extends AtlasBaseTypeDef> boolean hasTypeDef(Collection<T> typeDefs, String name) {
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (T typeDef : typeDefs) {
+                if (typeDef.getName().equals(name)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     @JsonIgnore
     public boolean isEmpty() {
         return CollectionUtils.isEmpty(enumDefs) &&
                 CollectionUtils.isEmpty(structDefs) &&
                 CollectionUtils.isEmpty(classificationDefs) &&
                 CollectionUtils.isEmpty(entityDefs);
+    }
+
+    public void clear() {
+        if (enumDefs != null) {
+            enumDefs.clear();
+        }
+
+        if (structDefs != null) {
+            structDefs.clear();
+        }
+
+        if (classificationDefs != null) {
+            classificationDefs.clear();
+        }
+
+        if (entityDefs != null) {
+            entityDefs.clear();
+        }
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("AtlasTypesDef{");
+        sb.append("enumDefs={");
+        AtlasBaseTypeDef.dumpObjects(enumDefs, sb);
+        sb.append("}");
+        sb.append("structDefs={");
+        AtlasBaseTypeDef.dumpObjects(structDefs, sb);
+        sb.append("}");
+        sb.append("classificationDefs={");
+        AtlasBaseTypeDef.dumpObjects(classificationDefs, sb);
+        sb.append("}");
+        sb.append("entityDefs={");
+        AtlasBaseTypeDef.dumpObjects(entityDefs, sb);
+        sb.append("}");
+
+        return sb;
+    }
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 }

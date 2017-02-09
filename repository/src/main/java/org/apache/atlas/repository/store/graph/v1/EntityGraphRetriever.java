@@ -31,12 +31,8 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,12 +74,20 @@ public final class EntityGraphRetriever {
         return toAtlasEntity(getEntityVertex(guid));
     }
 
+    public AtlasEntity toAtlasEntity(AtlasObjectId objId) throws AtlasBaseException {
+        return toAtlasEntity(getEntityVertex(objId));
+    }
+
     public AtlasEntity toAtlasEntity(AtlasVertex entityVertex) throws AtlasBaseException {
         return mapVertexToAtlasEntity(entityVertex, null);
     }
 
     public AtlasEntityWithExtInfo toAtlasEntityWithExtInfo(String guid) throws AtlasBaseException {
         return toAtlasEntityWithExtInfo(getEntityVertex(guid));
+    }
+
+    public AtlasEntityWithExtInfo toAtlasEntityWithExtInfo(AtlasObjectId objId) throws AtlasBaseException {
+        return toAtlasEntityWithExtInfo(getEntityVertex(objId));
     }
 
     public AtlasEntityWithExtInfo toAtlasEntityWithExtInfo(AtlasVertex entityVertex) throws AtlasBaseException {
@@ -101,6 +105,24 @@ public final class EntityGraphRetriever {
             return graphHelper.getVertexForGUID(guid);
         } catch (AtlasException excp) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+    }
+
+    private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
+        try {
+            if (! objId.isValid()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
+            }
+            if (objId.isAssignedGuid()) {
+                return graphHelper.getVertexForGUID(objId.getGuid());
+            } else {
+                AtlasEntityType     entityType     = typeRegistry.getEntityTypeByName(objId.getTypeName());
+                Map<String, Object> uniqAttributes = objId.getUniqueAttributes();
+
+                return AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
+            }
+        } catch (AtlasException excp) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, objId.toString());
         }
     }
 

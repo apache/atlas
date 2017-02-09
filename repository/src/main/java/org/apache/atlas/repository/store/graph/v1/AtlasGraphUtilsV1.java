@@ -26,19 +26,20 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Utility methods for Graph.
@@ -197,6 +198,29 @@ public class AtlasGraphUtilsV1 {
         }
 
         return returnType.cast(property);
+    }
+
+    public static AtlasVertex getVertexByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException {
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query();
+
+        for (Map.Entry<String, Object> e : uniqAttributes.entrySet()) {
+            String attrName = e.getKey();
+            Object attrValue = e.getValue();
+
+            query = query.has(entityType.getQualifiedAttributeName(attrName), attrValue);
+        }
+
+        Iterator<AtlasVertex> result = query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName())
+                                            .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())
+                                            .vertices().iterator();
+        AtlasVertex entityVertex = result.hasNext() ? result.next() : null;
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
+                                         uniqAttributes.keySet().toString(), uniqAttributes.values().toString());
+        }
+
+        return entityVertex;
     }
 
     private static String toString(AtlasElement element) {

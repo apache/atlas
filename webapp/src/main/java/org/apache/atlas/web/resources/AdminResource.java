@@ -20,11 +20,17 @@ package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.discovery.DiscoveryService;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
+import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -40,16 +46,17 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
+
+import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
 
 /**
  * Jersey Resource for admin operations.
@@ -58,6 +65,12 @@ import java.util.Set;
 @Singleton
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
+
+    @Context
+    private HttpServletRequest httpServletRequest;
+
+    @Context
+    private HttpServletResponse httpServletResponse;
 
     private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
     private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
@@ -69,13 +82,19 @@ public class AdminResource {
     private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
     private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
     private Response version;
-    private ServiceState serviceState;
-    private MetricsService metricsService;
+
+    private final ServiceState      serviceState;
+    private final MetricsService    metricsService;
+    private final DiscoveryService  discoveryService;
+    private final AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public AdminResource(ServiceState serviceState, MetricsService metricsService) {
-        this.serviceState = serviceState;
-        this.metricsService = metricsService;
+    public AdminResource(ServiceState serviceState, MetricsService metricsService,
+                         DiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
+        this.serviceState     = serviceState;
+        this.metricsService   = metricsService;
+        this.discoveryService = discoveryService;
+        this.typeRegistry     = typeRegistry;
     }
 
     /**
@@ -249,6 +268,40 @@ public class AdminResource {
         return metrics;
     }
 
+    @POST
+    @Path("/export")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public Response export(AtlasExportRequest request) throws AtlasBaseException {
+        ZipSink exportSink = null;
+        try {
+            exportSink = new ZipSink();
+            ExportService exportService = new ExportService(this.typeRegistry);
+
+            AtlasExportResult result = exportService.run(exportSink, request, Servlets.getUserName(httpServletRequest),
+                                                         Servlets.getHostName(httpServletRequest),
+                                                         Servlets.getRequestIpAddress(httpServletRequest));
+
+            exportSink.close();
+
+            ServletOutputStream outStream = httpServletResponse.getOutputStream();
+            exportSink.writeTo(outStream);
+
+            httpServletResponse.setContentType("application/zip");
+            httpServletResponse.setHeader("Content-Disposition",
+                                          "attachment; filename=" + result.getClass().getSimpleName());
+
+            outStream.flush();
+            return Response.ok().build();
+        } catch (AtlasException | IOException ex) {
+            LOG.error("export() failed", ex);
+
+            throw toAtlasBaseException(new AtlasException(ex));
+        } finally {
+            if (exportSink != null)
+                exportSink.close();
+        }
+    }
+
     private String getEditableEntityTypes(PropertiesConfiguration config) {
         String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
 
@@ -256,11 +309,11 @@ public class AdminResource {
             Object value = config.getProperty(editableEntityTypes);
 
             if (value instanceof String) {
-                ret = (String)value;
+                ret = (String) value;
             } else if (value instanceof Collection) {
                 StringBuilder sb = new StringBuilder();
 
-                for (Object elem : ((Collection)value)) {
+                for (Object elem : ((Collection) value)) {
                     if (sb.length() > 0) {
                         sb.append(",");
                     }

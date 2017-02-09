@@ -24,6 +24,7 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.codehaus.jettison.json.JSONException;
@@ -37,6 +38,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.List;
 
@@ -52,6 +55,7 @@ public final class Servlets {
     }
 
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+    public static final String BINARY = MediaType.APPLICATION_OCTET_STREAM;
 
     /**
      * Returns the user of the given request.
@@ -167,5 +171,26 @@ public final class Servlets {
     public static String escapeJsonString(String inputStr) {
         ParamChecker.notNull(inputStr, "Input String cannot be null");
         return StringEscapeUtils.escapeJson(inputStr);
+    }
+
+    public static String getRequestIpAddress(HttpServletRequest httpServletRequest) {
+        try {
+            InetAddress inetAddr = InetAddress.getByName(httpServletRequest.getRemoteAddr());
+
+            String ip = inetAddr.getHostAddress();
+
+            return ip;
+        } catch(UnknownHostException ex) {
+            LOG.error("Error occured when retrieving IP address", ex);
+            return "";
+        }
+    }
+
+    public static String getHostName(HttpServletRequest httpServletRequest) {
+        return httpServletRequest.getLocalName();
+    }
+
+    public static String getUserName(HttpServletRequest httpServletRequest) throws IOException {
+        return httpServletRequest.getRemoteUser();
     }
 }

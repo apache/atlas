@@ -59,7 +59,8 @@ public enum AtlasErrorCode {
     CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_NON_EXISTING(400, "ATLAS40028E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} does not exist"),
     CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40029E", "{0}.{1}: invalid {2} constraint. Inverse attribute {3}.{4} is not an entity type"),
     CONSTRAINT_OWNED_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS40030E", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),
-    CANNOT_MAP_ATTRIBUTE(400, "ATLAS40027E", "cannot map attribute: {0} of type: {1} from vertex"),
+    CANNOT_MAP_ATTRIBUTE(400, "ATLAS40031E", "cannot map attribute: {0} of type: {1} from vertex"),
+    INVALID_OBJECT_ID(400, "ATLAS40032E", "ObjectId is not valid {0}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
