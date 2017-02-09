@@ -57,6 +57,9 @@ allows integration with the whole enterprise data ecosystem.
 
    * <a href="api/rest.html">REST API Documentation</a>
 
+---++ Developer Setup Documentation
+   * [[EclipseSetup][Developer Setup: Eclipse]]
+
 #LicenseInfo
 ---+ Licensing Information
 

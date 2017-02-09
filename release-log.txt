@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1401 Document in detail how to set up Eclipse for Atlas dev environment
 ATLAS-1527 Batch entity retrievals - DefaultMetadataService.loadEntities
 ATLAS-1385 Add configuration property to disable full text mapper (wwojcik via jnhagelb)
 ATLAS-746  After updating a set of entities, response contains only the first entity definition (jnhagelb)
