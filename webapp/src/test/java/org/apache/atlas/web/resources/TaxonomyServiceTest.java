@@ -18,22 +18,39 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.catalog.*;
-import org.apache.atlas.services.MetadataService;
-import org.easymock.Capture;
-import org.testng.annotations.Test;
-
-import static org.easymock.EasyMock.*;
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.createNiceMock;
+import static org.easymock.EasyMock.createStrictMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.newCapture;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.util.*;
+
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.catalog.AtlasTypeSystem;
+import org.apache.atlas.catalog.JsonSerializer;
+import org.apache.atlas.catalog.Request;
+import org.apache.atlas.catalog.ResourceProvider;
+import org.apache.atlas.catalog.Result;
+import org.apache.atlas.catalog.TaxonomyResourceProvider;
+import org.apache.atlas.catalog.TermPath;
+import org.apache.atlas.services.MetadataService;
+import org.easymock.Capture;
+import org.testng.annotations.Test;
 
 /**
  * Unit tests for TaxonomyService.
@@ -555,11 +572,6 @@ public class TaxonomyServiceTest {
         @Override
         protected JsonSerializer getSerializer() {
             return testSerializer;
-        }
-
-        @Override
-        protected void initializeGraphTransaction() {
-            transactionInitialized = true;
         }
 
         public boolean wasTransactionInitialized() {

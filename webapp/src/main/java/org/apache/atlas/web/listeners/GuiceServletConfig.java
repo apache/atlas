@@ -35,6 +35,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.service.Services;
 import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AuditFilter;
+import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorModule;
 import org.apache.atlas.web.service.ServiceModule;
 import org.apache.commons.configuration.Configuration;
@@ -91,6 +92,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
                         @Override
                         protected void configureServlets() {
+                            filter("/*").through(StaleTransactionCleanupFilter.class);
                             filter("/*").through(AuditFilter.class);
                             configureActiveServerFilterIfNecessary();
 

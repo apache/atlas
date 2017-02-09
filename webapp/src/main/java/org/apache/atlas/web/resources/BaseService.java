@@ -52,7 +52,6 @@ public abstract class BaseService {
     protected Result getResource(ResourceProvider provider, Request request)
             throws ResourceNotFoundException {
 
-        initializeGraphTransaction();
         try {
             return provider.getResourceById(request);
         } catch (RuntimeException e) {
@@ -63,7 +62,6 @@ public abstract class BaseService {
     protected Result getResources(ResourceProvider provider, Request request)
             throws ResourceNotFoundException, InvalidQueryException {
 
-        initializeGraphTransaction();
         try {
             return provider.getResources(request);
         } catch (RuntimeException e) {
@@ -72,7 +70,6 @@ public abstract class BaseService {
     }
 
     protected void createResource(ResourceProvider provider, Request request) throws CatalogException {
-        initializeGraphTransaction();
         try {
             provider.createResource(request);
         } catch (RuntimeException e) {
@@ -81,7 +78,6 @@ public abstract class BaseService {
     }
 
     protected void updateResource(ResourceProvider provider, Request request) throws CatalogException {
-        initializeGraphTransaction();
         try {
             provider.updateResourceById(request);
         } catch (RuntimeException e) {
@@ -90,7 +86,6 @@ public abstract class BaseService {
     }
 
     protected void deleteResource(ResourceProvider provider, Request request) throws CatalogException {
-        initializeGraphTransaction();
         try {
             provider.deleteResourceById(request);
 
@@ -100,7 +95,6 @@ public abstract class BaseService {
     }
 
     protected Collection<String> createResources(ResourceProvider provider, Request request) throws CatalogException {
-        initializeGraphTransaction();
         try {
             return provider.createResources(request);
         } catch (RuntimeException e) {
@@ -139,11 +133,6 @@ public abstract class BaseService {
         return serializer;
     }
 
-    //todo: abstract via AtlasTypeSystem
-    // ensure that the thread wasn't re-pooled with an existing transaction
-    protected void initializeGraphTransaction() {
-        AtlasGraphProvider.getGraphInstance().rollback();
-    }
 
     private RuntimeException wrapRuntimeException(RuntimeException e) {
         return e instanceof CatalogRuntimeException ? e : new CatalogRuntimeException(e);
