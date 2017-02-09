@@ -19,11 +19,15 @@
 package org.apache.atlas.repository.graph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -169,19 +173,70 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException {
+        return getEntityDefinitions(guid).get(0);
+    }
+
+    @Override
+    @GraphTransaction
+    public List<ITypedReferenceableInstance> getEntityDefinitions(String... guids) throws RepositoryException, EntityNotFoundException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Retrieving entity with guid={}", guid);
+            LOG.debug("Retrieving entities with guids={}", Arrays.toString(guids));
         }
 
-        AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
+        RequestContext context = RequestContext.get();
+        ITypedReferenceableInstance[] result = new ITypedReferenceableInstance[guids.length];
 
-        try {
-            return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
-        } catch (AtlasException e) {
-            throw new RepositoryException(e);
+        // Map of the guids of instances not in the cache to their index(es) in the result.
+        // This is used to put the loaded instances into the location(s) corresponding
+        // to their guid in the result.  Note that a set is needed since guids can
+        // appear more than once in the list.
+        Map<String, Set<Integer>> uncachedGuids = new HashMap<>();
+
+        for (int i = 0; i < guids.length; i++) {
+            String guid = guids[i];
+
+            // First, check the cache.
+            ITypedReferenceableInstance cached = context.getInstance(guid);
+            if (cached != null) {
+                result[i] = cached;
+            } else {
+                Set<Integer> indices = uncachedGuids.get(guid);
+                if (indices == null) {
+                    indices = new HashSet<>(1);
+                    uncachedGuids.put(guid, indices);
+                }
+                indices.add(i);
+            }
         }
+
+        List<String> guidsToFetch = new ArrayList<>(uncachedGuids.keySet());
+        Map<String, AtlasVertex> instanceVertices = graphHelper.getVerticesForGUIDs(guidsToFetch);
+
+        // search for missing entities
+        if (instanceVertices.size() != guidsToFetch.size()) {
+            Set<String> missingGuids = new HashSet<String>(guidsToFetch);
+            missingGuids.removeAll(instanceVertices.keySet());
+            if (!missingGuids.isEmpty()) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Failed to find guids={}", missingGuids);
+                }
+                throw new EntityNotFoundException(
+                    "Could not find entities in the repository with guids: " + missingGuids.toString());
+            }
+        }
+
+        for (String guid : guidsToFetch) {
+            try {
+                ITypedReferenceableInstance entity = graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertices.get(guid));
+                for(int index : uncachedGuids.get(guid)) {
+                    result[index] = entity;
+                }
+            } catch (AtlasException e) {
+                throw new RepositoryException(e);
+            }
+        }
+        return Arrays.asList(result);
     }
 
     @Override

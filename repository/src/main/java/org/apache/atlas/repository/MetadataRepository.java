@@ -104,8 +104,19 @@ public interface MetadataRepository {
      * @param guid globally unique identifier for the entity
      * @return entity (typed instance) definition
      * @throws RepositoryException
+     * @throws EntityNotFoundException
      */
     ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException;
+
+    /**
+     * Fetch the complete entity definitions for the entities with the given GUIDs
+     *
+     * @param guids globally unique identifiers for the entities
+     * @return entity (typed instance) definitions list
+     * @throws RepositoryException
+     * @throws EntityNotFoundException
+     */
+    List<ITypedReferenceableInstance> getEntityDefinitions(String... guids) throws RepositoryException, EntityNotFoundException;
 
     /**
      * Gets the list of entities for a given entity type.

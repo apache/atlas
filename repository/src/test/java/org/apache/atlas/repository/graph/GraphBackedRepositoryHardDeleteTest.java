@@ -80,7 +80,7 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
             repositoryService.getEntityDefinition(id);
             fail("Expected EntityNotFoundException");
         } catch(EntityNotFoundException e) {
-            //expected
+            // expected
         }
     }
 

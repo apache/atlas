@@ -705,13 +705,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         }
     }
 
-    private List<ITypedReferenceableInstance> loadEntities(List<String> guids) throws EntityNotFoundException,
-            RepositoryException {
-        List<ITypedReferenceableInstance> entities = new ArrayList<>();
-        for (String guid : guids) {
-            entities.add(repository.getEntityDefinition(guid));
-        }
-        return entities;
+    private List<ITypedReferenceableInstance> loadEntities(List<String> guids) throws RepositoryException, EntityNotFoundException {
+        return repository.getEntityDefinitions(guids.toArray(new String[guids.size()]));
     }
 
     private void onTypesUpdated(Map<String, IDataType> typesUpdated) throws AtlasException {
