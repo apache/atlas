@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1546 Hive hook should choose appropriate JAAS config when host uses kerberos ticket-cache (nixonrodrigues,gss2002 via mneethiraj)
 ATLAS-1539 Integration tests in projects which use the typesystem test jar (e.g. webapp) can now be run successfully when invoked in the project directory (dkantor)
 ATLAS-1542 Atlas server fails to start if duplicate types are found during Typesystem bootstrap (svimal2106)
 ATLAS-1535 Some webapp tests are failing due to a stale Titan transaction (jnhagelberg)

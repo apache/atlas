@@ -127,12 +127,15 @@ public final class InMemoryJAASConfiguration extends Configuration {
     private static final String JAAS_CONFIG_LOGIN_MODULE_CONTROL_FLAG_PARAM = "loginModuleControlFlag";
     private static final String JAAS_CONFIG_LOGIN_OPTIONS_PREFIX = "option";
     private static final String JAAS_PRINCIPAL_PROP = "principal";
+    private static final Map<String, String> configSectionRedirects = new HashMap<>();
 
     private Configuration parent = null;
     private Map<String, List<AppConfigurationEntry>> applicationConfigEntryMap = new HashMap<>();
 
     public static void init(String propFile) throws AtlasException {
-        LOG.debug("==> InMemoryJAASConfiguration.init( {} )", propFile);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> InMemoryJAASConfiguration.init({})", propFile);
+        }
 
         InputStream in = null;
 
@@ -161,7 +164,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
             }
         }
 
-        LOG.debug("<== InMemoryJAASConfiguration.init( {} )", propFile);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== InMemoryJAASConfiguration.init({})", propFile);
+        }
     }
 
     public static void init(org.apache.commons.configuration.Configuration atlasConfiguration) throws AtlasException {
@@ -192,10 +197,26 @@ public final class InMemoryJAASConfiguration extends Configuration {
 
     @Override
     public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-        LOG.trace("==> InMemoryJAASConfiguration.getAppConfigurationEntry( {} )", name);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> InMemoryJAASConfiguration.getAppConfigurationEntry({})", name);
+        }
 
         AppConfigurationEntry[] ret = null;
-        List<AppConfigurationEntry> retList = applicationConfigEntryMap.get(name);
+        List<AppConfigurationEntry> retList = null;
+        String redirectedName = getConfigSectionRedirect(name);
+
+        if (redirectedName != null) {
+            retList = applicationConfigEntryMap.get(redirectedName);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Redirected jaasConfigSection ({} -> {}): ", name, redirectedName, retList);
+            }
+        }
+
+        if (retList == null || retList.size() == 0) {
+            retList = applicationConfigEntryMap.get(name);
+        }
+
         if (retList == null || retList.size() == 0) {
             if (parent != null) {
                 ret = parent.getAppConfigurationEntry(name);
@@ -206,7 +227,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
             ret = retList.toArray(ret);
         }
 
-        LOG.trace("==> InMemoryJAASConfiguration.getAppConfigurationEntry( {} ) : {}", name, ArrayUtils.toString(ret));
+		if (LOG.isDebugEnabled()) {
+            LOG.debug("<== InMemoryJAASConfiguration.getAppConfigurationEntry({}): {}", name, ArrayUtils.toString(ret));
+		}
 
         return ret;
     }
@@ -344,10 +367,28 @@ public final class InMemoryJAASConfiguration extends Configuration {
             }
         }
 
-        LOG.debug("<== InMemoryJAASConfiguration.initialize()");
+        LOG.debug("<== InMemoryJAASConfiguration.initialize({})", applicationConfigEntryMap);
     }
 
     private static boolean isNumeric(String str) {
         return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+    }
+
+    public static void setConfigSectionRedirect(String name, String redirectTo) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("setConfigSectionRedirect({}, {})", name, redirectTo);
+        }
+
+        if (name != null) {
+            if (redirectTo != null) {
+                configSectionRedirects.put(name, redirectTo);
+            } else {
+                configSectionRedirects.remove(name);
+            }
+        }
+    }
+
+    private static String getConfigSectionRedirect(String name) {
+        return name != null ? configSectionRedirects.get(name) : null;
     }
 }

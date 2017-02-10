@@ -26,6 +26,7 @@ import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
@@ -76,6 +77,12 @@ public abstract class AtlasHook {
         if (logFailedMessages) {
             failedMessagesLogger = new FailedMessagesLogger(failedMessageFile);
             failedMessagesLogger.init();
+        }
+
+        if (!isLoginKeytabBased()) {
+            if (isLoginTicketBased()) {
+                InMemoryJAASConfiguration.setConfigSectionRedirect("KafkaClient", "ticketBased-KafkaClient");
+            }
         }
 
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
@@ -208,6 +215,30 @@ public abstract class AtlasHook {
             LOG.warn("Failed for UserGroupInformation.getCurrentUser() ", e);
             return System.getProperty("user.name");
         }
+    }
+
+    private static boolean isLoginKeytabBased() {
+        boolean ret = false;
+
+        try {
+            ret = UserGroupInformation.isLoginKeytabBased();
+        } catch (Exception excp) {
+            LOG.error("error in determining whether to use ticket-cache or keytab for KafkaClient JAAS configuration", excp);
+        }
+
+        return ret;
+    }
+
+    private static boolean isLoginTicketBased() {
+        boolean ret = false;
+
+        try {
+            ret = UserGroupInformation.isLoginTicketBased();
+        } catch (Exception excp) {
+            LOG.error("error in determining whether to use ticket-cache or keytab for KafkaClient JAAS configuration", excp);
+        }
+
+        return ret;
     }
 
 }
