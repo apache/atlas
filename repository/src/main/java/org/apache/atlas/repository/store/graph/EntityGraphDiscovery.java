@@ -20,8 +20,10 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 
 import java.util.List;
+import java.util.Map;
 
 public interface EntityGraphDiscovery {
 
@@ -33,7 +35,7 @@ public interface EntityGraphDiscovery {
      * Resolved references already exist in the ATLAS repository and have an assigned unique GUID
      * Unresolved attribute references result in an error if they are not composite (managed by a parent entity)
      */
-    EntityGraphDiscoveryContext discoverEntities(List<AtlasEntity> entities) throws AtlasBaseException;
+    EntityGraphDiscoveryContext discoverEntities() throws AtlasBaseException;
 
     void cleanUp() throws AtlasBaseException;
 }

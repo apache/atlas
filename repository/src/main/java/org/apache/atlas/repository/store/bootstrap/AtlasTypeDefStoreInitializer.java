@@ -86,39 +86,7 @@ public class AtlasTypeDefStoreInitializer {
                     continue;
                 }
 
-                AtlasTypesDef typesToCreate = new AtlasTypesDef();
-
-                if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
-                    for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
-                        if (!typeRegistry.isRegisteredType(enumDef.getName())) {
-                            typesToCreate.getEnumDefs().add(enumDef);
-                        }
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
-                    for (AtlasStructDef structDef : typesDef.getStructDefs()) {
-                        if (!typeRegistry.isRegisteredType(structDef.getName())) {
-                            typesToCreate.getStructDefs().add(structDef);
-                        }
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
-                    for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
-                        if (!typeRegistry.isRegisteredType(classificationDef.getName())) {
-                            typesToCreate.getClassificationDefs().add(classificationDef);
-                        }
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
-                    for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
-                        if (!typeRegistry.isRegisteredType(entityDef.getName())) {
-                            typesToCreate.getEntityDefs().add(entityDef);
-                        }
-                    }
-                }
+                AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, typeRegistry);
 
                 if (typesToCreate.isEmpty()) {
                     LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
@@ -135,6 +103,44 @@ public class AtlasTypeDefStoreInitializer {
         }
 
         applyTypePatches(typeDefStore, typeRegistry, typesDirName);
+    }
+
+    public static AtlasTypesDef getTypesToCreate(AtlasTypesDef typesDef, AtlasTypeRegistry typeRegistry) {
+        AtlasTypesDef typesToCreate = new AtlasTypesDef();
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
+                if (!typeRegistry.isRegisteredType(enumDef.getName())) {
+                    typesToCreate.getEnumDefs().add(enumDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasStructDef structDef : typesDef.getStructDefs()) {
+                if (!typeRegistry.isRegisteredType(structDef.getName())) {
+                    typesToCreate.getStructDefs().add(structDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                if (!typeRegistry.isRegisteredType(classificationDef.getName())) {
+                    typesToCreate.getClassificationDefs().add(classificationDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
+                if (!typeRegistry.isRegisteredType(entityDef.getName())) {
+                    typesToCreate.getEntityDefs().add(entityDef);
+                }
+            }
+        }
+
+        return typesToCreate;
     }
 
     private void applyTypePatches(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, String typesDirName) {

@@ -17,7 +17,6 @@
  */
 package org.apache.atlas;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,11 +24,10 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.commons.collections.MapUtils;
@@ -37,34 +35,33 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class AtlasEntitiesClientV2 extends AtlasBaseClient {
-
-    private static final GenericType<List<AtlasEntity>> ENTITY_LIST_TYPE = new GenericType<List<AtlasEntity>>(){};
     public static final String ENTITY_API = BASE_URI + "v2/entity/";
-    public static final String ENTITIES_API = BASE_URI + "v2/entities/";
 
-    private static final APIInfo GET_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ENTITY = new APIInfo(ENTITIES_API, HttpMethod.POST, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITY = CREATE_ENTITY;
-    private static final APIInfo GET_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s/attribute/%s", HttpMethod.DELETE, Response.Status.OK);
-    private static final APIInfo DELETE_ENTITY_BY_GUID = new APIInfo(ENTITY_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
-    private static final APIInfo DELETE_ENTITY_BY_GUIDS = new APIInfo(ENTITIES_API + "guids/", HttpMethod.DELETE, Response.Status.OK);
-    private static final APIInfo GET_CLASSIFICATIONS = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo ADD_CLASSIFICATIONS = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
+    private static final APIInfo GET_ENTITY_BY_GUID         = new APIInfo(ENTITY_API + "guid/%s", HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo GET_ENTITY_BY_ATTRIBUTE    = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo CREATE_ENTITY              = new APIInfo(ENTITY_API, HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo UPDATE_ENTITY              = CREATE_ENTITY;
+    private static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.PUT, Response.Status.OK);
+    private static final APIInfo DELETE_ENTITY_BY_GUID      = new APIInfo(ENTITY_API + "guid/%s", HttpMethod.DELETE, Response.Status.OK);
+    private static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.DELETE, Response.Status.OK);
 
+    private static final APIInfo GET_ENTITIES_BY_GUIDS    = new APIInfo(ENTITY_API + "bulk/", HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo CREATE_ENTITIES          = new APIInfo(ENTITY_API + "bulk/", HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo UPDATE_ENTITIES          = CREATE_ENTITIES;
+    private static final APIInfo DELETE_ENTITIES_BY_GUIDS = new APIInfo(ENTITY_API + "bulk/", HttpMethod.DELETE, Response.Status.OK);
+
+    private static final APIInfo GET_CLASSIFICATIONS    = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo ADD_CLASSIFICATIONS    = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
     private static final APIInfo UPDATE_CLASSIFICATIONS = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_CLASSIFICATION = new APIInfo(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
-    private static final APIInfo GET_ENTITIES = new APIInfo(ENTITIES_API + "guids/", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ENTITIES = new APIInfo(ENTITIES_API, HttpMethod.POST, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITIES = CREATE_ENTITIES;
-    private static final APIInfo DELETE_ENTITIES = new APIInfo(ENTITIES_API + "guids/", HttpMethod.GET, Response.Status.NO_CONTENT);
-    private static final APIInfo SEARCH_ENTITIES = new APIInfo(ENTITIES_API, HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo DELETE_CLASSIFICATION  = new APIInfo(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+
+
+    public static final String PREFIX_ATTR = "attr:";
+
 
     public AtlasEntitiesClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -88,15 +85,8 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
     }
 
     public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
-
-        return callAPI(GET_ENTITY_BY_GUID, null, AtlasEntityWithExtInfo.class, guid);
+        return callAPI(formatPathForPathParams(GET_ENTITY_BY_GUID, guid), AtlasEntityWithExtInfo.class, null);
     }
-
-    public AtlasEntities getEntityByGuids(List<String> guids) throws AtlasServiceException {
-        return callAPI(GET_ENTITY_BY_GUID, AtlasEntities.class, "guid", guids);
-    }
-
-    public static final String PREFIX_ATTR = "attr:";
 
     public AtlasEntityWithExtInfo getEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
@@ -104,33 +94,51 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         return callAPI(formatPathForPathParams(GET_ENTITY_BY_ATTRIBUTE, type), AtlasEntityWithExtInfo.class, queryParams);
     }
 
-    public EntityMutationResponse updateEntityByAttribute(String type, String attribute, String value, AtlasEntity entity) throws AtlasServiceException {
+    public EntityMutationResponse updateEntityByAttribute(String type, Map<String, String> attributes, AtlasEntity entity) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
+
+        return callAPI(formatPathForPathParams(UPDATE_ENTITY_BY_ATTRIBUTE, type), entity, EntityMutationResponse.class, queryParams);
+    }
+
+    public EntityMutationResponse deleteEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
+
+        return callAPI(formatPathForPathParams(DELETE_ENTITY_BY_ATTRIBUTE, type), null, EntityMutationResponse.class, queryParams);
+    }
+
+    public EntityMutationResponse createEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
+        return callAPI(CREATE_ENTITY, entity, EntityMutationResponse.class);
+    }
+
+    public EntityMutationResponse updateEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
+        return callAPI(UPDATE_ENTITY, entity, EntityMutationResponse.class);
+    }
+
+    public EntityMutationResponse deleteEntityByGuid(String guid) throws AtlasServiceException {
+        return callAPI(formatPathForPathParams(DELETE_ENTITY_BY_GUID, guid), EntityMutationResponse.class, null);
+    }
+
+
+    public AtlasEntitiesWithExtInfo getEntitiesByGuids(List<String> guids) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("value", value);
-        return callAPI(formatPathForPathParams(UPDATE_ENTITY_BY_ATTRIBUTE, type, attribute), entity, EntityMutationResponse.class, queryParams);
+
+        queryParams.put("guid", guids);
+
+        return callAPI(GET_ENTITIES_BY_GUIDS, AtlasEntitiesWithExtInfo.class, queryParams);
     }
 
-    public EntityMutationResponse deleteEntityByAttribute(String type, String attribute, String value) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("value", value);
-        return callAPI(formatPathForPathParams(DELETE_ENTITY_BY_ATTRIBUTE, type, attribute), null, EntityMutationResponse.class, queryParams);
+    public EntityMutationResponse createEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
+        return callAPI(CREATE_ENTITIES, atlasEntities, EntityMutationResponse.class);
     }
 
-    public EntityMutationResponse createEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITY, new HashMap<String, AtlasEntity>(1) {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
+    public EntityMutationResponse updateEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
+        return callAPI(UPDATE_ENTITIES, atlasEntities, EntityMutationResponse.class);
     }
 
-    public EntityMutationResponse updateEntity(final AtlasEntity atlasEntity) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITY, new HashMap<String, AtlasEntity>(1) {{ put(atlasEntity.getGuid(), atlasEntity); }}, EntityMutationResponse.class);
+    public EntityMutationResponse deleteEntitiesByGuids(List<String> guids) throws AtlasServiceException {
+        return callAPI(DELETE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, "guid", guids);
     }
 
-    public AtlasEntity deleteEntityByGuid(String guid) throws AtlasServiceException {
-        return callAPI(DELETE_ENTITY_BY_GUID, null, AtlasEntity.class, guid);
-    }
-
-    public EntityMutationResponse deleteEntityByGuid(List<String> guids) throws AtlasServiceException {
-        return callAPI(DELETE_ENTITY_BY_GUIDS, EntityMutationResponse.class, "guid", guids);
-    }
 
     public AtlasClassifications getClassifications(String guid) throws AtlasServiceException {
         return callAPI(formatPathForPathParams(GET_CLASSIFICATIONS, guid), null, AtlasClassifications.class);
@@ -158,26 +166,6 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
         return null;
     }
 
-    public EntityMutationResponse createEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
-
-        return callAPI(CREATE_ENTITIES, entityListToMap(atlasEntities), EntityMutationResponse.class);
-    }
-
-    private Map<String, AtlasEntity> entityListToMap(List<AtlasEntity> atlasEntities) {
-        Map<String,AtlasEntity> toSend = new HashMap<String, AtlasEntity>(atlasEntities.size());
-        for(AtlasEntity entity : atlasEntities) {
-            toSend.put(entity.getGuid(), entity);
-        }
-        return toSend;
-    }
-
-    public EntityMutationResponse updateEntities(List<AtlasEntity> atlasEntities) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITIES, entityListToMap(atlasEntities), EntityMutationResponse.class);
-    }
-
-    public AtlasEntity.AtlasEntities searchEntities(SearchFilter searchFilter) throws AtlasServiceException {
-        return callAPI(GET_ENTITIES, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
-    }
 
     private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String> attributes) {
         return attributesToQueryParams(attributes, null);

@@ -60,11 +60,11 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
             if (v1Obj instanceof Id) {
                 Id id = (Id) v1Obj;
 
-                ret = new AtlasObjectId(id.getTypeName(), id._getId());
+                ret = new AtlasObjectId(id._getId(), id.getTypeName());
             } else if (v1Obj instanceof IReferenceableInstance) {
                 IReferenceableInstance entRef = (IReferenceableInstance) v1Obj;
 
-                ret = new AtlasObjectId(entRef.getTypeName(), entRef.getId()._getId());
+                ret = new AtlasObjectId(entRef.getId()._getId(), entRef.getTypeName());
 
                 if (!context.entityExists(ret.getGuid())) {
                     Map<String, Object> v1Attribs = null;

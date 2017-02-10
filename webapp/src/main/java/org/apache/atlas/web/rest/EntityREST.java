@@ -26,21 +26,23 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.web.adapters.AtlasFormatConverter;
 import org.apache.atlas.web.adapters.AtlasInstanceRestAdapters;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -114,9 +116,23 @@ public class EntityREST {
         AtlasEntityType     entityType = ensureEntityType(typeName);
         Map<String, Object> attributes = getAttributes(servletRequest);
 
-        validateAttributes(entityType, attributes);
+        validateUniqueAttribute(entityType, attributes);
 
-        return entitiesStore.getByUniqueAttribute(entityType, attributes);
+        return entitiesStore.getByUniqueAttributes(entityType, attributes);
+    }
+
+    /**
+     * Create new entity or update existing entity in Atlas.
+     * Existing entity is matched using its unique guid if supplied or by its unique attributes eg: qualifiedName
+     * @param entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+        return entitiesStore.createOrUpdate(new AtlasEntityStream(entity));
     }
 
     /**
@@ -152,18 +168,23 @@ public class EntityREST {
     @PUT
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Path("/uniqueAttribute/type/{typeName}/attribute/{attrName}")
-    public EntityMutationResponse partialUpdateByUniqueAttribute(@PathParam("typeName") String entityType,
-                                                                 @PathParam("attrName") String attribute,
-                                                                 @QueryParam("value") String value, AtlasEntity entity) throws Exception {
+    @Path("/uniqueAttribute/type/{typeName}")
+    public EntityMutationResponse partialUpdateByUniqueAttribute(@PathParam("typeName") String typeName,
+                                                                 @Context HttpServletRequest servletRequest,
+                                                                 AtlasEntity entity) throws Exception {
+        AtlasEntityType     entityType = ensureEntityType(typeName);
+        Map<String, Object> attributes = getAttributes(servletRequest);
 
-        AtlasEntityType type = (AtlasEntityType) validateType(entityType, TypeCategory.ENTITY);
-        validateUniqueAttribute(type, attribute);
+        validateUniqueAttribute(entityType, attributes);
+
+        // legacy API supports only one unique attribute
+        String attribute = attributes.keySet().toArray(new String[1])[0];
+        String value     = (String)attributes.get(attribute);
 
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
         ctx.addEntity(entity);
         Referenceable ref = restAdapters.getReferenceable(entity, ctx);
-        CreateUpdateEntitiesResult result = metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, ref);
+        CreateUpdateEntitiesResult result = metadataService.updateEntityByUniqueAttribute(typeName, attribute, value, ref);
         return toEntityMutationResponse(result);
     }
 
@@ -171,46 +192,67 @@ public class EntityREST {
     @DELETE
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Path("/uniqueAttribute/type/{typeName}/attribute/{attrName}")
+    @Path("/uniqueAttribute/type/{typeName}")
     public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
-        @PathParam("attrName") String attribute,
-        @QueryParam("value") String value) throws Exception {
+                                                          @Context HttpServletRequest servletRequest) throws Exception {
+        AtlasEntityType     entityType = ensureEntityType(typeName);
+        Map<String, Object> attributes = getAttributes(servletRequest);
 
-        AtlasEntityType entityType = ensureEntityType(typeName);
+        validateUniqueAttribute(entityType, attributes);
 
-        validateUniqueAttribute(entityType, attribute);
+        // legacy API supports only one unique attribute
+        String attribute = attributes.keySet().toArray(new String[1])[0];
+        String value     = (String)attributes.get(attribute);
 
         final AtlasClient.EntityResult result = metadataService.deleteEntityByUniqueAttribute(typeName, attribute, value);
         return toEntityMutationResponse(result);
     }
 
-    /**
-     * Fetch the complete definition of an entity
-     * which is identified by its type and unique attribute  eg: Referenceable.qualifiedName.
-     */
-    @Deprecated
     @GET
-    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Path("/bulk")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Path("/uniqueAttribute/type/{typeName}/attribute/{attrName}")
-    public List<AtlasEntity> getByUniqueAttribute(@PathParam("typeName") String typeName,
-        @PathParam("attrName") String attribute,
-        @QueryParam("value") String value) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids) throws AtlasBaseException {
 
-        List<AtlasEntity> entityList = new ArrayList<>();
-        AtlasEntityType                   entityType = ensureEntityType(typeName);
-
-        validateUniqueAttribute(entityType, attribute);
-
-        try {
-            final ITypedReferenceableInstance entityDefinitionReference = metadataService.getEntityDefinitionReference(typeName, attribute, value);
-            Map<String, AtlasEntity> entityRet = restAdapters.getAtlasEntity(entityDefinitionReference);
-            entityList.addAll(entityRet.values());
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
         }
 
-        return entityList;
+        AtlasEntitiesWithExtInfo entities = entitiesStore.getByIds(guids);
+
+        return entities;
+    }
+
+    /**
+     * Create new entity or update existing entity in Atlas.
+     * Existing entity is matched using its unique guid if supplied or by its unique attributes eg: qualifiedName
+     * @param entities
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Path("/bulk")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities) throws AtlasBaseException {
+
+        EntityStream entityStream = new AtlasEntityStream(entities);
+
+        return entitiesStore.createOrUpdate(entityStream);
+    }
+
+    /*******
+     * Entity Delete
+     *******/
+
+    @DELETE
+    @Path("/bulk")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse deleteByGuids(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
+        EntityMutationResponse ret = entitiesStore.deleteByIds(guids);
+
+        return ret;
     }
 
     /**
@@ -348,18 +390,6 @@ public class EntityREST {
         }
     }
 
-    private AtlasType validateType(String entityType, TypeCategory expectedCategory) throws AtlasBaseException {
-        if ( StringUtils.isEmpty(entityType) ) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, entityType);
-        }
-
-        AtlasType type = typeRegistry.getType(entityType);
-        if (type.getTypeCategory() != expectedCategory) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, type.getTypeCategory().name(), expectedCategory.name());
-        }
-
-        return type;
-    }
 
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
         AtlasEntityType ret = typeRegistry.getEntityTypeByName(typeName);
@@ -381,50 +411,6 @@ public class EntityREST {
         return ret;
     }
 
-    /**
-     * Deprecated method - not used
-     * Validate that attribute is unique attribute
-     * @param entityType     the entity type
-     * @param attributeName  the name of the attribute
-     */
-    private void validateUniqueAttribute(AtlasEntityType entityType, String attributeName) throws AtlasBaseException {
-        AtlasAttributeDef attribute = entityType.getAttributeDef(attributeName);
-
-        if (attribute == null || !attribute.getIsUnique()) {
-            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
-        }
-    }
-
-    private List<AtlasEntity> getOrderedEntityList(Map<String, AtlasEntity> entities, String firstItemGuid) {
-        List<AtlasEntity> ret = new ArrayList<>(entities.size());
-
-        for (AtlasEntity entity : entities.values()) {
-            if (StringUtils.equals(entity.getGuid(), firstItemGuid)) {
-                ret.add(0, entity);
-            } else {
-                ret.add(entity);
-            }
-        }
-
-        return ret;
-    }
-
-    private void validateAttributes(AtlasEntityType entityType, Map<String, Object> attributes)
-            throws AtlasBaseException {
-
-        if (MapUtils.isEmpty(attributes)) {
-            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), "");
-        }
-
-        for (String attrName : attributes.keySet()) {
-            AtlasAttributeDef attrDef = entityType.getAttributeDef(attrName);
-
-            if (attrDef == null || !attrDef.getIsUnique()) {
-                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attrName);
-            }
-        }
-    }
-
     private Map<String, Object> getAttributes(HttpServletRequest request) {
         Map<String, Object> attributes = new HashMap<>();
 
@@ -442,5 +428,24 @@ public class EntityREST {
         }
 
         return attributes;
+    }
+
+    /**
+     * Validate that each attribute given is an unique attribute
+     * @param entityType the entity type
+     * @param attributes attributes
+     */
+    private void validateUniqueAttribute(AtlasEntityType entityType, Map<String, Object> attributes) throws AtlasBaseException {
+        if (MapUtils.isEmpty(attributes)) {
+            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), "");
+        }
+
+        for (String attributeName : attributes.keySet()) {
+            AtlasAttributeDef attribute = entityType.getAttributeDef(attributeName);
+
+            if (attribute == null || !attribute.getIsUnique()) {
+                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
+            }
+        }
     }
 }

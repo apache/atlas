@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -87,16 +88,16 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this(entityDef != null ? entityDef.getName() : null, null);
     }
 
+    public AtlasEntity(String typeName, String attrName, Object attrValue) {
+        super(typeName, attrName, attrValue);
+
+        init();
+    }
+
     public AtlasEntity(String typeName, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        setGuid(nextInternalId());
-        setStatus(null);
-        setCreatedBy(null);
-        setUpdatedBy(null);
-        setCreateTime(null);
-        setUpdateTime(null);
-        setClassifications(null);
+        init();
     }
 
     public AtlasEntity(AtlasEntity other) {
@@ -186,18 +187,30 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @JsonIgnore
     public static boolean isAssigned(String guid) {
-        try {
-            UUID.fromString(guid);
-        } catch (IllegalArgumentException e) {
-            return false;
+        if (guid != null) {
+            try {
+                UUID.fromString(guid);
+                return true;
+            } catch (IllegalArgumentException e) {
+                // ignore
+            }
         }
-
-        return true;
+        return false;
     }
 
     @JsonIgnore
     public static boolean isUnAssigned(String guid) {
         return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
+    }
+
+    private void init() {
+        setGuid(nextInternalId());
+        setStatus(null);
+        setCreatedBy(null);
+        setUpdatedBy(null);
+        setCreateTime(null);
+        setUpdateTime(null);
+        setClassifications(null);
     }
 
     private static String nextInternalId() {
@@ -206,7 +219,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @JsonIgnore
     public AtlasObjectId getAtlasObjectId() {
-        return new AtlasObjectId(getTypeName(), getGuid());
+        return new AtlasObjectId(getGuid(), getTypeName());
     }
 
     @Override
@@ -279,6 +292,10 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setReferredEntities(null);
         }
 
+        public AtlasEntityExtInfo(AtlasEntity referredEntity) {
+            addReferredEntity(referredEntity);
+        }
+
         public AtlasEntityExtInfo(Map<String, AtlasEntity> referredEntities) {
             setReferredEntities(referredEntities);
         }
@@ -292,6 +309,11 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         public Map<String, AtlasEntity> getReferredEntities() { return referredEntities; }
 
         public void setReferredEntities(Map<String, AtlasEntity> referredEntities) { this.referredEntities = referredEntities; }
+
+        @JsonIgnore
+        public final void addReferredEntity(AtlasEntity entity) {
+            addReferredEntity(entity.getGuid(), entity);
+        }
 
         @JsonIgnore
         public final void addReferredEntity(String guid, AtlasEntity entity) {
@@ -494,8 +516,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this(null, null);
         }
 
+        public AtlasEntitiesWithExtInfo(AtlasEntity entity) { this(Arrays.asList(entity), null);
+        }
+
         public AtlasEntitiesWithExtInfo(List<AtlasEntity> entities) {
             this(entities, null);
+        }
+
+        public AtlasEntitiesWithExtInfo(AtlasEntityWithExtInfo entity) {
+            this(Arrays.asList(entity.getEntity()), entity);
         }
 
         public AtlasEntitiesWithExtInfo(List<AtlasEntity> entities, AtlasEntityExtInfo extInfo) {

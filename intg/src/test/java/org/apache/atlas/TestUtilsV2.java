@@ -21,6 +21,8 @@ package org.apache.atlas;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -275,8 +277,98 @@ public final class TestUtilsV2 {
     }
 
     public static final String DEPARTMENT_TYPE = "Department";
-    public static final String PERSON_TYPE = "Person";
-    public static final String EMPLOYEE_TYPE = "Employee";
+    public static final String EMPLOYEE_TYPE   = "Employee";
+    public static final String MANAGER_TYPE    = "Manager";
+    public static final String ADDRESS_TYPE    = "Address";
+
+    public static AtlasEntitiesWithExtInfo createDeptEg2() {
+        AtlasEntitiesWithExtInfo entitiesWithExtInfo = new AtlasEntitiesWithExtInfo();
+
+        /******* Department - HR *******/
+        AtlasEntity   hrDept   = new AtlasEntity(DEPARTMENT_TYPE, "name", "hr");
+        AtlasObjectId hrDeptId = hrDept.getAtlasObjectId();
+
+        /******* Address Entities *******/
+        AtlasStruct janeAddr = new AtlasStruct(ADDRESS_TYPE);
+            janeAddr.setAttribute("street", "Great America Parkway");
+            janeAddr.setAttribute("city", "Santa Clara");
+
+        AtlasStruct juliusAddr = new AtlasStruct(ADDRESS_TYPE);
+            juliusAddr.setAttribute("street", "Madison Ave");
+            juliusAddr.setAttribute("city", "Newtonville");
+
+        AtlasStruct maxAddr = new AtlasStruct(ADDRESS_TYPE);
+            maxAddr.setAttribute("street", "Ripley St");
+            maxAddr.setAttribute("city", "Newton");
+
+        AtlasStruct johnAddr = new AtlasStruct(ADDRESS_TYPE);
+            johnAddr.setAttribute("street", "Stewart Drive");
+            johnAddr.setAttribute("city", "Sunnyvale");
+
+        /******* Manager - Jane (John and Max subordinates) *******/
+        AtlasEntity   jane   = new AtlasEntity(MANAGER_TYPE);
+        AtlasObjectId janeId = jane.getAtlasObjectId();
+            jane.setAttribute("name", "Jane");
+            jane.setAttribute("department", hrDeptId);
+            jane.setAttribute("address", janeAddr);
+
+        /******* Manager - Julius (no subordinates) *******/
+        AtlasEntity   julius   = new AtlasEntity(MANAGER_TYPE);
+        AtlasObjectId juliusId = julius.getAtlasObjectId();
+            julius.setAttribute("name", "Julius");
+            julius.setAttribute("department", hrDeptId);
+            julius.setAttribute("address", juliusAddr);
+            julius.setAttribute("subordinates", ImmutableList.of());
+
+        /******* Employee - Max (Manager: Jane, Mentor: Julius) *******/
+        AtlasEntity   max   = new AtlasEntity(EMPLOYEE_TYPE);
+        AtlasObjectId maxId = max.getAtlasObjectId();
+            max.setAttribute("name", "Max");
+            max.setAttribute("department", hrDeptId);
+            max.setAttribute("address", maxAddr);
+            max.setAttribute("manager", janeId);
+            max.setAttribute("mentor", juliusId);
+            max.setAttribute("birthday",new Date(1979, 3, 15));
+            max.setAttribute("hasPets", true);
+            max.setAttribute("age", 36);
+            max.setAttribute("numberOfCars", 2);
+            max.setAttribute("houseNumber", 17);
+            max.setAttribute("carMileage", 13);
+            max.setAttribute("shares", Long.MAX_VALUE);
+            max.setAttribute("salary", Double.MAX_VALUE);
+            max.setAttribute("numberOfStarsEstimate", new BigInteger("1000000000000000000000000000000"));
+            max.setAttribute("approximationOfPi", new BigDecimal("3.1415926535897932"));
+
+        /******* Employee - John (Manager: Jane, Mentor: Max) *******/
+        AtlasEntity   john   = new AtlasEntity(EMPLOYEE_TYPE);
+        AtlasObjectId johnId = john.getAtlasObjectId();
+            john.setAttribute("name", "John");
+            john.setAttribute("department", hrDeptId);
+            john.setAttribute("address", johnAddr);
+            john.setAttribute("manager", janeId);
+            john.setAttribute("mentor", maxId);
+            john.setAttribute("birthday",new Date(1950, 5, 15));
+            john.setAttribute("hasPets", true);
+            john.setAttribute("numberOfCars", 1);
+            john.setAttribute("houseNumber", 153);
+            john.setAttribute("carMileage", 13364);
+            john.setAttribute("shares", 15000);
+            john.setAttribute("salary", 123345.678);
+            john.setAttribute("age", 50);
+            john.setAttribute("numberOfStarsEstimate", new BigInteger("1000000000000000000000"));
+            john.setAttribute("approximationOfPi", new BigDecimal("3.141592653589793238462643383279502884197169399375105820974944592307816406286"));
+
+        jane.setAttribute("subordinates", ImmutableList.of(johnId, maxId));
+        hrDept.setAttribute("employees", ImmutableList.of(janeId, juliusId, maxId, johnId));
+
+        entitiesWithExtInfo.addEntity(hrDept);
+        entitiesWithExtInfo.addEntity(jane);
+        entitiesWithExtInfo.addEntity(julius);
+        entitiesWithExtInfo.addEntity(max);
+        entitiesWithExtInfo.addEntity(john);
+
+        return entitiesWithExtInfo;
+    }
 
     public static Map<String, AtlasEntity> createDeptEg1() {
         Map<String, AtlasEntity> deptEmpEntities = new HashMap<>();
@@ -292,7 +384,7 @@ public final class TestUtilsV2 {
         AtlasEntity max = new AtlasEntity(EMPLOYEE_TYPE);
         AtlasEntity maxAddr = new AtlasEntity("Address");
 
-        AtlasObjectId deptId = new AtlasObjectId(hrDept.getTypeName(), hrDept.getGuid());
+        AtlasObjectId deptId = new AtlasObjectId(hrDept.getGuid(), hrDept.getTypeName());
         hrDept.setAttribute("name", "hr");
         john.setAttribute("name", "John");
         john.setAttribute("department", deptId);
@@ -329,8 +421,8 @@ public final class TestUtilsV2 {
         AtlasObjectId johnId = john.getAtlasObjectId();
 
         //TODO - Change to MANAGER_TYPE for JULIUS
-        AtlasObjectId maxId = new AtlasObjectId(EMPLOYEE_TYPE, max.getGuid());
-        AtlasObjectId juliusId = new AtlasObjectId(EMPLOYEE_TYPE, julius.getGuid());
+        AtlasObjectId maxId = new AtlasObjectId(max.getGuid(), EMPLOYEE_TYPE);
+        AtlasObjectId juliusId = new AtlasObjectId(julius.getGuid(), EMPLOYEE_TYPE);
 
         max.setAttribute("name", "Max");
         max.setAttribute("department", deptId);
@@ -355,10 +447,6 @@ public final class TestUtilsV2 {
         hrDept.setAttribute("employees", ImmutableList.of(johnId, janeId, juliusId, maxId));
 
         jane.setAttribute("subordinates", ImmutableList.of(johnId, maxId));
-
-//        Map<String, Integer> secClearanceLevelMap = new HashMap<>();
-//        secClearanceLevelMap.put("level", 1);
-//        jane.setAttribute("SecurityClearance", secClearanceLevelMap);
 
         deptEmpEntities.put(jane.getGuid(), jane);
         deptEmpEntities.put(john.getGuid(), john);
@@ -659,27 +747,32 @@ public final class TestUtilsV2 {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    public static Map<String, AtlasEntity> createDBEntity() {
-        Map<String, AtlasEntity> ret = new HashMap<>();
+    public static AtlasEntity createDBEntity() {
         AtlasEntity entity = new AtlasEntity(DATABASE_TYPE);
         String dbName = RandomStringUtils.randomAlphanumeric(10);
         entity.setAttribute(NAME, dbName);
         entity.setAttribute("description", "us db");
 
-        ret.put(entity.getGuid(), entity);
-        return ret;
+        return entity;
     }
 
-    public static Map<String, AtlasEntity> createTableEntity(String dbId) {
-        Map<String, AtlasEntity> ret = new HashMap<>();
+    public static AtlasEntityWithExtInfo createDBEntityV2() {
+        AtlasEntity dbEntity = new AtlasEntity(DATABASE_TYPE);
 
+        dbEntity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
+        dbEntity.setAttribute("description", "us db");
+
+        return new AtlasEntityWithExtInfo(dbEntity);
+    }
+
+    public static AtlasEntity createTableEntity(AtlasEntity dbEntity) {
         AtlasEntity entity = new AtlasEntity(TABLE_TYPE);
         String tableName = RandomStringUtils.randomAlphanumeric(10);
         entity.setAttribute(NAME, tableName);
         entity.setAttribute("description", "random table");
         entity.setAttribute("type", "type");
         entity.setAttribute("tableType", "MANAGED");
-        entity.setAttribute("database", new AtlasObjectId(DATABASE_TYPE, dbId));
+        entity.setAttribute("database", dbEntity.getAtlasObjectId());
         entity.setAttribute("created", new Date());
 
         Map<String, Object> partAttributes = new HashMap<String, Object>() {{
@@ -692,16 +785,39 @@ public final class TestUtilsV2 {
             put("key1", "value1");
         }});
 
-        ret.put(entity.getGuid(), entity);
+        return entity;
+    }
+
+    public static AtlasEntityWithExtInfo createTableEntityV2(AtlasEntity dbEntity) {
+        AtlasEntity tblEntity = new AtlasEntity(TABLE_TYPE);
+
+        tblEntity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
+        tblEntity.setAttribute("description", "random table");
+        tblEntity.setAttribute("type", "type");
+        tblEntity.setAttribute("tableType", "MANAGED");
+        tblEntity.setAttribute("database", dbEntity.getAtlasObjectId());
+        tblEntity.setAttribute("created", new Date());
+
+        final AtlasStruct partitionStruct = new AtlasStruct("partition_struct_type", "name", "part0");
+
+        tblEntity.setAttribute("partitions", new ArrayList<AtlasStruct>() {{ add(partitionStruct); }});
+        tblEntity.setAttribute("parametersMap",
+                new java.util.HashMap<String, String>() {{ put("key1", "value1"); }});
+
+
+        AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(tblEntity);
+
+        ret.addReferredEntity(dbEntity);
+
         return ret;
     }
 
-    public static AtlasEntity createColumnEntity(String tableId) {
+    public static AtlasEntity createColumnEntity(AtlasEntity tableEntity) {
 
         AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
         entity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
         entity.setAttribute("type", "VARCHAR(32)");
-        entity.setAttribute("table", new AtlasObjectId(TABLE_TYPE, tableId));
+        entity.setAttribute("table", tableEntity.getAtlasObjectId());
         return entity;
     }
 

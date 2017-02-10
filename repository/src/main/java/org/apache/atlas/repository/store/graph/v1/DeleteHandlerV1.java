@@ -98,7 +98,7 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate GUIDs in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : compositeVertices) {
-                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getTypeName(), vertexInfo.getGuid()));
+                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getGuid(), vertexInfo.getTypeName()));
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
@@ -324,7 +324,7 @@ public abstract class DeleteHandlerV1 {
                     String propertyName = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(structType, attributeInfo.getName());
 
                     if (AtlasGraphUtilsV1.isReference(valueTypeCategory)) {
-                        List<Object> keys = ArrayVertexMapper.getArrayElementsProperty(keyType, instanceVertex, propertyName);
+                        List<Object> keys = EntityGraphMapper.getArrayElementsProperty(keyType, instanceVertex, propertyName);
                         if (keys != null) {
                             for (Object key : keys) {
                                 String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, (String) key);
@@ -513,7 +513,7 @@ public abstract class DeleteHandlerV1 {
             GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 requestContext.getRequestTime());
             GraphHelper.setProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
-            requestContext.recordEntityUpdate(new AtlasObjectId(typeName, outId));
+            requestContext.recordEntityUpdate(new AtlasObjectId(outId, typeName));
         }
     }
 

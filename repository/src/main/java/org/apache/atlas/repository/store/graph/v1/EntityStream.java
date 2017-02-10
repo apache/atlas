@@ -28,5 +28,5 @@ public interface EntityStream {
 
     void reset();
 
-    AtlasEntity getById(AtlasObjectId id);
+    AtlasEntity getByGuid(String guid);
 }

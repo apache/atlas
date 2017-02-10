@@ -25,6 +25,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
@@ -33,7 +34,9 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.rest.EntitiesREST;
 
 import org.apache.atlas.web.rest.EntityREST;
@@ -49,14 +52,19 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Guice(modules = {RepositoryMetadataModule.class})
 public class TestEntitiesREST {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestEntitiesREST.class);
+
+    @Inject
+    AtlasTypeRegistry typeRegistry;
 
     @Inject
     private AtlasTypeDefStore typeStore;
@@ -69,10 +77,6 @@ public class TestEntitiesREST {
 
     private List<String> createdGuids = new ArrayList<>();
 
-    private Map<String, AtlasEntity> dbEntityMap;
-
-    private Map<String, AtlasEntity> tableEntityMap;
-
     private AtlasEntity dbEntity;
 
     private AtlasEntity tableEntity;
@@ -81,17 +85,22 @@ public class TestEntitiesREST {
 
     @BeforeClass
     public void setUp() throws Exception {
-        AtlasTypesDef typesDef = TestUtilsV2.defineHiveTypes();
-        typeStore.createTypesDef(typesDef);
-        dbEntityMap = TestUtilsV2.createDBEntity();
-        dbEntity = dbEntityMap.values().iterator().next();
+        AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] {  TestUtilsV2.defineHiveTypes() };
 
-        tableEntityMap = TestUtilsV2.createTableEntity(dbEntity.getGuid());
-        tableEntity = tableEntityMap.values().iterator().next();
+        for (AtlasTypesDef typesDef : testTypesDefs) {
+            AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
 
-        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
+            if (!typesToCreate.isEmpty()) {
+                typeStore.createTypesDef(typesToCreate);
+            }
+        }
+
+        dbEntity    = TestUtilsV2.createDBEntity();
+        tableEntity = TestUtilsV2.createTableEntity(dbEntity);
+
+        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity);
         columns = new ArrayList<AtlasEntity>() {{ add(colEntity); }};
-        tableEntity.setAttribute("columns", columns);
+        tableEntity.setAttribute("columns", getObjIdList(columns));
     }
 
     @AfterMethod
@@ -106,11 +115,15 @@ public class TestEntitiesREST {
 
     @Test
     public void testCreateOrUpdateEntities() throws Exception {
-        Map<String, AtlasEntity> entities = new HashMap<>();
-        entities.put(dbEntity.getGuid(), dbEntity);
-        entities.put(tableEntity.getGuid(), tableEntity);
+        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo();
 
-        EntityMutationResponse response = entitiesREST.createOrUpdate(entities);
+        entities.addEntity(dbEntity);
+        entities.addEntity(tableEntity);
+        for (AtlasEntity column : columns) {
+            entities.addReferredEntity(column);
+        }
+
+        EntityMutationResponse response = entityREST.createOrUpdate(entities);
         List<AtlasEntityHeader> guids = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
 
         Assert.assertNotNull(guids);
@@ -137,23 +150,24 @@ public class TestEntitiesREST {
     public void testUpdateWithSerializedEntities() throws  Exception {
         //Check with serialization and deserialization of entity attributes for the case
         // where attributes which are de-serialized into a map
-        Map<String, AtlasEntity> dbEntityMap = TestUtilsV2.createDBEntity();
-        AtlasEntity dbEntity = dbEntityMap.values().iterator().next();
+        AtlasEntity dbEntity    = TestUtilsV2.createDBEntity();
+        AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
 
-        Map<String, AtlasEntity> tableEntityMap = TestUtilsV2.createTableEntity(dbEntity.getGuid());
-        AtlasEntity tableEntity = tableEntityMap.values().iterator().next();
-
-        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity.getGuid());
+        final AtlasEntity colEntity = TestUtilsV2.createColumnEntity(tableEntity);
         List<AtlasEntity> columns = new ArrayList<AtlasEntity>() {{ add(colEntity); }};
-        tableEntity.setAttribute("columns", columns);
+        tableEntity.setAttribute("columns", getObjIdList(columns));
 
         AtlasEntity newDBEntity = serDeserEntity(dbEntity);
         AtlasEntity newTableEntity = serDeserEntity(tableEntity);
 
-        Map<String, AtlasEntity> newEntities = new HashMap<>();
-        newEntities.put(newDBEntity.getGuid(), newDBEntity);
-        newEntities.put(newTableEntity.getGuid(), newTableEntity);
-        EntityMutationResponse response2 = entitiesREST.createOrUpdate(newEntities);
+        AtlasEntitiesWithExtInfo newEntities = new AtlasEntitiesWithExtInfo();
+        newEntities.addEntity(newDBEntity);
+        newEntities.addEntity(newTableEntity);
+        for (AtlasEntity column : columns) {
+            newEntities.addReferredEntity(serDeserEntity(column));
+        }
+
+        EntityMutationResponse response2 = entityREST.createOrUpdate(newEntities);
 
         List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
         Assert.assertNotNull(newGuids);
@@ -163,8 +177,8 @@ public class TestEntitiesREST {
     @Test(dependsOnMethods = "testCreateOrUpdateEntities")
     public void testGetEntities() throws Exception {
 
-        final AtlasEntity.AtlasEntities response = entitiesREST.getById(createdGuids);
-        final List<AtlasEntity> entities = response.getList();
+        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids);
+        final List<AtlasEntity> entities = response.getEntities();
 
         Assert.assertNotNull(entities);
         Assert.assertEquals(entities.size(), 3);
@@ -174,7 +188,7 @@ public class TestEntitiesREST {
     @Test(dependsOnMethods = "testGetEntities")
     public void testDeleteEntities() throws Exception {
 
-        final EntityMutationResponse response = entitiesREST.deleteById(createdGuids);
+        final EntityMutationResponse response = entityREST.deleteByGuids(createdGuids);
         final List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE);
 
         Assert.assertNotNull(entities);
@@ -246,5 +260,15 @@ public class TestEntitiesREST {
         //JSON from String to Object
         AtlasEntity newEntity = mapper.readValue(entityJson, AtlasEntity.class);
         return newEntity;
+    }
+
+    private List<AtlasObjectId> getObjIdList(Collection<AtlasEntity> entities) {
+        List<AtlasObjectId> ret = new ArrayList<>();
+
+        for (AtlasEntity entity : entities) {
+            ret.add(entity.getAtlasObjectId());
+        }
+
+        return ret;
     }
 }

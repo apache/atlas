@@ -233,7 +233,7 @@ public class AtlasArrayType extends AtlasType {
                     ret = false;
 
                     messages.add(objName + ": incorrect number of values. found=" + objList.size()
-                                 + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
+                            + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
                 }
 
                 int idx = 0;
@@ -248,7 +248,7 @@ public class AtlasArrayType extends AtlasType {
                     ret = false;
 
                     messages.add(objName + ": incorrect number of values. found=" + arrayLen
-                                 + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
+                            + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
                 }
 
                 for (int i = 0; i < arrayLen; i++) {

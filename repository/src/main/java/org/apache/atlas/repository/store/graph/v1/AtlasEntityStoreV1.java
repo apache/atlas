@@ -19,234 +19,217 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntity.Status;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
-import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 
+@Singleton
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
-
-    protected AtlasTypeRegistry typeRegistry;
-
-    private final EntityGraphMapper graphMapper;
-    private final AtlasGraph        graph;
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
-    @Inject
-    public AtlasEntityStoreV1(EntityGraphMapper vertexMapper) {
-        this.graphMapper  = vertexMapper;
-        this.graph        = AtlasGraphProvider.getGraphInstance();
-    }
+
+    private final DeleteHandlerV1   deleteHandler;
+    private final AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public void init(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        this.typeRegistry = typeRegistry;
+    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry) {
+        this.deleteHandler = deleteHandler;
+        this.typeRegistry  = typeRegistry;
     }
 
     @Override
-    public AtlasEntityWithExtInfo getById(final String guid) throws AtlasBaseException {
+    @GraphTransaction
+    public AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Retrieving entity with guid={}", guid);
+            LOG.debug("==> getById({})", guid);
         }
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
 
-        return entityRetriever.toAtlasEntityWithExtInfo(guid);
+        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(guid);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getById({}): {}", guid, ret);
+        }
+
+        return ret;
     }
 
     @Override
-    public AtlasEntityWithExtInfo getByUniqueAttribute(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException {
-        String entityTypeName = entityType.getTypeName();
+    @GraphTransaction
+    public AtlasEntitiesWithExtInfo getByIds(List<String> guids) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getByIds({})", guids);
+        }
+
+        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+
+        AtlasEntitiesWithExtInfo ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Retrieving entity with type={} and attributes={}: values={}", entityTypeName, uniqAttributes);
+            LOG.debug("<== getByIds({}): {}", guids, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+                                                                                            throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getByUniqueAttribute({}, {})", entityType.getTypeName(), uniqAttributes);
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
 
-        return entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
-    }
+        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
 
-    @Override
-    public EntityMutationResponse deleteById(final String guid) {
-        return null;
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
+                                         uniqAttributes.toString());
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getByUniqueAttribute({}, {}): {}", entityType.getTypeName(), uniqAttributes, ret);
+        }
+
+        return ret;
     }
 
     @Override
     @GraphTransaction
-    public EntityMutationResponse createOrUpdate(final Map<String, AtlasEntity> entities) throws AtlasBaseException {
-
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityStoreV1.createOrUpdate({}, {})", entities);
+            LOG.debug("==> createOrUpdate()");
         }
 
-        //Validate
-        List<AtlasEntity> normalizedEntities = validateAndNormalize(entities);
-
-        //Discover entities, create vertices
-        EntityMutationContext ctx = preCreateOrUpdate(normalizedEntities);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasStructDefStoreV1.createOrUpdate({}, {}): {}", entities);
+        if (entityStream == null || !entityStream.hasNext()) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
-        return graphMapper.mapAttributes(ctx);
+        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
+
+        // Create/Update entities
+        EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper);
+
+        EntityMutationResponse ret = entityGraphMapper.mapAttributes(context);
+
+        ret.setGuidAssignments(context.getGuidAssignments());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== createOrUpdate()");
+        }
+
+        return ret;
     }
 
     @Override
-    public AtlasEntitiesWithExtInfo getByIds(final List<String> guids) throws AtlasBaseException {
-        return null;
+    @GraphTransaction
+    public EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
+                                                          AtlasEntity entity) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "updateByUniqueAttributes() not implemented yet");
     }
 
     @Override
-    public EntityMutationResponse deleteByIds(final List<String> guid) throws AtlasBaseException {
-        return null;
+    @GraphTransaction
+    public EntityMutationResponse deleteById(String guid) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteById() not implemented yet");
     }
 
     @Override
-    public EntityMutationResponse updateByUniqueAttribute(final String typeName, final String attributeName, final String attributeValue, final AtlasEntity entity) throws AtlasBaseException {
-        return null;
+    @GraphTransaction
+    public EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+            throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteByUniqueAttributes() not implemented yet");
     }
 
     @Override
-    public EntityMutationResponse deleteByUniqueAttribute(final String typeName, final String attributeName, final String attributeValue) throws AtlasBaseException {
-        return null;
+    @GraphTransaction
+    public EntityMutationResponse deleteByIds(List<String> guids) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteByIds() not implemented yet");
     }
 
     @Override
-    public void addClassifications(final String guid, final List<AtlasClassification> classification) throws AtlasBaseException {
-
+    @GraphTransaction
+    public void addClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "addClassifications() not implemented yet");
     }
 
     @Override
-    public void updateClassifications(final String guid, final List<AtlasClassification> classification) throws AtlasBaseException {
-
+    @GraphTransaction
+    public void updateClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "updateClassifications() not implemented yet");
     }
 
     @Override
-    public void deleteClassifications(final String guid, final List<String> classificationNames) throws AtlasBaseException {
-
+    @GraphTransaction
+    public void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException {
+        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteClassifications() not implemented yet");
     }
 
-    private EntityMutationContext preCreateOrUpdate(final List<AtlasEntity> atlasEntities) throws AtlasBaseException {
-        List<EntityResolver> entityResolvers = new ArrayList<>();
 
-        entityResolvers.add(new IDBasedEntityResolver());
-        entityResolvers.add(new UniqAttrBasedEntityResolver(typeRegistry));
+    private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper) throws AtlasBaseException {
+        EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityStream);
+        EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
+        EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
 
-        EntityGraphDiscovery        graphDiscoverer    = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityResolvers);
-        EntityGraphDiscoveryContext discoveredEntities = graphDiscoverer.discoverEntities(atlasEntities);
-        EntityMutationContext       context            = new EntityMutationContext(discoveredEntities);
+        for (String guid : discoveryContext.getReferencedGuids()) {
+            AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
+            AtlasEntity entity = entityStream.getByGuid(guid);
 
-        for (AtlasEntity entity : discoveredEntities.getRootEntities()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity);
-            }
+            if (vertex != null) {
+                // entity would be null if guid is not in the stream but referenced by an entity in the stream
+                if (entity != null) {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                    context.addUpdated(entity, entityType, vertex);
 
-            if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
-            }
-
-            final AtlasVertex vertex;
-            AtlasObjectId     objId = entity.getAtlasObjectId();
-
-            if (discoveredEntities.isResolvedId(objId) ) {
-                vertex = discoveredEntities.getResolvedEntityVertex(objId);
-
-                context.addUpdated(entity, entityType, vertex);
-
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-
-                RequestContextV1.get().recordEntityUpdate(new AtlasObjectId(entityType.getTypeName(), guid));
+                    RequestContextV1.get().recordEntityUpdate(entity.getAtlasObjectId());
+                }
             } else {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
                 //Create vertices which do not exist in the repository
-                vertex = graphMapper.createVertexTemplate(entity, entityType);
+                vertex = entityGraphMapper.createVertex(entity);
 
-                context.addCreated(entity, entityType, vertex);
+                discoveryContext.addResolvedGuid(guid, vertex);
 
-                discoveredEntities.addResolvedId(objId, vertex);
-                discoveredEntities.removeUnResolvedId(objId);
+                String generatedGuid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
 
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+                entity.setGuid(generatedGuid);
 
-                RequestContextV1.get().recordEntityCreate(new AtlasObjectId(entityType.getTypeName(), guid));
-            }
+                context.addCreated(guid, entity, entityType, vertex);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasEntityStoreV1.preCreateOrUpdate({}): {}", entity, vertex);
+                RequestContextV1.get().recordEntityCreate(entity.getAtlasObjectId());
             }
         }
 
         return context;
-    }
-
-    private List<AtlasEntity> validateAndNormalize(final Map<String, AtlasEntity> entities) throws AtlasBaseException {
-        List<AtlasEntity> normalizedEntities = new ArrayList<>();
-        List<String>      messages           = new ArrayList<>();
-
-        for (String entityId : entities.keySet()) {
-            if ( !AtlasEntity.isAssigned(entityId) && !AtlasEntity.isUnAssigned(entityId)) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, ": Guid in map key is invalid " + entityId);
-            }
-
-            AtlasEntity entity = entities.get(entityId);
-
-            if ( entity == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, ": Entity is null for guid " + entityId);
-            }
-
-            AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
-            if (type == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
-            }
-
-            type.validateValue(entity, entity.getTypeName(), messages);
-
-            if ( !messages.isEmpty()) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
-            }
-
-            AtlasEntity normalizedEntity = (AtlasEntity) type.getNormalizedValue(entity);
-
-            normalizedEntities.add(normalizedEntity);
-        }
-
-        return normalizedEntities;
-    }
-
-    public void cleanUp() throws AtlasBaseException {
     }
 }

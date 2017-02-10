@@ -43,6 +43,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -74,6 +75,7 @@ import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -286,13 +288,13 @@ public abstract class BaseResourceIT {
         EntityMutationResponse entity = null;
         try {
             if (!update) {
-                entity = entitiesClientV2.createEntity(atlasEntity);
+                entity = entitiesClientV2.createEntity(new AtlasEntityWithExtInfo(atlasEntity));
                 assertNotNull(entity);
                 assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
                 assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size() > 0);
                 return entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0);
             } else {
-                entity = entitiesClientV2.updateEntity(atlasEntity);
+                entity = entitiesClientV2.updateEntity(new AtlasEntityWithExtInfo(atlasEntity));
                 assertNotNull(entity);
                 assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
                 assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);

@@ -45,37 +45,41 @@ public class TestAtlasObjectIdType {
         Map<Object, Object> invalidObj2 = new HashMap<>();
         Map<Object, Object> invalidObj3 = new HashMap<>();
         Map<Object, Object> invalidObj4 = new HashMap<>();
-        Map<Object, Object> invalidObj5 = new HashMap<>();
-
-        validObj1.put(AtlasObjectId.KEY_TYPENAME, "testType");
-        validObj1.put(AtlasObjectId.KEY_GUID, "guid-1234");
-        validObj2.put(AtlasObjectId.KEY_TYPENAME, "testType");
-        validObj2.put(AtlasObjectId.KEY_GUID, 1234);
 
         Map<String, Object> uniqAttribs = new HashMap<String, Object>();
         uniqAttribs.put("name", "testTypeInstance-1");
 
+        // guid
+        validObj1.put(AtlasObjectId.KEY_GUID, "guid-1234");
+
+        // typeName & unique-attributes
+        validObj2.put(AtlasObjectId.KEY_TYPENAME, "testType");
+        validObj2.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, uniqAttribs);
+
+        // guid, typeName & unique-attributes
+        validObj3.put(AtlasObjectId.KEY_GUID, "guid-1234");
         validObj3.put(AtlasObjectId.KEY_TYPENAME, "testType");
         validObj3.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, uniqAttribs);
 
-        invalidObj1.put(AtlasObjectId.KEY_TYPENAME, "testType"); // no guid
+        // no guid or typeName/unique-attributes
+        invalidObj1.put(AtlasObjectId.KEY_GUID + "-invalid", "guid-1234"); // no guid or typename or uniqueAttribute
 
-        invalidObj2.put(AtlasObjectId.KEY_GUID, "guid-1234");    // no typeName or uniqueAttribute
-        invalidObj2.put(AtlasObjectId.KEY_TYPENAME + "-invalid", "testType");
+        // no unique-attributes
+        invalidObj2.put(AtlasObjectId.KEY_TYPENAME, "testType"); // no guid
 
-        invalidObj3.put(AtlasObjectId.KEY_GUID + "-invalid", "guid-1234"); // no guid or typename or uniqueAttribute
+        // empty uniqueAttribute
+        invalidObj3.put(AtlasObjectId.KEY_TYPENAME, "testType");
+        invalidObj3.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, new HashMap<String, Object>());
 
-        invalidObj4.put(AtlasObjectId.KEY_TYPENAME, "testType");    // empty uniqueAttribute
-        invalidObj4.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, new HashMap<String, Object>());
-
-        invalidObj5.put(AtlasObjectId.KEY_TYPENAME, "testType");    // non-map uniqueAttribute
-        invalidObj5.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, new ArrayList<String>());
+        // non-map uniqueAttribute
+        invalidObj4.put(AtlasObjectId.KEY_TYPENAME, "testType");
+        invalidObj4.put(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES, new ArrayList<String>());
 
         validValues = new Object[] {
-            null, validObj1, validObj2, validObj3, new AtlasObjectId(), new AtlasObjectId("testType", "guid-1234"), };
+            null, validObj1, validObj2, validObj3, new AtlasObjectId(), new AtlasObjectId("guid-1234", "testType"), };
 
         invalidValues = new Object[] {
-            invalidObj1, invalidObj2, invalidObj3, invalidObj4, invalidObj5,
+            invalidObj1, invalidObj2, invalidObj3, invalidObj4,
             Byte.valueOf((byte)1), Short.valueOf((short)1), Integer.valueOf(1),
             Long.valueOf(1L), Float.valueOf(1), Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
             "", "12ab", "abcd", "-12ab",
@@ -116,12 +120,12 @@ public class TestAtlasObjectIdType {
             if (value instanceof AtlasObjectId) {
                 assertEquals(normalizedValue, value, "value=" + value);
             } else if (value instanceof Map) {
-                assertEquals(normalizedValue.getTypeName(), ((Map)value).get(AtlasObjectId.KEY_TYPENAME).toString(),
+                assertEquals(normalizedValue.getTypeName(), ((Map)value).get(AtlasObjectId.KEY_TYPENAME),
                              "value=" + value);
                 if (((Map)value).get(AtlasObjectId.KEY_GUID) == null) {
                     assertEquals(normalizedValue.getGuid(), ((Map)value).get(AtlasObjectId.KEY_GUID),  "value=" + value);
                 } else {
-                    assertEquals(normalizedValue.getGuid().toString(), ((Map) value).get(AtlasObjectId.KEY_GUID).toString(), "value=" + value);
+                    assertEquals(normalizedValue.getGuid(), ((Map) value).get(AtlasObjectId.KEY_GUID), "value=" + value);
                 }
 
                 assertEquals(normalizedValue.getUniqueAttributes(), ((Map)value).get(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES),

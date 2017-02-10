@@ -17,167 +17,104 @@
  */
 package org.apache.atlas.repository.store.graph;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public final class EntityGraphDiscoveryContext {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphDiscoveryContext.class);
 
-    private final AtlasTypeRegistry         typeRegistry;
-    private List<AtlasEntity>               rootEntities               = new ArrayList<>();
-    private Map<AtlasObjectId, AtlasVertex> resolvedIds                = new LinkedHashMap<>();
-    private Set<AtlasObjectId>              unresolvedIds              = new HashSet<>();
-    private List<AtlasObjectId>             unresolvedIdsByUniqAttribs = new ArrayList<>();
+    private final AtlasTypeRegistry               typeRegistry;
+    private final EntityStream                    entityStream;
+    private final List<String>                    referencedGuids          = new ArrayList<>();
+    private final Set<AtlasObjectId>              referencedByUniqAttribs  = new HashSet<>();
+    private final Map<String, AtlasVertex>        resolvedGuids            = new HashMap<>();
+    private final Map<AtlasObjectId, AtlasVertex> resolvedIdsByUniqAttribs = new HashMap<>();
+    private final Set<String>                     localGuids               = new HashSet<>();
 
-    public EntityGraphDiscoveryContext(AtlasTypeRegistry typeRegistry) {
+    public EntityGraphDiscoveryContext(AtlasTypeRegistry typeRegistry, EntityStream entityStream) {
         this.typeRegistry = typeRegistry;
+        this.entityStream = entityStream;
     }
 
-
-    public Collection<AtlasEntity> getRootEntities() {
-        return rootEntities;
+    public EntityStream getEntityStream() {
+        return entityStream;
     }
 
-    public Map<AtlasObjectId, AtlasVertex> getResolvedIds() {
-        return resolvedIds;
+    public List<String> getReferencedGuids() { return referencedGuids; }
+
+    public Set<AtlasObjectId> getReferencedByUniqAttribs() { return referencedByUniqAttribs; }
+
+    public Map<String, AtlasVertex> getResolvedGuids() {
+        return resolvedGuids;
     }
 
-    public Set<AtlasObjectId> getUnresolvedIds() {
-        return unresolvedIds;
+    public Map<AtlasObjectId, AtlasVertex> getResolvedIdsByUniqAttribs() {
+        return resolvedIdsByUniqAttribs;
     }
 
-    public List<AtlasObjectId> getUnresolvedIdsByUniqAttribs() {
-        return unresolvedIdsByUniqAttribs;
-    }
+    public Set<String> getLocalGuids() { return localGuids; }
 
 
-    public void addRootEntity(AtlasEntity rootEntity) {
-        this.rootEntities.add(rootEntity);
-    }
-
-
-    public void addResolvedId(AtlasObjectId objId, AtlasVertex vertex) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addResolvedId({})", objId);
+    public void addReferencedGuid(String guid) {
+        if (! referencedGuids.contains(guid)) {
+            referencedGuids.add(guid);
         }
-
-        resolvedIds.put(objId, vertex);
     }
 
-    public boolean removeUnResolvedId(AtlasObjectId objId) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("removeUnResolvedId({})", objId);
-        }
+    public void addReferencedByUniqAttribs(AtlasObjectId objId) { referencedByUniqAttribs.add(objId); }
 
-        return unresolvedIds.remove(objId);
+
+    public void addResolvedGuid(String guid, AtlasVertex vertex) { resolvedGuids.put(guid, vertex); }
+
+    public void addResolvedIdByUniqAttribs(AtlasObjectId objId, AtlasVertex vertex) { resolvedIdsByUniqAttribs.put(objId, vertex); }
+
+    public void addLocalGuidReference(String guid) { localGuids.add(guid); }
+
+    public boolean isResolvedGuid(String guid) { return resolvedGuids.containsKey(guid); }
+
+    public boolean isResolvedIdByUniqAttrib(AtlasObjectId objId) { return resolvedIdsByUniqAttribs.containsKey(objId); }
+
+
+    public AtlasVertex getResolvedEntityVertex(String guid) throws AtlasBaseException {
+        AtlasVertex ret = resolvedGuids.get(guid);
+
+        return ret;
     }
 
-
-    public void addUnResolvedId(AtlasObjectId objId) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addUnResolvedId({})", objId);
-        }
-
-        this.unresolvedIds.add(objId);
-    }
-
-    public boolean removeUnResolvedIds(List<AtlasObjectId> objIds) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("removeUnResolvedIds({})", objIds);
-        }
-
-        return unresolvedIds.removeAll(objIds);
-    }
-
-
-    public void addUnresolvedIdByUniqAttribs(AtlasObjectId objId) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addUnresolvedIdByUniqAttribs({})", objId);
-        }
-
-        this.unresolvedIdsByUniqAttribs.add(objId);
-    }
-
-    public boolean removeUnresolvedIdsByUniqAttribs(List<AtlasObjectId> objIds) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("removeUnresolvedIdsByUniqAttribs({})", objIds);
-        }
-
-        return unresolvedIdsByUniqAttribs.removeAll(objIds);
-    }
-
-    public boolean hasUnresolvedReferences() {
-        return unresolvedIdsByUniqAttribs.size() > 0 || unresolvedIds.size() > 0;
-    }
-
-    public boolean isResolvedId(AtlasObjectId id) {
-        return resolvedIds.containsKey(id);
-    }
-
-    public AtlasVertex getResolvedEntityVertex(AtlasObjectId ref) throws AtlasBaseException {
-        AtlasVertex vertex = resolvedIds.get(ref);
+    public AtlasVertex getResolvedEntityVertex(AtlasObjectId objId) {
+        AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
 
         // check also for sub-types; ref={typeName=Asset; guid=abcd} should match {typeName=hive_table; guid=abcd}
         if (vertex == null) {
-            final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(ref.getTypeName());
+            final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(objId.getTypeName());
             final Set<String>     allSubTypes = entityType.getAllSubTypes();
 
             for (String subType : allSubTypes) {
-                AtlasObjectId subTypeObjId = new AtlasObjectId(subType, ref.getGuid(), ref.getUniqueAttributes());
+                AtlasObjectId subTypeObjId = new AtlasObjectId(objId.getGuid(), subType, objId.getUniqueAttributes());
 
-                vertex = resolvedIds.get(subTypeObjId);
+                vertex = resolvedIdsByUniqAttribs.get(subTypeObjId);
 
                 if (vertex != null) {
-                    resolvedIds.put(ref, vertex);
+                    resolvedIdsByUniqAttribs.put(objId, vertex);
                     break;
                 }
             }
         }
 
-        if (vertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS,
-                                         " : Could not find an entity with " + ref.toString());
-        }
-
         return vertex;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        } else if (obj == this) {
-            return true;
-        } else if (obj.getClass() != getClass()) {
-            return false;
-        } else {
-            EntityGraphDiscoveryContext ctx = (EntityGraphDiscoveryContext) obj;
-            return Objects.equals(rootEntities, ctx.getRootEntities()) &&
-                Objects.equals(resolvedIds, ctx.getResolvedIds()) &&
-                Objects.equals(unresolvedIdsByUniqAttribs, ctx.getUnresolvedIdsByUniqAttribs()) &&
-                Objects.equals(unresolvedIds, ctx.getUnresolvedIds());
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(rootEntities, resolvedIds, unresolvedIdsByUniqAttribs, unresolvedIds);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -186,10 +123,11 @@ public final class EntityGraphDiscoveryContext {
         }
 
         sb.append("EntityGraphDiscoveryCtx{");
-        sb.append("rootEntities='").append(rootEntities).append('\'');
-        sb.append(", resolvedIds=").append(resolvedIds);
-        sb.append(", unresolvedIdsByUniqAttribs='").append(unresolvedIdsByUniqAttribs).append('\'');
-        sb.append(", unresolvedIds='").append(unresolvedIds).append('\'');
+        sb.append("referencedGuids=").append(referencedGuids);
+        sb.append(", referencedByUniqAttribs=").append(referencedByUniqAttribs);
+        sb.append(", resolvedGuids='").append(resolvedGuids);
+        sb.append(", resolvedIdsByUniqAttribs='").append(resolvedIdsByUniqAttribs);
+        sb.append(", localGuids='").append(localGuids);
         sb.append('}');
 
         return sb;
@@ -201,9 +139,10 @@ public final class EntityGraphDiscoveryContext {
     }
 
     public void cleanUp() {
-        rootEntities.clear();
-        unresolvedIdsByUniqAttribs.clear();
-        resolvedIds.clear();
-        unresolvedIds.clear();
+        referencedGuids.clear();
+        referencedByUniqAttribs.clear();
+        resolvedGuids.clear();
+        resolvedIdsByUniqAttribs.clear();
+        localGuids.clear();
     }
 }

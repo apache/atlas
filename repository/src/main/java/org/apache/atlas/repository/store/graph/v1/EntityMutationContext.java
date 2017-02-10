@@ -24,32 +24,37 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
 public class EntityMutationContext {
-    private final EntityGraphDiscoveryContext         context;
-    private final List<AtlasEntity>                   entitiesCreated = new ArrayList<>();
-    private final List<AtlasEntity>                   entitiesUpdated = new ArrayList<>();
-    private final Map<AtlasObjectId, AtlasEntityType> entityVsType    = new HashMap<>();
-    private final Map<AtlasObjectId, AtlasVertex>     entityVsVertex  = new HashMap<>();
+    private final EntityGraphDiscoveryContext  context;
+    private final List<AtlasEntity>            entitiesCreated = new ArrayList<>();
+    private final List<AtlasEntity>            entitiesUpdated = new ArrayList<>();
+    private final Map<String, AtlasEntityType> entityVsType    = new HashMap<>();
+    private final Map<String, AtlasVertex>     entityVsVertex  = new HashMap<>();
+    private final Map<String, String>          guidAssignments = new HashMap<>();
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
     }
 
-    public void addCreated(AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
-        AtlasObjectId objId = entity.getAtlasObjectId();
+    public void addCreated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
         entitiesCreated.add(entity);
-        entityVsType.put(objId, type);
-        entityVsVertex.put(objId, atlasVertex);
+        entityVsType.put(entity.getGuid(), type);
+        entityVsVertex.put(entity.getGuid(), atlasVertex);
+
+        if (!StringUtils.equals(internalGuid, entity.getGuid())) {
+            guidAssignments.put(internalGuid, entity.getGuid());
+            entityVsVertex.put(internalGuid, atlasVertex);
+        }
     }
 
     public void addUpdated(AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
-        AtlasObjectId objId = entity.getAtlasObjectId();
         entitiesUpdated.add(entity);
-        entityVsType.put(objId, type);
-        entityVsVertex.put(objId, atlasVertex);
+        entityVsType.put(entity.getGuid(), type);
+        entityVsVertex.put(entity.getGuid(), atlasVertex);
     }
 
     public EntityGraphDiscoveryContext getDiscoveryContext() {
@@ -64,21 +69,15 @@ public class EntityMutationContext {
         return entitiesUpdated;
     }
 
-    public AtlasEntityType getType(AtlasEntity entity) {
-        return entityVsType.get(entity.getAtlasObjectId());
+    public Map<String, String> getGuidAssignments() {
+        return guidAssignments;
     }
 
-    public AtlasType getType(AtlasObjectId entityId) {
-        return entityVsType.get(entityId);
+    public AtlasEntityType getType(String guid) {
+        return entityVsType.get(guid);
     }
 
-    public AtlasVertex getVertex(AtlasEntity entity) {
-        return entityVsVertex.get(entity.getAtlasObjectId());
-    }
-
-    public AtlasVertex getVertex(AtlasObjectId entityId) {
-        return entityVsVertex.get(entityId);
-    }
+    public AtlasVertex getVertex(String guid) { return entityVsVertex.get(guid); }
 
 
     @Override

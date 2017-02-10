@@ -244,7 +244,7 @@ public final class GraphHelper {
         /**
         Iterable<AtlasEdge> edges = outVertex.getEdges(Direction.OUT, edgeLabel);
         for (AtlasEdge edge : edges) {
-            if (edge.getId().toString().equals(edgeId)) {
+            if (edge.getObjectId().toString().equals(edgeId)) {
                 return edge;
             }
         }

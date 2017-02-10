@@ -765,7 +765,7 @@ public class DefaultMetadataServiceTest {
         Referenceable dbDef = InstanceSerialization.fromJsonReferenceable(dbDefJson, true);
 
         Assert.assertNotEquals(dbId, (((Id) tableDefinitionActual.get("database"))._getId()));
-        Assert.assertEquals(dbDef.getId()._getId(), (((Id) tableDefinitionActual.get("database"))._getId())); */
+        Assert.assertEquals(dbDef.getObjectId()._getId(), (((Id) tableDefinitionActual.get("database"))._getId())); */
 
     }
 

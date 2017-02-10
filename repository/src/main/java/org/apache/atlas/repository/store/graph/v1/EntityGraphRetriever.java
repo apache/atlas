@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -94,6 +95,22 @@ public final class EntityGraphRetriever {
         AtlasEntityExtInfo     entityExtInfo = new AtlasEntityExtInfo();
         AtlasEntity            entity        = mapVertexToAtlasEntity(entityVertex, entityExtInfo);
         AtlasEntityWithExtInfo ret           = new AtlasEntityWithExtInfo(entity, entityExtInfo);
+
+        ret.compact();
+
+        return ret;
+    }
+
+    public AtlasEntitiesWithExtInfo toAtlasEntitiesWithExtInfo(List<String> guids) throws AtlasBaseException {
+        AtlasEntitiesWithExtInfo ret = new AtlasEntitiesWithExtInfo();
+
+        for (String guid : guids) {
+            AtlasVertex vertex = getEntityVertex(guid);
+
+            AtlasEntity entity = mapVertexToAtlasEntity(vertex, ret);
+
+            ret.addEntity(entity);
+        }
 
         ret.compact();
 
@@ -405,7 +422,7 @@ public final class EntityGraphRetriever {
                         ret = entity.getAtlasObjectId();
                     }
                 } else {
-                    ret = new AtlasObjectId(GraphHelper.getTypeName(referenceVertex), GraphHelper.getGuid(referenceVertex));
+                    ret = new AtlasObjectId(GraphHelper.getGuid(referenceVertex), GraphHelper.getTypeName(referenceVertex));
                 }
             }
         }

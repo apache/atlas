@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -29,8 +30,8 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.web.rest.EntitiesREST;
 import org.apache.atlas.web.rest.EntityREST;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -39,6 +40,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,9 +54,6 @@ public class TestEntityREST {
 
     @Inject
     private EntityREST entityREST;
-
-    @Inject
-    private EntitiesREST entitiesREST;
 
     private AtlasEntity dbEntity;
 
@@ -77,12 +76,9 @@ public class TestEntityREST {
     }
 
     private void createTestEntity() throws Exception {
-        Map<String, AtlasEntity> dbEntityMap = TestUtilsV2.createDBEntity();
-        AtlasEntity              dbEntity    = dbEntityMap.values().iterator().next();
+        AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
-        dbEntityMap.put(dbEntity.getGuid(), dbEntity);
-
-        final EntityMutationResponse response = entitiesREST.createOrUpdate(dbEntityMap);
+        final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
 
         Assert.assertNotNull(response);
         List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
@@ -158,10 +154,9 @@ public class TestEntityREST {
 
     @Test
     public void  testUpdateGetDeleteEntityByUniqueAttribute() throws Exception {
-        Map<String, AtlasEntity> dbEntityMap = TestUtilsV2.createDBEntity();
-        AtlasEntity              dbEntity    = dbEntityMap.values().iterator().next();
-        EntityMutationResponse   response    = entitiesREST.createOrUpdate(dbEntityMap);
-        String                   dbGuid      = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
+        AtlasEntity            dbEntity = TestUtilsV2.createDBEntity();
+        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
+        String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
         Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
 
@@ -170,21 +165,35 @@ public class TestEntityREST {
 
         dbEntity.setAttribute(TestUtilsV2.NAME, updatedDBName);
 
-        response = entityREST.partialUpdateByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, prevDBName, dbEntity);
+        response = entityREST.partialUpdateByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
-        List<AtlasEntity> entities = entityREST.getByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, updatedDBName);
-        Assert.assertNotNull(entities);
-        Assert.assertNotNull(entities.get(0).getGuid());
-        Assert.assertEquals(entities.get(0).getGuid(), dbGuid);
-        TestEntitiesREST.verifyAttributes(entities.get(0).getAttributes(), dbEntity.getAttributes());
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        Assert.assertNotNull(entity);
+        Assert.assertNotNull(entity.getEntity().getGuid());
+        Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);
+        TestEntitiesREST.verifyAttributes(entity.getEntity().getAttributes(), dbEntity.getAttributes());
 
-        final EntityMutationResponse deleteResponse = entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME));
+        final EntityMutationResponse deleteResponse = entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)));
 
         Assert.assertNotNull(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE));
         Assert.assertEquals(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 1);
         Assert.assertEquals(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).get(0).getGuid(), dbGuid);
     }
 
+    private HttpServletRequest toHttpServletRequest(String attrName, String attrValue) {
+        HttpServletRequest    request   = Mockito.mock(HttpServletRequest.class);
+        Map<String, String[]> paramsMap = toParametersMap(EntityREST.PREFIX_ATTR + attrName, attrValue);
+
+        Mockito.when(request.getParameterMap()).thenReturn(paramsMap);
+
+        return request;
+    }
+
+    private Map<String, String[]> toParametersMap(final String name, final String value) {
+        return new HashMap<String, String[]>() {{
+            put(name, new String[] { value });
+        }};
+    }
 }

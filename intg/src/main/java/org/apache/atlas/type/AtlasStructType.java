@@ -254,7 +254,7 @@ public class AtlasStructType extends AtlasType {
                     }
                 }
             } else if (obj instanceof Map) {
-                Map map = (Map) obj;
+                Map attributes = AtlasTypeUtil.toStructAttributes((Map)obj);
 
                 for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
                     String    attrName = attributeDef.getName();
@@ -262,7 +262,7 @@ public class AtlasStructType extends AtlasType {
 
                     if (attribute != null) {
                         AtlasType dataType = attribute.getAttributeType();
-                        Object value     = map.get(attrName);
+                        Object value     = attributes.get(attrName);
                         String fieldName = objName + "." + attrName;
 
                         if (value != null) {
@@ -408,14 +408,16 @@ public class AtlasStructType extends AtlasType {
         private final AtlasType         attributeType;
         private final AtlasAttributeDef attributeDef;
         private final String            qualifiedName;
+        private final String            vertexPropertyName;
         private final boolean           isOwnedRef;
         private final String            inverseRefAttribute;
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
-            this.definedInType = definedInType;
-            this.attributeDef  = attrDef;
-            this.attributeType = attributeType;
-            this.qualifiedName = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
+            this.definedInType      = definedInType;
+            this.attributeDef       = attrDef;
+            this.attributeType      = attributeType;
+            this.qualifiedName      = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
+            this.vertexPropertyName = encodePropertyKey(this.qualifiedName);
 
             boolean isOwnedRef          = false;
             String  inverseRefAttribute = null;
@@ -458,17 +460,47 @@ public class AtlasStructType extends AtlasType {
 
         public String getQualifiedName() { return qualifiedName; }
 
-        public String getQualifiedAttributeName() {
-            return qualifiedName;
-        }
+        public String getVertexPropertyName() { return vertexPropertyName; }
 
         public boolean isOwnedRef() { return isOwnedRef; }
 
         public String getInverseRefAttribute() { return inverseRefAttribute; }
 
-        public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
+        private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
             final String typeName = structDef.getName();
             return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
         }
+
+        private static String encodePropertyKey(String key) {
+            if (StringUtils.isBlank(key)) {
+                return key;
+            }
+
+            for (String[] strMap : RESERVED_CHAR_ENCODE_MAP) {
+                key = key.replace(strMap[0], strMap[1]);
+            }
+
+            return key;
+        }
+
+        private static String decodePropertyKey(String key) {
+            if (StringUtils.isBlank(key)) {
+                return key;
+            }
+
+            for (String[] strMap : RESERVED_CHAR_ENCODE_MAP) {
+                key = key.replace(strMap[1], strMap[0]);
+            }
+
+            return key;
+        }
+
+        private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][] {
+                new String[] { "{",  "_o" },
+                new String[] { "}",  "_c" },
+                new String[] { "\"", "_q" },
+                new String[] { "$",  "_d" },
+                new String[] { "%", "_p"  },
+        };
     }
 }

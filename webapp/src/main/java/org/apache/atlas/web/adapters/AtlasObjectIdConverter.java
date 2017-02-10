@@ -51,10 +51,10 @@ AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
         if (v1Obj != null) {
             if (v1Obj instanceof Id) {
                 Id id = (Id) v1Obj;
-                ret = new AtlasObjectId(id.getTypeName(), id._getId());
+                ret = new AtlasObjectId(id._getId(), id.getTypeName());
             } else if (v1Obj instanceof IReferenceableInstance) {
                 IReferenceableInstance entity = (IReferenceableInstance) v1Obj;
-                ret = new AtlasObjectId(entity.getTypeName(), entity.getId()._getId());
+                ret = new AtlasObjectId(entity.getId()._getId(), entity.getTypeName());
             }
         }
         return ret;

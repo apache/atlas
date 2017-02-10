@@ -34,9 +34,11 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -106,54 +108,57 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testCreateNestedEntities() throws Exception {
+        AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
 
-        AtlasEntity databaseInstance = new AtlasEntity(DATABASE_TYPE_V2);
+        AtlasEntity databaseInstance = new AtlasEntity(DATABASE_TYPE_V2, "name", "db1");
         databaseInstance.setAttribute("name", "db1");
         databaseInstance.setAttribute("description", "foo database");
         databaseInstance.setAttribute("owner", "user1");
         databaseInstance.setAttribute("locationUri", "/tmp");
         databaseInstance.setAttribute("createTime",1000);
+        entities.addEntity(databaseInstance);
 
         int nTables = 5;
         int colsPerTable=3;
-        List<AtlasEntity> tables = new ArrayList<>();
-        List<AtlasEntity> allColumns = new ArrayList<>();
 
         for(int i = 0; i < nTables; i++) {
             String tableName = "db1-table-" + i;
 
-            AtlasEntity tableInstance =
-                    new AtlasEntity(HIVE_TABLE_TYPE_V2);
-            tableInstance.setAttribute("name", tableName);
+            AtlasEntity tableInstance = new AtlasEntity(HIVE_TABLE_TYPE_V2, "name", tableName);
             tableInstance.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
-            tableInstance.setAttribute("db", databaseInstance);
+            tableInstance.setAttribute("db", databaseInstance.getAtlasObjectId());
             tableInstance.setAttribute("description", tableName + " table");
-            tables.add(tableInstance);
+            entities.addEntity(tableInstance);
 
-            List<AtlasEntity> columns = new ArrayList<>();
+            List<AtlasObjectId> columns = new ArrayList<>();
             for(int j = 0; j < colsPerTable; j++) {
                 AtlasEntity columnInstance = new AtlasEntity(COLUMN_TYPE_V2);
                 columnInstance.setAttribute("name", tableName + "-col-" + j);
                 columnInstance.setAttribute("dataType", "String");
                 columnInstance.setAttribute("comment", "column " + j + " for table " + i);
-                allColumns.add(columnInstance);
-                columns.add(columnInstance);
+
+                columns.add(columnInstance.getAtlasObjectId());
+
+                entities.addReferredEntity(columnInstance);
             }
-            tableInstance.setAttribute("columns", ImmutableList.builder().addAll(columns).build());
+            tableInstance.setAttribute("columns", columns);
         }
 
         //Create the tables.  The database and columns should be created automatically, since
         //the tables reference them.
-        EntityMutationResponse response = entitiesClientV2.createEntities(tables);
+
+        EntityMutationResponse response = entitiesClientV2.createEntities(entities);
         Assert.assertNotNull(response);
 
         Map<String,String> guidsCreated = response.getGuidAssignments();
         assertEquals(guidsCreated.size(), nTables * colsPerTable + nTables + 1);
         assertNotNull(guidsCreated.get(databaseInstance.getGuid()));
-        for(AtlasEntity r : allColumns) {
+
+        for(AtlasEntity r : entities.getEntities()) {
             assertNotNull(guidsCreated.get(r.getGuid()));
         }
-        for(AtlasEntity r : tables) {
+
+        for(AtlasEntity r : entities.getReferredEntities().values()) {
             assertNotNull(guidsCreated.get(r.getGuid()));
         }
     }
@@ -189,7 +194,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntity hiveTableInstanceV2 = createHiveTableInstanceV2(hiveDBInstanceV2, tableName);
         hiveTableInstanceV2.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
 
-        EntityMutationResponse entity = entitiesClientV2.createEntity(hiveTableInstanceV2);
+        EntityMutationResponse entity = entitiesClientV2.createEntity(new AtlasEntityWithExtInfo(hiveTableInstanceV2));
         assertNotNull(entity);
         assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
         results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
@@ -226,7 +231,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         //create entity for the type
         AtlasEntity instance = new AtlasEntity(entityDef.getName());
         instance.setAttribute("name", randomString());
-        EntityMutationResponse mutationResponse = entitiesClientV2.createEntity(instance);
+        EntityMutationResponse mutationResponse = entitiesClientV2.createEntity(new AtlasEntityWithExtInfo(instance));
         assertNotNull(mutationResponse);
         assertNotNull(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
         assertEquals(mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size(),1 );
@@ -272,9 +277,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntity hiveDB = createHiveDB();
         String qualifiedName = (String) hiveDB.getAttribute(NAME);
         //get entity by attribute
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put(NAME, qualifiedName);
-        AtlasEntity byAttribute = entitiesClientV2.getEntityByAttribute(DATABASE_TYPE_V2, attributes).getEntity();
+
+        AtlasEntity byAttribute = entitiesClientV2.getEntityByAttribute(DATABASE_TYPE_V2, toMap(NAME, qualifiedName)).getEntity();
         assertEquals(byAttribute.getTypeName(), DATABASE_TYPE_V2);
         assertEquals(byAttribute.getAttribute(NAME), qualifiedName);
     }
@@ -407,7 +411,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
         AtlasEntity entityByGuid = getEntityByGuid(guid);
         entityByGuid.setAttribute(property, value);
-        EntityMutationResponse response = entitiesClientV2.updateEntity(entityByGuid);
+        EntityMutationResponse response = entitiesClientV2.updateEntity(new AtlasEntityWithExtInfo(entityByGuid));
         assertNotNull(response);
         assertNotNull(response.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
     }
@@ -624,10 +628,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntity hiveTable = createHiveTable();
         AtlasEntity tableUpdated = hiveTable;
 
-        hiveTable.setAttribute("columns", columns);
+        hiveTable.setAttribute("columns", AtlasTypeUtil.toObjectIds(columns));
 
         LOG.debug("Updating entity= " + tableUpdated);
-        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(tableUpdated);
+        EntityMutationResponse updateResult = entitiesClientV2.updateEntity(new AtlasEntityWithExtInfo(tableUpdated));
         assertNotNull(updateResult);
         assertNotNull(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertTrue(updateResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
@@ -642,11 +646,12 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         ref = new AtlasEntity(BaseResourceIT.COLUMN_TYPE_V2, values);
         columns.set(0, ref);
         tableUpdated = hiveTable;
-        tableUpdated.setAttribute("columns", columns);
+        tableUpdated.setAttribute("columns", AtlasTypeUtil.toObjectIds(columns));
 
         LOG.debug("Updating entity= " + tableUpdated);
-        EntityMutationResponse updateResponse = entitiesClientV2.updateEntityByAttribute(BaseResourceIT.HIVE_TABLE_TYPE_V2, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                (String) hiveTable.getAttribute("name"), tableUpdated);
+        Map<String, String> uniqAttributes = new HashMap<>();
+        uniqAttributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, (String)hiveTable.getAttribute("name"));
+        EntityMutationResponse updateResponse = entitiesClientV2.updateEntityByAttribute(BaseResourceIT.HIVE_TABLE_TYPE_V2, uniqAttributes, tableUpdated);
         assertNotNull(updateResponse);
         assertNotNull(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertTrue(updateResponse.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);
@@ -680,8 +685,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         columns.add(ref1);
         columns.add(ref2);
         AtlasEntity hiveTable = createHiveTable();
-        hiveTable.setAttribute("columns", columns);
-        EntityMutationResponse updateEntityResult = entitiesClientV2.updateEntity(hiveTable);
+        hiveTable.setAttribute("columns", AtlasTypeUtil.toObjectIds(columns));
+        EntityMutationResponse updateEntityResult = entitiesClientV2.updateEntity(new AtlasEntityWithExtInfo(hiveTable));
         assertNotNull(updateEntityResult);
         assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
         assertNotNull(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
@@ -690,7 +695,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertEquals(updateEntityResult.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size(), 2);
 
         AtlasEntity entityByGuid = getEntityByGuid(hiveTable.getGuid());
-        List<AtlasEntity> refs = (List<AtlasEntity>) entityByGuid.getAttribute("columns");
+        List<AtlasObjectId> refs = (List<AtlasObjectId>) entityByGuid.getAttribute("columns");
         assertEquals(refs.size(), 2);
     }
 
@@ -713,7 +718,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntityHeader entity2Header = createEntity(db2);
 
         // Delete the database entities
-        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntityByGuid(ImmutableList.of(entity1Header.getGuid(), entity2Header.getGuid()));
+        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntitiesByGuids(ImmutableList.of(entity1Header.getGuid(), entity2Header.getGuid()));
 
         // Verify that deleteEntities() response has database entity guids
         assertNotNull(deleteResponse);
@@ -727,10 +732,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testDeleteEntityByUniqAttribute() throws Exception {
         // Create database entity
         AtlasEntity hiveDB = createHiveDB(DATABASE_NAME + random());
-        String qualifiedName = (String) hiveDB.getAttribute(NAME);
 
         // Delete the database entity
-        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntityByAttribute(DATABASE_TYPE_V2, NAME, qualifiedName);
+        EntityMutationResponse deleteResponse = entitiesClientV2.deleteEntityByAttribute(DATABASE_TYPE_V2, toMap(NAME, (String) hiveDB.getAttribute(NAME)));
 
         // Verify that deleteEntities() response has database entity guids
         assertNotNull(deleteResponse);
@@ -740,4 +744,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         // Verify entities were deleted from the repository.
     }
 
+    private Map<String, String> toMap(final String name, final String value) {
+        return new HashMap<String, String>() {{
+            put(name, value);
+        }};
+    }
 }

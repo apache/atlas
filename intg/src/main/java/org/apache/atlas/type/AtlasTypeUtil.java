@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableSet;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -35,14 +37,16 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-
 import java.util.Map;
 import java.util.Set;
-import java.util.Arrays;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -297,5 +301,27 @@ public class AtlasTypeUtil {
         }
 
         return headerList;
+    }
+
+    public static Collection<AtlasObjectId> toObjectIds(Collection<AtlasEntity> entities) {
+        List<AtlasObjectId> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            for (AtlasEntity entity : entities) {
+                if (entity != null) {
+                    ret.add(entity.getAtlasObjectId());
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static Map toStructAttributes(Map map) {
+        if (map != null && map.containsKey("typeName") && map.containsKey("attributes") && map.get("attributes") instanceof Map) {
+            return (Map)map.get("attributes");
+        }
+
+        return map;
     }
 }

@@ -21,10 +21,5 @@ import org.apache.atlas.exception.AtlasBaseException;
 
 
 public interface EntityResolver {
-
-    void init(EntityGraphDiscoveryContext entities) throws AtlasBaseException;
-
-    EntityGraphDiscoveryContext resolveEntityReferences() throws AtlasBaseException;
-
-    void cleanUp() throws AtlasBaseException;
+    EntityGraphDiscoveryContext resolveEntityReferences(EntityGraphDiscoveryContext entities) throws AtlasBaseException;
 }

@@ -27,14 +27,11 @@ import java.util.Map;
 
 public class InMemoryMapEntityStream implements EntityStream {
 
-    private final Map<AtlasObjectId, AtlasEntity>                 entities = new HashMap<>();
-    private       Iterator<Map.Entry<AtlasObjectId, AtlasEntity>> iterator;
+    private final Map<String, AtlasEntity>                 entities;
+    private       Iterator<Map.Entry<String, AtlasEntity>> iterator;
 
-    public InMemoryMapEntityStream(Map<String, AtlasEntity> entityMap) {
-        for (AtlasEntity entity : entityMap.values()) {
-            entities.put(entity.getAtlasObjectId(), entity);
-        }
-
+    public InMemoryMapEntityStream(Map<String, AtlasEntity> entities) {
+        this.entities = entities;
         this.iterator = entities.entrySet().iterator();
     }
 
@@ -54,7 +51,7 @@ public class InMemoryMapEntityStream implements EntityStream {
     }
 
     @Override
-    public AtlasEntity getById(final AtlasObjectId id) {
-        return entities.get(id);
+    public AtlasEntity getByGuid(final String guid) {
+        return entities.get(guid);
     }
 }

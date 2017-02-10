@@ -190,6 +190,9 @@ public class AtlasEntityType extends AtlasStructType {
             if (obj instanceof AtlasObjectId) {
                 AtlasObjectId objId = (AtlasObjectId ) obj;
                 return isAssignableFrom(objId);
+            } else if (obj instanceof Map) {
+                AtlasObjectId objId = new AtlasObjectId((Map)obj);
+                return isAssignableFrom(objId);
             }
 
             for (AtlasEntityType superType : superTypes) {

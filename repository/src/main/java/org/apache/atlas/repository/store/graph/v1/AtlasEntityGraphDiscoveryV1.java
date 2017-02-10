@@ -17,10 +17,10 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +31,6 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
@@ -41,38 +40,21 @@ import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
+import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityGraphDiscoveryV1.class);
 
     private final AtlasTypeRegistry           typeRegistry;
-    private final EntityGraphDiscoveryContext discoveredEntities;
-    private final Set<String>                 processedIds    = new HashSet<>();
-    private final Collection<EntityResolver>  entityResolvers = new LinkedHashSet<>();
+    private final EntityGraphDiscoveryContext discoveryContext;
 
-    @Inject
-    public AtlasEntityGraphDiscoveryV1(AtlasTypeRegistry typeRegistry, Collection<Provider<EntityResolver>> entityResolverProviders) {
-        this.typeRegistry       = typeRegistry;
-        this.discoveredEntities = new EntityGraphDiscoveryContext(typeRegistry);
-
-        for (Provider<EntityResolver> entityResolverProvider : entityResolverProviders) {
-             entityResolvers.add(entityResolverProvider.get());
-        }
-    }
-
-    @VisibleForTesting
-    public AtlasEntityGraphDiscoveryV1(AtlasTypeRegistry typeRegistry, List<EntityResolver> entityResolvers) {
-        this.typeRegistry       = typeRegistry;
-        this.discoveredEntities = new EntityGraphDiscoveryContext(typeRegistry);
-
-        for (EntityResolver entityResolver : entityResolvers) {
-            this.entityResolvers.add(entityResolver);
-        }
+    public AtlasEntityGraphDiscoveryV1(AtlasTypeRegistry typeRegistry, EntityStream entityStream) {
+        this.typeRegistry     = typeRegistry;
+        this.discoveryContext = new EntityGraphDiscoveryContext(typeRegistry, entityStream);
     }
 
     @Override
@@ -81,161 +63,239 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     }
 
     @Override
-    public EntityGraphDiscoveryContext discoverEntities(final List<AtlasEntity> entities) throws AtlasBaseException {
+    public EntityGraphDiscoveryContext discoverEntities() throws AtlasBaseException {
 
-        //walk the graph and discover entity references
-        discover(entities);
+        // walk through entities in stream and validate them; record entity references
+        discoverAndValidate();
 
-        //resolve root and referred entities
+        // resolve entity references discovered in previous step
         resolveReferences();
 
-        return discoveredEntities;
+        return discoveryContext;
     }
 
     @Override
     public void cleanUp() throws AtlasBaseException {
-        processedIds.clear();
-        discoveredEntities.cleanUp();
-
-        for (EntityResolver resolver : entityResolvers) {
-            resolver.cleanUp();
-        }
+        discoveryContext.cleanUp();
     }
 
 
-    protected void discover(List<AtlasEntity> entities) throws AtlasBaseException {
-        for (AtlasEntity entity : entities) {
-            AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+    protected void discoverAndValidate() throws AtlasBaseException {
+        EntityStream entityStream = discoveryContext.getEntityStream();
 
-            if (type == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        Set<String> walkedEntities = new HashSet<>();
+
+        // walk through top-level entities and find entity references
+        while (entityStream.hasNext()) {
+            AtlasEntity entity = entityStream.next();
+
+            if (entity != null) {
+                walkEntityGraph(entity);
+
+                walkedEntities.add(entity.getGuid());
+            }
+        }
+
+        // walk through entities referenced by other entities
+        // referencedGuids will be updated within this for() loop; avoid use of iterators
+        List<String> referencedGuids = discoveryContext.getReferencedGuids();
+        for (int i = 0; i < referencedGuids.size(); i++) {
+            String guid = referencedGuids.get(i);
+
+            if (walkedEntities.contains(guid)) {
+                continue;
             }
 
-            discoveredEntities.addRootEntity(entity);
+            AtlasEntity entity = entityStream.getByGuid(guid);
 
-            walkEntityGraph(type, entity);
+            if (entity != null) {
+                walkEntityGraph(entity);
+
+                walkedEntities.add(entity.getGuid());
+            }
         }
     }
 
     protected void resolveReferences() throws AtlasBaseException {
+        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(),
+                                                                  new UniqAttrBasedEntityResolver(typeRegistry)
+                                                                };
+
         for (EntityResolver resolver : entityResolvers) {
-            resolver.init(discoveredEntities);
-
-            resolver.resolveEntityReferences();
-        }
-
-        if (discoveredEntities.hasUnresolvedReferences()) {
-            throw new AtlasBaseException(AtlasErrorCode.UNRESOLVED_REFERENCES_FOUND,
-                                                         discoveredEntities.getUnresolvedIds().toString(),
-                                                         discoveredEntities.getUnresolvedIdsByUniqAttribs().toString());
+            resolver.resolveEntityReferences(discoveryContext);
         }
     }
 
-    private void visitReference(AtlasEntityType type, Object entity) throws AtlasBaseException {
-        if (entity != null) {
-            if (entity instanceof AtlasObjectId) {
-                AtlasObjectId objId = (AtlasObjectId)entity;
+    private void visitReference(AtlasEntityType type, Object val) throws AtlasBaseException {
+        if (type == null || val == null) {
+            return;
+        }
 
-                if (!objId.isValid()) {
-                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, "Invalid object id " + objId);
-                }
+        if (val instanceof AtlasObjectId) {
+            AtlasObjectId objId = (AtlasObjectId)val;
 
-                if (!StringUtils.isEmpty(objId.getGuid()) && (objId.isAssignedGuid() || objId.isUnAssignedGuid())) {
-                    discoveredEntities.addUnResolvedId(objId);
-                } else {
-                    discoveredEntities.addUnresolvedIdByUniqAttribs(objId);
-                }
-            } else if (entity instanceof AtlasEntity) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, "Use AtlasObjectId to refer to another instance instead of AtlasEntity " + type.getTypeName());
-            } else {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, "Invalid object type " + entity.getClass());
+            if (!objId.isValid()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
+
+            recordObjectReference(objId);
+        } else if (val instanceof Map) {
+            AtlasObjectId objId = new AtlasObjectId((Map)val);
+
+            if (!objId.isValid()) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
+            }
+
+            recordObjectReference(objId);
+        } else if (val instanceof AtlasEntity) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "found AtlasEntity");
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, val.toString());
         }
     }
 
-    void visitAttribute(AtlasStructType parentType, AtlasType attrType, AtlasAttributeDef attrDef, Object val) throws AtlasBaseException {
-        if (val != null) {
-            if ( isPrimitive(attrType.getTypeCategory()) ) {
-                return;
-            }
-            if (attrType.getTypeCategory() == TypeCategory.ARRAY) {
-                AtlasArrayType arrayType = (AtlasArrayType) attrType;
-                AtlasType      elemType  = arrayType.getElementType();
+    void visitAttribute(AtlasType attrType, Object val) throws AtlasBaseException {
+        if (attrType == null || val == null) {
+            return;
+        }
 
-                visitCollectionReferences(parentType, attrType, attrDef, elemType, val);
-            } else if (attrType.getTypeCategory() == TypeCategory.MAP) {
-                AtlasType keyType   = ((AtlasMapType) attrType).getKeyType();
-                AtlasType valueType = ((AtlasMapType) attrType).getValueType();
+        if (isPrimitive(attrType.getTypeCategory()) ) {
+            return;
+        }
+        if (attrType.getTypeCategory() == TypeCategory.ARRAY) {
+            AtlasArrayType arrayType = (AtlasArrayType) attrType;
+            AtlasType      elemType  = arrayType.getElementType();
 
-                visitMapReferences(parentType, attrType, attrDef, keyType, valueType, val);
-            } else if (attrType.getTypeCategory() == TypeCategory.STRUCT) {
-                visitStruct((AtlasStructType)attrType, val);
-            } else if (attrType.getTypeCategory() == TypeCategory.ENTITY) {
-                visitReference((AtlasEntityType) attrType,  val);
-            }
+            visitCollectionReferences(elemType, val);
+        } else if (attrType.getTypeCategory() == TypeCategory.MAP) {
+            AtlasType keyType   = ((AtlasMapType) attrType).getKeyType();
+            AtlasType valueType = ((AtlasMapType) attrType).getValueType();
+
+            visitMapReferences(keyType, valueType, val);
+        } else if (attrType.getTypeCategory() == TypeCategory.STRUCT) {
+            visitStruct((AtlasStructType)attrType, val);
+        } else if (attrType.getTypeCategory() == TypeCategory.ENTITY) {
+            visitReference((AtlasEntityType) attrType,  val);
         }
     }
 
-    void visitMapReferences(AtlasStructType parentType, final AtlasType attrType, AtlasAttributeDef attrDef, AtlasType keyType, AtlasType valueType, Object val) throws AtlasBaseException {
+    void visitMapReferences(AtlasType keyType, AtlasType valueType, Object val) throws AtlasBaseException {
+        if (keyType == null || valueType == null || val == null) {
+            return;
+        }
+
         if (isPrimitive(keyType.getTypeCategory()) && isPrimitive(valueType.getTypeCategory())) {
             return;
         }
 
-        if (val != null) {
-            if (Map.class.isAssignableFrom(val.getClass())) {
-                Iterator<Map.Entry> it = ((Map) val).entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry e = it.next();
-                    visitAttribute(parentType, keyType, attrDef, e.getKey());
-                    visitAttribute(parentType, valueType, attrDef, e.getValue());
-                }
+        if (Map.class.isAssignableFrom(val.getClass())) {
+            Iterator<Map.Entry> it = ((Map) val).entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry e = it.next();
+                visitAttribute(keyType, e.getKey());
+                visitAttribute(valueType, e.getValue());
             }
         }
     }
 
-    void visitCollectionReferences(final AtlasStructType parentType, final AtlasType attrType, final AtlasAttributeDef attrDef, AtlasType elemType, Object val) throws AtlasBaseException {
-        if (isPrimitive(elemType.getTypeCategory())) {
+    void visitCollectionReferences(AtlasType elemType, Object val) throws AtlasBaseException {
+        if (elemType == null || val == null || isPrimitive(elemType.getTypeCategory())) {
             return;
         }
 
-        if (val != null) {
-            Iterator it = null;
-            if (val instanceof Collection) {
-                it = ((Collection) val).iterator();
-            } else if (val instanceof Iterable) {
-                it = ((Iterable) val).iterator();
-            } else if (val instanceof Iterator) {
-                it = (Iterator) val;
-            }
-            if (it != null) {
-                while (it.hasNext()) {
-                    Object elem = it.next();
-                    visitAttribute(parentType, elemType, attrDef, elem);
-                }
+        Iterator it = null;
+
+        if (val instanceof Collection) {
+            it = ((Collection) val).iterator();
+        } else if (val instanceof Iterable) {
+            it = ((Iterable) val).iterator();
+        } else if (val instanceof Iterator) {
+            it = (Iterator) val;
+        }
+
+        if (it != null) {
+            while (it.hasNext()) {
+                Object elem = it.next();
+                visitAttribute(elemType, elem);
             }
         }
     }
 
     void visitStruct(AtlasStructType structType, Object val) throws AtlasBaseException {
-        if (structType == null) {
+        if (structType == null || val == null) {
             return;
         }
 
-        for (AtlasStructType.AtlasAttribute attribute : structType.getAllAttributes().values()) {
-            AtlasType attrType = attribute.getAttributeType();
-            Object    attrVal  = ((AtlasStruct) val).getAttribute(attribute.getName());
+        AtlasStruct struct;
 
-            visitAttribute(structType, attrType, attribute.getAttributeDef(), attrVal);
+        if (val instanceof AtlasStruct) {
+            struct = (AtlasStruct) val;
+        } else if (val instanceof Map) {
+            Map attributes = AtlasTypeUtil.toStructAttributes((Map) val);
+
+            struct = new AtlasStruct(structType.getTypeName(), attributes);
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_STRUCT_VALUE, val.toString());
+        }
+
+        for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
+            AtlasType attrType = attribute.getAttributeType();
+            Object    attrVal  = struct.getAttribute(attribute.getName());
+
+            visitAttribute(attrType, attrVal);
         }
     }
 
 
-    void walkEntityGraph(AtlasEntityType entityType, AtlasEntity entity) throws AtlasBaseException {
-        visitStruct(entityType, entity);
+    void walkEntityGraph(AtlasEntity entity) throws AtlasBaseException {
+        if (entity == null) {
+            return;
+        }
+
+        validateAndNormalize(entity);
+        AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        recordObjectReference(entity.getGuid());
+
+        visitStruct(type, entity);
     }
 
 
     boolean isPrimitive(TypeCategory typeCategory) {
         return typeCategory == TypeCategory.PRIMITIVE || typeCategory == TypeCategory.ENUM;
+    }
+
+    private void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
+        }
+
+        AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        }
+
+        type.validateValue(entity, entity.getTypeName(), messages);
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
+        }
+
+        type.getNormalizedValue(entity);
+    }
+
+    private void recordObjectReference(String guid) {
+        discoveryContext.addReferencedGuid(guid);
+    }
+
+    private void recordObjectReference(AtlasObjectId objId) {
+        if (objId.isValidGuid()) {
+            discoveryContext.addReferencedGuid(objId.getGuid());
+        } else {
+            discoveryContext.addReferencedByUniqAttribs(objId);
+        }
     }
 }

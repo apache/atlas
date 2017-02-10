@@ -64,6 +64,7 @@ public enum AtlasErrorCode {
     UNRESOLVED_REFERENCES_FOUND(400, "ATLAS40033E", "Unresolved references: byId={0}; byUniqueAttributes={1}"),
     UNKNOWN_ATTRIBUTE(400, "ATLAS40034E", "Attribute {0} not found for type {1}"),
     SYSTEM_TYPE(400, "ATLAS40035E", "{0} is a System-type"),
+    INVALID_STRUCT_VALUE(400, "ATLAS40036E", "not a valid struct value {0}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
@@ -74,8 +75,8 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
     DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
     INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS4049E", "Invalid instance creation/updation parameters passed : {0}"),
-    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS40410E", "Instance {0} with unique attribute {1}={2} does not exist"),
-
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS40410E", "Instance {0} with unique attribute {1} does not exist"),
+    REFERENCED_ENTITY_NOT_FOUND(404, "ATLAS40411E", "Referenced entity {0} is not found"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS4091E", "Given type {0} already exists"),

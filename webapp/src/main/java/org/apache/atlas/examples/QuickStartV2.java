@@ -341,7 +341,7 @@ public class QuickStartV2 {
 
     private AtlasEntity createInstance(AtlasEntity entity, String[] traitNames) throws Exception {
         AtlasEntity ret = null;
-        EntityMutationResponse  response = entitiesClient.createEntity(entity);
+        EntityMutationResponse  response = entitiesClient.createEntity(new AtlasEntityWithExtInfo(entity));
         List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
 
         if (CollectionUtils.isNotEmpty(entities)) {
@@ -422,7 +422,7 @@ public class QuickStartV2 {
         entity.setAttribute("retention", System.currentTimeMillis());
         entity.setAttribute("db", db.getAtlasObjectId());
         entity.setAttribute("sd", sd.getAtlasObjectId());
-        entity.setAttribute("columns", getObjectIds(columns));
+        entity.setAttribute("columns", AtlasTypeUtil.toObjectIds(columns));
 
         return createInstance(entity, traitNames);
     }
@@ -562,19 +562,5 @@ public class QuickStartV2 {
 
         AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, attributes).getEntity();
         return tableEntity.getGuid();
-    }
-
-    private Collection<AtlasObjectId> getObjectIds(Collection<AtlasEntity> entities) {
-        List<AtlasObjectId> ret = new ArrayList<>();
-
-        if (CollectionUtils.isNotEmpty(entities)) {
-            for (AtlasEntity entity : entities) {
-                if (entity != null) {
-                    ret.add(entity.getAtlasObjectId());
-                }
-            }
-        }
-
-        return ret;
     }
 }

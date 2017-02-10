@@ -217,7 +217,7 @@ public class AtlasGraphUtilsV1 {
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
-                                         uniqAttributes.keySet().toString(), uniqAttributes.values().toString());
+                                         uniqAttributes.toString());
         }
 
         return entityVertex;

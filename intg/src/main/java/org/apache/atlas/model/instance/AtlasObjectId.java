@@ -20,6 +20,7 @@ package org.apache.atlas.model.instance;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -51,62 +52,61 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 public class AtlasObjectId  implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String KEY_TYPENAME          = "typeName";
     public static final String KEY_GUID              = "guid";
+    public static final String KEY_TYPENAME          = "typeName";
     public static final String KEY_UNIQUE_ATTRIBUTES = "uniqueAttributes";
 
-    private String              typeName;
     private String              guid;
+    private String              typeName;
     private Map<String, Object> uniqueAttributes;
 
-    @JsonIgnore
-    private boolean isAssignedGuid = false;
-
-    @JsonIgnore
-    private boolean isUnAssignedGuid = false;
 
     public AtlasObjectId() {
-        this(null, null, null);
+        this(null, null, (Map<String, Object>)null);
     }
 
-    public AtlasObjectId(String typeName) {
-        this(typeName, null, null);
+    public AtlasObjectId(String guid) {
+        this(guid, null, (Map<String, Object>)null);
     }
 
-    public AtlasObjectId(String typeName, String guid) {
-        this(typeName, guid, null);
+    public AtlasObjectId(String guid, String typeName) {
+        this(guid, typeName, (Map<String, Object>)null);
     }
 
     public AtlasObjectId(String typeName, Map<String, Object> uniqueAttributes) {
-        this(typeName, null, uniqueAttributes);
+        this(null, typeName, uniqueAttributes);
     }
 
-    public AtlasObjectId(String typeName, String guid, Map<String, Object> uniqueAttributes) {
-        setTypeName(typeName);
+    public AtlasObjectId(String typeName, final String attrName, final Object attrValue) {
+        this(null, typeName, new HashMap<String, Object>() {{ put(attrName, attrValue); }});
+    }
+
+    public AtlasObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes) {
         setGuid(guid);
+        setTypeName(typeName);
         setUniqueAttributes(uniqueAttributes);
     }
 
     public AtlasObjectId(AtlasObjectId other) {
         if (other != null) {
-            setTypeName(other.getTypeName());
             setGuid(other.getGuid());
+            setTypeName(other.getTypeName());
             setUniqueAttributes(other.getUniqueAttributes());
         }
     }
 
     public AtlasObjectId(Map objIdMap) {
         if (objIdMap != null) {
-            Object t = objIdMap.get(KEY_TYPENAME);
             Object g = objIdMap.get(KEY_GUID);
+            Object t = objIdMap.get(KEY_TYPENAME);
             Object u = objIdMap.get(KEY_UNIQUE_ATTRIBUTES);
-
-            if (t != null) {
-                setTypeName(t.toString());
-            }
 
             if (g != null) {
                 setGuid(g.toString());
+            }
+
+            if (t != null) {
+                setTypeName(t.toString());
             }
 
             if (u != null && u instanceof Map) {
@@ -115,24 +115,20 @@ public class AtlasObjectId  implements Serializable {
         }
     }
 
-    public String getTypeName() {
-        return typeName;
-    }
-
-    public void setTypeName(String typeName) {
-        this.typeName = typeName;
-    }
-
     public String getGuid() {
         return guid;
     }
 
     public void setGuid(String guid) {
         this.guid = guid;
-        if ( guid != null) {
-            this.isAssignedGuid = AtlasEntity.isAssigned(guid);
-            this.isUnAssignedGuid = AtlasEntity.isUnAssigned(guid);
-        }
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
     }
 
     public Map<String, Object> getUniqueAttributes() {
@@ -144,28 +140,29 @@ public class AtlasObjectId  implements Serializable {
     }
 
     @JsonIgnore
+    public boolean isValidGuid() {
+        return isAssignedGuid() || isUnAssignedGuid();
+    }
+
+    @JsonIgnore
     public boolean isAssignedGuid() {
-        return isAssignedGuid;
+        return AtlasEntity.isAssigned(guid);
     }
 
     @JsonIgnore
     public boolean isUnAssignedGuid() {
-        return isUnAssignedGuid;
+        return AtlasEntity.isUnAssigned(guid);
     }
 
     @JsonIgnore
     public boolean isValid() {
-        if (StringUtils.isEmpty(typeName)) {
-            return false;
-        } else if (StringUtils.isNotEmpty(guid)) {
-            if (!isAssignedGuid && !isUnAssignedGuid) {
-                return false;
-            }
-        } else if (MapUtils.isEmpty(uniqueAttributes)) {
-            return false;
+        if (isAssignedGuid() || isUnAssignedGuid()) {
+            return true;
+        } else if (StringUtils.isNotEmpty(typeName) && MapUtils.isNotEmpty(uniqueAttributes)) {
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -174,8 +171,8 @@ public class AtlasObjectId  implements Serializable {
         }
 
         sb.append("AtlasObjectId{");
-        sb.append("typeName='").append(typeName).append('\'');
-        sb.append(", guid='").append(guid).append('\'');
+        sb.append("guid='").append(guid).append('\'');
+        sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", uniqueAttributes={");
         AtlasBaseTypeDef.dumpObjects(uniqueAttributes, sb);
         sb.append('}');
@@ -186,17 +183,27 @@ public class AtlasObjectId  implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         AtlasObjectId that = (AtlasObjectId) o;
+
+        if (isValidGuid() && Objects.equals(guid, that.guid)) {
+            return true;
+        }
+
         return Objects.equals(typeName, that.typeName) &&
-                Objects.equals(guid, that.guid) &&
-                Objects.equals(uniqueAttributes, that.uniqueAttributes);
+               Objects.equals(uniqueAttributes, that.uniqueAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(typeName, guid, uniqueAttributes);
+        return isValidGuid() ? Objects.hash(guid) : Objects.hash(typeName, uniqueAttributes);
     }
 
     @Override

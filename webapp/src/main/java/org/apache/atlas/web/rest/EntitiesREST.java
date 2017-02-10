@@ -20,15 +20,16 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.web.adapters.AtlasInstanceRestAdapters;
 import org.apache.atlas.web.util.Servlets;
@@ -50,13 +51,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
-import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toEntityMutationResponse;
 
 
 @Path("v2/entities")
@@ -79,101 +76,6 @@ public class EntitiesREST {
         this.entitiesStore = entitiesStore;
         this.metadataService = metadataService;
         this.restAdapters = restAdapters;
-    }
-
-    /*******
-     * Entity Creation/Updation if it already exists in ATLAS
-     * An existing entity is matched by its guid if supplied or by its unique attribute eg: qualifiedName
-     * Any associations like Classifications, Business Terms will have to be handled through the respective APIs
-     *******/
-
-    @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public EntityMutationResponse createOrUpdate(Map<String, AtlasEntity> entities) throws AtlasBaseException {
-        EntityMutationResponse response = null;
-
-        ITypedReferenceableInstance[] entitiesInOldFormat = restAdapters.getITypedReferenceables(entities.values());
-
-        try {
-            final CreateUpdateEntitiesResult result = metadataService.updateEntities(entitiesInOldFormat);
-            response = toEntityMutationResponse(result);
-        } catch (AtlasException e) {
-            LOG.error("Exception while getting a typed reference for the entity ", e);
-            throw AtlasInstanceRestAdapters.toAtlasBaseException(e);
-        }
-        return response;
-    }
-
-    /*******
-     * Entity Updation - Allows full update of the specified entities.
-     * Any associations like Classifications, Business Terms will have to be handled through the respective APIs
-     * Null updates are supported i.e Set an attribute value to Null if its an optional attribute
-     *******/
-    @PUT
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public EntityMutationResponse update(Map<String, AtlasEntity> entities) throws AtlasBaseException {
-       return createOrUpdate(entities);
-    }
-
-    @GET
-    @Path("/guids")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntity.AtlasEntities getById(@QueryParam("guid") List<String> guids) throws AtlasBaseException {
-
-        if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
-        }
-
-        AtlasEntity.AtlasEntities entities = new AtlasEntity.AtlasEntities();
-
-        List<AtlasEntity> entityList = new ArrayList<>();
-
-        for (String guid : guids) {
-            try {
-               ITypedReferenceableInstance ref       = metadataService.getEntityDefinition(guid);
-               Map<String, AtlasEntity>    entityRet = restAdapters.getAtlasEntity(ref);
-
-               addToEntityList(entityList, entityRet.values());
-
-            } catch (AtlasException e) {
-                throw toAtlasBaseException(e);
-            }
-        }
-
-        entities.setList(entityList);
-        return entities;
-    }
-
-    private void addToEntityList(final List<AtlasEntity> entityList, final Collection<AtlasEntity> values) {
-        for (AtlasEntity val : values) {
-            if ( !entityList.contains(val)) {
-                entityList.add(val);
-            }
-        }
-    }
-
-    /*******
-     * Entity Delete
-     *******/
-
-    @DELETE
-    @Path("/guids")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public EntityMutationResponse deleteById(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
-
-        if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
-        }
-        try {
-            AtlasClient.EntityResult result = metadataService.deleteEntities(guids);
-            return toEntityMutationResponse(result);
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
     }
 
     /**

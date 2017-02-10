@@ -24,8 +24,8 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -34,13 +34,6 @@ import java.util.Map;
  * Persistence/Retrieval API for AtlasEntity
  */
 public interface AtlasEntityStore {
-
-    /**
-     * Initialization
-     */
-    void init(AtlasTypeRegistry typeRegistry) throws AtlasBaseException;
-
-
     /**
      *
      * Get entity definition by its guid
@@ -50,22 +43,6 @@ public interface AtlasEntityStore {
     AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException;
 
     /**
-     * Delete an entity by its guid
-     * @param guid
-     * @return
-     */
-    EntityMutationResponse deleteById(String guid);
-
-    /**
-     * Create or update  entities
-     * @param entities Map of the entity Id(guid or transient Id) to AtlasEntity objects that need to be created
-     * @return EntityMutationResponse Entity mutations operations with the correspomding set of entities on which these operations were performed
-     * @throws AtlasBaseException
-     */
-
-    EntityMutationResponse createOrUpdate(Map<String, AtlasEntity> entities) throws AtlasBaseException;
-
-    /**
      * Batch GET to retrieve entities by their ID
      * @param guid
      * @return
@@ -73,43 +50,57 @@ public interface AtlasEntityStore {
      */
     AtlasEntitiesWithExtInfo getByIds(List<String> guid) throws AtlasBaseException;
 
+    /**
+     *
+     * Get an eneity by its unique attribute
+     * @param entityType     type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @return EntityMutationResponse details of the updates performed by this call
+     */
+    AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+            throws AtlasBaseException;
+
+    /**
+     * Create or update  entities in the stream
+     * @param entityStream AtlasEntityStream
+     * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse createOrUpdate(EntityStream entityStream) throws AtlasBaseException;
+
+    /**
+     * @deprecated
+     * Update a single entity
+     * @param entityType     type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @return EntityMutationResponse details of the updates performed by this call
+     * @throws AtlasBaseException
+     *
+     */
+    EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
+                                                    AtlasEntity entity) throws AtlasBaseException;
+
+    /**
+     * Delete an entity by its guid
+     * @param guid
+     * @return
+     */
+    EntityMutationResponse deleteById(String guid) throws AtlasBaseException;
+
+    /**
+     * @deprecated
+     * @param entityType      type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @return EntityMutationResponse details of the updates performed by this call
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+                                                                                             throws AtlasBaseException;
+
     /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
-
-    /**
-     *
-     * Get an eneity by its unique attribute
-     * @param entityType
-     * @param uniqAttributes
-     * @return AtlasEntity
-     */
-    AtlasEntityWithExtInfo getByUniqueAttribute(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
-                                                                                             throws AtlasBaseException;
-
-    /**
-     * @deprecated
-     * Create or update a single entity
-     * @param typeName The entity's type
-     * @param attributeName Attribute that uniquely identifies the entity
-     * @param attributeValue The unqiue attribute's value
-     * @return EntityMutationResponse Entity mutations operations with the correspomding set of entities on which these operations were performed
-     * @throws AtlasBaseException
-     *
-     */
-
-    EntityMutationResponse updateByUniqueAttribute(String typeName, String attributeName, String attributeValue, AtlasEntity entity) throws AtlasBaseException;
-
-    /**
-     * @deprecated
-     * @param typeName
-     * @param attributeName
-     * @param attributeValue
-     * @return
-     * @throws AtlasBaseException
-     */
-    EntityMutationResponse deleteByUniqueAttribute(String typeName, String attributeName, String attributeValue) throws AtlasBaseException;
 
     /**
      * Add classification(s)

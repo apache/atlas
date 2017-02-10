@@ -519,7 +519,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public AtlasObjectId createDefaultValue() {
-            return new AtlasObjectId(AtlasBaseTypeDef.ATLAS_TYPE_ASSET, "test");
+            return new AtlasObjectId("-1", AtlasBaseTypeDef.ATLAS_TYPE_ASSET);
         }
 
         @Override
@@ -551,13 +551,16 @@ public class AtlasBuiltInTypes {
         }
 
         private boolean isValidMap(Map map) {
-            if (map.containsKey(AtlasObjectId.KEY_TYPENAME)) {
-                if (map.containsKey(AtlasObjectId.KEY_GUID)) {
-                    return true;
-                } else {
+            Object guid = map.get(AtlasObjectId.KEY_GUID);
+
+            if (guid != null && StringUtils.isNotEmpty(guid.toString())) {
+                return true;
+            } else {
+                Object typeName = map.get(AtlasObjectId.KEY_TYPENAME);
+                if (typeName != null && StringUtils.isNotEmpty(typeName.toString())) {
                     Object uniqueAttributes = map.get(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES);
 
-                    if (uniqueAttributes instanceof Map && MapUtils.isNotEmpty((Map)uniqueAttributes)) {
+                    if (uniqueAttributes instanceof Map && MapUtils.isNotEmpty((Map) uniqueAttributes)) {
                         return true;
                     }
                 }
