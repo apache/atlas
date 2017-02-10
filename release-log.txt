@@ -32,6 +32,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1542 Atlas server fails to start if duplicate types are found during Typesystem bootstrap (svimal2106)
 ATLAS-1442 updated pom.xml to change version number to 0.7.1-incubating (mneethiraj)
 ATLAS-1432 Responsive Loader and css changes (kevalbhatt via mneethiraj)
 ATLAS-1427 update tests for the changes in default SSL protocols support (mneethiraj)

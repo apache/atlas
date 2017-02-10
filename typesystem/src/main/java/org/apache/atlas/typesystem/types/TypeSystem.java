@@ -405,7 +405,8 @@ public class TypeSystem {
             for (EnumTypeDefinition eDef : enumDefs) {
                 assert eDef.name != null;
                 if (!update && isRegistered(eDef.name)) {
-                    throw new AtlasException(String.format("Redefinition of type %s not supported", eDef.name));
+                    LOG.warn("Found duplicate definition of type {}. Ignoring..", eDef.name);
+                    continue;
                 }
 
                 EnumType eT = new EnumType(this, eDef.name, eDef.description, eDef.enumValues);
@@ -415,7 +416,8 @@ public class TypeSystem {
             for (StructTypeDefinition sDef : structDefs) {
                 assert sDef.typeName != null;
                 if (!update && isRegistered(sDef.typeName)) {
-                    throw new TypeExistsException(String.format("Cannot redefine type %s", sDef.typeName));
+                    LOG.warn("Found duplicate definition of type {}. Ignoring..", sDef.typeName);
+                    continue;
                 }
                 StructType sT = new StructType(this, sDef.typeName, sDef.typeDescription, sDef.attributeDefinitions.length);
                 structNameToDefMap.put(sDef.typeName, sDef);
@@ -425,7 +427,8 @@ public class TypeSystem {
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 assert traitDef.typeName != null;
                 if (!update && isRegistered(traitDef.typeName)) {
-                    throw new TypeExistsException(String.format("Cannot redefine type %s", traitDef.typeName));
+                    LOG.warn("Found duplicate definition of type {}. Ignoring..", traitDef.typeName);
+                    continue;
                 }
                 TraitType tT = new TraitType(this, traitDef.typeName, traitDef.typeDescription, traitDef.superTypes,
                         traitDef.attributeDefinitions.length);
@@ -436,7 +439,8 @@ public class TypeSystem {
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 assert classDef.typeName != null;
                 if (!update && isRegistered(classDef.typeName)) {
-                    throw new TypeExistsException(String.format("Cannot redefine type %s", classDef.typeName));
+                    LOG.warn("Found duplicate definition of type {}. Ignoring..", classDef.typeName);
+                    continue;
                 }
 
                 ClassType cT = new ClassType(this, classDef.typeName, classDef.typeDescription, classDef.superTypes,
