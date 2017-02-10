@@ -60,7 +60,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection'));
                 this.collectionObject = this.entity;
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject.classifications),
@@ -204,7 +204,10 @@ define(['require',
                     'tagOrTerm': (that.term ? "term" : "tag"),
                     callback: function() {
                         that.$('.fontLoader').show();
-                        that.collection.fetch({ reset: true });
+                        if (that.fetchCollection) {
+                            that.fetchCollection();
+                        }
+
                     }
                 });
             }

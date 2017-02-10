@@ -22,6 +22,12 @@ define(['require', 'utils/Enums'], function(require, Enums) {
     var UrlLinks = {
         baseUrl: '/api/atlas',
         baseUrlV2: '/api/atlas/v2',
+        typedefsUrl: function() {
+            return {
+                defs: this.baseUrlV2 + '/types/typedefs',
+                def: this.baseUrlV2 + '/types/typedef'
+            };
+        },
         taxonomiesApiUrl: function() {
             return this.baseUrl + '/v1/taxonomies';
         },
@@ -39,11 +45,11 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         entitiesDefApiUrl: function(name) {
-            var entitieDefUrl = this.baseUrlV2 + '/types/entitydef';
+            var entitieDefUrl = this.typedefsUrl();
             if (name) {
-                return entitieDefUrl + '/name/' + name;
+                return entitieDefUrl.def + '/name/' + name + '?type=entity';
             } else {
-                return entitieDefUrl;
+                return entitieDefUrl.defs + '?type=entity';
             }
         },
         entitiesTraitsApiUrl: function(token) {
@@ -59,17 +65,17 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             return this.baseUrl + '/entities/' + guid + '/audit';
         },
         typesClassicationApiUrl: function(name, guid) {
-            var typeUrl = this.baseUrlV2 + '/types/classificationdef'
+            var typeUrl = this.typedefsUrl();
             if (name) {
-                return typeUrl + '/name/' + name;
+                return typeUrl.def + '/name/' + name + '?type=classification';
             } else if (guid) {
-                return typeUrl + '/guid/' + guid;
+                return typeUrl.def + '/guid/' + guid + '?type=classification';
             } else {
-                return typeUrl;
+                return typeUrl.defs + '?type=classification';
             }
         },
         typesApiUrl: function() {
-            return this.baseUrlV2 + '/types/typedefs/headers'
+            return this.typedefsUrl().defs + '/headers'
         },
         lineageApiUrl: function(guid) {
             var lineageUrl = this.baseUrlV2 + '/lineage';

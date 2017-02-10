@@ -32,7 +32,7 @@ define(['require',
 
             initialize: function() {
                 this.modelName = 'VEntity';
-                this.modelAttrName = '';
+                this.modelAttrName = 'entityDefs';
             },
             parseRecords: function(resp, options) {
                 try {
@@ -50,22 +50,6 @@ define(['require',
                     } else {
                         return resp
                     }
-                    // if (this.modelAttrName && this.modelAttrName === "createEntity") {
-                    //     var arr = [];
-                    //     arr.push({
-                    //         attributes: resp.attributes,
-                    //         classifications: resp.classifications,
-                    //         guid: resp.guid,
-                    //         typeName: resp.typeName
-                    //     });
-                    //     return arr;
-                    // } else {
-                    //     if (resp[this.modelAttrName]) {
-                    //         return resp[this.modelAttrName];
-                    //     } else {
-                    //         return resp
-                    //     }
-                    // }
 
                 } catch (e) {
                     console.log(e);

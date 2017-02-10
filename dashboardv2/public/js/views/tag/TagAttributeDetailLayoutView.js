@@ -70,7 +70,7 @@ define(['require',
                     } else {
                         this.$('.fontLoader').hide();
                         Utils.notifyError({
-                            content: 'Something went wrong'
+                            content: 'Tag Not Found'
                         });
                     }
                 }, this);
@@ -106,7 +106,7 @@ define(['require',
                 if (this.model.get("description")) {
                     this.ui.description.text(this.model.get("description"));
                 }
-                if (this.model.get("attributeDefs")) {
+                if (attributeDefs) {
                     if (!_.isArray(attributeDefs)) {
                         attributeDefs = [attributeDefs];
                     }
@@ -138,10 +138,19 @@ define(['require',
                     });
                     return;
                 }
+
                 this.model.saveTagAttribute(this.model.get('guid'), {
-                    data: JSON.stringify(saveObject),
+                    data: JSON.stringify({
+                        classificationDefs: [saveObject],
+                        entityDefs: [],
+                        enumDefs: [],
+                        structDefs: []
+
+                    }),
                     success: function(model, response) {
-                        that.model.set(model);
+                        if (model.classificationDefs) {
+                            that.model.set(model.classificationDefs[0], { merge: true });
+                        }
                         that.renderTagDetail();
                         Utils.notifySuccess({
                             content: message

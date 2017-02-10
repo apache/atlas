@@ -49,7 +49,7 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         saveTagAttribute: function(guid, options) {
-            var url = UrlLinks.typesClassicationApiUrl(null, guid);
+            var url = UrlLinks.typesClassicationApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

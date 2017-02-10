@@ -169,8 +169,7 @@ require(['App',
     var that = this;
     this.asyncFetchCounter = 2;
     this.entityDefCollection = new VEntityList();
-    that.entityDefCollection.url = UrlLinks.entitiesDefApiUrl()
-    that.entityDefCollection.modelAttrName = 'list';
+    that.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection

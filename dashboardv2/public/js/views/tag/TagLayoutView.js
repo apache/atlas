@@ -239,19 +239,24 @@ define(['require',
                     attributeObj = [];
                 }
                 this.json = {
-                    'name': this.name,
-                    'description': this.description,
-                    "typeVersion": "2",
-                    "version": "2",
-                    'superTypes': superTypes.length ? superTypes : [],
-                    "attributeDefs": attributeObj
+                    classificationDefs: [{
+                        'name': this.name.trim(),
+                        'description': this.description.trim(),
+                        "typeVersion": "2",
+                        "version": "2",
+                        'superTypes': superTypes.length ? superTypes : [],
+                        "attributeDefs": attributeObj
+                    }],
+                    entityDefs: [],
+                    enumDefs: [],
+                    structDefs: []
+
                 };
                 new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
                         that.ui.createTag.removeAttr("disabled");
                         that.createTag = true;
-                        that.fetchCollections();
-                        that.collection.add(model)
+                        that.collection.reset(model.get('classificationDefs'));
                         that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
                             content: "Tag " + that.name + Messages.addSuccessMessage

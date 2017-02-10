@@ -30,28 +30,17 @@ define(['require',
             model: VTag,
             initialize: function() {
                 this.modelName = 'VTag';
-                this.modelAttrName = 'list';
+                this.modelAttrName = 'classificationDefs';
             },
             parseRecords: function(resp, options) {
                 try {
                     if (!this.modelAttrName) {
                         throw new Error("this.modelAttrName not defined for " + this);
                     }
-                    if (this.modelAttrName === "list") {
-                        if (resp[this.modelAttrName]) {
-                            return resp[this.modelAttrName];
-                        } else {
-                            return resp
-                        }
-
+                    if (resp[this.modelAttrName]) {
+                        return resp[this.modelAttrName];
                     } else {
-                        var arr = [];
-                        resp[this.modelAttrName].forEach(function(d) {
-                            arr.push({
-                                tags: d
-                            });
-                        });
-                        return arr;
+                        return resp
                     }
 
                 } catch (e) {
