@@ -139,6 +139,7 @@ module.exports = function(grunt) {
                 },
                 files: {
                     'bootstrap/css': 'bootstrap/dist/css/bootstrap.min.css',
+                    'bootstrap/fonts': 'bootstrap/fonts/glyphicons-halflings-regular.woff2',
                     'backgrid/css': 'backgrid/lib/backgrid.css',
                     'backgrid-filter/css': 'backgrid-filter/backgrid-filter.min.css',
                     'backgrid-orderable-columns/css': 'backgrid-orderable-columns/backgrid-orderable-columns.css',

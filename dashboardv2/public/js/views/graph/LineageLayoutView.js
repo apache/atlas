@@ -56,7 +56,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid'));
+                _.extend(this, _.pick(options, 'guid', 'entityDefCollection'));
                 this.entityModel = new VEntity();
                 this.collection = new VLineageList();
                 this.typeMap = {};
@@ -113,29 +113,6 @@ define(['require',
             generateData: function(relations, guidEntityMap) {
                 var that = this;
 
-                function fetchEntity(name) {
-                    ++that.asyncFetchCounter;
-                    that.entityModel.getEntityDef(name, {
-                        success: function(data) {
-                            if (that.typeMap[data.name]) {
-                                _.keys(that.fromToObj).map(function(key) {
-                                    var obj = that.fromToObj[key];
-                                    if (obj.typeName === data.name) {
-                                        that.fromToObj[key]['isProcess'] = _.contains(data.superTypes, "Process") ? true : false;
-                                    }
-                                });
-                            }
-                            that.typeMap[data.name] = data.superTypes;
-                        },
-                        complete: function() {
-                            --that.asyncFetchCounter;
-                            if (that.asyncFetchCounter == 0) {
-                                that.createGraph();
-                            }
-                        }
-                    });
-                }
-
                 function makeNodeObj(relationObj) {
                     var obj = {};
                     obj['shape'] = "img";
@@ -147,12 +124,11 @@ define(['require',
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
-                    if (that.typeMap && that.typeMap[relationObj.typeName]) {
-                        obj['isProcess'] = _.contains(that.typeMap[relationObj.typeName], "Process") ? true : false;
-                    } else {
-                        that.typeMap[relationObj.typeName] = { fetch: true };
-                        fetchEntity(relationObj.typeName);
+                    var entityDef = that.entityDefCollection.fullCollection.find({ name: relationObj.typeName });
+                    if (entityDef && entityDef.get('superTypes')) {
+                        obj['isProcess'] = _.contains(entityDef.get('superTypes'), "Process") ? true : false;
                     }
+
                     return obj;
                 }
 

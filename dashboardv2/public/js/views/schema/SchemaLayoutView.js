@@ -329,10 +329,14 @@ define(['require',
             },
             addTagModalView: function(guid, multiple) {
                 var that = this;
+                var tagList = that.schemaCollection.find({ 'guid': guid });
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: guid,
                         multiple: multiple,
+                        tagList: _.map((tagList ? tagList.get('classifications') : []), function(obj) {
+                            return obj.typeName;
+                        }),
                         callback: function() {
                             that.fetchCollection();
                             that.arr = [];

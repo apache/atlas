@@ -108,8 +108,8 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
-                    var entityObject = this.collection.first().toJSON();
-                    var collectionJSON = entityObject.entity;
+                    this.entityObject = this.collection.first().toJSON();
+                    var collectionJSON = this.entityObject.entity;
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -164,7 +164,7 @@ define(['require',
                     this.hideLoader();
                     var obj = {
                         entity: collectionJSON,
-                        referredEntities: entityObject.referredEntities,
+                        referredEntities: this.entityObject.referredEntities,
                         guid: this.id,
                         entityName: this.name,
                         entityDefCollection: this.entityDefCollection,
@@ -174,7 +174,6 @@ define(['require',
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
                     this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
-                    this.renderLineageLayoutView(obj);
                     // To render Schema check attribute "schemaElementsAttribute"
                     var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
                     if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
@@ -197,6 +196,7 @@ define(['require',
                 var that = this;
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader').show(); // to show tab loader
+                this.renderLineageLayoutView({ guid: this.id, entityDefCollection: this.entityDefCollection });
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
@@ -270,7 +270,7 @@ define(['require',
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: that.id,
-                        tagList: _.map(that.collection.first().toJSON().classifications, function(obj) {
+                        tagList: _.map(that.entityObject.entity.classifications, function(obj) {
                             return obj.typeName;
                         }),
                         callback: function() {
