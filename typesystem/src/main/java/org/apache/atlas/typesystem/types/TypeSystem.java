@@ -412,9 +412,13 @@ public class TypeSystem {
         private void validateAndSetupShallowTypes(boolean update) throws AtlasException {
             for (EnumTypeDefinition eDef : enumDefs) {
                 assert eDef.name != null;
-                if (!update && isRegistered(eDef.name)) {
-                    LOG.warn("Found duplicate definition of type {}. Ignoring..", eDef.name);
-                    continue;
+                if (!update) {
+                    if (TypeSystem.this.isRegistered(eDef.name)) {
+                        throw new TypeExistsException(String.format("Redefinition of type %s is not supported", eDef.name));
+                    } else if (transientTypes.containsKey(eDef.name)) {
+                        LOG.warn("Found duplicate definition of type {}. Ignoring..", eDef.name);
+                        continue;
+                    }
                 }
 
                 EnumType eT = new EnumType(this, eDef.name, eDef.description, eDef.version, eDef.enumValues);
@@ -423,10 +427,15 @@ public class TypeSystem {
 
             for (StructTypeDefinition sDef : structDefs) {
                 assert sDef.typeName != null;
-                if (!update && isRegistered(sDef.typeName)) {
-                    LOG.warn("Found duplicate definition of type {}. Ignoring..", sDef.typeName);
-                    continue;
+                if (!update) {
+                    if (TypeSystem.this.isRegistered(sDef.typeName)) {
+                        throw new TypeExistsException(String.format("Redefinition of type %s is not supported", sDef.typeName));
+                    } else if (transientTypes.containsKey(sDef.typeName)) {
+                        LOG.warn("Found duplicate definition of type {}. Ignoring..", sDef.typeName);
+                        continue;
+                    }
                 }
+
                 StructType sT = new StructType(this, sDef.typeName, sDef.typeDescription, sDef.typeVersion, sDef.attributeDefinitions.length);
                 structNameToDefMap.put(sDef.typeName, sDef);
                 transientTypes.put(sDef.typeName, sT);
@@ -434,10 +443,15 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 assert traitDef.typeName != null;
-                if (!update && isRegistered(traitDef.typeName)) {
-                    LOG.warn("Found duplicate definition of type {}. Ignoring..", traitDef.typeName);
-                    continue;
+                if (!update) {
+                    if (TypeSystem.this.isRegistered(traitDef.typeName)) {
+                        throw new TypeExistsException(String.format("Redefinition of type %s is not supported", traitDef.typeName));
+                    } else if (transientTypes.containsKey(traitDef.typeName)) {
+                        LOG.warn("Found duplicate definition of type {}. Ignoring..", traitDef.typeName);
+                        continue;
+                    }
                 }
+
                 TraitType tT = new TraitType(this, traitDef.typeName, traitDef.typeDescription, traitDef.typeVersion, traitDef.superTypes,
                         traitDef.attributeDefinitions.length);
                 traitNameToDefMap.put(traitDef.typeName, traitDef);
@@ -446,9 +460,13 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 assert classDef.typeName != null;
-                if (!update && isRegistered(classDef.typeName)) {
-                    LOG.warn("Found duplicate definition of type {}. Ignoring..", classDef.typeName);
-                    continue;
+                if (!update) {
+                    if (TypeSystem.this.isRegistered(classDef.typeName)) {
+                        throw new TypeExistsException(String.format("Redefinition of type %s is not supported", classDef.typeName));
+                    } else if (transientTypes.containsKey(classDef.typeName)) {
+                        LOG.warn("Found duplicate definition of type {}. Ignoring..", classDef.typeName);
+                        continue;
+                    }
                 }
 
                 ClassType cT = new ClassType(this, classDef.typeName, classDef.typeDescription, classDef.typeVersion, classDef.superTypes,
