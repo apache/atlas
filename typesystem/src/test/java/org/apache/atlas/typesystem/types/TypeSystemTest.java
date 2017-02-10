@@ -275,7 +275,7 @@ public class TypeSystemTest extends BaseTest {
     }
 
     @Test
-    public void testDuplicateTypenames() throws Exception {
+    public void testRedefineExistingType() throws Exception {
         TypeSystem typeSystem = getTypeSystem();
         HierarchicalTypeDefinition<TraitType> trait = TypesUtil
                 .createTraitTypeDef(random(), "description", ImmutableSet.<String>of(),
@@ -287,6 +287,25 @@ public class TypeSystemTest extends BaseTest {
             fail("Expected TypeExistsException");
         } catch(TypeExistsException e) {
             //expected
+        }
+    }
+
+    @Test
+    public void testDuplicateNewTypenames() throws Exception {
+        TypeSystem typeSystem = getTypeSystem();
+        HierarchicalTypeDefinition<TraitType> trait1 = TypesUtil
+                .createTraitTypeDef(random(), "description", ImmutableSet.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        // create another trait with the same name
+        HierarchicalTypeDefinition<TraitType> trait2 = TypesUtil
+                .createTraitTypeDef(trait1.typeName, "description", ImmutableSet.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+
+        try {
+            typeSystem.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                    ImmutableList.of(trait1, trait2), ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+        } catch(AtlasException e) {
+            fail("Exception unexpected");
         }
     }
 
