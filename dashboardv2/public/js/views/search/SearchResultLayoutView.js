@@ -122,7 +122,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'vent', 'value', 'initialView'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -297,7 +297,6 @@ define(['require',
                 require(['utils/TableLayout'], function(TableLayout) {
                     var columns = new Backgrid.Columns(that.getFixedDslColumn());
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        globalVent: that.globalVent,
                         columns: columns
                     })));
                     that.ui.paginationDiv.show();
@@ -622,6 +621,7 @@ define(['require',
                 ], function(CreateEntityLayoutView) {
                     var view = new CreateEntityLayoutView({
                         guid: guid,
+                        entityDefCollection: that.entityDefCollection,
                         callback: function() {
                             that.fetchCollection();
                         }
@@ -635,6 +635,7 @@ define(['require',
                     'views/entity/CreateEntityLayoutView'
                 ], function(CreateEntityLayoutView) {
                     var view = new CreateEntityLayoutView({
+                        entityDefCollection: that.entityDefCollection,
                         callback: function() {
                             that.fetchCollection();
                         }

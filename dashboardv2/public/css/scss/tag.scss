@@ -385,7 +385,8 @@ legend.scheduler-border {
 }
 
 .errorClass {
-    border: 1px solid red;
+    border: 1px solid red !important;
+    box-shadow: none !important;
 }
 
 .entityInputBox {

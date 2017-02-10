@@ -347,6 +347,7 @@ define(['require',
                 ], function(CreateEntityLayoutView) {
                     var view = new CreateEntityLayoutView({
                         guid: that.id,
+                        entityDefCollection: that.entityDefCollection,
                         callback: function() {
                             that.fetchCollection();
                         }

@@ -72,20 +72,20 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader'));
+                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection'));
                 var that = this,
                     entityTitle, okLabel;
                 this.searchCollection = new VSearchList();
                 this.searchCollection.url = UrlLinks.searchApiUrl(Enums.searchUrlType.DSL);
                 this.selectStoreCollection = new Backbone.Collection();
+                this.collection = new VEntityList();
                 this.entityModel = new VEntity();
                 if (this.guid) {
-                    this.collection = new VEntityList();
                     this.collection.modelAttrName = "createEntity"
-                } else {
-                    this.collection = new VTagList();
                 }
+                this.searchQueryList = [];
                 this.asyncFetchCounter = 0;
+                this.asyncFetchLOVCounter = 0;
                 this.required = true;
                 if (this.guid) {
                     entityTitle = 'Edit entity';
@@ -112,19 +112,9 @@ define(['require',
                         }
                     }
                 }).open();
+
                 this.modal.$el.find('button.ok').attr("disabled", true);
                 this.ui.entityList.val("");
-                $(this.ui.entityInputData).on('keyup change dp.change', that.modal.$el.find('input select textarea'), function(e) {
-                    that.ui.entityInputData.find("input,select,textarea").each(function() {
-                        if (this.value !== "") {
-                            if ($(this).data('select2')) {
-                                $(this).data('select2').$container.removeClass("errorClass")
-                            } else {
-                                $(this).removeClass('errorClass');
-                            }
-                        }
-                    });
-                });
                 this.modal.on('ok', function(e) {
                     that.okButton();
                 });
@@ -140,31 +130,62 @@ define(['require',
                 }, this);
                 this.listenTo(this.collection, 'error', function() {
                     --this.asyncFetchCounter
-                    this.hideLoader();
+                    if (this.asyncFetchCounter === 0) {
+                        this.hideLoader();
+                    }
                 }, this);
                 this.listenTo(this.searchCollection, "reset", function() {
+                    var that = this;
+                    --this.asyncFetchLOVCounter
+                    _.each(this.searchCollection.fullCollection.models, function(model) {
+                        var obj = model.toJSON();
+                        obj['queryText'] = model.collection.queryText;
+                        that.selectStoreCollection.push(obj);
+                    })
                     this.addJsonSearchData();
                 }, this);
                 this.listenTo(this.searchCollection, 'error', function(data, key) {
-                    this.addJsonSearchData(key);
-                    this.hideLoader();
+                    --this.asyncFetchLOVCounter;
+                    this.addJsonSearchData();
                 }, this);
+                this.ui.entityInputData.on("keyup", "textarea", function() {
+                    var value = this.value;
+                    try {
+                        if (value && value.length) {
+                            JSON.parse(value);
+                            $(this).removeClass('errorClass');
+                        }
+                    } catch (err) {
+                        $(this).addClass('errorClass');
+                    }
+                });
+                this.ui.entityInputData.on('keyup change dp.change', 'input.true,select.true', function(e) {
+                    if (this.value !== "") {
+                        if ($(this).data('select2')) {
+                            $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass")
+                        } else {
+                            $(this).removeClass('errorClass');
+                        }
+                    } else {
+                        if ($(this).data('select2')) {
+                            $(this).data('select2').$container.find('.select2-selection').addClass("errorClass")
+                        } else {
+                            $(this).addClass('errorClass');
+                        }
+                    }
+                });
             },
             onRender: function() {
                 this.bindEvents();
                 this.fetchCollections();
             },
             fetchCollections: function() {
-                this.asyncFetchCounter++;
                 if (this.guid) {
                     this.collection.url = UrlLinks.entitiesApiUrl(this.guid);
                     this.collection.fetch({ reset: true });
                 } else {
-                    this.collection.url = UrlLinks.entitiesDefApiUrl()
-                    this.collection.modelAttrName = 'list';
-                    this.collection.fetch({ reset: true });
+                    this.entityCollectionList();
                 }
-
             },
             entityCollectionList: function() {
                 this.ui.entityList.empty();
@@ -180,10 +201,10 @@ define(['require',
                     this.onEntityChange(null, this.entityData);
                 } else {
                     var str = '<option selected="selected" disabled="disabled">--Select entity-type--</option>';
-                    this.collection.fullCollection.comparator = function(model) {
+                    this.entityDefCollection.fullCollection.comparator = function(model) {
                         return model.get('name');
                     }
-                    this.collection.fullCollection.sort().each(function(val) {
+                    this.entityDefCollection.fullCollection.sort().each(function(val) {
                         if (Globals.entityTypeConfList) {
                             if (_.isEmptyArray(Globals.entityTypeConfList)) {
                                 str += '<option>' + _.escape(val.get("name")) + '</option>';
@@ -204,30 +225,19 @@ define(['require',
                 if (checked) {
                     this.ui.entityInputData.find('div.true').show();
                     this.ui.entityInputData.find('fieldset div.true').show();
+                    this.ui.entityInputData.find('fieldset').show();
                     this.required = false;
                 } else {
+                    this.ui.entityInputData.find('fieldset').each(function() {
+                        if (!$(this).find('div').hasClass('false')) {
+                            $(this).hide();
+                        }
+                    });
                     this.ui.entityInputData.find('div.true').hide();
                     this.ui.entityInputData.find('fieldset div.true').hide();
                     this.required = true;
                 }
 
-            },
-            longValidation: function(that) {
-                that.$('input[data-type="long"]').on('keydown', function(e) {
-                    var regex = /^[0-9]*((?=[^.]|$))?$/; // allow only numbers [0-9] 
-                    if (!regex.test(e.currentTarget.value)) {
-                        return false;
-                    }
-                });
-                that.$('input[data-type="long"]').on('keyup click', function(e) {
-                    e.currentTarget.value = e.currentTarget.value;
-                    var regex = /^[0-9]*((?=[^.]|$))?$/; // allow only numbers [0-9] 
-                    if (!regex.test(e.currentTarget.value)) {
-                        var txtfld = e.currentTarget;
-                        var newtxt = txtfld.value.slice(0, txtfld.value.length - 1);
-                        txtfld.value = newtxt;
-                    }
-                }); // IE9 allow input type number
             },
             onEntityChange: function(e, value) {
                 this.modal.$el.find('button.ok').prop("disabled", false);
@@ -249,39 +259,7 @@ define(['require',
                         that.subAttributeData(data)
                     },
                     complete: function() {
-                        var _self = that;
-                        that.$('input[data-type="date"]').each(function() {
-                            if (!$(this).data('datepicker')) {
-                                $(this).datetimepicker({
-                                    format: 'DD MMMM YYYY'
-                                });
-                            }
-                        });
-                        that.longValidation(that);
-                        // IE9 allow input type number
-                        that.$('input[data-type="int"]').on('keydown', function(e) {
-                            var regex = /^[0-9]*((?=[^.]|$))?$/; // allow only numbers [0-9] 
-                            if (!regex.test(e.currentTarget.value)) {
-                                return false;
-                            }
-                        });
-                        if (that.ui.entityInputData.find('fieldset').length > 0 && that.ui.entityInputData.find('select.true,input.true').length === 0) {
-                            that.requiredAllToggle(that.ui.entityInputData.find('select.true,input.true').length === 0);
-                            that.ui.toggleRequired.prop('checked', true);
-                        }
-                        // IE9 allow input type number
-                        that.$('input[data-type="int"]').on('keyup click', function(e) {
-                            e.currentTarget.value = e.currentTarget.value;
-                            var regex = /^[0-9]*((?=[^.]|$))?$/; // allow only numbers [0-9] 
-                            if (!regex.test(e.currentTarget.value)) {
-                                var txtfld = e.currentTarget;
-                                var newtxt = txtfld.value.slice(0, txtfld.value.length - 1);
-                                txtfld.value = newtxt;
-                            }
-                        });
-                        that.$('select[data-type="array<string>"]').each(function() {
-                            that.addJsonSearchData(that.arryaType);
-                        });
+                        that.initilizeElements();
                     },
                     silent: true
                 });
@@ -305,9 +283,8 @@ define(['require',
                         var superTypeAttr = data.superTypes[j];
                         that.fetchTagSubData(superTypeAttr);
                     }
-                } else {
-                    this.hideLoader();
                 }
+
                 if (this.required) {
                     this.ui.entityInputData.find('fieldset div.true').hide()
                     this.ui.entityInputData.find('div.true').hide();
@@ -316,20 +293,129 @@ define(['require',
                     this.ui.entityInputData.find("input,select,textarea").placeholder();
                 }
             },
+            fetchTagSubData: function(entityName) {
+                var that = this;
+                this.collection.url = UrlLinks.entitiesDefApiUrl(entityName);
+                this.collection.modelAttrName = 'attributeDefs';
+                this.asyncFetchCounter++;
+                this.collection.fetch({
+                    success: function(model, data) {
+                        that.subAttributeData(data);
+                    },
+                    complete: function() {
+                        --that.asyncFetchCounter;
+                        that.initilizeElements();
+                    },
+                    silent: true
+                });
+            },
+            initilizeElements: function() {
+                var that = this;
+                if (this.asyncFetchCounter === 0) {
+                    this.$('input[data-type="date"]').each(function() {
+                        if (!$(this).data('datepicker')) {
+                            $(this).datetimepicker({
+                                format: 'DD MMMM YYYY'
+                            });
+                        }
+                    });
+                    this.initializeValidation();
+
+                    if (this.ui.entityInputData.find('fieldset').length > 0 && this.ui.entityInputData.find('select.true,input.true').length === 0) {
+                        this.requiredAllToggle(this.ui.entityInputData.find('select.true,input.true').length === 0);
+                        this.ui.toggleRequired.prop('checked', true);
+                    } else {
+                        this.ui.entityInputData.find('fieldset').each(function() {
+                            if (!$(this).find('div').hasClass('false')) {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                    this.$('select[data-type="boolean"]').each(function(value, key) {
+                        var dataKey = $(key).data('key');
+                        if (that.entityData) {
+                            var setValue = that.entityData.get("attributes")[dataKey];
+                            this.value = setValue;
+                        }
+                    });
+                    if (this.ui.entityInputData.find('select').length) {
+                        this.ui.entityInputData.find('select').each(function() {
+                            that.addJsonSearchData();
+                        });
+                    } else {
+                        this.hideLoader();
+                    }
+                }
+            },
+            initializeValidation: function() {
+                // IE9 allow input type number
+                var regex = /^[0-9]*((?=[^.]|$))?$/, // allow only numbers [0-9] 
+                    removeText = function(e, value) {
+                        if (!regex.test(value)) {
+                            var txtfld = e.currentTarget;
+                            var newtxt = txtfld.value.slice(0, txtfld.value.length - 1);
+                            txtfld.value = newtxt;
+                        }
+                    }
+                this.$('input[data-type="int"],input[data-type="long"]').on('keydown', function(e) {
+                    // allow only numbers [0-9] 
+                    if (!regex.test(e.currentTarget.value)) {
+                        return false;
+                    }
+                });
+                this.$('input[data-type="int"],input[data-type="long"]').on('paste', function(e) {
+                    return false;
+                });
+
+                this.$('input[data-type="long"],input[data-type="int"]').on('keyup click', function(e) {
+                    removeText(e, e.currentTarget.value);
+                });
+            },
             getContainer: function(value) {
                 var entityLabel = this.capitalize(value.name);
                 return '<div class="row row-margin-bottom ' + value.isOptional + '"><span class="col-md-3">' +
                     '<label class="' + value.isOptional + '">' + entityLabel + (value.isOptional == true ? '' : ' <span class="requiredInput">*</span>') + '</label></span>' +
-                    '<span class="col-md-9 position-relative">' +
-                    (value.typeName === "boolean" ? this.getSelect(value) : this.getInput(value)) +
+                    '<span class="col-md-9 position-relative">' + (this.getElement(value)) +
                     '<span class="spanEntityType" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></input></span></div>';
             },
             getFieldSet: function(data, alloptional, attributeInput) {
                 return '<fieldset class="scheduler-border' + (alloptional ? " alloptional" : "") + '"><legend class="scheduler-border">' + data.name + '</legend>' + attributeInput + '</fieldset>';
             },
-            getInput: function(value) {
-                var that = this;
-                var entityValue = "";
+            getSelect: function(value, entityValue) {
+                if (value.typeName === "boolean") {
+                    return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName + '" data-key="' + value.name + '" data-id="entityInput">' +
+                        '<option disabled="disabled">--Select true or false--</option><option value="true">true</option>' +
+                        '<option value="false">false</option></select>';
+                } else {
+                    var splitTypeName = value.typeName.split("<");
+                    if (splitTypeName.length > 1) {
+                        splitTypeName = splitTypeName[1].split(">")[0];
+                    } else {
+                        splitTypeName = value.typeName;
+                    }
+                    return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName +
+                        '" data-key="' + value.name + '"data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
+                }
+
+            },
+            getTextArea: function(value, entityValue) {
+                return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
+                    ' data-type="' + value.typeName + '"' +
+                    ' data-key="' + value.name + '"' +
+                    ' placeholder="' + value.name + '"' +
+                    ' data-id="entityInput">' + entityValue + '</textarea>';
+            },
+            getInput: function(value, entityValue) {
+                return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
+                    ' data-type="' + value.typeName + '"' +
+                    ' value="' + entityValue + '"' +
+                    ' data-key="' + value.name + '"' +
+                    ' placeholder="' + value.name + '"' +
+                    ' data-id="entityInput">';
+            },
+            getElement: function(value) {
+                var typeName = value.typeName,
+                    entityValue = "";
                 if (this.guid) {
                     var dataValue = this.entityData.get("attributes")[value.name];
                     if (_.isObject(dataValue)) {
@@ -343,181 +429,136 @@ define(['require',
                         }
                     }
                 }
-                if (value.typeName === "string" || value.typeName === "long" || value.typeName === "int" || value.typeName === "boolean" || value.typeName === "date") {
-                    return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
-                        ' data-type="' + value.typeName + '"' +
-                        ' value="' + entityValue + '"' +
-                        ' data-key="' + value.name + '"' +
-                        ' placeholder="' + value.name + '"' +
-                        ' data-id="entityInput">';
-                } else if (value.typeName === "map<string,string>") {
-                    return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
-                        ' data-type="' + value.typeName + '"' +
-                        ' data-key="' + value.name + '"' +
-                        ' placeholder="' + value.name + '"' +
-                        ' data-id="entityInput">' + entityValue + '</textarea>';
-                } else {
-                    var changeDatatype;
-                    if (value.typeName.indexOf("array") == -1) {
-                        changeDatatype = value.typeName;
-                    } else {
-                        if (value.typeName === "array<string>") {
-                            this.arryaType = value.typeName;
-                        } else {
-                            changeDatatype = value.typeName.split('<')[1].split('>')[0];
+                if (typeName && this.entityDefCollection.fullCollection.find({ name: typeName })) {
+                    if (!_.contains(this.searchQueryList, typeName)) {
+                        this.searchQueryList.push(typeName);
+                        $.extend(this.searchCollection.queryParams, { query: typeName });
+                        ++this.asyncFetchLOVCounter;
+                        this.searchCollection.fetch({ reset: true });
+                    }
+                    return this.getSelect(value, entityValue);
+                } else if (typeName === "boolean" || typeName.indexOf("array") > -1) {
+                    var splitTypeName = typeName.split("<");
+                    if (splitTypeName.length > 1) {
+                        splitTypeName = splitTypeName[1].split(">")[0];
+                        if (splitTypeName && this.entityDefCollection.fullCollection.find({ name: splitTypeName })) {
+                            if (!_.contains(this.searchQueryList, splitTypeName)) {
+                                this.searchQueryList.push(splitTypeName);
+                                $.extend(this.searchCollection.queryParams, { query: splitTypeName });
+                                ++this.asyncFetchLOVCounter;
+                                this.searchCollection.fetch({ reset: true });
+                            }
                         }
                     }
-                    $.extend(that.searchCollection.queryParams, { query: changeDatatype });
-                    that.searchCollection.fetch({ reset: true });
-                    return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName +
-                        '" data-key="' + value.name + '"data-id="entitySelectData" data-queryData="' + value.typeName + '">' + (this.guid ? entityValue : "") + '</select>';
+                    return this.getSelect(value, entityValue);
+                } else if (typeName.indexOf("map") > -1) {
+                    return this.getTextArea(value, entityValue);
+                } else {
+                    return this.getInput(value, entityValue);
                 }
-            },
-            getSelect: function(value) {
-                return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName + '" data-key="' + value.name + '" data-id="entityInput">' +
-                    '<option disabled="disabled">--Select true or false--</option><option>true</option>' +
-                    '<option>false</option></select>';
-            },
-            fetchTagSubData: function(entityName) {
-                var that = this;
-                this.collection.url = UrlLinks.entitiesDefApiUrl(entityName);
-                this.collection.modelAttrName = 'attributeDefs';
-                this.asyncFetchCounter++;
-                this.collection.fetch({
-                    success: function(model, data) {
-                        that.subAttributeData(data);
-                    },
-                    complete: function() {
-                        --that.asyncFetchCounter;
-                        if (that.asyncFetchCounter === 0) {
-                            that.$('input[data-type="date"]').each(function() {
-                                if (!$(this).data('datepicker')) {
-                                    $(this).datetimepicker({
-                                        format: 'DD MMMM YYYY'
-                                    });
-                                }
-                            });
-                            that.longValidation(that);
-                            that.hideLoader();
-                        }
-                        if (that.ui.entityInputData.find('select.true,input.true').length === 0) {
-                            that.requiredAllToggle(that.ui.entityInputData.find('select.true,input.true').length === 0);
-                            that.ui.toggleRequired.prop('checked', true);
-                        }
-                        that.$('select[data-type="boolean"]').each(function(value, key) {
-                            var dataKey = $(key).data('key');
-                            if (that.entityData) {
-                                var setValue = that.entityData.get("attributes")[dataKey];
-                                this.value = setValue;
-                            }
-                        });
-                    },
-                    silent: true
-                });
             },
             okButton: function() {
                 var that = this;
                 this.showLoader();
                 this.parentEntity = this.ui.entityList.val();
                 var entityAttribute = {};
-                that.validateError = false;
-                that.validateMessage = false;
-                this.ui.entityInputData.find("input,select,textarea").each(function() {
-                    var value = $(this).val();
-                    if ($(this).val() && $(this).val().trim) {
-                        value = $(this).val().trim();
+                var extractValue = function(value) {
+                    if (_.isArray(value)) {
+                        if (that.selectStoreCollection.length) {
+                            var parseData = [];
+                            value.map(function(val) {
+                                var temp = {} // I9 support;
+                                temp['labelName'] = val;
+                                if (that.selectStoreCollection.findWhere(temp)) {
+                                    var valueData = that.selectStoreCollection.findWhere(temp).toJSON();
+                                    valueData['guid'] = valueData.guid;
+                                    parseData.push(valueData);
+                                }
+                            });
+                        }
+                    } else {
+                        if (that.selectStoreCollection.length) {
+                            var temp = {} // I9 support;
+                            temp['labelName'] = value;
+                            if (that.selectStoreCollection.findWhere(temp)) {
+                                var parseData = that.selectStoreCollection.findWhere(temp).toJSON();
+                                parseData['guid'] = parseData.guid;
+                            }
+                        }
                     }
-
-                    if ($(this).hasClass("true")) {
-                        if (value == "" || value == undefined) {
-                            if ($(this).data('select2')) {
-                                $(this).data('select2').$container.addClass("errorClass")
-                            } else {
+                    return parseData;
+                }
+                try {
+                    this.ui.entityInputData.find("input,select,textarea").each(function() {
+                        var value = $(this).val();
+                        if ($(this).val() && $(this).val().trim) {
+                            value = $(this).val().trim();
+                        }
+                        if (this.nodeName === "TEXTAREA") {
+                            try {
+                                if (value && value.length) {
+                                    JSON.parse(value);
+                                    $(this).removeClass('errorClass');
+                                }
+                            } catch (err) {
+                                throw new Error(err.message);
                                 $(this).addClass('errorClass');
                             }
-                            that.hideLoader();
-                            that.validateError = true;
-                            that.validateMessage = true;
-                            return;
                         }
-                    }
-                    var dataTypeEnitity = $(this).data('type');
-                    var datakeyEntity = $(this).data('key');
-                    var selectDataType = $(this).data('querydata');
-                    // var pickKey = $(this).data('pickkey');
-                    if (typeof dataTypeEnitity === 'string' && datakeyEntity.indexOf("Time") > -1) {
-                        entityAttribute[datakeyEntity] = Date.parse($(this).val());
-                    } else if (dataTypeEnitity == "string" || dataTypeEnitity === "long" || dataTypeEnitity === "int" || dataTypeEnitity === "boolean" || dataTypeEnitity == "date") {
-                        entityAttribute[datakeyEntity] = $(this).val();
-                    } else {
-                        try {
-                            if (value !== undefined && value !== null && value !== "") {
-                                if (_.isArray(value)) {
-                                    var arrayEmptyValueCheck = value.join("")
-                                    if (arrayEmptyValueCheck === "") {
-                                        return;
+                        // validation
+                        if ($(this).hasClass("true")) {
+                            if (value == "" || value == undefined) {
+                                if ($(this).data('select2')) {
+                                    $(this).data('select2').$container.addClass("errorClass")
+                                } else {
+                                    $(this).addClass('errorClass');
+                                }
+                                that.hideLoader();
+                                throw new Error("Please fill the required fields");
+                                return;
+                            }
+                        }
+                        var dataTypeEnitity = $(this).data('type');
+                        var datakeyEntity = $(this).data('key');
+
+                        // Extract Data
+                        if (dataTypeEnitity && datakeyEntity) {
+                            if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
+                                entityAttribute[datakeyEntity] = extractValue(value);
+                            } else if (typeof dataTypeEnitity === 'string' && datakeyEntity.indexOf("Time") > -1) {
+                                entityAttribute[datakeyEntity] = Date.parse(value);
+                            } else if (dataTypeEnitity.indexOf("map") > -1) {
+                                try {
+                                    if (value && value.length) {
+                                        parseData = JSON.parse(value);
+                                        entityAttribute[datakeyEntity] = parseData;
                                     }
-                                    if (dataTypeEnitity === "array<string>") {
-                                        var parseData = value;
-                                    } else {
-                                        if (that.selectStoreCollection.length) {
-                                            var parseData = value.map(function(val) {
-                                                var temp = {} // I9 support;
-                                                temp['labelName'] = val;
-                                                var valueData = that.selectStoreCollection.findWhere(temp).toJSON();
-                                                valueData['guid'] = valueData.guid;
-                                                return valueData;
-                                            })
-                                        }
+                                } catch (err) {
+                                    $(this).addClass('errorClass');
+                                    throw new Error(datakeyEntity + " : " + err.message);
+                                    return;
+                                }
+                            } else if (dataTypeEnitity.indexOf("array") > -1 && dataTypeEnitity.indexOf("string") === -1) {
+                                entityAttribute[datakeyEntity] = extractValue(value);
+                            } else {
+                                if (_.isString(value)) {
+                                    if (value.length) {
+                                        entityAttribute[datakeyEntity] = value;
                                     }
                                 } else {
-                                    if (that.selectStoreCollection.length) {
-                                        var temp = {} // I9 support;
-                                        temp['labelName'] = $(this).val();
-                                        var parseData = that.selectStoreCollection.findWhere(temp).toJSON();
-                                        parseData['guid'] = parseData.guid;
-                                    }
-                                    // Object but maptype
-                                    if (!temp['labelName']) {
-                                        try {
-                                            parseData = JSON.parse($(this).val());
-                                        } catch (err) {
-                                            Utils.serverErrorHandler();
-                                        }
-                                    }
+                                    entityAttribute[datakeyEntity] = value;
                                 }
+
                             }
-                            if (parseData) {
-                                entityAttribute[datakeyEntity] = parseData
-                            }
-                            $(this).removeClass('errorClass');
-                        } catch (e) {
-                            $(this).addClass('errorClass');
-                            that.validateError = e;
-                            that.hideLoader();
                         }
-                    }
-                });
-                var entityJson = {
-                    "typeName": this.guid ? this.entityData.get("typeName") : this.parentEntity,
-                    "attributes": entityAttribute
-                };
-                if (this.guid) {
-                    entityJson["guid"] = this.entityData.get("guid");
-                };
-                if (that.validateError) {
-                    if (that.validateMessage) {
-                        Utils.notifyError({
-                            content: "Please fill the required fields"
-                        });
-                    } else {
-                        Utils.notifyError({
-                            content: that.validateError.message
-                        });
-                    }
-                    that.validateError = null;
-                    that.hideLoader();
-                } else {
+                    });
+                    var entityJson = {
+                        "typeName": this.guid ? this.entityData.get("typeName") : this.parentEntity,
+                        "attributes": entityAttribute
+                    };
+                    if (this.guid) {
+                        entityJson["guid"] = this.entityData.get("guid");
+                    };
                     this.entityModel.createOreditEntity(this.guid, {
                         data: JSON.stringify(entityJson),
                         type: this.guid ? "PUT" : "POST",
@@ -538,6 +579,12 @@ define(['require',
                             that.hideLoader();
                         }
                     });
+
+                } catch (e) {
+                    Utils.notifyError({
+                        content: e.message
+                    });
+                    that.hideLoader();
                 }
             },
             setUrl: function(url, create) {
@@ -558,81 +605,99 @@ define(['require',
                 this.$('.entityLoader').hide();
                 this.$('.entityInputData').show();
             },
-            addJsonSearchData: function(arrStingType) {
-                var that = this,
-                    typename,
-                    str = '';
-                if (arrStingType) {
-                    typename = arrStingType;
-                } else {
-                    if (this.searchCollection.length) {
-                        typename = this.searchCollection.first().get("typeName");
-                        this.selectStoreCollection.push(this.searchCollection.fullCollection.models);
-                        var labelName = "";
-                        _.each(this.searchCollection.fullCollection.models, function(value, key) {
-                            var obj = value.toJSON();
+            addJsonSearchData: function() {
+                if (this.asyncFetchLOVCounter === 0) {
+                    var that = this,
+                        queryText,
+                        str = '';
 
-                            labelName = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid);
-                            value.set('labelName', labelName);
+                    // Add oprions in select
+                    if (this.selectStoreCollection.length) {
+                        var appendOption = function(optionValue) {
+                            var obj = optionValue.toJSON(),
+                                labelName = (_.escape(obj.displayText) || _.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || obj.guid);
+                            optionValue.set('labelName', labelName);
                             if (labelName) {
-                                str += '<option>' + _.escape(labelName) + '</option>';
+                                var str = '<option>' + _.escape(labelName) + '</option>';
                             }
-                        });
-                    } else {
-
-                    }
-                }
-                this.$('select[data-queryData="' + typename + '"]').html(str);
-                $('select[data-id="' + 'entitySelectData' + '"]').each(function(value, key) {
-                    var keyData = $(this).data("key");
-                    var typeData = $(this).data("type");
-                    var placeholderName = "Select a " + typeData + " from the dropdown list";
-                    var $this = $(this);
-                    $this.attr("multiple", ($this.data('type').indexOf("array") === -1 ? false : true))
-                    if (that.guid) {
-                        if (that.selectStoreCollection.length) {
-                            var selectedValue = [];
+                            this.$('select[data-queryData="' + obj.queryText + '"]').append(str);
                         }
-                        var dataValue = that.entityData.get("attributes")[keyData];
-                        that.selectStoreCollection.each(function(value) {
+                        _.each(this.selectStoreCollection.models, function(value) {
                             var obj = value.toJSON();
-                            if (dataValue !== null && _.isArray(dataValue)) {
-                                _.each(dataValue, function(obj) {
-                                    if (obj.guid === value.attributes.guid) {
-                                        selectedValue.push(value.attributes.labelName);
-                                    }
-                                });
-                            } else if (dataValue !== null) {
-                                if (dataValue.guid === value.attributes.guid) {
-                                    selectedValue.push(value.attributes.labelName);
+                            if (obj.status) {
+                                if (!Enums.entityStateReadOnly[obj.status]) {
+                                    appendOption(value);
                                 }
+                            } else {
+                                appendOption(value);
                             }
                         });
-                        if (selectedValue) {
-                            $this.val(selectedValue);
-                        } else {
-                            if (that.guid) {
-                                var dataValue = that.entityData.get("attributes")[keyData];
-                                if (dataValue !== null) {
+                    }
+
+                    $('select[data-id="entitySelectData"]').each(function(value, key) {
+                        var $this = $(this),
+                            keyData = $(this).data("key"),
+                            typeData = $(this).data("type"),
+                            placeholderName = "Select a " + typeData + " from the dropdown list";
+
+                        $this.attr("multiple", ($this.data('type').indexOf("array") === -1 ? false : true));
+
+                        if (that.guid) {
+                            var dataValue = that.entityData.get("attributes")[keyData];
+                            if (that.selectStoreCollection.length) {
+                                var selectedValue = [];
+                            }
+                            var setValue = function(selectValue) {
+                                var obj = selectValue.toJSON();
+                                if (dataValue !== null && _.isArray(dataValue)) {
                                     _.each(dataValue, function(obj) {
-                                        if (!_.isObject(obj)) {
-                                            str += '<option>' + _.escape(obj) + '</option>';
+                                        if (obj.guid === selectValue.attributes.guid) {
+                                            selectedValue.push(selectValue.attributes.labelName);
                                         }
                                     });
-                                    $this.html(str);
+                                } else if (dataValue !== null) {
+                                    if (dataValue.guid === selectValue.attributes.guid) {
+                                        selectedValue.push(selectValue.attributes.labelName);
+                                    }
                                 }
                             }
-                            $this.val(dataValue);
+                            that.selectStoreCollection.each(function(storedValue) {
+                                var obj = storedValue.toJSON();
+                                if (obj.status) {
+                                    if (!Enums.entityStateReadOnly[obj.status]) {
+                                        setValue(storedValue);
+                                    }
+                                } else {
+                                    setValue(storedValue);
+                                }
+                            });
+
+                            // Array of string.
+                            if (selectedValue.length === 0 && dataValue && dataValue.length) {
+                                var str = "";
+                                _.each(dataValue, function(obj) {
+                                    if (_.isString(obj)) {
+                                        selectedValue.push(obj);
+                                        str += '<option>' + _.escape(obj) + '</option>';
+                                    }
+                                });
+                                $this.html(str);
+                            }
+                            if (selectedValue) {
+                                $this.val(selectedValue);
+                            }
+                        } else {
+                            $this.val([]);
                         }
-                    } else {
-                        $this.val("");
-                    }
-                    $this.select2({
-                        placeholder: placeholderName,
-                        allowClear: true,
-                        tags: true
+                        $this.select2({
+                            placeholder: placeholderName,
+                            allowClear: true,
+                            tags: true
+                        });
                     });
-                });
+                    this.hideLoader();
+                }
+
             }
         });
     return CreateEntityLayoutView;

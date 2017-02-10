@@ -119,6 +119,9 @@
     .select2-selection--multiple {
         background-color: $color_white_lilac_approx !important;
         border: 1px $color_mystic_approx solid !important;
+        &.errorClass {
+            border: 1px solid red !important;
+        }
     }
     .select2-selection--single {
         .select2-selection__arrow {

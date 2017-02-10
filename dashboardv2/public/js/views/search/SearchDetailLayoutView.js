@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'value', 'initialView'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -64,7 +64,8 @@ define(['require',
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                             value: value,
                             tag: that.tag,
-                            initialView: that.initialView
+                            initialView: that.initialView,
+                            entityDefCollection: that.entityDefCollection
                         }));
                     }
                 });
