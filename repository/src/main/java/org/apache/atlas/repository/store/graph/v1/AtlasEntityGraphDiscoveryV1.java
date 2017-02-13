@@ -89,11 +89,13 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         while (entityStream.hasNext()) {
             AtlasEntity entity = entityStream.next();
 
-            if (entity != null) {
-                walkEntityGraph(entity);
-
-                walkedEntities.add(entity.getGuid());
+            if (entity == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "found null entity");
             }
+
+            walkEntityGraph(entity);
+
+            walkedEntities.add(entity.getGuid());
         }
 
         // walk through entities referenced by other entities

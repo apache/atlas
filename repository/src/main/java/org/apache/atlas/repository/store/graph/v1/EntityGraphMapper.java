@@ -606,14 +606,10 @@ public class EntityGraphMapper {
                 if (!newMap.values().contains(currentEdge)) {
                     boolean deleted = deleteHandler.deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true);
 
-                    /* TODO: need to review the following 'if' block. Wouldn't this leave deleted keys in the map?
-                     *
                     if (!deleted) {
                         additionalMap.put(currentKey, currentEdge);
                         shouldDeleteKey = false;
                     }
-                    *
-                    */
                 }
             }
 
@@ -700,13 +696,9 @@ public class EntityGraphMapper {
                     for (AtlasEdge edge : edgesToRemove) {
                         boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(), true);
 
-                        /* TODO: need to review the following 'if' block. Wouldn't this leave deleted elements continue to be in array?
-                         *
                         if (!deleted) {
                             additionalElements.add(edge);
                         }
-                         *
-                         */
                     }
 
                     return additionalElements;

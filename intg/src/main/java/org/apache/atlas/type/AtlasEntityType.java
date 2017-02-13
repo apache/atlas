@@ -89,7 +89,7 @@ public class AtlasEntityType extends AtlasStructType {
         this.superTypes    = Collections.unmodifiableList(s);
         this.allSuperTypes = Collections.unmodifiableSet(allS);
         this.allAttributes = Collections.unmodifiableMap(allA);
-        this.allSubTypes          = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
+        this.allSubTypes   = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
     }
 
     @Override
@@ -188,11 +188,22 @@ public class AtlasEntityType extends AtlasStructType {
 
         if (obj != null) {
             if (obj instanceof AtlasObjectId) {
-                AtlasObjectId objId = (AtlasObjectId ) obj;
+                AtlasObjectId objId = (AtlasObjectId) obj;
                 return isAssignableFrom(objId);
+            } else if (obj instanceof AtlasEntity) {
+                // entity validation will be done below, outside of these if/else blocks
             } else if (obj instanceof Map) {
-                AtlasObjectId objId = new AtlasObjectId((Map)obj);
-                return isAssignableFrom(objId);
+                AtlasObjectId objId = new AtlasObjectId((Map) obj);
+
+                if (isAssignableFrom(objId)) {
+                    return true;
+                }
+
+                // entity validation will be done below, outside of these if/else blocks
+            } else {
+                ret = false;
+
+                messages.add(objName + ": invalid value type '" + obj.getClass().getName());
             }
 
             for (AtlasEntityType superType : superTypes) {

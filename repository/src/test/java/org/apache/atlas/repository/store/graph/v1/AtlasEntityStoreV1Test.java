@@ -677,13 +677,13 @@ public class AtlasEntityStoreV1Test {
                 Map          actualMap   = (Map) actual;
                 Map          expectedMap = (Map) expected;
 
-                if (MapUtils.isEmpty(expectedMap)) {
-                    Assert.assertEquals(0, (actualMap == null ? 0 : actualMap.size()));
-                } else {
-                    Assert.assertFalse(MapUtils.isEmpty(actualMap));
-                    Assert.assertEquals(actualMap.size(), expectedMap.size());
+                if (MapUtils.isNotEmpty(expectedMap)) {
+                    Assert.assertTrue(MapUtils.isNotEmpty(actualMap));
 
-                    for (Object key : actualMap.keySet()) {
+                    //actual map could have deleted entities. Hence size may not match.
+                    Assert.assertTrue(actualMap.size() >= expectedMap.size());
+
+                    for (Object key : expectedMap.keySet()) {
                         validateAttribute(entityExtInfo, actualMap.get(key), expectedMap.get(key), valueType, attrName);
                     }
                 }
@@ -695,14 +695,13 @@ public class AtlasEntityStoreV1Test {
                 List           actualList   = (List) actual;
                 List           expectedList = (List) expected;
 
-                if (CollectionUtils.isEmpty(expectedList)) {
-                    Assert.assertTrue(CollectionUtils.isEmpty(actualList));
-                } else {
-                    Assert.assertFalse(CollectionUtils.isEmpty(actualList));
-                    Assert.assertEquals(actualList.size(), expectedList.size());
+                if (CollectionUtils.isNotEmpty(expectedList)) {
+                    Assert.assertTrue(CollectionUtils.isNotEmpty(actualList));
 
                     //actual list could have deleted entities. Hence size may not match.
-                    for (int i = 0; i < actualList.size(); i++) {
+                    Assert.assertTrue(actualList.size() >= expectedList.size());
+
+                    for (int i = 0; i < expectedList.size(); i++) {
                         validateAttribute(entityExtInfo, actualList.get(i), expectedList.get(i), elemType, attrName);
                     }
                 }
