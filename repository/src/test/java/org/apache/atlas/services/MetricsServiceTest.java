@@ -1,23 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.atlas.services;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -50,37 +32,20 @@ public class MetricsServiceTest {
     private Number mockCount = 10;
 
     @BeforeClass
-    public void init() throws ScriptException, AtlasException {
-        Map<String, Object> aMockMap = new HashMap<>();
-        Map<String, Object> bMockMap = new HashMap<>();
-        Map<String, Object> cMockMap = new HashMap<>();
-        aMockMap.put("key", "a");
-        aMockMap.put("value", 1);
-
-        bMockMap.put("key", "b");
-        bMockMap.put("value", 2);
-
-        cMockMap.put("key", "c");
-        cMockMap.put("value", 3);
-        mockMapList.add(aMockMap);
-        mockMapList.add(bMockMap);
-        mockMapList.add(cMockMap);
+    public void init() throws ScriptException {
+        Map<String, Object> mockMap = new HashMap<>();
+        mockMap.put("a", 1);
+        mockMap.put("b", 2);
+        mockMap.put("c", 3);
+        mockMapList.add(mockMap);
 
         when(mockConfig.getInt(anyString(), anyInt())).thenReturn(5);
-        when(mockConfig.getString(anyString(), anyString()))
-                // we have seven count queries so stubbing 7 counts
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                .thenReturn("dummyTestQuery.count()")
-                // The last query is a map
-                .thenReturn("dummyTestQuery");
         assertEquals(mockConfig.getInt("test", 1), 5);
+        when(mockConfig.getString(anyString(), anyString()))
+                .thenReturn("count()", "count()", "count()", "count()", "count()", "toList()", "count()", "toList()");
         when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
         setupMockGraph();
+
         metricsService = new MetricsService(mockConfig, mockGraph, mockTypeRegistry);
     }
 
@@ -101,19 +66,19 @@ public class MetricsServiceTest {
     @Test
     public void testGetMetrics() throws InterruptedException, ScriptException {
         assertNotNull(metricsService);
-        AtlasMetrics metrics = metricsService.getMetrics();
+        AtlasMetrics metrics = metricsService.getMetrics(false);
         assertNotNull(metrics);
         Number aCount = metrics.getMetric("entity", "a");
         assertNotNull(aCount);
-        assertEquals(aCount, 10);
+        assertEquals(aCount, 1);
 
         Number bCount = metrics.getMetric("entity", "b");
         assertNotNull(bCount);
-        assertEquals(bCount, 10);
+        assertEquals(bCount, 2);
 
         Number cCount = metrics.getMetric("entity", "c");
         assertNotNull(cCount);
-        assertEquals(cCount, 10);
+        assertEquals(cCount, 3);
 
         Number aTags = metrics.getMetric("tag", "a");
         assertNotNull(aTags);
@@ -130,12 +95,12 @@ public class MetricsServiceTest {
         verify(mockGraph, atLeastOnce()).executeGremlinScript(anyString(), anyBoolean());
 
         // Subsequent call within the cache timeout window
-        metricsService.getMetrics();
+        metricsService.getMetrics(false);
         verifyZeroInteractions(mockGraph);
 
         // Now test the cache refresh
         Thread.sleep(6000);
-        metricsService.getMetrics();
+        metricsService.getMetrics(true);
         verify(mockGraph, atLeastOnce()).executeGremlinScript(anyString(), anyBoolean());
     }
 }

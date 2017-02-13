@@ -87,8 +87,8 @@ public class MetricsService {
     }
 
     @SuppressWarnings("unchecked")
-    public AtlasMetrics getMetrics() {
-        if (!isCacheValid()) {
+    public AtlasMetrics getMetrics(boolean ignoreCache) {
+        if (ignoreCache || !isCacheValid()) {
             AtlasMetrics metrics = new AtlasMetrics();
 
             for (MetricQuery metricQuery : MetricQuery.values()) {
@@ -96,18 +96,7 @@ public class MetricsService {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Executing query: {}", metricQuery);
                     }
-
-                    if (metricQuery == MetricQuery.ENTITIES_PER_TYPE) {
-                        Collection<String> entityDefNames = atlasTypeRegistry.getAllEntityDefNames();
-
-                        for (String entityDefName : entityDefNames) {
-                            String formattedQuery = String.format(metricQuery.query, entityDefName);
-
-                            executeGremlinQuery(metrics, metricQuery.type, entityDefName, formattedQuery);
-                        }
-                    } else {
-                        executeGremlinQuery(metrics, metricQuery.type, metricQuery.name, metricQuery.query);
-                    }
+                    executeGremlinQuery(metrics, metricQuery.type, metricQuery.name, metricQuery.query);
                 } catch (ScriptException e) {
                     LOG.error("Gremlin execution failed for metric {}", metricQuery, e);
                 }
@@ -130,8 +119,10 @@ public class MetricsService {
         if (result instanceof Number) {
             metrics.addData(type, name, ((Number) result).intValue());
         } else if (result instanceof List) {
-            for (Map resultMap : (List<Map>) result) {
-                metrics.addData(type, (String) resultMap.get("key"), ((Number) resultMap.get("value")).intValue());
+            for (Map<String, Number> resultMap : (List<Map<String, Number>>) result) {
+                for (Map.Entry<String, Number> entry : resultMap.entrySet()) {
+                    metrics.addData(type, entry.getKey(), entry.getValue().intValue());
+                }
             }
         } else {
             String returnClassName = result != null ? result.getClass().getSimpleName() : "null";
@@ -176,10 +167,10 @@ public class MetricsService {
         TAGS_COUNT(GENERAL, METRIC_TAG_COUNT, "g.V().has('__type', 'typeSystem').filter({it.'__type.category'.name() == 'TRAIT'}).count()"),
         DELETED_ENTITY_COUNT(GENERAL, METRIC_ENTITY_DELETED, "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__status', 'DELETED').count()"),
 
-        ENTITIES_PER_TYPE(ENTITY, METRIC_TYPE_ENTITIES, "g.V().has('__typeName', T.in, ['%s']).count()"),
+        ENTITIES_PER_TYPE(ENTITY, METRIC_TYPE_ENTITIES, "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter({it.'__type.category'.name() != 'TRAIT'}).'__type.name'.toSet()).groupCount{it.'__typeName'}.cap.toList()"),
         TAGGED_ENTITIES(ENTITY, METRIC_TAGGED_ENTITIES, "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__traitNames').count()"),
 
-        TAGS_PER_ENTITY(TAG, METRIC_TAGS_PER_ENTITY, "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__traitNames').transform{[ key: it.'Referenceable.qualifiedName', value: it.'__traitNames'.size()]}.dedup().toList()"),
+        ENTITIES_WITH_SPECIFIC_TAG(TAG, METRIC_TAGS_PER_ENTITY, "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.'__type.category'.name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.'__typeName'}.cap.toList()"),
         ;
 
         private final String type;
