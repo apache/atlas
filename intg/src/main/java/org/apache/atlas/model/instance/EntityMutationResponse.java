@@ -45,8 +45,8 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityMutationResponse {
 
-    Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
-    Map<String, String>                           guidAssignments;
+    private Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
+    private Map<String, String>                           guidAssignments;
 
     public EntityMutationResponse() {
     }

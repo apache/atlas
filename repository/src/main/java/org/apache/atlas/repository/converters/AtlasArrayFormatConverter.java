@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.AtlasErrorCode;

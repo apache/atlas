@@ -15,16 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.type.AtlasType;
 
-import java.util.HashMap;
-import java.util.Map;
 
 public interface AtlasFormatConverter {
     Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException;
@@ -33,28 +32,35 @@ public interface AtlasFormatConverter {
 
     TypeCategory getTypeCategory();
 
-    public static class ConverterContext {
+    class ConverterContext {
 
-        private Map<String, AtlasEntity> entities = null;
+        private AtlasEntity.AtlasEntitiesWithExtInfo entities = null;
 
         public void addEntity(AtlasEntity entity) {
             if (entities == null) {
-                entities = new HashMap<>();
+                entities = new AtlasEntitiesWithExtInfo();
             }
-            entities.put(entity.getGuid(), entity);
+            entities.addEntity(entity);
+        }
+
+        public void addReferredEntity(AtlasEntity entity) {
+            if (entities == null) {
+                entities = new AtlasEntitiesWithExtInfo();
+            }
+            entities.addReferredEntity(entity);
         }
 
         public AtlasEntity getById(String guid) {
             if( entities != null) {
-                return entities.get(guid);
+                return entities.getEntity(guid);
             }
 
             return null;
         }
 
-        public boolean entityExists(String guid) { return entities != null && entities.containsKey(guid); }
+        public boolean entityExists(String guid) { return entities != null && entities.hasEntity(guid); }
 
-        public Map<String, AtlasEntity> getEntities() {
+        public AtlasEntitiesWithExtInfo getEntities() {
             return entities;
         }
     }

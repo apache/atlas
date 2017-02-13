@@ -60,7 +60,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
+import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
 /**
  * Jersey Resource for admin operations.

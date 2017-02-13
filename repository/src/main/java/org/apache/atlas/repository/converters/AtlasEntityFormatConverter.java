@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -51,22 +51,18 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
     }
 
     @Override
-    public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException {
-        AtlasObjectId ret = null;
+    public AtlasEntity fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException {
+        AtlasEntity entity = null;
 
         if (v1Obj != null) {
             AtlasEntityType entityType = (AtlasEntityType) type;
 
-            if (v1Obj instanceof Id) {
-                Id id = (Id) v1Obj;
-
-                ret = new AtlasObjectId(id._getId(), id.getTypeName());
-            } else if (v1Obj instanceof IReferenceableInstance) {
+            if (v1Obj instanceof IReferenceableInstance) {
                 IReferenceableInstance entRef = (IReferenceableInstance) v1Obj;
 
-                ret = new AtlasObjectId(entRef.getId()._getId(), entRef.getTypeName());
+                String guid = entRef.getId()._getId();
 
-                if (!context.entityExists(ret.getGuid())) {
+                if (!context.entityExists(guid)) {
                     Map<String, Object> v1Attribs = null;
 
                     try {
@@ -75,7 +71,7 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                         LOG.error("IReferenceableInstance.getValuesMap() failed", excp);
                     }
 
-                    AtlasEntity entity = new AtlasEntity(entRef.getTypeName(),
+                    entity = new AtlasEntity(entRef.getTypeName(),
                                                          super.fromV1ToV2(entityType, v1Attribs, context));
                     entity.setGuid(entRef.getId()._getId());
                     entity.setStatus(convertState(entRef.getId().getState()));
@@ -83,7 +79,7 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                     entity.setCreateTime(entRef.getSystemAttributes().createdTime);
                     entity.setUpdatedBy(entRef.getSystemAttributes().modifiedBy);
                     entity.setUpdateTime(entRef.getSystemAttributes().modifiedTime);
-                    entity.setVersion(new Long(entRef.getId().version));
+                    entity.setVersion((long) entRef.getId().version);
 
                     if (CollectionUtils.isNotEmpty(entRef.getTraits())) {
                         List<AtlasClassification> classifications = new ArrayList<>();
@@ -99,18 +95,18 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                         entity.setClassifications(classifications);
                     }
-
-                    context.addEntity(entity);
+                } else {
+                    entity = context.getById(guid);
                 }
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "IReferenceableInstance",
                                              v1Obj.getClass().getCanonicalName());
             }
         }
-        return ret;
+        return entity;
     }
 
-    private AtlasEntity.Status convertState(EntityState state){
+    private Status convertState(EntityState state){
         Status status = Status.ACTIVE;
         if(state != null && state.equals(EntityState.DELETED)){
             status = Status.DELETED;
@@ -160,7 +156,6 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                                              v2Obj.getClass().getCanonicalName());
             }
         }
-
         return ret;
     }
 }

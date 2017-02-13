@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.AtlasErrorCode;
@@ -77,12 +77,12 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasType            valueType      = mapType.getValueType();
                 AtlasFormatConverter keyConverter   = converterRegistry.getConverter(keyType.getTypeCategory());
                 AtlasFormatConverter valueConverter = converterRegistry.getConverter(valueType.getTypeCategory());
-                Map                  v1Map          = (Map)v2Obj;
+                Map                  v2Map          = (Map)v2Obj;
 
                 ret = new HashMap<>();
 
-                for (Object key : v1Map.keySet()) {
-                    Object value = v1Map.get(key);
+                for (Object key : v2Map.keySet()) {
+                    Object value = v2Map.get(key);
 
                     Object v2Key   = keyConverter.fromV2ToV1(key, keyType, ctx);
                     Object v2Value = valueConverter.fromV2ToV1(value, valueType, ctx);

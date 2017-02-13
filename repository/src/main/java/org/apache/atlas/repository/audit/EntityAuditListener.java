@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.audit;
 
-import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
@@ -34,6 +33,7 @@ import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -107,6 +107,10 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEvents(events);
+    }
+
+    public List<EntityAuditEvent> getAuditEvents(String guid) throws AtlasException{
+        return auditRepository.listEvents(guid, null, (short) 10);
     }
 
     private EntityAuditEvent createEvent(ITypedReferenceableInstance entity, long ts, EntityAuditAction action)
@@ -189,34 +193,30 @@ public class EntityAuditListener implements EntityChangeListener {
                     if (attrValue instanceof Collection) {
                         for (Object attribute : (Collection) attrValue) {
                             if (attribute instanceof ITypedReferenceableInstance) {
-                                ITypedReferenceableInstance attrInstance = (ITypedReferenceableInstance) attribute;
-                                Map<String, Object>         prunedAttrs  = pruneEntityAttributesForAudit(attrInstance);
-
-                                if (MapUtils.isNotEmpty(prunedAttrs)) {
-                                    if (ret == null) {
-                                        ret = new HashMap<>();
-                                    }
-
-                                    ret.put(attrInstance.getId()._getId(), prunedAttrs);
-                                }
+                                ret = pruneAttributes(ret, (ITypedReferenceableInstance) attribute);
                             }
                         }
                     } else if (attrValue instanceof ITypedReferenceableInstance) {
-                        ITypedReferenceableInstance attrInstance = (ITypedReferenceableInstance) attrValue;
-                        Map<String, Object>         prunedAttrs  = pruneEntityAttributesForAudit(attrInstance);
-
-                        if (MapUtils.isNotEmpty(prunedAttrs)) {
-                            if (ret == null) {
-                                ret = new HashMap<>();
-                            }
-
-                            ret.put(attrInstance.getId()._getId(), prunedAttrs);
-                        }
+                        ret = pruneAttributes(ret, (ITypedReferenceableInstance) attrValue);
                     }
                 }
             }
         }
 
+        return ret;
+    }
+
+    private Map<String, Object> pruneAttributes(Map<String, Object> ret, ITypedReferenceableInstance attribute) throws AtlasException {
+        ITypedReferenceableInstance attrInstance = attribute;
+        Map<String, Object>         prunedAttrs  = pruneEntityAttributesForAudit(attrInstance);
+
+        if (MapUtils.isNotEmpty(prunedAttrs)) {
+            if (ret == null) {
+                ret = new HashMap<>();
+            }
+
+            ret.put(attrInstance.getId()._getId(), prunedAttrs);
+        }
         return ret;
     }
 
@@ -240,24 +240,22 @@ public class EntityAuditListener implements EntityChangeListener {
                     if (attrValue instanceof Collection) {
                         for (Object attributeEntity : (Collection) attrValue) {
                             if (attributeEntity instanceof ITypedReferenceableInstance) {
-                                ITypedReferenceableInstance attrInstance = (ITypedReferenceableInstance) attributeEntity;
-                                Object                      obj          = prunedAttributes.get(attrInstance.getId()._getId());
-
-                                if (obj instanceof Map) {
-                                    restoreEntityAttributes(attrInstance, (Map) obj);
-                                }
+                                restoreAttributes(prunedAttributes, (ITypedReferenceableInstance) attributeEntity);
                             }
                         }
                     } else if (attrValue instanceof ITypedReferenceableInstance) {
-                        ITypedReferenceableInstance attrInstance = (ITypedReferenceableInstance) attrValue;
-                        Object                      obj          = prunedAttributes.get(attrInstance.getId()._getId());
-
-                        if (obj instanceof Map) {
-                            restoreEntityAttributes(attrInstance, (Map) obj);
-                        }
+                        restoreAttributes(prunedAttributes, (ITypedReferenceableInstance) attrValue);
                     }
                 }
             }
+        }
+    }
+
+    private void restoreAttributes(Map<String, Object> prunedAttributes, ITypedReferenceableInstance attributeEntity) throws AtlasException {
+        Object                      obj          = prunedAttributes.get(attributeEntity.getId()._getId());
+
+        if (obj instanceof Map) {
+            restoreEntityAttributes(attributeEntity, (Map) obj);
         }
     }
 

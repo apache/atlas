@@ -75,9 +75,9 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
     DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
     INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS4049E", "Invalid instance creation/updation parameters passed : {0}"),
+
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS40410E", "Instance {0} with unique attribute {1} does not exist"),
     REFERENCED_ENTITY_NOT_FOUND(404, "ATLAS40411E", "Referenced entity {0} is not found"),
-
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS4091E", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS4092E", "Given type {0} has references"),
@@ -87,7 +87,8 @@ public enum AtlasErrorCode {
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
-    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again");
+    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again"),
+    NOTIFICATION_FAILED(500, "ATLAS5005E", "Failed to notify for change {0}");
 
     private String errorCode;
     private String errorMessage;

@@ -23,11 +23,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
@@ -37,7 +38,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
-import org.apache.atlas.web.adapters.AtlasInstanceRestAdapters;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -46,7 +46,15 @@ import org.apache.commons.lang3.StringUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
@@ -54,7 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
+import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
 /**
  * REST for a single entity
@@ -66,14 +74,15 @@ public class EntityREST {
     public static final String PREFIX_ATTR = "attr:";
 
     private final AtlasTypeRegistry         typeRegistry;
-    private final AtlasInstanceRestAdapters restAdapters;
+    private final AtlasInstanceConverter restAdapters;
     private final MetadataService           metadataService;
     private final AtlasEntityStore          entitiesStore;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasInstanceRestAdapters restAdapters, MetadataService metadataService, AtlasEntityStore entitiesStore) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter,
+                      MetadataService metadataService, AtlasEntityStore entitiesStore) {
         this.typeRegistry    = typeRegistry;
-        this.restAdapters    = restAdapters;
+        this.restAdapters    = instanceConverter;
         this.metadataService = metadataService;
         this.entitiesStore   = entitiesStore;
     }

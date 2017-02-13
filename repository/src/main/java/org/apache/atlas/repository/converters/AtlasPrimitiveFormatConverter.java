@@ -15,27 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 
-public abstract class AtlasAbstractFormatConverter implements AtlasFormatConverter {
-    protected final AtlasFormatConverters converterRegistry;
-    protected final AtlasTypeRegistry     typeRegistry;
-    protected final TypeCategory          typeCategory;
-
-    protected AtlasAbstractFormatConverter(AtlasFormatConverters converterRegistry, AtlasTypeRegistry typeRegistry, TypeCategory typeCategory) {
-        this.converterRegistry = converterRegistry;
-        this.typeRegistry      = typeRegistry;
-        this.typeCategory      = typeCategory;
+public class AtlasPrimitiveFormatConverter extends AtlasAbstractFormatConverter {
+    public AtlasPrimitiveFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
+        super(registry, typeRegistry, TypeCategory.PRIMITIVE);
     }
 
     @Override
-    public TypeCategory getTypeCategory() {
-        return typeCategory;
+    public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        return type.getNormalizedValue(v1Obj);
+    }
+
+    @Override
+    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        return type.getNormalizedValue(v2Obj);
     }
 }
 

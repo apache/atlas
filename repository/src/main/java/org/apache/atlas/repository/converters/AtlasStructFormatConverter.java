@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.commons.collections.MapUtils;
@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructFormatConverter.class);
@@ -124,7 +125,9 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructType.AtlasAttribute attr : structType.getAllAttributes().values()) {
+            // Only process the requested/set attributes
+            for (Object attribKey : attributes.keySet()) {
+                AtlasStructType.AtlasAttribute attr = structType.getAttribute((String) attribKey);
                 AtlasType attrType = attr.getAttributeType();
 
                 if (attrType == null) {
@@ -133,16 +136,10 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 }
 
                 Object v2Value = attributes.get(attr.getName());
-                Object v1Value = null;
+                Object v1Value;
 
-                AtlasFormatConverter attrConverter = null;
-                if (attrType.getTypeCategory() == TypeCategory.OBJECT_ID_TYPE && !attr.isOwnedRef()) {
-                    attrConverter = new AtlasObjectIdConverter(converterRegistry, typeRegistry);
-                    v1Value = attrConverter.fromV2ToV1(v2Value, attrType, context);
-                } else {
-                    attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
-                    v1Value = attrConverter.fromV2ToV1(v2Value, attrType, context);
-                }
+                AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
+                v1Value = attrConverter.fromV2ToV1(v2Value, attrType, context);
                 ret.put(attr.getName(), v1Value);
             }
         }
@@ -156,7 +153,10 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
-            for (AtlasStructType.AtlasAttribute attr : structType.getAllAttributes().values()) {
+            // Only process the requested/set attributes
+            for (Object attribKey : attributes.keySet()) {
+                AtlasStructType.AtlasAttribute attr = structType.getAttribute((String) attribKey);
+
                 AtlasType attrType = attr.getAttributeType();
 
                 if (attrType == null) {

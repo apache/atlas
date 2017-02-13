@@ -69,7 +69,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private String updatedBy  = null;
     private Date   createTime = null;
     private Date   updateTime = null;
-    private Long   version    = new Long(0);
+    private Long   version    = 0L;
 
     private List<AtlasClassification> classifications;
 

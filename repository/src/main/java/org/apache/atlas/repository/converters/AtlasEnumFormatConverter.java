@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
@@ -24,9 +24,9 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 
-public class AtlasPrimitiveFormatConverter extends AtlasAbstractFormatConverter {
-    public AtlasPrimitiveFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
-        super(registry, typeRegistry, TypeCategory.PRIMITIVE);
+public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
+    public AtlasEnumFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
+        super(registry, typeRegistry, TypeCategory.ENUM);
     }
 
     @Override

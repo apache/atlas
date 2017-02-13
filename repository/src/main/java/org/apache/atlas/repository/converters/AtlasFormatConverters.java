@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.adapters;
+package org.apache.atlas.repository.converters;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -41,6 +41,7 @@ public class AtlasFormatConverters {
         registerConverter(new AtlasEntityFormatConverter(this, typeRegistry));
         registerConverter(new AtlasArrayFormatConverter(this, typeRegistry));
         registerConverter(new AtlasMapFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasObjectIdConverter(this, typeRegistry));
     }
 
     private void registerConverter(AtlasFormatConverter converter) {
