@@ -224,9 +224,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entity to update.");
         }
 
-        AtlasVertex entityVertex = AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
+        String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, uniqAttributes);
 
-        updatedEntity.setGuid(AtlasGraphUtilsV1.getIdFromVertex(entityVertex));
+        updatedEntity.setGuid(guid);
 
         return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
     }
@@ -249,7 +249,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             }
         }
 
-        Collection<AtlasVertex> deletionCandidates = new ArrayList<AtlasVertex>();
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         deletionCandidates.add(vertex);
 
         return deleteVertices(deletionCandidates);

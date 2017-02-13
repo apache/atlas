@@ -75,7 +75,7 @@ public class NotificationHookConsumerTest {
         AtlasType mockType = mock(AtlasType.class);
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
         AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = mock(AtlasEntity.AtlasEntitiesWithExtInfo.class);
-        when(instanceConverter.getEntities(anyList())).thenReturn(mockEntity);
+        when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
         EntityMutationResponse mutationResponse = mock(EntityMutationResponse.class);
         when(atlasEntityStore.createOrUpdate(any(EntityStream.class), anyBoolean())).thenReturn(mutationResponse);
     }

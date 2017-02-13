@@ -190,6 +190,11 @@ public class AtlasGraphUtilsV1 {
         return vertex;
     }
 
+    public static String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> attrValues) throws AtlasBaseException {
+        AtlasVertex vertexByUniqueAttributes = getVertexByUniqueAttributes(entityType, attrValues);
+        return getIdFromVertex(vertexByUniqueAttributes);
+    }
+
     public static AtlasVertex findByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> attrValues) {
         AtlasVertex vertex = null;
 

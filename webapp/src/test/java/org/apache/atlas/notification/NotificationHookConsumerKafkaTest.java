@@ -77,7 +77,7 @@ public class NotificationHookConsumerKafkaTest {
         AtlasType mockType = mock(AtlasType.class);
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
         AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = mock(AtlasEntity.AtlasEntitiesWithExtInfo.class);
-        when(instanceConverter.getEntities(anyList())).thenReturn(mockEntity);
+        when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
         kafkaNotification = startKafkaServer();
     }
 

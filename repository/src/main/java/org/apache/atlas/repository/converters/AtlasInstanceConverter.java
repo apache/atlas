@@ -125,7 +125,7 @@ public class AtlasInstanceConverter {
         return ret;
     }
 
-    public AtlasEntity.AtlasEntitiesWithExtInfo getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
+    public AtlasEntity.AtlasEntitiesWithExtInfo toAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
 
         AtlasEntityFormatConverter converter  = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
         AtlasEntityType      entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
@@ -187,9 +187,9 @@ public class AtlasInstanceConverter {
         return new AtlasBaseException(e);
     }
 
-    public AtlasEntity.AtlasEntitiesWithExtInfo getEntities(List<Referenceable> referenceables) throws AtlasBaseException {
+    public AtlasEntity.AtlasEntitiesWithExtInfo toAtlasEntities(List<Referenceable> referenceables) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> getEntities");
+            LOG.debug("==> toAtlasEntities");
         }
 
         AtlasFormatConverter.ConverterContext context = new AtlasFormatConverter.ConverterContext();
@@ -199,7 +199,7 @@ public class AtlasInstanceConverter {
             context.addEntity(entity);
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== getEntities");
+            LOG.debug("<== toAtlasEntities");
         }
 
         return context.getEntities();

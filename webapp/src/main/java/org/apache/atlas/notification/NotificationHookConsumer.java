@@ -29,9 +29,11 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -45,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +55,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.atlas.notification.hook.HookNotification.*;
+import static org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
+import static org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
+import static org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
+import static org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
@@ -249,7 +253,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             EntityCreateRequest createRequest = (EntityCreateRequest) message;
                             audit(messageUser, AtlasClient.API.CREATE_ENTITY);
 
-                            entities = instanceConverter.getEntities(createRequest.getEntities());
+                            entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
                             atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                             break;
@@ -262,11 +266,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             audit(messageUser, AtlasClient.API.UPDATE_ENTITY_PARTIAL);
 
                             Referenceable referenceable = partialUpdateRequest.getEntity();
-                            entities = instanceConverter.getEntities(Collections.singletonList(referenceable));
-                            // There should only be one root entity after the conversion
-                            AtlasEntity entity = entities.getEntities().get(0);
-                            // Need to set the attributes explicitly here as the qualified name might have changed during update
-                            entity.setAttribute(partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue());
+                            entities = instanceConverter.toAtlasEntity(referenceable);
+
+                            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
+                            String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, new HashMap<String, Object>(){
+                                { put(partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue()); }
+                            });
+
+                            // There should only be one root entity
+                            entities.getEntities().get(0).setGuid(guid);
+
                             atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), true);
                             break;
 
@@ -293,7 +302,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             EntityUpdateRequest updateRequest = (EntityUpdateRequest) message;
                             audit(messageUser, AtlasClient.API.UPDATE_ENTITY);
 
-                            entities = instanceConverter.getEntities(updateRequest.getEntities());
+                            entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
                             atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                             break;
 
