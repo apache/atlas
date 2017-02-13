@@ -25,6 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Iterator;
 
@@ -32,6 +35,8 @@ import java.util.Iterator;
  * Application properties used by Atlas.
  */
 public final class ApplicationProperties extends PropertiesConfiguration {
+    public static final String ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
+
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
@@ -65,7 +70,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     public static Configuration get(String fileName) throws AtlasException {
-        String confLocation = System.getProperty("atlas.conf");
+        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
         try {
             URL url = null;
 
@@ -124,5 +129,75 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         } catch (Exception e) {
             throw new AtlasException(e);
         }
+    }
+
+    /**
+     * Get the specified property as an {@link InputStream}.
+     * If the property is not set, then the specified default filename
+     * is searched for in the following locations, in order of precedence:
+     * 1. Atlas configuration directory specified by the {@link #ATLAS_CONFIGURATION_DIRECTORY_PROPERTY} system property
+     * 2. relative to the working directory if {@link #ATLAS_CONFIGURATION_DIRECTORY_PROPERTY} is not set
+     * 3. as a classloader resource
+     *
+     * @param configuration
+     * @param propertyName
+     * @param defaultFileName name of file to use by default if specified property is not set in the configuration- if null,
+     * an {@link AtlasException} is thrown if the property is not set
+     * @return an {@link InputStream}
+     * @throws AtlasException if no file was found or if there was an error loading the file
+     */
+    public static InputStream getFileAsInputStream(Configuration configuration, String propertyName, String defaultFileName) throws AtlasException {
+        File fileToLoad = null;
+        String fileName = configuration.getString(propertyName);
+        if (fileName == null) {
+            if (defaultFileName == null) {
+                throw new AtlasException(propertyName + " property not set and no default value specified");
+            }
+            fileName = defaultFileName;
+            String atlasConfDir = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+            if (atlasConfDir != null) {
+                // Look for default filename in Atlas config directory
+                fileToLoad = new File(atlasConfDir, fileName);
+            }
+            else {
+                // Look for default filename under the working directory
+                fileToLoad = new File(fileName);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{} property not set - defaulting to {}", propertyName, fileToLoad.getPath());
+            }
+        }
+        else {
+            // Look for configured filename
+            fileToLoad = new File(fileName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Using {} property setting: {}", propertyName, fileToLoad.getPath());
+            }
+        }
+
+        InputStream inStr = null;
+        if (fileToLoad.exists()) {
+            try {
+                inStr = new FileInputStream(fileToLoad);
+            } catch (FileNotFoundException e) {
+                throw new AtlasException("Error loading file " + fileName, e);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Loaded file from : {}", fileToLoad.getPath());
+            }
+        }
+        else {
+            // Look for file as class loader resource
+            inStr = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+            if (inStr == null) {
+                String msg = fileName + " not found in file system or as class loader resource";
+                LOG.error(msg);
+                throw new AtlasException(msg);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Loaded {} as resource from : {}", fileName, Thread.currentThread().getContextClassLoader().getResource(fileName).toString());
+            }
+        }
+        return inStr;
     }
 }

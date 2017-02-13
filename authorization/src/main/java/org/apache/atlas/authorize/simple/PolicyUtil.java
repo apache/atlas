@@ -33,7 +33,7 @@ public class PolicyUtil {
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
 
 
-    public Map<String, Map<AtlasResourceTypes, List<String>>> createPermissionMap(List<PolicyDef> policyDefList,
+    public static Map<String, Map<AtlasResourceTypes, List<String>>> createPermissionMap(List<PolicyDef> policyDefList,
         AtlasActionTypes permissionType, SimpleAtlasAuthorizer.AtlasAccessorTypes principalType) {
         if (isDebugEnabled) {
             LOG.debug("==> PolicyUtil createPermissionMap\nCreating Permission Map for :: {} & {}", permissionType, principalType);
@@ -104,5 +104,4 @@ public class PolicyUtil {
         return userReadMap;
 
     }
-
 }

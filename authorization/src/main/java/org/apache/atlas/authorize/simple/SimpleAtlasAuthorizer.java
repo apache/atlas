@@ -19,6 +19,7 @@
 package org.apache.atlas.authorize.simple;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +34,6 @@ import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.utils.PropertiesUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.lang.StringUtils;
@@ -44,7 +44,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
 
-	public enum AtlasAccessorTypes {
+    public enum AtlasAccessorTypes {
         USER, GROUP
     }
 
@@ -74,7 +74,6 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
         }
         try {
 
-            PolicyUtil util = new PolicyUtil();
             PolicyParser parser = new PolicyParser();
             optIgnoreCase = Boolean.valueOf(PropertiesUtil.getProperty("optIgnoreCase", "false"));
 
@@ -82,25 +81,25 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                 LOG.debug("Read from PropertiesUtil --> optIgnoreCase :: {}", optIgnoreCase);
             }
 
-            Configuration configuration = ApplicationProperties.get();
-            String policyStorePath = configuration.getString("atlas.auth.policy.file", System.getProperty("atlas.conf")+"/policy-store.txt");
-
-            if (isDebugEnabled) {
-                LOG.debug("Loading Apache Atlas policies from : {}", policyStorePath);
+            InputStream policyStoreStream = ApplicationProperties.getFileAsInputStream(ApplicationProperties.get(), "atlas.auth.policy.file", "policy-store.txt");
+            List<String> policies = null;
+            try {
+                policies = FileReaderUtil.readFile(policyStoreStream);
             }
-
-            List<String> policies = FileReaderUtil.readFile(policyStorePath);
+            finally {
+                policyStoreStream.close();
+            }
             List<PolicyDef> policyDef = parser.parsePolicies(policies);
 
-            userReadMap = util.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.USER);
-            userWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.USER);
-            userUpdateMap = util.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.USER);
-            userDeleteMap = util.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.USER);
+            userReadMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.USER);
+            userWriteMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.USER);
+            userUpdateMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.USER);
+            userDeleteMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.USER);
 
-            groupReadMap = util.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.GROUP);
-            groupWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.GROUP);
-            groupUpdateMap = util.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.GROUP);
-            groupDeleteMap = util.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.GROUP);
+            groupReadMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.GROUP);
+            groupWriteMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.GROUP);
+            groupUpdateMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.GROUP);
+            groupDeleteMap = PolicyUtil.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.GROUP);
 
             if (isDebugEnabled) {
                 LOG.debug("\n\nUserReadMap :: {}\nGroupReadMap :: {}", userReadMap, groupReadMap);

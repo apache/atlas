@@ -18,7 +18,7 @@
 package org.apache.atlas.web.dao;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.FileInputStream;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +44,8 @@ import org.springframework.util.StringUtils;
 @Repository
 public class UserDao {
 
+    private static final String DEFAULT_USER_CREDENTIALS_PROPERTIES = "users-credentials.properties";
+
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
 
     private Properties userLogins;
@@ -54,24 +56,14 @@ public class UserDao {
     }
 
     void loadFileLoginsDetails() {
-        String PROPERTY_FILE_PATH = null;
         InputStream inStr = null;
-
         try {
-
             Configuration configuration = ApplicationProperties.get();
-            PROPERTY_FILE_PATH = configuration
-                    .getString("atlas.authentication.method.file.filename");
-            if (PROPERTY_FILE_PATH != null && !"".equals(PROPERTY_FILE_PATH)) {
-                userLogins = new Properties();
-                inStr = new FileInputStream(PROPERTY_FILE_PATH);
-                userLogins.load(inStr);
-            }else {
-                LOG.error("Error while reading user.properties file, filepath={}", PROPERTY_FILE_PATH);
-            }
-
+            inStr = ApplicationProperties.getFileAsInputStream(configuration, "atlas.authentication.method.file.filename", DEFAULT_USER_CREDENTIALS_PROPERTIES);
+            userLogins = new Properties();
+            userLogins.load(inStr);
         } catch (IOException | AtlasException e) {
-            LOG.error("Error while reading user.properties file, filepath={}", PROPERTY_FILE_PATH, e);
+            LOG.error("Error while reading user.properties file", e);
             throw new RuntimeException(e);
         } finally {
             if(inStr != null) {

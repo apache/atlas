@@ -19,13 +19,13 @@
 package org.apache.atlas.authorize.simple;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +33,12 @@ public class FileReaderUtil {
     private static Logger LOG = LoggerFactory.getLogger(FileReaderUtil.class);
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
 
-    public static List<String> readFile(String path) throws IOException {
+    public static List<String> readFile(InputStream policyStoreStream) throws IOException {
         if (isDebugEnabled) {
-            LOG.debug("==> FileReaderUtil readFile({})", path);
+            LOG.debug("==> FileReaderUtil readFile()");
         }
         List<String> list = new ArrayList<>();
-        List<String> fileLines = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
+        List<String> fileLines = IOUtils.readLines(policyStoreStream, StandardCharsets.UTF_8);
         if (fileLines != null) {
             for (String line : fileLines) {
                 if ((!line.startsWith("#")) && Pattern.matches(".+;;.*;;.*;;.+", line))
@@ -47,7 +47,7 @@ public class FileReaderUtil {
         }
 
         if (isDebugEnabled) {
-            LOG.debug("<== FileReaderUtil readFile({})", path);
+            LOG.debug("<== FileReaderUtil readFile()");
             LOG.debug("Policies read :: " + list);
         }
 

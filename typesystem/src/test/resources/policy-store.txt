@@ -1,0 +1,9 @@
+##Policy Format
+##r-READ, w-WRITE, u-UPDATE, d-DELETE
+##Policy_Name;;User_Name1:Operations_Allowed,User_Name2:Operations_Allowed;;Group_Name1:Operations_Allowed,Group_Name2:Operations_Allowed;;Resource_Type1:Resource_Name,Resource_Type2:Resource_Name
+##
+adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*,taxonomy:*,term:*
+dataScientistPolicy;;;;DATA_SCIENTIST:r;;type:*,entity:*,taxonomy:*,term:*
+dataStewardPolicy;;;;DATA_STEWARD:rwu;;type:*,entity:*,taxonomy:*,term:*
+hadoopPolicy;;;;hadoop:rwud;;type:*,entity:*,operation:*,taxonomy:*,term:*
+rangerTagSyncPolicy;;;;RANGER_TAG_SYNC:r;;type:*,entity:*
