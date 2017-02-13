@@ -45,6 +45,10 @@ public class AtlasFormatConverters {
 
     private void registerConverter(AtlasFormatConverter converter) {
         registry.put(converter.getTypeCategory(), converter);
+
+        if (converter.getTypeCategory() == TypeCategory.ENTITY) {
+            registry.put(TypeCategory.OBJECT_ID_TYPE, converter);
+        }
     }
 
     public AtlasFormatConverter getConverter(TypeCategory typeCategory) throws AtlasBaseException {

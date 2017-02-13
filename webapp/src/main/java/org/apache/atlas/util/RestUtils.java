@@ -418,24 +418,4 @@ public final class RestUtils {
 
         return ret.toArray(new AttributeDefinition[ret.size()]);
     }
-
-    private static HierarchicalTypeDefinition<ClassType> findClassType(List<HierarchicalTypeDefinition<ClassType>> classDefs,
-                                                                             String typeName) {
-        HierarchicalTypeDefinition<ClassType> ret = null;
-
-        if (CollectionUtils.isNotEmpty(classDefs)) {
-            for (HierarchicalTypeDefinition<ClassType> classType : classDefs) {
-                if (classType.typeName.equalsIgnoreCase(typeName)) {
-                    ret = classType;
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    private static boolean isEntity(AtlasType type) {
-        return type.getTypeCategory() == TypeCategory.ENTITY;
-    }
-    
 }

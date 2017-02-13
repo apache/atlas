@@ -660,7 +660,7 @@ public class AtlasEntityStoreV1Test {
 
     private void validateAttribute(AtlasEntityExtInfo entityExtInfo, Object actual, Object expected, AtlasType attributeType, String attrName) throws AtlasBaseException, AtlasException {
         switch(attributeType.getTypeCategory()) {
-            case ENTITY:
+            case OBJECT_ID_TYPE:
                 Assert.assertTrue(actual instanceof AtlasObjectId);
                 String guid = ((AtlasObjectId) actual).getGuid();
                 Assert.assertTrue(AtlasEntity.isAssigned(guid), "expected assigned guid. found " + guid);

@@ -77,6 +77,14 @@ public abstract class AtlasType {
         return ret;
     }
 
+    /* for attribute of entity-type, the value would be of AtlasObjectId
+     * when an attribute instance is created i.e. AtlasAttribute, this method
+     * will be called to get AtlasEntityType replaced with AtlasObjectType
+     */
+    public AtlasType getTypeForAttribute() {
+        return this;
+    }
+
 
     public static String toJson(Object obj) {
         return GSON.toJson(obj);

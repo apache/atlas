@@ -251,7 +251,7 @@ public final class EntityGraphRetriever {
             case STRUCT:
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo);
                 break;
-            case ENTITY:
+            case OBJECT_ID_TYPE:
                 ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute);
                 break;
             case ARRAY:
@@ -344,7 +344,7 @@ public final class EntityGraphRetriever {
                 ret = mapVertexToStruct(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo);
                 break;
 
-            case ENTITY:
+            case OBJECT_ID_TYPE:
                 ret = mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute);
                 break;
 

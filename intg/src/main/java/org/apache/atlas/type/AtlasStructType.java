@@ -415,7 +415,7 @@ public class AtlasStructType extends AtlasType {
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
             this.definedInType      = definedInType;
             this.attributeDef       = attrDef;
-            this.attributeType      = attributeType;
+            this.attributeType      = attributeType.getTypeForAttribute();
             this.qualifiedName      = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
             this.vertexPropertyName = encodePropertyKey(this.qualifiedName);
 

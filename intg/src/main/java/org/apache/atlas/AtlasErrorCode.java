@@ -48,7 +48,7 @@ public enum AtlasErrorCode {
     INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY(400, "ATLAS40018E", "Cardinality of attribute {0}.{1} requires a list or set type"),
     ATTRIBUTE_UNIQUE_INVALID(400, "ATLAS40019E", "Type {0} with unique attribute {1} does not exist"),
     TYPE_NAME_INVALID(400, "ATLAS40020E", "Type {0} with name {1} does not exist"),
-    TYPE_CATEGORY_INVALID(400, "ATLAS40021E", "Type Category {0} does not match {1} or is invalid"),
+    TYPE_CATEGORY_INVALID(400, "ATLAS40021E", "Type Category {0} is invalid"),
     PATCH_NOT_APPLICABLE_FOR_TYPE(400, "ATLAS40022E", "{0} - invalid patch for type {1}"),
     PATCH_FOR_UNKNOWN_TYPE(400, "ATLAS40023E", "{0} - patch references unknown type {1}"),
     PATCH_INVALID_DATA(400, "ATLAS40024E", "{0} - patch data is invalid for type {1}"),

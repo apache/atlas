@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -214,6 +215,17 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return ret;
+    }
+
+    @Override
+    public AtlasType getTypeForAttribute() {
+        AtlasType attributeType = new AtlasObjectIdType(getTypeName());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("getTypeForAttribute(): {} ==> {}", getTypeName(), attributeType.getTypeName());
+        }
+
+        return attributeType;
     }
 
     public void normalizeAttributeValues(AtlasEntity ent) {

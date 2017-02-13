@@ -192,4 +192,22 @@ public class AtlasMapType extends AtlasType {
 
         return ret;
     }
+
+    @Override
+    public AtlasType getTypeForAttribute() {
+        AtlasType keyAttributeType   = keyType.getTypeForAttribute();
+        AtlasType valueAttributeType = valueType.getTypeForAttribute();
+
+        if (keyAttributeType == keyType && valueAttributeType == valueType) {
+            return this;
+        } else {
+            AtlasType attributeType = new AtlasMapType(keyAttributeType, valueAttributeType);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("getTypeForAttribute(): {} ==> {}", getTypeName(), attributeType.getTypeName());
+            }
+
+            return attributeType;
+        }
+    }
 }

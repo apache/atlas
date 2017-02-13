@@ -34,13 +34,8 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +123,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         }
     }
 
-    private void visitReference(AtlasEntityType type, Object val) throws AtlasBaseException {
+    private void visitReference(AtlasObjectIdType type, Object val) throws AtlasBaseException {
         if (type == null || val == null) {
             return;
         }
@@ -149,8 +144,6 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
             }
 
             recordObjectReference(objId);
-        } else if (val instanceof AtlasEntity) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "found AtlasEntity");
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, val.toString());
         }
@@ -161,23 +154,37 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
             return;
         }
 
-        if (isPrimitive(attrType.getTypeCategory()) ) {
-            return;
-        }
-        if (attrType.getTypeCategory() == TypeCategory.ARRAY) {
-            AtlasArrayType arrayType = (AtlasArrayType) attrType;
-            AtlasType      elemType  = arrayType.getElementType();
+        switch (attrType.getTypeCategory()) {
+            case PRIMITIVE:
+            case ENUM:
+                return;
 
-            visitCollectionReferences(elemType, val);
-        } else if (attrType.getTypeCategory() == TypeCategory.MAP) {
-            AtlasType keyType   = ((AtlasMapType) attrType).getKeyType();
-            AtlasType valueType = ((AtlasMapType) attrType).getValueType();
+            case ARRAY: {
+                AtlasArrayType arrayType = (AtlasArrayType) attrType;
+                AtlasType      elemType  = arrayType.getElementType();
 
-            visitMapReferences(keyType, valueType, val);
-        } else if (attrType.getTypeCategory() == TypeCategory.STRUCT) {
-            visitStruct((AtlasStructType)attrType, val);
-        } else if (attrType.getTypeCategory() == TypeCategory.ENTITY) {
-            visitReference((AtlasEntityType) attrType,  val);
+                visitCollectionReferences(elemType, val);
+            }
+            break;
+
+            case MAP: {
+                AtlasType keyType   = ((AtlasMapType) attrType).getKeyType();
+                AtlasType valueType = ((AtlasMapType) attrType).getValueType();
+
+                visitMapReferences(keyType, valueType, val);
+            }
+            break;
+
+            case STRUCT:
+                visitStruct((AtlasStructType)attrType, val);
+            break;
+
+            case OBJECT_ID_TYPE:
+                visitReference((AtlasObjectIdType) attrType,  val);
+            break;
+
+            default:
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, attrType.getTypeCategory().name());
         }
     }
 

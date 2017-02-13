@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
@@ -981,12 +982,6 @@ public final class GraphHelper {
 
     }
 
-    public static boolean isReference(AtlasType type) {
-        return ((type.getTypeCategory() == org.apache.atlas.model.TypeCategory.STRUCT) ||
-                (type.getTypeCategory() == org.apache.atlas.model.TypeCategory.ENTITY));
-
-    }
-
     public static void setArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -1020,7 +1015,7 @@ public final class GraphHelper {
     public static Object getMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
         String vertexPropertyName = GraphHelper.encodePropertyKey(propertyName);
 
-        if (GraphHelper.isReference(elementType)) {
+        if (AtlasGraphUtilsV1.isReference(elementType)) {
             return instanceVertex.getProperty(vertexPropertyName, AtlasEdge.class);
         } else {
             return instanceVertex.getProperty(vertexPropertyName, Object.class).toString();
@@ -1030,7 +1025,7 @@ public final class GraphHelper {
     // newly added
     public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
         String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(GraphHelper.isReference(elementType)) {
+        if(AtlasGraphUtilsV1.isReference(elementType)) {
             return (List)instanceVertex.getListProperty(encodedPropertyName, AtlasEdge.class);
         }
         else {

@@ -136,7 +136,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 Object v1Value = null;
 
                 AtlasFormatConverter attrConverter = null;
-                if (attrType.getTypeCategory() == TypeCategory.ENTITY && !attr.isOwnedRef()) {
+                if (attrType.getTypeCategory() == TypeCategory.OBJECT_ID_TYPE && !attr.isOwnedRef()) {
                     attrConverter = new AtlasObjectIdConverter(converterRegistry, typeRegistry);
                     v1Value = attrConverter.fromV2ToV1(v2Value, attrType, context);
                 } else {
@@ -170,20 +170,6 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
                 ret.put(attr.getAttributeDef().getName(), v2Value);
             }
-        }
-
-        return ret;
-    }
-
-    private Collection<AtlasStructType.AtlasAttribute> getAttributes(AtlasStructType structType) {
-        Collection<AtlasStructType.AtlasAttribute> ret = null;
-
-        if (structType.getTypeCategory() == TypeCategory.STRUCT
-            || structType.getTypeCategory() == TypeCategory.CLASSIFICATION
-            || structType.getTypeCategory() == TypeCategory.ENTITY) {
-            ret = structType.getAllAttributes().values();
-        } else {
-            ret = Collections.emptyList();
         }
 
         return ret;

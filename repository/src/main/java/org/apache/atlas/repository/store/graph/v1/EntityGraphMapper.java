@@ -243,7 +243,7 @@ public class EntityGraphMapper {
                 return newEdge;
             }
 
-            case ENTITY: {
+            case OBJECT_ID_TYPE: {
                 String          edgeLabel    = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
                 AtlasEdge       currentEdge  = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
                 AtlasEntityType instanceType = getInstanceType(ctx.getValue());
@@ -252,7 +252,7 @@ public class EntityGraphMapper {
                 ctx.setElementType(instanceType);
                 ctx.setExistingEdge(edge);
 
-                AtlasEdge newEdge = mapEntityValue(ctx, context);
+                AtlasEdge newEdge = mapObjectIdValue(ctx, context);
 
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
                     deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(), true);
@@ -308,9 +308,9 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    private AtlasEdge mapEntityValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
+    private AtlasEdge mapObjectIdValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> mapEntityValue({})", ctx);
+            LOG.debug("==> mapObjectIdValue({})", ctx);
         }
 
         AtlasEdge ret = null;
@@ -342,7 +342,7 @@ public class EntityGraphMapper {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== mapEntityValue({})", ctx);
+            LOG.debug("<== mapObjectIdValue({})", ctx);
         }
 
         return ret;
@@ -494,10 +494,10 @@ public class EntityGraphMapper {
             case STRUCT:
                 return mapStructValue(ctx, context);
 
-            case ENTITY:
+            case OBJECT_ID_TYPE:
                 AtlasEntityType instanceType = getInstanceType(ctx.getValue());
                 ctx.setElementType(instanceType);
-                return mapEntityValue(ctx, context);
+                return mapObjectIdValue(ctx, context);
 
             case MAP:
             case ARRAY:
@@ -510,8 +510,6 @@ public class EntityGraphMapper {
         if (val != null) {
             if ( val instanceof  AtlasObjectId) {
                 return ((AtlasObjectId) val);
-            } else if (val instanceof AtlasEntity) {
-                return ((AtlasEntity) val).getAtlasObjectId();
             } else if (val instanceof Map) {
                 AtlasObjectId ret = new AtlasObjectId((Map)val);
 
@@ -530,8 +528,6 @@ public class EntityGraphMapper {
         if (val != null) {
             if ( val instanceof  AtlasObjectId) {
                 return ((AtlasObjectId) val).getGuid();
-            } else if (val instanceof AtlasEntity) {
-                return ((AtlasEntity) val).getGuid();
             } else if (val instanceof Map) {
                 Object guidVal = ((Map)val).get(AtlasObjectId.KEY_GUID);
 
@@ -550,8 +546,6 @@ public class EntityGraphMapper {
 
             if (val instanceof AtlasObjectId) {
                 typeName = ((AtlasObjectId)val).getTypeName();
-            } else if (val instanceof AtlasEntity) {
-                typeName = ((AtlasEntity)val).getTypeName();
             } else if (val instanceof Map) {
                 Object typeNameVal = ((Map)val).get(AtlasObjectId.KEY_TYPENAME);
 

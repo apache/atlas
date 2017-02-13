@@ -115,7 +115,8 @@ public class AtlasGraphUtilsV1 {
     public static boolean isReference(TypeCategory typeCategory) {
         return typeCategory == TypeCategory.STRUCT ||
             typeCategory == TypeCategory.ENTITY ||
-            typeCategory == TypeCategory.CLASSIFICATION;
+            typeCategory == TypeCategory.CLASSIFICATION ||
+            typeCategory == TypeCategory.OBJECT_ID_TYPE;
     }
 
     public static String encodePropertyKey(String key) {

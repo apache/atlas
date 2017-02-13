@@ -513,13 +513,27 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of Atlas object-id type.
      */
     public static class AtlasObjectIdType extends AtlasType {
+        public static final String DEFAULT_UNASSIGNED_GUID = "-1";
+
+        private final String objectType;
+
         public AtlasObjectIdType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_OBJECT_ID, TypeCategory.OBJECT_ID_TYPE);
+
+            objectType = AtlasBaseTypeDef.ATLAS_TYPE_ASSET;
         }
+
+        public AtlasObjectIdType(String objectType) {
+            super(AtlasBaseTypeDef.ATLAS_TYPE_OBJECT_ID, TypeCategory.OBJECT_ID_TYPE);
+
+            this.objectType = objectType;
+        }
+
+        public String getObjectType() { return objectType; }
 
         @Override
         public AtlasObjectId createDefaultValue() {
-            return new AtlasObjectId("-1", AtlasBaseTypeDef.ATLAS_TYPE_ASSET);
+            return new AtlasObjectId(DEFAULT_UNASSIGNED_GUID, objectType);
         }
 
         @Override

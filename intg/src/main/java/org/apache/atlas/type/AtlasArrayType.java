@@ -264,6 +264,23 @@ public class AtlasArrayType extends AtlasType {
         return ret;
     }
 
+    @Override
+    public AtlasType getTypeForAttribute() {
+        AtlasType elementAttributeType = elementType.getTypeForAttribute();
+
+        if (elementAttributeType == elementType) {
+            return this;
+        } else {
+            AtlasType attributeType = new AtlasArrayType(elementAttributeType, minCount, maxCount);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("getTypeForAttribute(): {} ==> {}", getTypeName(), attributeType.getTypeName());
+            }
+
+            return attributeType;
+        }
+    }
+
     private boolean isValidElementCount(int count) {
         if (minCount != COUNT_NOT_SET) {
             if (count < minCount) {
