@@ -107,7 +107,7 @@ define(['require',
             },
             noLineage: function() {
                 this.$('.fontLoader').hide();
-                this.$('svg').height('100');
+                //this.$('svg').height('100');
                 this.$('svg').html('<text x="' + (this.$('svg').width() - 150) / 2 + '" y="' + this.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
             },
             generateData: function(relations, guidEntityMap) {

@@ -65,15 +65,17 @@ define(['require',
                     table = "";
                 var detailObj = this.entityModel.get('details');
                 if (detailObj && detailObj.search(':') >= 0) {
-                    var parseDetailsObject = detailObj;
-                    var appendedString = "{" + detailObj + "}";
-                    var auditData = appendedString.split('"')[0].split(':')[0].split("{")[1];
+                    var parseDetailsObject = detailObj.split(':');
+                    if (parseDetailsObject.length > 1) {
+                        parseDetailsObject.shift();
+                        var auditData = parseDetailsObject.join(":");
+                    }
                     try {
-                        parseDetailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
+                        parseDetailsObject = JSON.parse(auditData);
                         var name = _.escape(parseDetailsObject.typeName);
                     } catch (err) {
-                        if (parseDetailsObject.search(':') >= 0) {
-                            var name = parseDetailsObject.split(":")[1];
+                        if (_.isArray(parseDetailsObject)) {
+                            var name = _.escape(parseDetailsObject[0]);
                         }
                     }
                     var values = parseDetailsObject.values;

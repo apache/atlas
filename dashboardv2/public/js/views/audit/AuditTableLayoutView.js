@@ -136,17 +136,16 @@ define(['require',
                         that.$('.fontLoader').hide();
                         that.$('.auditTable').show();
                         that.renderOffset(options);
-                        if (that.entityCollection && (that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
-                            options.next.attr('disabled', true);
-                            options.previous.removeAttr("disabled");
-                        } else {
-                            if (that.entityCollection.models.length > 0) {
+                        if (that.entityCollection.models.length) {
+                            if (that.entityCollection && (that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
+                                options.next.attr('disabled', true);
+                                options.previous.removeAttr("disabled");
+                            } else {
                                 that.next = that.entityCollection.last().get('eventKey');
                                 if (that.pervOld.length === 0) {
                                     options.previous.attr('disabled', true);
                                 }
                             }
-
                         }
                         that.renderTableLayoutView();
                     },
@@ -207,7 +206,7 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Enums.auditAction[model.attributes.action] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
+                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Enums.auditAction[model.get('action')] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
                             }
                         })
                     },

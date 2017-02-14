@@ -70,13 +70,8 @@ define(['require',
 
             return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
         },
-        createOreditEntity: function(guid, options) {
-            var url;
-            if (guid) {
-                url = UrlLinks.entitiesApiUrl(guid);
-            } else {
-                url = UrlLinks.entitiesApiUrl();
-            }
+        createOreditEntity: function(options) {
+            var url = UrlLinks.entitiesApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

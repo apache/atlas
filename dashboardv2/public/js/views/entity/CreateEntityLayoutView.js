@@ -125,18 +125,18 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, "reset", function() {
-                    --this.asyncFetchCounter;
+                    this.decrementCounter('asyncFetchCounter');
                     this.entityCollectionList();
                 }, this);
                 this.listenTo(this.collection, 'error', function() {
-                    --this.asyncFetchCounter
+                    this.decrementCounter('asyncFetchCounter');
                     if (this.asyncFetchCounter === 0) {
                         this.hideLoader();
                     }
                 }, this);
                 this.listenTo(this.searchCollection, "reset", function() {
                     var that = this;
-                    --this.asyncFetchLOVCounter
+                    this.decrementCounter('asyncFetchLOVCounter');
                     _.each(this.searchCollection.fullCollection.models, function(model) {
                         var obj = model.toJSON();
                         obj['queryText'] = model.collection.queryText;
@@ -145,7 +145,7 @@ define(['require',
                     this.addJsonSearchData();
                 }, this);
                 this.listenTo(this.searchCollection, 'error', function(data, key) {
-                    --this.asyncFetchLOVCounter;
+                    this.decrementCounter('asyncFetchLOVCounter');
                     this.addJsonSearchData();
                 }, this);
                 this.ui.entityInputData.on("keyup", "textarea", function() {
@@ -179,6 +179,11 @@ define(['require',
                 this.bindEvents();
                 this.fetchCollections();
             },
+            decrementCounter: function(counter) {
+                if (this[counter] > 0) {
+                    --this[counter];
+                }
+            },
             fetchCollections: function() {
                 if (this.guid) {
                     this.collection.url = UrlLinks.entitiesApiUrl(this.guid);
@@ -194,7 +199,7 @@ define(['require',
                     value;
                 if (this.guid) {
                     this.collection.each(function(val) {
-                        name += _.escape(val.get("attributes").name) || _.escape(val.get("attributes").qualifiedName) || _.escape(val.get("attributes").id);
+                        name += _.escape(val.get("entity").attributes.name) || _.escape(val.get("entity").attributes.qualifiedName) || _.escape(val.get("entity").attributes.id);
                         that.entityData = val;
                     });
                     this.ui.assetName.html(name);
@@ -242,15 +247,12 @@ define(['require',
             onEntityChange: function(e, value) {
                 this.modal.$el.find('button.ok').prop("disabled", false);
                 var that = this,
-                    typeName;
+                    typeName = value && value.get('entity') ? value.get('entity').typeName : null;
                 this.showLoader();
                 this.ui.entityInputData.empty();
-                if (value) {
-                    typeName = value.get("typeName");
-                }
                 if (typeName) {
                     this.collection.url = UrlLinks.entitiesDefApiUrl(typeName);
-                } else {
+                } else if (e) {
                     this.collection.url = UrlLinks.entitiesDefApiUrl(e.target.value);
                     this.collection.modelAttrName = 'attributeDefs';
                 }
@@ -303,7 +305,7 @@ define(['require',
                         that.subAttributeData(data);
                     },
                     complete: function() {
-                        --that.asyncFetchCounter;
+                        that.decrementCounter('asyncFetchCounter');
                         that.initilizeElements();
                     },
                     silent: true
@@ -334,7 +336,7 @@ define(['require',
                     this.$('select[data-type="boolean"]').each(function(value, key) {
                         var dataKey = $(key).data('key');
                         if (that.entityData) {
-                            var setValue = that.entityData.get("attributes")[dataKey];
+                            var setValue = that.entityData.get("entity").attributes[dataKey];
                             this.value = setValue;
                         }
                     });
@@ -417,7 +419,7 @@ define(['require',
                 var typeName = value.typeName,
                     entityValue = "";
                 if (this.guid) {
-                    var dataValue = this.entityData.get("attributes")[value.name];
+                    var dataValue = this.entityData.get("entity").attributes[value.name];
                     if (_.isObject(dataValue)) {
                         entityValue = JSON.stringify(dataValue);
                     } else {
@@ -461,7 +463,8 @@ define(['require',
                 var that = this;
                 this.showLoader();
                 this.parentEntity = this.ui.entityList.val();
-                var entityAttribute = {};
+                var entity = {};
+                var referredEntities = {};
                 var extractValue = function(value) {
                     if (_.isArray(value)) {
                         if (that.selectStoreCollection.length) {
@@ -471,8 +474,10 @@ define(['require',
                                 temp['labelName'] = val;
                                 if (that.selectStoreCollection.findWhere(temp)) {
                                     var valueData = that.selectStoreCollection.findWhere(temp).toJSON();
-                                    valueData['guid'] = valueData.guid;
-                                    parseData.push(valueData);
+                                    if (valueData) {
+                                        //referredEntities[valueData.guid] = valueData;
+                                        parseData.push({ guid: valueData.guid, typeName: valueData.typeName });
+                                    }
                                 }
                             });
                         }
@@ -481,8 +486,11 @@ define(['require',
                             var temp = {} // I9 support;
                             temp['labelName'] = value;
                             if (that.selectStoreCollection.findWhere(temp)) {
-                                var parseData = that.selectStoreCollection.findWhere(temp).toJSON();
-                                parseData['guid'] = parseData.guid;
+                                var valueData = that.selectStoreCollection.findWhere(temp).toJSON();
+                                if (valueData) {
+                                    //referredEntities[valueData.guid] = valueData;
+                                    var parseData = { guid: valueData.guid, typeName: valueData.typeName };
+                                }
                             }
                         }
                     }
@@ -524,14 +532,14 @@ define(['require',
                         // Extract Data
                         if (dataTypeEnitity && datakeyEntity) {
                             if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
-                                entityAttribute[datakeyEntity] = extractValue(value);
+                                entity[datakeyEntity] = extractValue(value);
                             } else if (typeof dataTypeEnitity === 'string' && datakeyEntity.indexOf("Time") > -1) {
-                                entityAttribute[datakeyEntity] = Date.parse(value);
+                                entity[datakeyEntity] = Date.parse(value);
                             } else if (dataTypeEnitity.indexOf("map") > -1) {
                                 try {
                                     if (value && value.length) {
                                         parseData = JSON.parse(value);
-                                        entityAttribute[datakeyEntity] = parseData;
+                                        entity[datakeyEntity] = parseData;
                                     }
                                 } catch (err) {
                                     $(this).addClass('errorClass');
@@ -539,29 +547,30 @@ define(['require',
                                     return;
                                 }
                             } else if (dataTypeEnitity.indexOf("array") > -1 && dataTypeEnitity.indexOf("string") === -1) {
-                                entityAttribute[datakeyEntity] = extractValue(value);
+                                entity[datakeyEntity] = extractValue(value);
                             } else {
                                 if (_.isString(value)) {
                                     if (value.length) {
-                                        entityAttribute[datakeyEntity] = value;
+                                        entity[datakeyEntity] = value;
                                     }
                                 } else {
-                                    entityAttribute[datakeyEntity] = value;
+                                    entity[datakeyEntity] = value;
                                 }
 
                             }
                         }
                     });
                     var entityJson = {
-                        "typeName": this.guid ? this.entityData.get("typeName") : this.parentEntity,
-                        "attributes": entityAttribute
+                        "entity": {
+                            "typeName": (this.guid ? this.entityData.get("entity").typeName : this.parentEntity),
+                            "attributes": entity,
+                            "guid": (this.guid ? this.guid : -1)
+                        },
+                        "referredEntities": referredEntities
                     };
-                    if (this.guid) {
-                        entityJson["guid"] = this.entityData.get("guid");
-                    };
-                    this.entityModel.createOreditEntity(this.guid, {
+                    this.entityModel.createOreditEntity({
                         data: JSON.stringify(entityJson),
-                        type: this.guid ? "PUT" : "POST",
+                        type: "POST",
                         success: function(model, response) {
                             that.modal.close();
                             Utils.notifySuccess({
@@ -643,10 +652,11 @@ define(['require',
                         $this.attr("multiple", ($this.data('type').indexOf("array") === -1 ? false : true));
 
                         if (that.guid) {
-                            var dataValue = that.entityData.get("attributes")[keyData];
-                            if (that.selectStoreCollection.length) {
-                                var selectedValue = [];
-                            }
+                            var dataValue = that.entityData.get("entity").attributes[keyData];
+                            var selectedValue = [];
+                            // if (that.selectStoreCollection.length) {
+                            //     var selectedValue = [];
+                            // }
                             var setValue = function(selectValue) {
                                 var obj = selectValue.toJSON();
                                 if (dataValue !== null && _.isArray(dataValue)) {
@@ -692,7 +702,7 @@ define(['require',
                         $this.select2({
                             placeholder: placeholderName,
                             allowClear: true,
-                            tags: true
+                            tags: ($this.data('querydata') == "string" ? true : false)
                         });
                     });
                     this.hideLoader();
