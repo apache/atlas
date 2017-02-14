@@ -25,7 +25,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasEdgeLabel;
@@ -34,10 +33,10 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
@@ -48,6 +47,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -60,14 +60,14 @@ public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
     private AtlasTypeRegistry typeRegistry;
-    private boolean shouldUpdateReverseAttribute;
+    private boolean shouldUpdateInverseReferences;
     private boolean softDelete;
 
     protected static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    public DeleteHandlerV1(AtlasTypeRegistry typeRegistry, boolean shouldUpdateReverseAttribute, boolean softDelete) {
+    public DeleteHandlerV1(AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete) {
         this.typeRegistry = typeRegistry;
-        this.shouldUpdateReverseAttribute = shouldUpdateReverseAttribute;
+        this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete = softDelete;
     }
 
@@ -79,21 +79,30 @@ public abstract class DeleteHandlerV1 {
      * @param instanceVertices
      * @throws AtlasException
      */
-    public void deleteEntities(List<AtlasVertex> instanceVertices) throws AtlasBaseException {
+    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
         RequestContextV1 requestContext = RequestContextV1.get();
 
         Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
-            String guid = GraphHelper.getGuid(instanceVertex);
+            String              guid = AtlasGraphUtilsV1.getIdFromVertex(instanceVertex);
             AtlasEntity.Status state = AtlasGraphUtilsV1.getState(instanceVertex);
-            if (requestContext.getDeletedEntityIds().contains(guid) || state == AtlasEntity.Status.DELETED) {
+
+            if (state == AtlasEntity.Status.DELETED) {
+                LOG.debug("Skipping deletion of {} as it is already deleted", guid);
+                continue;
+            }
+
+            String typeName = AtlasGraphUtilsV1.getTypeName(instanceVertex);
+            AtlasObjectId objId = new AtlasObjectId(guid, typeName);
+
+            if (requestContext.getDeletedEntityIds().contains(objId)) {
                 LOG.debug("Skipping deletion of {} as it is already deleted", guid);
                 continue;
             }
 
             // Get GUIDs and vertices for all deletion candidates.
-            Set<GraphHelper.VertexInfo> compositeVertices = getCompositeVertices(instanceVertex);
+            Set<GraphHelper.VertexInfo> compositeVertices = getOwnedVertices(instanceVertex);
 
             // Record all deletion candidate GUIDs in RequestContext
             // and gather deletion candidate vertices.
@@ -118,19 +127,22 @@ public abstract class DeleteHandlerV1 {
      * @return set of VertexInfo for all composite entities
      * @throws AtlasException
      */
-    public Set<GraphHelper.VertexInfo> getCompositeVertices(AtlasVertex entityVertex) throws AtlasBaseException {
-        Set<GraphHelper.VertexInfo> result = new HashSet<>();
+    public Set<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
+        Set<GraphHelper.VertexInfo> result = new LinkedHashSet<>();
         Stack<AtlasVertex> vertices = new Stack<>();
         vertices.push(entityVertex);
         while (vertices.size() > 0) {
             AtlasVertex vertex = vertices.pop();
-            String typeName = GraphHelper.getTypeName(vertex);
-            String guid = GraphHelper.getGuid(vertex);
+
             AtlasEntity.Status state = AtlasGraphUtilsV1.getState(vertex);
             if (state == AtlasEntity.Status.DELETED) {
                 //If the reference vertex is marked for deletion, skip it
                 continue;
             }
+
+            String typeName = GraphHelper.getTypeName(vertex);
+            String guid = GraphHelper.getGuid(vertex);
+
             result.add(new GraphHelper.VertexInfo(guid, vertex, typeName));
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
@@ -143,7 +155,7 @@ public abstract class DeleteHandlerV1 {
                     continue;
                 }
                 String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(entityType, attributeInfo.getName());
-                AtlasType attrType = typeRegistry.getType(attributeInfo.getTypeName());
+                AtlasType attrType = attributeInfo.getAttributeType();
                 switch (attrType.getTypeCategory()) {
                 case OBJECT_ID_TYPE:
                     AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
@@ -199,19 +211,19 @@ public abstract class DeleteHandlerV1 {
      * Force delete is used to remove struct/trait in case of entity updates
      * @param edge
      * @param typeCategory
-     * @param isComposite
+     * @param isOwned
      * @param forceDeleteStructTrait
      * @return returns true if the edge reference is hard deleted
      * @throws AtlasException
      */
-    public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isComposite,
+    public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned,
         boolean forceDeleteStructTrait) throws AtlasBaseException {
         LOG.debug("Deleting {}", string(edge));
         boolean forceDelete =
             (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
 
         if (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION
-            || (typeCategory == TypeCategory.OBJECT_ID_TYPE && isComposite)) {
+            || (typeCategory == TypeCategory.OBJECT_ID_TYPE && isOwned)) {
             //If the vertex is of type struct/trait, delete the edge and then the reference vertex as the vertex is not shared by any other entities.
             //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
             //through this delete, hence delete the edge and the reference vertex.
@@ -232,18 +244,19 @@ public abstract class DeleteHandlerV1 {
     }
 
     protected void deleteEdge(AtlasEdge edge, boolean updateReverseAttribute, boolean force) throws AtlasBaseException {
-        //update reverse attribute
+        //update inverse attribute
         if (updateReverseAttribute) {
             AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(edge.getLabel());
 
             AtlasType parentType = typeRegistry.getType(atlasEdgeLabel.getTypeName());
 
-            if (parentType instanceof AtlasStructType) {
-                AtlasStructType parentStructType = (AtlasStructType) parentType;
-                //TODO - Fix this later
-//                if (parentStructType.isForeignKeyAttribute(atlasEdgeLabel.getAttributeName())) {
-//                    deleteEdgeBetweenVertices(edge.getInVertex(), edge.getOutVertex(), atlasEdgeLabel.getAttributeName());
-//                }
+            if (parentType instanceof AtlasEntityType) {
+                AtlasEntityType parentEntityType = (AtlasEntityType) parentType;
+
+                AtlasStructType.AtlasAttribute attribute = parentEntityType.getAttribute(atlasEdgeLabel.getAttributeName());
+                if (attribute.getInverseRefAttribute() != null) {
+                    deleteEdgeBetweenVertices(edge.getInVertex(), edge.getOutVertex(), attribute.getInverseRefAttribute());
+                }
             }
         }
 
@@ -286,16 +299,16 @@ public abstract class DeleteHandlerV1 {
 
             for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
                 LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
-                boolean isComposite = isEntityType && attributeInfo.isOwnedRef();
+                boolean isOwned = isEntityType && attributeInfo.isOwnedRef();
 
-                AtlasType attrType = typeRegistry.getType(attributeInfo.getTypeName());
+                AtlasType attrType = attributeInfo.getAttributeType();
 
                 String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(structType, attributeInfo.getName());
 
                 switch (attrType.getTypeCategory()) {
                 case OBJECT_ID_TYPE:
                     //If its class attribute, delete the reference
-                    deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isComposite);
+                    deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
                     break;
 
                 case STRUCT:
@@ -312,7 +325,7 @@ public abstract class DeleteHandlerV1 {
                         if (edges != null) {
                             while (edges.hasNext()) {
                                 AtlasEdge edge = edges.next();
-                                deleteEdgeReference(edge, elemType.getTypeCategory(), isComposite, false);
+                                deleteEdgeReference(edge, elemType.getTypeCategory(), isOwned, false);
                             }
                         }
                     }
@@ -330,7 +343,7 @@ public abstract class DeleteHandlerV1 {
                         if (keys != null) {
                             for (Object key : keys) {
                                 String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, (String) key);
-                                deleteEdgeReference(instanceVertex, mapEdgeLabel, valueTypeCategory, isComposite);
+                                deleteEdgeReference(instanceVertex, mapEdgeLabel, valueTypeCategory, isOwned);
                             }
                         }
                     }
@@ -342,10 +355,10 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void deleteEdgeReference(AtlasVertex outVertex, String edgeLabel, TypeCategory typeCategory,
-        boolean isComposite) throws AtlasBaseException {
+        boolean isOwned) throws AtlasBaseException {
         AtlasEdge edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
         if (edge != null) {
-            deleteEdgeReference(edge, typeCategory, isComposite, false);
+            deleteEdgeReference(edge, typeCategory, isOwned, false);
         }
     }
 
@@ -390,8 +403,11 @@ public abstract class DeleteHandlerV1 {
             attributeName);
         String typeName = GraphHelper.getTypeName(outVertex);
         String outId = GraphHelper.getGuid(outVertex);
+
+        AtlasObjectId objId = new AtlasObjectId(outId, typeName);
         AtlasEntity.Status state = AtlasGraphUtilsV1.getState(outVertex);
-        if ((outId != null && RequestContextV1.get().isDeletedEntity(outId)) || state == AtlasEntity.Status.DELETED) {
+
+        if (state == AtlasEntity.Status.DELETED || (outId != null && RequestContextV1.get().isDeletedEntity(objId))) {
             //If the reference vertex is marked for deletion, skip updating the reference
             return;
         }
@@ -401,21 +417,22 @@ public abstract class DeleteHandlerV1 {
         String edgeLabel = EDGE_LABEL_PREFIX + propertyName;
         AtlasEdge edge = null;
 
+        AtlasAttribute attribute = parentType.getAttribute(attributeName);
         AtlasAttributeDef attrDef = parentType.getAttributeDef(attributeName);
-        AtlasType attrType = typeRegistry.getType(attrDef.getTypeName());
+        AtlasType attrType = attribute.getAttributeType();
 
         switch (attrType.getTypeCategory()) {
         case OBJECT_ID_TYPE:
             //If its class attribute, its the only edge between two vertices
             if (attrDef.getIsOptional()) {
                 edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
-                if (shouldUpdateReverseAttribute) {
+                if (shouldUpdateInverseReferences) {
                     GraphHelper.setProperty(outVertex, propertyName, null);
                 }
             } else {
                 // Cannot unset a required attribute.
                 throw new AtlasBaseException("Cannot unset required attribute " + propertyName +
-                    " on " + GraphHelper.getVertexDetails(outVertex) + " edge = " + edgeLabel);
+                    " on " + GraphHelper.vertexString(outVertex) + " edge = " + edgeLabel);
             }
             break;
 
@@ -444,7 +461,7 @@ public abstract class DeleteHandlerV1 {
                                     + GraphHelper.getVertexDetails(outVertex) + " " + GraphHelper.getEdgeDetails(elementEdge));
                         }
 
-                        if (shouldUpdateReverseAttribute) {
+                        if (shouldUpdateInverseReferences) {
                             //if composite attribute, remove the reference as well. else, just remove the edge
                             //for example, when table is deleted, process still references the table
                             //but when column is deleted, table will not reference the deleted column
@@ -485,7 +502,7 @@ public abstract class DeleteHandlerV1 {
                                         propertyName + " on " + GraphHelper.getVertexDetails(outVertex) + " " + GraphHelper.getEdgeDetails(mapEdge));
                             }
 
-                            if (shouldUpdateReverseAttribute) {
+                            if (shouldUpdateInverseReferences) {
                                 //remove this key
                                 LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
                                     attributeName);
@@ -506,7 +523,7 @@ public abstract class DeleteHandlerV1 {
 
         default:
             throw new IllegalStateException("There can't be an edge from " + GraphHelper.getVertexDetails(outVertex) + " to "
-                + GraphHelper.getVertexDetails(inVertex) + " with attribute name " + attributeName + " which is not class/array/map attribute");
+                + GraphHelper.getVertexDetails(inVertex) + " with attribute name " + attributeName + " which is not class/array/map attribute. found " + attrType.getTypeCategory().name());
         }
 
         if (edge != null) {

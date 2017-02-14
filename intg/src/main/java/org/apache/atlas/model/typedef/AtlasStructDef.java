@@ -390,8 +390,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 cDefs = new ArrayList<>();
 
                 this.constraints = cDefs;
-            } else {
-                cDefs = new ArrayList<>(cDefs);
             }
 
             cDefs.add(constraintDef);

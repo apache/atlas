@@ -104,7 +104,7 @@ public class AtlasStruct implements Serializable {
     public boolean hasAttribute(String name) {
         Map<String, Object> a = this.attributes;
 
-        return a != null ? a.containsKey(name) : null;
+        return a != null ? a.containsKey(name) : false;
     }
 
     public Object getAttribute(String name) {

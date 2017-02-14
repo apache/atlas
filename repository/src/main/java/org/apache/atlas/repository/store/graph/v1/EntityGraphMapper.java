@@ -139,6 +139,10 @@ public class EntityGraphMapper {
             resp.addEntity(DELETE, constructHeader(id));
         }
 
+        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
+            resp.addEntity(UPDATE, constructHeader(id));
+        }
+
         return resp;
     }
 
@@ -744,7 +748,7 @@ public class EntityGraphMapper {
         return header;
     }
 
-    private AtlasEntityHeader constructHeader(AtlasObjectId id) {
+    public static AtlasEntityHeader constructHeader(AtlasObjectId id) {
         AtlasEntityHeader entity = new AtlasEntityHeader(id.getTypeName());
         entity.setGuid(id.getGuid());
 

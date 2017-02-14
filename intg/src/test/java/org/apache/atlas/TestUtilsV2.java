@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -45,6 +46,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.atlas.type.AtlasTypeUtil.createStructTypeDef;
 
@@ -55,6 +57,8 @@ import static org.apache.atlas.type.AtlasTypeUtil.createStructTypeDef;
 public final class TestUtilsV2 {
 
     public static final long TEST_DATE_IN_LONG = 1418265358440L;
+
+    private static AtomicInteger seq = new AtomicInteger();
 
     private TestUtilsV2() {
     }
@@ -87,7 +91,9 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
-                                new ArrayList<AtlasConstraintDef>()));
+                            new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                            }}));
 
         AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
@@ -111,7 +117,12 @@ public final class TestUtilsV2 {
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
-                        Collections.<AtlasConstraintDef>emptyList()),
+                new ArrayList<AtlasConstraintDef>() {{
+                        add(new AtlasConstraintDef(
+                            AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                            put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "subordinates");
+                        }}));
+                    }}),
                 new AtlasAttributeDef("mentor", EMPLOYEE_TYPE, true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
@@ -162,7 +173,9 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createOptionalAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
-                                Collections.<AtlasConstraintDef>emptyList()));
+                            new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                            }}));
 
         AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description,
                 ImmutableSet.<String>of(),
@@ -190,7 +203,12 @@ public final class TestUtilsV2 {
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
-                        Collections.<AtlasConstraintDef>emptyList()),
+                    new ArrayList<AtlasConstraintDef>() {{
+                        add(new AtlasConstraintDef(
+                            AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                            put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "subordinates");
+                        }}));
+                    }}),
                 new AtlasAttributeDef("mentor", EMPLOYEE_TYPE, true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
@@ -239,7 +257,9 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createRequiredAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Person"), true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
-                                Collections.<AtlasConstraintDef>emptyList()));
+                            new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                            }}));
 
         AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
                 AtlasTypeUtil.createRequiredAttrDef("name", "string"),
@@ -253,7 +273,12 @@ public final class TestUtilsV2 {
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
-                        Collections.<AtlasConstraintDef>emptyList()),
+                    new ArrayList<AtlasConstraintDef>() {{
+                        add(new AtlasConstraintDef(
+                            AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                            put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "subordinates");
+                        }}));
+                    }}),
                 new AtlasAttributeDef("mentor", "Person", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
@@ -524,6 +549,7 @@ public final class TestUtilsV2 {
                 ImmutableList.of(newSuperTypeDefinition));
     }
 
+
     public static AtlasTypesDef defineHiveTypes() {
         String _description = "_description";
         AtlasEntityDef superTypeDefinition =
@@ -556,9 +582,9 @@ public final class TestUtilsV2 {
                         ImmutableSet.<String>of(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
-                    new AtlasAttributeDef("table", TABLE_TYPE,
-                        false,
-                        AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                        new AtlasAttributeDef("table", TABLE_TYPE,
+                        true,
+                        AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
                         new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                             add(new AtlasStructDef.AtlasConstraintDef(
@@ -604,8 +630,8 @@ public final class TestUtilsV2 {
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
-                new AtlasAttributeDef("table", TABLE_TYPE, false,
-                        AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                new AtlasAttributeDef("table", TABLE_TYPE, true,
+                        AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                         false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("createTime", "long", true,
@@ -686,17 +712,6 @@ public final class TestUtilsV2 {
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
                                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()
-                                /* TODO - Fix map validation in type store and enable this
-                                 *
-                                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
-                                    add(new AtlasStructDef.AtlasConstraintDef(
-                                            AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF,
-                                            new HashMap<String, Object>() {{
-                                                put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "table");
-                                        }}));
-                                    }}
-                                  *
-                                  */
                                 ),
                         //map of structs
                         new AtlasAttributeDef("partitionsMap",
@@ -748,8 +763,12 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasEntity createDBEntity() {
-        AtlasEntity entity = new AtlasEntity(DATABASE_TYPE);
         String dbName = RandomStringUtils.randomAlphanumeric(10);
+        return createDBEntity(dbName);
+    }
+
+    public static AtlasEntity createDBEntity(String dbName) {
+        AtlasEntity entity = new AtlasEntity(DATABASE_TYPE);
         entity.setAttribute(NAME, dbName);
         entity.setAttribute("description", "us db");
 
@@ -766,9 +785,13 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasEntity createTableEntity(AtlasEntity dbEntity) {
-        AtlasEntity entity = new AtlasEntity(TABLE_TYPE);
         String tableName = RandomStringUtils.randomAlphanumeric(10);
-        entity.setAttribute(NAME, tableName);
+        return createTableEntity(dbEntity, tableName);
+    }
+
+    public static AtlasEntity createTableEntity(AtlasEntity dbEntity, String name) {
+        AtlasEntity entity = new AtlasEntity(TABLE_TYPE);
+        entity.setAttribute(NAME, name);
         entity.setAttribute("description", "random table");
         entity.setAttribute("type", "type");
         entity.setAttribute("tableType", "MANAGED");
@@ -813,11 +836,23 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasEntity createColumnEntity(AtlasEntity tableEntity) {
+        return createColumnEntity(tableEntity, "col" + seq.addAndGet(1));
+    }
 
+    public static AtlasEntity createColumnEntity(AtlasEntity tableEntity, String colName) {
         AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
-        entity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
+        entity.setAttribute(NAME, colName);
         entity.setAttribute("type", "VARCHAR(32)");
         entity.setAttribute("table", tableEntity.getAtlasObjectId());
+        return entity;
+    }
+
+    public static AtlasEntity createProcessEntity(List<AtlasObjectId> inputs, List<AtlasObjectId> outputs) {
+
+        AtlasEntity entity = new AtlasEntity(PROCESS_TYPE);
+        entity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
+        entity.setAttribute("inputs", inputs);
+        entity.setAttribute("outputs", outputs);
         return entity;
     }
 

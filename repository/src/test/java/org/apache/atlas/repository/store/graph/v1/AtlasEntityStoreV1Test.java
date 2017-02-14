@@ -119,13 +119,11 @@ public class AtlasEntityStoreV1Test {
     @AfterClass
     public void clear() {
         AtlasGraphProvider.cleanup();
-        TestUtils.resetRequestContext();
     }
 
     @BeforeTest
     public void init() throws Exception {
         entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry);
-
         RequestContextV1.clear();
     }
 
@@ -138,7 +136,7 @@ public class AtlasEntityStoreV1Test {
         AtlasEntityHeader dept1 = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DEPARTMENT_TYPE);
         validateEntity(deptEntity, getEntityFromStore(dept1), deptEntity.getEntities().get(0));
 
-        final Map<EntityOperation, List<AtlasEntityHeader>> entitiesMutated = response.getEntitiesMutated();
+        final Map<EntityOperation, List<AtlasEntityHeader>> entitiesMutated = response.getMutatedEntities();
         List<AtlasEntityHeader> entitiesCreated = entitiesMutated.get(EntityOperation.CREATE);
 
         Assert.assertTrue(entitiesCreated.size() >= deptEntity.getEntities().size());

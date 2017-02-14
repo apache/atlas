@@ -28,7 +28,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
     public HardDeleteHandlerV1(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, false, true);
+        super(typeRegistry, true, false);
     }
 
     @Override

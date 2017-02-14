@@ -21,24 +21,35 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +57,6 @@ import java.util.Map;
 @Singleton
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
-
 
     private final DeleteHandlerV1   deleteHandler;
     private final AtlasTypeRegistry typeRegistry;
@@ -101,6 +111,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @GraphTransaction
     public AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
                                                                                             throws AtlasBaseException {
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getByUniqueAttribute({}, {})", entityType.getTypeName(), uniqAttributes);
         }
@@ -113,7 +124,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
-                                         uniqAttributes.toString());
+                uniqAttributes.toString());
         }
 
         if (LOG.isDebugEnabled()) {
@@ -157,23 +168,73 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "updateByUniqueAttributes() not implemented yet");
     }
 
+    @GraphTransaction
+    public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        // Retrieve vertices for requested guids.
+        AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
+
+        if (LOG.isDebugEnabled()) {
+            if (vertex == null) {
+                // Entity does not exist - treat as non-error, since the caller
+                // wanted to delete the entity and it's already gone.
+                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+            }
+        }
+
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<AtlasVertex>();
+        deletionCandidates.add(vertex);
+
+        return deleteVertices(deletionCandidates);
+    }
+
     @Override
     @GraphTransaction
-    public EntityMutationResponse deleteById(String guid) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteById() not implemented yet");
+    public EntityMutationResponse deleteByIds(final List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
+        }
+
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+
+        for (String guid : guids) {
+            // Retrieve vertices for requested guids.
+            AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
+            if (LOG.isDebugEnabled()) {
+                if (vertex == null) {
+                    // Entity does not exist - treat as non-error, since the caller
+                    // wanted to delete the entity and it's already gone.
+                    LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+                }
+            }
+            deletionCandidates.add(vertex);
+
+        }
+
+        if (deletionCandidates.isEmpty()) {
+            LOG.info("No deletion candidate entities were found for guids %s", guids);
+        }
+        return deleteVertices(deletionCandidates);
     }
 
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteByUniqueAttributes() not implemented yet");
-    }
 
-    @Override
-    @GraphTransaction
-    public EntityMutationResponse deleteByIds(List<String> guids) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteByIds() not implemented yet");
+        if (MapUtils.isEmpty(uniqAttributes)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, uniqAttributes.toString());
+        }
+
+        final AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(entityType, uniqAttributes);
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+        deletionCandidates.add(vertex);
+
+        return deleteVertices(deletionCandidates);
     }
 
     @Override
@@ -216,8 +277,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     }
 
                     context.addUpdated(guid, entity, entityType, vertex);
-
-                    RequestContextV1.get().recordEntityUpdate(entity.getAtlasObjectId());
                 }
             } else {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
@@ -233,10 +292,24 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
                 context.addCreated(guid, entity, entityType, vertex);
 
-                RequestContextV1.get().recordEntityCreate(entity.getAtlasObjectId());
             }
         }
 
         return context;
+    }
+
+    private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
+        EntityMutationResponse response = new EntityMutationResponse();
+        deleteHandler.deleteEntities(deletionCandidates);
+        RequestContextV1 req = RequestContextV1.get();
+        for (AtlasObjectId id : req.getDeletedEntityIds()) {
+            response.addEntity(EntityMutations.EntityOperation.DELETE, EntityGraphMapper.constructHeader(id));
+        }
+
+        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
+            response.addEntity(EntityMutations.EntityOperation.UPDATE, EntityGraphMapper.constructHeader(id));
+        }
+
+        return response;
     }
 }

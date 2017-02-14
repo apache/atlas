@@ -115,8 +115,8 @@ public class RequestContextV1 {
         return requestTime;
     }
     
-    public boolean isDeletedEntity(String entityGuid) {
-        return deletedEntityIds.contains(entityGuid);
+    public boolean isDeletedEntity(AtlasObjectId entityId) {
+        return deletedEntityIds.contains(entityId);
     }
 
     public static Metrics getMetrics() {
