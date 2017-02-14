@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1555 Move classification endpoint from Entities API to Entity API and remove Entities API (svimal2106)
 ATLAS-1548 Create entity : Change PUT and POST object structure based on new API Changes (kevalbhatt)
 ATLAS-1522 entity type attributes (like hive_table.sd, hive_table.columns) should use AtlasObjectId as value instead of entire entity contents (mneethiraj)
 ATLAS-1546 Hive hook should choose appropriate JAAS config when host uses kerberos ticket-cache (nixonrodrigues,gss2002 via mneethiraj)

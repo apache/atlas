@@ -57,7 +57,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return this.baseUrlV2 + '/entity/guid/' + token + '/classifications';
             } else {
                 // For Multiple Assignment
-                return this.baseUrlV2 + '/entities/classification';
+                return this.baseUrlV2 + '/entity/bulk/classification';
             }
 
         },

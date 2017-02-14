@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -385,6 +386,37 @@ public class EntityREST {
 
         try {
             metadataService.deleteTrait(guid, typeName);
+        } catch (AtlasException e) {
+            throw toAtlasBaseException(e);
+        }
+    }
+
+    /**
+     * Bulk API to associate a tag to multiple entities
+     *
+     */
+    @POST
+    @Path("/bulk/classification")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void addClassification(ClassificationAssociateRequest request) throws AtlasBaseException {
+        AtlasClassification classification = request == null ? null : request.getClassification();
+        List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
+
+        if (classification == null || org.apache.commons.lang.StringUtils.isEmpty(classification.getTypeName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
+        }
+
+        if (CollectionUtils.isEmpty(entityGuids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty entity list");
+        }
+
+        final ITypedStruct trait = restAdapters.getTrait(classification);
+
+        try {
+            metadataService.addTrait(entityGuids, trait);
+        } catch (IllegalArgumentException e) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
         } catch (AtlasException e) {
             throw toAtlasBaseException(e);
         }
