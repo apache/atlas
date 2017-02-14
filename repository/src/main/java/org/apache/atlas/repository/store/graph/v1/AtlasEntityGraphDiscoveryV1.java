@@ -114,7 +114,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     }
 
     protected void resolveReferences() throws AtlasBaseException {
-        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(),
+        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry),
                                                                   new UniqAttrBasedEntityResolver(typeRegistry)
                                                                 };
 

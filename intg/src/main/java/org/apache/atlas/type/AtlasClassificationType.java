@@ -87,10 +87,11 @@ public class AtlasClassificationType extends AtlasStructType {
             }
         }
 
-        this.superTypes    = Collections.unmodifiableList(s);
-        this.allSuperTypes = Collections.unmodifiableSet(allS);
-        this.allAttributes = Collections.unmodifiableMap(allA);
-        this.allSubTypes   = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.superTypes     = Collections.unmodifiableList(s);
+        this.allSuperTypes  = Collections.unmodifiableSet(allS);
+        this.allAttributes  = Collections.unmodifiableMap(allA);
+        this.uniqAttributes = getUniqueAttributes(this.allAttributes);
+        this.allSubTypes    = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
     }
 
     @Override

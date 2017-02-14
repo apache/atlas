@@ -286,18 +286,30 @@ public class EntityGraphMapper {
         AtlasEdge ret = null;
 
         if (ctx.getCurrentEdge() != null) {
-            updateVertex((AtlasStruct) ctx.getValue(), ctx.getCurrentEdge().getInVertex(), context);
+            AtlasStruct structVal = null;
+            if (ctx.getValue() instanceof AtlasStruct) {
+                structVal = (AtlasStruct)ctx.getValue();
+            } else if (ctx.getValue() instanceof Map) {
+                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), (Map) AtlasTypeUtil.toStructAttributes((Map)ctx.getValue()));
+            }
+
+            if (structVal != null) {
+                updateVertex(structVal, ctx.getCurrentEdge().getInVertex(), context);
+            }
 
             ret = ctx.getCurrentEdge();
         } else if (ctx.getValue() != null) {
             String edgeLabel = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
 
+            AtlasStruct structVal = null;
             if (ctx.getValue() instanceof AtlasStruct) {
-                ret = createVertex((AtlasStruct) ctx.getValue(), ctx.getReferringVertex(), edgeLabel, context);
+                structVal = (AtlasStruct) ctx.getValue();
             } else if (ctx.getValue() instanceof Map) {
-                AtlasStruct stuct = new AtlasStruct(ctx.getAttrType().getTypeName(), (Map) AtlasTypeUtil.toStructAttributes((Map)ctx.getValue()));
+                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), (Map) AtlasTypeUtil.toStructAttributes((Map)ctx.getValue()));
+            }
 
-                ret = createVertex(stuct, ctx.getReferringVertex(), edgeLabel, context);
+            if (structVal != null) {
+                ret = createVertex(structVal, ctx.getReferringVertex(), edgeLabel, context);
             }
         }
 
@@ -422,7 +434,7 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(newElements)) {
             for (int index = 0; index < newElements.size(); index++) {
                 AtlasEdge               existingEdge = getEdgeAt(currentElements, index, elementType);
-                AttributeMutationContext arrCtx      =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
+                AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
                                                                                      ctx.getVertexProperty(), elementType, existingEdge);
 
                 Object newEntry = mapCollectionElementsToVertex(arrCtx, context);

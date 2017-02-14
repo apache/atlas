@@ -209,6 +209,7 @@ public class AtlasEntityStoreV1Test {
 
         columns.add(col3.getAtlasObjectId());
         columns.add(col4.getAtlasObjectId());
+        tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         entitiesInfo.addReferredEntity(col3);
         entitiesInfo.addReferredEntity(col4);
@@ -223,6 +224,7 @@ public class AtlasEntityStoreV1Test {
         columns.clear();
         columns.add(col4.getAtlasObjectId());
         columns.add(col3.getAtlasObjectId());
+        tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));

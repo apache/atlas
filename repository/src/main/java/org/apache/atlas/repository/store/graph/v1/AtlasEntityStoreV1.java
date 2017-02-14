@@ -35,6 +35,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,7 +209,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 if (entity != null) {
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
-                    context.addUpdated(entity, entityType, vertex);
+                    String guidVertex = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+
+                    if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
+                        entity.setGuid(guidVertex);
+                    }
+
+                    context.addUpdated(guid, entity, entityType, vertex);
 
                     RequestContextV1.get().recordEntityUpdate(entity.getAtlasObjectId());
                 }

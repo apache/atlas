@@ -19,14 +19,14 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +34,12 @@ import org.slf4j.LoggerFactory;
 public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
 
+    private final GraphHelper       graphHelper = GraphHelper.getInstance();
+    private final AtlasTypeRegistry typeRegistry;
 
-    private final GraphHelper graphHelper = GraphHelper.getInstance();
-
+    public IDBasedEntityResolver(AtlasTypeRegistry typeRegistry) {
+        this.typeRegistry = typeRegistry;
+    }
 
     public EntityGraphDiscoveryContext resolveEntityReferences(EntityGraphDiscoveryContext context) throws AtlasBaseException {
         if (context == null) {
@@ -46,34 +49,36 @@ public class IDBasedEntityResolver implements EntityResolver {
         EntityStream entityStream = context.getEntityStream();
 
         for (String guid : context.getReferencedGuids()) {
-            if (AtlasEntity.isAssigned(guid)) { // validate in graph repo that given guid exists
-                AtlasVertex vertex = resolveGuid(guid);
+            boolean     isAssignedGuid = AtlasEntity.isAssigned(guid);
+            AtlasVertex vertex         = isAssignedGuid ? AtlasGraphUtilsV1.findByGuid(guid) : null;
 
+            if (vertex == null) { // if not found in the store, look if the entity is present in the stream
+                AtlasEntity entity = entityStream.getByGuid(guid);
+
+                if (entity != null) { // look for the entity in the store using unique-attributes
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                    if (entityType == null) {
+                        throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+                    }
+
+                    vertex = AtlasGraphUtilsV1.findByUniqueAttributes(entityType, entity.getAttributes());
+                } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
+                    throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                }
+            }
+
+            if (vertex != null) {
                 context.addResolvedGuid(guid, vertex);
-            } else  if (entityStream.getByGuid(guid) != null) { //check if entity stream have this reference id
-                context.addLocalGuidReference(guid);
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                if (isAssignedGuid) {
+                    throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                } else {
+                    context.addLocalGuidReference(guid);
+                }
             }
         }
 
         return context;
-    }
-
-    private AtlasVertex resolveGuid(String guid) throws AtlasBaseException {
-        //validate in graph repo that given guid, typename exists
-        AtlasVertex vertex = null;
-        try {
-            vertex = graphHelper.findVertex(Constants.GUID_PROPERTY_KEY, guid,
-                                            Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-        } catch (EntityNotFoundException e) {
-            //Ignore
-        }
-
-        if (vertex != null) {
-            return vertex;
-        } else {
-            throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
-        }
     }
 }

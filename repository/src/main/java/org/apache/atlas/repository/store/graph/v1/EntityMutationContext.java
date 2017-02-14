@@ -51,10 +51,15 @@ public class EntityMutationContext {
         }
     }
 
-    public void addUpdated(AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
+    public void addUpdated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
         entitiesUpdated.add(entity);
         entityVsType.put(entity.getGuid(), type);
         entityVsVertex.put(entity.getGuid(), atlasVertex);
+
+        if (!StringUtils.equals(internalGuid, entity.getGuid())) {
+            guidAssignments.put(internalGuid, entity.getGuid());
+            entityVsVertex.put(internalGuid, atlasVertex);
+        }
     }
 
     public EntityGraphDiscoveryContext getDiscoveryContext() {

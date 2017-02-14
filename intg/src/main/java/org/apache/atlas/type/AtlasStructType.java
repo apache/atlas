@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,8 @@ public class AtlasStructType extends AtlasType {
 
     private final AtlasStructDef structDef;
 
-    protected Map<String, AtlasAttribute> allAttributes = Collections.emptyMap();
+    protected Map<String, AtlasAttribute> allAttributes  = Collections.emptyMap();
+    protected Map<String, AtlasAttribute> uniqAttributes = Collections.emptyMap();
 
     public AtlasStructType(AtlasStructDef structDef) {
         super(structDef);
@@ -103,7 +105,8 @@ public class AtlasStructType extends AtlasType {
 
         resolveConstraints(typeRegistry);
 
-        this.allAttributes = Collections.unmodifiableMap(a);
+        this.allAttributes  = Collections.unmodifiableMap(a);
+        this.uniqAttributes = getUniqueAttributes(this.allAttributes);
     }
 
     private void resolveConstraints(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -174,6 +177,10 @@ public class AtlasStructType extends AtlasType {
 
     public Map<String, AtlasAttribute> getAllAttributes() {
         return allAttributes;
+    }
+
+    public Map<String, AtlasAttribute> getUniqAttributes() {
+        return uniqAttributes;
     }
 
     public AtlasAttribute getAttribute(String attributeName) {
@@ -403,6 +410,20 @@ public class AtlasStructType extends AtlasType {
         return type instanceof AtlasEntityType ? (AtlasEntityType)type : null;
     }
 
+    protected Map<String, AtlasAttribute> getUniqueAttributes(Map<String, AtlasAttribute> attributes) {
+        Map<String, AtlasAttribute> ret = new HashMap<>();
+
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (AtlasAttribute attribute : attributes.values()) {
+                if (attribute.getAttributeDef().getIsUnique()) {
+                    ret.put(attribute.getName(), attribute);
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap(ret);
+    }
+
     public static class AtlasAttribute {
         private final AtlasStructType   definedInType;
         private final AtlasType         attributeType;
@@ -466,12 +487,7 @@ public class AtlasStructType extends AtlasType {
 
         public String getInverseRefAttribute() { return inverseRefAttribute; }
 
-        private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
-            final String typeName = structDef.getName();
-            return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
-        }
-
-        private static String encodePropertyKey(String key) {
+        public static String encodePropertyKey(String key) {
             if (StringUtils.isBlank(key)) {
                 return key;
             }
@@ -483,7 +499,7 @@ public class AtlasStructType extends AtlasType {
             return key;
         }
 
-        private static String decodePropertyKey(String key) {
+        public static String decodePropertyKey(String key) {
             if (StringUtils.isBlank(key)) {
                 return key;
             }
@@ -493,6 +509,11 @@ public class AtlasStructType extends AtlasType {
             }
 
             return key;
+        }
+
+        private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
+            final String typeName = structDef.getName();
+            return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
         }
 
         private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][] {

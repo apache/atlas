@@ -73,7 +73,7 @@ public class AtlasEntityType extends AtlasStructType {
 
         List<AtlasEntityType>       s    = new ArrayList<>();
         Set<String>                 allS = new HashSet<>();
-        Map<String, AtlasAttribute> allA    = new HashMap<>();
+        Map<String, AtlasAttribute> allA = new HashMap<>();
 
         getTypeHierarchyInfo(typeRegistry, allS, allA);
 
@@ -87,10 +87,11 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        this.superTypes    = Collections.unmodifiableList(s);
-        this.allSuperTypes = Collections.unmodifiableSet(allS);
-        this.allAttributes = Collections.unmodifiableMap(allA);
-        this.allSubTypes   = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
+        this.superTypes     = Collections.unmodifiableList(s);
+        this.allSuperTypes  = Collections.unmodifiableSet(allS);
+        this.allAttributes  = Collections.unmodifiableMap(allA);
+        this.uniqAttributes = getUniqueAttributes(this.allAttributes);
+        this.allSubTypes    = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
     }
 
     @Override
