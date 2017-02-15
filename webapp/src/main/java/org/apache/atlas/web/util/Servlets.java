@@ -21,6 +21,7 @@ package org.apache.atlas.web.util;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.LocalServletRequest;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +42,9 @@ import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility functions for dealing with servlets.
@@ -192,5 +195,24 @@ public final class Servlets {
 
     public static String getUserName(HttpServletRequest httpServletRequest) throws IOException {
         return httpServletRequest.getRemoteUser();
+    }
+
+    public static Map<String, Object> getParameterMap(HttpServletRequest request) {
+        Map<String, Object> attributes = new HashMap<>();
+
+        if (MapUtils.isNotEmpty(request.getParameterMap())) {
+            for (Map.Entry<String, String[]> e : request.getParameterMap().entrySet()) {
+                String key = e.getKey();
+
+                if (key != null) {
+                    String[] values = e.getValue();
+                    String   value  = values != null && values.length > 0 ? values[0] : null;
+
+                    attributes.put(key, value);
+                }
+            }
+        }
+
+        return attributes;
     }
 }

@@ -84,6 +84,11 @@ public class EntityGraphMapper {
     }
 
     public AtlasVertex createVertex(AtlasEntity entity) {
+        final String guid = UUID.randomUUID().toString();
+        return createVertexWithGuid(entity, guid);
+    }
+
+    public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createVertex({})", entity.getTypeName());
         }
@@ -95,8 +100,6 @@ public class EntityGraphMapper {
         for (String superTypeName : entityType.getAllSuperTypes()) {
             AtlasGraphUtilsV1.addProperty(ret, Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
         }
-
-        final String guid = UUID.randomUUID().toString();
 
         AtlasGraphUtilsV1.setProperty(ret, Constants.GUID_PROPERTY_KEY, guid);
         AtlasGraphUtilsV1.setProperty(ret, Constants.VERSION_PROPERTY_KEY, getEntityVersion(entity));

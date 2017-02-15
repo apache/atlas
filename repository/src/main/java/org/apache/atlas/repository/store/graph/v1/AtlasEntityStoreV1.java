@@ -21,9 +21,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -33,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -46,10 +43,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -303,7 +298,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                     //Create vertices which do not exist in the repository
-                    vertex = entityGraphMapper.createVertex(entity);
+                    if ((entityStream instanceof EntityImportStream) && AtlasEntity.isAssigned(entity.getGuid())) {
+                        vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
+                    } else {
+                        vertex = entityGraphMapper.createVertex(entity);
+                    }
 
                     discoveryContext.addResolvedGuid(guid, vertex);
 

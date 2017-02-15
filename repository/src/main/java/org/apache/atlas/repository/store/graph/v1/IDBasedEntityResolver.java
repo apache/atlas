@@ -21,7 +21,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
 
-    private final GraphHelper       graphHelper = GraphHelper.getInstance();
     private final AtlasTypeRegistry typeRegistry;
 
     public IDBasedEntityResolver(AtlasTypeRegistry typeRegistry) {
@@ -49,8 +47,8 @@ public class IDBasedEntityResolver implements EntityResolver {
         EntityStream entityStream = context.getEntityStream();
 
         for (String guid : context.getReferencedGuids()) {
-            boolean     isAssignedGuid = AtlasEntity.isAssigned(guid);
-            AtlasVertex vertex         = isAssignedGuid ? AtlasGraphUtilsV1.findByGuid(guid) : null;
+            boolean isAssignedGuid = AtlasEntity.isAssigned(guid);
+            AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV1.findByGuid(guid) : null;
 
             if (vertex == null) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
@@ -71,7 +69,7 @@ public class IDBasedEntityResolver implements EntityResolver {
             if (vertex != null) {
                 context.addResolvedGuid(guid, vertex);
             } else {
-                if (isAssignedGuid) {
+                if (isAssignedGuid && !(entityStream instanceof EntityImportStream)) {
                     throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                 } else {
                     context.addLocalGuidReference(guid);

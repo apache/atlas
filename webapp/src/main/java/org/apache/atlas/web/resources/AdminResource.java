@@ -21,15 +21,18 @@ package org.apache.atlas.web.resources;
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.impexp.AtlasImportRequest;
+import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
@@ -53,6 +56,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -85,16 +89,19 @@ public class AdminResource {
 
     private final ServiceState      serviceState;
     private final MetricsService    metricsService;
-    private final DiscoveryService  discoveryService;
     private final AtlasTypeRegistry typeRegistry;
+    private final AtlasTypeDefStore typesDefStore;
+    private final AtlasEntityStore  entityStore;
 
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
-                         DiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
+                         AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore,
+                         AtlasEntityStore entityStore) {
         this.serviceState     = serviceState;
         this.metricsService   = metricsService;
-        this.discoveryService = discoveryService;
         this.typeRegistry     = typeRegistry;
+        this.typesDefStore    = typeDefStore;
+        this.entityStore      = entityStore;
     }
 
     /**
@@ -272,6 +279,10 @@ public class AdminResource {
     @Path("/export")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     public Response export(AtlasExportRequest request) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.export()");
+        }
+
         ZipSink exportSink = null;
         try {
             exportSink = new ZipSink();
@@ -292,14 +303,83 @@ public class AdminResource {
 
             outStream.flush();
             return Response.ok().build();
-        } catch (AtlasException | IOException ex) {
-            LOG.error("export() failed", ex);
+        } catch (IOException excp) {
+            LOG.error("export() failed", excp);
 
-            throw toAtlasBaseException(new AtlasException(ex));
+            throw new AtlasBaseException(excp);
         } finally {
-            if (exportSink != null)
+            if (exportSink != null) {
                 exportSink.close();
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AdminResource.export()");
+            }
         }
+    }
+
+    @POST
+    @Path("/import")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.BINARY)
+    public AtlasImportResult importData(byte[] bytes) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.importData(bytes.length={})", bytes.length);
+        }
+
+        AtlasImportResult result;
+
+        try {
+            AtlasImportRequest   request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
+            ByteArrayInputStream inputStream   = new ByteArrayInputStream(bytes);
+            ImportService        importService = new ImportService(this.typesDefStore, this.entityStore);
+
+            ZipSource zipSource = new ZipSource(inputStream);
+
+            result = importService.run(zipSource, request, Servlets.getUserName(httpServletRequest),
+                                       Servlets.getHostName(httpServletRequest),
+                                       Servlets.getRequestIpAddress(httpServletRequest));
+        } catch (Exception excp) {
+            LOG.error("importData(binary) failed", excp);
+
+            throw new AtlasBaseException(excp);
+        } finally {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AdminResource.importData(binary)");
+            }
+        }
+
+        return result;
+    }
+
+    @POST
+    @Path("/importfile")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasImportResult importFile() throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.importFile()");
+        }
+
+        AtlasImportResult result;
+
+        try {
+            AtlasImportRequest request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
+            ImportService      importService = new ImportService(this.typesDefStore, this.entityStore);
+
+            result = importService.run(request, Servlets.getUserName(httpServletRequest),
+                                       Servlets.getHostName(httpServletRequest),
+                                       Servlets.getRequestIpAddress(httpServletRequest));
+        } catch (Exception excp) {
+            LOG.error("importFile() failed", excp);
+
+            throw new AtlasBaseException(excp);
+        } finally {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AdminResource.importFile()");
+            }
+        }
+
+        return result;
     }
 
     private String getEditableEntityTypes(PropertiesConfiguration config) {

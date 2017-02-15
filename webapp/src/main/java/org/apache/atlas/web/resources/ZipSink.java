@@ -54,21 +54,18 @@ public class ZipSink {
     }
 
     public void setResult(AtlasExportResult result) throws AtlasBaseException {
-        final String fileName = "atlas-export-info";
         String jsonData = convertToJSON(result);
-        saveToZip(fileName, jsonData);
+        saveToZip(ZipExportFileNames.ATLAS_EXPORT_INFO_NAME, jsonData);
     }
 
     public void setTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
-        final String fileName = "atlas-typesdef";
         String jsonData = convertToJSON(typesDef);
-        saveToZip(fileName, jsonData);
+        saveToZip(ZipExportFileNames.ATLAS_TYPESDEF_NAME, jsonData);
     }
 
-    public void setExportOrder(Map<String, List<String>> result) throws AtlasBaseException {
-        final String fileName = "atlas-export-order";
+    public void setExportOrder(List<String> result) throws AtlasBaseException {
         String jsonData = convertToJSON(result);
-        saveToZip(fileName, jsonData);
+        saveToZip(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME, jsonData);
     }
 
     public void writeTo(OutputStream stream) throws IOException {
@@ -90,9 +87,13 @@ public class ZipSink {
         return AtlasType.toJson(entity);
     }
 
+    private void saveToZip(ZipExportFileNames fileName, String jsonData) throws AtlasBaseException {
+        saveToZip(fileName.toString(), jsonData);
+    }
+
     private void saveToZip(String fileName, String jsonData) throws AtlasBaseException {
         try {
-            addToZipStream(fileName + ".json", jsonData);
+            addToZipStream(fileName.toString() + ".json", jsonData);
         } catch (IOException e) {
             throw new AtlasBaseException(String.format("Error writing file %s.", fileName), e);
         }

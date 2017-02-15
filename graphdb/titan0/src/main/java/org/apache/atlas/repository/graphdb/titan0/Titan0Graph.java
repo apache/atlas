@@ -264,6 +264,10 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
 
         Object result = executeGremlinScript(query);
+        return convertGremlinScriptResult(isPath, result);
+    }
+
+    private Object convertGremlinScriptResult(boolean isPath, Object result) {
         if (isPath) {
             List<Object> path = convertPathQueryResultToList(result);
 
@@ -275,6 +279,17 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         } else {
             return convertGremlinValue(result);
         }
+    }
+
+    @Override
+    public Object executeGremlinScript(ScriptEngine scriptEngine, Bindings bindings, String query, boolean isPath) throws ScriptException {
+        if(!bindings.containsKey("g")) {
+            bindings.put("g", getGraph());
+        }
+
+        Object result = scriptEngine.eval(query, bindings);
+        return convertGremlinScriptResult(isPath, result);
+
     }
 
     private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
@@ -350,7 +365,6 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
             }
         });
     }
-
 
     @Override
     public boolean isMultiProperty(String propertyName) {

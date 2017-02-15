@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,59 +15,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.atlas.model.impexp;
 
-
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.io.Serializable;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasExportResult implements Serializable {
+public class AtlasImportResult {
     private static final long serialVersionUID = 1L;
-
-    public final static String ENTITY_COUNT = "entityCount";
 
     public enum OperationStatus {
         SUCCESS, PARTIAL_SUCCESS, FAIL
     }
 
-    private AtlasExportRequest   request;
+    private AtlasImportRequest   request;
     private String               userName;
     private String               clientIpAddress;
     private String               hostName;
     private long                 timeStamp;
     private Map<String, Integer> metrics;
-    private AtlasExportData      data;
     private OperationStatus      operationStatus;
 
-
-    public AtlasExportResult() {
+    public AtlasImportResult() {
         this(null, null, null, null, System.currentTimeMillis());
     }
 
-    public AtlasExportResult(AtlasExportRequest request,
-                             String userName, String clientIpAddress, String hostName, long timeStamp) {
+    public AtlasImportResult(AtlasImportRequest request, String userName,
+                             String clientIpAddress, String hostName, long timeStamp) {
         this.request         = request;
         this.userName        = userName;
         this.clientIpAddress = clientIpAddress;
@@ -75,14 +65,13 @@ public class AtlasExportResult implements Serializable {
         this.timeStamp       = timeStamp;
         this.metrics         = new HashMap<>();
         this.operationStatus = OperationStatus.FAIL;
-        this.data            = new AtlasExportData();
     }
 
-    public AtlasExportRequest getRequest() {
+    public AtlasImportRequest getRequest() {
         return request;
     }
 
-    public void setRequest(AtlasExportRequest request) {
+    public void setRequest(AtlasImportRequest request) {
         this.request = request;
     }
 
@@ -126,14 +115,6 @@ public class AtlasExportResult implements Serializable {
         this.metrics = metrics;
     }
 
-    public AtlasExportData getData() {
-        return data;
-    }
-
-    public void setData(AtlasExportData data) {
-        this.data = data;
-    }
-
     public OperationStatus getOperationStatus() {
         return operationStatus;
     }
@@ -141,7 +122,6 @@ public class AtlasExportResult implements Serializable {
     public void setOperationStatus(OperationStatus operationStatus) {
         this.operationStatus = operationStatus;
     }
-
 
     public void incrementMeticsCounter(String key) {
         incrementMeticsCounter(key, 1);
@@ -158,7 +138,7 @@ public class AtlasExportResult implements Serializable {
             sb = new StringBuilder();
         }
 
-        sb.append("AtlasExportResult{");
+        sb.append("AtlasImportResult{");
         sb.append("request={").append(request).append("}");
         sb.append(", userName='").append(userName).append("'");
         sb.append(", clientIpAddress='").append(clientIpAddress).append("'");
@@ -168,7 +148,6 @@ public class AtlasExportResult implements Serializable {
         AtlasBaseTypeDef.dumpObjects(metrics, sb);
         sb.append("}");
 
-        sb.append(", data='").append(data).append("'");
         sb.append(", operationStatus='").append(operationStatus).append("'");
         sb.append("}");
 
@@ -178,61 +157,5 @@ public class AtlasExportResult implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
-    }
-
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class AtlasExportData implements Serializable{
-        private static final long serialVersionUID = 1L;
-
-        private AtlasTypesDef            typesDef;
-        private Map<String, AtlasEntity> entities;
-        private List<String>             entityCreationOrder;
-
-
-        public AtlasExportData() {
-            typesDef            = new AtlasTypesDef();
-            entities            = new HashMap<>();
-            entityCreationOrder = new ArrayList<>();
-        }
-
-        public AtlasTypesDef getTypesDef() { return typesDef; }
-
-        public void setTypesDef(AtlasTypesDef typesDef) { this.typesDef = typesDef; }
-
-        public Map<String, AtlasEntity> getEntities() { return entities; }
-
-        public void setEntities(Map<String, AtlasEntity> entities) { this.entities = entities; }
-
-        public List<String> getEntityCreationOrder() { return entityCreationOrder; }
-
-        public void setEntityCreationOrder(List<String> entityCreationOrder) { this.entityCreationOrder = entityCreationOrder; }
-
-
-        public StringBuilder toString(StringBuilder sb) {
-            if (sb == null) {
-                sb = new StringBuilder();
-            }
-
-            sb.append("AtlasExportData{");
-            sb.append("typesDef={").append(typesDef).append("}");
-            sb.append("entities={");
-            AtlasBaseTypeDef.dumpObjects(entities, sb);
-            sb.append("}");
-            sb.append("entityCreationOrder={");
-            AtlasBaseTypeDef.dumpObjects(entityCreationOrder, sb);
-            sb.append("}");
-            sb.append("}");
-
-            return sb;
-        }
-
-        @Override
-        public String toString() {
-            return toString(new StringBuilder()).toString();
-        }
     }
 }

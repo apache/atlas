@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Set;
 
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.apache.atlas.groovy.GroovyExpression;
@@ -265,6 +268,22 @@ public interface AtlasGraph<V, E> {
     Object executeGremlinScript(String query, boolean isPath) throws ScriptException;
 
     /**
+     * Executes a Gremlin script using a ScriptEngineManager provided by consumer, returns an object with the result.
+     * This is useful for scenarios where an operation executes large number of queries.
+     *
+     * @param scriptEngine: ScriptEngine initialized by consumer.
+     * @param bindings: Update bindings with Graph instance for ScriptEngine that is initilized externally.
+     * @param query
+     * @param isPath whether this is a path query
+     *
+     * @return the result from executing the script
+     *
+     * @throws ScriptException
+     */
+    Object executeGremlinScript(ScriptEngine scriptEngine, Bindings bindings, String query, boolean isPath) throws ScriptException;
+
+
+    /**
      * Convenience method to check whether the given property is
      * a multi-property.
      *
@@ -272,6 +291,4 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     boolean isMultiProperty(String name);
-
-
 }
