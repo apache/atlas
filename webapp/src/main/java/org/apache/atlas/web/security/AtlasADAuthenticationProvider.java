@@ -29,12 +29,17 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
+import org.springframework.security.ldap.authentication.BindAuthenticator;
+import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
+import org.springframework.security.ldap.search.FilterBasedLdapUserSearch;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -58,17 +63,75 @@ public class AtlasADAuthenticationProvider extends
     }
 
     @Override
-    public Authentication authenticate(Authentication authentication)
-            throws AuthenticationException {
+    public Authentication authenticate(Authentication authentication) {
+            Authentication auth = getADBindAuthentication(authentication);
+            if (auth != null && auth.isAuthenticated()) {
+                return auth;
+            } else {
+                auth = getADAuthentication(authentication);
+                if (auth != null && auth.isAuthenticated()) {
+                    return auth;
+                }
+            }
+            if (auth == null) {
+                throw new AtlasAuthenticationException("AD Authentication Failed");
+            }
+            return auth;
+    }
+
+    private Authentication getADBindAuthentication (Authentication authentication) {
         try {
-            return getADBindAuthentication(authentication);
+            String userName = authentication.getName();
+            String userPassword = "";
+            if (authentication.getCredentials() != null) {
+                userPassword = authentication.getCredentials().toString();
+            }
+
+            LdapContextSource ldapContextSource = new DefaultSpringSecurityContextSource(adURL);
+            ldapContextSource.setUserDn(adBindDN);
+            ldapContextSource.setPassword(adBindPassword);
+            ldapContextSource.setReferral(adReferral);
+            ldapContextSource.setCacheEnvironmentProperties(true);
+            ldapContextSource.setAnonymousReadOnly(false);
+            ldapContextSource.setPooled(true);
+            ldapContextSource.afterPropertiesSet();
+
+            if (adUserSearchFilter==null || adUserSearchFilter.trim().isEmpty()) {
+                adUserSearchFilter="(sAMAccountName={0})";
+            }
+            FilterBasedLdapUserSearch userSearch=new FilterBasedLdapUserSearch(adBase, adUserSearchFilter,ldapContextSource);
+            userSearch.setSearchSubtree(true);
+
+            BindAuthenticator bindAuthenticator = new BindAuthenticator(ldapContextSource);
+            bindAuthenticator.setUserSearch(userSearch);
+            bindAuthenticator.afterPropertiesSet();
+
+			LdapAuthenticationProvider ldapAuthenticationProvider = new LdapAuthenticationProvider(bindAuthenticator);
+
+            if (userName != null && userPassword != null
+                    && !userName.trim().isEmpty()
+                    && !userPassword.trim().isEmpty()) {
+                final List<GrantedAuthority> grantedAuths = getAuthorities(userName);
+                final UserDetails principal = new User(userName, userPassword,
+                        grantedAuths);
+                final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(
+                        principal, userPassword, grantedAuths);
+                authentication = ldapAuthenticationProvider.authenticate(finalAuthentication);
+                if (groupsFromUGI) {
+                    authentication = getAuthenticationWithGrantedAuthorityFromUGI(authentication);
+                }
+                return authentication;
+            } else {
+                LOG.error("AD Authentication Failed userName or userPassword is null or empty");
+                return null;
+            }
         } catch (Exception e) {
-            throw new AtlasAuthenticationException(e.getMessage(), e.getCause());
+            LOG.error("AD Authentication Failed:", e);
+            return null;
         }
     }
 
-    private Authentication getADBindAuthentication(Authentication authentication)
-            throws Exception {
+    private Authentication getADAuthentication(Authentication authentication) {
         try {
             String userName = authentication.getName();
             String userPassword = "";
@@ -78,6 +141,8 @@ public class AtlasADAuthenticationProvider extends
 
             ActiveDirectoryLdapAuthenticationProvider adAuthenticationProvider =
                     new ActiveDirectoryLdapAuthenticationProvider(adDomain, adURL);
+            adAuthenticationProvider.setConvertSubErrorCodesToExceptions(true);
+			adAuthenticationProvider.setUseAuthenticationRequestCredentials(true);
 
             if (userName != null && userPassword != null
                     && !userName.trim().isEmpty()
@@ -93,13 +158,12 @@ public class AtlasADAuthenticationProvider extends
                 }
                 return authentication;
             } else {
-                throw new AtlasAuthenticationException(
-                        "AD Authentication Failed userName or userPassword is null or empty");
+                LOG.error("AD Authentication Failed userName or userPassword is null or empty");
+                return null;
             }
         } catch (Exception e) {
             LOG.error("AD Authentication Failed:", e);
-            throw new AtlasAuthenticationException("AD Authentication Failed ",
-                    e);
+            return null;
         }
     }
 
