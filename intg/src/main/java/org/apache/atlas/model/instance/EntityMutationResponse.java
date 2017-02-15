@@ -44,48 +44,61 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityMutationResponse {
 
-    Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> entitiesMutated;
-    Map<String,String> guidAssignments;
+    Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
+    Map<String,String>                                            guidAssignments;
 
     public EntityMutationResponse() {
     }
 
-    public EntityMutationResponse(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> opVsEntityMap) {
-        this.entitiesMutated = opVsEntityMap;
+    public EntityMutationResponse(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
+        this.mutatedEntities = mutatedEntities;
     }
 
     public Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> getMutatedEntities() {
-        return entitiesMutated;
+        return mutatedEntities;
     }
 
-    public void setEntitiesMutated(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> opVsEntityMap) {
-        this.entitiesMutated = opVsEntityMap;
+    public void setMutatedEntities(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
+        this.mutatedEntities = mutatedEntities;
     }
 
+    public void setGuidAssignments(Map<String,String> guidAssignments) {
+        this.guidAssignments = guidAssignments;
+    }
+
+    public Map<String,String> getGuidAssignments() {
+        return guidAssignments;
+    }
+
+
+    @JsonIgnore
     public List<AtlasEntityHeader> getEntitiesByOperation(EntityMutations.EntityOperation op) {
-        if ( entitiesMutated != null) {
-            return entitiesMutated.get(op);
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(op);
         }
         return null;
     }
 
+    @JsonIgnore
     public List<AtlasEntityHeader> getCreatedEntities() {
-        if ( entitiesMutated != null) {
-            return entitiesMutated.get(EntityMutations.EntityOperation.CREATE);
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(EntityMutations.EntityOperation.CREATE);
         }
         return null;
     }
 
+    @JsonIgnore
     public List<AtlasEntityHeader> getUpdatedEntities() {
-        if ( entitiesMutated != null) {
-            return entitiesMutated.get(EntityMutations.EntityOperation.UPDATE);
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(EntityMutations.EntityOperation.UPDATE);
         }
         return null;
     }
 
+    @JsonIgnore
     public List<AtlasEntityHeader> getDeletedEntities() {
-        if ( entitiesMutated != null) {
-            return entitiesMutated.get(EntityMutations.EntityOperation.DELETE);
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(EntityMutations.EntityOperation.DELETE);
         }
         return null;
     }
@@ -151,15 +164,15 @@ public class EntityMutationResponse {
     }
 
     public void addEntity(EntityMutations.EntityOperation op, AtlasEntityHeader header) {
-        if (entitiesMutated == null) {
-            entitiesMutated = new HashMap<>();
+        if (mutatedEntities == null) {
+            mutatedEntities = new HashMap<>();
         }
 
-        List<AtlasEntityHeader> opEntities = entitiesMutated.get(op);
+        List<AtlasEntityHeader> opEntities = mutatedEntities.get(op);
 
         if (opEntities == null) {
             opEntities = new ArrayList<>();
-            entitiesMutated.put(op, opEntities);
+            mutatedEntities.put(op, opEntities);
         }
 
         opEntities.add(header);
@@ -171,7 +184,7 @@ public class EntityMutationResponse {
             sb = new StringBuilder();
         }
 
-        AtlasBaseTypeDef.dumpObjects(entitiesMutated, sb);
+        AtlasBaseTypeDef.dumpObjects(mutatedEntities, sb);
 
         return sb;
     }
@@ -181,13 +194,13 @@ public class EntityMutationResponse {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EntityMutationResponse that = (EntityMutationResponse) o;
-        return Objects.equals(entitiesMutated, that.entitiesMutated) &&
+        return Objects.equals(mutatedEntities, that.mutatedEntities) &&
                Objects.equals(guidAssignments, that.guidAssignments);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entitiesMutated, guidAssignments);
+        return Objects.hash(mutatedEntities, guidAssignments);
     }
 
     @Override
@@ -230,12 +243,5 @@ public class EntityMutationResponse {
             }
         }
         return null;
-    }
-    public void setGuidAssignments(Map<String,String> guidAssignments) {
-        this.guidAssignments = guidAssignments;
-    }
-
-    public Map<String,String> getGuidAssignments() {
-        return guidAssignments;
     }
 }
