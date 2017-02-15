@@ -159,6 +159,21 @@ public class AtlasClassificationType extends AtlasStructType {
     }
 
     @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                if (!superType.isValidValueForUpdate(obj)) {
+                    return false;
+                }
+            }
+
+            return super.isValidValueForUpdate(obj);
+        }
+
+        return true;
+    }
+
+    @Override
     public Object getNormalizedValue(Object obj) {
         Object ret = null;
 
@@ -169,6 +184,25 @@ public class AtlasClassificationType extends AtlasStructType {
                     ret = obj;
                 } else if (obj instanceof Map) {
                     normalizeAttributeValues((Map) obj);
+                    ret = obj;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public Object getNormalizedValueForUpdate(Object obj) {
+        Object ret = null;
+
+        if (obj != null) {
+            if (isValidValueForUpdate(obj)) {
+                if (obj instanceof AtlasClassification) {
+                    normalizeAttributeValuesForUpdate((AtlasClassification) obj);
+                    ret = obj;
+                } else if (obj instanceof Map) {
+                    normalizeAttributeValuesForUpdate((Map) obj);
                     ret = obj;
                 }
             }
@@ -192,6 +226,21 @@ public class AtlasClassificationType extends AtlasStructType {
         return ret;
     }
 
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
+            }
+
+            ret = super.validateValueForUpdate(obj, objName, messages) && ret;
+        }
+
+        return ret;
+    }
+
     public void normalizeAttributeValues(AtlasClassification classification) {
         if (classification != null) {
             for (AtlasClassificationType superType : superTypes) {
@@ -199,6 +248,16 @@ public class AtlasClassificationType extends AtlasStructType {
             }
 
             super.normalizeAttributeValues(classification);
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(AtlasClassification classification) {
+        if (classification != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(classification);
+            }
+
+            super.normalizeAttributeValuesForUpdate(classification);
         }
     }
 
@@ -210,6 +269,16 @@ public class AtlasClassificationType extends AtlasStructType {
             }
 
             super.normalizeAttributeValues(obj);
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(obj);
+            }
+
+            super.normalizeAttributeValuesForUpdate(obj);
         }
     }
 

@@ -199,7 +199,7 @@ public class AtlasStructType extends AtlasType {
                     }
                 }
             } else if (obj instanceof Map) {
-                Map map = (Map) obj;
+                Map map = AtlasTypeUtil.toStructAttributes((Map) obj);
 
                 for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
                     if (!isAssignableValue(map.get(attributeDef.getName()), attributeDef)) {
@@ -208,6 +208,42 @@ public class AtlasStructType extends AtlasType {
                 }
             } else {
                 return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            Map<String, Object> attributes;
+
+            if (obj instanceof AtlasStruct) {
+                AtlasStruct structObj = (AtlasStruct) obj;
+                attributes = structObj.getAttributes();
+
+            } else if (obj instanceof Map) {
+                attributes = AtlasTypeUtil.toStructAttributes((Map) obj);
+
+            } else {
+                return false;
+            }
+
+            if (MapUtils.isNotEmpty(attributes)) {
+                for (Map.Entry<String, Object> e : attributes.entrySet()) {
+                    String            attrName  = e.getKey();
+                    Object            attrValue = e.getValue();
+                    AtlasAttributeDef attrDef   = structDef.getAttribute(attrName);
+
+                    if (attrValue == null || attrDef == null) {
+                        continue;
+                    }
+
+                    if (!isAssignableValueForUpdate(attrValue, attrDef)) {
+                        return false;
+                    }
+                }
             }
         }
 
@@ -234,6 +270,25 @@ public class AtlasStructType extends AtlasType {
     }
 
     @Override
+    public Object getNormalizedValueForUpdate(Object obj) {
+        Object ret = null;
+
+        if (obj != null) {
+            if (isValidValueForUpdate(obj)) {
+                if (obj instanceof AtlasStruct) {
+                    normalizeAttributeValuesForUpdate((AtlasStruct) obj);
+                    ret = obj;
+                } else if (obj instanceof Map) {
+                    normalizeAttributeValuesForUpdate((Map) obj);
+                    ret = obj;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
     public boolean validateValue(Object obj, String objName, List<String> messages) {
         boolean ret = true;
 
@@ -242,20 +297,18 @@ public class AtlasStructType extends AtlasType {
                 AtlasStruct structObj = (AtlasStruct) obj;
 
                 for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-                    String    attrName = attributeDef.getName();
-
+                    String         attrName  = attributeDef.getName();
                     AtlasAttribute attribute = allAttributes.get(attributeDef.getName());
 
                     if (attribute != null) {
-                        AtlasType dataType = attribute.getAttributeType();
-                        Object value     = structObj.getAttribute(attrName);
-                        String fieldName = objName + "." + attrName;
+                        AtlasType dataType  = attribute.getAttributeType();
+                        Object    value     = structObj.getAttribute(attrName);
+                        String    fieldName = objName + "." + attrName;
 
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
                         } else if (!attributeDef.getIsOptional()) {
                             ret = false;
-
                             messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
                         }
                     }
@@ -264,19 +317,18 @@ public class AtlasStructType extends AtlasType {
                 Map attributes = AtlasTypeUtil.toStructAttributes((Map)obj);
 
                 for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-                    String    attrName = attributeDef.getName();
-                    AtlasAttribute attribute = allAttributes.get(attributeDef.getName());
+                    String             attrName  = attributeDef.getName();
+                    AtlasAttribute     attribute = allAttributes.get(attributeDef.getName());
 
                     if (attribute != null) {
-                        AtlasType dataType = attribute.getAttributeType();
-                        Object value     = attributes.get(attrName);
-                        String fieldName = objName + "." + attrName;
+                        AtlasType dataType  = attribute.getAttributeType();
+                        Object    value     = attributes.get(attrName);
+                        String    fieldName = objName + "." + attrName;
 
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
                         } else if (!attributeDef.getIsOptional()) {
                             ret = false;
-
                             messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
                         }
                     }
@@ -284,6 +336,47 @@ public class AtlasStructType extends AtlasType {
             } else {
                 ret = false;
                 messages.add(objName + "=" + obj + ": invalid value for type " + getTypeName());
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean             ret        = true;
+        Map<String, Object> attributes = null;
+
+        if (obj != null) {
+            if (obj instanceof AtlasStruct) {
+                AtlasStruct structObj = (AtlasStruct) obj;
+                attributes = structObj.getAttributes();
+
+            } else if (obj instanceof Map) {
+                attributes = AtlasTypeUtil.toStructAttributes((Map) obj);
+
+            } else {
+                ret = false;
+                messages.add(objName + "=" + obj + ": invalid value for type " + getTypeName());
+            }
+
+            if (MapUtils.isNotEmpty(attributes)) {
+                for (Map.Entry<String, Object> e : attributes.entrySet()) {
+                    String         attrName  = e.getKey();
+                    Object         attrValue = e.getValue();
+                    AtlasAttribute attribute = allAttributes.get(attrName);
+
+                    if (attrValue == null) {
+                        continue;
+                    }
+
+                    if (attribute != null) {
+                        AtlasType dataType  = attribute.getAttributeType();
+                        String    fieldName = objName + "." + attrName;
+
+                        ret = dataType.validateValueForUpdate(attrValue, fieldName, messages) && ret;
+                    }
+                }
             }
         }
 
@@ -306,6 +399,19 @@ public class AtlasStructType extends AtlasType {
         }
     }
 
+    public void normalizeAttributeValuesForUpdate(AtlasStruct obj) {
+        if (obj != null) {
+            for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+                String attributeName = attributeDef.getName();
+
+                if (obj.hasAttribute(attributeName)) {
+                    Object attributeValue = getNormalizedValueForUpdate(obj.getAttribute(attributeName), attributeDef);
+                    obj.setAttribute(attributeName, attributeValue);
+                }
+            }
+        }
+    }
+
     public void normalizeAttributeValues(Map<String, Object> obj) {
         if (obj != null) {
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -317,6 +423,20 @@ public class AtlasStructType extends AtlasType {
                     obj.put(attributeName, attributeValue);
                 } else if (!attributeDef.getIsOptional()) {
                     obj.put(attributeName, createDefaultValue(attributeDef));
+                }
+            }
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasAttributeDef attrDef : structDef.getAttributeDefs()) {
+                String attrName  = attrDef.getName();
+                Object attrValue = obj.get(attrName);
+
+                if (obj.containsKey(attrName)) {
+                    attrValue = getNormalizedValueForUpdate(attrValue, attrDef);
+                    obj.put(attrName, attrValue);
                 }
             }
         }
@@ -376,6 +496,24 @@ public class AtlasStructType extends AtlasType {
         return ret;
     }
 
+    private boolean isAssignableValueForUpdate(Object value, AtlasAttributeDef attributeDef) {
+        boolean ret = true;
+
+        if (value != null) {
+            AtlasAttribute attribute = allAttributes.get(attributeDef.getName());
+
+            if (attribute != null) {
+                AtlasType attrType = attribute.getAttributeType();
+
+                if (!attrType.isValidValueForUpdate(value)) {
+                    ret = false; // invalid value
+                }
+            }
+        }
+
+        return ret;
+    }
+
     private Object getNormalizedValue(Object value, AtlasAttributeDef attributeDef) {
         AtlasAttribute attribute = allAttributes.get(attributeDef.getName());
 
@@ -388,6 +526,20 @@ public class AtlasStructType extends AtlasType {
                 }
             } else {
                 return attrType.getNormalizedValue(value);
+            }
+        }
+
+        return null;
+    }
+
+    private Object getNormalizedValueForUpdate(Object value, AtlasAttributeDef attributeDef) {
+        AtlasAttribute attribute = allAttributes.get(attributeDef.getName());
+
+        if (attribute != null) {
+            AtlasType attrType = attribute.getAttributeType();
+
+            if (value != null) {
+                return attrType.getNormalizedValueForUpdate(value);
             }
         }
 

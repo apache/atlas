@@ -59,9 +59,8 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
 
     @Override
     public EntityGraphDiscoveryContext discoverEntities() throws AtlasBaseException {
-
         // walk through entities in stream and validate them; record entity references
-        discoverAndValidate();
+        discover();
 
         // resolve entity references discovered in previous step
         resolveReferences();
@@ -70,12 +69,58 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     }
 
     @Override
+    public void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
+        }
+
+        AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        }
+
+        type.validateValue(entity, entity.getTypeName(), messages);
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
+        }
+
+        type.getNormalizedValue(entity);
+    }
+
+    @Override
+    public void validateAndNormalizeForUpdate(AtlasEntity entity) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
+        }
+
+        AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        }
+
+        type.validateValueForUpdate(entity, entity.getTypeName(), messages);
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
+        }
+
+        type.getNormalizedValueForUpdate(entity);
+    }
+
+    @Override
     public void cleanUp() throws AtlasBaseException {
         discoveryContext.cleanUp();
     }
 
 
-    protected void discoverAndValidate() throws AtlasBaseException {
+    protected void discover() throws AtlasBaseException {
         EntityStream entityStream = discoveryContext.getEntityStream();
 
         Set<String> walkedEntities = new HashSet<>();
@@ -261,7 +306,6 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
             return;
         }
 
-        validateAndNormalize(entity);
         AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         recordObjectReference(entity.getGuid());
@@ -272,28 +316,6 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
 
     boolean isPrimitive(TypeCategory typeCategory) {
         return typeCategory == TypeCategory.PRIMITIVE || typeCategory == TypeCategory.ENUM;
-    }
-
-    private void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException {
-        List<String> messages = new ArrayList<>();
-
-        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
-        }
-
-        AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-        if (type == null) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
-        }
-
-        type.validateValue(entity, entity.getTypeName(), messages);
-
-        if (!messages.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
-        }
-
-        type.getNormalizedValue(entity);
     }
 
     private void recordObjectReference(String guid) {

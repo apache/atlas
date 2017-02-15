@@ -32,6 +32,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -44,21 +45,21 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityMutationResponse {
 
-    Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
-    Map<String,String>                                            guidAssignments;
+    Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities;
+    Map<String, String>                           guidAssignments;
 
     public EntityMutationResponse() {
     }
 
-    public EntityMutationResponse(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
+    public EntityMutationResponse(final Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
         this.mutatedEntities = mutatedEntities;
     }
 
-    public Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> getMutatedEntities() {
+    public Map<EntityOperation, List<AtlasEntityHeader>> getMutatedEntities() {
         return mutatedEntities;
     }
 
-    public void setMutatedEntities(final Map<EntityMutations.EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
+    public void setMutatedEntities(final Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities) {
         this.mutatedEntities = mutatedEntities;
     }
 
@@ -72,7 +73,7 @@ public class EntityMutationResponse {
 
 
     @JsonIgnore
-    public List<AtlasEntityHeader> getEntitiesByOperation(EntityMutations.EntityOperation op) {
+    public List<AtlasEntityHeader> getEntitiesByOperation(EntityOperation op) {
         if ( mutatedEntities != null) {
             return mutatedEntities.get(op);
         }
@@ -82,7 +83,7 @@ public class EntityMutationResponse {
     @JsonIgnore
     public List<AtlasEntityHeader> getCreatedEntities() {
         if ( mutatedEntities != null) {
-            return mutatedEntities.get(EntityMutations.EntityOperation.CREATE);
+            return mutatedEntities.get(EntityOperation.CREATE);
         }
         return null;
     }
@@ -90,7 +91,14 @@ public class EntityMutationResponse {
     @JsonIgnore
     public List<AtlasEntityHeader> getUpdatedEntities() {
         if ( mutatedEntities != null) {
-            return mutatedEntities.get(EntityMutations.EntityOperation.UPDATE);
+            return mutatedEntities.get(EntityOperation.UPDATE);
+        }
+        return null;
+    }
+
+    public List<AtlasEntityHeader> getPartialUpdatedEntities() {
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(EntityOperation.PARTIAL_UPDATE);
         }
         return null;
     }
@@ -98,14 +106,14 @@ public class EntityMutationResponse {
     @JsonIgnore
     public List<AtlasEntityHeader> getDeletedEntities() {
         if ( mutatedEntities != null) {
-            return mutatedEntities.get(EntityMutations.EntityOperation.DELETE);
+            return mutatedEntities.get(EntityOperation.DELETE);
         }
         return null;
     }
 
     @JsonIgnore
     public AtlasEntityHeader getFirstEntityCreated() {
-        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityOperation.CREATE);
         if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
             return entitiesByOperation.get(0);
         }
@@ -115,7 +123,18 @@ public class EntityMutationResponse {
 
     @JsonIgnore
     public AtlasEntityHeader getFirstEntityUpdated() {
-        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE);
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityOperation.UPDATE);
+
+        if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
+            return entitiesByOperation.get(0);
+        }
+
+        return null;
+    }
+
+    @JsonIgnore
+    public AtlasEntityHeader getFirstEntityPartialUpdated() {
+        final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityOperation.PARTIAL_UPDATE);
         if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
             return entitiesByOperation.get(0);
         }
@@ -125,45 +144,51 @@ public class EntityMutationResponse {
 
     @JsonIgnore
     public AtlasEntityHeader getFirstCreatedEntityByTypeName(String typeName) {
-        return getFirstEntityByType(getEntitiesByOperation(EntityMutations.EntityOperation.CREATE), typeName);
+        return getFirstEntityByType(getEntitiesByOperation(EntityOperation.CREATE), typeName);
     }
 
     @JsonIgnore
     public AtlasEntityHeader getFirstDeletedEntityByTypeName(String typeName) {
-        return getFirstEntityByType(getEntitiesByOperation(EntityMutations.EntityOperation.DELETE), typeName);
+        return getFirstEntityByType(getEntitiesByOperation(EntityOperation.DELETE), typeName);
     }
 
     @JsonIgnore
     public List<AtlasEntityHeader> getCreatedEntitiesByTypeName(String typeName) {
-        return getEntitiesByType(getEntitiesByOperation(EntityMutations.EntityOperation.CREATE), typeName);
+        return getEntitiesByType(getEntitiesByOperation(EntityOperation.CREATE), typeName);
+    }
+
+    @JsonIgnore
+    public List<AtlasEntityHeader> getPartialUpdatedEntitiesByTypeName(String typeName) {
+        return getEntitiesByType(getEntitiesByOperation(EntityOperation.PARTIAL_UPDATE), typeName);
     }
 
     @JsonIgnore
     public AtlasEntityHeader getCreatedEntityByTypeNameAndAttribute(String typeName, String attrName, String attrVal) {
-        return getEntityByTypeAndUniqueAttribute(getEntitiesByOperation(EntityMutations.EntityOperation.CREATE), typeName, attrName, attrVal);
+        return getEntityByTypeAndUniqueAttribute(getEntitiesByOperation(EntityOperation.CREATE), typeName, attrName, attrVal);
     }
 
     @JsonIgnore
+
     public AtlasEntityHeader getUpdatedEntityByTypeNameAndAttribute(String typeName, String attrName, String attrVal) {
-        return getEntityByTypeAndUniqueAttribute(getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE), typeName, attrName, attrVal);
+        return getEntityByTypeAndUniqueAttribute(getEntitiesByOperation(EntityOperation.UPDATE), typeName, attrName, attrVal);
     }
 
     @JsonIgnore
     public List<AtlasEntityHeader> getUpdatedEntitiesByTypeName(String typeName) {
-        return getEntitiesByType(getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE), typeName);
+        return getEntitiesByType(getEntitiesByOperation(EntityOperation.UPDATE), typeName);
     }
 
     @JsonIgnore
     public List<AtlasEntityHeader> getDeletedEntitiesByTypeName(String typeName) {
-        return getEntitiesByType(getEntitiesByOperation(EntityMutations.EntityOperation.DELETE), typeName);
+        return getEntitiesByType(getEntitiesByOperation(EntityOperation.DELETE), typeName);
     }
 
     @JsonIgnore
     public AtlasEntityHeader getFirstUpdatedEntityByTypeName(String typeName) {
-        return getFirstEntityByType(getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE), typeName);
+        return getFirstEntityByType(getEntitiesByOperation(EntityOperation.UPDATE), typeName);
     }
 
-    public void addEntity(EntityMutations.EntityOperation op, AtlasEntityHeader header) {
+    public void addEntity(EntityOperation op, AtlasEntityHeader header) {
         if (mutatedEntities == null) {
             mutatedEntities = new HashMap<>();
         }

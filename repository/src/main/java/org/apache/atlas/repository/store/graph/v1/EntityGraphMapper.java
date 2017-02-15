@@ -63,6 +63,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 
@@ -103,7 +104,7 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    public EntityMutationResponse mapAttributes(EntityMutationContext context) throws AtlasBaseException {
+    public EntityMutationResponse mapAttributes(EntityMutationContext context, boolean isPartialUpdate) throws AtlasBaseException {
         EntityMutationResponse resp = new EntityMutationResponse();
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
@@ -129,7 +130,12 @@ public class EntityGraphMapper {
 
                 mapAttributes(updatedEntity, vertex, UPDATE, context);
 
-                resp.addEntity(UPDATE, constructHeader(updatedEntity, entityType, vertex));
+                if (isPartialUpdate) {
+                    resp.addEntity(PARTIAL_UPDATE, constructHeader(updatedEntity, entityType, vertex));
+                } else {
+                    resp.addEntity(UPDATE, constructHeader(updatedEntity, entityType, vertex));
+                }
+
             }
         }
 

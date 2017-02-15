@@ -136,7 +136,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public EntityMutationResponse createOrUpdate(EntityStream entityStream) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -145,12 +145,12 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
+        // Create/Update entities
         EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
 
-        // Create/Update entities
-        EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper);
+        EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
-        EntityMutationResponse ret = entityGraphMapper.mapAttributes(context);
+        EntityMutationResponse ret = entityGraphMapper.mapAttributes(context, isPartialUpdate);
 
         ret.setGuidAssignments(context.getGuidAssignments());
 
@@ -164,8 +164,21 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
-                                                          AtlasEntity entity) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "updateByUniqueAttributes() not implemented yet");
+                                                           AtlasEntity updatedEntity) throws AtlasBaseException {
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> updateByUniqueAttributes({}, {})", entityType.getTypeName(), uniqAttributes);
+        }
+
+        if (updatedEntity == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entity to update.");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
+
+        updatedEntity.setGuid(AtlasGraphUtilsV1.getIdFromVertex(entityVertex));
+
+        return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
     }
 
     @GraphTransaction
@@ -256,7 +269,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
 
-    private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper) throws AtlasBaseException {
+    private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityStream);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -265,9 +278,16 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
             AtlasEntity entity = entityStream.getByGuid(guid);
 
-            if (vertex != null) {
-                // entity would be null if guid is not in the stream but referenced by an entity in the stream
-                if (entity != null) {
+            if (entity != null) {
+                
+                if (vertex != null) {
+                    // entity would be null if guid is not in the stream but referenced by an entity in the stream
+                    if (!isPartialUpdate) {
+                        graphDiscoverer.validateAndNormalize(entity);
+                    } else {
+                        graphDiscoverer.validateAndNormalizeForUpdate(entity);
+                    }
+
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                     String guidVertex = AtlasGraphUtilsV1.getIdFromVertex(vertex);
@@ -277,21 +297,22 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     }
 
                     context.addUpdated(guid, entity, entityType, vertex);
+                } else {
+                    graphDiscoverer.validateAndNormalize(entity);
+
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                    //Create vertices which do not exist in the repository
+                    vertex = entityGraphMapper.createVertex(entity);
+
+                    discoveryContext.addResolvedGuid(guid, vertex);
+
+                    String generatedGuid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+
+                    entity.setGuid(generatedGuid);
+
+                    context.addCreated(guid, entity, entityType, vertex);
                 }
-            } else {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-                //Create vertices which do not exist in the repository
-                vertex = entityGraphMapper.createVertex(entity);
-
-                discoveryContext.addResolvedGuid(guid, vertex);
-
-                String generatedGuid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
-
-                entity.setGuid(generatedGuid);
-
-                context.addCreated(guid, entity, entityType, vertex);
-
             }
         }
 

@@ -37,5 +37,9 @@ public interface EntityGraphDiscovery {
      */
     EntityGraphDiscoveryContext discoverEntities() throws AtlasBaseException;
 
+    void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException;
+
+    void validateAndNormalizeForUpdate(AtlasEntity entity) throws AtlasBaseException;
+
     void cleanUp() throws AtlasBaseException;
 }

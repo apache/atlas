@@ -133,7 +133,7 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
-        return entitiesStore.createOrUpdate(new AtlasEntityStream(entity));
+        return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
     }
 
     /**
@@ -164,29 +164,19 @@ public class EntityREST {
      * an entity which is identified by its type and unique attribute  eg: Referenceable.qualifiedName.
      * Null updates are not possible
      *******/
-
-    @Deprecated
     @PUT
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Path("/uniqueAttribute/type/{typeName}")
-    public EntityMutationResponse partialUpdateByUniqueAttribute(@PathParam("typeName") String typeName,
+    public EntityMutationResponse partialUpdateByUniqueAttributes(@PathParam("typeName") String typeName,
                                                                  @Context HttpServletRequest servletRequest,
                                                                  AtlasEntity entity) throws Exception {
-        AtlasEntityType     entityType = ensureEntityType(typeName);
-        Map<String, Object> attributes = getAttributes(servletRequest);
+        AtlasEntityType     entityType       = ensureEntityType(typeName);
+        Map<String, Object> uniqueAttributes = getAttributes(servletRequest);
 
-        validateUniqueAttribute(entityType, attributes);
+        validateUniqueAttribute(entityType, uniqueAttributes);
 
-        // legacy API supports only one unique attribute
-        String attribute = attributes.keySet().toArray(new String[1])[0];
-        String value     = (String)attributes.get(attribute);
-
-        AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
-        ctx.addEntity(entity);
-        Referenceable ref = restAdapters.getReferenceable(entity, ctx);
-        CreateUpdateEntitiesResult result = metadataService.updateEntityByUniqueAttribute(typeName, attribute, value, ref);
-        return toEntityMutationResponse(result);
+        return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entity);
     }
 
     @Deprecated
@@ -239,7 +229,7 @@ public class EntityREST {
 
         EntityStream entityStream = new AtlasEntityStream(entities);
 
-        return entitiesStore.createOrUpdate(entityStream);
+        return entitiesStore.createOrUpdate(entityStream, false);
     }
 
     /*******

@@ -582,6 +582,7 @@ public final class TestUtilsV2 {
                         ImmutableSet.<String>of(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
+                        AtlasTypeUtil.createOptionalAttrDef("description", "string"),
                         new AtlasAttributeDef("table", TABLE_TYPE,
                         true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,

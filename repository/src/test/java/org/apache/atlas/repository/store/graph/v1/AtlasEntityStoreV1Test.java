@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContextV1;
@@ -68,7 +69,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
+import static org.apache.atlas.TestUtils.COLUMN_TYPE;
+import static org.apache.atlas.TestUtils.NAME;
 import static org.apache.atlas.TestUtils.randomString;
+import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.testng.Assert.assertEquals;
 
 @Guice(modules = RepositoryMetadataModule.class)
@@ -130,7 +134,7 @@ public class AtlasEntityStoreV1Test {
     @Test
     public void testCreate() throws Exception {
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(deptEntity));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(deptEntity), false);
 
         validateMutationResponse(response, EntityOperation.CREATE, 5);
         AtlasEntityHeader dept1 = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DEPARTMENT_TYPE);
@@ -150,7 +154,7 @@ public class AtlasEntityStoreV1Test {
 
         //Create DB
         init();
-        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         validateMutationResponse(dbCreationResponse, EntityOperation.CREATE, 1);
 
         AtlasEntityHeader db1 = dbCreationResponse.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
@@ -163,10 +167,10 @@ public class AtlasEntityStoreV1Test {
         tblEntity.addReferredEntity(dbEntity.getEntity());
 
         init();
-        EntityMutationResponse tableCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(tblEntity));
+        EntityMutationResponse tableCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
         validateMutationResponse(tableCreationResponse, EntityOperation.CREATE, 1);
 
-        AtlasEntityHeader tableEntity = tableCreationResponse.getFirstCreatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader tableEntity = tableCreationResponse.getFirstCreatedEntityByTypeName(TABLE_TYPE);
         validateEntity(tblEntity, getEntityFromStore(tableEntity));
     }
 
@@ -193,7 +197,7 @@ public class AtlasEntityStoreV1Test {
         entitiesInfo.addReferredEntity(col2);
 
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
@@ -213,7 +217,7 @@ public class AtlasEntityStoreV1Test {
         entitiesInfo.addReferredEntity(col4);
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
@@ -225,7 +229,7 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
         Assert.assertEquals(((List<AtlasObjectId>) updatedTable.getAttribute(COLUMNS_ATTR_NAME)).size(), 2);
@@ -236,7 +240,7 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute(COLUMNS_ATTR_NAME, null);
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
@@ -254,9 +258,9 @@ public class AtlasEntityStoreV1Test {
         entitiesInfo.addReferredEntity(tableEntity);
 
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        AtlasEntityHeader tableDefinition1 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader tableDefinition1 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition1));
                 
         Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) tableDefinition1.getAttribute("partitionsMap")).get("part0")));
@@ -266,9 +270,9 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute("partitionsMap", partsMap);
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        AtlasEntityHeader tableDefinition2 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader tableDefinition2 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition2));
 
         assertEquals(((Map<String, AtlasStruct>) tableDefinition2.getAttribute("partitionsMap")).size(), 2);
@@ -280,9 +284,9 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute("partitionsMap", partsMap);
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        AtlasEntityHeader tableDefinition3 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader tableDefinition3 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition3));
 
         assertEquals(((Map<String, AtlasStruct>) tableDefinition3.getAttribute("partitionsMap")).size(), 2);
@@ -294,9 +298,9 @@ public class AtlasEntityStoreV1Test {
         partition2.setAttribute(TestUtilsV2.NAME, "test2Updated");
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        AtlasEntityHeader tableDefinition4 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader tableDefinition4 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition4));
 
         assertEquals(((Map<String, AtlasStruct>) tableDefinition4.getAttribute("partitionsMap")).size(), 2);
@@ -314,7 +318,7 @@ public class AtlasEntityStoreV1Test {
         col0WithExtendedInfo.addReferredEntity(dbEntity.getEntity());
 
         init();
-        entityStore.createOrUpdate(new AtlasEntityStream(col0WithExtendedInfo));
+        entityStore.createOrUpdate(new AtlasEntityStream(col0WithExtendedInfo), false);
 
         AtlasEntity col1 = new AtlasEntity(TestUtils.COLUMN_TYPE, TestUtilsV2.NAME, "test2");
         col1.setAttribute("type", "string");
@@ -325,7 +329,7 @@ public class AtlasEntityStoreV1Test {
         col1WithExtendedInfo.addReferredEntity(dbEntity.getEntity());
 
         init();
-        entityStore.createOrUpdate(new AtlasEntityStream(col1WithExtendedInfo));
+        entityStore.createOrUpdate(new AtlasEntityStream(col1WithExtendedInfo), false);
 
         Map<String, AtlasObjectId> columnsMap = new HashMap<String, AtlasObjectId>();
         columnsMap.put("col0", col0.getAtlasObjectId());
@@ -336,8 +340,8 @@ public class AtlasEntityStoreV1Test {
         entitiesInfo.addReferredEntity(col0);
         entitiesInfo.addReferredEntity(col1);
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader tableDefinition5 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader tableDefinition5 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition5));
 
         //Swap elements
@@ -347,23 +351,23 @@ public class AtlasEntityStoreV1Test {
 
         tableEntity.setAttribute(TestUtils.COLUMNS_MAP, columnsMap);
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader tableDefinition6 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader tableDefinition6 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition6));
 
         //Drop the first key and change the class type as well to col0
         columnsMap.clear();
         columnsMap.put("col0", col0.getAtlasObjectId());
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader tableDefinition7 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader tableDefinition7 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition7));
 
         //Clear state
         tableEntity.setAttribute(TestUtils.COLUMNS_MAP, null);
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader tableDefinition8 = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader tableDefinition8 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition8));
     }
 
@@ -378,17 +382,17 @@ public class AtlasEntityStoreV1Test {
         Map<String, String> paramsMap = (Map<String, String>) tableEntity.getAttribute("parametersMap");
         paramsMap.put("newParam", "value");
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
         validateMutationResponse(response, EntityMutations.EntityOperation.UPDATE, 1);
-        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //Remove an entry
         paramsMap.remove("key1");
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
         validateMutationResponse(response, EntityMutations.EntityOperation.UPDATE, 1);
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
     }
 
@@ -405,44 +409,44 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute("partitions", partitions);
 
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //add a new element to array of struct
         partitions.add(new AtlasStruct(TestUtils.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part3"));
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //remove one of the struct values
         init();
         partitions.remove(1);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //Update struct value within array of struct
         init();
         partitions.get(0).setAttribute(TestUtilsV2.NAME, "part4");
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
 
         //add a repeated element to array of struct
         partitions.add(new AtlasStruct(TestUtils.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part4"));
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         // Remove all elements. Should set array attribute to null
         partitions.clear();
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
     }
 
@@ -460,22 +464,22 @@ public class AtlasEntityStoreV1Test {
         tableEntity.setAttribute("database", new AtlasObjectId(databaseEntity.getTypeName(), TestUtilsV2.NAME, databaseEntity.getAttribute(TestUtilsV2.NAME)));
 
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //update struct attribute
         serdeInstance.setAttribute("serde", "testUpdated");
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //set to null
         tableEntity.setAttribute("description", null);
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
-        updatedTable = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         Assert.assertNull(updatedTable.getAttribute("description"));
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
     }
@@ -506,7 +510,7 @@ public class AtlasEntityStoreV1Test {
         //Create new db instance
         final AtlasEntity databaseInstance = TestUtilsV2.createDBEntity();
 
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(databaseInstance));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(databaseInstance), false);
         final AtlasEntityHeader dbCreated = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
 
         init();
@@ -517,8 +521,8 @@ public class AtlasEntityStoreV1Test {
         tableCloneMap.put(dbCreated.getGuid(), databaseInstance);
         tableCloneMap.put(tableClone.getGuid(), tableClone);
 
-        response = entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap));
-        final AtlasEntityHeader tableDefinition = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.TABLE_TYPE);
+        response = entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap), false);
+        final AtlasEntityHeader tableDefinition = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         Assert.assertNotNull(tableDefinition.getAttribute("database"));
         Assert.assertEquals(((AtlasObjectId) tableDefinition.getAttribute("database")).getGuid(), dbCreated.getGuid());
     }
@@ -529,7 +533,7 @@ public class AtlasEntityStoreV1Test {
         AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         AtlasEntityHeader firstEntityCreated = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
 
         //The optional boolean attribute should have a non-null value
@@ -547,7 +551,7 @@ public class AtlasEntityStoreV1Test {
         //Complete update
 
         init();
-        response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         AtlasEntityHeader firstEntityUpdated = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
 
         Assert.assertNotNull(firstEntityUpdated);
@@ -599,7 +603,7 @@ public class AtlasEntityStoreV1Test {
 
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo(entity);
 
-        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo));
+        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
         final AtlasEntityHeader firstEntityCreated = response.getFirstEntityCreated();
         validateEntity(entityWithExtInfo, getEntityFromStore(firstEntityCreated));
 
@@ -616,12 +620,195 @@ public class AtlasEntityStoreV1Test {
     public void testCreateRequiredAttrNull() throws Exception {
         //Update required attribute
         Map<String, AtlasEntity> tableCloneMap = new HashMap<>();
-        AtlasEntity tableEntity = new AtlasEntity(TestUtilsV2.TABLE_TYPE);
+        AtlasEntity tableEntity = new AtlasEntity(TABLE_TYPE);
         tableEntity.setAttribute(TestUtilsV2.NAME, "table_" + TestUtils.randomString());
         tableCloneMap.put(tableEntity.getGuid(), tableEntity);
 
-        entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap));
+        entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap), false);
         Assert.fail("Expected exception while creating with required attribute null");
+    }
+
+    @Test
+    public void testPartialUpdateAttr() throws Exception {
+        //Update optional attribute
+
+        init();
+
+        AtlasEntity dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
+        dbEntity.setAttribute("name", RandomStringUtils.randomAlphanumeric(10));
+        dbEntity.setAttribute("description", "us db");
+        dbEntity.setAttribute("isReplicated", false);
+        dbEntity.setAttribute("created", "09081988");
+        dbEntity.setAttribute("namespace", "db namespace");
+        dbEntity.setAttribute("cluster", "Fenton_Cluster");
+        dbEntity.setAttribute("colo", "10001");
+
+        EntityStream           dbStream        = new AtlasEntityStream(new AtlasEntitiesWithExtInfo(dbEntity));
+        EntityMutationResponse response        = entityStore.createOrUpdate(dbStream, false);
+        AtlasEntityHeader      dbHeader        = response.getFirstEntityCreated();
+        AtlasEntity            createdDbEntity = getEntityFromStore(dbHeader);
+
+        // update the db entity
+        dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
+        dbEntity.setGuid(createdDbEntity.getGuid());
+        // dbEntity.setAttribute("name", createdDbEntity.getAttribute("name"));
+        // dbEntity.setAttribute("description", "another db"); // required attr
+        dbEntity.setAttribute("created", "08151947");       // optional attr
+        dbEntity.setAttribute("isReplicated", true);       // optional attr
+
+        dbStream = new AtlasEntityStream(new AtlasEntitiesWithExtInfo(dbEntity));
+
+        // fail full update if required attributes are not specified.
+        try {
+            entityStore.createOrUpdate(dbStream, false);
+        } catch (AtlasBaseException ex) {
+            Assert.assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS);
+        }
+
+        // do partial update without providing required attributes
+        dbStream.reset();
+        response = entityStore.createOrUpdate(dbStream, true);
+        dbHeader = response.getFirstEntityPartialUpdated();
+        AtlasEntity updatedDbEntity = getEntityFromStore(dbHeader);
+
+        assertEquals(updatedDbEntity.getAttribute("name"), createdDbEntity.getAttribute("name"));
+        assertEquals(updatedDbEntity.getAttribute("description"), createdDbEntity.getAttribute("description"));
+        assertEquals(updatedDbEntity.getAttribute("isReplicated"), true);
+        assertEquals(updatedDbEntity.getAttribute("created"), "08151947");
+        assertEquals(updatedDbEntity.getAttribute("namespace"), createdDbEntity.getAttribute("namespace"));
+        assertEquals(updatedDbEntity.getAttribute("cluster"), createdDbEntity.getAttribute("cluster"));
+        assertEquals(updatedDbEntity.getAttribute("colo"), createdDbEntity.getAttribute("colo"));
+
+        // create a new table type
+        AtlasEntity tblEntity = new AtlasEntity(TABLE_TYPE);
+        tblEntity.setAttribute("name", RandomStringUtils.randomAlphanumeric(10));
+        tblEntity.setAttribute("type", "type");
+        tblEntity.setAttribute("tableType", "MANAGED");
+        tblEntity.setAttribute("database", updatedDbEntity.getAtlasObjectId());
+
+        // create new column entity
+        AtlasEntity col1 = TestUtilsV2.createColumnEntity(tblEntity);
+        AtlasEntity col2 = TestUtilsV2.createColumnEntity(tblEntity);
+        col1.setAttribute(TestUtilsV2.NAME, "col1");
+        col2.setAttribute(TestUtilsV2.NAME, "col2");
+
+        List<AtlasObjectId> columns = new ArrayList<>();
+        columns.add(col1.getAtlasObjectId());
+        columns.add(col2.getAtlasObjectId());
+
+        tblEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+
+        AtlasEntitiesWithExtInfo tableEntityInfo = new AtlasEntitiesWithExtInfo(tblEntity);
+        tableEntityInfo.addReferredEntity(col1.getGuid(), col1);
+        tableEntityInfo.addReferredEntity(col2.getGuid(), col2);
+
+        EntityStream tblStream = new AtlasEntityStream(tableEntityInfo);
+        response = entityStore.createOrUpdate(tblStream, false);
+        AtlasEntityHeader tblHeader = response.getFirstEntityCreated();
+        AtlasEntity createdTblEntity = getEntityFromStore(tblHeader);
+
+        columns = (List<AtlasObjectId>) createdTblEntity.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
+        assertEquals(columns.size(), 2);
+
+        // update - add 2 more columns to table
+        AtlasEntity col3 = TestUtilsV2.createColumnEntity(createdTblEntity);
+        col3.setAttribute(TestUtilsV2.NAME, "col3");
+        col3.setAttribute("description", "description col3");
+
+        AtlasEntity col4 = TestUtilsV2.createColumnEntity(createdTblEntity);
+        col4.setAttribute(TestUtilsV2.NAME, "col4");
+        col4.setAttribute("description", "description col4");
+
+        columns.clear();
+        columns.add(col3.getAtlasObjectId());
+        columns.add(col4.getAtlasObjectId());
+
+        tblEntity = new AtlasEntity(TABLE_TYPE);
+        tblEntity.setGuid(createdTblEntity.getGuid());
+        tblEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+
+        tableEntityInfo = new AtlasEntitiesWithExtInfo(tblEntity);
+        tableEntityInfo.addReferredEntity(col3.getGuid(), col3);
+        tableEntityInfo.addReferredEntity(col4.getGuid(), col4);
+
+        tblStream = new AtlasEntityStream(tableEntityInfo);
+        response  = entityStore.createOrUpdate(tblStream, true);
+        tblHeader = response.getFirstEntityPartialUpdated();
+        AtlasEntity updatedTblEntity = getEntityFromStore(tblHeader);
+
+        columns = (List<AtlasObjectId>) tblHeader.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
+        assertEquals(columns.size(), 2);
+    }
+
+    @Test
+    public void testPartialUpdateArrayAttr() throws Exception {
+        // Create a table entity, with 3 reference column entities
+        init();
+        final AtlasEntity      dbEntity           = TestUtilsV2.createDBEntity();
+        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+
+        final AtlasEntity        tableEntity      = TestUtilsV2.createTableEntity(dbEntity);
+        AtlasEntitiesWithExtInfo entitiesInfo     = new AtlasEntitiesWithExtInfo(tableEntity);
+
+        final AtlasEntity columnEntity1 = TestUtilsV2.createColumnEntity(tableEntity);
+        columnEntity1.setAttribute("description", "desc for col1");
+        entitiesInfo.addReferredEntity(columnEntity1);
+
+        final AtlasEntity columnEntity2 = TestUtilsV2.createColumnEntity(tableEntity);
+        columnEntity2.setAttribute("description", "desc for col2");
+        entitiesInfo.addReferredEntity(columnEntity2);
+
+        final AtlasEntity columnEntity3 = TestUtilsV2.createColumnEntity(tableEntity);
+        columnEntity3.setAttribute("description", "desc for col3");
+        entitiesInfo.addReferredEntity(columnEntity3);
+
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity1.getAtlasObjectId(), columnEntity2.getAtlasObjectId(), columnEntity3.getAtlasObjectId()));
+
+        init();
+
+        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
+        final AtlasEntityHeader      createdTblHeader    = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
+        final AtlasEntity            createdTblEntity    = getEntityFromStore(createdTblHeader);
+
+        final AtlasEntityHeader column1Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity1.getAttribute(NAME));
+        final AtlasEntityHeader column2Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity2.getAttribute(NAME));
+        final AtlasEntityHeader column3Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity3.getAttribute(NAME));
+
+        // update only description attribute of all 3 columns
+        AtlasEntity col1 = new AtlasEntity(COLUMN_TYPE);
+        col1.setGuid(column1Created.getGuid());
+        col1.setAttribute("description", "desc for col1:updated");
+
+        AtlasEntity col2 = new AtlasEntity(COLUMN_TYPE);
+        col2.setGuid(column2Created.getGuid());
+        col2.setAttribute("description", "desc for col2:updated");
+
+        AtlasEntity col3 = new AtlasEntity(COLUMN_TYPE);
+        col3.setGuid(column3Created.getGuid());
+        col3.setAttribute("description", "desc for col3:updated");
+
+        final AtlasEntity tableEntity1 = new AtlasEntity(TABLE_TYPE);
+        tableEntity1.setGuid(createdTblHeader.getGuid());
+        tableEntity1.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(col1.getAtlasObjectId(), col2.getAtlasObjectId(), col3.getAtlasObjectId()));
+        AtlasEntitiesWithExtInfo tableInfo = new AtlasEntitiesWithExtInfo(tableEntity1);
+        tableInfo.addReferredEntity(col1.getGuid(), col1);
+        tableInfo.addReferredEntity(col2.getGuid(), col2);
+        tableInfo.addReferredEntity(col3.getGuid(), col3);
+
+        init();
+
+        final EntityMutationResponse tblUpdateResponse = entityStore.createOrUpdate(new AtlasEntityStream(tableInfo), true);
+        final AtlasEntityHeader      updatedTblHeader  = tblUpdateResponse.getFirstEntityPartialUpdated();
+        final AtlasEntity            updatedTblEntity2 = getEntityFromStore(updatedTblHeader);
+        List<AtlasEntityHeader>      updatedColHeaders = tblUpdateResponse.getPartialUpdatedEntitiesByTypeName(COLUMN_TYPE);
+
+        final AtlasEntity updatedCol1Entity = getEntityFromStore(updatedColHeaders.get(0));
+        final AtlasEntity updatedCol2Entity = getEntityFromStore(updatedColHeaders.get(1));
+        final AtlasEntity updatedCol3Entity = getEntityFromStore(updatedColHeaders.get(2));
+
+        assertEquals(col1.getAttribute("description"), updatedCol1Entity.getAttribute("description"));
+        assertEquals(col2.getAttribute("description"), updatedCol2Entity.getAttribute("description"));
+        assertEquals(col3.getAttribute("description"), updatedCol3Entity.getAttribute("description"));
     }
 
 

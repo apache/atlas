@@ -124,6 +124,25 @@ public class AtlasMapType extends AtlasType {
     }
 
     @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            if (obj instanceof Map) {
+                Map<Object, Objects> map = (Map<Object, Objects>) obj;
+
+                for (Map.Entry e : map.entrySet()) {
+                    if (!keyType.isValidValueForUpdate(e.getKey()) || !valueType.isValidValueForUpdate(e.getValue())) {
+                        return false; // invalid key/value
+                    }
+                }
+            } else {
+                return false; // invalid type
+            }
+        }
+
+        return true;
+    }
+
+    @Override
     public Map<Object, Object> getNormalizedValue(Object obj) {
         if (obj == null) {
             return null;
@@ -163,6 +182,45 @@ public class AtlasMapType extends AtlasType {
     }
 
     @Override
+    public Map<Object, Object> getNormalizedValueForUpdate(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof Map) {
+            Map<Object, Object> ret = new HashMap<>();
+
+            Map<Object, Objects> map = (Map<Object, Objects>) obj;
+
+            for (Map.Entry e : map.entrySet()) {
+                Object normalizedKey = keyType.getNormalizedValueForUpdate(e.getKey());
+
+                if (normalizedKey != null) {
+                    Object value = e.getValue();
+
+                    if (value != null) {
+                        Object normalizedValue = valueType.getNormalizedValueForUpdate(e.getValue());
+
+                        if (normalizedValue != null) {
+                            ret.put(normalizedKey, normalizedValue);
+                        } else {
+                            return null; // invalid value
+                        }
+                    } else {
+                        ret.put(normalizedKey, value);
+                    }
+                } else {
+                    return null; // invalid key
+                }
+            }
+
+            return ret;
+        }
+
+        return null;
+    }
+
+    @Override
     public boolean validateValue(Object obj, String objName, List<String> messages) {
         boolean ret = true;
 
@@ -181,6 +239,37 @@ public class AtlasMapType extends AtlasType {
                         Object value = e.getValue();
 
                         ret = valueType.validateValue(value, objName + "." + key, messages) && ret;
+                    }
+                }
+            } else {
+                ret = false;
+
+                messages.add(objName + "=" + obj + ": invalid value for type " + getTypeName());
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            if (obj instanceof Map) {
+                Map<Object, Objects> map = (Map<Object, Objects>) obj;
+
+                for (Map.Entry e : map.entrySet()) {
+                    Object key = e.getKey();
+
+                    if (!keyType.isValidValueForUpdate(key)) {
+                        ret = false;
+
+                        messages.add(objName + "." + key + ": invalid key for type " + getTypeName());
+                    } else {
+                        Object value = e.getValue();
+
+                        ret = valueType.validateValueForUpdate(value, objName + "." + key, messages) && ret;
                     }
                 }
             } else {

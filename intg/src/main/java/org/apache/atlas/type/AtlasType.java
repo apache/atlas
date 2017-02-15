@@ -77,6 +77,14 @@ public abstract class AtlasType {
         return ret;
     }
 
+    public boolean isValidValueForUpdate(Object obj) { return isValidValue(obj); }
+
+    public Object getNormalizedValueForUpdate(Object obj) { return getNormalizedValue(obj); }
+
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        return validateValue(obj, objName, messages);
+    }
+
     /* for attribute of entity-type, the value would be of AtlasObjectId
      * when an attribute instance is created i.e. AtlasAttribute, this method
      * will be called to get AtlasEntityType replaced with AtlasObjectType

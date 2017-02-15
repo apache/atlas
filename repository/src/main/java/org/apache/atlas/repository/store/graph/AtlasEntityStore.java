@@ -66,10 +66,9 @@ public interface AtlasEntityStore {
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
      * @throws AtlasBaseException
      */
-    EntityMutationResponse createOrUpdate(EntityStream entityStream) throws AtlasBaseException;
+    EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
-     * @deprecated
      * Update a single entity
      * @param entityType     type of the entity
      * @param uniqAttributes Attributes that uniquely identify the entity

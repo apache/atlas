@@ -142,17 +142,26 @@ public class AtlasEntityType extends AtlasStructType {
     @Override
     public boolean isValidValue(Object obj) {
         if (obj != null) {
-            if (obj instanceof AtlasObjectId) {
-                AtlasObjectId objId = (AtlasObjectId ) obj;
-                return isAssignableFrom(objId);
-            } else {
-                for (AtlasEntityType superType : superTypes) {
-                    if (!superType.isValidValue(obj)) {
-                        return false;
-                    }
+            for (AtlasEntityType superType : superTypes) {
+                if (!superType.isValidValue(obj)) {
+                    return false;
                 }
-                return super.isValidValue(obj);
             }
+            return super.isValidValue(obj);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            for (AtlasEntityType superType : superTypes) {
+                if (!superType.isValidValueForUpdate(obj)) {
+                    return false;
+                }
+            }
+            return super.isValidValueForUpdate(obj);
         }
 
         return true;
@@ -170,7 +179,24 @@ public class AtlasEntityType extends AtlasStructType {
                 } else if (obj instanceof Map) {
                     normalizeAttributeValues((Map) obj);
                     ret = obj;
-                } else if (obj instanceof AtlasObjectId) {
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public Object getNormalizedValueForUpdate(Object obj) {
+        Object ret = null;
+
+        if (obj != null) {
+            if (isValidValueForUpdate(obj)) {
+                if (obj instanceof AtlasEntity) {
+                    normalizeAttributeValuesForUpdate((AtlasEntity) obj);
+                    ret = obj;
+                } else if (obj instanceof Map) {
+                    normalizeAttributeValuesForUpdate((Map) obj);
                     ret = obj;
                 }
             }
@@ -189,30 +215,38 @@ public class AtlasEntityType extends AtlasStructType {
         boolean ret = true;
 
         if (obj != null) {
-            if (obj instanceof AtlasObjectId) {
-                AtlasObjectId objId = (AtlasObjectId) obj;
-                return isAssignableFrom(objId);
-            } else if (obj instanceof AtlasEntity) {
-                // entity validation will be done below, outside of these if/else blocks
-            } else if (obj instanceof Map) {
-                AtlasObjectId objId = new AtlasObjectId((Map) obj);
-
-                if (isAssignableFrom(objId)) {
-                    return true;
+            if (obj instanceof AtlasEntity || obj instanceof Map) {
+                for (AtlasEntityType superType : superTypes) {
+                    ret = superType.validateValue(obj, objName, messages) && ret;
                 }
 
-                // entity validation will be done below, outside of these if/else blocks
+                ret = super.validateValue(obj, objName, messages) && ret;
+
             } else {
                 ret = false;
-
                 messages.add(objName + ": invalid value type '" + obj.getClass().getName());
             }
+        }
 
-            for (AtlasEntityType superType : superTypes) {
-                ret = superType.validateValue(obj, objName, messages) && ret;
+        return ret;
+    }
+
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            if (obj instanceof AtlasEntity || obj instanceof Map) {
+                for (AtlasEntityType superType : superTypes) {
+                    ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
+                }
+
+                ret = super.validateValueForUpdate(obj, objName, messages) && ret;
+
+            } else {
+                ret = false;
+                messages.add(objName + ": invalid value type '" + obj.getClass().getName());
             }
-
-            ret = super.validateValue(obj, objName, messages) && ret;
         }
 
         return ret;
@@ -239,6 +273,16 @@ public class AtlasEntityType extends AtlasStructType {
         }
     }
 
+    public void normalizeAttributeValuesForUpdate(AtlasEntity ent) {
+        if (ent != null) {
+            for (AtlasEntityType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(ent);
+            }
+
+            super.normalizeAttributeValuesForUpdate(ent);
+        }
+    }
+
     @Override
     public void normalizeAttributeValues(Map<String, Object> obj) {
         if (obj != null) {
@@ -247,6 +291,16 @@ public class AtlasEntityType extends AtlasStructType {
             }
 
             super.normalizeAttributeValues(obj);
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasEntityType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(obj);
+            }
+
+            super.normalizeAttributeValuesForUpdate(obj);
         }
     }
 

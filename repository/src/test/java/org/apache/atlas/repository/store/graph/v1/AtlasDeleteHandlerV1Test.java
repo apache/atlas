@@ -163,7 +163,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     public void testDeleteAndCreate() throws Exception {
         init();
         final AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
 
         init();
         //delete entity should mark it as deleted
@@ -182,7 +182,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
         //Create the same entity again, should create new entity
         AtlasEntity newDBEntity = TestUtilsV2.createDBEntity((String) dbEntity.getAttribute(NAME));
-        EntityMutationResponse newCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(newDBEntity));
+        EntityMutationResponse newCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(newDBEntity), false);
         assertNotEquals(newCreationResponse.getFirstEntityCreated().getGuid(), response.getFirstEntityCreated().getGuid());
 
         //TODO - Enable after GET is ready
@@ -197,7 +197,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
         init();
-        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
 
         final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
         final AtlasEntity columnEntity = TestUtilsV2.createColumnEntity(tableEntity);
@@ -207,7 +207,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         input.addReferredEntity(columnEntity);
 
         init();
-        EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(input));
+        EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(input), false);
         final AtlasEntityHeader columnCreated = tblCreationResponse.getFirstCreatedEntityByTypeName(COLUMN_TYPE);
         final AtlasEntityHeader tableCreated = tblCreationResponse.getFirstCreatedEntityByTypeName(TABLE_TYPE);
 
@@ -227,7 +227,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         //Deleting table should update process
         AtlasEntity process = TestUtilsV2.createProcessEntity(null, Arrays.asList(tableCreated.getAtlasObjectId()));
         init();
-        final EntityMutationResponse processCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(process));
+        final EntityMutationResponse processCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(process), false);
 
         init();
         entityStore.deleteById(tableCreated.getGuid());
@@ -242,7 +242,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         // Create a table entity, with 3 composite column entities
         init();
         final AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
-        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
 
         final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
         AtlasEntity.AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntity.AtlasEntitiesWithExtInfo(tableEntity);
@@ -258,7 +258,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         init();
 
-        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         final AtlasEntityHeader column1Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity1.getAttribute(NAME));
         final AtlasEntityHeader column2Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity2.getAttribute(NAME));
@@ -296,7 +296,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         entitiesInfo1.addReferredEntity(columnEntity3New);
 
         init();
-        deletionResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo1));
+        deletionResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo1), false);
 
         //TODO - enable after fixing unique atribute resolver
         assertEquals(deletionResponse.getDeletedEntities().size(), 1);
@@ -347,7 +347,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
 
         RequestContextV1.clear();
-        final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept));
+        final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
         final AtlasEntityHeader deptCreated = hrDeptCreationResponse.getFirstUpdatedEntityByTypeName(DEPARTMENT_TYPE);
         final AtlasEntityHeader maxEmployeeCreated = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
         final AtlasEntityHeader johnEmployeeCreated = hrDeptCreationResponse.getUpdatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
@@ -372,7 +372,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         maxEmployee.setAttribute("manager", janeEmployeeCreated.getAtlasObjectId());
 
         init();
-        EntityMutationResponse entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee));
+        EntityMutationResponse entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
 
         assertEquals(entityResult.getUpdatedEntities().size(), 1);
         assertTrue(extractGuids(entityResult.getUpdatedEntities()).contains(maxGuid));
@@ -391,7 +391,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         // Update max's mentor reference to jane.
         maxEmployee.setAttribute("mentor", janeEmployeeCreated.getAtlasObjectId());
         init();
-        entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee));
+        entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
         assertEquals(entityResult.getUpdatedEntities().size(), 1);
         assertTrue(extractGuids(entityResult.getUpdatedEntities()).contains(maxGuid));
 
@@ -411,7 +411,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         init();
         maxEmployee.setAttribute("manager", juliusEmployeeCreated.getAtlasObjectId());
-        entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee));
+        entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
         //TODO ATLAS-499 should have updated julius' subordinates
         assertEquals(entityResult.getUpdatedEntities().size(), 2);
         assertTrue(extractGuids(entityResult.getUpdatedEntities()).contains(maxGuid));
@@ -464,7 +464,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     public void testDisconnectBidirectionalReferences() throws Exception {
         AtlasEntity.AtlasEntitiesWithExtInfo hrDept = TestUtilsV2.createDeptEg2();
         init();
-        final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept));
+        final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
 
         final AtlasEntityHeader deptCreated = hrDeptCreationResponse.getFirstCreatedEntityByTypeName(DEPARTMENT_TYPE);
         final AtlasEntityHeader maxEmployee = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
@@ -647,7 +647,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         AtlasEntityStream entityStream = new AtlasEntityStream(structCreationObj);
 
-        EntityMutationResponse response = entityStore.createOrUpdate(entityStream);
+        EntityMutationResponse response = entityStore.createOrUpdate(entityStream, false);
         Assert.assertEquals(response.getCreatedEntities().size(), 3);
 
         final List<String> structTarget = metadataService.getEntityList("StructTarget");
@@ -726,7 +726,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         // Create a table entity, with 3 composite column entities
         init();
         final AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
-        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity));
+        EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
 
         final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
         AtlasEntity.AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntity.AtlasEntitiesWithExtInfo(tableEntity);
@@ -742,7 +742,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         init();
 
-        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo));
+        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         final AtlasEntityHeader column1Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity1.getAttribute(NAME));
         final AtlasEntityHeader column2Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity2.getAttribute(NAME));

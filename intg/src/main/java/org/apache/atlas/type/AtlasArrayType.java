@@ -161,6 +161,41 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            if (obj instanceof List || obj instanceof Set) {
+                Collection objList = (Collection) obj;
+
+                if (!isValidElementCount(objList.size())) {
+                    return false;
+                }
+
+                for (Object element : objList) {
+                    if (!elementType.isValidValueForUpdate(element)) {
+                        return false;
+                    }
+                }
+            } else if (obj.getClass().isArray()) {
+                int arrayLen = Array.getLength(obj);
+
+                if (!isValidElementCount(arrayLen)) {
+                    return false;
+                }
+
+                for (int i = 0; i < arrayLen; i++) {
+                    if (!elementType.isValidValueForUpdate(Array.get(obj, i))) {
+                        return false;
+                    }
+                }
+            } else {
+                return false; // invalid type
+            }
+        }
+
+        return true;
+    }
+
+    @Override
     public Collection<?> getNormalizedValue(Object obj) {
         if (obj == null) {
             return null;
@@ -222,6 +257,67 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
+    public Collection<?> getNormalizedValueForUpdate(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof List || obj instanceof Set) {
+            List<Object> ret = new ArrayList<>();
+
+            Collection objList = (Collection) obj;
+
+            if (!isValidElementCount(objList.size())) {
+                return null;
+            }
+
+            for (Object element : objList) {
+                if (element != null) {
+                    Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
+
+                    if (normalizedValue != null) {
+                        ret.add(normalizedValue);
+                    } else {
+                        return null; // invalid element value
+                    }
+                } else {
+                    ret.add(element);
+                }
+            }
+
+            return ret;
+        } else if (obj.getClass().isArray()) {
+            List<Object> ret = new ArrayList<>();
+
+            int arrayLen = Array.getLength(obj);
+
+            if (!isValidElementCount(arrayLen)) {
+                return null;
+            }
+
+            for (int i = 0; i < arrayLen; i++) {
+                Object element = Array.get(obj, i);
+
+                if (element != null) {
+                    Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
+
+                    if (normalizedValue != null) {
+                        ret.add(normalizedValue);
+                    } else {
+                        return null; // invalid element value
+                    }
+                } else {
+                    ret.add(element);
+                }
+            }
+
+            return ret;
+        }
+
+        return null;
+    }
+
+    @Override
     public boolean validateValue(Object obj, String objName, List<String> messages) {
         boolean ret = true;
 
@@ -253,6 +349,49 @@ public class AtlasArrayType extends AtlasType {
 
                 for (int i = 0; i < arrayLen; i++) {
                     ret = elementType.validateValue(Array.get(obj, i), objName + "[" + i + "]", messages) && ret;
+                }
+            } else {
+                ret = false;
+
+                messages.add(objName + "=" + obj + ": invalid value for type " + getTypeName());
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            if (obj instanceof List || obj instanceof Set) {
+                Collection objList = (Collection) obj;
+
+                if (!isValidElementCount(objList.size())) {
+                    ret = false;
+
+                    messages.add(objName + ": incorrect number of values. found=" + objList.size()
+                            + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
+                }
+
+                int idx = 0;
+                for (Object element : objList) {
+                    ret = elementType.validateValueForUpdate(element, objName + "[" + idx + "]", messages) && ret;
+                    idx++;
+                }
+            } else if (obj.getClass().isArray()) {
+                int arrayLen = Array.getLength(obj);
+
+                if (!isValidElementCount(arrayLen)) {
+                    ret = false;
+
+                    messages.add(objName + ": incorrect number of values. found=" + arrayLen
+                            + "; expected: minCount=" + minCount + ", maxCount=" + maxCount);
+                }
+
+                for (int i = 0; i < arrayLen; i++) {
+                    ret = elementType.validateValueForUpdate(Array.get(obj, i), objName + "[" + i + "]", messages) && ret;
                 }
             } else {
                 ret = false;

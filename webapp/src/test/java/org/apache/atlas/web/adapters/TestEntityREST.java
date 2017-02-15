@@ -153,6 +153,37 @@ public class TestEntityREST {
     }
 
     @Test
+    public void  testPartialUpdateByUniqueAttribute() throws Exception {
+        AtlasEntity            dbEntity = TestUtilsV2.createDBEntity();
+        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
+        String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
+
+        Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
+
+        final String prevDBName    = (String) dbEntity.getAttribute(TestUtilsV2.NAME);
+        final String updatedDBName = prevDBName + ":updated";
+        Map<String, Object> dbAttrs = dbEntity.getAttributes();
+
+        // partial update only db name
+        dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
+        dbEntity.setGuid(dbGuid);
+        dbEntity.setAttribute(TestUtilsV2.NAME, updatedDBName);
+
+        dbAttrs.putAll(dbEntity.getAttributes());
+
+        response = entityREST.partialUpdateByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
+
+        Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
+
+        //Get By unique attribute
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        Assert.assertNotNull(entity);
+        Assert.assertNotNull(entity.getEntity().getGuid());
+        Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);
+        TestEntitiesREST.verifyAttributes(entity.getEntity().getAttributes(), dbAttrs);
+    }
+
+    @Test
     public void  testUpdateGetDeleteEntityByUniqueAttribute() throws Exception {
         AtlasEntity            dbEntity = TestUtilsV2.createDBEntity();
         EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
@@ -165,8 +196,9 @@ public class TestEntityREST {
 
         dbEntity.setAttribute(TestUtilsV2.NAME, updatedDBName);
 
-        response = entityREST.partialUpdateByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
-        Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).get(0).getGuid(), dbGuid);
+        response = entityREST.partialUpdateByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
+
+        Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
         AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
