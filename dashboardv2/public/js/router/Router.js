@@ -174,6 +174,7 @@ define([
                 if (tagName) {
                     App.rNContent.show(new TagDetailLayoutView({
                         'tag': tagName,
+                        'entityDefCollection': that.entityDefCollection,
                         'collection': that.tagCollection
                     }));
                 }

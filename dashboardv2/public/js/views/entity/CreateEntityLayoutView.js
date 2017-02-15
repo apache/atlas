@@ -112,9 +112,7 @@ define(['require',
                         }
                     }
                 }).open();
-
                 this.modal.$el.find('button.ok').attr("disabled", true);
-                this.ui.entityList.val("");
                 this.modal.on('ok', function(e) {
                     that.okButton();
                 });
@@ -154,23 +152,37 @@ define(['require',
                         if (value && value.length) {
                             JSON.parse(value);
                             $(this).removeClass('errorClass');
+                            that.modal.$el.find('button.ok').prop("disabled", false);
                         }
                     } catch (err) {
                         $(this).addClass('errorClass');
+                        that.modal.$el.find('button.ok').prop("disabled", true);
                     }
                 });
+
+                if (this.guid) {
+                    this.bindNonRequiredField();
+                }
                 this.ui.entityInputData.on('keyup change dp.change', 'input.true,select.true', function(e) {
                     if (this.value !== "") {
                         if ($(this).data('select2')) {
-                            $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass")
+                            $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass");
+                            if (that.ui.entityInputData.find('.errorClass').length === 0) {
+                                that.modal.$el.find('button.ok').prop("disabled", false);
+                            }
                         } else {
                             $(this).removeClass('errorClass');
+                            if (that.ui.entityInputData.find('.errorClass').length === 0) {
+                                that.modal.$el.find('button.ok').prop("disabled", false);
+                            }
                         }
                     } else {
                         if ($(this).data('select2')) {
-                            $(this).data('select2').$container.find('.select2-selection').addClass("errorClass")
+                            $(this).data('select2').$container.find('.select2-selection').addClass("errorClass");
+                            that.modal.$el.find('button.ok').prop("disabled", true);
                         } else {
                             $(this).addClass('errorClass');
+                            that.modal.$el.find('button.ok').prop("disabled", true);
                         }
                     }
                 });
@@ -178,6 +190,14 @@ define(['require',
             onRender: function() {
                 this.bindEvents();
                 this.fetchCollections();
+            },
+            bindNonRequiredField: function() {
+                var that = this;
+                this.ui.entityInputData.off('keyup change dp.change', 'input.false,select.false').on('keyup change dp.change', 'input.false,select.false', function(e) {
+                    if (that.modal.$el.find('button.ok').prop('disabled') && that.ui.entityInputData.find('.errorClass').length === 0) {
+                        that.modal.$el.find('button.ok').prop("disabled", false);
+                    }
+                });
             },
             decrementCounter: function(counter) {
                 if (this[counter] > 0) {
@@ -205,7 +225,7 @@ define(['require',
                     this.ui.assetName.html(name);
                     this.onEntityChange(null, this.entityData);
                 } else {
-                    var str = '<option selected="selected" disabled="disabled">--Select entity-type--</option>';
+                    var str = '<option disabled="disabled" selected>--Select entity-type--</option>';
                     this.entityDefCollection.fullCollection.comparator = function(model) {
                         return model.get('name');
                     }
@@ -245,7 +265,6 @@ define(['require',
 
             },
             onEntityChange: function(e, value) {
-                this.modal.$el.find('button.ok').prop("disabled", false);
                 var that = this,
                     typeName = value && value.get('entity') ? value.get('entity').typeName : null;
                 this.showLoader();
@@ -325,6 +344,9 @@ define(['require',
 
                     if (this.ui.entityInputData.find('fieldset').length > 0 && this.ui.entityInputData.find('select.true,input.true').length === 0) {
                         this.requiredAllToggle(this.ui.entityInputData.find('select.true,input.true').length === 0);
+                        if (!this.guid) {
+                            this.bindNonRequiredField();
+                        }
                         this.ui.toggleRequired.prop('checked', true);
                     } else {
                         this.ui.entityInputData.find('fieldset').each(function() {
@@ -579,8 +601,8 @@ define(['require',
                             if (that.guid && that.callback) {
                                 that.callback();
                             } else {
-                                if (model.entitiesMutated && (model.entitiesMutated.CREATE || model.entitiesMutated.UPDATE)) {
-                                    that.setUrl('#!/detailPage/' + (model.entitiesMutated.CREATE ? model.entitiesMutated.CREATE[0].guid : model.entitiesMutated.UPDATE[0].guid), true);
+                                if (model.createdEntities && _.isArray(model.createdEntities) && model.createdEntities[0] && model.createdEntities[0].guid) {
+                                    that.setUrl('#!/detailPage/' + (model.createdEntities[0].guid), true);
                                 }
                             }
                         },
@@ -619,7 +641,6 @@ define(['require',
                     var that = this,
                         queryText,
                         str = '';
-
                     // Add oprions in select
                     if (this.selectStoreCollection.length) {
                         var appendOption = function(optionValue) {
@@ -654,9 +675,6 @@ define(['require',
                         if (that.guid) {
                             var dataValue = that.entityData.get("entity").attributes[keyData];
                             var selectedValue = [];
-                            // if (that.selectStoreCollection.length) {
-                            //     var selectedValue = [];
-                            // }
                             var setValue = function(selectValue) {
                                 var obj = selectValue.toJSON();
                                 if (dataValue !== null && _.isArray(dataValue)) {

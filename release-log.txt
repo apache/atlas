@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1556 Edit entity button not working from search table of tag detail page. (kevalbhatt)
 ATLAS-1559 Regression - If a new tag is created then the earlier tags doesn't render properly (kevalbhatt)
 ATLAS-1508 Make AtlasADAuthenticationProvider like Ranger ADLdap Methods (gss2002 via mneethiraj)
 ATLAS-1547 Add tests for DeleteHandlerV1 (sumasai via mneethiraj)

@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -60,6 +60,7 @@ define(['require',
                     };
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                         value: value,
+                        entityDefCollection: that.entityDefCollection,
                         tag: that.tag
                     }));
                 });
