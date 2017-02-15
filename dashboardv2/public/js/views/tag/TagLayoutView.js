@@ -62,7 +62,7 @@ define(['require',
             },
             bindEvents: function() {
                 var that = this;
-                this.listenTo(this.collection, "reset", function() {
+                this.listenTo(this.collection, "reset add", function() {
                     this.tagsAndTypeGenerator('collection');
                 }, this);
                 this.ui.tagsParent.on('click', 'li.parent-node a', function() {
@@ -256,7 +256,7 @@ define(['require',
                     success: function(model, response) {
                         that.ui.createTag.removeAttr("disabled");
                         that.createTag = true;
-                        that.collection.reset(model.get('classificationDefs'));
+                        that.collection.add(model.get('classificationDefs'));
                         that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
                             content: "Tag " + that.name + Messages.addSuccessMessage

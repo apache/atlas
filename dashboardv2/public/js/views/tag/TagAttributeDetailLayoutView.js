@@ -50,7 +50,7 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
+                events["click " + this.ui.addTagListBtn] = 'onClickAddTagAttributeBtn';
                 events["click " + this.ui.editButton] = 'onEditButton';
                 return events;
             },
@@ -63,15 +63,16 @@ define(['require',
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
-                    this.model = this.collection.fullCollection.findWhere({ name: this.tag });
-                    /// this.model = this.collection.fullCollection.findWhere({ typeName: $(".dataTypeSelector").val() });
-                    if (this.model) {
-                        this.renderTagDetail();
-                    } else {
-                        this.$('.fontLoader').hide();
-                        Utils.notifyError({
-                            content: 'Tag Not Found'
-                        });
+                    if (!this.model) {
+                        this.model = this.collection.fullCollection.findWhere({ name: this.tag });
+                        if (this.model) {
+                            this.renderTagDetail();
+                        } else {
+                            this.$('.fontLoader').hide();
+                            Utils.notifyError({
+                                content: 'Tag Not Found'
+                            });
+                        }
                     }
                 }, this);
                 this.listenTo(this.tagCollection, 'error', function(error, response) {
@@ -149,7 +150,7 @@ define(['require',
                     }),
                     success: function(model, response) {
                         if (model.classificationDefs) {
-                            that.model.set(model.classificationDefs[0], { merge: true });
+                            that.model.set(model.classificationDefs[0]);
                         }
                         that.renderTagDetail();
                         Utils.notifySuccess({
@@ -159,7 +160,7 @@ define(['require',
                     }
                 });
             },
-            onClickAddTagBtn: function(e) {
+            onClickAddTagAttributeBtn: function(e) {
                 var that = this;
                 require(['views/tag/AddTagAttributeView',
                         'modules/Modal'

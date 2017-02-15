@@ -179,8 +179,18 @@ define(['require',
                         this.$('.searchResult').find(".inputAssignTag.multiSelectTag").hide();
                     }
                 });
-                this.listenTo(this.searchCollection, "error", function(value, responseData) {
+                this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.$('.fontLoader').hide();
+                    var responseJSON = response ? response.responseJSON : response;
+                    if (response && responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
+                        Utils.notifyError({
+                            content: responseJSON.errorMessage || responseJSON.message || responseJSON.error
+                        });
+                    } else {
+                        Utils.notifyError({
+                            content: "Invalid Expression : " + model.queryParams.query
+                        });
+                    }
                 }, this);
             },
             onRender: function() {
@@ -217,7 +227,7 @@ define(['require',
                     return;
                 }
                 this.showLoader();
-                if (Globals.searchApiCallRef) {
+                if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
                 $.extend(this.searchCollection.queryParams, { limit: this.limit });
@@ -233,6 +243,7 @@ define(['require',
                     _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
+                    skipDefaultError: true,
                     success: function() {
                         if (that.searchCollection.models.length < that.limit) {
                             that.ui.nextData.attr('disabled', true);

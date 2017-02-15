@@ -9,7 +9,10 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1559 Regression - If a new tag is created then the earlier tags doesn't render properly (kevalbhatt)
 ATLAS-1508 Make AtlasADAuthenticationProvider like Ranger ADLdap Methods (gss2002 via mneethiraj)
+ATLAS-1547 Add tests for DeleteHandlerV1 (sumasai via mneethiraj)
+ATLAS-1557 IDBased resolver should attempt unique-attribute match as well (mneethiraj)
 ATLAS-1555 Move classification endpoint from Entities API to Entity API and remove Entities API (svimal2106)
 ATLAS-1548 Create entity : Change PUT and POST object structure based on new API Changes (kevalbhatt)
 ATLAS-1522 entity type attributes (like hive_table.sd, hive_table.columns) should use AtlasObjectId as value instead of entire entity contents (mneethiraj)
