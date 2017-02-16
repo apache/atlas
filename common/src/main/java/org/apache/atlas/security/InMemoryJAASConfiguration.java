@@ -26,6 +26,8 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -39,8 +41,6 @@ import java.util.SortedSet;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 
 /**
  * InMemoryJAASConfiguration
@@ -127,7 +127,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
     private static final String JAAS_CONFIG_LOGIN_MODULE_CONTROL_FLAG_PARAM = "loginModuleControlFlag";
     private static final String JAAS_CONFIG_LOGIN_OPTIONS_PREFIX = "option";
     private static final String JAAS_PRINCIPAL_PROP = "principal";
-    private static final Map<String, String> configSectionRedirects = new HashMap<>();
+    private static final Map<String, String> CONFIG_SECTION_REDIRECTS = new HashMap<>();
 
     private Configuration parent = null;
     private Map<String, List<AppConfigurationEntry>> applicationConfigEntryMap = new HashMap<>();
@@ -227,9 +227,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
             ret = retList.toArray(ret);
         }
 
-		if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("<== InMemoryJAASConfiguration.getAppConfigurationEntry({}): {}", name, ArrayUtils.toString(ret));
-		}
+        }
 
         return ret;
     }
@@ -245,11 +245,11 @@ public final class InMemoryJAASConfiguration extends Configuration {
         int prefixLen = JAAS_CONFIG_PREFIX_PARAM.length();
 
         Map<String, SortedSet<Integer>> jaasClients = new HashMap<>();
-        for(String key : properties.stringPropertyNames()) {
+        for (String key : properties.stringPropertyNames()) {
             if (key.startsWith(JAAS_CONFIG_PREFIX_PARAM)) {
-                String jaasKey  = key.substring(prefixLen);
+                String jaasKey = key.substring(prefixLen);
                 StringTokenizer tokenizer = new StringTokenizer(jaasKey, ".");
-                int tokenCount =tokenizer.countTokens();
+                int tokenCount = tokenizer.countTokens();
                 if (tokenCount > 0) {
                     String clientId = tokenizer.nextToken();
                     SortedSet<Integer> indexList = jaasClients.get(clientId);
@@ -259,7 +259,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                     }
                     String indexStr = tokenizer.nextToken();
 
-                    int indexId =  isNumeric(indexStr) ? Integer.parseInt(indexStr)  : -1;
+                    int indexId = isNumeric(indexStr) ? Integer.parseInt(indexStr) : -1;
 
                     Integer clientIdIndex = Integer.valueOf(indexId);
 
@@ -270,14 +270,14 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 }
             }
         }
-        for(String jaasClient : jaasClients.keySet()) {
+        for (String jaasClient : jaasClients.keySet()) {
 
-            for(Integer index :  jaasClients.get(jaasClient)) {
+            for (Integer index : jaasClients.get(jaasClient)) {
 
                 String keyPrefix = JAAS_CONFIG_PREFIX_PARAM + jaasClient + ".";
 
                 if (index > -1) {
-                    keyPrefix = keyPrefix  + String.valueOf(index) + ".";
+                    keyPrefix = keyPrefix + String.valueOf(index) + ".";
                 }
 
                 String keyParam = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_NAME_PARAM;
@@ -291,7 +291,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 }
 
                 keyParam = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_CONTROL_FLAG_PARAM;
-                String  controlFlag =    properties.getProperty(keyParam);
+                String controlFlag = properties.getProperty(keyParam);
 
                 AppConfigurationEntry.LoginModuleControlFlag loginControlFlag = null;
                 if (controlFlag != null) {
@@ -322,9 +322,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
 
 
                 Map<String, String> options = new HashMap<>();
-                String optionPrefix =  keyPrefix + JAAS_CONFIG_LOGIN_OPTIONS_PREFIX + ".";
+                String optionPrefix = keyPrefix + JAAS_CONFIG_LOGIN_OPTIONS_PREFIX + ".";
                 int optionPrefixLen = optionPrefix.length();
-                for(String key : properties.stringPropertyNames()) {
+                for (String key : properties.stringPropertyNames()) {
                     if (key.startsWith(optionPrefix)) {
                         String optionKey = key.substring(optionPrefixLen);
                         String optionVal = properties.getProperty(key);
@@ -357,7 +357,7 @@ public final class InMemoryJAASConfiguration extends Configuration {
                     LOG.debug(sb.toString());
                 }
 
-                List<AppConfigurationEntry> retList =  applicationConfigEntryMap.get(jaasClient);
+                List<AppConfigurationEntry> retList = applicationConfigEntryMap.get(jaasClient);
                 if (retList == null) {
                     retList = new ArrayList<>();
                     applicationConfigEntryMap.put(jaasClient, retList);
@@ -381,14 +381,14 @@ public final class InMemoryJAASConfiguration extends Configuration {
 
         if (name != null) {
             if (redirectTo != null) {
-                configSectionRedirects.put(name, redirectTo);
+                CONFIG_SECTION_REDIRECTS.put(name, redirectTo);
             } else {
-                configSectionRedirects.remove(name);
+                CONFIG_SECTION_REDIRECTS.remove(name);
             }
         }
     }
 
     private static String getConfigSectionRedirect(String name) {
-        return name != null ? configSectionRedirects.get(name) : null;
+        return name != null ? CONFIG_SECTION_REDIRECTS.get(name) : null;
     }
 }

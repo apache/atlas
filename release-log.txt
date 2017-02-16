@@ -9,6 +9,10 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1546 (ATLAS-1546.3.patch)Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhat)
+ATLAS-1503 Export/import support to copy data between Atlas instances (ashutoshm via mneethiraj)
+ATLAS-1554 v2 EntityREST implementation for entity partial update (sarathkumarsubramanian  via mneethiraj)
+ATLAS-1547 Fix DeleteHandlerV1 for new model changes and add tests (mneethiraj)
 ATLAS-1556 Edit entity button not working from search table of tag detail page. (kevalbhatt)
 ATLAS-1559 Regression - If a new tag is created then the earlier tags doesn't render properly (kevalbhatt)
 ATLAS-1508 Make AtlasADAuthenticationProvider like Ranger ADLdap Methods (gss2002 via mneethiraj)

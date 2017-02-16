@@ -114,7 +114,7 @@ public abstract class AtlasHook {
      * De-duping of entities is done on server side depending on the
      * unique attribute on the entities.
      *
-     * @param messages hook notification messages
+     * @param messages   hook notification messages
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
     public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
@@ -142,7 +142,7 @@ public abstract class AtlasHook {
                     try {
                         LOG.debug("Sleeping for {} ms before retry", notificationRetryInterval);
                         Thread.sleep(notificationRetryInterval);
-                    } catch (InterruptedException ie){
+                    } catch (InterruptedException ie) {
                         LOG.error("Notification hook thread sleep interrupted");
                     }
 
@@ -176,6 +176,7 @@ public abstract class AtlasHook {
 
     /**
      * Returns the logged in user.
+     *
      * @return
      */
     public static String getUser() {
@@ -223,7 +224,7 @@ public abstract class AtlasHook {
         try {
             ret = UserGroupInformation.isLoginKeytabBased();
         } catch (Exception excp) {
-            LOG.error("error in determining whether to use ticket-cache or keytab for KafkaClient JAAS configuration", excp);
+            LOG.error("Error in determining keytab for KafkaClient-JAAS config", excp);
         }
 
         return ret;
@@ -235,7 +236,7 @@ public abstract class AtlasHook {
         try {
             ret = UserGroupInformation.isLoginTicketBased();
         } catch (Exception excp) {
-            LOG.error("error in determining whether to use ticket-cache or keytab for KafkaClient JAAS configuration", excp);
+            LOG.error("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
         }
 
         return ret;
