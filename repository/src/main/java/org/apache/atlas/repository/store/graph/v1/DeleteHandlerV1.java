@@ -243,9 +243,9 @@ public abstract class DeleteHandlerV1 {
         return !softDelete || forceDelete;
     }
 
-    protected void deleteEdge(AtlasEdge edge, boolean updateReverseAttribute, boolean force) throws AtlasBaseException {
+    protected void deleteEdge(AtlasEdge edge, boolean updateInverseAttribute, boolean force) throws AtlasBaseException {
         //update inverse attribute
-        if (updateReverseAttribute) {
+        if (updateInverseAttribute) {
             AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(edge.getLabel());
 
             AtlasType parentType = typeRegistry.getType(atlasEdgeLabel.getTypeName());

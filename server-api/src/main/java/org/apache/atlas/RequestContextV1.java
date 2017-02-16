@@ -94,7 +94,6 @@ public class RequestContextV1 {
         this.updatedEntityIds.add(entityId);
     }
 
-
     public void recordEntityDelete(AtlasObjectId entityId) {
         deletedEntityIds.add(entityId);
     }
@@ -114,7 +113,7 @@ public class RequestContextV1 {
     public long getRequestTime() {
         return requestTime;
     }
-    
+
     public boolean isDeletedEntity(AtlasObjectId entityId) {
         return deletedEntityIds.contains(entityId);
     }

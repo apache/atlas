@@ -25,8 +25,10 @@ import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
@@ -142,11 +144,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
     @BeforeTest
     public void init() throws Exception {
-
-        final Class<? extends DeleteHandlerV1> deleteHandlerImpl = AtlasRepositoryConfiguration.getDeleteHandlerV1Impl();
-        final Constructor<? extends DeleteHandlerV1> deleteHandlerImplConstructor = deleteHandlerImpl.getConstructor(AtlasTypeRegistry.class);
-        DeleteHandlerV1 deleteHandler = deleteHandlerImplConstructor.newInstance(typeRegistry);
-
+        DeleteHandlerV1 deleteHandler = getDeleteHandler(typeRegistry);
         entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry);
         RequestContextV1.clear();
 
@@ -185,7 +183,6 @@ public abstract class AtlasDeleteHandlerV1Test {
         EntityMutationResponse newCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(newDBEntity), false);
         assertNotEquals(newCreationResponse.getFirstEntityCreated().getGuid(), response.getFirstEntityCreated().getGuid());
 
-        //TODO - Enable after GET is ready
         //get by unique attribute should return the new entity
         ITypedReferenceableInstance instance = metadataService.getEntityDefinitionReference(TestUtils.DATABASE_TYPE, "name", (String) dbEntity.getAttribute("name"));
         assertEquals(instance.getId()._getId(), newCreationResponse.getFirstEntityCreated().getGuid());
@@ -220,9 +217,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         assertEntityDeleted(columnCreated.getGuid());
 
-        //TODO - Fix after GET is ready
-//        ITypedReferenceableInstance tableInstance = repositoryService.getEntityDefinition(tableId);
-//        assertColumnForTestDeleteReference(tableInstance);
+        assertColumnForTestDeleteReference(entityStore.getById(tableCreated.getGuid()));
 
         //Deleting table should update process
         AtlasEntity process = TestUtilsV2.createProcessEntity(null, Arrays.asList(tableCreated.getAtlasObjectId()));
@@ -281,11 +276,11 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEquals(deletionResponse.getUpdatedEntities().get(0).getGuid(), tableId);
         assertEntityDeleted(colId);
 
-        tableInstance = metadataService.getEntityDefinitionReference(TestUtils.TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
-        assertDeletedColumn(tableInstance);
+        final AtlasEntity.AtlasEntityWithExtInfo tableEntityCreated = entityStore.getById(tableId);
+        assertDeletedColumn(tableEntityCreated);
 
         assertTestDisconnectUnidirectionalArrayReferenceFromClassType(
-            (List<ITypedReferenceableInstance>) tableInstance.get("columns"), colId);
+            (List<AtlasObjectId>) tableEntityCreated.getEntity().getAttribute(COLUMNS_ATTR_NAME), colId);
 
         //update by removing a column - col1
         final AtlasEntity tableEntity1 = TestUtilsV2.createTableEntity(dbEntity, (String) tableEntity.getAttribute(NAME));
@@ -298,7 +293,6 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
         deletionResponse = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo1), false);
 
-        //TODO - enable after fixing unique atribute resolver
         assertEquals(deletionResponse.getDeletedEntities().size(), 1);
         assertEquals(deletionResponse.getDeletedEntities().get(0).getGuid(), column2Created.getGuid());
         assertEntityDeleted(colId);
@@ -320,18 +314,17 @@ public abstract class AtlasDeleteHandlerV1Test {
         // Verify that tables and their composite columns have been deleted from the graph Repository.
         assertEntityDeleted(tableDeleted.getGuid());
         assertEntityDeleted(colDeleted.getGuid());
-        assertTestDeleteEntities(tableInstance);
 
     }
 
-    protected abstract void assertDeletedColumn(ITypedReferenceableInstance tableInstance) throws AtlasException;
+    protected abstract void assertDeletedColumn(AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws AtlasException, AtlasBaseException;
 
-    protected abstract void assertTestDeleteEntities(ITypedReferenceableInstance tableInstance) throws Exception;
+    protected abstract void assertTestDeleteEntities(AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws Exception;
 
     protected abstract void assertTableForTestDeleteReference(String tableId) throws Exception;
 
-    protected abstract void assertColumnForTestDeleteReference(AtlasEntity tableInstance)
-        throws AtlasException;
+    protected abstract void assertColumnForTestDeleteReference(AtlasEntity.AtlasEntityWithExtInfo tableInstance)
+        throws AtlasBaseException;
 
     protected abstract void assertProcessForTestDeleteReference(AtlasEntityHeader processInstance) throws Exception;
 
@@ -353,9 +346,6 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntityHeader johnEmployeeCreated = hrDeptCreationResponse.getUpdatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
         final AtlasEntityHeader janeEmployeeCreated = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
         final AtlasEntityHeader juliusEmployeeCreated = hrDeptCreationResponse.getUpdatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
-
-//        ITypedReferenceableInstance hrDeptInstance = metadataService.getEntityDefinition(hrDeptCreationResponse.getFirstCreatedEntityByTypeName(DEPARTMENT_TYPE).getGuid());
-//        Map<String, String> nameGuidMap = getEmployeeNameGuidMap(hrDeptInstance);
 
         ITypedReferenceableInstance max = metadataService.getEntityDefinition(maxEmployeeCreated.getGuid());
         String maxGuid = max.getId()._getId();
@@ -451,7 +441,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         }
         return null;
     }
-//
+
     protected abstract void assertTestUpdateEntity_MultiplicityOneNonCompositeReference(String janeGuid) throws Exception;
 
     /**
@@ -513,8 +503,8 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         assertEntityDeleted(janeEmployee.getGuid());
 
-        john = metadataService.getEntityDefinitionReference(TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
-        assertJohnForTestDisconnectBidirectionalReferences(john, janeEmployee.getGuid());
+        final AtlasEntity.AtlasEntityWithExtInfo johnUpdated = entityStore.getById(johnEmployee.getGuid());
+        assertJohnForTestDisconnectBidirectionalReferences(johnUpdated, janeEmployee.getGuid());
     }
 
     protected List<String> extractGuids(final List<AtlasEntityHeader> updatedEntities) {
@@ -525,14 +515,14 @@ public abstract class AtlasDeleteHandlerV1Test {
         return guids;
     }
 
-    protected abstract void assertJohnForTestDisconnectBidirectionalReferences(ITypedReferenceableInstance john,
+    protected abstract void assertJohnForTestDisconnectBidirectionalReferences(AtlasEntity.AtlasEntityWithExtInfo john,
         String janeGuid) throws Exception;
 
     protected abstract void assertMaxForTestDisconnectBidirectionalReferences(Map<String, String> nameGuidMap)
         throws Exception;
 
     protected abstract void assertTestDisconnectUnidirectionalArrayReferenceFromClassType(
-        List<ITypedReferenceableInstance> columns, String columnGuid);
+        List<AtlasObjectId> columns, String columnGuid) throws AtlasBaseException;
 
     /**
      * Verify deleting entities that are the target of a unidirectional class array reference
@@ -768,9 +758,6 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEquals(deletionResponse.getUpdatedEntities().size(), 1);
         assertEquals(deletionResponse.getUpdatedEntities().get(0).getGuid(), tableId);
         assertEntityDeleted(colId);
-
-        tableInstance = metadataService.getEntityDefinitionReference(TestUtils.TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
-        assertDeletedColumn(tableInstance);
     }
 
     protected abstract void assertTestDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes(

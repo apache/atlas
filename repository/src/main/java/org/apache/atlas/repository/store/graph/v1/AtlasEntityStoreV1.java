@@ -204,7 +204,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @GraphTransaction
     public EntityMutationResponse deleteByIds(final List<String> guids) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();

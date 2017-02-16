@@ -19,7 +19,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -54,19 +55,25 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
     }
 
     @Override
-    protected void assertDeletedColumn(final ITypedReferenceableInstance tableInstance) throws AtlasException {
+    protected void assertDeletedColumn(final AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws AtlasBaseException {
+        final List<AtlasObjectId> columns = (List<AtlasObjectId>) tableInstance.getEntity().getAttribute(COLUMNS_ATTR_NAME);
+        Assert.assertEquals(columns.size(), 3);
 
+        final AtlasEntity.AtlasEntityWithExtInfo colDeleted = entityStore.getById(columns.get(0).getGuid());
+        assertEquals(colDeleted.getEntity().getStatus(), AtlasEntity.Status.DELETED);
     }
 
     @Override
-    protected void assertTestDeleteEntities(final ITypedReferenceableInstance tableInstance) throws Exception {
-
+    protected void assertTestDeleteEntities(final AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws Exception {
+        //Assert that the deleted table can be fully constructed back
+        List<IReferenceableInstance> columns = (List<IReferenceableInstance>) tableInstance.getEntity().getAttribute(COLUMNS_ATTR_NAME);
+        assertEquals(columns.size(), 3);
+        assertNotNull(tableInstance.getEntity().getAttribute("database"));
     }
 
     @Override
     protected void assertTableForTestDeleteReference(final String tableId) throws Exception {
 
-        //TODO - Fix after GET is ready
         ITypedReferenceableInstance table = metadataService.getEntityDefinition(tableId);
         assertNotNull(table.get(NAME));
         assertNotNull(table.get("description"));
@@ -84,14 +91,12 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
     }
 
     @Override
-    protected void assertColumnForTestDeleteReference(final AtlasEntity tableInstance) throws AtlasException {
-
-        List<AtlasObjectId> columns = (List<AtlasObjectId>) tableInstance.getAttribute(COLUMNS_ATTR_NAME);
+    protected void assertColumnForTestDeleteReference(final AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws AtlasBaseException {
+        List<AtlasObjectId> columns = (List<AtlasObjectId>) tableInstance.getEntity().getAttribute(COLUMNS_ATTR_NAME);
         assertEquals(columns.size(), 1);
 
-        //TODO - Enable after GET is ready
-        ITypedReferenceableInstance colInst = metadataService.getEntityDefinition(columns.get(0).getGuid());
-        assertEquals(colInst.getId().getState(), Id.EntityState.DELETED);
+        final AtlasEntity.AtlasEntityWithExtInfo byId = entityStore.getById(columns.get(0).getGuid());
+        assertEquals(byId.getEntity().getStatus(), AtlasEntity.Status.DELETED);
     }
 
     @Override
@@ -108,8 +113,6 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
 
     @Override
     protected void assertEntityDeleted(final String id) throws Exception {
-//        ITypedReferenceableInstance entity = metadataService.getEntityDefinition(id);
-//        assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         final AtlasEntity.AtlasEntityWithExtInfo byId = entityStore.getById(id);
         assertEquals(byId.getEntity().getStatus(), AtlasEntity.Status.DELETED);
     }
@@ -123,11 +126,14 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
     }
 
     @Override
-    protected void assertJohnForTestDisconnectBidirectionalReferences(final ITypedReferenceableInstance john, final String janeGuid) throws Exception {
-        Id mgr = (Id) john.get("manager");
+    protected void assertJohnForTestDisconnectBidirectionalReferences(final AtlasEntity.AtlasEntityWithExtInfo john, final String janeGuid) throws Exception {
+        AtlasObjectId mgr = (AtlasObjectId) john.getEntity().getAttribute("manager");
         assertNotNull(mgr);
-        assertEquals(mgr._getId(), janeGuid);
-        assertEquals(mgr.getState(), Id.EntityState.DELETED);
+        assertEquals(mgr.getGuid(), janeGuid);
+
+
+        final AtlasEntity.AtlasEntityWithExtInfo mgrEntity = entityStore.getById(mgr.getGuid());
+        assertEquals(mgrEntity.getEntity().getStatus(), AtlasEntity.Status.DELETED);
     }
 
     @Override
@@ -164,13 +170,14 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
     }
 
     @Override
-    protected void assertTestDisconnectUnidirectionalArrayReferenceFromClassType(final List<ITypedReferenceableInstance> columns, final String columnGuid) {
+    protected void assertTestDisconnectUnidirectionalArrayReferenceFromClassType(final List<AtlasObjectId> columns, final String columnGuid) throws AtlasBaseException {
         Assert.assertEquals(columns.size(), 3);
-        for (ITypedReferenceableInstance column : columns) {
-            if (column.getId()._getId().equals(columnGuid)) {
-                assertEquals(column.getId().getState(), Id.EntityState.DELETED);
+        for (AtlasObjectId column : columns) {
+            AtlasEntity.AtlasEntityWithExtInfo columnEntity = entityStore.getById(column.getGuid());
+            if (column.getGuid().equals(columnGuid)) {
+                assertEquals(columnEntity.getEntity().getStatus(), AtlasEntity.Status.DELETED);
             } else {
-                assertEquals(column.getId().getState(), Id.EntityState.ACTIVE);
+                assertEquals(columnEntity.getEntity().getStatus(), AtlasEntity.Status.ACTIVE);
             }
         }
     }
