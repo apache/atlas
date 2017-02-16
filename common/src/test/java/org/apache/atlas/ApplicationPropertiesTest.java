@@ -32,23 +32,52 @@ public class ApplicationPropertiesTest {
     @Test
     public void testGetFileAsInputStream() throws Exception {
         Configuration props = ApplicationProperties.get("test.properties");
+        InputStream inStr = null;
 
         // configured file as class loader resource
-        InputStream inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
-        assertNotNull(inStr);
+        try {
+            inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
+            assertNotNull(inStr);
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
+        }
 
         // configured file from file system path
         props.setProperty("jaas.properties.file", "src/test/resources/atlas-jaas.properties");
-        inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
-        assertNotNull(inStr);
+        try {
+            inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
+            assertNotNull(inStr);
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
+        }
 
         // default file as class loader resource
-        inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "atlas-jaas.properties");
-        assertNotNull(inStr);
+        try {
+            inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "atlas-jaas.properties");
+            assertNotNull(inStr);
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
+        }
 
         // default file relative to working directory
-        inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "src/test/resources/atlas-jaas.properties");
-        assertNotNull(inStr);
+        try {
+            inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "src/test/resources/atlas-jaas.properties");
+            assertNotNull(inStr);
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
+        }
 
         // default file relative to atlas configuration directory
         String originalConfDirSetting = System.setProperty(ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY, "src/test/resources");
@@ -57,6 +86,9 @@ public class ApplicationPropertiesTest {
             assertNotNull(inStr);
         }
         finally {
+            if (inStr != null) {
+                inStr.close();
+            }
             if (originalConfDirSetting != null) {
                 System.setProperty(ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY, originalConfDirSetting);
             }
@@ -67,21 +99,31 @@ public class ApplicationPropertiesTest {
 
         // non-existent property and no default file
         try {
-            ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", null);
+            inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", null);
             fail("Expected " + AtlasException.class.getSimpleName() + " but none thrown");
         }
         catch (AtlasException e) {
             // good
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
         }
 
         // configured file not found in file system or classpath
         props.setProperty("jaas.properties.file", "does_not_exist.txt");
         try {
-            ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
+            inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
             fail("Expected " + AtlasException.class.getSimpleName() + " but none thrown");
         }
         catch (AtlasException e) {
             // good
+        }
+        finally {
+            if (inStr != null) {
+                inStr.close();
+            }
         }
     }
 }
