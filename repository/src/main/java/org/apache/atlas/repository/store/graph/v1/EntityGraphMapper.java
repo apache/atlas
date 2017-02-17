@@ -739,28 +739,18 @@ public class EntityGraphMapper {
 
 
     private AtlasEntityHeader constructHeader(AtlasEntity entity, final AtlasEntityType type, AtlasVertex vertex) {
-        //TODO - enhance to return only selective attributes
-        AtlasEntityHeader header = new AtlasEntityHeader(entity.getTypeName(), AtlasGraphUtilsV1.getIdFromVertex(vertex), entity.getAttributes());
-        final Map<String, AtlasStructType.AtlasAttribute> allAttributes = type.getAllAttributes();
-        for (String attribute : allAttributes.keySet()) {
-            AtlasType attributeType = allAttributes.get(attribute).getAttributeType();
-            AtlasAttributeDef attributeDef = allAttributes.get(attribute).getAttributeDef();
-            if ( header.getAttribute(attribute) == null && (TypeCategory.PRIMITIVE == attributeType.getTypeCategory())) {
+        AtlasEntityHeader header = new AtlasEntityHeader(entity.getTypeName());
 
-                if ( attributeDef.getIsOptional()) {
-                    header.setAttribute(attribute, attributeType.createOptionalDefaultValue());
-                } else {
-                    header.setAttribute(attribute, attributeType.createDefaultValue());
-                }
-            }
+        header.setGuid(AtlasGraphUtilsV1.getIdFromVertex(vertex));
+
+        for (AtlasAttribute attribute : type.getUniqAttributes().values()) {
+            header.setAttribute(attribute.getName(), entity.getAttribute(attribute.getName()));
         }
+
         return header;
     }
 
     public static AtlasEntityHeader constructHeader(AtlasObjectId id) {
-        AtlasEntityHeader entity = new AtlasEntityHeader(id.getTypeName());
-        entity.setGuid(id.getGuid());
-
-        return entity;
+        return new AtlasEntityHeader(id.getTypeName(), id.getGuid(), id.getUniqueAttributes());
     }
 }

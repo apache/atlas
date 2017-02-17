@@ -20,6 +20,7 @@ package org.apache.atlas.web.resources;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.commons.io.FileUtils;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 public class ImportService {
@@ -38,6 +40,9 @@ public class ImportService {
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasEntityStore  entityStore;
+
+    private long startTimestamp;
+    private long endTimestamp;
 
 
     public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore) {
@@ -52,6 +57,7 @@ public class ImportService {
         try {
             LOG.info("==> import(user={}, from={})", userName, requestingIP);
 
+            startTimestamp = System.currentTimeMillis();
             processTypes(source.getTypesDef(), result);
             processEntities(source, result);
 
@@ -65,12 +71,7 @@ public class ImportService {
 
             throw new AtlasBaseException(excp);
         } finally {
-            try {
-                source.close();
-            } catch (IOException e) {
-                // ignore
-            }
-
+            source.close();
             LOG.info("<== import(user={}, from={}): status={}", userName, requestingIP, result.getOperationStatus());
         }
 
@@ -118,10 +119,14 @@ public class ImportService {
         setGuidToEmpty(typeDefinitionMap.getEntityDefs());
         typeDefStore.updateTypesDef(typeDefinitionMap);
 
-        result.incrementMeticsCounter("Enum(s)", typeDefinitionMap.getEnumDefs().size());
-        result.incrementMeticsCounter("Struct(s)", typeDefinitionMap.getStructDefs().size());
-        result.incrementMeticsCounter("Classification(s)", typeDefinitionMap.getClassificationDefs().size());
-        result.incrementMeticsCounter("Entity definition(s)", typeDefinitionMap.getEntityDefs().size());
+        updateMetricsForTypesDef(typeDefinitionMap, result);
+    }
+
+    private void updateMetricsForTypesDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) {
+        result.incrementMeticsCounter("typedef:classification", typeDefinitionMap.getClassificationDefs().size());
+        result.incrementMeticsCounter("typedef:enum", typeDefinitionMap.getEnumDefs().size());
+        result.incrementMeticsCounter("typedef:entitydef", typeDefinitionMap.getEntityDefs().size());
+        result.incrementMeticsCounter("typedef:struct", typeDefinitionMap.getStructDefs().size());
     }
 
     private void setGuidToEmpty(List<AtlasEntityDef> entityDefList) {
@@ -131,7 +136,9 @@ public class ImportService {
     }
 
     private void processEntities(ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
-        this.entityStore.createOrUpdate(importSource, false);
-        result.incrementMeticsCounter("Entities", importSource.getCreationOrder().size());
+        this.entityStore.bulkImport(importSource, result);
+
+        endTimestamp = System.currentTimeMillis();
+        result.incrementMeticsCounter("Duration", (int) (this.endTimestamp - this.startTimestamp));
     }
 }

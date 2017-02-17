@@ -20,7 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -59,6 +59,7 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
@@ -75,6 +76,8 @@ public class AdminResource {
 
     @Context
     private HttpServletResponse httpServletResponse;
+
+    private final ReentrantLock importExportOperationLock;
 
     private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
     private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
@@ -97,11 +100,12 @@ public class AdminResource {
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
                          AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore,
                          AtlasEntityStore entityStore) {
-        this.serviceState     = serviceState;
-        this.metricsService   = metricsService;
-        this.typeRegistry     = typeRegistry;
-        this.typesDefStore    = typeDefStore;
-        this.entityStore      = entityStore;
+        this.serviceState               = serviceState;
+        this.metricsService             = metricsService;
+        this.typeRegistry               = typeRegistry;
+        this.typesDefStore              = typeDefStore;
+        this.entityStore                = entityStore;
+        this.importExportOperationLock  = new ReentrantLock();
     }
 
     /**
@@ -275,6 +279,10 @@ public class AdminResource {
         return metrics;
     }
 
+    private void releaseExportImportLock() {
+        importExportOperationLock.unlock();
+    }
+
     @POST
     @Path("/export")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -282,6 +290,8 @@ public class AdminResource {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.export()");
         }
+
+        acquireExportImportLock("export");
 
         ZipSink exportSink = null;
         try {
@@ -308,6 +318,8 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
+            releaseExportImportLock();
+
             if (exportSink != null) {
                 exportSink.close();
             }
@@ -327,6 +339,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.importData(bytes.length={})", bytes.length);
         }
 
+        acquireExportImportLock("import");
+
         AtlasImportResult result;
 
         try {
@@ -344,6 +358,8 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
+            releaseExportImportLock();
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AdminResource.importData(binary)");
             }
@@ -360,6 +376,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.importFile()");
         }
 
+        acquireExportImportLock("importFile");
+
         AtlasImportResult result;
 
         try {
@@ -374,6 +392,8 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
+            releaseExportImportLock();
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AdminResource.importFile()");
             }
@@ -406,5 +426,16 @@ public class AdminResource {
         }
 
         return ret;
+    }
+
+    private void acquireExportImportLock(String activity) throws AtlasBaseException {
+        boolean alreadyLocked = importExportOperationLock.isLocked();
+        if (alreadyLocked) {
+            LOG.warn("Another export or import is currently in progress..aborting this " + activity, Thread.currentThread().getName());
+
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK);
+        }
+
+        importExportOperationLock.lock();
     }
 }

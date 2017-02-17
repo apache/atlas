@@ -562,6 +562,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createUniqueRequiredAttrDef(NAME, "string"),
                         AtlasTypeUtil.createOptionalAttrDef("isReplicated", "boolean"),
                         AtlasTypeUtil.createOptionalAttrDef("created", "string"),
+                        AtlasTypeUtil.createOptionalAttrDef("parameters", "map<string,string>"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"));
 
 

@@ -24,13 +24,10 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -43,10 +40,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 
 
 @Singleton
@@ -127,6 +123,65 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         return ret;
+    }
+
+    @Override
+    public EntityMutationResponse bulkImport(EntityStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> bulkImport()");
+        }
+
+        if (entityStream == null || !entityStream.hasNext()) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
+        }
+
+        EntityMutationResponse ret = new EntityMutationResponse();
+        ret.setGuidAssignments(new HashMap<String, String>());
+
+        Set<String> processedGuids          = new HashSet<>();
+        int         progressReportedAtCount = 0;
+
+        while (entityStream.hasNext()) {
+            AtlasEntity entity = entityStream.next();
+
+            if(processedGuids.contains(entity.getGuid())) {
+                continue;
+            }
+
+            AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entity, entityStream);
+
+            EntityMutationResponse resp = createOrUpdate(oneEntityStream, false);
+
+            updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
+            updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
+            updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
+
+            if ((processedGuids.size() - progressReportedAtCount) > 10) {
+                progressReportedAtCount = processedGuids.size();
+
+                LOG.info("bulkImport(): in progress.. number of entities imported: {}", progressReportedAtCount);
+            }
+
+            if (resp.getGuidAssignments() != null) {
+                ret.getGuidAssignments().putAll(resp.getGuidAssignments());
+            }
+        }
+
+        importResult.getProcessedEntities().addAll(processedGuids);
+        LOG.info("bulkImport(): done. Number of entities imported: {}", processedGuids.size());
+
+        return ret;
+    }
+
+    private void updateImportMetrics(String prefix, List<AtlasEntityHeader> list, Set<String> processedGuids, AtlasImportResult importResult) {
+        if (list == null) {
+            return;
+        }
+
+        for (AtlasEntityHeader h : list) {
+            processedGuids.add(h.getGuid());
+            importResult.incrementMeticsCounter(String.format(prefix, h.getTypeName()));
+        }
     }
 
     @Override
@@ -323,11 +378,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         deleteHandler.deleteEntities(deletionCandidates);
         RequestContextV1 req = RequestContextV1.get();
         for (AtlasObjectId id : req.getDeletedEntityIds()) {
-            response.addEntity(EntityMutations.EntityOperation.DELETE, EntityGraphMapper.constructHeader(id));
+            response.addEntity(DELETE, EntityGraphMapper.constructHeader(id));
         }
 
         for (AtlasObjectId id : req.getUpdatedEntityIds()) {
-            response.addEntity(EntityMutations.EntityOperation.UPDATE, EntityGraphMapper.constructHeader(id));
+            response.addEntity(UPDATE, EntityGraphMapper.constructHeader(id));
         }
 
         return response;

@@ -88,6 +88,7 @@ public enum AtlasErrorCode {
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again"),
+    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS5005E", "Another import or export is in progress. Please try again"),
     NOTIFICATION_FAILED(500, "ATLAS5005E", "Failed to notify for change {0}");
 
     private String errorCode;

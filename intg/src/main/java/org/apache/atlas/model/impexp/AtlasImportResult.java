@@ -26,7 +26,9 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -50,6 +52,7 @@ public class AtlasImportResult {
     private String               hostName;
     private long                 timeStamp;
     private Map<String, Integer> metrics;
+    private List<String>         processedEntities;
     private OperationStatus      operationStatus;
 
     public AtlasImportResult() {
@@ -58,13 +61,14 @@ public class AtlasImportResult {
 
     public AtlasImportResult(AtlasImportRequest request, String userName,
                              String clientIpAddress, String hostName, long timeStamp) {
-        this.request         = request;
-        this.userName        = userName;
-        this.clientIpAddress = clientIpAddress;
-        this.hostName        = hostName;
-        this.timeStamp       = timeStamp;
-        this.metrics         = new HashMap<>();
-        this.operationStatus = OperationStatus.FAIL;
+        this.request           = request;
+        this.userName          = userName;
+        this.clientIpAddress   = clientIpAddress;
+        this.hostName          = hostName;
+        this.timeStamp         = timeStamp;
+        this.metrics           = new HashMap<>();
+        this.operationStatus   = OperationStatus.FAIL;
+        this.processedEntities = new ArrayList<>();
     }
 
     public AtlasImportRequest getRequest() {
@@ -133,6 +137,10 @@ public class AtlasImportResult {
         metrics.put(key, currentValue + incrementBy);
     }
 
+    public void setProcessedEntities(List<String> processedEntities) { this.processedEntities = processedEntities; }
+
+    public List<String> getProcessedEntities() { return this.processedEntities; }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -149,6 +157,9 @@ public class AtlasImportResult {
         sb.append("}");
 
         sb.append(", operationStatus='").append(operationStatus).append("'");
+        sb.append(", processedEntities=[");
+        AtlasBaseTypeDef.dumpObjects(processedEntities, sb);
+        sb.append("]");
         sb.append("}");
 
         return sb;

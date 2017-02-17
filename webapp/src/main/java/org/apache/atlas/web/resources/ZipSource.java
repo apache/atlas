@@ -19,7 +19,6 @@ package org.apache.atlas.web.resources;
 
 import org.codehaus.jackson.type.TypeReference;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
@@ -28,8 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -37,52 +38,64 @@ import java.util.zip.ZipInputStream;
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
 
-    private final ByteArrayInputStream inputStream;
-    private List<String>         creationOrder;
-    private Iterator<String>     iterator;
+    private final ByteArrayInputStream          inputStream;
+    private List<String>                        creationOrder;
+    private Iterator<String>                    iterator;
+    private Map<String, String>                 guidEntityJsonMap;
 
-    public ZipSource(ByteArrayInputStream inputStream) {
+    public ZipSource(ByteArrayInputStream inputStream) throws IOException {
         this.inputStream = inputStream;
+        guidEntityJsonMap = new HashMap<>();
 
+        updateGuidZipEntryMap();
         this.setCreationOrder();
     }
 
     public AtlasTypesDef getTypesDef() throws AtlasBaseException {
         final String fileName = ZipExportFileNames.ATLAS_TYPESDEF_NAME.toString();
 
-        try {
-            String s = get(fileName);
-            return convertFromJson(AtlasTypesDef.class, s);
-        } catch (IOException e) {
-            LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
-            return null;
-        }
+        String s = getFromCache(fileName);
+        return convertFromJson(AtlasTypesDef.class, s);
     }
-
-    public AtlasExportResult getExportResult() throws AtlasBaseException {
-        String fileName = ZipExportFileNames.ATLAS_EXPORT_INFO_NAME.toString();
-        try {
-            String s = get(fileName);
-            return convertFromJson(AtlasExportResult.class, s);
-        } catch (IOException e) {
-            LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
-            return null;
-        }
-    }
-
 
     private void setCreationOrder() {
         String fileName = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
 
         try {
-            String s = get(fileName);
+            String s = getFromCache(fileName);
             this.creationOrder = convertFromJson(new TypeReference<List<String>>(){}, s);
             this.iterator = this.creationOrder.iterator();
-        } catch (IOException e) {
-            LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
         } catch (AtlasBaseException e) {
             LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
         }
+    }
+
+    private void updateGuidZipEntryMap() throws IOException {
+
+        inputStream.reset();
+
+        ZipInputStream zipInputStream = new ZipInputStream(inputStream);
+        ZipEntry zipEntry = zipInputStream.getNextEntry();
+        while (zipEntry != null) {
+            String entryName = zipEntry.getName().replace(".json", "");
+
+            if (guidEntityJsonMap.containsKey(entryName)) continue;
+            if (zipEntry == null) continue;
+
+            byte[] buf = new byte[1024];
+
+            int n = 0;
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
+                bos.write(buf, 0, n);
+            }
+
+            guidEntityJsonMap.put(entryName, bos.toString());
+            zipEntry = zipInputStream.getNextEntry();
+
+        }
+
+        zipInputStream.close();
     }
 
     public List<String> getCreationOrder() throws AtlasBaseException {
@@ -90,50 +103,8 @@ public class ZipSource implements EntityImportStream {
     }
 
     public AtlasEntity getEntity(String guid) throws AtlasBaseException {
-        try {
-            String s = get(guid);
-            return convertFromJson(AtlasEntity.class, s);
-        } catch (IOException e) {
-            LOG.error(String.format("Error retrieving '%s' from zip.", guid), e);
-            return null;
-        }
-    }
-
-    private String get(String entryName) throws IOException {
-        String ret = "";
-
-        inputStream.reset();
-
-        ZipInputStream zipInputStream = new ZipInputStream(inputStream);
-        ZipEntry       zipEntry       = zipInputStream.getNextEntry();
-
-        entryName = entryName + ".json";
-
-        while (zipEntry != null) {
-            if (zipEntry.getName().equals(entryName)) {
-                break;
-            }
-
-            zipEntry = zipInputStream.getNextEntry();
-        }
-
-        if (zipEntry != null) {
-            ByteArrayOutputStream os  = new ByteArrayOutputStream();
-            byte[]                buf = new byte[1024];
-
-            int n = 0;
-            while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
-                os.write(buf, 0, n);
-            }
-
-            ret = os.toString();
-        } else {
-            LOG.warn("{}: no such entry in zip file", entryName);
-        }
-
-        zipInputStream.close();
-
-        return ret;
+        String s = getFromCache(guid);
+        return convertFromJson(AtlasEntity.class, s);
     }
 
     private <T> T convertFromJson(TypeReference clazz, String jsonData) throws AtlasBaseException {
@@ -158,8 +129,20 @@ public class ZipSource implements EntityImportStream {
         }
     }
 
-    public void close() throws IOException {
-        inputStream.close();
+    private String getFromCache(String entryName) {
+        if(!guidEntityJsonMap.containsKey(entryName)) return "";
+
+        return guidEntityJsonMap.get(entryName).toString();
+    }
+
+    public void close() {
+        try {
+            inputStream.close();
+            guidEntityJsonMap.clear();
+        }
+        catch(IOException ex) {
+            LOG.warn("{}: Error closing streams.");
+        }
     }
 
     @Override

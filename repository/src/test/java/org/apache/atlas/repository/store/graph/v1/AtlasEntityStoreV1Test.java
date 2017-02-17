@@ -74,6 +74,7 @@ import static org.apache.atlas.TestUtils.NAME;
 import static org.apache.atlas.TestUtils.randomString;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class AtlasEntityStoreV1Test {
@@ -199,8 +200,8 @@ public class AtlasEntityStoreV1Test {
         init();
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        AtlasEntityHeader updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
-        validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
+        AtlasEntityHeader updatedTableHeader = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
+        validateEntity(entitiesInfo, getEntityFromStore(updatedTableHeader));
 
         //Complete update. Add  array elements - col3,col4
         AtlasEntity col3 = TestUtilsV2.createColumnEntity(tableEntity);
@@ -219,8 +220,8 @@ public class AtlasEntityStoreV1Test {
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
-        validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
+        updatedTableHeader = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
+        validateEntity(entitiesInfo, getEntityFromStore(updatedTableHeader));
 
         //Swap elements
         columns.clear();
@@ -231,8 +232,10 @@ public class AtlasEntityStoreV1Test {
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
-        Assert.assertEquals(((List<AtlasObjectId>) updatedTable.getAttribute(COLUMNS_ATTR_NAME)).size(), 2);
+        updatedTableHeader = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
+        AtlasEntity updatedEntity = getEntityFromStore(updatedTableHeader);
+        // deleted columns are also included in "columns" attribute
+        Assert.assertTrue(((List<AtlasObjectId>) updatedEntity.getAttribute(COLUMNS_ATTR_NAME)).size() >= 2);
 
         assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);  // col1, col2 are deleted
 
@@ -242,8 +245,8 @@ public class AtlasEntityStoreV1Test {
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
-        updatedTable = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
-        validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
+        updatedTableHeader = response.getFirstUpdatedEntityByTypeName(tableEntity.getTypeName());
+        validateEntity(entitiesInfo, getEntityFromStore(updatedTableHeader));
         assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);
     }
 
@@ -261,9 +264,10 @@ public class AtlasEntityStoreV1Test {
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         AtlasEntityHeader tableDefinition1 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        validateEntity(entitiesInfo, getEntityFromStore(tableDefinition1));
+        AtlasEntity updatedTableDef1 = getEntityFromStore(tableDefinition1);
+        validateEntity(entitiesInfo, updatedTableDef1);
                 
-        Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) tableDefinition1.getAttribute("partitionsMap")).get("part0")));
+        Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) updatedTableDef1.getAttribute("partitionsMap")).get("part0")));
 
         //update map - add a map key
         partsMap.put("part1", new AtlasStruct(TestUtils.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "test1"));
@@ -273,10 +277,11 @@ public class AtlasEntityStoreV1Test {
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         AtlasEntityHeader tableDefinition2 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        validateEntity(entitiesInfo, getEntityFromStore(tableDefinition2));
+        AtlasEntity updatedTableDef2 = getEntityFromStore(tableDefinition2);
+        validateEntity(entitiesInfo, updatedTableDef2);
 
-        assertEquals(((Map<String, AtlasStruct>) tableDefinition2.getAttribute("partitionsMap")).size(), 2);
-        Assert.assertTrue(partsMap.get("part1").equals(((Map<String, AtlasStruct>) tableDefinition2.getAttribute("partitionsMap")).get("part1")));
+        assertEquals(((Map<String, AtlasStruct>) updatedTableDef2.getAttribute("partitionsMap")).size(), 2);
+        Assert.assertTrue(partsMap.get("part1").equals(((Map<String, AtlasStruct>) updatedTableDef2.getAttribute("partitionsMap")).get("part1")));
 
         //update map - remove a key and add another key
         partsMap.remove("part0");
@@ -287,11 +292,12 @@ public class AtlasEntityStoreV1Test {
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         AtlasEntityHeader tableDefinition3 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        validateEntity(entitiesInfo, getEntityFromStore(tableDefinition3));
+        AtlasEntity updatedTableDef3 = getEntityFromStore(tableDefinition3);
+        validateEntity(entitiesInfo, updatedTableDef3);
 
-        assertEquals(((Map<String, AtlasStruct>) tableDefinition3.getAttribute("partitionsMap")).size(), 2);
-        Assert.assertNull(((Map<String, AtlasStruct>) tableDefinition3.getAttribute("partitionsMap")).get("part0"));
-        Assert.assertTrue(partsMap.get("part2").equals(((Map<String, AtlasStruct>) tableDefinition3.getAttribute("partitionsMap")).get("part2")));
+        assertEquals(((Map<String, AtlasStruct>) updatedTableDef3.getAttribute("partitionsMap")).size(), 2);
+        Assert.assertNull(((Map<String, AtlasStruct>) updatedTableDef3.getAttribute("partitionsMap")).get("part0"));
+        Assert.assertTrue(partsMap.get("part2").equals(((Map<String, AtlasStruct>) updatedTableDef3.getAttribute("partitionsMap")).get("part2")));
 
         //update struct value for existing map key
         AtlasStruct partition2 = partsMap.get("part2");
@@ -301,11 +307,12 @@ public class AtlasEntityStoreV1Test {
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
 
         AtlasEntityHeader tableDefinition4 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        validateEntity(entitiesInfo, getEntityFromStore(tableDefinition4));
+        AtlasEntity updatedTableDef4 = getEntityFromStore(tableDefinition4);
+        validateEntity(entitiesInfo, updatedTableDef4);
 
-        assertEquals(((Map<String, AtlasStruct>) tableDefinition4.getAttribute("partitionsMap")).size(), 2);
-        Assert.assertNull(((Map<String, AtlasStruct>) tableDefinition4.getAttribute("partitionsMap")).get("part0"));
-        Assert.assertTrue(partsMap.get("part2").equals(((Map<String, AtlasStruct>) tableDefinition4.getAttribute("partitionsMap")).get("part2")));
+        assertEquals(((Map<String, AtlasStruct>) updatedTableDef4.getAttribute("partitionsMap")).size(), 2);
+        Assert.assertNull(((Map<String, AtlasStruct>) updatedTableDef4.getAttribute("partitionsMap")).get("part0"));
+        Assert.assertTrue(partsMap.get("part2").equals(((Map<String, AtlasStruct>) updatedTableDef4.getAttribute("partitionsMap")).get("part2")));
 
         //Test map pointing to a class
 
@@ -523,8 +530,9 @@ public class AtlasEntityStoreV1Test {
 
         response = entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap), false);
         final AtlasEntityHeader tableDefinition = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        Assert.assertNotNull(tableDefinition.getAttribute("database"));
-        Assert.assertEquals(((AtlasObjectId) tableDefinition.getAttribute("database")).getGuid(), dbCreated.getGuid());
+        AtlasEntity updatedTableDefinition = getEntityFromStore(tableDefinition);
+        Assert.assertNotNull(updatedTableDefinition.getAttribute("database"));
+        Assert.assertEquals(((AtlasObjectId) updatedTableDefinition.getAttribute("database")).getGuid(), dbCreated.getGuid());
     }
 
     @Test
@@ -534,7 +542,7 @@ public class AtlasEntityStoreV1Test {
 
         init();
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
-        AtlasEntityHeader firstEntityCreated = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
+        AtlasEntity firstEntityCreated = getEntityFromStore(response.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE));
 
         //The optional boolean attribute should have a non-null value
         final String isReplicatedAttr = "isReplicated";
@@ -552,7 +560,7 @@ public class AtlasEntityStoreV1Test {
 
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
-        AtlasEntityHeader firstEntityUpdated = response.getFirstUpdatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
+        AtlasEntity firstEntityUpdated = getEntityFromStore(response.getFirstUpdatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE));
 
         Assert.assertNotNull(firstEntityUpdated);
         Assert.assertNotNull(firstEntityUpdated.getAttribute(isReplicatedAttr));
@@ -736,8 +744,9 @@ public class AtlasEntityStoreV1Test {
         tblHeader = response.getFirstEntityPartialUpdated();
         AtlasEntity updatedTblEntity = getEntityFromStore(tblHeader);
 
-        columns = (List<AtlasObjectId>) tblHeader.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
-        assertEquals(columns.size(), 2);
+        columns = (List<AtlasObjectId>) updatedTblEntity.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
+        // deleted columns are included in the attribute; hence use >=
+        assertTrue(columns.size() >= 2);
     }
 
     @Test
@@ -867,7 +876,7 @@ public class AtlasEntityStoreV1Test {
                 if (MapUtils.isNotEmpty(expectedMap)) {
                     Assert.assertTrue(MapUtils.isNotEmpty(actualMap));
 
-                    //actual map could have deleted entities. Hence size may not match.
+                    // deleted entries are included in the attribute; hence use >=
                     Assert.assertTrue(actualMap.size() >= expectedMap.size());
 
                     for (Object key : expectedMap.keySet()) {

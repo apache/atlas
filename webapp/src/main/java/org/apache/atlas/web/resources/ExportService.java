@@ -75,7 +75,7 @@ public class ExportService {
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
                                  String requestingIP) throws AtlasBaseException {
-
+        long startTimestamp = System.currentTimeMillis();
         ExportContext context = new ExportContext(new AtlasExportResult(request, userName, hostName, requestingIP,
                                                                         System.currentTimeMillis()), exportSink);
 
@@ -90,6 +90,9 @@ public class ExportService {
             context.sink.setTypesDef(context.result.getData().getTypesDef());
             context.result.setData(null);
             context.result.setOperationStatus(AtlasExportResult.OperationStatus.SUCCESS);
+
+            long endTimestamp = System.currentTimeMillis();
+            context.result.incrementMeticsCounter("duration", (int) (endTimestamp - startTimestamp));
             context.sink.setResult(context.result);
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
@@ -175,7 +178,7 @@ public class ExportService {
         context.sink.add(entity);
 
         context.result.incrementMeticsCounter(String.format("entity:%s", entity.getTypeName()));
-        context.result.incrementMeticsCounter("Entities");
+        context.result.incrementMeticsCounter("entities");
 
         if (context.guidsProcessed.size() % 10 == 0) {
             LOG.info("export(): in progress.. number of entities exported: {}", context.guidsProcessed.size());
@@ -195,7 +198,7 @@ public class ExportService {
                 AtlasClassificationDef cd = typeRegistry.getClassificationDefByName(c.getTypeName());
 
                 typesDef.getClassificationDefs().add(cd);
-                result.incrementMeticsCounter("Classification");
+                result.incrementMeticsCounter("typedef:classification");
             }
         }
     }
@@ -208,7 +211,7 @@ public class ExportService {
             AtlasEntityDef typeDefinition = typeRegistry.getEntityDefByName(typeName);
 
             typesDef.getEntityDefs().add(typeDefinition);
-            result.incrementMeticsCounter("Type(s)");
+            result.incrementMeticsCounter("typedef:" + typeDefinition.getName());
         }
     }
 
