@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1565 Create EntityREST endpoints for delete operations (sarathkumarsubramanian via svimal2106)
 ATLAS-1547 Added tests for hard delete (mneethiraj)
 ATLAS-1546 (ATLAS-1546.3.patch)Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhat)
 ATLAS-1503 Export/import support to copy data between Atlas instances (ashutoshm via mneethiraj)

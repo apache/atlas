@@ -87,7 +87,7 @@ public interface AtlasEntityStore {
     EntityMutationResponse deleteById(String guid) throws AtlasBaseException;
 
     /**
-     * @deprecated
+     * Deletes an entity using its type and unique attributes
      * @param entityType      type of the entity
      * @param uniqAttributes Attributes that uniquely identify the entity
      * @return EntityMutationResponse details of the updates performed by this call
