@@ -28,9 +28,12 @@ import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
+import org.apache.atlas.typesystem.types.FieldMapping;
+import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.AtlasConstants;
@@ -127,6 +130,29 @@ public class TypesUtil {
                     false, null), null);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
+     * Get the field mappings for the specified data type.
+     * Field mappings are only relevant for CLASS, TRAIT, and STRUCT types.
+     *
+     * @param type
+     * @return {@link FieldMapping} for the specified type
+     * @throws IllegalArgumentException if type is not a CLASS, TRAIT, or STRUCT type.
+     */
+    public static FieldMapping getFieldMapping(IDataType type) {
+        switch (type.getTypeCategory()) {
+        case CLASS:
+        case TRAIT:
+            return ((HierarchicalType)type).fieldMapping();
+
+        case STRUCT:
+            return ((StructType)type).fieldMapping();
+
+        default:
+            throw new IllegalArgumentException("Type " + type + " doesn't have any fields!");
         }
     }
 }

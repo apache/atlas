@@ -49,6 +49,7 @@ import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
@@ -56,6 +57,7 @@ import org.apache.atlas.typesystem.types.ObjectGraphWalker;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.utils.MD5Utils;
 import org.slf4j.Logger;
@@ -249,6 +251,9 @@ public final class TypedInstanceToGraphMapper {
                     deleteHandler.deleteEdgeReference(currentEdge, attributeInfo.dataType().getTypeCategory(),
                             attributeInfo.isComposite, true);
                 }
+                if (attributeInfo.reverseAttributeName != null && newEdge != null) {
+                    addReverseReference(instanceVertex, attributeInfo.reverseAttributeName, newEdge);
+                }
                 break;
 
             case TRAIT:
@@ -421,24 +426,35 @@ public final class TypedInstanceToGraphMapper {
         List<Object> newElementsCreated = new ArrayList<>();
 
         if (!newAttributeEmpty) {
-            if (newElements != null && !newElements.isEmpty()) {
-                int index = 0;
-                for (; index < newElements.size(); index++) {
-                    Object currentElement = (currentElements != null && index < currentElements.size()) ?
-                            currentElements.get(index) : null;
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
-                                currentElement, newElements.get(index));
-                    }
-
-                    Object newEntry = addOrUpdateCollectionEntry(instanceVertex, attributeInfo, elementType,
-                            newElements.get(index), currentElement, propertyName, operation);
-                    newElementsCreated.add(newEntry);
+            int index = 0;
+            for (; index < newElements.size(); index++) {
+                Object currentElement = (currentElements != null && index < currentElements.size()) ?
+                        currentElements.get(index) : null;
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Adding/updating element at position {}, current element {}, new element {}", index,
+                            currentElement, newElements.get(index));
                 }
+
+                Object newEntry = addOrUpdateCollectionEntry(instanceVertex, attributeInfo, elementType,
+                        newElements.get(index), currentElement, propertyName, operation);
+                newElementsCreated.add(newEntry);
             }
         }
 
         if(GraphHelper.isReference(elementType)) {
+            if (attributeInfo.reverseAttributeName != null && newElementsCreated.size() > 0) {
+                // Set/add the new reference value(s) on the reverse reference.
+                for (Object newElement : newElementsCreated) {
+                    if ((newElement instanceof AtlasEdge)) {
+                        AtlasEdge newEdge = (AtlasEdge) newElement;
+                        addReverseReference(instanceVertex, attributeInfo.reverseAttributeName, newEdge);
+                    }
+                    else {
+                        throw new AtlasException("Invalid array element type " + newElement.getClass().getName() + " - expected " + AtlasEdge.class.getName() +
+                            " for reference " + GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo) + " on vertex " + GraphHelper.getVertexDetails(instanceVertex));
+                    }
+                }
+            }
 
             List<AtlasEdge> additionalEdges = removeUnusedEntries(instanceVertex, propertyName, (List)currentElements,
                     (List)newElementsCreated, elementType, attributeInfo);
@@ -865,5 +881,68 @@ public final class TypedInstanceToGraphMapper {
             }
         }
         return new GuidMapping(mapping);
+    }
+
+
+    private <V,E> void addReverseReference(AtlasVertex<V,E> vertex, String reverseAttributeName, AtlasEdge<V,E> edge)
+        throws AtlasException {
+
+        String typeName = GraphHelper.getTypeName(vertex);
+        Id id = GraphHelper.getIdFromVertex(typeName, vertex);
+
+        AtlasVertex<V, E> reverseVertex = edge.getInVertex();
+        String reverseTypeName = GraphHelper.getTypeName(reverseVertex);
+        Id reverseId = GraphHelper.getIdFromVertex(reverseTypeName, reverseVertex);
+        IDataType reverseType = typeSystem.getDataType(IDataType.class, reverseTypeName);
+        AttributeInfo reverseAttrInfo = TypesUtil.getFieldMapping(reverseType).fields.get(reverseAttributeName);
+        if (reverseAttrInfo.dataType().getTypeCategory() == TypeCategory.MAP) {
+            // If the reverse reference is a map, what would be used as the key?
+            // Not supporting automatic update of reverse map references.
+            LOG.debug("Automatic update of reverse map reference is not supported - reference = {}",
+                GraphHelper.getQualifiedFieldName(reverseType, reverseAttributeName));
+            return;
+        }
+
+        String propertyName = GraphHelper.getQualifiedFieldName(reverseType, reverseAttributeName);
+        String reverseEdgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
+        AtlasEdge<V, E> reverseEdge = graphHelper.getEdgeForLabel(reverseVertex, reverseEdgeLabel);
+
+        AtlasEdge<V, E> newEdge = null;
+        if (reverseEdge != null) {
+            newEdge = updateClassEdge(reverseVertex, reverseEdge, id, vertex, reverseAttrInfo, reverseEdgeLabel);
+        }
+        else {
+            newEdge = addClassEdge(reverseVertex, vertex, reverseEdgeLabel);
+        }
+
+        switch (reverseAttrInfo.dataType().getTypeCategory()) {
+        case CLASS:
+            if (reverseEdge != null && !reverseEdge.getId().toString().equals(newEdge.getId().toString())) {
+                // Disconnect old reference
+                deleteHandler.deleteEdgeReference(reverseEdge, reverseAttrInfo.dataType().getTypeCategory(),
+                    reverseAttrInfo.isComposite, true);
+            }
+            break;
+        case ARRAY:
+            // Add edge ID to property value
+            List<String> elements = reverseVertex.getProperty(propertyName, List.class);
+            if (elements == null) {
+                elements = new ArrayList<>();
+                elements.add(newEdge.getId().toString());
+                reverseVertex.setProperty(propertyName, elements);
+            }
+            else {
+               if (!elements.contains(newEdge.getId().toString())) {
+                    elements.add(newEdge.getId().toString());
+                    reverseVertex.setProperty(propertyName, elements);
+                }
+            }
+            break;
+        }
+
+        RequestContext requestContext = RequestContext.get();
+        GraphHelper.setProperty(reverseVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+                requestContext.getRequestTime());
+        requestContext.recordEntityUpdate(reverseId._getId());
     }
 }

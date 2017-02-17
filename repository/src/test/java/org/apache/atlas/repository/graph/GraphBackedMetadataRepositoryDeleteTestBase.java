@@ -24,11 +24,11 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -63,10 +63,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -257,7 +253,8 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     private String createInstance(Referenceable entity) throws Exception {
         ClassType dataType = typeSystem.getDataType(ClassType.class, entity.getTypeName());
         ITypedReferenceableInstance instance = dataType.convert(entity, Multiplicity.REQUIRED);
-        List<String> results = repositoryService.createEntities(instance).getCreatedEntities();
+        CreateUpdateEntitiesResult result = repositoryService.createEntities(instance);
+        List<String> results = result.getCreatedEntities();
         return results.get(results.size() - 1);
     }
 
@@ -434,7 +431,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertNotNull(modificationTimestampPreUpdate);
 
         ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(nameGuidMap.get("Jane"));
-        Id janeGuid = jane.getId();
+        Id janeId = jane.getId();
 
         // Update max's mentor reference to john.
         ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
@@ -456,7 +453,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
 
         // Update max's mentor reference to jane.
-        maxEntity.set("mentor", janeGuid);
+        maxEntity.set("mentor", janeId);
         entityResult = updatePartial(maxEntity);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
@@ -464,7 +461,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         // Verify the update was applied correctly - jane should now be max's mentor.
         max = repositoryService.getEntityDefinition(maxGuid);
         refTarget = (ITypedReferenceableInstance) max.get("mentor");
-        Assert.assertEquals(refTarget.getId()._getId(), janeGuid._getId());
+        Assert.assertEquals(refTarget.getId()._getId(), janeId._getId());
 
         // Verify modification timestamp was updated.
         vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
@@ -473,21 +470,28 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
 
         ITypedReferenceableInstance julius = repositoryService.getEntityDefinition(nameGuidMap.get("Julius"));
-        Id juliusGuid = julius.getId();
+        Id juliusId = julius.getId();
         maxEntity = personType.createInstance(max.getId());
-        maxEntity.set("manager", juliusGuid);
+        maxEntity.set("manager", juliusId);
         entityResult = updatePartial(maxEntity);
-        //TODO ATLAS-499 should have updated julius' subordinates
-        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        // Verify julius' subordinates were updated.
+        assertEquals(entityResult.getUpdateEntities().size(), 3);
         assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
-        assertTrue(entityResult.getUpdateEntities().contains(janeGuid._getId()));
+        assertTrue(entityResult.getUpdateEntities().containsAll(Arrays.asList(maxGuid, janeId._getId(), juliusId._getId())));
 
         // Verify the update was applied correctly - julius should now be max's manager.
         max = repositoryService.getEntityDefinition(maxGuid);
         refTarget = (ITypedReferenceableInstance) max.get("manager");
-        Assert.assertEquals(refTarget.getId()._getId(), juliusGuid._getId());
+        Assert.assertEquals(refTarget.getId()._getId(), juliusId._getId());
+        Assert.assertEquals(refTarget.getId()._getId(), juliusId._getId());
+        julius = repositoryService.getEntityDefinition(nameGuidMap.get("Julius"));
+        Object object = julius.get("subordinates");
+        Assert.assertTrue(object instanceof List);
+        List<ITypedReferenceableInstance> refValues = (List<ITypedReferenceableInstance>) object;
+        Assert.assertEquals(refValues.size(), 1);
+        Assert.assertTrue(refValues.contains(max.getId()));
 
-        assertTestUpdateEntity_MultiplicityOneNonCompositeReference(janeGuid._getId());
+        assertTestUpdateEntity_MultiplicityOneNonCompositeReference(janeId._getId());
     }
 
     protected abstract void assertTestUpdateEntity_MultiplicityOneNonCompositeReference(String janeGuid) throws Exception;
