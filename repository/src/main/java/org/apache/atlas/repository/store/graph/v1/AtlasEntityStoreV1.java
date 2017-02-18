@@ -25,9 +25,13 @@ import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -49,13 +53,15 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
-    private final DeleteHandlerV1   deleteHandler;
-    private final AtlasTypeRegistry typeRegistry;
+    private final DeleteHandlerV1           deleteHandler;
+    private final AtlasTypeRegistry         typeRegistry;
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry) {
-        this.deleteHandler = deleteHandler;
-        this.typeRegistry  = typeRegistry;
+    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
+        this.deleteHandler        = deleteHandler;
+        this.typeRegistry         = typeRegistry;
+        this.entityChangeNotifier = entityChangeNotifier;
     }
 
     @Override
@@ -208,6 +214,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("<== createOrUpdate()");
         }
 
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret);
+
         return ret;
     }
 
@@ -252,7 +261,12 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         deletionCandidates.add(vertex);
 
-        return deleteVertices(deletionCandidates);
+        EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret);
+
+        return ret;
     }
 
     @Override
@@ -281,7 +295,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         if (deletionCandidates.isEmpty()) {
             LOG.info("No deletion candidate entities were found for guids %s", guids);
         }
-        return deleteVertices(deletionCandidates);
+
+        EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret);
+
+        return ret;
     }
 
     @Override
@@ -297,7 +317,12 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         deletionCandidates.add(vertex);
 
-        return deleteVertices(deletionCandidates);
+        EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret);
+
+        return ret;
     }
 
     @Override

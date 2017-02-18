@@ -74,7 +74,7 @@ public class EntityREST {
     public static final String PREFIX_ATTR = "attr:";
 
     private final AtlasTypeRegistry         typeRegistry;
-    private final AtlasInstanceConverter restAdapters;
+    private final AtlasInstanceConverter    instanceConverter;
     private final MetadataService           metadataService;
     private final AtlasEntityStore          entitiesStore;
 
@@ -82,7 +82,7 @@ public class EntityREST {
     public EntityREST(AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter,
                       MetadataService metadataService, AtlasEntityStore entitiesStore) {
         this.typeRegistry    = typeRegistry;
-        this.restAdapters    = instanceConverter;
+        this.instanceConverter = instanceConverter;
         this.metadataService = metadataService;
         this.entitiesStore   = entitiesStore;
     }
@@ -204,7 +204,7 @@ public class EntityREST {
 
         try {
             IStruct trait = metadataService.getTraitDefinition(guid, typeName);
-            return restAdapters.getClassification(trait);
+            return instanceConverter.getClassification(trait);
 
         } catch (AtlasException e) {
             throw toAtlasBaseException(e);
@@ -231,7 +231,7 @@ public class EntityREST {
             List<AtlasClassification> clsList = new ArrayList<>();
             for ( String traitName : metadataService.getTraitNames(guid) ) {
                 IStruct trait = metadataService.getTraitDefinition(guid, traitName);
-                AtlasClassification cls = restAdapters.getClassification(trait);
+                AtlasClassification cls = instanceConverter.getClassification(trait);
                 clsList.add(cls);
             }
 
@@ -258,7 +258,7 @@ public class EntityREST {
         }
 
         for (AtlasClassification classification:  classifications) {
-            final ITypedStruct trait = restAdapters.getTrait(classification);
+            final ITypedStruct trait = instanceConverter.getTrait(classification);
             try {
                 metadataService.addTrait(guid, trait);
             } catch (IllegalArgumentException e) {
@@ -378,7 +378,7 @@ public class EntityREST {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty entity list");
         }
 
-        final ITypedStruct trait = restAdapters.getTrait(classification);
+        final ITypedStruct trait = instanceConverter.getTrait(classification);
 
         try {
             metadataService.addTrait(entityGuids, trait);

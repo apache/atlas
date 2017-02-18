@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContextV1;
@@ -59,7 +58,6 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -69,7 +67,6 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,6 +79,7 @@ import static org.apache.atlas.TestUtils.COLUMN_TYPE;
 import static org.apache.atlas.TestUtils.DEPARTMENT_TYPE;
 import static org.apache.atlas.TestUtils.NAME;
 import static org.apache.atlas.TestUtils.TABLE_TYPE;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
@@ -106,6 +104,8 @@ public abstract class AtlasDeleteHandlerV1Test {
     private AtlasEntityType compositeMapValueType;
 
     private TypeSystem typeSystem = TypeSystem.getInstance();
+
+    AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
 
     @BeforeClass
@@ -145,7 +145,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     @BeforeTest
     public void init() throws Exception {
         DeleteHandlerV1 deleteHandler = getDeleteHandler(typeRegistry);
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry);
+        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier);
         RequestContextV1.clear();
 
     }

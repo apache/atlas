@@ -19,6 +19,7 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 

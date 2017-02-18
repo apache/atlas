@@ -76,17 +76,24 @@ public class AtlasInstanceConverter {
 
         Iterator<AtlasEntity> entityIterator = entities.iterator();
         for (int i = 0; i < entities.size(); i++) {
-            ITypedReferenceableInstance typedInstance = getITypedReferenceable(entityIterator.next(), ctx);
+            ITypedReferenceableInstance typedInstance = getITypedReferenceable(entityIterator.next());
             entitiesInOldFormat[i] = typedInstance;
         }
         return entitiesInOldFormat;
     }
 
-    public ITypedReferenceableInstance getITypedReferenceable(AtlasEntity entity, AtlasFormatConverter.ConverterContext ctx) throws AtlasBaseException {
-        Referenceable ref = getReferenceable(entity, ctx);
-
+    public ITypedReferenceableInstance getITypedReferenceable(AtlasEntity entity) throws AtlasBaseException {
         try {
-            return metadataService.getTypedReferenceableInstance(ref);
+            return metadataService.getEntityDefinition(entity.getGuid());
+        } catch (AtlasException e) {
+            LOG.error("Exception while getting a typed reference for the entity ", e);
+            throw toAtlasBaseException(e);
+        }
+    }
+
+    public ITypedReferenceableInstance getITypedReferenceable(String guid) throws AtlasBaseException {
+        try {
+            return metadataService.getEntityDefinition(guid);
         } catch (AtlasException e) {
             LOG.error("Exception while getting a typed reference for the entity ", e);
             throw toAtlasBaseException(e);

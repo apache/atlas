@@ -73,6 +73,7 @@ import static org.apache.atlas.TestUtils.COLUMN_TYPE;
 import static org.apache.atlas.TestUtils.NAME;
 import static org.apache.atlas.TestUtils.randomString;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -97,6 +98,8 @@ public class AtlasEntityStoreV1Test {
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
     private AtlasEntityWithExtInfo   tblEntity;
+
+    AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
 
     @BeforeClass
@@ -128,7 +131,7 @@ public class AtlasEntityStoreV1Test {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry);
+        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier);
         RequestContextV1.clear();
     }
 
