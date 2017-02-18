@@ -17,39 +17,27 @@
   -->
 
 <enunciate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:noNamespaceSchemaLocation="http://enunciate.codehaus.org/schemas/enunciate-1.29.xsd">
-    <api-import pattern="org.apache.atlas.web.resources.*"/>
-    <services>
-        <rest defaultRestSubcontext="/api/atlas/">
-            <custom-resource-parameter-annotation
-                    qualifiedName="org.glassfish.jersey.media.multipart.FormDataParam"/>
-        </rest>
-    </services>
-    <webapp disabled="true"/>
+           xsi:noNamespaceSchemaLocation="http://enunciate.webcohesion.com/schemas/enunciate-2.8.0.xsd">
+    <title>Atlas REST API</title>
+    <description> Atlas exposes a variety of REST endpoints to work with types, entities, lineage and data discovery.</description>
+    <api-classes>
+        <include pattern="org.apache.atlas.web.rest.*"/>
+        <include pattern="org.apache.atlas.model.*"/>
+    </api-classes>
+
     <modules>
-        <disable-rule id="csharp.warnings"/>
-        <disable-rule id="c.warnings"/>
-        <disable-rule id="obj-c.warnings"/>
-        <docs docsDir="apidocs" title="Apache Data Governance APIs"
-              includeDefaultDownloads="true" includeExampleXml="false"
-              disableRestMountpoint="true" forceExampleJson="true">
-        </docs>
-        <basic-app disabled="true"/>
-        <c disabled="true"/>
-        <csharp disabled="true"/>
-        <jaxws-ri disabled="true"/>
-        <jersey disabled="true"/>
-        <obj-c disabled="true"/>
-        <amf disabled="true"/>
-        <gwt disabled="true"/>
-        <jboss disabled="true"/>
-        <object-c disabled="true"/>
-        <rubby disabled="true"/>
-        <java-client disabled="true"/>
-        <jaxws-client disabled="true"/>
-        <xml forceExampleJson="true"/>
-        <jaxws-support disabled="false"/>
-        <cxf disabled="false" enableJaxrs="true" enableJaxws="true"/>
-        <jaxws disabled="false"/>
+        <swagger/>
+        <jackson/>
+        <jackson1 disabled="true"/>
+        <c-xml-client disabled="true"/>
+        <java-json-client disabled="true"/>
+        <csharp-xml-client disabled="true"/>
+        <java-xml-client disabled="true"/>
+        <javascript-client disabled="true"/>
+        <ruby-json-client disabled="true"/>
+        <gwt-json-overlay disabled="true"/>
+        <php-xml-client disabled="true"/>
+        <php-json-client disabled="true"/>
+        <jaxws disabled="true"/>
     </modules>
 </enunciate>

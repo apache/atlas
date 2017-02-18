@@ -65,15 +65,14 @@ public enum AtlasErrorCode {
     UNKNOWN_ATTRIBUTE(400, "ATLAS40034E", "Attribute {0} not found for type {1}"),
     SYSTEM_TYPE(400, "ATLAS40035E", "{0} is a System-type"),
     INVALID_STRUCT_VALUE(400, "ATLAS40036E", "not a valid struct value {0}"),
+    INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS40037E", "Invalid lineage query parameters passed {0}: {1}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS4042E", "Given type guid {0} was invalid"),
     EMPTY_RESULTS(404, "ATLAS4044E", "No result found for {0}"),
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS4045E", "Given instance guid {0} is invalid/not found"),
-    INSTANCE_LINEAGE_INVALID_PARAMS(404, "ATLAS4046E", "Invalid lineage query parameters passed {0}: {1}"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
-    DISCOVERY_QUERY_FAILED(404, "ATLAS4048E", "Discovery query failed {0}"),
     INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS4049E", "Invalid instance creation/updation parameters passed : {0}"),
 
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS40410E", "Instance {0} with unique attribute {1} does not exist"),
@@ -87,9 +86,10 @@ public enum AtlasErrorCode {
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
-    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5004E", "Failed to get the lock; another type update might be in progress. Please try again"),
-    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS5005E", "Another import or export is in progress. Please try again"),
-    NOTIFICATION_FAILED(500, "ATLAS5005E", "Failed to notify for change {0}");
+    DISCOVERY_QUERY_FAILED(500, "ATLAS5004E", "Discovery query failed {0}"),
+    FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5005E", "Failed to get the lock; another type update might be in progress. Please try again"),
+    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS5006E", "Another import or export is in progress. Please try again"),
+    NOTIFICATION_FAILED(500, "ATLAS5007E", "Failed to notify for change {0}");
 
     private String errorCode;
     private String errorMessage;

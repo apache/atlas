@@ -18,6 +18,8 @@
 package org.apache.atlas.web.rest;
 
 import com.google.inject.Inject;
+import com.webcohesion.enunciate.metadata.rs.ResponseCode;
+import com.webcohesion.enunciate.metadata.rs.StatusCodes;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -46,20 +48,28 @@ import javax.ws.rs.core.Context;
 import java.util.List;
 import java.util.Set;
 
-
+/**
+ * REST interface for CRUD operations on type definitions
+ */
 @Path("v2/types")
 @Singleton
 public class TypesREST {
 
     private final AtlasTypeDefStore typeDefStore;
 
-
     @Inject
     public TypesREST(AtlasTypeDefStore typeDefStore) {
         this.typeDefStore = typeDefStore;
     }
 
-
+    /**
+     * Get type definition by it's name
+     * @param name Type name
+     * @return Type definition
+     * @throws AtlasBaseException
+     * @HTTP 200 Successful lookup by name
+     * @HTTP 404 Failed lookup by name
+     */
     @GET
     @Path("/typedef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -69,6 +79,13 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * @param guid GUID of the type
+     * @return Type definition
+     * @throws AtlasBaseException
+     * @HTTP 200 Successful lookup
+     * @HTTP 404 Failed lookup
+     */
     @GET
     @Path("/typedef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -82,6 +99,8 @@ public class TypesREST {
      * Bulk retrieval API for all type definitions returned as a list of minimal information header
      * @return List of AtlasTypeDefHeader {@link AtlasTypeDefHeader}
      * @throws AtlasBaseException
+     * @HTTP 200 Returns a list of {@link AtlasTypeDefHeader} matching the search criteria
+     * or an empty list if no match.
      */
     @GET
     @Path("/typedefs/headers")
@@ -98,6 +117,7 @@ public class TypesREST {
      * Bulk retrieval API for retrieving all type definitions in Atlas
      * @return A composite wrapper object with lists of all type definitions
      * @throws Exception
+     * @HTTP 200 {@link AtlasTypesDef} with type definitions matching the search criteria or else returns empty list of type definitions
      */
     @GET
     @Path("/typedefs")
@@ -110,6 +130,14 @@ public class TypesREST {
         return typesDef;
     }
 
+    /**
+     * Get the enum definition by it's name (unique)
+     * @param name enum name
+     * @return enum definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the enum definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
     @GET
     @Path("/enumdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -119,6 +147,14 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the enum definition for the given guid
+     * @param guid enum guid
+     * @return enum definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the enum definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
     @GET
     @Path("/enumdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -129,6 +165,14 @@ public class TypesREST {
     }
 
 
+    /**
+     * Get the struct definition by it's name (unique)
+     * @param name struct name
+     * @return struct definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the struct definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
     @GET
     @Path("/structdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -138,6 +182,14 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the struct definition for the given guid
+     * @param guid struct guid
+     * @return struct definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the struct definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
     @GET
     @Path("/structdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -147,6 +199,14 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the classification definition by it's name (unique)
+     * @param name classification name
+     * @return classification definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the classification definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
     @GET
     @Path("/classificationdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -156,6 +216,14 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the classification definition for the given guid
+     * @param guid classification guid
+     * @return classification definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the classification definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
     @GET
     @Path("/classificationdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -165,7 +233,14 @@ public class TypesREST {
         return ret;
     }
 
-
+    /**
+     * Get the entity definition by it's name (unique)
+     * @param name entity name
+     * @return Entity definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the entity definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
     @GET
     @Path("/entitydef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -175,6 +250,14 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the Entity definition for the given guid
+     * @param guid entity guid
+     * @return Entity definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the entity definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
     @GET
     @Path("/entitydef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -184,9 +267,7 @@ public class TypesREST {
         return ret;
     }
 
-    /******************************************************************/
-    /** Bulk API operations                                          **/
-    /******************************************************************/
+    /* Bulk API operation */
 
     /**
      * Bulk create APIs for all atlas type definitions, only new definitions will be created.
@@ -195,6 +276,8 @@ public class TypesREST {
      * @return A composite wrapper object with lists of type definitions that were successfully
      * created
      * @throws Exception
+     * @HTTP 200 On successful update of requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
      */
     @POST
     @Path("/typedefs")
@@ -211,6 +294,8 @@ public class TypesREST {
      * @param typesDef A composite object that captures all type definition changes
      * @return A composite object with lists of type definitions that were updated
      * @throws Exception
+     * @HTTP 200 On successful update of requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
      */
     @PUT
     @Path("/typedefs")
@@ -227,6 +312,8 @@ public class TypesREST {
      * Bulk delete API for all types
      * @param typesDef A composite object that captures all types to be deleted
      * @throws Exception
+     * @HTTP 204 On successful deletion of the requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
      */
     @DELETE
     @Path("/typedefs")

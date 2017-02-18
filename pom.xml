@@ -483,6 +483,7 @@
         <skipITs>false</skipITs>
         <skipDocs>true</skipDocs>
         <skipSite>true</skipSite>
+        <skipEnunciate>true</skipEnunciate>
         <projectBaseDir>${project.basedir}</projectBaseDir>
         <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
 
@@ -521,22 +522,6 @@
                 <titan.storage.hostname>localhost</titan.storage.hostname>
                 <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
             </properties>
-        </profile>
-
-        <profile>
-            <id>jdk7</id>
-            <activation>
-                <jdk>[1.7,1.8)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.enunciate</groupId>
-                        <artifactId>maven-enunciate-plugin</artifactId>
-                        <version>1.29</version>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -1433,6 +1418,14 @@
                 <version>${fastutil.version}</version>
             </dependency>
 
+            <!-- API documentation  -->
+            <dependency>
+                <groupId>com.webcohesion.enunciate</groupId>
+                <artifactId>enunciate-core-annotations</artifactId>
+                <version>2.8.0</version>
+            </dependency>
+
+
             <!-- supports simple auth handler -->
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -1681,6 +1674,20 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>aspectj-maven-plugin</artifactId>
                     <version>1.8</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.webcohesion.enunciate</groupId>
+                    <artifactId>enunciate-maven-plugin</artifactId>
+                    <version>2.8.0</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>docs</goal>
+                            </goals>
+                            <phase>package</phase>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

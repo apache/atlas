@@ -40,33 +40,6 @@
 
     <profiles>
         <profile>
-            <id>jdk7</id>
-            <activation>
-                <jdk>[1.7,1.8)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.enunciate</groupId>
-                        <artifactId>maven-enunciate-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>docs</goal>
-                                </goals>
-                                <phase>site</phase>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <!-- the directory where to put the docs -->
-                            <docsDir>${project.build.directory}/apidocs</docsDir>
-                            <configFile>${basedir}/../src/build/enunciate.xml</configFile>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <!-- default profile is for external HBase and Solr - hence not packaging those jars -->
             <id>dist</id>
             <activation>
@@ -399,6 +372,12 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-server-api</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.webcohesion.enunciate</groupId>
+            <artifactId>enunciate-core-annotations</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -662,6 +641,18 @@
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>com.webcohesion.enunciate</groupId>
+                <artifactId>enunciate-maven-plugin</artifactId>
+                <configuration>
+                    <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
+                    <enunciateArtifactId/>
+                    <docsDir>${project.build.directory}/api/v2/</docsDir>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                    <skipEnunciate>${skipEnunciate}</skipEnunciate>
+                </configuration>
             </plugin>
         </plugins>
     </build>

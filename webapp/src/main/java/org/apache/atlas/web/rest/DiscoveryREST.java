@@ -30,6 +30,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+/**
+ * REST interface for data discovery using dsl or full text search
+ */
 @Path("v2/search")
 @Singleton
 public class DiscoveryREST {
@@ -40,6 +43,17 @@ public class DiscoveryREST {
         this.atlasDiscoveryService = discoveryService;
     }
 
+    /**
+     * Retrieve data for the specified DSL
+     * @param query DSL query
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful DSL execution with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid DSL or query parameters
+     */
     @GET
     @Path("/dsl")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -53,6 +67,17 @@ public class DiscoveryREST {
         return ret;
     }
 
+    /**
+     * Retrieve data for the specified fulltext query
+     * @param query Fulltext query
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid fulltext or query parameters
+     */
     @GET
     @Path("/fulltext")
     @Consumes(Servlets.JSON_MEDIA_TYPE)

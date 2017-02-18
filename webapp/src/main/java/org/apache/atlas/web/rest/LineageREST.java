@@ -37,6 +37,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 
+/**
+ * REST interface for an entity's lineage information
+ */
 @Path("v2/lineage")
 @Singleton
 public class LineageREST {
@@ -59,6 +62,9 @@ public class LineageREST {
      * @param depth - number of hops for lineage
      * @return AtlasLineageInfo
      * @throws AtlasBaseException
+     * @HTTP 200 If Lineage exists for the given entity
+     * @HTTP 400 Bad query parameters
+     * @HTTP 404 If no lineage is found for the given entity
      */
     @GET
     @Path("/{guid}")

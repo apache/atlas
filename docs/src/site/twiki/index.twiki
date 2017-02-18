@@ -55,7 +55,8 @@ allows integration with the whole enterprise data ecosystem.
 
 ---++ API Documentation
 
-   * <a href="api/rest.html">REST API Documentation</a>
+   * <a href="api/v2/index.html">REST API Documentation</a>
+   * <a href="api/rest.html">Legacy API Documentation</a>
 
 ---++ Developer Setup Documentation
    * [[EclipseSetup][Developer Setup: Eclipse]]
