@@ -21,15 +21,16 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -37,17 +38,28 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 
 
 @Singleton
@@ -243,6 +255,65 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         updatedEntity.setGuid(guid);
 
         return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse updateByGuid(AtlasEntityType entityType, String guid, AtlasEntity updatedEntity)
+            throws AtlasBaseException {
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> updateByUniqueAttributes({}, {})", entityType.getTypeName(), guid);
+        }
+
+        if (updatedEntity == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entity to update.");
+        }
+
+        updatedEntity.setGuid(guid);
+
+        return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse updateEntityAttributeByGuid(String guid, String attrName, Object attrValue)
+                                                              throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> updateEntityAttributeByGuid({}, {}, {})", guid, attrName, attrValue);
+        }
+
+        AtlasEntityWithExtInfo entityInfo = getById(guid);
+
+        if (entityInfo == null || entityInfo.getEntity() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasEntity     entity     = entityInfo.getEntity();
+        AtlasEntityType entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
+        AtlasAttribute  attr       = entityType.getAttribute(attrName);
+
+        if (attr == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entity.getTypeName());
+        }
+
+        AtlasType   attrType     = attr.getAttributeType();
+        AtlasEntity updateEntity = new AtlasEntity();
+
+        updateEntity.setGuid(guid);
+        updateEntity.setTypeName(entity.getTypeName());
+
+        switch (attrType.getTypeCategory()) {
+            case PRIMITIVE:
+            case OBJECT_ID_TYPE:
+                updateEntity.setAttribute(attrName, attrValue);
+                break;
+
+            default:
+                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, attrName, attrType.getTypeName());
+        }
+
+        return createOrUpdate(new AtlasEntityStream(updateEntity), true);
     }
 
     @GraphTransaction

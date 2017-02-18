@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,13 +21,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
 
+import com.vividsolutions.jts.util.CollectionUtil;
 import org.apache.atlas.AtlasClient.EntityResult;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -42,8 +51,9 @@ public class EntityResourceTest {
 
     private static final String DELETED_GUID = "deleted_guid";
 
+
     @Mock
-    MetadataService mockService;
+    AtlasEntityStore entitiesStore;
 
     @BeforeMethod
     public void setUp() {
@@ -53,22 +63,35 @@ public class EntityResourceTest {
     @Test
     public void testDeleteEntitiesDoesNotLookupDeletedEntity() throws Exception {
         List<String> guids = Collections.singletonList(DELETED_GUID);
+        List<AtlasEntityHeader> deletedEntities = Collections.singletonList(new AtlasEntityHeader(null, DELETED_GUID, null));
 
         // Create EntityResult with a deleted guid and no other guids.
-        EntityResult entityResult = new EntityResult(Collections.<String>emptyList(),
-            Collections.<String>emptyList(), guids);
-        when(mockService.deleteEntities(guids)).thenReturn(entityResult);
+        EntityMutationResponse  resp    = new EntityMutationResponse();
+        List<AtlasEntityHeader> headers = toAtlasEntityHeaders(guids);
 
-        // Create EntityResource with mock MetadataService.
-        EntityResource entityResource = new EntityResource(mockService);
+        for (AtlasEntityHeader entity : headers) {
+            resp.addEntity(EntityMutations.EntityOperation.DELETE, entity);
+        }
 
-        Response response = entityResource.deleteEntities(guids, null, null, null);
+        when(entitiesStore.deleteByIds(guids)).thenReturn(resp);
 
-        // Verify that if the EntityResult returned by MetadataService includes only deleted guids,
-        // deleteEntities() does not perform any entity lookup.
-        verify(mockService, never()).getEntityDefinition(Matchers.anyString());
+        EntityMutationResponse response = entitiesStore.deleteByIds(guids);
 
-        EntityResult resultFromEntityResource = EntityResult.fromString(response.getEntity().toString());
-        Assert.assertTrue(resultFromEntityResource.getDeletedEntities().contains(DELETED_GUID));
+        List<AtlasEntityHeader> responseDeletedEntities = response.getDeletedEntities();
+
+        Assert.assertEquals(responseDeletedEntities, deletedEntities);
+    }
+
+    private List<AtlasEntityHeader> toAtlasEntityHeaders(List<String> guids) {
+        List<AtlasEntityHeader> ret = null;
+
+        if (CollectionUtils.isNotEmpty(guids)) {
+            ret = new ArrayList<>(guids.size());
+            for (String guid : guids) {
+                ret.add(new AtlasEntityHeader(null, guid, null));
+            }
+        }
+
+        return ret;
     }
 }

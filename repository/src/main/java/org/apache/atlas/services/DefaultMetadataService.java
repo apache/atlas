@@ -308,7 +308,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         return result;
     }
 
-    private ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition) throws AtlasException {
+    @Override
+    public ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition) throws AtlasException {
         return GraphHelper.deserializeClassInstances(typeSystem, entityInstanceDefinition);
     }
     

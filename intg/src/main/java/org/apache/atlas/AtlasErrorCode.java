@@ -66,6 +66,7 @@ public enum AtlasErrorCode {
     SYSTEM_TYPE(400, "ATLAS40035E", "{0} is a System-type"),
     INVALID_STRUCT_VALUE(400, "ATLAS40036E", "not a valid struct value {0}"),
     INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS40037E", "Invalid lineage query parameters passed {0}: {1}"),
+    ATTRIBUTE_UPDATE_NOT_SUPPORTED(400, "ATLAS40038E", "{0}.{1} : attribute update not supported"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),

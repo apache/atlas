@@ -301,4 +301,12 @@ public interface MetadataService {
      * @return
      */
     List<EntityAuditEvent> getAuditEvents(String guid, String startKey, short count) throws AtlasException;
+
+    /**
+     * Deserializes entity instances into ITypedReferenceableInstance array.
+     * @param entityInstanceDefinition
+     * @return ITypedReferenceableInstance[]
+     * @throws AtlasException
+     */
+    ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition) throws AtlasException;
 }

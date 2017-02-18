@@ -20,16 +20,28 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.AtlasClient.EntityResult;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
@@ -39,6 +51,7 @@ import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.web.rest.EntityREST;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -59,7 +72,9 @@ import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -77,10 +92,16 @@ public class EntityResource {
 
     private static final String TRAIT_NAME = "traitName";
 
-    private final MetadataService metadataService;
+    private final MetadataService        metadataService;
+    private final AtlasInstanceConverter restAdapters;
+    private final AtlasEntityStore       entitiesStore;
+    private final AtlasTypeRegistry      typeRegistry;
 
     @Context
     UriInfo uriInfo;
+
+    @Context
+    private ResourceContext resourceContext;
 
     /**
      * Created by the Guice ServletModule and injected with the
@@ -89,8 +110,11 @@ public class EntityResource {
      * @param metadataService metadata service handle
      */
     @Inject
-    public EntityResource(MetadataService metadataService) {
+    public EntityResource(MetadataService metadataService, AtlasInstanceConverter restAdapters, AtlasEntityStore entitiesStore, AtlasTypeRegistry typeRegistry) {
         this.metadataService = metadataService;
+        this.restAdapters    = restAdapters;
+        this.entitiesStore   = entitiesStore;
+        this.typeRegistry    = typeRegistry;
     }
 
     /**
@@ -131,15 +155,20 @@ public class EntityResource {
                 LOG.debug("submitting entities {} ", entityJson);
             }
 
-            final CreateUpdateEntitiesResult result = metadataService.createEntities(entities);
-            final List<String> guids = result.getEntityResult().getCreatedEntities();
+            EntityREST               entityREST       = resourceContext.getResource(EntityREST.class);
+            AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(entities);
+            EntityMutationResponse   mutationResponse = entityREST.createOrUpdate(entitiesInfo);
+
+            final List<String> guids = restAdapters.getGuids(mutationResponse.getCreatedEntities());
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Created entities {}", guids);
             }
 
-            JSONObject response = getResponse(result);
+            final CreateUpdateEntitiesResult result = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
-            URI locationURI = getLocationURI(guids);
+            JSONObject response    = getResponse(result);
+            URI        locationURI = getLocationURI(guids);
 
             return Response.created(locationURI).entity(response).build();
 
@@ -164,7 +193,6 @@ public class EntityResource {
 
         }
     }
-
 
     @VisibleForTesting
     public URI getLocationURI(List<String> guids) {
@@ -235,7 +263,10 @@ public class EntityResource {
                 LOG.info("updating entities {} ", entityJson);
             }
 
-            CreateUpdateEntitiesResult result = metadataService.updateEntities(entities);
+            EntityREST                 entityREST       = resourceContext.getResource(EntityREST.class);
+            AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(entities);
+            EntityMutationResponse     mutationResponse = entityREST.createOrUpdate(entitiesInfo);
+            CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Updated entities: {}", result.getEntityResult());
@@ -317,11 +348,19 @@ public class EntityResource {
                 LOG.debug("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
             }
 
-            Referenceable updatedEntity =
-                InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            Referenceable updatedEntity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
-            CreateUpdateEntitiesResult result =
-                    metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, updatedEntity);
+            entityType = ParamChecker.notEmpty(entityType, "Entity type cannot be null");
+            attribute  = ParamChecker.notEmpty(attribute, "attribute name cannot be null");
+            value      = ParamChecker.notEmpty(value, "attribute value cannot be null");
+
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(attribute, value);
+
+            AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
+            AtlasEntity                entity           = entitiesInfo.getEntity(updatedEntity.getId()._getId());
+            EntityMutationResponse     mutationResponse = entitiesStore.updateByUniqueAttributes(getEntityType(entityType), attributes, entity);
+            CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Updated entities: {}", result.getEntityResult());
@@ -379,9 +418,9 @@ public class EntityResource {
             }
 
             if (StringUtils.isEmpty(attribute)) {
-                return updateEntityPartialByGuid(guid, request);
+                return partialUpdateEntityByGuid(guid, request);
             } else {
-                return updateEntityAttributeByGuid(guid, attribute, request);
+                return partialUpdateEntityAttrByGuid(guid, attribute, request);
             }
         } finally {
             AtlasPerfTracer.log(perf);
@@ -392,7 +431,7 @@ public class EntityResource {
         }
     }
 
-    private Response updateEntityPartialByGuid(String guid, HttpServletRequest request) {
+    private Response partialUpdateEntityByGuid(String guid, HttpServletRequest request) {
         String entityJson = null;
         try {
             guid = ParamChecker.notEmpty(guid, "Guid property cannot be null");
@@ -402,10 +441,11 @@ public class EntityResource {
                 LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
             }
 
-            Referenceable updatedEntity =
-                    InstanceSerialization.fromJsonReferenceable(entityJson, true);
-
-            CreateUpdateEntitiesResult result = metadataService.updateEntityPartialByGuid(guid, updatedEntity);
+            Referenceable              updatedEntity    = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
+            AtlasEntity                entity           = entitiesInfo.getEntity(updatedEntity.getId()._getId());
+            EntityMutationResponse     mutationResponse = entitiesStore.updateByGuid(getEntityType(updatedEntity.getTypeName()), guid, entity);
+            CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Updated entities: {}", result.getEntityResult());
@@ -435,7 +475,7 @@ public class EntityResource {
      * @postbody property's value
      * @return response payload as json
      */
-    private Response updateEntityAttributeByGuid(String guid, String property, HttpServletRequest request) {
+    private Response partialUpdateEntityAttrByGuid(String guid, String property, HttpServletRequest request) {
         String value = null;
         try {
             Preconditions.checkNotNull(property, "Entity property cannot be null");
@@ -446,7 +486,8 @@ public class EntityResource {
                 LOG.debug("Updating entity {} for property {} = {}", guid, property, value);
             }
 
-            CreateUpdateEntitiesResult result = metadataService.updateEntityAttributeByGuid(guid, property, value);
+            EntityMutationResponse     mutationResponse = entitiesStore.updateEntityAttributeByGuid(guid, property, value);
+            CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Updated entities: {}", result.getEntityResult());
@@ -481,9 +522,9 @@ public class EntityResource {
     @DELETE
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteEntities(@QueryParam("guid") List<String> guids,
-        @QueryParam("type") String entityType,
-        @QueryParam("property") String attribute,
-        @QueryParam("value") String value) {
+                                   @QueryParam("type") String entityType,
+                                   @QueryParam("property") final String attribute,
+                                   @QueryParam("value") final String value) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> EntityResource.deleteEntities({}, {}, {}, {})", guids, entityType, attribute, value);
         }
@@ -494,19 +535,26 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.deleteEntities(" + guids + ", " + entityType + ", " + attribute + ", " + value + ")");
             }
 
-            AtlasClient.EntityResult entityResult;
+            EntityResult entityResult;
+            EntityREST entityREST = resourceContext.getResource(EntityREST.class);
+
             if (guids != null && !guids.isEmpty()) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Deleting entities {}", guids);
                 }
 
-                entityResult = metadataService.deleteEntities(guids);
+                EntityMutationResponse mutationResponse = entityREST.deleteByGuids(guids);
+                entityResult = restAdapters.toCreateUpdateEntitiesResult(mutationResponse).getEntityResult();
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Deleting entity type={} with property {}={}", entityType, attribute, value);
                 }
 
-                entityResult = metadataService.deleteEntityByUniqueAttribute(entityType, attribute, value);
+                Map<String, Object> attributes = new HashMap<>();
+                attributes.put(attribute, value);
+
+                EntityMutationResponse mutationResponse = entitiesStore.deleteByUniqueAttributes(getEntityType(entityType), attributes);
+                entityResult = restAdapters.toCreateUpdateEntitiesResult(mutationResponse).getEntityResult();
             }
 
             if (LOG.isDebugEnabled()) {
@@ -634,7 +682,7 @@ public class EntityResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntity(@QueryParam("type") String entityType,
                               @QueryParam("property") String attribute,
-                              @QueryParam("value") String value) {
+                              @QueryParam("value") final String value) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> EntityResource.getEntity({}, {}, {})", entityType, attribute, value);
         }
@@ -678,7 +726,26 @@ public class EntityResource {
             attribute  = ParamChecker.notEmpty(attribute, "attribute name cannot be null");
             value      = ParamChecker.notEmpty(value, "attribute value cannot be null");
 
-            final String entityDefinition = metadataService.getEntityDefinition(entityType, attribute, value);
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(attribute, value);
+
+            AtlasEntityWithExtInfo entityInfo;
+
+            try {
+                entityInfo = entitiesStore.getByUniqueAttributes(getEntityType(entityType), attributes);
+            } catch (AtlasBaseException e) {
+                LOG.error("Cannot find entity with type: {0}, attribute: {1} and value: {2}", entityType, attribute, value);
+                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            }
+
+            String entityDefinition = null;
+
+            if (entityInfo != null) {
+                AtlasEntity entity = entityInfo.getEntity();
+                final ITypedReferenceableInstance instance = restAdapters.getITypedReferenceable(entity);
+
+                entityDefinition = InstanceSerialization.toJson(instance, true);
+            }
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -694,10 +761,7 @@ public class EntityResource {
 
             return Response.status(status).entity(response).build();
 
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with type={} and qualifiedName={} does not exist", entityType, value, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Bad type={}, qualifiedName={}", entityType, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
@@ -1031,5 +1095,9 @@ public class EntityResource {
             jsonArray.put(new JSONObject(element.toString()));
         }
         return jsonArray;
+    }
+
+    private AtlasEntityType getEntityType(String typeName) {
+        return typeRegistry.getEntityTypeByName(typeName);
     }
 }

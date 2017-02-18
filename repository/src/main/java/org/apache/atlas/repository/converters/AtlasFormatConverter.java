@@ -34,7 +34,7 @@ public interface AtlasFormatConverter {
 
     class ConverterContext {
 
-        private AtlasEntity.AtlasEntitiesWithExtInfo entities = null;
+        private AtlasEntitiesWithExtInfo entities = null;
 
         public void addEntity(AtlasEntity entity) {
             if (entities == null) {
@@ -61,6 +61,10 @@ public interface AtlasFormatConverter {
         public boolean entityExists(String guid) { return entities != null && entities.hasEntity(guid); }
 
         public AtlasEntitiesWithExtInfo getEntities() {
+            if (entities != null) {
+                entities.compact();
+            }
+
             return entities;
         }
     }

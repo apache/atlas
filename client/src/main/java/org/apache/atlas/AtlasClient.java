@@ -270,12 +270,12 @@ public class AtlasClient extends AtlasBaseClient {
         }
 
         public EntityResult(List<String> created, List<String> updated, List<String> deleted) {
-            add(OP_CREATED, created);
-            add(OP_UPDATED, updated);
-            add(OP_DELETED, deleted);
+            set(OP_CREATED, created);
+            set(OP_UPDATED, updated);
+            set(OP_DELETED, deleted);
         }
 
-        private void add(String type, List<String> list) {
+        public void set(String type, List<String> list) {
             if (list != null && list.size() > 0) {
                 entities.put(type, list);
             }

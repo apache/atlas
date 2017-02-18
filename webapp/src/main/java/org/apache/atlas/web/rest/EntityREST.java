@@ -155,13 +155,30 @@ public class EntityREST {
         return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entity);
     }
 
+    /*******
+     * Entity Partial Update - Add/Update entity attribute identified by its GUID.
+     * Supports only uprimitive attribute type and entity references.
+     * does not support updation of complex types like arrays, maps
+     * Null updates are not possible
+     *******/
+    @PUT
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Path("/guid/{guid}")
+    public EntityMutationResponse partialUpdateByGuid(@PathParam("guid") String guid,
+                                                      @QueryParam("name") String attrName,
+                                                      Object attrValue) throws Exception {
+
+        return entitiesStore.updateEntityAttributeByGuid(guid, attrName, attrValue);
+    }
+
     /**
      * Delete an entity identified by its GUID.
      * @param  guid GUID for the entity
      * @return EntityMutationResponse
      */
     @DELETE
-    @Path("guid/{guid}")
+    @Path("/guid/{guid}")
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse deleteByGuid(@PathParam("guid") final String guid) throws AtlasBaseException {
