@@ -311,7 +311,7 @@ public final class TestUtilsV2 {
 
         /******* Department - HR *******/
         AtlasEntity   hrDept   = new AtlasEntity(DEPARTMENT_TYPE, "name", "hr");
-        AtlasObjectId hrDeptId = hrDept.getAtlasObjectId();
+        AtlasObjectId hrDeptId = AtlasTypeUtil.getAtlasObjectId(hrDept);
 
         /******* Address Entities *******/
         AtlasStruct janeAddr = new AtlasStruct(ADDRESS_TYPE);
@@ -332,14 +332,14 @@ public final class TestUtilsV2 {
 
         /******* Manager - Jane (John and Max subordinates) *******/
         AtlasEntity   jane   = new AtlasEntity(MANAGER_TYPE);
-        AtlasObjectId janeId = jane.getAtlasObjectId();
+        AtlasObjectId janeId = AtlasTypeUtil.getAtlasObjectId(jane);
             jane.setAttribute("name", "Jane");
             jane.setAttribute("department", hrDeptId);
             jane.setAttribute("address", janeAddr);
 
         /******* Manager - Julius (no subordinates) *******/
         AtlasEntity   julius   = new AtlasEntity(MANAGER_TYPE);
-        AtlasObjectId juliusId = julius.getAtlasObjectId();
+        AtlasObjectId juliusId = AtlasTypeUtil.getAtlasObjectId(julius);
             julius.setAttribute("name", "Julius");
             julius.setAttribute("department", hrDeptId);
             julius.setAttribute("address", juliusAddr);
@@ -347,7 +347,7 @@ public final class TestUtilsV2 {
 
         /******* Employee - Max (Manager: Jane, Mentor: Julius) *******/
         AtlasEntity   max   = new AtlasEntity(EMPLOYEE_TYPE);
-        AtlasObjectId maxId = max.getAtlasObjectId();
+        AtlasObjectId maxId = AtlasTypeUtil.getAtlasObjectId(max);
             max.setAttribute("name", "Max");
             max.setAttribute("department", hrDeptId);
             max.setAttribute("address", maxAddr);
@@ -366,7 +366,7 @@ public final class TestUtilsV2 {
 
         /******* Employee - John (Manager: Jane, Mentor: Max) *******/
         AtlasEntity   john   = new AtlasEntity(EMPLOYEE_TYPE);
-        AtlasObjectId johnId = john.getAtlasObjectId();
+        AtlasObjectId johnId = AtlasTypeUtil.getAtlasObjectId(john);
             john.setAttribute("name", "John");
             john.setAttribute("department", hrDeptId);
             john.setAttribute("address", johnAddr);
@@ -442,8 +442,8 @@ public final class TestUtilsV2 {
         julius.setAttribute("address", juliusAddr);
         julius.setAttribute("subordinates", ImmutableList.of());
 
-        AtlasObjectId janeId = jane.getAtlasObjectId();
-        AtlasObjectId johnId = john.getAtlasObjectId();
+        AtlasObjectId janeId = AtlasTypeUtil.getAtlasObjectId(jane);
+        AtlasObjectId johnId = AtlasTypeUtil.getAtlasObjectId(john);
 
         //TODO - Change to MANAGER_TYPE for JULIUS
         AtlasObjectId maxId = new AtlasObjectId(max.getGuid(), EMPLOYEE_TYPE);
@@ -797,7 +797,7 @@ public final class TestUtilsV2 {
         entity.setAttribute("description", "random table");
         entity.setAttribute("type", "type");
         entity.setAttribute("tableType", "MANAGED");
-        entity.setAttribute("database", dbEntity.getAtlasObjectId());
+        entity.setAttribute("database", AtlasTypeUtil.getAtlasObjectId(dbEntity));
         entity.setAttribute("created", new Date());
 
         Map<String, Object> partAttributes = new HashMap<String, Object>() {{
@@ -820,7 +820,7 @@ public final class TestUtilsV2 {
         tblEntity.setAttribute("description", "random table");
         tblEntity.setAttribute("type", "type");
         tblEntity.setAttribute("tableType", "MANAGED");
-        tblEntity.setAttribute("database", dbEntity.getAtlasObjectId());
+        tblEntity.setAttribute("database", AtlasTypeUtil.getAtlasObjectId(dbEntity));
         tblEntity.setAttribute("created", new Date());
 
         final AtlasStruct partitionStruct = new AtlasStruct("partition_struct_type", "name", "part0");
@@ -845,7 +845,7 @@ public final class TestUtilsV2 {
         AtlasEntity entity = new AtlasEntity(COLUMN_TYPE);
         entity.setAttribute(NAME, colName);
         entity.setAttribute("type", "VARCHAR(32)");
-        entity.setAttribute("table", tableEntity.getAtlasObjectId());
+        entity.setAttribute("table", AtlasTypeUtil.getAtlasObjectId(tableEntity));
         return entity;
     }
 

@@ -23,7 +23,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
@@ -32,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.impexp.*;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +133,7 @@ public class ExportService {
 
     private void processEntity(AtlasEntity entity, ExportContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> processEntity({})", entity.getAtlasObjectId());
+            LOG.debug("==> processEntity({})", AtlasTypeUtil.getAtlasObjectId(entity));
         }
 
         if (!context.guidsProcessed.contains(entity.getGuid())) {
@@ -148,7 +148,7 @@ public class ExportService {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processEntity({})", entity.getAtlasObjectId());
+            LOG.debug("<== processEntity({})", AtlasTypeUtil.getAtlasObjectId(entity));
         }
     }
 
@@ -156,7 +156,7 @@ public class ExportService {
 
         try {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {}", entity.getAtlasObjectId(), context.guidsToProcess.size());
+                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
             }
 
             List<String> result = executeGremlinScriptFor(entity.getGuid());

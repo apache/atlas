@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -175,33 +174,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
 
-    @JsonIgnore
-    public boolean isUnassigned() {
-        return isUnAssigned(guid);
-    }
-
-    @JsonIgnore
-    public boolean isAssigned() {
-        return isAssigned(guid);
-    }
-
-    @JsonIgnore
-    public static boolean isAssigned(String guid) {
-        if (guid != null) {
-            try {
-                UUID.fromString(guid);
-                return true;
-            } catch (IllegalArgumentException e) {
-                // ignore
-            }
-        }
-        return false;
-    }
-
-    @JsonIgnore
-    public static boolean isUnAssigned(String guid) {
-        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
-    }
 
     private void init() {
         setGuid(nextInternalId());
@@ -215,11 +187,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private static String nextInternalId() {
         return "-" + Long.toString(s_nextId.getAndIncrement());
-    }
-
-    @JsonIgnore
-    public AtlasObjectId getAtlasObjectId() {
-        return new AtlasObjectId(getGuid(), getTypeName());
     }
 
     @Override

@@ -72,7 +72,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     public void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
+        if (! AtlasTypeUtil.isValidGuid(entity.getGuid())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
         }
 
@@ -95,7 +95,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     public void validateAndNormalizeForUpdate(AtlasEntity entity) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        if (!AtlasEntity.isAssigned(entity.getGuid()) && !AtlasEntity.isUnAssigned(entity.getGuid())) {
+        if (! AtlasTypeUtil.isValidGuid(entity.getGuid())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
         }
 
@@ -176,7 +176,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         if (val instanceof AtlasObjectId) {
             AtlasObjectId objId = (AtlasObjectId)val;
 
-            if (!objId.isValid()) {
+            if (!AtlasTypeUtil.isValid(objId)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
 
@@ -184,7 +184,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         } else if (val instanceof Map) {
             AtlasObjectId objId = new AtlasObjectId((Map)val);
 
-            if (!objId.isValid()) {
+            if (!AtlasTypeUtil.isValid(objId)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
 
@@ -323,7 +323,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
     }
 
     private void recordObjectReference(AtlasObjectId objId) {
-        if (objId.isValidGuid()) {
+        if (AtlasTypeUtil.isValidGuid(objId)) {
             discoveryContext.addReferencedGuid(objId.getGuid());
         } else {
             discoveryContext.addReferencedByUniqAttribs(objId);

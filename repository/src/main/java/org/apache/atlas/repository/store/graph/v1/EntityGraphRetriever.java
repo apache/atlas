@@ -127,10 +127,10 @@ public final class EntityGraphRetriever {
 
     private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
         try {
-            if (! objId.isValid()) {
+            if (! AtlasTypeUtil.isValid(objId)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
-            if (objId.isAssignedGuid()) {
+            if (AtlasTypeUtil.isAssignedGuid(objId)) {
                 return graphHelper.getVertexForGUID(objId.getGuid());
             } else {
                 AtlasEntityType     entityType     = typeRegistry.getEntityTypeByName(objId.getTypeName());
@@ -419,7 +419,7 @@ public final class EntityGraphRetriever {
                     AtlasEntity entity = mapVertexToAtlasEntity(referenceVertex, entityExtInfo);
 
                     if (entity != null) {
-                        ret = entity.getAtlasObjectId();
+                        ret = AtlasTypeUtil.getAtlasObjectId(entity);
                     }
                 } else {
                     ret = new AtlasObjectId(GraphHelper.getGuid(referenceVertex), GraphHelper.getTypeName(referenceVertex));

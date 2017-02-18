@@ -538,7 +538,7 @@ public class EntityGraphMapper {
             } else if (val instanceof Map) {
                 AtlasObjectId ret = new AtlasObjectId((Map)val);
 
-                if (ret.isValid()) {
+                if (AtlasTypeUtil.isValid(ret)) {
                     return ret;
                 }
             }

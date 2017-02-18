@@ -26,6 +26,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class IDBasedEntityResolver implements EntityResolver {
         EntityStream entityStream = context.getEntityStream();
 
         for (String guid : context.getReferencedGuids()) {
-            boolean isAssignedGuid = AtlasEntity.isAssigned(guid);
+            boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV1.findByGuid(guid) : null;
 
             if (vertex == null) { // if not found in the store, look if the entity is present in the stream

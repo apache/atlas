@@ -19,6 +19,7 @@ package org.apache.atlas.web.adapters;
 
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -30,6 +31,7 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.web.rest.EntityREST;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -73,6 +75,7 @@ public class TestEntityREST {
     @AfterMethod
     public void cleanup() throws Exception {
         RequestContext.clear();
+        RequestContextV1.clear();
     }
 
     private void createTestEntity() throws Exception {
@@ -158,7 +161,7 @@ public class TestEntityREST {
         EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
         String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
-        Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
+        Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(dbGuid));
 
         final String prevDBName    = (String) dbEntity.getAttribute(TestUtilsV2.NAME);
         final String updatedDBName = prevDBName + ":updated";
@@ -189,7 +192,7 @@ public class TestEntityREST {
         EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
         String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
-        Assert.assertTrue(AtlasEntity.isAssigned(dbGuid));
+        Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(dbGuid));
 
         final String prevDBName    = (String) dbEntity.getAttribute(TestUtilsV2.NAME);
         final String updatedDBName = prevDBName + ":updated";

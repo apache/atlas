@@ -31,13 +31,10 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -139,32 +136,6 @@ public class AtlasObjectId  implements Serializable {
         this.uniqueAttributes = uniqueAttributes;
     }
 
-    @JsonIgnore
-    public boolean isValidGuid() {
-        return isAssignedGuid() || isUnAssignedGuid();
-    }
-
-    @JsonIgnore
-    public boolean isAssignedGuid() {
-        return AtlasEntity.isAssigned(guid);
-    }
-
-    @JsonIgnore
-    public boolean isUnAssignedGuid() {
-        return AtlasEntity.isUnAssigned(guid);
-    }
-
-    @JsonIgnore
-    public boolean isValid() {
-        if (isAssignedGuid() || isUnAssignedGuid()) {
-            return true;
-        } else if (StringUtils.isNotEmpty(typeName) && MapUtils.isNotEmpty(uniqueAttributes)) {
-            return true;
-        }
-
-        return false;
-    }
-
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -193,7 +164,8 @@ public class AtlasObjectId  implements Serializable {
 
         AtlasObjectId that = (AtlasObjectId) o;
 
-        if (isValidGuid() && Objects.equals(guid, that.guid)) {
+        // if guid is null, equality should be based on typeName/uniqueAttributes
+        if (guid != null && Objects.equals(guid, that.guid)) {
             return true;
         }
 
@@ -203,7 +175,7 @@ public class AtlasObjectId  implements Serializable {
 
     @Override
     public int hashCode() {
-        return isValidGuid() ? Objects.hash(guid) : Objects.hash(typeName, uniqueAttributes);
+        return guid != null ? Objects.hash(guid) : Objects.hash(typeName, uniqueAttributes);
     }
 
     @Override

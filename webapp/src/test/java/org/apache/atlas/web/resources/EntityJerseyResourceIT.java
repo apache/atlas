@@ -40,6 +40,7 @@ import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.entity.EntityNotification;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -158,7 +159,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, json);
 
-        GuidMapping guidMapping = GuidMapping.fromString(response.toString());
+        GuidMapping guidMapping = AtlasType.fromJson(response.toString(), GuidMapping.class);
 
         Map<String,String> guidsCreated = guidMapping.getGuidAssignments();
         assertEquals(guidsCreated.size(), nTables * colsPerTable + nTables + 1);

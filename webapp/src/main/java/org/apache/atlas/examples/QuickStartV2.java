@@ -420,8 +420,8 @@ public class QuickStartV2 {
         entity.setAttribute("createTime", System.currentTimeMillis());
         entity.setAttribute("lastAccessTime", System.currentTimeMillis());
         entity.setAttribute("retention", System.currentTimeMillis());
-        entity.setAttribute("db", db.getAtlasObjectId());
-        entity.setAttribute("sd", sd.getAtlasObjectId());
+        entity.setAttribute("db", AtlasTypeUtil.getAtlasObjectId(db));
+        entity.setAttribute("sd", AtlasTypeUtil.getAtlasObjectId(sd));
         entity.setAttribute("columns", AtlasTypeUtil.toObjectIds(columns));
 
         return createInstance(entity, traitNames);

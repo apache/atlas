@@ -362,7 +362,7 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     boolean isAssignableFrom(AtlasObjectId objId) {
-        boolean ret = objId.isValid() && (StringUtils.equals(objId.getTypeName(), getTypeName()) || isSuperTypeOf(objId.getTypeName()));
+        boolean ret = AtlasTypeUtil.isValid(objId) && (StringUtils.equals(objId.getTypeName(), getTypeName()) || isSuperTypeOf(objId.getTypeName()));
 
         return ret;
     }

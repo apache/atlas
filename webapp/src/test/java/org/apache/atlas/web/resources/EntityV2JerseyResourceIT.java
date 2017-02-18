@@ -126,7 +126,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
             AtlasEntity tableInstance = new AtlasEntity(HIVE_TABLE_TYPE_V2, "name", tableName);
             tableInstance.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
-            tableInstance.setAttribute("db", databaseInstance.getAtlasObjectId());
+            tableInstance.setAttribute("db", AtlasTypeUtil.getAtlasObjectId(databaseInstance));
             tableInstance.setAttribute("description", tableName + " table");
             entities.addEntity(tableInstance);
 
@@ -137,7 +137,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
                 columnInstance.setAttribute("dataType", "String");
                 columnInstance.setAttribute("comment", "column " + j + " for table " + i);
 
-                columns.add(columnInstance.getAtlasObjectId());
+                columns.add(AtlasTypeUtil.getAtlasObjectId(columnInstance));
 
                 entities.addReferredEntity(columnInstance);
             }

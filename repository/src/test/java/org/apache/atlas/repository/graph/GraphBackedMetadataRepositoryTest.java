@@ -240,7 +240,6 @@ public class GraphBackedMetadataRepositoryTest {
 
         CreateUpdateEntitiesResult result = repositoryService.createEntities(deptInstance);
 
-        System.out.println(result.getGuidMapping().toString());
         validateGuidMapping(toValidate, result);
     }
 
@@ -362,7 +361,6 @@ public class GraphBackedMetadataRepositoryTest {
 
         CreateUpdateEntitiesResult result = repositoryService.createEntities(deptInstance);
 
-        System.out.println(result.getGuidMapping().toString());
         assertEquals(result.getCreatedEntities().size(), toVerify.size());
 
         validateGuidMapping(toVerify, result);

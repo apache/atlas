@@ -191,8 +191,8 @@ public class AtlasEntityStoreV1Test {
         AtlasEntity col2 = TestUtilsV2.createColumnEntity(tableEntity);
         col2.setAttribute(TestUtilsV2.NAME, "col2");
 
-        columns.add(col1.getAtlasObjectId());
-        columns.add(col2.getAtlasObjectId());
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col1));
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col2));
 
         tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
@@ -213,8 +213,8 @@ public class AtlasEntityStoreV1Test {
         AtlasEntity col4 = TestUtilsV2.createColumnEntity(tableEntity);
         col4.setAttribute(TestUtilsV2.NAME, "col4");
 
-        columns.add(col3.getAtlasObjectId());
-        columns.add(col4.getAtlasObjectId());
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col3));
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col4));
         tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         entitiesInfo.addReferredEntity(col3);
@@ -228,8 +228,8 @@ public class AtlasEntityStoreV1Test {
 
         //Swap elements
         columns.clear();
-        columns.add(col4.getAtlasObjectId());
-        columns.add(col3.getAtlasObjectId());
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col4));
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col3));
         tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
         init();
@@ -321,7 +321,7 @@ public class AtlasEntityStoreV1Test {
 
         AtlasEntity col0 = new AtlasEntity(TestUtilsV2.COLUMN_TYPE, TestUtilsV2.NAME, "test1");
         col0.setAttribute("type", "string");
-        col0.setAttribute("table", tableEntity.getAtlasObjectId());
+        col0.setAttribute("table", AtlasTypeUtil.getAtlasObjectId(tableEntity));
 
         AtlasEntityWithExtInfo col0WithExtendedInfo = new AtlasEntityWithExtInfo(col0);
         col0WithExtendedInfo.addReferredEntity(tableEntity);
@@ -332,7 +332,7 @@ public class AtlasEntityStoreV1Test {
 
         AtlasEntity col1 = new AtlasEntity(TestUtils.COLUMN_TYPE, TestUtilsV2.NAME, "test2");
         col1.setAttribute("type", "string");
-        col1.setAttribute("table", tableEntity.getAtlasObjectId());
+        col1.setAttribute("table", AtlasTypeUtil.getAtlasObjectId(tableEntity));
 
         AtlasEntityWithExtInfo col1WithExtendedInfo = new AtlasEntityWithExtInfo(col1);
         col1WithExtendedInfo.addReferredEntity(tableEntity);
@@ -342,8 +342,8 @@ public class AtlasEntityStoreV1Test {
         entityStore.createOrUpdate(new AtlasEntityStream(col1WithExtendedInfo), false);
 
         Map<String, AtlasObjectId> columnsMap = new HashMap<String, AtlasObjectId>();
-        columnsMap.put("col0", col0.getAtlasObjectId());
-        columnsMap.put("col1", col1.getAtlasObjectId());
+        columnsMap.put("col0", AtlasTypeUtil.getAtlasObjectId(col0));
+        columnsMap.put("col1", AtlasTypeUtil.getAtlasObjectId(col1));
 
         tableEntity.setAttribute(TestUtils.COLUMNS_MAP, columnsMap);
 
@@ -356,8 +356,8 @@ public class AtlasEntityStoreV1Test {
 
         //Swap elements
         columnsMap.clear();
-        columnsMap.put("col0", col1.getAtlasObjectId());
-        columnsMap.put("col1", col0.getAtlasObjectId());
+        columnsMap.put("col0", AtlasTypeUtil.getAtlasObjectId(col1));
+        columnsMap.put("col1", AtlasTypeUtil.getAtlasObjectId(col0));
 
         tableEntity.setAttribute(TestUtils.COLUMNS_MAP, columnsMap);
         init();
@@ -367,7 +367,7 @@ public class AtlasEntityStoreV1Test {
 
         //Drop the first key and change the class type as well to col0
         columnsMap.clear();
-        columnsMap.put("col0", col0.getAtlasObjectId());
+        columnsMap.put("col0", AtlasTypeUtil.getAtlasObjectId(col0));
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
         AtlasEntityHeader tableDefinition7 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
@@ -695,7 +695,7 @@ public class AtlasEntityStoreV1Test {
         tblEntity.setAttribute("name", RandomStringUtils.randomAlphanumeric(10));
         tblEntity.setAttribute("type", "type");
         tblEntity.setAttribute("tableType", "MANAGED");
-        tblEntity.setAttribute("database", updatedDbEntity.getAtlasObjectId());
+        tblEntity.setAttribute("database", AtlasTypeUtil.getAtlasObjectId(updatedDbEntity));
 
         // create new column entity
         AtlasEntity col1 = TestUtilsV2.createColumnEntity(tblEntity);
@@ -704,8 +704,8 @@ public class AtlasEntityStoreV1Test {
         col2.setAttribute(TestUtilsV2.NAME, "col2");
 
         List<AtlasObjectId> columns = new ArrayList<>();
-        columns.add(col1.getAtlasObjectId());
-        columns.add(col2.getAtlasObjectId());
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col1));
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col2));
 
         tblEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
 
@@ -731,8 +731,8 @@ public class AtlasEntityStoreV1Test {
         col4.setAttribute("description", "description col4");
 
         columns.clear();
-        columns.add(col3.getAtlasObjectId());
-        columns.add(col4.getAtlasObjectId());
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col3));
+        columns.add(AtlasTypeUtil.getAtlasObjectId(col4));
 
         tblEntity = new AtlasEntity(TABLE_TYPE);
         tblEntity.setGuid(createdTblEntity.getGuid());
@@ -774,7 +774,9 @@ public class AtlasEntityStoreV1Test {
         columnEntity3.setAttribute("description", "desc for col3");
         entitiesInfo.addReferredEntity(columnEntity3);
 
-        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity1.getAtlasObjectId(), columnEntity2.getAtlasObjectId(), columnEntity3.getAtlasObjectId()));
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity1),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity2),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity3)));
 
         init();
 
@@ -801,7 +803,9 @@ public class AtlasEntityStoreV1Test {
 
         final AtlasEntity tableEntity1 = new AtlasEntity(TABLE_TYPE);
         tableEntity1.setGuid(createdTblHeader.getGuid());
-        tableEntity1.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(col1.getAtlasObjectId(), col2.getAtlasObjectId(), col3.getAtlasObjectId()));
+        tableEntity1.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(col1),
+                AtlasTypeUtil.getAtlasObjectId(col2),
+                AtlasTypeUtil.getAtlasObjectId(col3)));
         AtlasEntitiesWithExtInfo tableInfo = new AtlasEntitiesWithExtInfo(tableEntity1);
         tableInfo.addReferredEntity(col1.getGuid(), col1);
         tableInfo.addReferredEntity(col2.getGuid(), col2);
@@ -862,7 +866,7 @@ public class AtlasEntityStoreV1Test {
             case OBJECT_ID_TYPE:
                 Assert.assertTrue(actual instanceof AtlasObjectId);
                 String guid = ((AtlasObjectId) actual).getGuid();
-                Assert.assertTrue(AtlasEntity.isAssigned(guid), "expected assigned guid. found " + guid);
+                Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(guid), "expected assigned guid. found " + guid);
                 break;
 
             case PRIMITIVE:

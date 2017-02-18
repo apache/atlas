@@ -28,6 +28,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
@@ -201,7 +202,7 @@ public class EntityResource {
             }
         }
         if(mapping != null) {
-            response.put(AtlasClient.GUID_ASSIGNMENTS, new JSONObject(mapping.toString()).get(AtlasClient.GUID_ASSIGNMENTS));
+            response.put(AtlasClient.GUID_ASSIGNMENTS, new JSONObject(AtlasType.toJson(mapping)).get(AtlasClient.GUID_ASSIGNMENTS));
         }
         return response;
     }

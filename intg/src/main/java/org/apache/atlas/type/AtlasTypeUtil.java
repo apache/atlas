@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -35,7 +36,9 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -46,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -309,7 +313,7 @@ public class AtlasTypeUtil {
         if (CollectionUtils.isNotEmpty(entities)) {
             for (AtlasEntity entity : entities) {
                 if (entity != null) {
-                    ret.add(entity.getAtlasObjectId());
+                    ret.add(AtlasTypeUtil.getAtlasObjectId(entity));
                 }
             }
         }
@@ -323,5 +327,55 @@ public class AtlasTypeUtil {
         }
 
         return map;
+    }
+
+    public static AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
+        return new AtlasObjectId(entity.getGuid(), entity.getTypeName());
+    }
+
+    public static AtlasObjectId getAtlasObjectId(AtlasEntityHeader header) {
+        return new AtlasObjectId(header.getGuid(), header.getTypeName());
+    }
+
+    public static boolean isValidGuid(AtlasObjectId objId) {
+        return isValidGuid(objId.getGuid());
+    }
+
+    public static boolean isAssignedGuid(AtlasObjectId objId) {
+        return isAssignedGuid(objId.getGuid());
+    }
+
+    public static boolean isUnAssignedGuid(AtlasObjectId objId) {
+        return isUnAssignedGuid(objId.getGuid());
+    }
+
+    public static boolean isValidGuid(String guid) {
+        return isAssignedGuid(guid) || isUnAssignedGuid(guid);
+    }
+
+    public static boolean isAssignedGuid(String guid) {
+        if (guid != null) {
+            try {
+                UUID.fromString(guid);
+                return true;
+            } catch (IllegalArgumentException e) {
+                // ignore
+            }
+        }
+        return false;
+    }
+
+    public static boolean isUnAssignedGuid(String guid) {
+        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
+    }
+
+    public static boolean isValid(AtlasObjectId objId) {
+        if (isAssignedGuid(objId) || isUnAssignedGuid(objId)) {
+            return true;
+        } else if (StringUtils.isNotEmpty(objId.getTypeName()) && MapUtils.isNotEmpty(objId.getUniqueAttributes())) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.type.AtlasType;
 
 /**
  * Result from creating or updating entities.
@@ -77,7 +78,7 @@ public class CreateUpdateEntitiesResult {
      */
     public static CreateUpdateEntitiesResult fromJson(String json) throws AtlasServiceException {
 
-        GuidMapping guidMapping = GuidMapping.fromString(json);
+        GuidMapping guidMapping = AtlasType.fromJson(json, GuidMapping.class);
         EntityResult entityResult = EntityResult.fromString(json);
         CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
         result.setEntityResult(entityResult);

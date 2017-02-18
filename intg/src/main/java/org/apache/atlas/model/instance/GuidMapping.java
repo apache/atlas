@@ -26,13 +26,11 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * This stores a mapping of guid assignments that were made during the processing
@@ -45,15 +43,13 @@ import com.google.gson.GsonBuilder;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class GuidMapping {
+    private static final long serialVersionUID = 1L;
 
-    @JsonIgnore
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     private Map<String,String> guidAssignments;
 
 
     public GuidMapping() {
-
     }
 
     public GuidMapping(Map<String,String> guidAssignments) {
@@ -68,17 +64,23 @@ public class GuidMapping {
     public void setGuidAssignments(Map<String,String> guidAssignments) {
         this.guidAssignments = guidAssignments;
     }
-    /**
-     * Converts the GuidMapping to json
-     */
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("GuidMapping{");
+        sb.append("guidAssignments={");
+        AtlasBaseTypeDef.dumpObjects(guidAssignments, sb);
+        sb.append('}');
+        sb.append('}');
+
+        return sb;
+    }
+
     @Override
     public String toString() {
-        return gson.toJson(this);
+        return toString(new StringBuilder()).toString();
     }
-
-    @JsonIgnore
-    public static GuidMapping fromString(String json) {
-        return gson.fromJson(json, GuidMapping.class);
-    }
-
 }

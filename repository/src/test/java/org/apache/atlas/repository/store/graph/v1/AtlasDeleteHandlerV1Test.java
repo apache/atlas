@@ -198,7 +198,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
         final AtlasEntity columnEntity = TestUtilsV2.createColumnEntity(tableEntity);
-        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity.getAtlasObjectId()));
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity)));
 
         AtlasEntity.AtlasEntityWithExtInfo input = new AtlasEntity.AtlasEntityWithExtInfo(tableEntity);
         input.addReferredEntity(columnEntity);
@@ -220,7 +220,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertColumnForTestDeleteReference(entityStore.getById(tableCreated.getGuid()));
 
         //Deleting table should update process
-        AtlasEntity process = TestUtilsV2.createProcessEntity(null, Arrays.asList(tableCreated.getAtlasObjectId()));
+        AtlasEntity process = TestUtilsV2.createProcessEntity(null, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(tableCreated)));
         init();
         final EntityMutationResponse processCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(process), false);
 
@@ -249,7 +249,9 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntity columnEntity3 = TestUtilsV2.createColumnEntity(tableEntity);
         entitiesInfo.addReferredEntity(columnEntity3);
 
-        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity1.getAtlasObjectId(), columnEntity2.getAtlasObjectId(), columnEntity3.getAtlasObjectId()));
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity1),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity2),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity3)));
 
         init();
 
@@ -287,7 +289,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         AtlasEntity.AtlasEntitiesWithExtInfo entitiesInfo1 = new AtlasEntity.AtlasEntitiesWithExtInfo(tableEntity1);
         final AtlasEntity columnEntity3New = TestUtilsV2.createColumnEntity(tableEntity1, (String) column3Created.getAttribute(NAME));
-        tableEntity1.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity3New.getAtlasObjectId()));
+        tableEntity1.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity3New)));
         entitiesInfo1.addReferredEntity(columnEntity3New);
 
         init();
@@ -357,9 +359,9 @@ public abstract class AtlasDeleteHandlerV1Test {
         Assert.assertNotNull(modificationTimestampPreUpdate);
 
         AtlasEntity maxEmployee = getEmployeeByName(hrDept, "Max");
-        maxEmployee.setAttribute("mentor", johnEmployeeCreated.getAtlasObjectId());
-        maxEmployee.setAttribute("department", deptCreated.getAtlasObjectId());
-        maxEmployee.setAttribute("manager", janeEmployeeCreated.getAtlasObjectId());
+        maxEmployee.setAttribute("mentor", AtlasTypeUtil.getAtlasObjectId(johnEmployeeCreated));
+        maxEmployee.setAttribute("department", AtlasTypeUtil.getAtlasObjectId(deptCreated));
+        maxEmployee.setAttribute("manager", AtlasTypeUtil.getAtlasObjectId(janeEmployeeCreated));
 
         init();
         EntityMutationResponse entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
@@ -379,7 +381,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
 
         // Update max's mentor reference to jane.
-        maxEmployee.setAttribute("mentor", janeEmployeeCreated.getAtlasObjectId());
+        maxEmployee.setAttribute("mentor", AtlasTypeUtil.getAtlasObjectId(janeEmployeeCreated));
         init();
         entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
         assertEquals(entityResult.getUpdatedEntities().size(), 1);
@@ -400,7 +402,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         Id juliusGuid = julius.getId();
 
         init();
-        maxEmployee.setAttribute("manager", juliusEmployeeCreated.getAtlasObjectId());
+        maxEmployee.setAttribute("manager", AtlasTypeUtil.getAtlasObjectId(juliusEmployeeCreated));
         entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
         //TODO ATLAS-499 should have updated julius' subordinates
         assertEquals(entityResult.getUpdatedEntities().size(), 2);
@@ -625,7 +627,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         AtlasStruct nestedStructInstance = new AtlasStruct("NestedStruct");
         Struct traitInstance = new Struct("TestTrait");
         structContainerEntity.setAttribute("struct", structInstance);
-        structInstance.setAttribute("target", ImmutableList.of(structTargetEntity.getAtlasObjectId()));
+        structInstance.setAttribute("target", ImmutableList.of(AtlasTypeUtil.getAtlasObjectId(structTargetEntity)));
         structInstance.setAttribute("nestedStructs", ImmutableList.of(nestedStructInstance));
 
         AtlasEntity.AtlasEntitiesWithExtInfo structCreationObj = new AtlasEntity.AtlasEntitiesWithExtInfo();
@@ -728,7 +730,9 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntity columnEntity3 = TestUtilsV2.createColumnEntity(tableEntity);
         entitiesInfo.addReferredEntity(columnEntity3);
 
-        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(columnEntity1.getAtlasObjectId(), columnEntity2.getAtlasObjectId(), columnEntity3.getAtlasObjectId()));
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity1),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity2),
+                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity3)));
 
         init();
 
