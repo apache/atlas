@@ -23,6 +23,7 @@ import com.google.inject.Singleton;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
@@ -73,6 +74,7 @@ public class AuditFilter implements Filter {
             currentThread.setName(formatName(oldName, requestId));
             RequestContext requestContext = RequestContext.createContext();
             requestContext.setUser(user);
+            RequestContextV1.get().setUser(user);
             recordAudit(httpRequest, requestTimeISO9601, user);
             filterChain.doFilter(request, response);
         } finally {
@@ -81,6 +83,7 @@ public class AuditFilter implements Filter {
             currentThread.setName(oldName);
             recordMetrics();
             RequestContext.clear();
+            RequestContextV1.clear();
         }
     }
 

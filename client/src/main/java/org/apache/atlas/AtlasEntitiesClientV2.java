@@ -43,11 +43,11 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
 
     private static final APIInfo GET_ENTITY_BY_GUID         = new APIInfo(ENTITY_API + "guid/%s", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo GET_ENTITY_BY_ATTRIBUTE    = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ENTITY              = new APIInfo(ENTITY_API, HttpMethod.POST, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITY              = CREATE_ENTITY;
-    private static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.PUT, Response.Status.OK);
+    public  static final APIInfo CREATE_ENTITY              = new APIInfo(ENTITY_API, HttpMethod.POST, Response.Status.OK);
+    public  static final APIInfo UPDATE_ENTITY              = CREATE_ENTITY;
+    public  static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.PUT, Response.Status.OK);
     private static final APIInfo DELETE_ENTITY_BY_GUID      = new APIInfo(ENTITY_API + "guid/%s", HttpMethod.DELETE, Response.Status.OK);
-    private static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.DELETE, Response.Status.OK);
+    public  static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/%s", HttpMethod.DELETE, Response.Status.OK);
 
     private static final APIInfo GET_ENTITIES_BY_GUIDS    = new APIInfo(ENTITY_API + "bulk/", HttpMethod.GET, Response.Status.OK);
     private static final APIInfo CREATE_ENTITIES          = new APIInfo(ENTITY_API + "bulk/", HttpMethod.POST, Response.Status.OK);
