@@ -18,22 +18,25 @@
 package org.apache.atlas.type;
 
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.codehaus.jackson.map.ObjectMapper;
 
+
+import java.io.IOException;
 import java.util.List;
+
+
 
 
 /**
  * base class that declares interface for all Atlas types.
  */
+
 public abstract class AtlasType {
 
-    private static final Gson GSON =
-            new GsonBuilder().serializeNulls().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final String       typeName;
     private final TypeCategory typeCategory;
@@ -93,12 +96,23 @@ public abstract class AtlasType {
         return this;
     }
 
-
     public static String toJson(Object obj) {
-        return GSON.toJson(obj);
+        String ret;
+        try {
+            ret = mapper.writeValueAsString(obj);
+        }catch (IOException e){
+            ret = null;
+        }
+        return ret;
     }
 
     public static <T> T fromJson(String jsonStr, Class<T> type) {
-        return GSON.fromJson(jsonStr, type);
+        T ret;
+        try {
+            ret =  mapper.readValue(jsonStr, type);
+        }catch (IOException e){
+            ret = null;
+        }
+        return ret;
     }
 }

@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.web.adapters;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
@@ -36,6 +34,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 import org.apache.atlas.web.rest.EntityREST;
@@ -254,11 +253,9 @@ public class TestEntitiesREST {
 
     AtlasEntity serDeserEntity(AtlasEntity entity) throws IOException {
         //Convert from json to object and back to trigger the case where it gets translated to a map for attributes instead of AtlasEntity
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        String entityJson = mapper.writeValueAsString(entity);
-        //JSON from String to Object
-        AtlasEntity newEntity = mapper.readValue(entityJson, AtlasEntity.class);
+        String      jsonString = AtlasType.toJson(entity);
+        AtlasEntity newEntity  = AtlasType.fromJson(jsonString, AtlasEntity.class);
+
         return newEntity;
     }
 

@@ -35,6 +35,10 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -44,12 +48,18 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Client for metadata.
@@ -243,6 +253,11 @@ public class AtlasClient extends AtlasBaseClient {
         }
     }
 
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class EntityResult {
         public static final String OP_CREATED = "created";
         public static final String OP_UPDATED = "updated";
@@ -274,14 +289,26 @@ public class AtlasClient extends AtlasBaseClient {
             return list;
         }
 
+        public Map<String, List<String>> getEntities(){
+            return entities;
+        }
+
+        public void setEntities(Map<String, List<String>> entities){
+            this.entities = entities;
+        }
+
+        @JsonIgnore
         public List<String> getCreatedEntities() {
             return get(OP_CREATED);
         }
 
+        @JsonIgnore
         public List<String> getUpdateEntities() {
             return get(OP_UPDATED);
         }
 
+
+        @JsonIgnore
         public List<String> getDeletedEntities() {
             return get(OP_DELETED);
         }
