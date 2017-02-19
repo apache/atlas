@@ -81,8 +81,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getTaxonomy(null, uriInfo, taxonomyName);
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         Map<String, Object> requestProperties = request.getQueryProperties();
         assertEquals(requestProperties.size(), 1);
@@ -122,8 +120,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getTaxonomies(null, uriInfo);
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         assertTrue(request.getQueryProperties().isEmpty());
         assertEquals(request.getQueryString(), "name:testTaxonomy");
@@ -154,8 +150,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.createTaxonomy(body, null, uriInfo, "testTaxonomy");
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 2);
@@ -190,8 +184,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.deleteTaxonomy(null, uriInfo, "testTaxonomy");
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
@@ -232,8 +224,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getTaxonomyTerm(null, uriInfo, taxonomyName, termName);
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         Map<String, Object> requestProperties = request.getQueryProperties();
         assertEquals(requestProperties.size(), 1);
@@ -273,8 +263,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getTaxonomyTerms(null, uriInfo, "testTaxonomy");
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
@@ -322,8 +310,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getSubTerms(null, uriInfo, "testTaxonomy", "testTerm", "/terms/testTerm2");
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
@@ -375,8 +361,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, serializer);
         Response response = service.getSubTerms(null, uriInfo, "testTaxonomy", "testTerm", "/terms/testTerm2/terms");
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
         TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
@@ -412,8 +396,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.createTerm(body, null, uriInfo, taxonomyName, termName);
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 2);
@@ -453,8 +435,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.createSubTerm(body, null, uriInfo, taxonomyName, termName, "/terms/testTerm2");
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 2);
         assertEquals(request.getQueryProperties().get("description"), "test description");
@@ -490,8 +470,6 @@ public class TaxonomyServiceTest {
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.deleteTerm(null, uriInfo, "testTaxonomy", "testTerm");
 
-        assertTrue(service.wasTransactionInitialized());
-
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
         TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
@@ -525,8 +503,6 @@ public class TaxonomyServiceTest {
         TestTaxonomyService service = new TestTaxonomyService(
                 metadataService, taxonomyResourceProvider, termResourceProvider, null);
         Response response = service.deleteSubTerm(null, uriInfo, "testTaxonomy", "testTerm", "terms/testTerm2");
-
-        assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryProperties().size(), 1);
@@ -574,8 +550,5 @@ public class TaxonomyServiceTest {
             return testSerializer;
         }
 
-        public boolean wasTransactionInitialized() {
-            return transactionInitialized;
-        }
     }
 }
