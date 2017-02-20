@@ -224,7 +224,7 @@ public abstract class AtlasHook {
         try {
             ret = UserGroupInformation.isLoginKeytabBased();
         } catch (Exception excp) {
-            LOG.error("Error in determining keytab for KafkaClient-JAAS config", excp);
+            LOG.warn("Error in determining keytab for KafkaClient-JAAS config", excp);
         }
 
         return ret;
@@ -236,7 +236,7 @@ public abstract class AtlasHook {
         try {
             ret = UserGroupInformation.isLoginTicketBased();
         } catch (Exception excp) {
-            LOG.error("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
+            LOG.warn("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
         }
 
         return ret;

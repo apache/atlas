@@ -9,12 +9,15 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1546: Changed to LOG.warn instead error in Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhatt)
+ATLAS-1569 Clear contents of RequestContextV1 at the end of the request (mneethiraj)
+ATLAS-1570 Fix for Taxonomy service test failures (apoorvnaik via mneethiraj)
 ATLAS-1568 moved helper methods from org.apache.atlas.model package classes into an utility class (mneethiraj)
 ATLAS-1566 replace GSON ser-de with ObjectMapper ser-de (svimal2016 via mneethiraj)
 ATLAS-1551 auto update of reverse references in V1 API (dkantor)
 ATLAS-1565 Create EntityREST endpoints for delete operations (sarathkumarsubramanian via svimal2106)
 ATLAS-1547 Added tests for hard delete (sumasai)
-ATLAS-1546 (ATLAS-1546.3.patch)Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhat)
+ATLAS-1546 (ATLAS-1546.3.patch)Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhatt)
 ATLAS-1503 Export/import support to copy data between Atlas instances (ashutoshm via mneethiraj)
 ATLAS-1554 v2 EntityREST implementation for entity partial update (sarathkumarsubramanian  via mneethiraj)
 ATLAS-1547 Fix DeleteHandlerV1 for new model changes and add tests (sumasai)
