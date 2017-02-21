@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
@@ -31,11 +32,8 @@ import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructFormatConverter.class);
@@ -119,21 +117,22 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         return ret;
     }
 
-    protected Map<String, Object> fromV2ToV1(AtlasStructType structType, Map attributes, ConverterContext context) throws AtlasBaseException {
+    protected Map<String, Object> fromV2ToV1(AtlasStructType structType, Map<String, Object> attributes, ConverterContext context) throws AtlasBaseException {
         Map<String, Object> ret = null;
 
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
 
             // Only process the requested/set attributes
-            for (Object attribKey : attributes.keySet()) {
-                AtlasStructType.AtlasAttribute attr = structType.getAttribute((String) attribKey);
-                AtlasType attrType = attr.getAttributeType();
+            for (String attrName : attributes.keySet()) {
+                AtlasAttribute attr = structType.getAttribute(attrName);
 
-                if (attrType == null) {
-                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getName());
+                if (attr == null) {
+                    LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
                     continue;
                 }
+
+                AtlasType attrType = attr.getAttributeType();
 
                 Object v2Value = attributes.get(attr.getName());
                 Object v1Value;
@@ -155,14 +154,15 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
             // Only process the requested/set attributes
             for (Object attribKey : attributes.keySet()) {
-                AtlasStructType.AtlasAttribute attr = structType.getAttribute((String) attribKey);
+                String         attrName = attribKey.toString();
+                AtlasAttribute attr     = structType.getAttribute(attrName);
 
-                AtlasType attrType = attr.getAttributeType();
-
-                if (attrType == null) {
-                    LOG.warn("ignored attribute {}.{}: failed to find AtlasType", structType.getTypeName(), attr.getName());
+                if (attr == null) {
+                    LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
                     continue;
                 }
+
+                AtlasType attrType = attr.getAttributeType();
 
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
                 Object               v1Value       = attributes.get(attr.getName());
