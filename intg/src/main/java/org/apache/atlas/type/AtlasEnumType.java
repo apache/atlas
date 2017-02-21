@@ -91,4 +91,24 @@ public class AtlasEnumType extends AtlasType {
 
         return null;
     }
+
+    public AtlasEnumElementDef getEnumElementDef(String value) {
+        if (value != null) {
+            return elementDefs.get(value.toLowerCase());
+        }
+
+        return null;
+    }
+
+    public AtlasEnumElementDef getEnumElementDef(Number ordinal) {
+        if (ordinal != null) {
+            for (AtlasEnumElementDef elementDef : elementDefs.values()) {
+                if (elementDef.getOrdinal().longValue() == ordinal.longValue()) {
+                    return elementDef;
+                }
+            }
+        }
+
+        return null;
+    }
 }

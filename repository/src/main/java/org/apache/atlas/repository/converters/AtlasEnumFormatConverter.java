@@ -20,8 +20,13 @@ package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.types.EnumValue;
+
+import java.util.Map;
 
 
 public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
@@ -31,12 +36,67 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
 
     @Override
     public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        return type.getNormalizedValue(v1Obj);
+        String ret = null;
+
+        if (v1Obj == null || !(type instanceof AtlasEnumType)) {
+            return ret;
+        }
+
+        Object v1Value = null;
+
+        if (v1Obj instanceof EnumValue) {
+            EnumValue enumValue = (EnumValue)v1Obj;
+
+            v1Value = enumValue.value;
+
+            if (v1Value == null) {
+                v1Value = enumValue.ordinal;
+            }
+        } else if (v1Obj instanceof Map) {
+            Map mapValue = (Map)v1Obj;
+
+            v1Value = mapValue.get("value");
+
+            if (v1Value == null) {
+                v1Value = mapValue.get("ordinal");
+            }
+        }
+
+        if (v1Value == null) { // could be 'value' or 'ordinal'
+            v1Value = v1Obj;
+        }
+
+        AtlasEnumElementDef elementDef;
+
+        if (v1Value instanceof Number) {
+            elementDef = ((AtlasEnumType)type).getEnumElementDef((Number) v1Value);
+        } else {
+            elementDef = ((AtlasEnumType)type).getEnumElementDef(v1Value.toString());
+        }
+
+        if (elementDef != null) {
+            ret = elementDef.getValue();
+        }
+
+        return ret;
     }
 
     @Override
     public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        return type.getNormalizedValue(v2Obj);
+        EnumValue ret = null;
+
+        if (v2Obj == null || !(type instanceof AtlasEnumType)) {
+            return ret;
+        }
+
+        AtlasEnumType       enumType   = (AtlasEnumType) type;
+        AtlasEnumElementDef elementDef = enumType.getEnumElementDef(v2Obj.toString());
+
+        if (elementDef != null) {
+            ret = new EnumValue(elementDef.getValue(), elementDef.getOrdinal());
+        }
+
+        return ret;
     }
 }
 
