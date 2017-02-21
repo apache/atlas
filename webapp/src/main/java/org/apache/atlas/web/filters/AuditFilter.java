@@ -74,7 +74,6 @@ public class AuditFilter implements Filter {
             currentThread.setName(formatName(oldName, requestId));
             RequestContext requestContext = RequestContext.createContext();
             requestContext.setUser(user);
-            RequestContextV1.get().setUser(user);
             recordAudit(httpRequest, requestTimeISO9601, user);
             filterChain.doFilter(request, response);
         } finally {

@@ -64,6 +64,10 @@ public class RequestContext {
                 }
             }
         }
+
+        // ensure that RequestContextV1 is also initialized for this request
+        RequestContextV1.get();
+
         return CURRENT_CONTEXT.get();
     }
 
@@ -111,6 +115,8 @@ public class RequestContext {
 
     public void setUser(String user) {
         this.user = user;
+
+        RequestContextV1.get().setUser(user);
     }
 
     public void recordEntityCreate(Collection<String> createdEntityIds) {

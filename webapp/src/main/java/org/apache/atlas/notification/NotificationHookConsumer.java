@@ -24,6 +24,7 @@ import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -249,7 +250,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
                 }
                 try {
-                    RequestContextV1.get().setUser(messageUser);
+                    RequestContext requestContext = RequestContext.createContext();
+                    requestContext.setUser(messageUser);
 
                     switch (message.getType()) {
                         case ENTITY_CREATE:
@@ -337,6 +339,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         return;
                     }
                 } finally {
+                    RequestContext.clear();
                     RequestContextV1.clear();
                 }
             }
