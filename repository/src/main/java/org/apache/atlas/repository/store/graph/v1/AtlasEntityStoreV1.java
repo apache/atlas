@@ -186,6 +186,10 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         for (AtlasEntityHeader h : list) {
+            if(processedGuids.contains(h.getGuid())) {
+                continue;
+            }
+
             processedGuids.add(h.getGuid());
             importResult.incrementMeticsCounter(String.format(prefix, h.getTypeName()));
         }

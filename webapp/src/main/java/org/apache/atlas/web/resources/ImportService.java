@@ -139,6 +139,6 @@ public class ImportService {
         this.entityStore.bulkImport(importSource, result);
 
         endTimestamp = System.currentTimeMillis();
-        result.incrementMeticsCounter("Duration", (int) (this.endTimestamp - this.startTimestamp));
+        result.incrementMeticsCounter("duration", (int) (this.endTimestamp - this.startTimestamp));
     }
 }
