@@ -37,9 +37,10 @@ import java.util.Objects;
 public class FilterUtil {
     public static Predicate getPredicateFromSearchFilter(SearchFilter searchFilter) {
         List<Predicate> predicates = new ArrayList<>();
-        final String type = searchFilter.getParam(SearchFilter.PARAM_TYPE);
-        final String name = searchFilter.getParam(SearchFilter.PARAM_NAME);
-        final String supertype = searchFilter.getParam(SearchFilter.PARAM_SUPERTYPE);
+
+        final String type         = searchFilter.getParam(SearchFilter.PARAM_TYPE);
+        final String name         = searchFilter.getParam(SearchFilter.PARAM_NAME);
+        final String supertype    = searchFilter.getParam(SearchFilter.PARAM_SUPERTYPE);
         final String notSupertype = searchFilter.getParam(SearchFilter.PARAM_NOT_SUPERTYPE);
 
         // Add filter for the type/category
@@ -71,31 +72,17 @@ public class FilterUtil {
                 return o instanceof AtlasType;
             }
 
-            private boolean isAtlasTypeDef(Object o) {
-                return o instanceof AtlasBaseTypeDef;
-            }
-
             @Override
             public boolean evaluate(Object o) {
-                return o != null &&
-                        (isAtlasType(o) && Objects.equals(((AtlasType) o).getTypeName(), name)) ||
-                        (isAtlasTypeDef(o) && Objects.equals(((AtlasBaseTypeDef) o).getName(), name));
+                return o != null && isAtlasType(o) && Objects.equals(((AtlasType) o).getTypeName(), name);
             }
         };
     }
 
     private static Predicate getSuperTypePredicate(final String supertype) {
         return new Predicate() {
-            private boolean isClassificationTypeDef(Object o) {
-                return o instanceof AtlasClassificationDef;
-            }
-
             private boolean isClassificationType(Object o) {
                 return o instanceof AtlasClassificationType;
-            }
-
-            private boolean isEntityTypeDef(Object o) {
-                return o instanceof AtlasEntityDef;
             }
 
             private boolean isEntityType(Object o) {
@@ -105,9 +92,7 @@ public class FilterUtil {
             @Override
             public boolean evaluate(Object o) {
                 return (isClassificationType(o) && ((AtlasClassificationType) o).getAllSuperTypes().contains(supertype))||
-                        (isClassificationTypeDef(o) && ((AtlasClassificationDef)o).getSuperTypes().contains(supertype)) ||
-                        (isEntityType(o) && ((AtlasEntityType)o).getAllSuperTypes().contains(supertype)) ||
-                        (isEntityTypeDef(o) && ((AtlasEntityDef)o).getSuperTypes().contains(supertype));
+                       (isEntityType(o) && ((AtlasEntityType)o).getAllSuperTypes().contains(supertype));
             }
         };
     }
@@ -134,27 +119,8 @@ public class FilterUtil {
                             // This shouldn't have happened
                             return false;
                     }
-                } else if (o instanceof AtlasBaseTypeDef){
-                    AtlasBaseTypeDef typeDef = (AtlasBaseTypeDef)o;
-
-                    switch (type.toUpperCase()) {
-                        case "CLASS":
-                        case "ENTITY":
-                            return typeDef.getCategory() == TypeCategory.ENTITY;
-                        case "TRAIT":
-                        case "CLASSIFICATION":
-                            return typeDef.getCategory() == TypeCategory.CLASSIFICATION;
-                        case "STRUCT":
-                            return typeDef.getCategory() == TypeCategory.STRUCT;
-                        case "ENUM":
-                            return typeDef.getCategory() == TypeCategory.ENUM;
-                        default:
-                            // This shouldn't have happened
-                            return false;
-                    }
-                } else {
-                    return false;
                 }
+                return false;
             }
         };
     }

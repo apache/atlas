@@ -338,34 +338,6 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         }
     }
 
-    @Override
-    public AtlasClassificationDefs search(SearchFilter filter) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.search({})", filter);
-        }
-
-        List<AtlasClassificationDef> classificationDefs = new ArrayList<>();
-        Iterator<AtlasVertex>        vertices           = typeDefStore.findTypeVerticesByCategory(TypeCategory.TRAIT);
-
-        while(vertices.hasNext()) {
-            AtlasVertex            vertex            = vertices.next();
-            AtlasClassificationDef classificationDef = toClassificationDef(vertex);
-
-            if (classificationDef != null) {
-                classificationDefs.add(classificationDef);
-            }
-        }
-
-        CollectionUtils.filter(classificationDefs, FilterUtil.getPredicateFromSearchFilter(filter));
-
-        AtlasClassificationDefs ret = new AtlasClassificationDefs(classificationDefs);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.search({}): {}", filter, ret);
-        }
-        return ret;
-    }
-
     private void updateVertexPreCreate(AtlasClassificationDef  classificationDef,
                                        AtlasClassificationType classificationType,
                                        AtlasVertex             vertex) {

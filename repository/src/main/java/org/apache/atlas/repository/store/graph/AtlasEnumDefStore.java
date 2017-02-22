@@ -45,6 +45,4 @@ public interface AtlasEnumDefStore {
     void deleteByName(String name) throws AtlasBaseException;
 
     void deleteByGuid(String guid) throws AtlasBaseException;
-
-    AtlasEnumDefs search(SearchFilter filter) throws AtlasBaseException;
 }

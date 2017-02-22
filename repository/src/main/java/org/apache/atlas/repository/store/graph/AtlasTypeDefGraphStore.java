@@ -552,79 +552,29 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException {
         final AtlasTypesDef typesDef = new AtlasTypesDef();
         Predicate searchPredicates = FilterUtil.getPredicateFromSearchFilter(searchFilter);
-        try {
-            List<AtlasEnumDef> enumDefs = getEnumDefStore(typeRegistry).getAll();
-            CollectionUtils.filter(enumDefs, searchPredicates);
-            typesDef.setEnumDefs(enumDefs);
-        } catch (AtlasBaseException ex) {
-            LOG.error("Failed to retrieve the EnumDefs", ex);
+
+        for(AtlasEnumType enumType : typeRegistry.getAllEnumTypes()) {
+            if (searchPredicates.evaluate(enumType)) {
+                typesDef.getEnumDefs().add(enumType.getEnumDef());
+            }
         }
 
-        try {
-            List<AtlasStructDef> structDefs = getStructDefStore(typeRegistry).getAll();
-            Collection typeCollection = CollectionUtils.collect(structDefs, new Transformer() {
-                @Override
-                public Object transform(Object o) {
-                    try {
-                        return new AtlasStructType((AtlasStructDef) o, typeRegistry);
-                    } catch (AtlasBaseException e) {
-                        LOG.warn("Type validation failed for {}", ((AtlasStructDef) o).getName(), e);
-                        return null;
-                    }
-                }
-            });
-            CollectionUtils.filter(typeCollection, searchPredicates);
-            for (Object o : typeCollection) {
-                if (o != null)
-                    typesDef.getStructDefs().add(((AtlasStructType)o).getStructDef());
+        for(AtlasStructType structType : typeRegistry.getAllStructTypes()) {
+            if (searchPredicates.evaluate(structType)) {
+                typesDef.getStructDefs().add(structType.getStructDef());
             }
-        } catch (AtlasBaseException ex) {
-            LOG.error("Failed to retrieve the StructDefs", ex);
         }
 
-        try {
-            List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(typeRegistry).getAll();
-
-            Collection typeCollection = CollectionUtils.collect(classificationDefs, new Transformer() {
-                @Override
-                public Object transform(Object o) {
-                    try {
-                        return new AtlasClassificationType((AtlasClassificationDef) o, typeRegistry);
-                    } catch (AtlasBaseException e) {
-                        LOG.warn("Type validation failed for {}", ((AtlasClassificationDef) o).getName(), e);
-                        return null;
-                    }
-                }
-            });
-            CollectionUtils.filter(typeCollection, searchPredicates);
-            for (Object o : typeCollection) {
-                if (o != null)
-                    typesDef.getClassificationDefs().add(((AtlasClassificationType)o).getClassificationDef());
+        for(AtlasClassificationType classificationType : typeRegistry.getAllClassificationTypes()) {
+            if (searchPredicates.evaluate(classificationType)) {
+                typesDef.getClassificationDefs().add(classificationType.getClassificationDef());
             }
-        } catch (AtlasBaseException ex) {
-            LOG.error("Failed to retrieve the ClassificationDefs", ex);
         }
 
-        try {
-            List<AtlasEntityDef> entityDefs = getEntityDefStore(typeRegistry).getAll();
-            Collection typeCollection = CollectionUtils.collect(entityDefs, new Transformer() {
-                @Override
-                public Object transform(Object o) {
-                    try {
-                        return new AtlasEntityType((AtlasEntityDef) o, typeRegistry);
-                    } catch (AtlasBaseException e) {
-                        LOG.warn("Type validation failed for {}", ((AtlasEntityDef) o).getName(), e);
-                        return null;
-                    }
-                }
-            });
-            CollectionUtils.filter(typeCollection, searchPredicates);
-            for (Object o : typeCollection) {
-                if (o != null)
-                    typesDef.getEntityDefs().add(((AtlasEntityType)o).getEntityDef());
+        for(AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
+            if (searchPredicates.evaluate(entityType)) {
+                typesDef.getEntityDefs().add(entityType.getEntityDef());
             }
-        } catch (AtlasBaseException ex) {
-            LOG.error("Failed to retrieve the EntityDefs", ex);
         }
 
         return typesDef;

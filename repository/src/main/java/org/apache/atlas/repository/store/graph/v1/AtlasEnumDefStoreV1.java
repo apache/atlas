@@ -250,35 +250,6 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         }
     }
 
-    @Override
-    public AtlasEnumDefs search(SearchFilter filter) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV1.search({})", filter);
-        }
-
-        List<AtlasEnumDef>    enumDefs = new ArrayList<>();
-        Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
-
-        while(vertices.hasNext()) {
-            AtlasVertex  vertex  = vertices.next();
-            AtlasEnumDef enumDef = toEnumDef(vertex);
-
-            if (enumDef != null) {
-                enumDefs.add(enumDef);
-            }
-        }
-
-        CollectionUtils.filter(enumDefs, FilterUtil.getPredicateFromSearchFilter(filter));
-
-        AtlasEnumDefs ret = new AtlasEnumDefs(enumDefs);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV1.search({}): {}", filter, ret);
-        }
-
-        return ret;
-    }
-
     private void toVertex(AtlasEnumDef enumDef, AtlasVertex vertex) {
         List<String> values = new ArrayList<>(enumDef.getElementDefs().size());
 

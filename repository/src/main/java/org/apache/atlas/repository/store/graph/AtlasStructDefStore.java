@@ -51,6 +51,4 @@ public interface AtlasStructDefStore {
     Object preDeleteByGuid(String name) throws AtlasBaseException;
 
     void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException;
-
-    AtlasStructDefs search(SearchFilter filter) throws AtlasBaseException;
 }

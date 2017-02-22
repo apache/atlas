@@ -347,35 +347,6 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         }
     }
 
-    @Override
-    public AtlasStructDefs search(SearchFilter filter) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasStructDefStoreV1.search({})", filter);
-        }
-
-        List<AtlasStructDef>  structDefs = new ArrayList<>();
-        Iterator<AtlasVertex> vertices   = typeDefStore.findTypeVerticesByCategory(TypeCategory.STRUCT);
-
-        while (vertices.hasNext()) {
-            AtlasVertex    vertex    = vertices.next();
-            AtlasStructDef structDef = toStructDef(vertex);
-
-            if (structDef != null) {
-                structDefs.add(structDef);
-            }
-        }
-
-        CollectionUtils.filter(structDefs, FilterUtil.getPredicateFromSearchFilter(filter));
-
-        AtlasStructDefs ret = new AtlasStructDefs(structDefs);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasStructDefStoreV1.search({}): {}", filter, ret);
-        }
-
-        return ret;
-    }
-
     private AtlasStructDef toStructDef(AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDef ret = null;
 
