@@ -9,6 +9,12 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1502 - Fix for not getting atlas application properties using PropertiesConfiguration sometimes, so changed to ApplicationProperties (nixonrodrigues via kevalbhatt)
+ATLAS-1586: type search improvement by avoiding unnecessary instantiation of type objects (mneethiraj)
+ATLAS-1583: fix incorrect metrics by import API (ashutoshm via mneethiraj)
+ATLAS-1571: fix for incorrect v1->v2 conversion of enum-type value (mneethiraj)
+ATLAS-1576: fix for NPE while handling unknown attributes (mneethiraj)
+ATLAS-1577: audit event generated for an entity overwrites previous event for the entity (mneethiraj)
 ATLAS-1546: Changed to LOG.warn instead error in Hive hook should choose appropriate JAAS config if host uses kerberos ticket-cache (nixonrodrigues via kevalbhatt)
 ATLAS-1569 Clear contents of RequestContextV1 at the end of the request (mneethiraj)
 ATLAS-1570 Fix for Taxonomy service test failures (apoorvnaik via mneethiraj)

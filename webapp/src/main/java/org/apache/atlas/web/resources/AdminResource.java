@@ -19,8 +19,10 @@
 package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -68,6 +70,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.commons.configuration.Configuration;
 
 import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
@@ -96,7 +99,7 @@ public class AdminResource {
     private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
     private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
     private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
-    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
+    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
     private Response version;
 
     private final ServiceState      serviceState;
@@ -104,6 +107,15 @@ public class AdminResource {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasTypeDefStore typesDefStore;
     private final AtlasEntityStore  entityStore;
+    private static Configuration atlasProperties;
+
+    static {
+        try {
+            atlasProperties = ApplicationProperties.get();
+        } catch (Exception e) {
+            LOG.info("Failed to load application properties", e);
+        }
+    }
 
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
@@ -225,10 +237,12 @@ public class AdminResource {
         }
 
         Response response;
-
+        Boolean enableTaxonomy = false;
         try {
-            PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
-            Boolean enableTaxonomy = configProperties.getBoolean(isTaxonomyEnabled, false);
+            if(atlasProperties != null) {
+                enableTaxonomy = atlasProperties.getBoolean(isTaxonomyEnabled, false);
+            }
+
             boolean isEntityUpdateAccessAllowed = false;
             boolean isEntityCreateAccessAllowed = false;
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -255,12 +269,12 @@ public class AdminResource {
             responseData.put(isTaxonomyEnabled, enableTaxonomy);
             responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
             responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
-            responseData.put(editableEntityTypes, getEditableEntityTypes(configProperties));
+            responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
             responseData.put("userName", userName);
             responseData.put("groups", groups);
 
             response = Response.ok(responseData).build();
-        } catch (JSONException | ConfigurationException e) {
+        } catch (JSONException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
 
@@ -411,10 +425,10 @@ public class AdminResource {
         return result;
     }
 
-    private String getEditableEntityTypes(PropertiesConfiguration config) {
+    private String getEditableEntityTypes(Configuration config) {
         String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
 
-        if (config.containsKey(editableEntityTypes)) {
+        if (config != null && config.containsKey(editableEntityTypes)) {
             Object value = config.getProperty(editableEntityTypes);
 
             if (value instanceof String) {
