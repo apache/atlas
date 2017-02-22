@@ -398,6 +398,24 @@ define(['require',
                         }
                     })
                 };
+                col['typeName'] = {
+                    label: "Type",
+                    cell: "Html",
+                    editable: false,
+                    sortable: false,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function(rawValue, model) {
+                            if (that.searchCollection.queryType == "DSL") {
+                                var obj = model.toJSON();
+                            } else {
+                                var obj = model.get('entity');
+                            }
+                            if (obj && obj.typeName) {
+                                return '<a title="Search ' + obj.typeName + '" href="#!/search/searchResult?query=' + obj.typeName + ' &searchType=dsl&dslChecked=true">' + obj.typeName + '</a>';
+                            }
+                        }
+                    })
+                };
                 col['owner'] = {
                     label: "Owner",
                     cell: "String",

@@ -223,9 +223,12 @@
 }
 
 .backgrid-paginator ul > .disabled > span,
-.backgrid-paginator ul > .disabled > a,
-.backgrid-paginator ul > .disabled > a:hover {
-    cursor: pointer;
+.backgrid-paginator ul > .disabled > a {
+     &:hover {
+        cursor: not-allowed;
+        background-color: #7ed3be !important;
+    }
+
 }
 
 .popover {
