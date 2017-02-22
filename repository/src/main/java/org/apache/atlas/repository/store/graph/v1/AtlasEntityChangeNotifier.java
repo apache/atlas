@@ -27,8 +27,17 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.DeleteHandler;
+import org.apache.atlas.repository.graph.FullTextMapper;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graph.GraphToTypedInstanceMapper;
+import org.apache.atlas.repository.graph.TypedInstanceToGraphMapper;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +58,23 @@ public class AtlasEntityChangeNotifier {
 
     private final Set<EntityChangeListener> entityChangeListeners;
     private final AtlasInstanceConverter    instanceConverter;
+    private final FullTextMapper fullTextMapper;
+
+    @Inject
+    private DeleteHandler deleteHandler;
 
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      AtlasInstanceConverter    instanceConverter) {
         this.entityChangeListeners = entityChangeListeners;
         this.instanceConverter     = instanceConverter;
+
+        // This is only needed for the Legacy FullTextMapper, once the V2 changes are in place this can be replaced/removed
+        AtlasGraphProvider graphProvider = new AtlasGraphProvider();
+        GraphToTypedInstanceMapper graphToTypedInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
+        TypedInstanceToGraphMapper typedInstanceToGraphMapper = new TypedInstanceToGraphMapper(graphToTypedInstanceMapper, deleteHandler);
+
+        this.fullTextMapper        = new FullTextMapper(typedInstanceToGraphMapper, graphToTypedInstanceMapper);
     }
 
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse) throws AtlasBaseException {
@@ -70,18 +90,21 @@ public class AtlasEntityChangeNotifier {
         if (CollectionUtils.isNotEmpty(createdEntities)) {
             List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(createdEntities);
 
+            doFullTextMapping(createdEntities);
             notifyListeners(typedRefInst, EntityOperation.CREATE);
         }
 
         if (CollectionUtils.isNotEmpty(updatedEntities)) {
             List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(updatedEntities);
 
+            doFullTextMapping(updatedEntities);
             notifyListeners(typedRefInst, EntityOperation.UPDATE);
         }
 
         if (CollectionUtils.isNotEmpty(partiallyUpdatedEntities)) {
             List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(partiallyUpdatedEntities);
 
+            doFullTextMapping(partiallyUpdatedEntities);
             notifyListeners(typedRefInst, EntityOperation.PARTIAL_UPDATE);
         }
 
@@ -121,5 +144,25 @@ public class AtlasEntityChangeNotifier {
         }
 
         return ret;
+    }
+
+    private void doFullTextMapping(List<AtlasEntityHeader> atlasEntityHeaders) {
+        try {
+            if(!AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
+                return;
+            }
+        } catch (AtlasException e) {
+            LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
+        }
+
+        for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
+            AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(atlasEntityHeader.getGuid());
+            try {
+                String fullText = fullTextMapper.mapRecursive(atlasVertex, true);
+                GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+            } catch (AtlasException e) {
+                LOG.error("FullText mapping failed for Vertex[ guid = {} ]", atlasEntityHeader.getGuid());
+            }
+        }
     }
 }

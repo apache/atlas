@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.repository.graph;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -34,6 +31,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
+
 public class FullTextMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapper.class);
@@ -45,8 +45,8 @@ public class FullTextMapper {
 
     private static final String FULL_TEXT_DELIMITER = " ";
 
-    FullTextMapper(TypedInstanceToGraphMapper typedInstanceToGraphMapper,
-            GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
+    public FullTextMapper(TypedInstanceToGraphMapper typedInstanceToGraphMapper,
+                          GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
         this.graphToTypedInstanceMapper = graphToTypedInstanceMapper;
         this.typedInstanceToGraphMapper = typedInstanceToGraphMapper;
     }
