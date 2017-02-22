@@ -137,7 +137,9 @@ define(['require',
                     this.decrementCounter('asyncFetchLOVCounter');
                     _.each(this.searchCollection.fullCollection.models, function(model) {
                         var obj = model.toJSON();
-                        obj['queryText'] = model.collection.queryText;
+                        if (that.searchCollection && that.searchCollection.queryText) {
+                            obj['queryText'] = that.searchCollection.queryText;
+                        }
                         that.selectStoreCollection.push(obj);
                     })
                     this.addJsonSearchData();
@@ -241,6 +243,7 @@ define(['require',
                         }
                     });
                     this.ui.entityList.html(str);
+                    this.ui.entityList.select2({});
                 }
             },
             capitalize: function(string) {
@@ -488,6 +491,10 @@ define(['require',
                 var entity = {};
                 var referredEntities = {};
                 var extractValue = function(value) {
+                    if (!value) {
+                        return value;
+                    }
+
                     if (_.isArray(value)) {
                         if (that.selectStoreCollection.length) {
                             var parseData = [];
@@ -574,6 +581,8 @@ define(['require',
                                 if (_.isString(value)) {
                                     if (value.length) {
                                         entity[datakeyEntity] = value;
+                                    } else {
+                                        entity[datakeyEntity] = null;
                                     }
                                 } else {
                                     entity[datakeyEntity] = value;
@@ -601,8 +610,8 @@ define(['require',
                             if (that.guid && that.callback) {
                                 that.callback();
                             } else {
-                                if (model.createdEntities && _.isArray(model.createdEntities) && model.createdEntities[0] && model.createdEntities[0].guid) {
-                                    that.setUrl('#!/detailPage/' + (model.createdEntities[0].guid), true);
+                                if (model.mutatedEntities && model.mutatedEntities.CREATE && _.isArray(model.mutatedEntities.CREATE) && model.mutatedEntities.CREATE[0] && model.mutatedEntities.CREATE[0].guid) {
+                                    that.setUrl('#!/detailPage/' + (model.mutatedEntities.CREATE[0].guid), true);
                                 }
                             }
                         },
@@ -646,11 +655,13 @@ define(['require',
                         var appendOption = function(optionValue) {
                             var obj = optionValue.toJSON(),
                                 labelName = (_.escape(obj.displayText) || _.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || obj.guid);
-                            optionValue.set('labelName', labelName);
-                            if (labelName) {
-                                var str = '<option>' + _.escape(labelName) + '</option>';
+                            if (obj && obj.queryText) {
+                                optionValue.set('labelName', labelName);
+                                if (labelName) {
+                                    var str = '<option>' + _.escape(labelName) + '</option>';
+                                }
+                                that.$('select[data-queryData="' + obj.queryText + '"]').append(str);
                             }
-                            this.$('select[data-queryData="' + obj.queryText + '"]').append(str);
                         }
                         _.each(this.selectStoreCollection.models, function(value) {
                             var obj = value.toJSON();
@@ -701,7 +712,7 @@ define(['require',
                             });
 
                             // Array of string.
-                            if (selectedValue.length === 0 && dataValue && dataValue.length) {
+                            if (selectedValue.length === 0 && dataValue && dataValue.length && $this.data('querydata') === "string") {
                                 var str = "";
                                 _.each(dataValue, function(obj) {
                                     if (_.isString(obj)) {
