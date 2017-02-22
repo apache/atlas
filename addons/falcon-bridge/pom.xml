@@ -215,11 +215,6 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.apache.hadoop</groupId>
-                                            <artifactId>hadoop-common</artifactId>
-                                            <version>${hadoop.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>com.google.code.gson</groupId>
                                             <artifactId>gson</artifactId>
                                             <version>${gson.version}</version>
