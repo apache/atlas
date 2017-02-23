@@ -313,7 +313,7 @@ ul {
     }
     button {
         &.editbutton[data-id="editButton"] {
-            display: none;
+            display: none !important;
         }
     }
 }
