@@ -337,5 +337,13 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
        LiteralExpression aliasName =  (LiteralExpression)fc.getArguments().get(0);
        return Collections.singletonList(aliasName.getValue().toString());
     }
+
+    @Override
+    public boolean isRepeatExpression(GroovyExpression expr) {
+        if(!(expr instanceof FunctionCallExpression)) {
+            return false;
+        }
+        return ((FunctionCallExpression)expr).getFunctionName().equals(LOOP_METHOD);
+    }
 }
 

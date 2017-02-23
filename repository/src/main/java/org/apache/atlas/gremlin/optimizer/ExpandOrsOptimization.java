@@ -288,10 +288,14 @@ public class ExpandOrsOptimization implements GremlinOptimization {
 
     private GroovyExpression removeMapFromPathsIfNeeded(GroovyExpression expr, List<LiteralExpression> aliases) {
         if(aliases.size() > 0 && factory.isSelectGeneratesMap(aliases.size())) {
+            RepeatExpressionFinder repeatExprFinder = new RepeatExpressionFinder(factory);
+            GremlinQueryOptimizer.visitCallHierarchy(expr, repeatExprFinder);
+            boolean hasRepeat = repeatExprFinder.isRepeatExpressionFound();
+
             PathExpressionFinder pathExprFinder = new PathExpressionFinder();
             GremlinQueryOptimizer.visitCallHierarchy(expr, pathExprFinder);
             boolean hasPath = pathExprFinder.isPathExpressionFound();
-            if(hasPath) {
+            if(! hasRepeat && hasPath) {
                 //the path will now start with the map that we added.  That is an artifact
                 //of the optimization process and must be removed.
                 if(expr.getType() != TraversalStepType.END && expr.getType() != TraversalStepType.NONE) {

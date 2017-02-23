@@ -440,8 +440,13 @@ class GremlinTranslator(expr: Expression,
            return GremlinExpressionFactory.INSTANCE.generateHasExpression(gPersistenceBehavior, childExpr, qualifiedPropertyName, c.symbol, persistentExprValue, fInfo);
         }
         case fil@FilterExpression(child, condExpr) => {
-            val newParent = genQuery(parent, child, inClosure);
-            return genQuery(newParent, condExpr, inClosure);
+            var newParent = genQuery(parent, child, inClosure);
+            val alias = "a" + counter.next;
+            newParent = GremlinExpressionFactory.INSTANCE.generateAliasExpression(newParent, alias);
+            val translated =  genQuery(newParent, condExpr, inClosure);
+            //we want the query to return instances of the class whose instances we are filtering out
+            //The act of filtering may traverse edges and have other side effects.
+            GremlinExpressionFactory.INSTANCE.generateBackReferenceExpression(translated, false, alias);
         }
         case l@LogicalExpression(symb, children) => {
             val translatedChildren : java.util.List[GroovyExpression] = translateList(children, false);

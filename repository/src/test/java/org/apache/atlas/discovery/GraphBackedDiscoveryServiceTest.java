@@ -1228,6 +1228,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertEquals(rows.length(), 0);
     }
 
+    @Test
+    public void testTypePreservedWhenFilterTraversesEdges() throws DiscoveryException, JSONException {
+
+        String dsl = "hive_table db.name=\"Reporting\" limit 10";
+        ImmutableSet<String> expectedTableNames = ImmutableSet.of("table1", "table2", "sales_fact_monthly_mv", "sales_fact_daily_mv");
+        String jsonResults = discoveryService.searchByDSL(dsl, null);
+        assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        JSONArray rows = results.getJSONArray("rows");
+        assertEquals(rows.length(), expectedTableNames.size());
+        for(int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            Assert.assertTrue(expectedTableNames.contains(row.get("name")));
+        }
+    }
+
     private FieldValueValidator makeCountValidator(int count) {
         return new FieldValueValidator().withFieldNames("count()").withExpectedValues(count);
     }

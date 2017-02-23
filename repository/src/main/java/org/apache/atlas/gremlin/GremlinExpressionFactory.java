@@ -649,4 +649,6 @@ public abstract class GremlinExpressionFactory {
        return aliasName.getValue().toString();
 
     }
+
+    public abstract boolean isRepeatExpression(GroovyExpression expr);
 }

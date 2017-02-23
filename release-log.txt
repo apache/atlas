@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS_1589 DSL queries return wrong object when filter traverses an edge (jnhagelberg)
 ATLAS-1590 UI : Edit Button is enabled for Deleted entities. (kevalbhatt)
 ATLAS-1487 Create Entity in UI : types list doesn't list fs_permissions (struct type) hence no entity could be created for it. (kevalbhatt)
 ATLAS-1573 Full text mapping for Entity store V2

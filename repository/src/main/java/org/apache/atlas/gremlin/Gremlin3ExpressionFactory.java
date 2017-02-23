@@ -443,4 +443,12 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
     public List<String> getAliasesRequiredByExpression(GroovyExpression expr) {
         return Collections.emptyList();
     }
+
+    @Override
+    public boolean isRepeatExpression(GroovyExpression expr) {
+        if(!(expr instanceof FunctionCallExpression)) {
+            return false;
+        }
+        return ((FunctionCallExpression)expr).getFunctionName().equals(REPEAT_METHOD);
+    }
 }
