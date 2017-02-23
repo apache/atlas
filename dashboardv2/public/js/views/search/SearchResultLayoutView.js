@@ -122,7 +122,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -355,7 +355,8 @@ define(['require',
                                 var obj = model.get('entity');
                             }
                             var nameHtml = "";
-                            var name = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid)
+
+                            var name = Utils.getName(obj);
                             if (obj.guid) {
                                 nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + '">' + name + '</a>';
                             } else {
@@ -651,6 +652,7 @@ define(['require',
                     var view = new CreateEntityLayoutView({
                         guid: guid,
                         entityDefCollection: that.entityDefCollection,
+                        typeHeaders: that.typeHeaders,
                         callback: function() {
                             that.fetchCollection();
                         }
@@ -665,6 +667,7 @@ define(['require',
                 ], function(CreateEntityLayoutView) {
                     var view = new CreateEntityLayoutView({
                         entityDefCollection: that.entityDefCollection,
+                        typeHeaders: that.typeHeaders,
                         callback: function() {
                             that.fetchCollection();
                         }

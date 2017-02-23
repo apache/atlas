@@ -330,7 +330,43 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             }
         }
     }
-
+    Utils.getName = function(collectionJSON, priorityAttribute) {
+        if (collectionJSON) {
+            if (collectionJSON.attributes && collectionJSON.attributes[priorityAttribute]) {
+                return _.escape(collectionJSON.attributes[priorityAttribute]);
+            }
+            if (collectionJSON[priorityAttribute]) {
+                return _.escape(collectionJSON[priorityAttribute]);
+            }
+            if (collectionJSON.attributes) {
+                if (collectionJSON.attributes.name) {
+                    return _.escape(collectionJSON.attributes.name);
+                }
+                if (collectionJSON.attributes.qualifiedName) {
+                    return _.escape(collectionJSON.attributes.qualifiedName);
+                }
+                if (collectionJSON.attributes.id) {
+                    return _.escape(collectionJSON.attributes.id);
+                }
+            }
+            if (collectionJSON.name) {
+                return _.escape(collectionJSON.name);
+            }
+            if (collectionJSON.qualifiedName) {
+                return _.escape(collectionJSON.qualifiedName);
+            }
+            if (collectionJSON.displayText) {
+                return _.escape(collectionJSON.displayText);
+            }
+            if (collectionJSON.guid) {
+                return _.escape(collectionJSON.guid);
+            }
+            if (collectionJSON.id) {
+                return _.escape(collectionJSON.id);
+            }
+        }
+        return "-";
+    }
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
         loaderEl.css({
             'display': 'block',

@@ -140,10 +140,10 @@ define(['require',
                 var that = this,
                     str = '';
                 that.collection.fullCollection.comparator = function(model) {
-                    return model.get('name').toLowerCase();
+                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
                 };
                 that.collection.fullCollection.sort().each(function(model) {
-                    var name = _.escape(model.get('name'));
+                    var name = Utils.getName(model.toJSON(), 'name');
                     if (name.indexOf(".") > -1) {
                         return;
                     }

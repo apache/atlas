@@ -102,7 +102,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection'));
+                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders'));
                 this.bindEvents();
             },
             bindEvents: function() {
@@ -122,18 +122,18 @@ define(['require',
                         this.$el.removeClass('readOnly');
                     }
                     if (collectionJSON) {
+                        this.name = Utils.getName(collectionJSON);
                         if (collectionJSON.attributes) {
-                            this.name = (_.escape(collectionJSON.attributes && collectionJSON.attributes.name ? collectionJSON.attributes.name : null) || _.escape(collectionJSON.displayText) || collectionJSON.guid);
                             if (this.name && collectionJSON.typeName) {
-                                this.name = this.name + ' (' + collectionJSON.typeName + ')';
+                                this.name = this.name + ' (' + _.escape(collectionJSON.typeName) + ')';
                             }
                             if (!this.name && collectionJSON.typeName) {
-                                this.name = collectionJSON.typeName;
+                                this.name = _.escape(collectionJSON.typeName);
                             }
                             this.description = collectionJSON.attributes.description;
                             if (this.name) {
                                 this.ui.title.show();
-                                var titleName = '<span>' + _.escape(this.name) + '</span>';
+                                var titleName = '<span>' + this.name + '</span>';
                                 if (this.readOnly) {
                                     titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
@@ -348,6 +348,7 @@ define(['require',
                     var view = new CreateEntityLayoutView({
                         guid: that.id,
                         entityDefCollection: that.entityDefCollection,
+                        typeHeaders: that.typeHeaders,
                         callback: function() {
                             that.fetchCollection();
                         }

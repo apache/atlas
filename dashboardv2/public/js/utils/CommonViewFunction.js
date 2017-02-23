@@ -100,15 +100,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         var value = "",
                             deleteButton = "",
                             data = serverData.entity;
-                        if (data && data.attributes) {
-                            if (data.attributes.name) {
-                                value = data.attributes.name;
-                            } else if (data.attributes.qualifiedName) {
-                                value = data.attributes.qualifiedName;
-                            } else if (data.typeName) {
-                                value = data.typeName;
-                            }
-                        }
+                        value = Utils.getName(data);
                         var id = "";
                         if (data.guid) {
                             if (Enums.entityStateReadOnly[data.status]) {
@@ -117,7 +109,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             id = data.guid;
                         }
                         if (value.length > 1) {
-                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(value) + '</a>');
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + value + '</a>');
                         } else {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
                         }
@@ -169,25 +161,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
 
                     if (id && inputOutputField) {
-                        if (inputOutputField.attributes) {
-                            if (inputOutputField.attributes.name) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.attributes.name) + '</a>'
-                            } else if (inputOutputField.attributes.qualifiedName) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.attributes.qualifiedName) + '</a>'
-                            } else if (inputOutputField.typeName) {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.typeName) + '</a>'
-                            } else {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>'
-                            }
-                        } else if (inputOutputField.name) {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.name) + '</a>';
-                        } else if (inputOutputField.qualifiedName) {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + _.escape(inputOutputField.qualifiedName) + '</a>'
-                        } else {
+                        var name = Utils.getName(inputOutputField);
+                        if (name === "-") {
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
                             fetchInputOutputValue(fetchId);
                             tempLink += '<div data-id="' + fetchId + '"></div>';
+                        } else {
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                         }
                     }
                     if (readOnly) {
@@ -316,7 +297,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             html = "",
             id = obj.guid,
             terms = [],
-            entityName = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid);
+            entityName = Utils.getName(obj);
         if (traits) {
             traits.map(function(term) {
                 if (term.split(".").length > 1) {
@@ -334,7 +315,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 className += "showHideDiv hide";
             }
             obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
-            html += '<div class="' + className + '" dataterm-name="' + _.escape(obj.name) + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
+            html += '<div class="' + className + '" dataterm-name="' + entityName + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
         })
         if (terms.length > 1) {
             html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
@@ -358,7 +339,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             addTag = "",
             popTag = "",
             count = 0,
-            entityName = (_.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || _.escape(obj.displayText) || obj.guid);
+            entityName = Utils.getName(obj);
         if (traits) {
             traits.map(function(tag) {
                 if (tag.split(".").length === 1) {

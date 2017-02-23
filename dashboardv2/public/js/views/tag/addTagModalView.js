@@ -77,7 +77,7 @@ define(['require',
                 }
                 if (that.multiple) {
                     _.each(that.multiple, function(entity, i) {
-                        var name = (_.escape(entity.model.attributes && entity.model.attributes.name ? entity.model.attributes.name : null) || _.escape(entity.model.displayText) || entity.model.guid)
+                        var name = Utils.getName(entity.model);
                         if (Enums.entityStateReadOnly[entity.model.status]) {
                             obj.deletedEntity.push(name);
                         } else {
@@ -187,13 +187,15 @@ define(['require',
         tagsCollection: function() {
             var that = this;
             this.collection.fullCollection.comparator = function(model) {
-                return model.get('name').toLowerCase();
+                return Utils.getName(model.toJSON(), 'name').toLowerCase();
             }
 
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             this.collection.fullCollection.sort().each(function(obj, key) {
+                var name = Utils.getName(obj.toJSON(), 'name');
+                // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
                 if (_.indexOf(that.tagList, obj.get('name')) === -1) {
-                    str += '<option>' + _.escape(obj.get('name')) + '</option>';
+                    str += '<option>' + name + '</option>';
                 }
             });
             this.ui.addTagOptions.html(str);
@@ -233,8 +235,9 @@ define(['require',
             if (this.commonCollection.models[0]) {
                 if (this.commonCollection.models[0].get('attributeDefs')) {
                     _.each(this.commonCollection.models[0].get('attributeDefs'), function(obj) {
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + _.escape(obj.name) + '</label>' +
-                            '<input type="text" class="form-control attributeInputVal attrName" data-key="' + obj.name + '" ></input></div>');
+                        var name = Utils.getName(obj, 'name');
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
+                            '<input type="text" class="form-control attributeInputVal attrName" data-key="' + name + '" ></input></div>');
                     });
                 }
 

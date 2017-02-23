@@ -42,7 +42,7 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
@@ -111,7 +111,7 @@ define([
                     this.collection.url = url;
                     App.rNHeader.show(new BusinessCatalogHeader({ 'url': url, 'collection': this.collection }));
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'url': url, 'collection': that.tagCollection }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'url': url, 'collection': that.tagCollection, 'typeHeaders': that.typeHeaders }));
                     } else {
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
                         App.rSideNav.currentView.selectTab();
@@ -138,7 +138,7 @@ define([
                     this.entityCollection = new VEntityList([], {});
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'collection': that.tagCollection }));
+                        App.rSideNav.show(new SideNavLayoutView({ 'collection': that.tagCollection, 'typeHeaders': that.typeHeaders }));
                     } else {
                         App.rSideNav.currentView.selectTab();
                     }
@@ -146,6 +146,7 @@ define([
                         'collection': this.entityCollection,
                         'id': id,
                         'entityDefCollection': that.entityDefCollection,
+                        'typeHeaders': that.typeHeaders
                     }));
                     this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });
@@ -164,6 +165,7 @@ define([
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
                         'tag': tagName,
+                        'typeHeaders': that.typeHeaders,
                         'collection': that.tagCollection
                     }));
                 } else {
@@ -175,7 +177,8 @@ define([
                     App.rNContent.show(new TagDetailLayoutView({
                         'tag': tagName,
                         'entityDefCollection': that.entityDefCollection,
-                        'collection': that.tagCollection
+                        'collection': that.tagCollection,
+                        'typeHeaders': that.typeHeaders
                     }));
                 }
             });
@@ -192,7 +195,8 @@ define([
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
-                        'collection': that.tagCollection
+                        'collection': that.tagCollection,
+                        'typeHeaders': that.typeHeaders
                     }));
                 } else {
                     App.rSideNav.currentView.selectTab();
@@ -206,7 +210,8 @@ define([
                     App.rNContent.show(new SearchDetailLayoutView({
                         'value': paramObj,
                         'entityDefCollection': that.entityDefCollection,
-                        'initialView': true
+                        'initialView': true,
+                        'typeHeaders': that.typeHeaders
                     }))
                 } else {
                     App.rNContent.$el.html("");
@@ -227,7 +232,8 @@ define([
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({
                         'value': paramObj,
-                        'collection': that.tagCollection
+                        'collection': that.tagCollection,
+                        'typeHeaders': that.typeHeaders
                     }));
                 } else {
                     App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
@@ -236,6 +242,7 @@ define([
                 App.rNContent.show(new SearchDetailLayoutView({
                     'value': paramObj,
                     'entityDefCollection': that.entityDefCollection,
+                    'typeHeaders': that.typeHeaders,
                     'initialView': paramObj.query.trim().length === 0
                 }));
             });

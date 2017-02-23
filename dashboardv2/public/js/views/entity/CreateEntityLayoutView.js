@@ -72,7 +72,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection'));
+                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection', 'typeHeaders'));
                 var that = this,
                     entityTitle, okLabel;
                 this.searchCollection = new VSearchList();
@@ -150,16 +150,22 @@ define(['require',
                 }, this);
                 this.ui.entityInputData.on("keyup", "textarea", function() {
                     var value = this.value;
-                    try {
-                        if (value && value.length) {
-                            JSON.parse(value);
-                            $(this).removeClass('errorClass');
-                            that.modal.$el.find('button.ok').prop("disabled", false);
+                    if (!value.length && $(this).hasClass('false')) {
+                        $(this).removeClass('errorClass');
+                        that.modal.$el.find('button.ok').prop("disabled", false);
+                    } else {
+                        try {
+                            if (value && value.length) {
+                                JSON.parse(value);
+                                $(this).removeClass('errorClass');
+                                that.modal.$el.find('button.ok').prop("disabled", false);
+                            }
+                        } catch (err) {
+                            $(this).addClass('errorClass');
+                            that.modal.$el.find('button.ok').prop("disabled", true);
                         }
-                    } catch (err) {
-                        $(this).addClass('errorClass');
-                        that.modal.$el.find('button.ok').prop("disabled", true);
                     }
+
                 });
 
                 if (this.guid) {
@@ -195,7 +201,7 @@ define(['require',
             },
             bindNonRequiredField: function() {
                 var that = this;
-                this.ui.entityInputData.off('keyup change dp.change', 'input.false,select.false').on('keyup change dp.change', 'input.false,select.false', function(e) {
+                this.ui.entityInputData.off('keyup change', 'input.false,select.false').on('keyup change', 'input.false,select.false', function(e) {
                     if (that.modal.$el.find('button.ok').prop('disabled') && that.ui.entityInputData.find('.errorClass').length === 0) {
                         that.modal.$el.find('button.ok').prop("disabled", false);
                     }
@@ -221,7 +227,7 @@ define(['require',
                     value;
                 if (this.guid) {
                     this.collection.each(function(val) {
-                        name += _.escape(val.get("entity").attributes.name) || _.escape(val.get("entity").attributes.qualifiedName) || _.escape(val.get("entity").attributes.id);
+                        name += Utils.getName(val.get("entity"));
                         that.entityData = val;
                     });
                     this.ui.assetName.html(name);
@@ -232,12 +238,13 @@ define(['require',
                         return model.get('name');
                     }
                     this.entityDefCollection.fullCollection.sort().each(function(val) {
+                        var name = Utils.getName(val.toJSON());
                         if (Globals.entityTypeConfList) {
                             if (_.isEmptyArray(Globals.entityTypeConfList)) {
-                                str += '<option>' + _.escape(val.get("name")) + '</option>';
+                                str += '<option>' + name + '</option>';
                             } else {
                                 if (_.contains(Globals.entityTypeConfList, val.get("name"))) {
-                                    str += '<option>' + _.escape(val.get("name")) + '</option>';
+                                    str += '<option>' + name + '</option>';
                                 }
                             }
                         }
@@ -321,7 +328,7 @@ define(['require',
                 var that = this;
                 this.collection.url = UrlLinks.entitiesDefApiUrl(entityName);
                 this.collection.modelAttrName = 'attributeDefs';
-                this.asyncFetchCounter++;
+                ++this.asyncFetchCounter;
                 this.collection.fetch({
                     success: function(model, data) {
                         that.subAttributeData(data);
@@ -339,7 +346,8 @@ define(['require',
                     this.$('input[data-type="date"]').each(function() {
                         if (!$(this).data('datepicker')) {
                             $(this).datetimepicker({
-                                format: 'DD MMMM YYYY'
+                                format: 'DD MMMM YYYY',
+                                keepInvalid: true
                             });
                         }
                     });
@@ -411,7 +419,7 @@ define(['require',
             getSelect: function(value, entityValue) {
                 if (value.typeName === "boolean") {
                     return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName + '" data-key="' + value.name + '" data-id="entityInput">' +
-                        '<option disabled="disabled">--Select true or false--</option><option value="true">true</option>' +
+                        '<option value="">--Select true or false--</option><option value="true">true</option>' +
                         '<option value="false">false</option></select>';
                 } else {
                     var splitTypeName = value.typeName.split("<");
@@ -481,7 +489,12 @@ define(['require',
                 } else if (typeName.indexOf("map") > -1) {
                     return this.getTextArea(value, entityValue);
                 } else {
-                    return this.getInput(value, entityValue);
+                    var typeNameCategory = this.typeHeaders.fullCollection.findWhere({ name: typeName });
+                    if (typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
+                        return this.getTextArea(value, entityValue);
+                    } else {
+                        return this.getInput(value, entityValue);
+                    }
                 }
             },
             okButton: function() {
@@ -546,7 +559,7 @@ define(['require',
                         if ($(this).hasClass("true")) {
                             if (value == "" || value == undefined) {
                                 if ($(this).data('select2')) {
-                                    $(this).data('select2').$container.addClass("errorClass")
+                                    $(this).data('select2').$container.find('.select2-selection').addClass("errorClass")
                                 } else {
                                     $(this).addClass('errorClass');
                                 }
@@ -557,6 +570,7 @@ define(['require',
                         }
                         var dataTypeEnitity = $(this).data('type');
                         var datakeyEntity = $(this).data('key');
+                        var typeNameCategory = that.typeHeaders.fullCollection.findWhere({ name: dataTypeEnitity });
 
                         // Extract Data
                         if (dataTypeEnitity && datakeyEntity) {
@@ -564,7 +578,7 @@ define(['require',
                                 entity[datakeyEntity] = extractValue(value);
                             } else if (typeof dataTypeEnitity === 'string' && datakeyEntity.indexOf("Time") > -1) {
                                 entity[datakeyEntity] = Date.parse(value);
-                            } else if (dataTypeEnitity.indexOf("map") > -1) {
+                            } else if (dataTypeEnitity.indexOf("map") > -1 || (typeNameCategory && typeNameCategory.get('category') === 'STRUCT')) {
                                 try {
                                     if (value && value.length) {
                                         parseData = JSON.parse(value);
@@ -587,7 +601,6 @@ define(['require',
                                 } else {
                                     entity[datakeyEntity] = value;
                                 }
-
                             }
                         }
                     });
@@ -644,45 +657,53 @@ define(['require',
             hideLoader: function() {
                 this.$('.entityLoader').hide();
                 this.$('.entityInputData').show();
+                // To enable scroll after selecting value from select2.
+                this.ui.entityList.select2('open');
+                this.ui.entityList.select2('close');
             },
             addJsonSearchData: function() {
                 if (this.asyncFetchLOVCounter === 0) {
                     var that = this,
                         queryText,
-                        str = '';
-                    // Add oprions in select
-                    if (this.selectStoreCollection.length) {
-                        var appendOption = function(optionValue) {
+                        str = '',
+                        appendOption = function(optionValue) {
                             var obj = optionValue.toJSON(),
-                                labelName = (_.escape(obj.displayText) || _.escape(obj.attributes && obj.attributes.name ? obj.attributes.name : null) || obj.guid);
+                                labelName = Utils.getName(obj, 'displayText');
                             if (obj && obj.queryText) {
                                 optionValue.set('labelName', labelName);
                                 if (labelName) {
-                                    var str = '<option>' + _.escape(labelName) + '</option>';
+                                    var str = '<option>' + labelName + '</option>';
                                 }
+                                // appending value to all same droupdown
                                 that.$('select[data-queryData="' + obj.queryText + '"]').append(str);
                             }
-                        }
-                        _.each(this.selectStoreCollection.models, function(value) {
-                            var obj = value.toJSON();
-                            if (obj.status) {
-                                if (!Enums.entityStateReadOnly[obj.status]) {
-                                    appendOption(value);
-                                }
-                            } else {
-                                appendOption(value);
-                            }
-                        });
-                    }
+                        };
 
-                    $('select[data-id="entitySelectData"]').each(function(value, key) {
+                    this.$('select[data-id="entitySelectData"]').each(function(value, key) {
                         var $this = $(this),
                             keyData = $(this).data("key"),
                             typeData = $(this).data("type"),
+                            queryData = $(this).data("querydata"),
                             placeholderName = "Select a " + typeData + " from the dropdown list";
+
+                        //add options.
+                        if (that.selectStoreCollection.length && !this.options.length) {
+                            that.selectStoreCollection.where({ queryText: queryData }).forEach(function(model) {
+                                var obj = model.toJSON();
+                                if (obj.status) {
+                                    if (!Enums.entityStateReadOnly[obj.status]) {
+                                        appendOption(model);
+                                    }
+                                } else {
+                                    appendOption(model);
+                                }
+                            });
+                        }
+
 
                         $this.attr("multiple", ($this.data('type').indexOf("array") === -1 ? false : true));
 
+                        // Select Value.
                         if (that.guid) {
                             var dataValue = that.entityData.get("entity").attributes[keyData];
                             var selectedValue = [];

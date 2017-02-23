@@ -19,11 +19,10 @@
 define(['require',
     'backbone',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
-    'collection/VTagList',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Globals',
-], function(require, Backbone, SearchLayoutViewTmpl, VTagList, Utils, UrlLinks, Globals) {
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -72,9 +71,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value'));
-                this.typecollection = new VTagList([], {});
-                this.typecollection.url = UrlLinks.typesApiUrl();
+                _.extend(this, _.pick(options, 'value', 'typeHeaders'));
                 this.type = "fulltext";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -89,10 +86,9 @@ define(['require',
                 if (param && param.query && param.searchType) {
                     this.query[param.searchType].query = param.query;
                 }
-                this.bindEvents();
             },
             bindEvents: function(param) {
-                this.listenTo(this.typecollection, "reset", function(value) {
+                this.listenTo(this.typeHeaders, "reset", function(value) {
                     this.renderTypeList();
                     this.setValues();
                     this.ui.typeLov.select2({
@@ -104,11 +100,17 @@ define(['require',
             onRender: function() {
                 // array of tags which is coming from url
                 this.$('.typeLOV').hide();
-                this.fetchCollection();
+                this.renderTypeList();
+                this.setValues();
+                this.ui.typeLov.select2({
+                    placeholder: "Search For",
+                    allowClear: true
+                });
                 this.ui.searchBtn.attr("disabled", "true");
+                this.bindEvents();
             },
             fetchCollection: function(value) {
-                this.typecollection.fetch({ reset: true });
+                this.typeHeaders.fetch({ reset: true });
             },
             onRefreshButton: function() {
                 this.fetchCollection();
@@ -120,12 +122,12 @@ define(['require',
                 var that = this;
                 this.ui.typeLov.empty();
                 var str = '<option></option>';
-                this.typecollection.fullCollection.comparator = function(model) {
-                    return model.get('name').toLowerCase();
+                this.typeHeaders.fullCollection.comparator = function(model) {
+                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
                 }
-                this.typecollection.fullCollection.sort().each(function(model) {
+                this.typeHeaders.fullCollection.sort().each(function(model) {
                     if (model.get('category') == 'ENTITY') {
-                        str += '<option>' + _.escape(model.get("name")) + '</option>';
+                        str += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
                     }
                 });
                 that.ui.typeLov.html(str);

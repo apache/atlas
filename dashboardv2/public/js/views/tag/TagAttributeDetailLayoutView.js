@@ -101,9 +101,8 @@ define(['require',
             renderTagDetail: function() {
                 var attributeData = "",
                     attributeDefs = this.model.get("attributeDefs");
-                if (this.model.get("name")) {
-                    this.ui.title.html('<span>' + _.escape(this.model.get("name")) + '</span>');
-                }
+
+                this.ui.title.html('<span>' + (Utils.getName(this.model.toJSON())) + '</span>');
                 if (this.model.get("description")) {
                     this.ui.description.text(this.model.get("description"));
                 }
@@ -112,7 +111,7 @@ define(['require',
                         attributeDefs = [attributeDefs];
                     }
                     _.each(attributeDefs, function(value, key) {
-                        attributeData += '<span class="inputAttribute">' + _.escape(value.name) + '</span>';
+                        attributeData += '<span class="inputAttribute">' + (Utils.getName(value)) + '</span>';
                     });
                     this.ui.showAttribute.html(attributeData);
                 }

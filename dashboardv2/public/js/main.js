@@ -161,18 +161,22 @@ require(['App',
     'utils/Globals',
     'utils/UrlLinks',
     'collection/VEntityList',
+    'collection/VTagList',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList) {
+], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
     var that = this;
-    this.asyncFetchCounter = 2;
+    this.asyncFetchCounter = 3;
     this.entityDefCollection = new VEntityList();
-    that.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
+    this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
+    this.typeHeaders = new VTagList();
+    this.typeHeaders.url = UrlLinks.typesApiUrl();
 
     App.appRouter = new Router({
-        entityDefCollection: this.entityDefCollection
+        entityDefCollection: this.entityDefCollection,
+        typeHeaders: this.typeHeaders
     });
 
     var startApp = function() {
@@ -210,7 +214,15 @@ require(['App',
             startApp();
         }
     });
-    that.entityDefCollection.fetch({
+    this.entityDefCollection.fetch({
+        skipDefaultError: true,
+        complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+    this.typeHeaders.fetch({
+        skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;
             startApp();

@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection', 'typeHeaders'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -61,7 +61,8 @@ define(['require',
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                         value: value,
                         entityDefCollection: that.entityDefCollection,
-                        tag: that.tag
+                        tag: that.tag,
+                        typeHeaders: that.typeHeaders
                     }));
                 });
             },
