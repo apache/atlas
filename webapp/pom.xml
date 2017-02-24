@@ -377,7 +377,6 @@
             <groupId>com.webcohesion.enunciate</groupId>
             <artifactId>enunciate-core-annotations</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>

@@ -20,10 +20,9 @@ package org.apache.atlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import java.text.MessageFormat;
 import java.util.Arrays;
-
-import javax.ws.rs.core.Response;
 
 public enum AtlasErrorCode {
     NO_SEARCH_RESULTS(204, "ATLAS2041E", "Given search filter {0} did not yield any results"),
@@ -90,7 +89,10 @@ public enum AtlasErrorCode {
     DISCOVERY_QUERY_FAILED(500, "ATLAS5004E", "Discovery query failed {0}"),
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS5005E", "Failed to get the lock; another type update might be in progress. Please try again"),
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS5006E", "Another import or export is in progress. Please try again"),
-    NOTIFICATION_FAILED(500, "ATLAS5007E", "Failed to notify for change {0}");
+    NOTIFICATION_FAILED(500, "ATLAS5007E", "Failed to notify for change {0}"),
+    GREMLIN_GROOVY_SCRIPT_ENGINE_FAILED(500, "ATLAS5008E", "scriptEngine cannot be initialized for: {0}"),
+    JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED(500, "ATLAS5009E", "ObjectMapper.readValue returned NULL for class: {0}"),
+    GREMLIN_SCRIPT_EXECUTION_FAILED(500, "ATLAS5010E", "Script execution failed for: {0}");
 
     private String errorCode;
     private String errorMessage;

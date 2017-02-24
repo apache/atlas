@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static org.apache.atlas.AtlasErrorCode.JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED;
+
 
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
@@ -80,7 +82,6 @@ public class ZipSource implements EntityImportStream {
             String entryName = zipEntry.getName().replace(".json", "");
 
             if (guidEntityJsonMap.containsKey(entryName)) continue;
-            if (zipEntry == null) continue;
 
             byte[] buf = new byte[1024];
 
@@ -111,8 +112,12 @@ public class ZipSource implements EntityImportStream {
         try {
             ObjectMapper mapper = new ObjectMapper();
 
-            return mapper.readValue(jsonData, clazz);
+            T ret = mapper.readValue(jsonData, clazz);
+            if(ret == null) {
+                throw new AtlasBaseException(JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED, clazz.toString());
+            }
 
+            return ret;
         } catch (Exception e) {
             throw new AtlasBaseException("Error converting file to JSON.", e);
         }

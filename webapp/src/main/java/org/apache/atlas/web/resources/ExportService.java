@@ -17,48 +17,73 @@
  */
 package org.apache.atlas.web.resources;
 
+import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
+import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.impexp.*;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.*;
+import javax.script.Bindings;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.util.*;
 
 
 public class ExportService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportService.class);
 
+    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
+    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH   = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS    = "contains";
+    public static final String MATCH_TYPE_MATCHES     = "matches";
+
     private final AtlasTypeRegistry    typeRegistry;
     private final AtlasGraph           atlasGraph;
     private final EntityGraphRetriever entityGraphRetriever;
 
     // query engine support
-    private ScriptEngineManager scriptEngineManager;
-    private ScriptEngine scriptEngine;
-    private Bindings bindings;
-    private final String gremlinQuery = "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
+    private final ScriptEngine scriptEngine;
+    private final Bindings     bindings;
+    private final String queryByGuid          = "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
+    final private String queryByAttrEquals    = "g.V().has('__typeName','%s').has('%s', attrValue).has('__guid').__guid.toList()";
+    final private String queryByAttrStartWith = "g.V().has('__typeName','%s').filter({it.'%s'.startsWith(attrValue)}).has('__guid').__guid.toList()";
+    final private String queryByAttrEndsWith  = "g.V().has('__typeName','%s').filter({it.'%s'.endsWith(attrValue)}).has('__guid').__guid.toList()";
+    final private String queryByAttrContains  = "g.V().has('__typeName','%s').filter({it.'%s'.contains(attrValue)}).has('__guid').__guid.toList()";
+    final private String queryByAttrMatches   = "g.V().has('__typeName','%s').filter({it.'%s'.matches(attrValue)}).has('__guid').__guid.toList()";
 
-    public ExportService(final AtlasTypeRegistry typeRegistry) {
+    public ExportService(final AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = AtlasGraphProvider.getGraphInstance();
 
-        initScriptEngine();
+        this.scriptEngine  = new GremlinGroovyScriptEngine();
+
+        //Do not cache script compilations due to memory implications
+        scriptEngine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom",  ScriptContext.ENGINE_SCOPE);
+
+        bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE);
     }
 
     private class ExportContext {
@@ -109,16 +134,18 @@ public class ExportService {
         }
 
         try {
-            AtlasEntity entity = entityGraphRetriever.toAtlasEntity(item);
+            List<AtlasEntity> entities = getStartingEntity(item, context);
 
-            processEntity(entity, context);
+            for (AtlasEntity entity: entities) {
+                processEntity(entity, context);
+            }
 
             while (!context.guidsToProcess.isEmpty()) {
                 String guid = context.guidsToProcess.remove(0);
 
-                entity = entityGraphRetriever.toAtlasEntity(guid);
+                AtlasEntity e = entityGraphRetriever.toAtlasEntity(guid);
 
-                processEntity(entity, context);
+                processEntity(e, context);
             }
         } catch (AtlasBaseException excp) {
             context.result.setOperationStatus(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS);
@@ -131,18 +158,91 @@ public class ExportService {
         }
     }
 
+    private List<AtlasEntity> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
+        List<AtlasEntity> ret = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(item.getGuid())) {
+            AtlasEntity entity = entityGraphRetriever.toAtlasEntity(item);
+
+            if (entity != null) {
+                ret = Collections.singletonList(entity);
+            }
+        } else if (StringUtils.isNotEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
+            String          typeName   = item.getTypeName();
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+            }
+
+            AtlasExportRequest request = context.result.getRequest();
+            String matchType = null;
+
+            if (MapUtils.isNotEmpty(request.getOptions())) {
+                if (request.getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
+                    matchType = request.getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
+                }
+            }
+
+            final String queryTemplate;
+            if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_STARTS_WITH)) {
+                queryTemplate = queryByAttrStartWith;
+            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_ENDS_WITH)) {
+                queryTemplate = queryByAttrEndsWith;
+            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_CONTAINS)) {
+                queryTemplate = queryByAttrContains;
+            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_MATCHES)) {
+                queryTemplate = queryByAttrMatches;
+            } else { // default
+                queryTemplate = queryByAttrEquals;
+            }
+
+            for (Map.Entry<String, Object> e : item.getUniqueAttributes().entrySet()) {
+                String attrName  = e.getKey();
+                Object attrValue = e.getValue();
+
+                AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                if (attribute == null || attrValue == null) {
+                    continue;
+                }
+
+                String       query = String.format(queryTemplate, typeName, attribute.getQualifiedName());
+                List<String> guids = executeGremlinScriptFor(query, "attrValue", attrValue.toString());
+
+                if (CollectionUtils.isNotEmpty(guids)) {
+                    for (String guid : guids) {
+                        AtlasEntity entity = entityGraphRetriever.toAtlasEntity(guid);
+
+                        if (entity == null) {
+                            continue;
+                        }
+
+                        ret.add(entity);
+                    }
+                }
+
+                break;
+            }
+
+            LOG.info("export(item={}; matchType={}): found {} entities", item, matchType, ret.size());
+        }
+
+        return ret;
+    }
+
     private void processEntity(AtlasEntity entity, ExportContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> processEntity({})", AtlasTypeUtil.getAtlasObjectId(entity));
         }
 
         if (!context.guidsProcessed.contains(entity.getGuid())) {
+            context.guidsProcessed.add(entity.getGuid());
+            context.result.getData().getEntityCreationOrder().add(entity.getGuid());
+
             addTypesAsNeeded(entity.getTypeName(), context);
             addClassificationsAsNeeded(entity, context);
             addEntity(entity, context);
-
-            context.guidsProcessed.add(entity.getGuid());
-            context.result.getData().getEntityCreationOrder().add(entity.getGuid());
 
             getConnectedEntityGuids(entity, context);
         }
@@ -159,7 +259,11 @@ public class ExportService {
                 LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
             }
 
-            List<String> result = executeGremlinScriptFor(entity.getGuid());
+            List<String> result = executeGremlinScriptForHive(entity.getGuid());
+            if(result == null) {
+                return;
+            }
+
             for (String guid : result) {
                 if (!context.guidsProcessed.contains(guid)) {
                     context.guidsToProcess.add(guid);
@@ -215,22 +319,20 @@ public class ExportService {
         }
     }
 
-    private List<String> executeGremlinScriptFor(String guid) throws ScriptException {
-
-        bindings.put("startGuid", guid);
-        return (List<String>) atlasGraph.executeGremlinScript(this.scriptEngine, this.bindings, this.gremlinQuery, false);
+    private List<String> executeGremlinScriptForHive(String guid) throws ScriptException {
+        return executeGremlinScriptFor(this.queryByGuid, "startGuid", guid);
     }
 
-    private void initScriptEngine() {
-        if (scriptEngineManager != null) {
-            return;
+    private List<String> executeGremlinScriptFor(String query, String parameterName, String parameterValue) {
+        bindings.put(parameterName, parameterValue);
+        try {
+            return (List<String>) atlasGraph.executeGremlinScript(this.scriptEngine,
+                    this.bindings,
+                    query,
+                    false);
+        } catch (ScriptException e) {
+            LOG.error("Script execution failed for query: ", query, e);
+            return null;
         }
-
-        scriptEngineManager = new ScriptEngineManager();
-        scriptEngine = scriptEngineManager.getEngineByName("gremlin-groovy");
-        bindings = scriptEngine.createBindings();
-
-        //Do not cache script compilations due to memory implications
-        scriptEngine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
     }
 }

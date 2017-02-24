@@ -160,7 +160,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         while (entityStream.hasNext()) {
             AtlasEntity entity = entityStream.next();
 
-            if(processedGuids.contains(entity.getGuid())) {
+            if(entity == null || processedGuids.contains(entity.getGuid())) {
                 continue;
             }
 

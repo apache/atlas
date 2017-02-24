@@ -23,18 +23,13 @@ import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
-import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.DeleteHandler;
-import org.apache.atlas.repository.graph.FullTextMapper;
-import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graph.GraphToTypedInstanceMapper;
-import org.apache.atlas.repository.graph.TypedInstanceToGraphMapper;
+import org.apache.atlas.repository.graph.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
@@ -45,11 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 
 
 @Singleton
@@ -157,11 +147,17 @@ public class AtlasEntityChangeNotifier {
 
         for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
             AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(atlasEntityHeader.getGuid());
+
+            if(atlasVertex == null) {
+                continue;
+            }
+
             try {
                 String fullText = fullTextMapper.mapRecursive(atlasVertex, true);
+
                 GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
             } catch (AtlasException e) {
-                LOG.error("FullText mapping failed for Vertex[ guid = {} ]", atlasEntityHeader.getGuid());
+                LOG.error("FullText mapping failed for Vertex[ guid = {} ]", atlasEntityHeader.getGuid(), e);
             }
         }
     }
