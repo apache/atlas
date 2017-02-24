@@ -167,6 +167,7 @@ define(['require',
                         referredEntities: this.entityObject.referredEntities,
                         guid: this.id,
                         entityName: this.name,
+                        typeHeaders: this.typeHeaders,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that)
                     }

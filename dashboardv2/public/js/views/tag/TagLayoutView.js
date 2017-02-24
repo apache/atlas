@@ -242,8 +242,6 @@ define(['require',
                     classificationDefs: [{
                         'name': this.name.trim(),
                         'description': this.description.trim(),
-                        "typeVersion": "2",
-                        "version": "2",
                         'superTypes': superTypes.length ? superTypes : [],
                         "attributeDefs": attributeObj
                     }],

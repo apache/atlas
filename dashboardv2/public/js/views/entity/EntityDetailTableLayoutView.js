@@ -48,7 +48,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'referredEntities'));
+                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders'));
                 this.entityModel = new VEntity({});
             },
             bindEvents: function() {},

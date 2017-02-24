@@ -148,7 +148,7 @@ define(['require',
                     this.decrementCounter('asyncFetchLOVCounter');
                     this.addJsonSearchData();
                 }, this);
-                this.ui.entityInputData.on("keyup", "textarea", function() {
+                this.ui.entityInputData.on("keyup change", "textarea", function(e) {
                     var value = this.value;
                     if (!value.length && $(this).hasClass('false')) {
                         $(this).removeClass('errorClass');
@@ -165,7 +165,6 @@ define(['require',
                             that.modal.$el.find('button.ok').prop("disabled", true);
                         }
                     }
-
                 });
 
                 if (this.guid) {
@@ -433,12 +432,23 @@ define(['require',
                 }
 
             },
-            getTextArea: function(value, entityValue) {
+            getTextArea: function(value, entityValue, structType) {
+                var setValue = entityValue
+                try {
+                    if (structType && entityValue && entityValue.length) {
+                        var parseValue = JSON.parse(entityValue);
+                        if (_.isObject(parseValue) && !_.isArray(parseValue) && parseValue.attributes) {
+                            setValue = JSON.stringify(parseValue.attributes);
+                        }
+                    }
+                } catch (err) {}
+
                 return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
                     ' data-key="' + value.name + '"' +
                     ' placeholder="' + value.name + '"' +
-                    ' data-id="entityInput">' + entityValue + '</textarea>';
+                    ' data-id="entityInput">' + setValue + '</textarea>';
+
             },
             getInput: function(value, entityValue) {
                 return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
@@ -491,7 +501,7 @@ define(['require',
                 } else {
                     var typeNameCategory = this.typeHeaders.fullCollection.findWhere({ name: typeName });
                     if (typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
-                        return this.getTextArea(value, entityValue);
+                        return this.getTextArea(value, entityValue, true);
                     } else {
                         return this.getInput(value, entityValue);
                     }

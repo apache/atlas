@@ -149,7 +149,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
-                        _.each(inputOutputField, function(objValue, objKey) {
+                        var attributesList = inputOutputField;
+                        if (scope.typeHeaders && inputOutputField.typeName) {
+                            var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
+                            if (attributesList.attributes && typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
+                                attributesList = attributesList.attributes;
+                            }
+                        }
+                        _.each(attributesList, function(objValue, objKey) {
                             var value = objValue;
                             if (objKey.indexOf("$") == -1) {
                                 if (_.isObject(value)) {
@@ -162,7 +169,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
                     if (id && inputOutputField) {
                         var name = Utils.getName(inputOutputField);
-                        if (name === "-") {
+                        if (name === "-" || name === id) {
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
                             fetchInputOutputValue(fetchId);
