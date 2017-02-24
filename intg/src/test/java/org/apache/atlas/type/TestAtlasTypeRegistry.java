@@ -482,6 +482,83 @@ public class TestAtlasTypeRegistry {
         }
     }
 
+    /* create 2 entity types: L0 and L1, with L0 as superType of L1
+     * add entity type L2, with L0, L1 and L2 as super-types - this should fail due to L2 self-referencing itself in super-types
+     * verify that after the update failure, the registry still has correct super-type/sub-type information for L0 and L1
+     */
+    @Test
+    public void testRegistryValidityOnInvalidUpdate() {
+        AtlasEntityDef entL0 = new AtlasEntityDef("L0");
+        AtlasEntityDef entL1 = new AtlasEntityDef("L1");
+
+        entL1.addSuperType(entL0.getName());
+
+        entL0.addAttribute(new AtlasAttributeDef("L0_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL1.addAttribute(new AtlasAttributeDef("L1_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+
+        typesDef.getEntityDefs().add(entL0);
+        typesDef.getEntityDefs().add(entL1);
+
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        String                     failureMsg   = null;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(typesDef);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNull(failureMsg);
+
+        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
+
+        validateSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
+        validateSubTypes(typeRegistry, "L1", new HashSet<String>());
+
+
+        // create a circular reference
+        AtlasEntityDef entL2 = new AtlasEntityDef("L2");
+        entL2.addSuperType(entL0.getName());
+        entL2.addSuperType(entL1.getName());
+        entL2.addSuperType(entL2.getName());
+
+        typesDef.clear();
+        typesDef.getEntityDefs().add(entL2);
+
+        try {
+            commit = false;
+
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.updateTypes(typesDef);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNotNull(failureMsg);
+
+        assertNull(typeRegistry.getEntityTypeByName("L2"));
+
+        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
+
+        validateSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
+        validateSubTypes(typeRegistry, "L1", new HashSet<String>());
+    }
+
     private boolean addType(AtlasTypeRegistry typeRegistry, AtlasBaseTypeDef typeDef) {
         boolean                    ret = false;
         AtlasTransientTypeRegistry ttr = null;

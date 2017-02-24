@@ -65,7 +65,7 @@ public class AtlasTypeRegistry {
 
     // used only by AtlasTransientTypeRegistry
     protected AtlasTypeRegistry(AtlasTypeRegistry other) {
-        registryData       = new RegistryData(other.registryData);
+        registryData       = new RegistryData();
         updateSynchronizer = other.updateSynchronizer;
     }
 
@@ -245,15 +245,6 @@ public class AtlasTypeRegistry {
             allTypes.addType(new AtlasBuiltInTypes.AtlasObjectIdType());
         }
 
-        RegistryData(RegistryData other) {
-            allTypes           = new TypeCache(other.allTypes);
-            enumDefs           = new TypeDefCache<>(other.enumDefs, allTypes);
-            structDefs         = new TypeDefCache<>(other.structDefs, allTypes);
-            classificationDefs = new TypeDefCache<>(other.classificationDefs, allTypes);
-            entityDefs         = new TypeDefCache<>(other.entityDefs, allTypes);
-            allDefCaches       = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs };
-        }
-
         AtlasBaseTypeDef getTypeDefByName(String name) {
             AtlasBaseTypeDef ret = null;
 
@@ -320,8 +311,17 @@ public class AtlasTypeRegistry {
         private List<AtlasBaseTypeDef> deletedTypes = new ArrayList<>();
 
 
-        private AtlasTransientTypeRegistry(AtlasTypeRegistry parent) {
+        private AtlasTransientTypeRegistry(AtlasTypeRegistry parent) throws AtlasBaseException {
             super(parent);
+
+            addTypesWithNoRefResolve(parent.getAllEnumDefs());
+            addTypesWithNoRefResolve(parent.getAllStructDefs());
+            addTypesWithNoRefResolve(parent.getAllClassificationDefs());
+            addTypesWithNoRefResolve(parent.getAllEntityDefs());
+
+            addedTypes.clear();
+            updatedTypes.clear();
+            deletedTypes.clear();
         }
 
         private void resolveReferences() throws AtlasBaseException {
