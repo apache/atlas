@@ -29,7 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import java.util.*;
 
 public class EntityMutationContext {
-    private final EntityGraphDiscoveryContext  context;
+    private EntityGraphDiscoveryContext  context = null;
     private final List<AtlasEntity>            entitiesCreated = new ArrayList<>();
     private final List<AtlasEntity>            entitiesUpdated = new ArrayList<>();
     private final Map<String, AtlasEntityType> entityVsType    = new HashMap<>();
@@ -38,6 +38,9 @@ public class EntityMutationContext {
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
+    }
+
+    public EntityMutationContext() {
     }
 
     public void addCreated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {

@@ -206,26 +206,19 @@ public class EntityREST {
     /**
      * Gets the list of classifications for a given entity represented by a guid.
      * @param guid globally unique identifier for the entity
-     * @return a list of classifications for the given entity guid
+     * @return classification for the given entity guid
      */
     @GET
     @Path("/guid/{guid}/classification/{classificationName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassification getClassification(@PathParam("guid") String guid, @PathParam("classificationName") String typeName) throws AtlasBaseException {
+    public AtlasClassification getClassification(@PathParam("guid") String guid, @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
 
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        ensureClassificationType(typeName);
-
-        try {
-            IStruct trait = metadataService.getTraitDefinition(guid, typeName);
-            return instanceConverter.getClassification(trait);
-
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
+        ensureClassificationType(classificationName);
+        return entitiesStore.getClassification(guid, classificationName);
     }
 
     /**
@@ -242,22 +235,12 @@ public class EntityREST {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasClassification.AtlasClassifications clss = new AtlasClassification.AtlasClassifications();
+        AtlasClassification.AtlasClassifications classifications = new AtlasClassification.AtlasClassifications();
 
-        try {
-            List<AtlasClassification> clsList = new ArrayList<>();
-            for ( String traitName : metadataService.getTraitNames(guid) ) {
-                IStruct trait = metadataService.getTraitDefinition(guid, traitName);
-                AtlasClassification cls = instanceConverter.getClassification(trait);
-                clsList.add(cls);
-            }
+        final List<AtlasClassification> classificationList = entitiesStore.getClassifications(guid);
+        classifications.setList(classificationList);
 
-            clss.setList(clsList);
-
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
-        return clss;
+        return classifications;
     }
 
     /**
@@ -274,58 +257,27 @@ public class EntityREST {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        for (AtlasClassification classification:  classifications) {
-            final ITypedStruct trait = instanceConverter.getTrait(classification);
-            try {
-                metadataService.addTrait(guid, trait);
-            } catch (IllegalArgumentException e) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
-            } catch (AtlasException e) {
-                throw toAtlasBaseException(e);
-            }
-        }
-    }
-
-    /**
-     * Update classification(s) for an entity represented by a guid.
-     * Classifications are identified by their guid or name
-     * @param guid globally unique identifier for the entity
-     */
-    @PUT
-    @Path("/guid/{guid}/classifications")
-    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void updateClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        //Not supported in old API
-
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
+        entitiesStore.addClassifications(guid, classifications);
     }
 
     /**
      * Deletes a given classification from an existing entity represented by a guid.
      * @param guid      globally unique identifier for the entity
-     * @param typeName name of the trait
+     * @param classificationName name of the classifcation
      */
     @DELETE
     @Path("/guid/{guid}/classification/{classificationName}")
-    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteClassification(@PathParam("guid") String guid,
-        @PathParam("classificationName") String typeName) throws AtlasBaseException {
+        @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
 
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        ensureClassificationType(typeName);
+        ensureClassificationType(classificationName);
 
-        try {
-            metadataService.deleteTrait(guid, typeName);
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
+        entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(classificationName);}} );
     }
 
     /******************************************************************/
@@ -392,18 +344,10 @@ public class EntityREST {
         }
 
         if (CollectionUtils.isEmpty(entityGuids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty entity list");
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty guid list");
         }
 
-        final ITypedStruct trait = instanceConverter.getTrait(classification);
-
-        try {
-            metadataService.addTrait(entityGuids, trait);
-        } catch (IllegalArgumentException e) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
-        } catch (AtlasException e) {
-            throw toAtlasBaseException(e);
-        }
+        entitiesStore.addClassification(entityGuids, classification);
     }
 
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {

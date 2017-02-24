@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import com.google.common.base.Optional;
+import com.sun.istack.Nullable;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -35,6 +37,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,31 +206,77 @@ public final class EntityGraphRetriever {
         }
     }
 
-    private void mapClassifications(AtlasVertex entityVertex, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
-        List<String> classificationNames = GraphHelper.getTraitNames(entityVertex);
+    public List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException {
+
+        AtlasVertex instanceVertex = AtlasGraphUtilsV1.findByGuid(guid);
+        if (instanceVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        return getClassifications(instanceVertex, null);
+    }
+
+    public AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException {
+
+        AtlasVertex instanceVertex = AtlasGraphUtilsV1.findByGuid(guid);
+        if (instanceVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        List<AtlasClassification> classifications = getClassifications(instanceVertex, classificationName);
+        return classifications.get(0);
+    }
+
+
+    private List<AtlasClassification> getClassifications(AtlasVertex instanceVertex, @Nullable String classificationNameFilter) throws AtlasBaseException {
+        List<AtlasClassification> classifications = new ArrayList<>();
+        List<String> classificationNames = GraphHelper.getTraitNames(instanceVertex);
 
         if (CollectionUtils.isNotEmpty(classificationNames)) {
-            List<AtlasClassification> classifications = new ArrayList<>(classificationNames.size());
-
             for (String classficationName : classificationNames) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("mapping classification {} to atlas entity", classficationName);
-                }
-
-                Iterable<AtlasEdge> edges = entityVertex.getEdges(AtlasEdgeDirection.OUT, classficationName);
-                AtlasEdge           edge  = (edges != null && edges.iterator().hasNext()) ? edges.iterator().next() : null;
-
-                if (edge != null) {
-                    AtlasClassification classification = new AtlasClassification(classficationName);
-
-                    mapAttributes(edge.getInVertex(), classification, entityExtInfo);
-
+                AtlasClassification classification = null;
+                if (StringUtils.isNotEmpty(classificationNameFilter)) {
+                    if (classficationName.equals(classificationNameFilter)) {
+                        classification = getClassification(instanceVertex, classficationName);
+                        classifications.add(classification);
+                        return classifications;
+                    }
+                } else {
+                    classification = getClassification(instanceVertex, classficationName);
                     classifications.add(classification);
                 }
             }
 
-            entity.setClassifications(classifications);
+
+            if (StringUtils.isNotEmpty(classificationNameFilter)) {
+                //Should not reach here if classification present
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationNameFilter);
+            }
         }
+        return classifications;
+    }
+
+    private AtlasClassification getClassification(AtlasVertex instanceVertex, String classificationName) throws AtlasBaseException {
+
+        AtlasClassification ret = null;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("mapping classification {} to atlas entity", classificationName);
+        }
+
+        Iterable<AtlasEdge> edges = instanceVertex.getEdges(AtlasEdgeDirection.OUT, classificationName);
+        AtlasEdge           edge  = (edges != null && edges.iterator().hasNext()) ? edges.iterator().next() : null;
+
+        if (edge != null) {
+            ret = new AtlasClassification(classificationName);
+            mapAttributes(edge.getInVertex(), ret, null);
+        }
+
+        return ret;
+    }
+
+    private void mapClassifications(AtlasVertex entityVertex, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
+        final List<AtlasClassification> classifications = getClassifications(entityVertex, null);
+        entity.setClassifications(classifications);
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {

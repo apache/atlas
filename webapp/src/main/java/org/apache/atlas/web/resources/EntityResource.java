@@ -23,11 +23,13 @@ import com.google.common.base.Preconditions;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -797,7 +799,12 @@ public class EntityResource {
                 LOG.debug("Fetching trait names for entity={}", guid);
             }
 
-            final List<String> traitNames = metadataService.getTraitNames(guid);
+            final List<AtlasClassification> classifications = entitiesStore.getClassifications(guid);
+
+            List<String> traitNames = new ArrayList<>();
+            for (AtlasClassification classification : classifications) {
+                traitNames.add(classification.getTypeName());
+            }
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -805,11 +812,11 @@ public class EntityResource {
             response.put(AtlasClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to get trait names for entity {}", guid, e);
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get trait definition for entity {}", guid, e);
+            throw toWebApplicationException(e);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unable to get trait definition for entity {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
@@ -845,12 +852,11 @@ public class EntityResource {
                 LOG.debug("Fetching all trait definitions for entity={}", guid);
             }
 
-            final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
+            final List<AtlasClassification> classifications = entitiesStore.getClassifications(guid);
 
-            Referenceable entity = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
             JSONArray traits = new JSONArray();
-            for (String traitName : entity.getTraits()) {
-                IStruct trait = entity.getTrait(traitName);
+            for (AtlasClassification classification : classifications) {
+                IStruct trait = restAdapters.getTrait(classification);
                 traits.put(new JSONObject(InstanceSerialization.toJson(trait, true)));
             }
 
@@ -860,11 +866,11 @@ public class EntityResource {
             response.put(AtlasClient.COUNT, traits.length());
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException e){
-            LOG.error("An entity with GUID={} does not exist", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to get trait definitions for entity {}", guid, e);
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get trait definition for entity {}", guid, e);
+            throw toWebApplicationException(e);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unable to get trait definition for entity {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get trait definitions for entity {}", guid, e);
@@ -902,7 +908,10 @@ public class EntityResource {
                 LOG.debug("Fetching trait definition for entity {} and trait name {}", guid, traitName);
             }
 
-            final IStruct traitDefinition = metadataService.getTraitDefinition(guid, traitName);
+
+            final AtlasClassification classification = entitiesStore.getClassification(guid, traitName);
+
+            IStruct traitDefinition = restAdapters.getTrait(classification);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -910,10 +919,10 @@ public class EntityResource {
 
             return Response.ok(response).build();
 
-        } catch (EntityNotFoundException e){
-            LOG.error("An entity with GUID={} does not exist", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get trait definition for entity {} and trait {}", guid, traitName, e);
+            throw toWebApplicationException(e);
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get trait definition for entity {} and trait {}", guid, traitName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
@@ -955,7 +964,11 @@ public class EntityResource {
                 LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
             }
 
-            metadataService.addTrait(guid, traitDefinition);
+            List<String> guids = new ArrayList<String>() {{
+                add(guid);
+            }};
+
+            entitiesStore.addClassification(guids, restAdapters.getClassification(InstanceSerialization.fromJsonStruct(traitDefinition, true)));
 
             URI locationURI = getLocationURI(new ArrayList<String>() {{
                 add(guid);
@@ -965,10 +978,10 @@ public class EntityResource {
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.created(locationURI).entity(response).build();
-        } catch (EntityNotFoundException | TypeNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist traitDef={} ", guid, traitDefinition, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to add trait for entity={} traitDef={}", guid, traitDefinition, e);
+            throw toWebApplicationException(e);
+        } catch  (IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={} traitDef={}", guid, traitDefinition, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
@@ -994,7 +1007,7 @@ public class EntityResource {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request, @PathParam("guid") String guid,
-            @PathParam(TRAIT_NAME) String traitName) {
+            @PathParam(TRAIT_NAME) final String traitName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> EntityResource.deleteTrait({}, {})", guid, traitName);
         }
@@ -1010,20 +1023,17 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.deleteTrait(" + guid + ", " + traitName + ")");
             }
 
-            metadataService.deleteTrait(guid, traitName);
+            entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(traitName); }});
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException | TypeNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist traitName={} ", guid, traitName, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (TraitNotFoundException e) {
-            LOG.error("The trait name={} for entity={} does not exist.", traitName, guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
+            throw toWebApplicationException(e);
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
@@ -1099,5 +1109,19 @@ public class EntityResource {
 
     private AtlasEntityType getEntityType(String typeName) {
         return typeRegistry.getEntityTypeByName(typeName);
+    }
+
+    public static WebApplicationException toWebApplicationException(AtlasBaseException e) {
+        if (e.getAtlasErrorCode() == AtlasErrorCode.CLASSIFICATION_NOT_FOUND
+            || e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+            return new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        }
+
+        if (e.getAtlasErrorCode() == AtlasErrorCode.INVALID_PARAMETERS
+            || e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS) {
+            return new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        }
+
+        return new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
     }
 }

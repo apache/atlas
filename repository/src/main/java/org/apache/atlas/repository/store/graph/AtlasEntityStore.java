@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph;
 
 
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -135,14 +136,17 @@ public interface AtlasEntityStore {
      */
     void addClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException;
 
-
-    /**
-     * Update classification(s)
-     */
-    void updateClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException;
+    @GraphTransaction
+    void addClassification(List<String> guids, AtlasClassification classification) throws AtlasBaseException;
 
     /**
      * Delete classification(s)
      */
     void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException;
+
+    @GraphTransaction
+    List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
+
+    @GraphTransaction
+    AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
 }

@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -118,7 +119,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @GraphTransaction
     public AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
                                                                                             throws AtlasBaseException {
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getByUniqueAttribute({}, {})", entityType.getTypeName(), uniqAttributes);
         }
@@ -166,7 +166,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
             AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entity, entityStream);
 
-            EntityMutationResponse resp = createOrUpdate(oneEntityStream, false);
+            EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
 
             updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
@@ -204,9 +204,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
     }
 
-    @Override
     @GraphTransaction
-    public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
+    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -220,7 +219,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
-        EntityMutationResponse ret = entityGraphMapper.mapAttributes(context, isPartialUpdate);
+        EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
 
         ret.setGuidAssignments(context.getGuidAssignments());
 
@@ -232,6 +231,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         entityChangeNotifier.onEntitiesMutated(ret);
 
         return ret;
+    }
+
+    @Override
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
+        return createOrUpdate(entityStream, isPartialUpdate, false);
     }
 
     @Override
@@ -411,20 +415,83 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void addClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "addClassifications() not implemented yet");
+    public void addClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+        if (CollectionUtils.isEmpty(classifications)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding classifications={} to entity={}", classifications, guid);
+        }
+
+        EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
+        graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
+
     }
 
     @Override
     @GraphTransaction
-    public void updateClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "updateClassifications() not implemented yet");
+    public void addClassification(final List<String> guids, final AtlasClassification classification) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+        if (classification == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classification not specified");
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding classification={} to entities={}", classification, guids);
+        }
+
+        EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
+
+        for (String guid : guids) {
+            graphMapper.addClassifications(new EntityMutationContext(), guid, Collections.singletonList(classification));
+        }
+
     }
 
     @Override
     @GraphTransaction
-    public void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException {
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "deleteClassifications() not implemented yet");
+    public void deleteClassifications(final String guid, final List<String> classificationNames) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+        if (CollectionUtils.isEmpty(classificationNames)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting classifications={} from entity={}", classificationNames, guid);
+        }
+
+        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
+        entityGraphMapper.deleteClassifications(guid, classificationNames);
+    }
+
+    @Override
+    @GraphTransaction
+    public List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Getting classifications for entities={}", guid);
+        }
+
+        EntityGraphRetriever graphRetriever = new EntityGraphRetriever(typeRegistry);
+        return graphRetriever.getClassifications(guid);
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Getting classifications for entities={}", guid);
+        }
+
+        EntityGraphRetriever graphRetriever = new EntityGraphRetriever(typeRegistry);
+        return graphRetriever.getClassification(guid, classificationName);
     }
 
 
