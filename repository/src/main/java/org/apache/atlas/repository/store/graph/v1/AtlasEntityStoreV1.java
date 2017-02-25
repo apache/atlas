@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -38,12 +37,10 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -326,16 +323,17 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         // Retrieve vertices for requested guids.
         AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
 
-        if (LOG.isDebugEnabled()) {
-            if (vertex == null) {
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+
+        if (vertex != null) {
+            deletionCandidates.add(vertex);
+        } else {
+            if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
                 LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
             }
         }
-
-        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
-        deletionCandidates.add(vertex);
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
@@ -357,15 +355,16 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         for (String guid : guids) {
             // Retrieve vertices for requested guids.
             AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
-            if (LOG.isDebugEnabled()) {
-                if (vertex == null) {
+
+            if (vertex != null) {
+                deletionCandidates.add(vertex);
+            } else {
+                if (LOG.isDebugEnabled()) {
                     // Entity does not exist - treat as non-error, since the caller
                     // wanted to delete the entity and it's already gone.
                     LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
                 }
             }
-            deletionCandidates.add(vertex);
-
         }
 
         if (deletionCandidates.isEmpty()) {
@@ -391,7 +390,16 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         final AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(entityType, uniqAttributes);
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
-        deletionCandidates.add(vertex);
+
+        if (vertex != null) {
+            deletionCandidates.add(vertex);
+        } else {
+            if (LOG.isDebugEnabled()) {
+                // Entity does not exist - treat as non-error, since the caller
+                // wanted to delete the entity and it's already gone.
+                LOG.debug("Deletion request ignored for non-existent entity with uniqueAttributes " + uniqAttributes);
+            }
+        }
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
