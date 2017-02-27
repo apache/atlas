@@ -126,7 +126,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                 });
             }
-        _.keys(valueObject).map(function(key) {
+        _.sortBy(_.keys(valueObject)).map(function(key) {
             key = _.escape(key)
             var keyValue = valueObject[key],
                 valueOfArray = [];
