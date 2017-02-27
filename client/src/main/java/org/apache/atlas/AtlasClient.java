@@ -20,8 +20,9 @@ package org.apache.atlas;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
@@ -259,6 +260,8 @@ public class AtlasClient extends AtlasBaseClient {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class EntityResult {
+        private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
         public static final String OP_CREATED = "created";
         public static final String OP_UPDATED = "updated";
         public static final String OP_DELETED = "deleted";
@@ -314,12 +317,10 @@ public class AtlasClient extends AtlasBaseClient {
         }
 
         @Override
-        public String toString() {
-            return AtlasType.toJson(this);
-        }
+        public String toString() { return gson.toJson(this); }
 
         public static EntityResult fromString(String json) throws AtlasServiceException {
-            return AtlasType.fromJson(json, EntityResult.class);
+            return gson.fromJson(json, EntityResult.class);
         }
     }
 

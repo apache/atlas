@@ -350,10 +350,6 @@ public class QuickStartV2 {
             System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
         }
 
-        if (ArrayUtils.isNotEmpty(traitNames)) {
-            entitiesClient.addClassifications(ret.getGuid(), toAtlasClassifications(traitNames));
-        }
-
         return ret;
     }
 

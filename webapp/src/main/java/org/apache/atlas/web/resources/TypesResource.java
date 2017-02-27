@@ -121,12 +121,12 @@ public class TypesResource {
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (AtlasBaseException e) {
             LOG.error("Type creation failed", e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
+            throw new WebApplicationException(Servlets.getErrorResponse(e));
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
-            LOG.error("Unable to persist types due to V2 API error", e);
+            LOG.error("Unable to persist types", e);
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
@@ -187,11 +187,14 @@ public class TypesResource {
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
             return Response.ok().entity(response).build();
-        } catch (AtlasBaseException | IllegalArgumentException e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to persist types", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e));
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
-            LOG.error("Unable to persist types due to V2 API error", e);
+            LOG.error("Unable to persist types", e);
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
@@ -237,10 +240,13 @@ public class TypesResource {
             return Response.ok(response).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(e));
         } catch (JSONException | IllegalArgumentException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (WebApplicationException e) {
+            LOG.error("Unable to get type definition for type {}", typeName, e);
+            throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -292,7 +298,10 @@ public class TypesResource {
             return Response.ok(response).build();
         } catch (AtlasBaseException e) {
             LOG.warn("TypesREST exception: {} {}", e.getClass().getSimpleName(), e.getMessage());
-            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
+            throw new WebApplicationException(Servlets.getErrorResponse(e));
+        } catch (WebApplicationException e) {
+            LOG.error("Unable to get types list", e);
+            throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));

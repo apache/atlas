@@ -28,6 +28,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.web.resources.BaseResourceIT;
 import org.codehaus.jettison.json.JSONException;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -98,13 +100,13 @@ public class QuickStartV2IT extends BaseResourceIT {
 
     private void verifyColumnsAreAddedToTable(AtlasEntity table) throws JSONException {
         Map<String, Object> tableAttributes = table.getAttributes();
-        List<AtlasEntity> columns = (List<AtlasEntity>) tableAttributes.get("columns");
+        List<Map> columns = (List<Map>) tableAttributes.get("columns");
         assertEquals(4, columns.size());
 
-        Map<String, Object> column = (Map) columns.get(0);
-        Map<String, Object> columnAttributes = (Map) column.get("attributes");
-        assertEquals(QuickStartV2.TIME_ID_COLUMN, columnAttributes.get("name"));
-        assertEquals("int", columnAttributes.get("dataType"));
+        for (Map colMap : columns) {
+            String colGuid = (String) colMap.get("guid");
+            assertNotNull(UUID.fromString(colGuid));
+        }
     }
 
     private void verifyDBIsLinkedToTable(AtlasEntity table) throws AtlasServiceException, JSONException {

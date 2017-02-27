@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -281,24 +282,28 @@ public class AtlasInstanceConverter {
                         case CREATE:
                             List<AtlasEntityHeader> createdEntities = mutatedEntities.get(EntityOperation.CREATE);
                             if (CollectionUtils.isNotEmpty(createdEntities)) {
+                                Collections.reverse(createdEntities);
                                 entityResult.set(EntityResult.OP_CREATED, getGuids(createdEntities));
                             }
                             break;
                         case UPDATE:
                             List<AtlasEntityHeader> updatedEntities = mutatedEntities.get(EntityOperation.UPDATE);
                             if (CollectionUtils.isNotEmpty(updatedEntities)) {
+                                Collections.reverse(updatedEntities);
                                 entityResult.set(EntityResult.OP_UPDATED, getGuids(updatedEntities));
                             }
                             break;
                         case PARTIAL_UPDATE:
                             List<AtlasEntityHeader> partialUpdatedEntities = mutatedEntities.get(EntityOperation.PARTIAL_UPDATE);
                             if (CollectionUtils.isNotEmpty(partialUpdatedEntities)) {
+                                Collections.reverse(partialUpdatedEntities);
                                 entityResult.set(EntityResult.OP_UPDATED, getGuids(partialUpdatedEntities));
                             }
                             break;
                         case DELETE:
                             List<AtlasEntityHeader> deletedEntities = mutatedEntities.get(EntityOperation.DELETE);
                             if (CollectionUtils.isNotEmpty(deletedEntities)) {
+                                Collections.reverse(deletedEntities);
                                 entityResult.set(EntityResult.OP_DELETED, getGuids(deletedEntities));
                             }
                             break;

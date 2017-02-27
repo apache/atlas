@@ -69,8 +69,10 @@ public class EntityResourceTest {
         EntityMutationResponse  resp    = new EntityMutationResponse();
         List<AtlasEntityHeader> headers = toAtlasEntityHeaders(guids);
 
-        for (AtlasEntityHeader entity : headers) {
-            resp.addEntity(EntityMutations.EntityOperation.DELETE, entity);
+        if (CollectionUtils.isNotEmpty(headers)) {
+            for (AtlasEntityHeader entity : headers) {
+                resp.addEntity(EntityMutations.EntityOperation.DELETE, entity);
+            }
         }
 
         when(entitiesStore.deleteByIds(guids)).thenReturn(resp);

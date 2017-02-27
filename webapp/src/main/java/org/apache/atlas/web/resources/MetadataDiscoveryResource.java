@@ -150,6 +150,9 @@ public class MetadataDiscoveryResource {
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (WebApplicationException e) {
+            LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+            throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -225,6 +228,9 @@ public class MetadataDiscoveryResource {
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (WebApplicationException e) {
+            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
+            throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -272,6 +278,9 @@ public class MetadataDiscoveryResource {
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (WebApplicationException e) {
+            LOG.error("Unable to get entity list for query {}", query, e);
+            throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));

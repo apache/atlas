@@ -32,7 +32,6 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -319,7 +318,6 @@ public abstract class AtlasBaseClient {
                         }
                     } else {
                         T entity = clientResponse.getEntity(responseType);
-                        LOG.info("Response = {}", AtlasType.toJson(entity));
                         return entity;
                     }
                 } catch (ClientHandlerException e) {

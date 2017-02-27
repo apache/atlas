@@ -20,6 +20,7 @@ package org.apache.atlas.web.util;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.LocalServletRequest;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.IOUtils;
@@ -135,6 +136,13 @@ public final class Servlets {
         }
 
         return url.toString();
+    }
+
+    public static Response getErrorResponse(AtlasBaseException e) {
+        String message = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
+        Response response = getErrorResponse(message, e.getAtlasErrorCode().getHttpCode());
+
+        return response;
     }
 
     public static Response getErrorResponse(Throwable e, Response.Status status) {
