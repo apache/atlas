@@ -42,22 +42,26 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
         Collection ret = null;
 
         if (v1Obj != null) {
-            if (v1Obj instanceof List) {
-                ret = new ArrayList();
-            } else if (v1Obj instanceof Set) {
+            if (v1Obj instanceof Set) {
                 ret = new LinkedHashSet();
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set",
-                                             v1Obj.getClass().getCanonicalName());
+                ret = new ArrayList();
             }
 
             AtlasArrayType       arrType       = (AtlasArrayType) type;
             AtlasType            elemType      = arrType.getElementType();
             AtlasFormatConverter elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
-            Collection           v1List        = (Collection) v1Obj;
 
-            for (Object v1Elem : v1List) {
-                Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType, ctx);
+            if (v1Obj instanceof Collection) {
+                Collection v1List = (Collection) v1Obj;
+
+                for (Object v1Elem : v1List) {
+                    Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType, ctx);
+
+                    ret.add(convertedVal);
+                }
+            } else {
+                Object convertedVal = elemConverter.fromV1ToV2(v1Obj, elemType, ctx);
 
                 ret.add(convertedVal);
             }
