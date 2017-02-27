@@ -21,6 +21,7 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.RandomStringUtils;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -34,6 +35,11 @@ public class AuditRepositoryTestBase {
 
     private String rand() {
         return RandomStringUtils.randomAlphanumeric(10);
+    }
+
+    @BeforeTest
+    public void setUp() throws Exception{
+        eventRepository = new InMemoryEntityAuditRepository();
     }
 
     @Test
