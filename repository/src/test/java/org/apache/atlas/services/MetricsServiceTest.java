@@ -63,7 +63,7 @@ public class MetricsServiceTest {
         when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
         setupMockGraph();
 
-        metricsService = new MetricsService(mockConfig, mockGraph, mockTypeRegistry);
+        metricsService = new MetricsService(mockConfig, mockGraph);
     }
 
     private void setupMockGraph() throws ScriptException {

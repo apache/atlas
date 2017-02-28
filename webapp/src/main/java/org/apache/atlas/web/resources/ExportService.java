@@ -37,6 +37,8 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +49,12 @@ import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 public class ExportService {
@@ -62,21 +69,17 @@ public class ExportService {
     private final AtlasTypeRegistry    typeRegistry;
     private final AtlasGraph           atlasGraph;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final AtlasGremlinQueryProvider gremlinQueryProvider;
 
     // query engine support
     private final ScriptEngine scriptEngine;
     private final Bindings     bindings;
-    private final String queryByGuid          = "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
-    final private String queryByAttrEquals    = "g.V().has('__typeName','%s').has('%s', attrValue).has('__guid').__guid.toList()";
-    final private String queryByAttrStartWith = "g.V().has('__typeName','%s').filter({it.'%s'.startsWith(attrValue)}).has('__guid').__guid.toList()";
-    final private String queryByAttrEndsWith  = "g.V().has('__typeName','%s').filter({it.'%s'.endsWith(attrValue)}).has('__guid').__guid.toList()";
-    final private String queryByAttrContains  = "g.V().has('__typeName','%s').filter({it.'%s'.contains(attrValue)}).has('__guid').__guid.toList()";
-    final private String queryByAttrMatches   = "g.V().has('__typeName','%s').filter({it.'%s'.matches(attrValue)}).has('__guid').__guid.toList()";
 
     public ExportService(final AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = AtlasGraphProvider.getGraphInstance();
+        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
 
         this.scriptEngine  = new GremlinGroovyScriptEngine();
 
@@ -186,15 +189,15 @@ public class ExportService {
 
             final String queryTemplate;
             if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_STARTS_WITH)) {
-                queryTemplate = queryByAttrStartWith;
+                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_STARTS_WITH);
             } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_ENDS_WITH)) {
-                queryTemplate = queryByAttrEndsWith;
+                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_ENDS_WITH);
             } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_CONTAINS)) {
-                queryTemplate = queryByAttrContains;
+                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_CONTAINS);
             } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_MATCHES)) {
-                queryTemplate = queryByAttrMatches;
+                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_MATCHES);
             } else { // default
-                queryTemplate = queryByAttrEquals;
+                queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_DEFAULT);
             }
 
             for (Map.Entry<String, Object> e : item.getUniqueAttributes().entrySet()) {
@@ -320,7 +323,8 @@ public class ExportService {
     }
 
     private List<String> executeGremlinScriptForHive(String guid) throws ScriptException {
-        return executeGremlinScriptFor(this.queryByGuid, "startGuid", guid);
+        String queryByGuid = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID);
+        return executeGremlinScriptFor(queryByGuid, "startGuid", guid);
     }
 
     private List<String> executeGremlinScriptFor(String query, String parameterName, String parameterValue) {

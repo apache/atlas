@@ -31,6 +31,8 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
 
 import javax.inject.Inject;
@@ -47,29 +49,12 @@ public class EntityLineageService implements AtlasLineageService {
     private static final String OUTPUT_PROCESS_EDGE     =  "__Process.outputs";
 
     private final AtlasGraph graph;
-
-    /**
-     *  Gremlin query to retrieve input/output lineage for specified depth on a DataSet entity.
-     *  return list of Atlas vertices paths.
-     */
-    private static final String PARTIAL_LINEAGE_QUERY = "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
-                                                        "loop('src', {it.loops <= %s}, {((it.object.'__superTypeNames') ? " +
-                                                        "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
-                                                        "path().toList()";
-
-    /**
-     *  Gremlin query to retrieve all (no fixed depth) input/output lineage for a DataSet entity.
-     *  return list of Atlas vertices paths.
-     */
-    private static final String FULL_LINEAGE_QUERY    = "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
-                                                        "loop('src', {((it.path.contains(it.object)) ? false : true)}, " +
-                                                        "{((it.object.'__superTypeNames') ? " +
-                                                        "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
-                                                        "path().toList()";
+    private final AtlasGremlinQueryProvider gremlinQueryProvider;
 
     @Inject
     EntityLineageService() throws DiscoveryException {
         this.graph = AtlasGraphProvider.getGraphInstance();
+        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
     }
 
     @Override
@@ -157,20 +142,24 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageQuery = null;
 
         if (direction.equals(LineageDirection.INPUT)) {
-            if (depth < 1) {
-                lineageQuery = String.format(FULL_LINEAGE_QUERY, entityGuid, OUTPUT_PROCESS_EDGE, INPUT_PROCESS_EDGE);
-            } else {
-                lineageQuery = String.format(PARTIAL_LINEAGE_QUERY, entityGuid, OUTPUT_PROCESS_EDGE, INPUT_PROCESS_EDGE, depth);
-            }
+            lineageQuery = generateLineageQuery(entityGuid, depth, OUTPUT_PROCESS_EDGE, INPUT_PROCESS_EDGE);
 
         } else if (direction.equals(LineageDirection.OUTPUT)) {
-            if (depth < 1) {
-                lineageQuery = String.format(FULL_LINEAGE_QUERY, entityGuid, INPUT_PROCESS_EDGE, OUTPUT_PROCESS_EDGE);
-            } else {
-                lineageQuery = String.format(PARTIAL_LINEAGE_QUERY, entityGuid, INPUT_PROCESS_EDGE, OUTPUT_PROCESS_EDGE, depth);
-            }
+            lineageQuery = generateLineageQuery(entityGuid, depth, INPUT_PROCESS_EDGE, OUTPUT_PROCESS_EDGE);
         }
 
+        return lineageQuery;
+    }
+
+    private String generateLineageQuery(String entityGuid, int depth, String incomingFrom, String outgoingTo) {
+        String lineageQuery;
+        if (depth < 1) {
+            String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.FULL_LINEAGE);
+            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo);
+        } else {
+            String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.PARTIAL_LINEAGE);
+            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo, depth);
+        }
         return lineageQuery;
     }
 
