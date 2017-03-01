@@ -22,7 +22,9 @@ import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -31,14 +33,12 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
-import org.apache.atlas.authorize.AtlasActionTypes;
-import org.apache.atlas.authorize.AtlasResourceTypes;
-import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
@@ -54,13 +54,7 @@ import javax.inject.Singleton;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -70,9 +64,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.commons.configuration.Configuration;
-
-import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
 
 /**
@@ -369,7 +360,7 @@ public class AdminResource {
         try {
             AtlasImportRequest   request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
             ByteArrayInputStream inputStream   = new ByteArrayInputStream(bytes);
-            ImportService        importService = new ImportService(this.typesDefStore, this.entityStore);
+            ImportService        importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
 
             ZipSource zipSource = new ZipSource(inputStream);
 
@@ -405,7 +396,7 @@ public class AdminResource {
 
         try {
             AtlasImportRequest request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
-            ImportService      importService = new ImportService(this.typesDefStore, this.entityStore);
+            ImportService      importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
 
             result = importService.run(request, Servlets.getUserName(httpServletRequest),
                                        Servlets.getHostName(httpServletRequest),

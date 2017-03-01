@@ -37,8 +37,12 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__traitNames').count()";
             case ENTITIES_FOR_TAG_METRIC:
                 return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.'__type.category'.name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.'__typeName'}.cap.toList()";
-            case EXPORT_BY_GUID:
+            case EXPORT_BY_GUID_FULL:
                 return "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
+            case EXPORT_BY_GUID_CONNECTED_IN_EDGE:
+                return "g.V('__guid', startGuid).inE().outV().has('__guid').__guid.dedup().toList()";
+            case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
+                return "g.V('__guid', startGuid).outE().inV().has('__guid').__guid.dedup().toList()";
             case EXPORT_TYPE_STARTS_WITH:
                 return "g.V().has('__typeName','%s').filter({it.'%s'.startsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_ENDS_WITH:

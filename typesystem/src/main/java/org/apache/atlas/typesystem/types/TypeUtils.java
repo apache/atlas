@@ -22,12 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -82,6 +77,22 @@ public class TypeUtils {
         public static <L, R> Pair<L, R> of(L left, R right) {
             return new Pair<>(left, right);
         }
+
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            Pair p = (Pair)o;
+
+            return Objects.equals(left, p.left) && Objects.equals(right, p.right);
+        }
+
+        public int hashCode() { return Objects.hash(left, right); }
     }
 
     /**

@@ -27,6 +27,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -47,65 +48,44 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_FETCH_TYPE;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_ATTR_MATCH_TYPE;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_FULL;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_CONNECTED;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_STARTS_WITH;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_CONTAINS;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_MATCHES;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.MATCH_TYPE_ENDS_WITH;
 
 public class ExportService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportService.class);
 
-    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
-    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
-    public static final String MATCH_TYPE_ENDS_WITH   = "endsWith";
-    public static final String MATCH_TYPE_CONTAINS    = "contains";
-    public static final String MATCH_TYPE_MATCHES     = "matches";
-
-    private final AtlasTypeRegistry    typeRegistry;
-    private final AtlasGraph           atlasGraph;
-    private final EntityGraphRetriever entityGraphRetriever;
+    private final AtlasTypeRegistry         typeRegistry;
+    private final AtlasGraph                atlasGraph;
+    private final EntityGraphRetriever      entityGraphRetriever;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
-
-    // query engine support
-    private final ScriptEngine scriptEngine;
-    private final Bindings     bindings;
 
     public ExportService(final AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = AtlasGraphProvider.getGraphInstance();
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-
-        this.scriptEngine  = new GremlinGroovyScriptEngine();
-
-        //Do not cache script compilations due to memory implications
-        scriptEngine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom",  ScriptContext.ENGINE_SCOPE);
-
-        bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE);
-    }
-
-    private class ExportContext {
-        final Set<String>       guidsProcessed = new HashSet<>();
-        final List<String>      guidsToProcess = new ArrayList<>();
-        final AtlasExportResult result;
-        final ZipSink           sink;
-
-        ExportContext(AtlasExportResult result, ZipSink sink) {
-            this.result = result;
-            this.sink   = sink;
-        }
     }
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
                                  String requestingIP) throws AtlasBaseException {
-        long startTimestamp = System.currentTimeMillis();
-        ExportContext context = new ExportContext(new AtlasExportResult(request, userName, hostName, requestingIP,
-                                                                        System.currentTimeMillis()), exportSink);
+        long              startTime = System.currentTimeMillis();
+        AtlasExportResult result    = new AtlasExportResult(request, userName, hostName, requestingIP, startTime);
+        ExportContext     context   = new ExportContext(result, exportSink);
 
         try {
             LOG.info("==> export(user={}, from={})", userName, requestingIP);
@@ -114,13 +94,14 @@ public class ExportService {
                 processObjectId(item, context);
             }
 
+            long endTime = System.currentTimeMillis();
+
             context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
             context.sink.setTypesDef(context.result.getData().getTypesDef());
             context.result.setData(null);
             context.result.setOperationStatus(AtlasExportResult.OperationStatus.SUCCESS);
+            context.result.incrementMeticsCounter("duration", (int) (endTime - startTime));
 
-            long endTimestamp = System.currentTimeMillis();
-            context.result.incrementMeticsCounter("duration", (int) (endTimestamp - startTimestamp));
             context.sink.setResult(context.result);
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
@@ -140,15 +121,15 @@ public class ExportService {
             List<AtlasEntity> entities = getStartingEntity(item, context);
 
             for (AtlasEntity entity: entities) {
-                processEntity(entity, context);
+                processEntity(entity, context, TraversalDirection.UNKNOWN);
             }
 
             while (!context.guidsToProcess.isEmpty()) {
-                String guid = context.guidsToProcess.remove(0);
+                String             guid      = context.guidsToProcess.remove(0);
+                TraversalDirection direction = context.guidDirection.get(guid);
+                AtlasEntity        entity    = entityGraphRetriever.toAtlasEntity(guid);
 
-                AtlasEntity e = entityGraphRetriever.toAtlasEntity(guid);
-
-                processEntity(e, context);
+                processEntity(entity, context, direction);
             }
         } catch (AtlasBaseException excp) {
             context.result.setOperationStatus(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS);
@@ -178,23 +159,14 @@ public class ExportService {
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
             }
 
-            AtlasExportRequest request = context.result.getRequest();
-            String matchType = null;
-
-            if (MapUtils.isNotEmpty(request.getOptions())) {
-                if (request.getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
-                    matchType = request.getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
-                }
-            }
-
             final String queryTemplate;
-            if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_STARTS_WITH)) {
+            if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_STARTS_WITH)) {
                 queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_STARTS_WITH);
-            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_ENDS_WITH)) {
+            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_ENDS_WITH)) {
                 queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_ENDS_WITH);
-            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_CONTAINS)) {
+            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_CONTAINS)) {
                 queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_CONTAINS);
-            } else if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_MATCHES)) {
+            } else if (StringUtils.equalsIgnoreCase(context.matchType, MATCH_TYPE_MATCHES)) {
                 queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_MATCHES);
             } else { // default
                 queryTemplate = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_TYPE_DEFAULT);
@@ -211,7 +183,7 @@ public class ExportService {
                 }
 
                 String       query = String.format(queryTemplate, typeName, attribute.getQualifiedName());
-                List<String> guids = executeGremlinScriptFor(query, "attrValue", attrValue.toString());
+                List<String> guids = executeGremlinQuery(query, "attrValue", attrValue.toString(), context);
 
                 if (CollectionUtils.isNotEmpty(guids)) {
                     for (String guid : guids) {
@@ -228,13 +200,13 @@ public class ExportService {
                 break;
             }
 
-            LOG.info("export(item={}; matchType={}): found {} entities", item, matchType, ret.size());
+            LOG.info("export(item={}; matchType={}, fetchType={}): found {} entities", item, context.matchType, context.fetchType, ret.size());
         }
 
         return ret;
     }
 
-    private void processEntity(AtlasEntity entity, ExportContext context) throws AtlasBaseException {
+    private void processEntity(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> processEntity({})", AtlasTypeUtil.getAtlasObjectId(entity));
         }
@@ -247,7 +219,7 @@ public class ExportService {
             addClassificationsAsNeeded(entity, context);
             addEntity(entity, context);
 
-            getConnectedEntityGuids(entity, context);
+            getConntedEntitiesBasedOnOption(entity, context, direction);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -255,26 +227,125 @@ public class ExportService {
         }
     }
 
-    private void getConnectedEntityGuids(AtlasEntity entity, ExportContext context) {
+    private void getConntedEntitiesBasedOnOption(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
+        switch (context.fetchType) {
+            case CONNECTED:
+                getEntityGuidsForConnectedFetch(entity, context, direction);
+                break;
 
-        try {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+            case FULL:
+            default:
+                getEntityGuidsForFullFetch(entity, context);
+        }
+    }
+
+    private void getEntityGuidsForConnectedFetch(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
+        if (direction == TraversalDirection.UNKNOWN) {
+            getConnectedEntityGuids(entity, context, TraversalDirection.OUTWARD, TraversalDirection.OUTWARD);
+        } else {
+            if (isProcessEntity(entity)) {
+                direction = TraversalDirection.OUTWARD;
             }
 
-            List<String> result = executeGremlinScriptForHive(entity.getGuid());
-            if(result == null) {
+            getConnectedEntityGuids(entity, context, direction);
+        }
+    }
+
+    private boolean isProcessEntity(AtlasEntity entity) throws AtlasBaseException {
+        String          typeName   = entity.getTypeName();
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        return entityType.isSubTypeOf(AtlasBaseTypeDef.ATLAS_TYPE_PROCESS);
+    }
+
+    private void getConnectedEntityGuids(AtlasEntity entity, ExportContext context, TraversalDirection... directions) {
+        if(directions == null) {
+            return;
+        }
+
+        try {
+            for (TraversalDirection direction : directions) {
+                String query = getQueryForTraversalDirection(direction);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
+                }
+
+                List<String> guids = executeGremlinQuery(query, entity.getGuid(), context);
+
+                if (CollectionUtils.isEmpty(guids)) {
+                    continue;
+                }
+
+                for (String guid : guids) {
+                    TraversalDirection currentDirection = context.guidDirection.get(guid);
+
+                    if (currentDirection == null) {
+                        context.guidDirection.put(guid, direction);
+
+                        if (!context.guidsToProcess.contains(guid)) {
+                            context.guidsToProcess.add(guid);
+                        }
+                    } else if (currentDirection == TraversalDirection.OUTWARD && direction == TraversalDirection.INWARD) {
+                        context.guidDirection.put(guid, direction);
+
+                        // the entity should be reprocessed to get inward entities
+                        context.guidsProcessed.remove(guid);
+
+                        if (!context.guidsToProcess.contains(guid)) {
+                            context.guidsToProcess.add(guid);
+                        }
+                    }
+                }
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), guids.size(), context.guidsToProcess.size());
+                }
+            }
+
+        } catch (ScriptException e) {
+            LOG.error("Child entities could not be added for %s", entity.getGuid());
+        }
+    }
+
+    private String getQueryForTraversalDirection(TraversalDirection direction) {
+        switch (direction) {
+            case INWARD:
+                return this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_CONNECTED_IN_EDGE);
+
+            default:
+            case OUTWARD:
+                return this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_CONNECTED_OUT_EDGE);
+        }
+    }
+
+    private void getEntityGuidsForFullFetch(AtlasEntity entity, ExportContext context) {
+
+        try {
+            String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+            }
+
+            List<String> result = executeGremlinQuery(query, entity.getGuid(), context);
+
+            if (result == null) {
                 return;
             }
 
             for (String guid : result) {
                 if (!context.guidsProcessed.contains(guid)) {
-                    context.guidsToProcess.add(guid);
+                    if (!context.guidsToProcess.contains(guid)) {
+                        context.guidsToProcess.add(guid);
+                    }
+
+                    context.guidDirection.put(guid, TraversalDirection.BOTH);
                 }
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
+                LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
             }
         } catch (ScriptException e) {
             LOG.error("Child entities could not be added for %s", entity.getGuid());
@@ -322,21 +393,107 @@ public class ExportService {
         }
     }
 
-    private List<String> executeGremlinScriptForHive(String guid) throws ScriptException {
-        String queryByGuid = gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID);
-        return executeGremlinScriptFor(queryByGuid, "startGuid", guid);
+    private List<String> executeGremlinQuery(String query, String guid, ExportContext context) throws ScriptException {
+        context.bindings.put("startGuid", guid);
+        return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine,
+                context.bindings,
+                query,
+                false);
     }
 
-    private List<String> executeGremlinScriptFor(String query, String parameterName, String parameterValue) {
-        bindings.put(parameterName, parameterValue);
+    private List<String> executeGremlinQuery(String query, String parameterName, String parameterValue, ExportContext context) {
+        context.bindings.put(parameterName, parameterValue);
         try {
-            return (List<String>) atlasGraph.executeGremlinScript(this.scriptEngine,
-                    this.bindings,
+            return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine,
+                    context.bindings,
                     query,
                     false);
         } catch (ScriptException e) {
             LOG.error("Script execution failed for query: ", query, e);
             return null;
+        }
+    }
+
+
+    private enum TraversalDirection {
+        UNKNOWN,
+        INWARD,
+        OUTWARD,
+        BOTH;
+    }
+
+
+    public enum ExportFetchType {
+        FULL(FETCH_TYPE_FULL),
+        CONNECTED(FETCH_TYPE_CONNECTED);
+
+        final String str;
+        ExportFetchType(String s) {
+            this.str = s;
+        }
+
+        public static final ExportFetchType from(String s) {
+            for (ExportFetchType b : ExportFetchType.values()) {
+                if (b.str.equalsIgnoreCase(s)) {
+                    return b;
+                }
+            }
+
+            return FULL;
+        }
+    }
+
+
+    private class ExportContext {
+        final Set<String>                     guidsProcessed = new HashSet<>();
+        final List<String>                    guidsToProcess = new ArrayList<>();
+        final Map<String, TraversalDirection> guidDirection  = new HashMap<>();
+        final AtlasExportResult               result;
+        final ZipSink                         sink;
+
+        private final GremlinGroovyScriptEngine scriptEngine;
+        private final Bindings                  bindings;
+        private final ExportFetchType fetchType;
+        private final String                    matchType;
+
+        ExportContext(AtlasExportResult result, ZipSink sink) {
+            this.result = result;
+            this.sink   = sink;
+
+            this.scriptEngine  = new GremlinGroovyScriptEngine();
+
+            //Do not cache script compilations due to memory implications
+            scriptEngine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals",
+                    "phantom",
+                    ScriptContext.ENGINE_SCOPE);
+
+            bindings  = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE);
+            fetchType = getFetchType(result.getRequest());
+            matchType = getMatchType(result.getRequest());
+        }
+
+        private ExportFetchType getFetchType(AtlasExportRequest request) {
+            Object fetchOption = request.getOptions() != null ? request.getOptions().get(OPTION_FETCH_TYPE) : null;
+
+            if (fetchOption instanceof String) {
+                return ExportFetchType.from((String) fetchOption);
+            } else if (fetchOption instanceof ExportFetchType) {
+                return (ExportFetchType) fetchOption;
+            }
+
+            return ExportFetchType.FULL;
+        }
+
+        private String getMatchType(AtlasExportRequest request) {
+            String matchType = null;
+
+            if (MapUtils.isNotEmpty(request.getOptions())) {
+                if (request.getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
+                    matchType = request.getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
+                }
+            }
+
+            return matchType;
         }
     }
 }

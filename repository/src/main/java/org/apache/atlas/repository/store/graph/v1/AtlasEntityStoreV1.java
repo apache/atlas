@@ -142,7 +142,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
-    public EntityMutationResponse bulkImport(EntityStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
+    public EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> bulkImport()");
         }
@@ -168,6 +168,10 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
             EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
 
+            if(CollectionUtils.isNotEmpty(entity.getClassifications())) {
+                addClassifications(entity.getGuid(), entity.getClassifications());
+            }
+
             updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
@@ -181,6 +185,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             if (resp.getGuidAssignments() != null) {
                 ret.getGuidAssignments().putAll(resp.getGuidAssignments());
             }
+
+            entityStream.onImportComplete(entity.getGuid());
         }
 
         importResult.getProcessedEntities().addAll(processedGuids);

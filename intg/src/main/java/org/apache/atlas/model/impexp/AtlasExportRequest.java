@@ -18,12 +18,6 @@
 package org.apache.atlas.model.impexp;
 
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -33,6 +27,11 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -44,12 +43,17 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasExportRequest implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
-    public static final String EXPORT_PARAM_OPTION             = "FORMAT";
-    public static final String EXPORT_PARAM_OPTION_FORMAT_JSON = "JSON";
-    public static final String EXPORT_PARAM_OPTION_FORMAT_ZIP  = "ZIP";
-
+    public static final String OPTION_FETCH_TYPE      = "fetchType";
+    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
+    public static final String FETCH_TYPE_FULL        = "full";
+    public static final String FETCH_TYPE_CONNECTED   = "connected";
+    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH   = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS    = "contains";
+    public static final String MATCH_TYPE_MATCHES     = "matches";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
     private Map<String, Object> options       = new HashMap<>();

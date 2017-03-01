@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.resources;
 
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.codehaus.jackson.type.TypeReference;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -182,6 +183,13 @@ public class ZipSource implements EntityImportStream {
         } catch (AtlasBaseException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    @Override
+    public void onImportComplete(String guid) {
+        if(guid != null) {
+            guidEntityJsonMap.remove(guid);
         }
     }
 }

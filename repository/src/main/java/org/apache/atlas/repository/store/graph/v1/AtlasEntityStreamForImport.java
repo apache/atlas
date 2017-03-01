@@ -18,6 +18,9 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+
+import java.util.List;
 
 public class AtlasEntityStreamForImport extends AtlasEntityStream implements EntityImportStream {
     public AtlasEntityStreamForImport(AtlasEntity entity) {
@@ -26,5 +29,10 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
 
     public AtlasEntityStreamForImport(AtlasEntity entity, EntityStream entityStream) {
         super(entity, entityStream);
+    }
+
+    @Override
+    public void onImportComplete(String guid) {
+
     }
 }

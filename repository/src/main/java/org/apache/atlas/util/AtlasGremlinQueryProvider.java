@@ -42,7 +42,9 @@ public abstract class AtlasGremlinQueryProvider {
         ENTITIES_FOR_TAG_METRIC,
 
         // Import Export related Queries
-        EXPORT_BY_GUID,
+        EXPORT_BY_GUID_FULL,
+        EXPORT_BY_GUID_CONNECTED_IN_EDGE,
+        EXPORT_BY_GUID_CONNECTED_OUT_EDGE,
         EXPORT_TYPE_STARTS_WITH,
         EXPORT_TYPE_ENDS_WITH,
         EXPORT_TYPE_CONTAINS,

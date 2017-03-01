@@ -17,5 +17,8 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+
 public interface EntityImportStream extends EntityStream {
+
+    void onImportComplete(String guid);
 }

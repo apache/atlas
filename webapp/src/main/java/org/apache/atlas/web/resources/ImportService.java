@@ -18,21 +18,22 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.commons.io.FileUtils;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 
 
 public class ImportService {
@@ -40,14 +41,16 @@ public class ImportService {
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasEntityStore  entityStore;
+    private final AtlasTypeRegistry typeRegistry;
 
     private long startTimestamp;
     private long endTimestamp;
 
 
-    public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore) {
+    public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
         this.entityStore  = entityStore;
+        this.typeRegistry = typeRegistry;
     }
 
     public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
@@ -116,9 +119,13 @@ public class ImportService {
     }
 
     private void processTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        setGuidToEmpty(typeDefinitionMap.getEntityDefs());
-        typeDefStore.updateTypesDef(typeDefinitionMap);
+        setGuidToEmpty(typeDefinitionMap);
+        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typeDefinitionMap, this.typeRegistry);
+        if (!typesToCreate.isEmpty()) {
+            typeDefStore.createTypesDef(typesToCreate);
+        }
 
+        typeDefStore.updateTypesDef(typeDefinitionMap);
         updateMetricsForTypesDef(typeDefinitionMap, result);
     }
 
@@ -129,9 +136,21 @@ public class ImportService {
         result.incrementMeticsCounter("typedef:struct", typeDefinitionMap.getStructDefs().size());
     }
 
-    private void setGuidToEmpty(List<AtlasEntityDef> entityDefList) {
-        for (AtlasEntityDef edf: entityDefList) {
-            edf.setGuid("");
+    private void setGuidToEmpty(AtlasTypesDef typesDef) {
+        for (AtlasEntityDef def: typesDef.getEntityDefs()) {
+            def.setGuid(null);
+        }
+
+        for (AtlasClassificationDef def: typesDef.getClassificationDefs()) {
+            def.setGuid(null);
+        }
+
+        for (AtlasEnumDef def: typesDef.getEnumDefs()) {
+            def.setGuid(null);
+        }
+
+        for (AtlasStructDef def: typesDef.getStructDefs()) {
+            def.setGuid(null);
         }
     }
 
