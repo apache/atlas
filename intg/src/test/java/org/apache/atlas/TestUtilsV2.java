@@ -743,7 +743,11 @@ public final class TestUtilsV2 {
                         new AtlasAttributeDef("databaseComposite", DATABASE_TYPE, true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
-                                Collections.<AtlasConstraintDef>emptyList()));
+                                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                    add(new AtlasStructDef.AtlasConstraintDef(
+                                            AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                                }}
+                        ));
 
         AtlasClassificationDef piiTypeDefinition =
                 AtlasTypeUtil.createTraitTypeDef(PII, PII + _description, ImmutableSet.<String>of());

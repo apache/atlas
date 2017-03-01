@@ -75,7 +75,6 @@ import static org.apache.atlas.TestUtils.randomString;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
@@ -814,22 +813,30 @@ public class AtlasEntityStoreV1Test {
 
     @Test
     public void testSetObjectIdAttrToNull() throws Exception {
-        final AtlasEntity            dbEntity            = TestUtilsV2.createDBEntity();
-        EntityMutationResponse       dbCreationResponse  = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
-        final AtlasEntity            tableEntity         = TestUtilsV2.createTableEntity(dbEntity);
+        final AtlasEntity dbEntity  = TestUtilsV2.createDBEntity();
+        final AtlasEntity db2Entity = TestUtilsV2.createDBEntity();
+
+        entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        entityStore.createOrUpdate(new AtlasEntityStream(db2Entity), false);
+
+        final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
+
+        tableEntity.setAttribute("databaseComposite", AtlasTypeUtil.getAtlasObjectId(db2Entity));
+
         final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(tableEntity), false);
         final AtlasEntityHeader      createdTblHeader    = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
         final AtlasEntity            createdTblEntity    = getEntityFromStore(createdTblHeader);
 
         init();
 
-        createdTblEntity.setAttribute("database", null);
+        createdTblEntity.setAttribute("databaseComposite", null);
 
         final EntityMutationResponse tblUpdateResponse = entityStore.createOrUpdate(new AtlasEntityStream(createdTblEntity), true);
         final AtlasEntityHeader      updatedTblHeader  = tblUpdateResponse.getFirstEntityPartialUpdated();
         final AtlasEntity            updatedTblEntity  = getEntityFromStore(updatedTblHeader);
+        final AtlasEntity            deletedDb2Entity  = getEntityFromStore(db2Entity.getGuid());
 
-        assertNull(updatedTblEntity.getAttribute("database"));
+        assertEquals(deletedDb2Entity.getStatus(), AtlasEntity.Status.DELETED);
     }
 
     private String randomStrWithReservedChars() {
@@ -925,7 +932,11 @@ public class AtlasEntityStoreV1Test {
     }
 
     private AtlasEntity getEntityFromStore(AtlasEntityHeader header) throws AtlasBaseException {
-        AtlasEntityWithExtInfo entity = header != null ? entityStore.getById(header.getGuid()) : null;
+        return header != null ? getEntityFromStore(header.getGuid()) : null;
+    }
+
+    private AtlasEntity getEntityFromStore(String guid) throws AtlasBaseException {
+        AtlasEntityWithExtInfo entity = guid != null ? entityStore.getById(guid) : null;
 
         return entity != null ? entity.getEntity() : null;
     }
