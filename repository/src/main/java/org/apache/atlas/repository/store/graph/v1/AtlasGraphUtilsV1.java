@@ -225,8 +225,7 @@ public class AtlasGraphUtilsV1 {
 
     public static AtlasVertex findByGuid(String guid) {
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
-                                                  .has(Constants.GUID_PROPERTY_KEY, guid)
-                                                  .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+                                                  .has(Constants.GUID_PROPERTY_KEY, guid);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 

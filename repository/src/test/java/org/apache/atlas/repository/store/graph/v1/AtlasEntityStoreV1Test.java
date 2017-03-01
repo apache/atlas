@@ -261,7 +261,6 @@ public class AtlasEntityStoreV1Test {
         partsMap.put("part0", new AtlasStruct(TestUtils.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "test"));
 
         tableEntity.setAttribute("partitionsMap", partsMap);
-        entitiesInfo.addReferredEntity(tableEntity);
 
         init();
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -365,10 +364,14 @@ public class AtlasEntityStoreV1Test {
         AtlasEntityHeader tableDefinition6 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition6));
 
+        Assert.assertEquals(entityStore.getById(col0.getGuid()).getEntity().getStatus(), AtlasEntity.Status.ACTIVE);
+        Assert.assertEquals(entityStore.getById(col1.getGuid()).getEntity().getStatus(), AtlasEntity.Status.ACTIVE);
+
         //Drop the first key and change the class type as well to col0
         columnsMap.clear();
         columnsMap.put("col0", AtlasTypeUtil.getAtlasObjectId(col0));
         init();
+
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
         AtlasEntityHeader tableDefinition7 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         validateEntity(entitiesInfo, getEntityFromStore(tableDefinition7));
@@ -493,25 +496,6 @@ public class AtlasEntityStoreV1Test {
         Assert.assertNull(updatedTable.getAttribute("description"));
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
     }
-
-//    private AtlasEntity clearSubOrdinates(List<AtlasObjectId> employees, int index) {
-//
-//        AtlasEntity ret = null;
-//        AtlasObjectId employee = employees.get(index);
-//        AtlasEntity subOrdClone = new ArrayList<>(subOrdinates);
-//        ret = subOrdClone.remove(index);
-//
-//        employees.get(index).setAttribute("subordinates", subOrdClone);
-//        return ret;
-//    }
-//
-//    private int addSubordinate(AtlasEntity manager, AtlasEntity employee) {
-//        List<AtlasEntity> subOrdinates = (List<AtlasEntity>) manager.getAttribute("subordinates");
-//        subOrdinates.add(employee);
-//
-//        manager.setAttribute("subordinates", subOrdinates);
-//        return subOrdinates.size() - 1;
-//    }
 
     @Test(dependsOnMethods = "testCreate")
     public void testClassUpdate() throws Exception {

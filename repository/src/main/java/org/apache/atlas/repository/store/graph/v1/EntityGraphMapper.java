@@ -59,6 +59,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,6 +69,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CR
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 
@@ -437,7 +439,11 @@ public class EntityGraphMapper {
 
             Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), ctx.getVertexProperty(), currentMap, newMap);
 
-            Set<String> newKeys = new HashSet<>(newMap.keySet());
+            for (Object newEntry : newMap.values()) {
+                updateInConsistentOwnedMapVertices(ctx, mapType, newEntry);
+            }
+
+            Set<String> newKeys = new LinkedHashSet<>(newMap.keySet());
             newKeys.addAll(finalMap.keySet());
 
             // for dereference on way out
@@ -534,21 +540,21 @@ public class EntityGraphMapper {
 
     private Object mapCollectionElementsToVertex(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
         switch(ctx.getAttrType().getTypeCategory()) {
-            case PRIMITIVE:
-            case ENUM:
-                return ctx.getValue();
+        case PRIMITIVE:
+        case ENUM:
+            return ctx.getValue();
 
-            case STRUCT:
-                return mapStructValue(ctx, context);
+        case STRUCT:
+            return mapStructValue(ctx, context);
 
-            case OBJECT_ID_TYPE:
-                AtlasEntityType instanceType = getInstanceType(ctx.getValue());
-                ctx.setElementType(instanceType);
-                return mapObjectIdValue(ctx, context);
+        case OBJECT_ID_TYPE:
+            AtlasEntityType instanceType = getInstanceType(ctx.getValue());
+            ctx.setElementType(instanceType);
+            return mapObjectIdValue(ctx, context);
 
-            case MAP:
-            case ARRAY:
-            default:
+        case MAP:
+        case ARRAY:
+        default:
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, ctx.getAttrType().getTypeCategory().name());
         }
     }
@@ -774,6 +780,19 @@ public class EntityGraphMapper {
 
     public static AtlasEntityHeader constructHeader(AtlasObjectId id) {
         return new AtlasEntityHeader(id.getTypeName(), id.getGuid(), id.getUniqueAttributes());
+    }
+
+    private void updateInConsistentOwnedMapVertices(AttributeMutationContext ctx, AtlasMapType mapType, Object val) {
+        if (mapType.getValueType().getTypeCategory() == TypeCategory.OBJECT_ID_TYPE) {
+            AtlasEdge edge = (AtlasEdge) val;
+            if (ctx.getAttribute().isOwnedRef() &&
+                GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED &&
+                GraphHelper.getStatus(edge.getInVertex()) == AtlasEntity.Status.DELETED) {
+                //Resurrect the vertex and edge to ACTIVE state
+                GraphHelper.setProperty(edge, STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+                GraphHelper.setProperty(edge.getInVertex(), STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+            }
+        }
     }
 
     public void addClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications)

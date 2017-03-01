@@ -183,6 +183,19 @@ public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
     }
 
     @Override
+    protected void assertTestDisconnectMapReferenceFromClassType(final String mapOwnerGuid) throws Exception {
+        AtlasEntity.AtlasEntityWithExtInfo mapOwnerInstance = entityStore.getById(mapOwnerGuid);
+        Map<String, AtlasObjectId> map =
+            (Map<String, AtlasObjectId>) mapOwnerInstance.getEntity().getAttribute("map");
+        assertNotNull(map);
+        assertEquals(map.size(), 1);
+        Map<String, AtlasObjectId> biMap =
+            (Map<String, AtlasObjectId>) mapOwnerInstance.getEntity().getAttribute("biMap");
+        assertNotNull(biMap);
+        assertEquals(biMap.size(), 1);
+    }
+
+    @Override
     protected void assertTestDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes(final String structContainerGuid) throws Exception {
         // Verify that the unidirectional references from the struct and trait instances
         // to the deleted entities were not disconnected.

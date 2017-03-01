@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
@@ -144,6 +145,23 @@ public class HardDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
         for (AtlasObjectId column : columns) {
             assertFalse(column.getGuid().equals(columnGuid));
         }
+    }
+
+    protected void assertTestDisconnectMapReferenceFromClassType(final String mapOwnerGuid) throws Exception {
+        // Verify map references from mapOwner were disconnected.
+        AtlasEntity.AtlasEntityWithExtInfo mapOwnerInstance = entityStore.getById(mapOwnerGuid);
+        Map<String, AtlasObjectId> map =
+            (Map<String, AtlasObjectId>) mapOwnerInstance.getEntity().getAttribute("map");
+        Assert.assertNull(map);
+        Map<String, AtlasObjectId> biMap =
+            (Map<String, AtlasObjectId>) mapOwnerInstance.getEntity().getAttribute("biMap");
+        Assert.assertNull(biMap);
+
+        AtlasVertex mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerGuid);
+        Object object = mapOwnerVertex.getProperty("MapOwner.map.value1", String.class);
+        assertNull(object);
+        object = mapOwnerVertex.getProperty("MapOwner.biMap.value1", String.class);
+        assertNull(object);
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
@@ -37,6 +38,8 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -128,7 +131,11 @@ public abstract class AtlasDeleteHandlerV1Test {
         AtlasEntityDef mapOwnerDef = AtlasTypeUtil.createClassTypeDef("CompositeMapOwner", "CompositeMapOwner_description",
             ImmutableSet.<String>of(),
             AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
-            AtlasTypeUtil.createOptionalAttrDef("map", "map<string,string>")
+            new AtlasStructDef.AtlasAttributeDef("map", "map<string,CompositeMapValue>", true,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
+                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                    add(new AtlasStructDef.AtlasConstraintDef(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                }})
         );
 
         final AtlasTypesDef typesDef = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
@@ -713,6 +720,109 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertVerticesDeleted(getVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, "TestTrait"));
     }
 
+
+    /**
+     * Verify deleting entities that are the target of class map references.
+     */
+    @Test
+    public void testDisconnectMapReferenceFromClassType() throws Exception {
+        // Define type for map value.
+        AtlasStructDef.AtlasAttributeDef[] mapValueAttributes = new AtlasStructDef.AtlasAttributeDef[]{
+            new AtlasStructDef.AtlasAttributeDef("biMapOwner", "MapOwner",
+                true,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, false,
+                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                    add(new AtlasStructDef.AtlasConstraintDef(
+                        AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                        put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "biMap");
+                    }}));
+                }})};
+
+        AtlasEntityDef mapValueContainerDef =
+            new AtlasEntityDef("MapValue", "MapValue_desc", "1.0",
+                Arrays.asList(mapValueAttributes), Collections.<String>emptySet());
+
+        // Define type with unidirectional and bidirectional map references,
+        // where the map value is a class reference to MapValue.
+
+        AtlasStructDef.AtlasAttributeDef[] mapOwnerAttributes = new AtlasStructDef.AtlasAttributeDef[]{
+            new AtlasStructDef.AtlasAttributeDef("map", "map<string,MapValue>",
+                true,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, false,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()),
+            new AtlasStructDef.AtlasAttributeDef("biMap", "map<string,MapValue>",
+                true,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, false,
+                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                    add(new AtlasStructDef.AtlasConstraintDef(
+                        AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
+                        put(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "biMapOwner");
+                    }}));
+                }})};
+
+        AtlasEntityDef mapOwnerContainerDef =
+            new AtlasEntityDef("MapOwner", "MapOwner_desc", "1.0",
+                Arrays.asList(mapOwnerAttributes), Collections.<String>emptySet());
+
+        AtlasTypesDef typesDef = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
+            ImmutableList.<AtlasStructDef>of(),
+            ImmutableList.<AtlasClassificationDef>of(),
+            ImmutableList.<AtlasEntityDef>of(mapValueContainerDef, mapOwnerContainerDef));
+
+        typeDefStore.createTypesDef(typesDef);
+
+        // Create instances of MapOwner and MapValue.
+        // Set MapOwner.map and MapOwner.biMap with one entry that references MapValue instance.
+        AtlasEntity mapOwnerInstance = new AtlasEntity("MapOwner");
+        AtlasEntity mapValueInstance = new AtlasEntity("MapValue");
+
+        mapOwnerInstance.setAttribute("map", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueInstance)));
+        mapOwnerInstance.setAttribute("biMap", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueInstance)));
+        // Set biMapOwner reverse reference on MapValue.
+        mapValueInstance.setAttribute("biMapOwner", AtlasTypeUtil.getAtlasObjectId(mapOwnerInstance));
+
+        AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
+        entities.addReferredEntity(mapValueInstance);
+        entities.addEntity(mapOwnerInstance);
+
+        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entities), false);
+        Assert.assertEquals(response.getCreatedEntities().size(), 2);
+        final List<AtlasEntityHeader> mapOwnerCreated = response.getCreatedEntitiesByTypeName("MapOwner");
+        AtlasEntity.AtlasEntityWithExtInfo mapOwnerEntity = entityStore.getById(mapOwnerCreated.get(0).getGuid());
+
+        String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(typeRegistry.getEntityTypeByName("MapOwner"), "map");
+        String mapEntryLabel = edgeLabel + "." + "value1";
+        AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(mapEntryLabel);
+
+        // Verify MapOwner.map attribute has expected value.
+        String mapValueGuid = null;
+        AtlasVertex mapOwnerVertex = null;
+        for (String mapAttrName : Arrays.asList("map", "biMap")) {
+            Object object = mapOwnerEntity.getEntity().getAttribute(mapAttrName);
+            Assert.assertNotNull(object);
+            Assert.assertTrue(object instanceof Map);
+            Map<String, AtlasObjectId> map = (Map<String, AtlasObjectId>)object;
+            Assert.assertEquals(map.size(), 1);
+            AtlasObjectId value1Id = map.get("value1");
+            Assert.assertNotNull(value1Id);
+            mapValueGuid = value1Id.getGuid();
+            mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerEntity.getEntity().getGuid());
+            object = mapOwnerVertex.getProperty(atlasEdgeLabel.getQualifiedMapKey(), Object.class);
+            Assert.assertNotNull(object);
+        }
+
+        // Delete the map value instance.
+        // This should disconnect the references from the map owner instance.
+        entityStore.deleteById(mapValueGuid);
+        assertEntityDeleted(mapValueGuid);
+        assertTestDisconnectMapReferenceFromClassType(mapOwnerEntity.getEntity().getGuid());
+    }
+
+    protected abstract void assertTestDisconnectMapReferenceFromClassType(String mapOwnerGuid) throws Exception;
+
     @Test
     public void testDeleteByUniqueAttribute() throws Exception {
         // Create a table entity, with 3 composite column entities
@@ -764,6 +874,231 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEntityDeleted(colId);
     }
 
+    @Test
+    public void testDeleteEntitiesWithCompositeMapReference() throws Exception {
+        // Create instances of MapOwner and MapValue.
+        // Set MapOwner.map with one entry that references MapValue instance.
+        AtlasEntity.AtlasEntityWithExtInfo entityDefinition = createMapOwnerAndValueEntities();
+        String mapOwnerGuid = entityDefinition.getEntity().getGuid();
+
+        // Verify MapOwner.map attribute has expected value.
+        AtlasEntity.AtlasEntityWithExtInfo mapOwnerInstance = entityStore.getById(mapOwnerGuid);
+        Object object = mapOwnerInstance.getEntity().getAttribute("map");
+        Assert.assertNotNull(object);
+        Assert.assertTrue(object instanceof Map);
+        Map<String, AtlasObjectId> map = (Map<String, AtlasObjectId>)object;
+        Assert.assertEquals(map.size(), 1);
+        AtlasObjectId mapValueInstance = map.get("value1");
+        Assert.assertNotNull(mapValueInstance);
+        String mapValueGuid = mapValueInstance.getGuid();
+        String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(compositeMapOwnerType, "map");
+        String mapEntryLabel = edgeLabel + "." + "value1";
+        AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(mapEntryLabel);
+        AtlasVertex mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerGuid);
+        object = mapOwnerVertex.getProperty(atlasEdgeLabel.getQualifiedMapKey(), Object.class);
+        Assert.assertNotNull(object);
+
+        RequestContextV1.clear();
+        List<AtlasEntityHeader> deletedEntities = entityStore.deleteById(mapOwnerGuid).getDeletedEntities();
+        Assert.assertEquals(deletedEntities.size(), 2);
+        Assert.assertTrue(extractGuids(deletedEntities).contains(mapOwnerGuid));
+        Assert.assertTrue(extractGuids(deletedEntities).contains(mapValueGuid));
+
+        assertEntityDeleted(mapOwnerGuid);
+        assertEntityDeleted(mapValueGuid);
+    }
+
+    @Test
+    public void testDeleteTargetOfRequiredMapReference() throws Exception {
+        // Define type for map value.
+        AtlasEntityDef mapValueDef =
+            new AtlasEntityDef("RequiredMapValue", "RequiredMapValue_description", "1.0",
+                Collections.<AtlasStructDef.AtlasAttributeDef>emptyList(), Collections.<String>emptySet());
+
+        AtlasStructDef.AtlasAttributeDef[] mapOwnerAttributes = new AtlasStructDef.AtlasAttributeDef[]{
+            new AtlasStructDef.AtlasAttributeDef("map", "map<string,RequiredMapValue>",
+                false,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                false, false,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList())
+                };
+
+        AtlasEntityDef mapOwnerDef =
+            new AtlasEntityDef("RequiredMapOwner", "RequiredMapOwner_description", "1.0",
+                Arrays.asList(mapOwnerAttributes), Collections.<String>emptySet());
+
+        AtlasTypesDef typesDef = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
+            ImmutableList.<AtlasStructDef>of(),
+            ImmutableList.<AtlasClassificationDef>of(),
+            ImmutableList.<AtlasEntityDef>of(mapValueDef, mapOwnerDef));
+
+        typeDefStore.createTypesDef(typesDef);
+
+        AtlasEntityType mapOwnerType = typeRegistry.getEntityTypeByName("RequiredMapOwner");
+        AtlasEntityType mapValueType = typeRegistry.getEntityTypeByName("RequiredMapValue");
+
+        // Create instances of RequiredMapOwner and RequiredMapValue.
+        // Set RequiredMapOwner.map with one entry that references RequiredMapValue instance.
+        AtlasEntity mapOwnerInstance = new AtlasEntity(mapOwnerType.getTypeName());
+        AtlasEntity mapValueInstance = new AtlasEntity(mapValueType.getTypeName());
+        mapOwnerInstance.setAttribute("map", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueInstance)));
+
+        AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
+        entities.addReferredEntity(mapValueInstance);
+        entities.addEntity(mapOwnerInstance);
+
+        List<AtlasEntityHeader> createEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false).getCreatedEntities();
+        Assert.assertEquals(createEntitiesResult.size(), 2);
+        List<String> guids = metadataService.getEntityList("RequiredMapOwner");
+        Assert.assertEquals(guids.size(), 1);
+        String mapOwnerGuid = guids.get(0);
+        guids = metadataService.getEntityList("RequiredMapValue");
+        Assert.assertEquals(guids.size(), 1);
+        String mapValueGuid = guids.get(0);
+
+        // Verify MapOwner.map attribute has expected value.
+        final AtlasEntity.AtlasEntityWithExtInfo mapOwnerInstance1 = entityStore.getById(mapOwnerGuid);
+        Object object = mapOwnerInstance1.getEntity().getAttribute("map");
+        Assert.assertNotNull(object);
+        Assert.assertTrue(object instanceof Map);
+        Map<String, AtlasObjectId> map = (Map<String, AtlasObjectId>)object;
+        Assert.assertEquals(map.size(), 1);
+        AtlasObjectId mapValueInstance1 = map.get("value1");
+        Assert.assertNotNull(mapValueInstance1);
+        Assert.assertEquals(mapValueInstance1.getGuid(), mapValueGuid);
+        String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(mapOwnerType, "map");
+        String mapEntryLabel = edgeLabel + "." + "value1";
+        AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(mapEntryLabel);
+        AtlasVertex mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerGuid);
+        object = mapOwnerVertex.getProperty(atlasEdgeLabel.getQualifiedMapKey(), Object.class);
+        Assert.assertNotNull(object);
+
+        // Verify deleting the target of required map attribute throws a AtlasBaseException.
+        try {
+            entityStore.deleteById(mapValueGuid);
+            Assert.fail(AtlasBaseException.class.getSimpleName() + " was expected but none thrown.");
+        }
+        catch (Exception e) {
+            verifyExceptionThrown(e, AtlasBaseException.class);
+        }
+    }
+
+    @Test
+    public void testLowerBoundsIgnoredWhenDeletingCompositeEntitesOwnedByMap() throws Exception {
+        // Define MapValueReferencer type with required reference to CompositeMapValue.
+        AtlasStructDef.AtlasAttributeDef[] mapValueAttributes = new AtlasStructDef.AtlasAttributeDef[]{
+            new AtlasStructDef.AtlasAttributeDef("refToMapValue", "CompositeMapValue",
+                false,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                false, false,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList())
+        };
+
+        AtlasEntityDef mapValueDef =
+            new AtlasEntityDef("MapValueReferencer", "RequiredMapValue_description", "1.0",
+                Arrays.asList(mapValueAttributes), Collections.<String>emptySet());
+
+
+        AtlasStructDef.AtlasAttributeDef[] mapContainerAttributes = new AtlasStructDef.AtlasAttributeDef[]{
+            new AtlasStructDef.AtlasAttributeDef("requiredMap", "map<string,MapValueReferencer>",
+                false,
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                false, false,
+                new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                    add(new AtlasStructDef.AtlasConstraintDef(AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                }})
+        };
+
+        AtlasEntityDef mapContainerDef =
+            new AtlasEntityDef("MapValueReferencerContainer", "MapValueReferencerContainer_description", "1.0",
+                Arrays.asList(mapContainerAttributes), Collections.<String>emptySet());
+
+
+        AtlasTypesDef typesDef = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
+            ImmutableList.<AtlasStructDef>of(),
+            ImmutableList.<AtlasClassificationDef>of(),
+            ImmutableList.<AtlasEntityDef>of(mapValueDef, mapContainerDef));
+
+        typeDefStore.createTypesDef(typesDef);
+
+        // Create instances of CompositeMapOwner and CompositeMapValue.
+        // Set MapOwner.map with one entry that references MapValue instance.
+        AtlasEntity.AtlasEntityWithExtInfo entityDefinition = createMapOwnerAndValueEntities();
+        String mapOwnerGuid = entityDefinition.getEntity().getGuid();
+
+        // Verify MapOwner.map attribute has expected value.
+        ITypedReferenceableInstance mapOwnerInstance = metadataService.getEntityDefinition(mapOwnerGuid);
+        Object object = mapOwnerInstance.get("map");
+        Assert.assertNotNull(object);
+        Assert.assertTrue(object instanceof Map);
+        Map<String, ITypedReferenceableInstance> map = (Map<String, ITypedReferenceableInstance>)object;
+        Assert.assertEquals(map.size(), 1);
+        ITypedReferenceableInstance mapValueInstance = map.get("value1");
+        Assert.assertNotNull(mapValueInstance);
+        String mapValueGuid = mapValueInstance.getId()._getId();
+
+        // Create instance of MapValueReferencerContainer
+        RequestContextV1.clear();
+        AtlasEntity mapValueReferencer = new AtlasEntity(mapValueDef.getName());
+        mapValueReferencer.setAttribute("refToMapValue", new AtlasObjectId(mapValueInstance.getId()._getId(), mapValueInstance.getTypeName()));
+        AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
+        entities.addEntity(mapValueReferencer);
+
+        List<AtlasEntityHeader> createEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false).getCreatedEntities();
+        Assert.assertEquals(createEntitiesResult.size(), 1);
+
+        // Create instance of MapValueReferencer, and update mapValueReferencerContainer
+        // to reference it.
+        AtlasEntity mapValueReferenceContainer = new AtlasEntity(mapContainerDef.getName());
+        entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
+        entities.addEntity(mapValueReferenceContainer);
+        entities.addReferredEntity(mapValueReferencer);
+        mapValueReferenceContainer.setAttribute("requiredMap", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueReferencer)));
+
+
+        RequestContextV1.clear();
+        EntityMutationResponse updateEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false);
+
+        String mapValueReferencerContainerGuid = updateEntitiesResult.getCreatedEntitiesByTypeName("MapValueReferencerContainer").get(0).getGuid();
+        String mapValueReferencerGuid = updateEntitiesResult.getUpdatedEntitiesByTypeName("MapValueReferencer").get(0).getGuid();
+
+        Assert.assertEquals(updateEntitiesResult.getCreatedEntities().size(), 1);
+        Assert.assertEquals(updateEntitiesResult.getUpdatedEntities().size(), 1);
+        Assert.assertEquals(updateEntitiesResult.getUpdatedEntities().get(0).getGuid(), mapValueReferencerGuid);
+
+
+        // Delete map owner and map referencer container.  A total of 4 entities should be deleted,
+        // including the composite entities.  The lower bound constraint on MapValueReferencer.refToMapValue
+        // should not be enforced on the composite MapValueReferencer since it is being deleted.
+        EntityMutationResponse deleteEntitiesResult = entityStore.deleteByIds(Arrays.asList(mapOwnerGuid, mapValueReferencerContainerGuid));
+        Assert.assertEquals(deleteEntitiesResult.getDeletedEntities().size(), 4);
+        Assert.assertTrue(extractGuids(deleteEntitiesResult.getDeletedEntities()).containsAll(
+            Arrays.asList(mapOwnerGuid, mapValueGuid, mapValueReferencerContainerGuid, mapValueReferencerGuid)));
+    }
+
+    private AtlasEntity.AtlasEntityWithExtInfo createMapOwnerAndValueEntities()
+        throws AtlasException, AtlasBaseException {
+
+        final AtlasEntity mapOwnerInstance = new AtlasEntity(compositeMapOwnerType.getTypeName());
+        mapOwnerInstance.setAttribute(NAME, TestUtils.randomString());
+        AtlasEntity mapValueInstance = new AtlasEntity(compositeMapValueType.getTypeName());
+        mapValueInstance.setAttribute(NAME, TestUtils.randomString());
+        mapOwnerInstance.setAttribute("map", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueInstance)));
+
+        AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
+        entities.addReferredEntity(mapValueInstance);
+        entities.addEntity(mapOwnerInstance);
+
+        List<AtlasEntityHeader> createEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false).getCreatedEntities();
+        Assert.assertEquals(createEntitiesResult.size(), 2);
+        AtlasEntity.AtlasEntityWithExtInfo entityDefinition = entityStore.getByUniqueAttributes(compositeMapOwnerType,
+            new HashMap<String, Object>() {{
+                put(NAME, mapOwnerInstance.getAttribute(NAME));
+            }});
+        return entityDefinition;
+    }
+
+
     protected abstract void assertTestDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes(
         String structContainerGuid) throws Exception;
 
@@ -777,6 +1112,31 @@ public abstract class AtlasDeleteHandlerV1Test {
             list.add(vertex);
         }
         return list;
+    }
+
+    /**
+     * Search exception cause chain for specified exception.
+     *
+     * @param thrown root of thrown exception chain
+     * @param expected  class of expected exception
+     */
+    private void verifyExceptionThrown(Exception thrown, Class expected) {
+
+        boolean exceptionFound = false;
+        Throwable cause = thrown;
+        while (cause != null) {
+            if (expected.isInstance(cause)) {
+                // good
+                exceptionFound = true;
+                break;
+            }
+            else {
+                cause = cause.getCause();
+            }
+        }
+        if (!exceptionFound) {
+            Assert.fail(expected.getSimpleName() + " was expected but not thrown", thrown);
+        }
     }
 
 }

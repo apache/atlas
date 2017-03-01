@@ -559,6 +559,10 @@ public class AtlasStructType extends AtlasType {
             type = ((AtlasArrayType)type).getElementType();
         }
 
+        if (type instanceof AtlasMapType) {
+            type = ((AtlasMapType)type).getValueType();
+        }
+
         return type instanceof AtlasEntityType ? (AtlasEntityType)type : null;
     }
 

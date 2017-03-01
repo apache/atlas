@@ -713,7 +713,10 @@ public final class TestUtilsV2 {
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
-                                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList()
+                                 new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
+                                     add(new AtlasStructDef.AtlasConstraintDef(
+                                             AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+                                     }}
                                 ),
                         //map of structs
                         new AtlasAttributeDef("partitionsMap",
