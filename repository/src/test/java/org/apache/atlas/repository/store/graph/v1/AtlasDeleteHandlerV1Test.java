@@ -406,20 +406,28 @@ public abstract class AtlasDeleteHandlerV1Test {
         Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
 
         ITypedReferenceableInstance julius = metadataService.getEntityDefinition(juliusEmployeeCreated.getGuid());
-        Id juliusGuid = julius.getId();
+        Id juliusId = julius.getId();
 
         init();
         maxEmployee.setAttribute("manager", AtlasTypeUtil.getAtlasObjectId(juliusEmployeeCreated));
         entityResult = entityStore.createOrUpdate(new AtlasEntityStream(maxEmployee), false);
-        //TODO ATLAS-499 should have updated julius' subordinates
-        assertEquals(entityResult.getUpdatedEntities().size(), 2);
-        assertTrue(extractGuids(entityResult.getUpdatedEntities()).contains(maxGuid));
-        assertTrue(extractGuids(entityResult.getUpdatedEntities()).contains(janeEmployeeCreated.getGuid()));
+        assertEquals(entityResult.getUpdatedEntities().size(), 3);
+        List<String> updatedGuids = extractGuids(entityResult.getUpdatedEntities());
+        assertTrue(updatedGuids.contains(maxGuid));
+        assertTrue(updatedGuids.contains(janeEmployeeCreated.getGuid()));
+        // Should have updated julius to add max in subordinates list.
+        assertTrue(updatedGuids.contains(juliusEmployeeCreated.getGuid()));
 
-        // Verify the update was applied correctly - julius should now be max's manager.
+        // Verify the update was applied correctly - julius should now be max's manager and max should be julius' subordinate.
         max = metadataService.getEntityDefinition(maxGuid);
         refTarget = (ITypedReferenceableInstance) max.get("manager");
-        Assert.assertEquals(refTarget.getId()._getId(), juliusGuid._getId());
+        Assert.assertEquals(refTarget.getId()._getId(), juliusId._getId());
+        julius = metadataService.getEntityDefinition(juliusId._getId());
+        Object value = julius.get("subordinates");
+        Assert.assertTrue(value instanceof List);
+        List<ITypedReferenceableInstance> refList = (List<ITypedReferenceableInstance>) value;
+        Assert.assertEquals(refList.size(), 1);
+        Assert.assertEquals(refList.get(0).getId()._getId(), maxGuid);
 
         assertTestUpdateEntity_MultiplicityOneNonCompositeReference(janeEmployeeCreated.getGuid());
     }

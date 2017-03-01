@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1552: automatic update of inverse references in V2 code path (dkantor)
 ATLAS-1603: fix to handle null value for object_id type attributes (mneethiraj via kevalbhatt)
 ATLAS 1607: notify listeners on classification addition/deletion (sarathkumarsubramanian via mneethiraj)
 ATLAS-1606: introduced query provider to handle Gremlin version specific queries (apoorvnaik via mneethiraj)

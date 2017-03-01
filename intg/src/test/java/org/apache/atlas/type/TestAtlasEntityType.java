@@ -149,9 +149,10 @@ public class TestAtlasEntityType {
             AtlasEntityType typeColumn = ttr.getEntityTypeByName(TYPE_COLUMN);
 
             assertTrue(typeTable.getAttribute(ATTR_COLUMNS).isOwnedRef());
-            assertNull(typeTable.getAttribute(ATTR_COLUMNS).getInverseRefAttribute());
+            assertNull(typeTable.getAttribute(ATTR_COLUMNS).getInverseRefAttributeName());
             assertFalse(typeColumn.getAttribute(ATTR_TABLE).isOwnedRef());
-            assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttribute(), ATTR_COLUMNS);
+            assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttributeName(), ATTR_COLUMNS);
+            assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttribute(), typeTable.getAttribute(ATTR_COLUMNS));
 
             commit = true;
         } catch (AtlasBaseException excp) {

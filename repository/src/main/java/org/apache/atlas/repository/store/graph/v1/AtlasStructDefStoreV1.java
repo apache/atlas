@@ -476,7 +476,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         attribInfo.put("isUnique", attributeDef.getIsUnique());
         attribInfo.put("isIndexable", attributeDef.getIsIndexable());
         attribInfo.put("isComposite", attribute.isOwnedRef());
-        attribInfo.put("reverseAttributeName", attribute.getInverseRefAttribute());
+        attribInfo.put("reverseAttributeName", attribute.getInverseRefAttributeName());
 
         final int lower;
         final int upper;

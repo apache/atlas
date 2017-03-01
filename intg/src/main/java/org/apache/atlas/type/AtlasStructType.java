@@ -28,6 +28,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -164,6 +165,16 @@ public class AtlasStructType extends AtlasType {
     @Override
     public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
+        for (AtlasAttribute attribute : allAttributes.values()) {
+            if (attribute.getInverseRefAttributeName() == null) {
+                continue;
+            }
+            // Set the inverse reference attribute.
+            AtlasType referencedType = typeRegistry.getType(attribute.getAttributeDef().getTypeName());
+            AtlasEntityType referencedEntityType = getReferencedEntityType(referencedType);
+            AtlasAttribute inverseReference = referencedEntityType.getAttribute(attribute.getInverseRefAttributeName());
+            attribute.setInverseRefAttribute(inverseReference);
+         }
     }
 
     @Override
@@ -587,7 +598,8 @@ public class AtlasStructType extends AtlasType {
         private final String            qualifiedName;
         private final String            vertexPropertyName;
         private final boolean           isOwnedRef;
-        private final String            inverseRefAttribute;
+        private final String            inverseRefAttributeName;
+        private AtlasAttribute          inverseRefAttribute;
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
             this.definedInType      = definedInType;
@@ -616,7 +628,7 @@ public class AtlasStructType extends AtlasType {
             }
 
             this.isOwnedRef          = isOwnedRef;
-            this.inverseRefAttribute = inverseRefAttribute;
+            this.inverseRefAttributeName = inverseRefAttribute;
         }
 
         public AtlasStructType getDefinedInType() { return definedInType; }
@@ -641,7 +653,11 @@ public class AtlasStructType extends AtlasType {
 
         public boolean isOwnedRef() { return isOwnedRef; }
 
-        public String getInverseRefAttribute() { return inverseRefAttribute; }
+        public String getInverseRefAttributeName() { return inverseRefAttributeName; }
+
+        public AtlasAttribute getInverseRefAttribute() { return inverseRefAttribute; }
+
+        public void setInverseRefAttribute(AtlasAttribute inverseAttr) { inverseRefAttribute = inverseAttr; };
 
         public static String encodePropertyKey(String key) {
             if (StringUtils.isBlank(key)) {
