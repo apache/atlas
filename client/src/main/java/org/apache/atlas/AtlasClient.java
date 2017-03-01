@@ -997,12 +997,12 @@ public class AtlasClient extends AtlasBaseClient {
 
     @VisibleForTesting
     public JSONObject callAPIWithBody(API api, Object requestObject) throws AtlasServiceException {
-        return callAPI(toAPIInfo(api), requestObject, JSONObject.class, (String[]) null);
+        return callAPI(toAPIInfo(api), JSONObject.class, requestObject, (String[]) null);
     }
 
     @VisibleForTesting
     public JSONObject callAPIWithBodyAndParams(API api, Object requestObject, String ... params) throws AtlasServiceException {
-        return callAPI(toAPIInfo(api), requestObject, JSONObject.class, params);
+        return callAPI(toAPIInfo(api), JSONObject.class, requestObject, params);
     }
 
     @VisibleForTesting

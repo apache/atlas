@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -80,7 +80,8 @@ public abstract class AtlasBaseClient {
     private AtlasClientContext atlasClientContext;
     private boolean retryEnabled = false;
 
-    protected AtlasBaseClient() {}
+    protected AtlasBaseClient() {
+    }
 
     protected AtlasBaseClient(String[] baseUrl, String[] basicAuthUserNamePassword) {
         if (basicAuthUserNamePassword != null) {
@@ -158,7 +159,8 @@ public abstract class AtlasBaseClient {
         DefaultClientConfig config = new DefaultClientConfig();
         // Enable POJO mapping feature
         config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
-        int readTimeout = configuration.getInt("atlas.client.readTimeoutMSecs", 60000);;
+        int readTimeout = configuration.getInt("atlas.client.readTimeoutMSecs", 60000);
+        ;
         int connectTimeout = configuration.getInt("atlas.client.connectTimeoutMSecs", 60000);
         if (configuration.getBoolean(TLS_ENABLED, false)) {
             // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced
@@ -237,10 +239,10 @@ public abstract class AtlasBaseClient {
                     activeServerAddress = serverInstance;
                     break;
                 } else {
-                    LOG.info("attempt #{}: Service {} - is not active. status={}", (i+1), serverInstance, adminStatus);
+                    LOG.info("attempt #{}: Service {} - is not active. status={}", (i + 1), serverInstance, adminStatus);
                 }
             } catch (Exception e) {
-                LOG.error("attempt #{}: Service {} - could not get status", (i+1), serverInstance, e);
+                LOG.error("attempt #{}: Service {} - could not get status", (i + 1), serverInstance, e);
             }
             sleepBetweenRetries();
         }
@@ -280,7 +282,7 @@ public abstract class AtlasBaseClient {
 
     protected <T> T callAPIWithResource(APIInfo api, WebResource resource, Object requestObject, Class<T> responseType) throws AtlasServiceException {
         GenericType<T> genericType = null;
-        if(responseType != null) {
+        if (responseType != null) {
             genericType = new GenericType<>(responseType);
         }
         return callAPIWithResource(api, resource, requestObject, genericType);
@@ -381,7 +383,7 @@ public abstract class AtlasBaseClient {
      * @return Return metrics of the service instance the client is pointing to
      * @throws AtlasServiceException
      */
-    public AtlasMetrics getAtlasMetrics () throws AtlasServiceException {
+    public AtlasMetrics getAtlasMetrics() throws AtlasServiceException {
         return callAPI(METRICS, AtlasMetrics.class, null);
     }
 
@@ -423,18 +425,18 @@ public abstract class AtlasBaseClient {
         throw new AtlasServiceException(api, new RuntimeException("Could not get response after retries."));
     }
 
-    public <T> T callAPI(APIInfo api, Object requestObject, Class<T> responseType, String... params)
+    public <T> T callAPI(APIInfo api, Class<T> responseType, Object requestObject, String... params)
             throws AtlasServiceException {
         return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
     }
 
-    public <T> T callAPI(APIInfo api, Object requestObject, GenericType<T> responseType, String... params)
+    public <T> T callAPI(APIInfo api, GenericType<T> responseType, Object requestObject, String... params)
             throws AtlasServiceException {
         return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
     }
 
 
-    public <T> T callAPI(APIInfo api, Object requestBody, Class<T> responseType,
+    public <T> T callAPI(APIInfo api, Class<T> responseType, Object requestBody,
                          MultivaluedMap<String, String> queryParams, String... params) throws AtlasServiceException {
         WebResource resource = getResource(api, queryParams, params);
         return callAPIWithResource(api, resource, requestBody, responseType);
@@ -483,7 +485,7 @@ public abstract class AtlasBaseClient {
         return resource;
     }
 
-    protected WebResource getResource(APIInfo api, MultivaluedMap<String, String> queryParams, String ... pathParams) {
+    protected WebResource getResource(APIInfo api, MultivaluedMap<String, String> queryParams, String... pathParams) {
         WebResource resource = service.path(api.getPath());
         resource = appendPathParams(resource, pathParams);
         resource = appendQueryParams(queryParams, resource);
@@ -523,7 +525,7 @@ public abstract class AtlasBaseClient {
         return resource;
     }
 
-    protected APIInfo formatPathForPathParams(APIInfo apiInfo, String ... params) {
+    protected APIInfo updatePathParameters(APIInfo apiInfo, String... params) {
         return new APIInfo(String.format(apiInfo.getPath(), params), apiInfo.getMethod(), apiInfo.getExpectedStatus());
     }
 

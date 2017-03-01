@@ -63,7 +63,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
     public void testSearchByDSL() throws Exception {
         String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
 
-        AtlasSearchResult searchResult = discoveryClientV2.dslSearch(dslQuery);
+        AtlasSearchResult searchResult = atlasClientV2.dslSearch(dslQuery);
         assertNotNull(searchResult);
         assertEquals(searchResult.getQueryText(), dslQuery);
         assertEquals(searchResult.getQueryType(), AtlasQueryType.DSL);
@@ -84,48 +84,48 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchDSLLimits() throws Exception {
         String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
-        AtlasSearchResult searchResult = discoveryClientV2.dslSearch(dslQuery);
+        AtlasSearchResult searchResult = atlasClientV2.dslSearch(dslQuery);
         assertNotNull(searchResult);
 
         //higher limit, all results returned
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, 10, 0);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, 10, 0);
         assertEquals(searchResult.getEntities().size(), 1);
 
         //default limit and offset -1, all results returned
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, -1, -1);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, -1, -1);
         assertEquals(searchResult.getEntities().size(), 1);
 
         //uses the limit parameter passed
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, 1, 0);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, 1, 0);
         assertEquals(searchResult.getEntities().size(), 1);
 
         //uses the offset parameter passed
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, 10, 1);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, 10, 1);
         assertNull(searchResult.getEntities());
 
         //limit > 0
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, 0, 10);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, 0, 10);
         assertNull(searchResult.getEntities());
 
         //limit > maxlimit
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, Integer.MAX_VALUE, 10);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, Integer.MAX_VALUE, 10);
         assertNull(searchResult.getEntities());
 
         //offset >= 0
-        searchResult = discoveryClientV2.dslSearchWithParams(dslQuery, 10, -2);
+        searchResult = atlasClientV2.dslSearchWithParams(dslQuery, 10, -2);
         assertEquals(searchResult.getEntities().size(), 1);
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSearchByDSLForUnknownType() throws Exception {
         String dslQuery = "from blah";
-        discoveryClientV2.dslSearch(dslQuery);
+        atlasClientV2.dslSearch(dslQuery);
     }
 
     @Test
     public void testSearchUsingDSL() throws Exception {
         String query = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
-        AtlasSearchResult searchResult = discoveryClientV2.dslSearch(query);
+        AtlasSearchResult searchResult = atlasClientV2.dslSearch(query);
         assertNotNull(searchResult);
 
         assertEquals(searchResult.getQueryText(), query);
@@ -147,7 +147,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchFullTextOnDSLFailure() throws Exception {
         String query = "*";
-        AtlasSearchResult searchResult = discoveryClientV2.fullTextSearch(query);
+        AtlasSearchResult searchResult = atlasClientV2.fullTextSearch(query);
         assertNotNull(searchResult);
         assertEquals(searchResult.getQueryText(), query);
         assertEquals(searchResult.getQueryType(), AtlasQueryType.FULL_TEXT);
@@ -155,7 +155,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
-        AtlasSearchResult searchResult = discoveryClientV2.fullTextSearchWithParams(dbName, 10, 0);
+        AtlasSearchResult searchResult = atlasClientV2.fullTextSearchWithParams(dbName, 10, 0);
         assertNotNull(searchResult);
 
         assertEquals(searchResult.getQueryText(), dbName);
@@ -173,25 +173,25 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         String query = dbName;
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
-        searchResult = discoveryClientV2.fullTextSearch(query);
+        searchResult = atlasClientV2.fullTextSearch(query);
         assertNotNull(searchResult);
         assertEquals(searchResult.getFullTextResult().size(), 1);
 
         //verify passed in limits and offsets are used
         //higher limit and 0 offset returns all results
-        searchResult = discoveryClientV2.fullTextSearchWithParams(query, 10, 0);
+        searchResult = atlasClientV2.fullTextSearchWithParams(query, 10, 0);
         assertEquals(searchResult.getFullTextResult().size(), 1);
 
         //offset is used
-        searchResult = discoveryClientV2.fullTextSearchWithParams(query, 10, 1);
+        searchResult = atlasClientV2.fullTextSearchWithParams(query, 10, 1);
         assertEquals(searchResult.getFullTextResult().size(), 1);
 
         //limit is used
-        searchResult = discoveryClientV2.fullTextSearchWithParams(query, 1, 0);
+        searchResult = atlasClientV2.fullTextSearchWithParams(query, 1, 0);
         assertEquals(searchResult.getFullTextResult().size(), 1);
 
         //higher offset returns 0 results
-        searchResult = discoveryClientV2.fullTextSearchWithParams(query, 1, 2);
+        searchResult = atlasClientV2.fullTextSearchWithParams(query, 1, 2);
         assertEquals(searchResult.getFullTextResult().size(), 1);
     }
 

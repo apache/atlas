@@ -20,8 +20,8 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -57,7 +57,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
     private AtlasTypesDef typeDefinitions;
 
-    private AtlasTypedefClientV2 clientV2;
+    private AtlasClientV2 clientV2;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -66,9 +66,9 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         typeDefinitions = createHiveTypes();
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            clientV2 = new AtlasTypedefClientV2(atlasUrls, new String[]{"admin", "admin"});
+            clientV2 = new AtlasClientV2(atlasUrls, new String[]{"admin", "admin"});
         } else {
-            clientV2 = new AtlasTypedefClientV2(atlasUrls);
+            clientV2 = new AtlasClientV2(atlasUrls);
         }
     }
 
@@ -176,7 +176,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testInvalidGets() throws Exception {
         try {
-            AtlasEnumDef byName = clientV2.getEnumByName("blah");
+            AtlasEnumDef byName = clientV2.getEnumDefByName("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -184,7 +184,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasEnumDef byGuid = clientV2.getEnumByGuid("blah");
+            AtlasEnumDef byGuid = clientV2.getEnumDefByGuid("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -192,7 +192,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasStructDef byName = clientV2.getStructByName("blah");
+            AtlasStructDef byName = clientV2.getStructDefByName("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -200,7 +200,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasStructDef byGuid = clientV2.getStructByGuid("blah");
+            AtlasStructDef byGuid = clientV2.getStructDefByGuid("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -208,7 +208,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasClassificationDef byName = clientV2.getClassificationByName("blah");
+            AtlasClassificationDef byName = clientV2.getClassificationDefByName("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -216,7 +216,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasClassificationDef byGuid = clientV2.getClassificationByGuid("blah");
+            AtlasClassificationDef byGuid = clientV2.getClassificationDefByGuid("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -224,7 +224,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasEntityDef byName = clientV2.getEntityByName("blah");
+            AtlasEntityDef byName = clientV2.getEntityDefByName("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -232,7 +232,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         }
 
         try {
-            AtlasEntityDef byGuid = clientV2.getEntityByGuid("blah");
+            AtlasEntityDef byGuid = clientV2.getEntityDefByGuid("blah");
             fail("Get for invalid name should have reported a failure");
         } catch (AtlasServiceException e) {
             assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
@@ -312,13 +312,13 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         try {
             AtlasBaseTypeDef byName = null;
             if (typeDef.getCategory() == TypeCategory.ENUM) {
-                byName = clientV2.getEnumByName(typeDef.getName());
+                byName = clientV2.getEnumDefByName(typeDef.getName());
             } else if (typeDef.getCategory() == TypeCategory.ENTITY) {
-                byName = clientV2.getEntityByName(typeDef.getName());
+                byName = clientV2.getEntityDefByName(typeDef.getName());
             } else if (typeDef.getCategory() == TypeCategory.CLASSIFICATION) {
-                byName = clientV2.getClassificationByName(typeDef.getName());
+                byName = clientV2.getClassificationDefByName(typeDef.getName());
             } else if (typeDef.getCategory() == TypeCategory.STRUCT) {
-                byName = clientV2.getStructByName(typeDef.getName());
+                byName = clientV2.getStructDefByName(typeDef.getName());
             }
             assertNotNull(byName);
         } catch (AtlasServiceException e) {
@@ -328,13 +328,13 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
             try {
                 AtlasBaseTypeDef byGuid = null;
                 if (typeDef.getCategory() == TypeCategory.ENUM) {
-                    byGuid = clientV2.getEnumByGuid(typeDef.getGuid());
+                    byGuid = clientV2.getEnumDefByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.ENTITY) {
-                    byGuid = clientV2.getEntityByGuid(typeDef.getGuid());
+                    byGuid = clientV2.getEntityDefByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.CLASSIFICATION) {
-                    byGuid = clientV2.getClassificationByGuid(typeDef.getGuid());
+                    byGuid = clientV2.getClassificationDefByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.STRUCT) {
-                    byGuid = clientV2.getStructByGuid(typeDef.getGuid());
+                    byGuid = clientV2.getStructDefByGuid(typeDef.getGuid());
                 }
                 assertNotNull(byGuid);
             } catch (AtlasServiceException e) {

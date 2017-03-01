@@ -56,10 +56,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.atlas.AtlasEntitiesClientV2.CREATE_ENTITY;
-import static org.apache.atlas.AtlasEntitiesClientV2.DELETE_ENTITY_BY_ATTRIBUTE;
-import static org.apache.atlas.AtlasEntitiesClientV2.UPDATE_ENTITY;
-import static org.apache.atlas.AtlasEntitiesClientV2.UPDATE_ENTITY_BY_ATTRIBUTE;
+import static org.apache.atlas.AtlasClientV2.CREATE_ENTITY;
+import static org.apache.atlas.AtlasClientV2.DELETE_ENTITY_BY_ATTRIBUTE;
+import static org.apache.atlas.AtlasClientV2.UPDATE_ENTITY;
+import static org.apache.atlas.AtlasClientV2.UPDATE_ENTITY_BY_ATTRIBUTE;
 import static org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
 import static org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
 import static org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;

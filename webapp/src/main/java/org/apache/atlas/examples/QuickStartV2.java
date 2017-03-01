@@ -24,18 +24,18 @@ import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasDiscoveryClientV2;
-import org.apache.atlas.AtlasEntitiesClientV2;
+import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasLineageClientV2;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -53,11 +53,15 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
 
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 
 /**
  * A driver that sets up sample types and entities using v2 types and entity model for testing purposes.
@@ -169,23 +173,14 @@ public class QuickStartV2 {
         return urls;
     }
 
-    private final AtlasTypedefClientV2   typesClient;
-    private final AtlasEntitiesClientV2  entitiesClient;
-    private final AtlasDiscoveryClientV2 discoveryClient;
-    private final AtlasLineageClientV2   lineageClient;
+    private final AtlasClientV2 atlasClientV2;
 
     QuickStartV2(String[] urls, String[] basicAuthUsernamePassword) {
-        typesClient     = new AtlasTypedefClientV2(urls,basicAuthUsernamePassword);
-        entitiesClient  = new AtlasEntitiesClientV2(urls,basicAuthUsernamePassword);
-        discoveryClient = new AtlasDiscoveryClientV2(urls,basicAuthUsernamePassword);
-        lineageClient   = new AtlasLineageClientV2(urls,basicAuthUsernamePassword);
+        atlasClientV2 = new AtlasClientV2(urls,basicAuthUsernamePassword);
     }
 
     QuickStartV2(String[] urls) throws AtlasException {
-        typesClient     = new AtlasTypedefClientV2(urls);
-        entitiesClient  = new AtlasEntitiesClientV2(urls);
-        discoveryClient = new AtlasDiscoveryClientV2(urls);
-        lineageClient   = new AtlasLineageClientV2(urls);
+        atlasClientV2 = new AtlasClientV2(urls);
     }
 
 
@@ -193,7 +188,7 @@ public class QuickStartV2 {
         AtlasTypesDef atlasTypesDef = createTypeDefinitions();
 
         System.out.println("\nCreating sample types: ");
-        typesClient.createAtlasTypeDefs(atlasTypesDef);
+        atlasClientV2.createAtlasTypeDefs(atlasTypesDef);
 
         verifyTypesCreated();
     }
@@ -341,11 +336,11 @@ public class QuickStartV2 {
 
     private AtlasEntity createInstance(AtlasEntity entity, String[] traitNames) throws Exception {
         AtlasEntity ret = null;
-        EntityMutationResponse  response = entitiesClient.createEntity(new AtlasEntityWithExtInfo(entity));
+        EntityMutationResponse  response = atlasClientV2.createEntity(new AtlasEntityWithExtInfo(entity));
         List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
 
         if (CollectionUtils.isNotEmpty(entities)) {
-            AtlasEntityWithExtInfo getByGuidResponse = entitiesClient.getEntityByGuid(entities.get(0).getGuid());
+            AtlasEntityWithExtInfo getByGuidResponse = atlasClientV2.getEntityByGuid(entities.get(0).getGuid());
             ret = getByGuidResponse.getEntity();
             System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
         }
@@ -463,7 +458,7 @@ public class QuickStartV2 {
             searchParams.clear();
             searchParams.add(SearchFilter.PARAM_NAME, typeName);
             SearchFilter searchFilter = new SearchFilter(searchParams);
-            AtlasTypesDef searchDefs = typesClient.getAllTypeDefs(searchFilter);
+            AtlasTypesDef searchDefs = atlasClientV2.getAllTypeDefs(searchFilter);
 
             assert (!searchDefs.isEmpty());
             System.out.println("Created type [" + typeName + "]");
@@ -516,7 +511,7 @@ public class QuickStartV2 {
         System.out.println("\nSample DSL Queries: ");
 
         for (String dslQuery : getDSLQueries()) {
-            AtlasSearchResult results = discoveryClient.dslSearchWithParams(dslQuery, 10, 0);
+            AtlasSearchResult results = atlasClientV2.dslSearchWithParams(dslQuery, 10, 0);
 
             if (results != null) {
                 List<AtlasEntityHeader>   entitiesResult  = results.getEntities();
@@ -539,7 +534,7 @@ public class QuickStartV2 {
     private void lineage() throws AtlasServiceException {
         System.out.println("\nSample Lineage Info: ");
 
-        AtlasLineageInfo lineageInfo = lineageClient.getLineageInfo(getTableId(SALES_FACT_DAILY_MV_TABLE), LineageDirection.BOTH, 0);
+        AtlasLineageInfo lineageInfo = atlasClientV2.getLineageInfo(getTableId(SALES_FACT_DAILY_MV_TABLE), LineageDirection.BOTH, 0);
         Set<LineageRelation> relations = lineageInfo.getRelations();
         Map<String, AtlasEntityHeader> guidEntityMap = lineageInfo.getGuidEntityMap();
 
@@ -556,7 +551,7 @@ public class QuickStartV2 {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
 
-        AtlasEntity tableEntity = entitiesClient.getEntityByAttribute(TABLE_TYPE, attributes).getEntity();
+        AtlasEntity tableEntity = atlasClientV2.getEntityByAttribute(TABLE_TYPE, attributes).getEntity();
         return tableEntity.getGuid();
     }
 }

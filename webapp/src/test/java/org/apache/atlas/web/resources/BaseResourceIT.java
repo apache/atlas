@@ -18,32 +18,21 @@
 
 package org.apache.atlas.web.resources;
 
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasDiscoveryClientV2;
-import org.apache.atlas.AtlasEntitiesClientV2;
-import org.apache.atlas.AtlasLineageClientV2;
+import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -61,21 +50,10 @@ import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.EnumValue;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.*;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -84,11 +62,17 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import kafka.consumer.ConsumerTimeoutException;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Base class for integration tests.
@@ -104,10 +88,7 @@ public abstract class BaseResourceIT {
 
     // All service clients
     protected AtlasClient atlasClientV1;
-    protected AtlasTypedefClientV2 typedefClientV2;
-    protected AtlasEntitiesClientV2 entitiesClientV2;
-    protected AtlasDiscoveryClientV2 discoveryClientV2;
-    protected AtlasLineageClientV2 lineageClientV2;
+    protected AtlasClientV2 atlasClientV2;
 
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
     protected static final int MAX_WAIT_TIME = 60000;
@@ -131,30 +112,24 @@ public abstract class BaseResourceIT {
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             atlasClientV1 = new AtlasClient(atlasUrls, new String[]{"admin", "admin"});
-            typedefClientV2 = new AtlasTypedefClientV2(atlasUrls, new String[]{"admin", "admin"});
-            entitiesClientV2 = new AtlasEntitiesClientV2(atlasUrls, new String[]{"admin", "admin"});
-            discoveryClientV2 = new AtlasDiscoveryClientV2(atlasUrls, new String[]{"admin", "admin"});
-            lineageClientV2 = new AtlasLineageClientV2(atlasUrls, new String[]{"admin", "admin"});
+            atlasClientV2 = new AtlasClientV2(atlasUrls, new String[]{"admin", "admin"});
         } else {
             atlasClientV1 = new AtlasClient(atlasUrls);
-            typedefClientV2 = new AtlasTypedefClientV2(atlasUrls);
-            entitiesClientV2 = new AtlasEntitiesClientV2(atlasUrls);
-            discoveryClientV2 = new AtlasDiscoveryClientV2(atlasUrls);
-            lineageClientV2 = new AtlasLineageClientV2(atlasUrls);
+            atlasClientV2 = new AtlasClientV2(atlasUrls);
         }
     }
 
     protected void batchCreateTypes(AtlasTypesDef typesDef) throws AtlasServiceException { 
         for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
             try {
-                typedefClientV2.createEnumDef(enumDef);
+                atlasClientV2.createEnumDef(enumDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("EnumDef creation failed for {}", enumDef.getName());
             }
         }
         for (AtlasStructDef structDef : typesDef.getStructDefs()) {
             try {
-                typedefClientV2.createStructDef(structDef);
+                atlasClientV2.createStructDef(structDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("StructDef creation failed for {}", structDef.getName());
             }
@@ -166,7 +141,7 @@ public abstract class BaseResourceIT {
             Collections.<AtlasClassificationDef>emptyList(),
             typesDef.getEntityDefs());
         try {
-            typedefClientV2.createAtlasTypeDefs(entityDefs);
+            atlasClientV2.createAtlasTypeDefs(entityDefs);
         }
         catch(AtlasServiceException e) {
             LOG.warn("Type creation failed for {}", typesDef.toString());
@@ -175,7 +150,7 @@ public abstract class BaseResourceIT {
         
         for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
             try {
-                typedefClientV2.createClassificationDef(classificationDef);
+                atlasClientV2.createClassificationDef(classificationDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("ClassificationDef creation failed for {}", classificationDef.getName());
             }
@@ -187,28 +162,28 @@ public abstract class BaseResourceIT {
         // Since the bulk create bails out on a single failure, this has to be done as a workaround
         for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
             try {
-                typedefClientV2.createEnumDef(enumDef);
+                atlasClientV2.createEnumDef(enumDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("EnumDef creation failed for {}", enumDef.getName());
             }
         }
         for (AtlasStructDef structDef : typesDef.getStructDefs()) {
             try {
-                typedefClientV2.createStructDef(structDef);
+                atlasClientV2.createStructDef(structDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("StructDef creation failed for {}", structDef.getName());
             }
         }
         for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
             try {
-                typedefClientV2.createEntityDef(entityDef);
+                atlasClientV2.createEntityDef(entityDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("EntityDef creation failed for {}", entityDef.getName());
             }
         }
         for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
             try {
-                typedefClientV2.createClassificationDef(classificationDef);
+                atlasClientV2.createClassificationDef(classificationDef);
             } catch (AtlasServiceException ex) {
                 LOG.warn("ClassificationDef creation failed for {}", classificationDef.getName());
             }
@@ -288,13 +263,13 @@ public abstract class BaseResourceIT {
         EntityMutationResponse entity = null;
         try {
             if (!update) {
-                entity = entitiesClientV2.createEntity(new AtlasEntityWithExtInfo(atlasEntity));
+                entity = atlasClientV2.createEntity(new AtlasEntityWithExtInfo(atlasEntity));
                 assertNotNull(entity);
                 assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
                 assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).size() > 0);
                 return entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0);
             } else {
-                entity = entitiesClientV2.updateEntity(new AtlasEntityWithExtInfo(atlasEntity));
+                entity = atlasClientV2.updateEntity(new AtlasEntityWithExtInfo(atlasEntity));
                 assertNotNull(entity);
                 assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE));
                 assertTrue(entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).size() > 0);

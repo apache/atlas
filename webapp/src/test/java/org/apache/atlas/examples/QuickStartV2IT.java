@@ -61,7 +61,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     private AtlasEntity getDB(String dbName) throws AtlasServiceException, JSONException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("name", dbName);
-        AtlasEntity dbEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.DATABASE_TYPE, attributes).getEntity();
+        AtlasEntity dbEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.DATABASE_TYPE, attributes).getEntity();
         return dbEntity;
     }
 
@@ -80,20 +80,20 @@ public class QuickStartV2IT extends BaseResourceIT {
     private AtlasEntity getTable(String tableName) throws AtlasServiceException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
-        AtlasEntity tableEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.TABLE_TYPE, attributes).getEntity();
+        AtlasEntity tableEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.TABLE_TYPE, attributes).getEntity();
         return tableEntity;
     }
 
     private AtlasEntity getProcess(String processName) throws AtlasServiceException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName);
-        AtlasEntity processEntity = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
+        AtlasEntity processEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
         return processEntity;
     }
      
 
     private void verifyTrait(AtlasEntity table) throws AtlasServiceException {
-        AtlasClassification.AtlasClassifications classfications = entitiesClientV2.getClassifications(table.getGuid());
+        AtlasClassification.AtlasClassifications classfications = atlasClientV2.getClassifications(table.getGuid());
         List<AtlasClassification> traits = classfications.getList();
         assertNotNull(traits.get(0).getTypeName());
     }
@@ -126,7 +126,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     public void testProcessIsAdded() throws AtlasServiceException, JSONException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.LOAD_SALES_DAILY_PROCESS);
-        AtlasEntity loadProcess = entitiesClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
+        AtlasEntity loadProcess = atlasClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
 
         Map loadProcessAttribs = loadProcess.getAttributes();
         assertEquals(QuickStartV2.LOAD_SALES_DAILY_PROCESS, loadProcessAttribs.get(AtlasClient.NAME));
@@ -162,7 +162,7 @@ public class QuickStartV2IT extends BaseResourceIT {
         String salesDailyProcessId   = getProcessId(QuickStartV2.LOAD_SALES_DAILY_PROCESS);
         String salesMonthlyProcessId = getProcessId(QuickStartV2.LOAD_SALES_MONTHLY_PROCESS);
 
-        AtlasLineageInfo inputLineage = lineageClientV2.getLineageInfo(salesFactDailyMVId, LineageDirection.BOTH, 0);
+        AtlasLineageInfo inputLineage = atlasClientV2.getLineageInfo(salesFactDailyMVId, LineageDirection.BOTH, 0);
         List<LineageRelation> relations = new ArrayList<>(inputLineage.getRelations());
         Map<String, AtlasEntityHeader> entityMap = inputLineage.getGuidEntityMap();
 
@@ -181,7 +181,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     public void testViewIsAdded() throws AtlasServiceException, JSONException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.PRODUCT_DIM_VIEW);
-        AtlasEntity view = entitiesClientV2.getEntityByAttribute(QuickStartV2.VIEW_TYPE, attributes).getEntity();
+        AtlasEntity view = atlasClientV2.getEntityByAttribute(QuickStartV2.VIEW_TYPE, attributes).getEntity();
         Map<String, Object> viewAttributes = view.getAttributes();
         assertEquals(QuickStartV2.PRODUCT_DIM_VIEW, viewAttributes.get(AtlasClient.NAME));
 
