@@ -9,6 +9,10 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1603: fix to handle null value for object_id type attributes (mneethiraj via kevalbhatt)
+ATLAS 1607: notify listeners on classification addition/deletion (sarathkumarsubramanian via mneethiraj)
+ATLAS-1606: introduced query provider to handle Gremlin version specific queries (apoorvnaik via mneethiraj)
+ATLAS-1602 fixed IT failures in QuickStart and issues identified in coverity scan (sarathkumarsubramanian via mneethiraj)
 ATLAS-1584 Fix issues with owned map reference and add tests (sumasai)
 ATLAS-1589 DSL queries return wrong object when filter traverses an edge (jnhagelberg)
 ATLAS-1590 UI : Edit Button is enabled for Deleted entities. (kevalbhatt)

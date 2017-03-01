@@ -282,15 +282,19 @@ public class EntityGraphMapper {
             }
 
             case OBJECT_ID_TYPE: {
-                String          edgeLabel    = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
-                AtlasEdge       currentEdge  = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
-                AtlasEntityType instanceType = getInstanceType(ctx.getValue());
-                AtlasEdge       edge         = currentEdge != null ? currentEdge : null;
+                String    edgeLabel    = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
+                AtlasEdge currentEdge  = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
+                AtlasEdge newEdge      = null;
 
-                ctx.setElementType(instanceType);
-                ctx.setExistingEdge(edge);
+                if (ctx.getValue() != null) {
+                    AtlasEntityType instanceType = getInstanceType(ctx.getValue());
+                    AtlasEdge       edge         = currentEdge != null ? currentEdge : null;
 
-                AtlasEdge newEdge = mapObjectIdValue(ctx, context);
+                    ctx.setElementType(instanceType);
+                    ctx.setExistingEdge(edge);
+
+                    newEdge = mapObjectIdValue(ctx, context);
+                }
 
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
                     deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(), true);
@@ -371,11 +375,14 @@ public class EntityGraphMapper {
 
         if (entityVertex == null) {
             AtlasObjectId objId = getObjectId(ctx.getValue());
-            entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
+
+            if (objId != null) {
+                entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
+            }
         }
 
         if (entityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, ctx.getValue().toString());
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, (ctx.getValue() == null ? null : ctx.getValue().toString()));
         }
 
         if (ctx.getCurrentEdge() != null) {

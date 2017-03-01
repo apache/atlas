@@ -75,6 +75,7 @@ import static org.apache.atlas.TestUtils.randomString;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
@@ -811,6 +812,25 @@ public class AtlasEntityStoreV1Test {
         assertEquals(col3.getAttribute("description"), updatedCol3Entity.getAttribute("description"));
     }
 
+    @Test
+    public void testSetObjectIdAttrToNull() throws Exception {
+        final AtlasEntity            dbEntity            = TestUtilsV2.createDBEntity();
+        EntityMutationResponse       dbCreationResponse  = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        final AtlasEntity            tableEntity         = TestUtilsV2.createTableEntity(dbEntity);
+        final EntityMutationResponse tblCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(tableEntity), false);
+        final AtlasEntityHeader      createdTblHeader    = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
+        final AtlasEntity            createdTblEntity    = getEntityFromStore(createdTblHeader);
+
+        init();
+
+        createdTblEntity.setAttribute("database", null);
+
+        final EntityMutationResponse tblUpdateResponse = entityStore.createOrUpdate(new AtlasEntityStream(createdTblEntity), true);
+        final AtlasEntityHeader      updatedTblHeader  = tblUpdateResponse.getFirstEntityPartialUpdated();
+        final AtlasEntity            updatedTblEntity  = getEntityFromStore(updatedTblHeader);
+
+        assertNull(updatedTblEntity.getAttribute("database"));
+    }
 
     private String randomStrWithReservedChars() {
         return randomString() + "\"${}%";
