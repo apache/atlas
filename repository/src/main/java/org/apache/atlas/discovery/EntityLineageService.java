@@ -22,7 +22,6 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
@@ -31,6 +30,9 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
@@ -48,13 +50,15 @@ public class EntityLineageService implements AtlasLineageService {
     private static final String INPUT_PROCESS_EDGE      =  "__Process.inputs";
     private static final String OUTPUT_PROCESS_EDGE     =  "__Process.outputs";
 
-    private final AtlasGraph graph;
+    private final AtlasGraph                graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
+    private final EntityGraphRetriever      entityRetriever;
 
     @Inject
-    EntityLineageService() throws DiscoveryException {
-        this.graph = AtlasGraphProvider.getGraphInstance();
+    EntityLineageService(AtlasTypeRegistry typeRegistry) throws DiscoveryException {
+        this.graph                = AtlasGraphProvider.getGraphInstance();
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+        this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
     }
 
     @Override
@@ -99,7 +103,11 @@ public class EntityLineageService implements AtlasLineageService {
                             AtlasEntityHeader prev = null;
 
                             for (Object vertex : vertices) {
-                                AtlasEntityHeader entity = toAtlasEntityHeader(vertex);
+                                if (!(vertex instanceof AtlasVertex)) {
+                                    continue;
+                                }
+
+                                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex)vertex);
 
                                 if (!entities.containsKey(entity.getGuid())) {
                                     entities.put(entity.getGuid(), entity);
@@ -161,23 +169,6 @@ public class EntityLineageService implements AtlasLineageService {
             lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo, depth);
         }
         return lineageQuery;
-    }
-
-    private AtlasEntityHeader toAtlasEntityHeader(Object vertexObj) {
-        AtlasEntityHeader ret = new AtlasEntityHeader();
-
-        if (vertexObj instanceof AtlasVertex) {
-            AtlasVertex vertex = (AtlasVertex) vertexObj;
-            ret.setTypeName(vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class));
-            ret.setGuid(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class));
-            ret.setDisplayText(vertex.getProperty(Constants.QUALIFIED_NAME, String.class));
-
-            String state  = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
-            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.ACTIVE : Status.DELETED);
-            ret.setStatus(status);
-        }
-
-        return ret;
     }
 
     private boolean entityExists(String guid) {

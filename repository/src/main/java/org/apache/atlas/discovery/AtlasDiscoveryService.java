@@ -39,5 +39,5 @@ public interface AtlasDiscoveryService {
      * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
      * @return AtlasSearchResult
      */
-    AtlasSearchResult searchUsingFullTextQuery(String query, int limit, int offset);
+    AtlasSearchResult searchUsingFullTextQuery(String query, int limit, int offset) throws AtlasBaseException;
 }

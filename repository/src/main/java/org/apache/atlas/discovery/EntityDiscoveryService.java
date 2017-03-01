@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.discovery;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
@@ -25,9 +24,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.query.Expressions.AliasExpression;
 import org.apache.atlas.query.Expressions.Expression;
 import org.apache.atlas.query.Expressions.SelectExpression;
@@ -44,6 +41,8 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -55,7 +54,6 @@ import scala.util.parsing.combinator.Parsers.NoSuccess;
 import javax.inject.Inject;
 import javax.script.ScriptException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,19 +61,17 @@ import java.util.Map;
 import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
 
 public class EntityDiscoveryService implements AtlasDiscoveryService {
-
-    private final AtlasGraph graph;
-    private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
 
-    private final static String PROPERTY_KEY_NAME        = AtlasBaseTypeDef.ATLAS_TYPE_ASSET + "." + AtlasClient.NAME;
-    private final static String PROPERTY_KEY_DESCRIPTION = AtlasBaseTypeDef.ATLAS_TYPE_ASSET + "." + AtlasClient.DESCRIPTION;
-    private final static String PROPERTY_KEY_OWNER       = AtlasBaseTypeDef.ATLAS_TYPE_ASSET + "." + AtlasClient.OWNER;
+    private final AtlasGraph                      graph;
+    private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
+    private final EntityGraphRetriever            entityRetriever;
 
     @Inject
-    EntityDiscoveryService(MetadataRepository metadataRepository) {
-        this.graph = AtlasGraphProvider.getGraphInstance();
+    EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry) {
+        this.graph                    = AtlasGraphProvider.getGraphInstance();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
+        this.entityRetriever          = new EntityGraphRetriever(typeRegistry);
     }
 
     @Override
@@ -97,7 +93,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (firstElement instanceof AtlasVertex) {
                     for (Object element : queryResult) {
                         if (element instanceof AtlasVertex) {
-                            ret.addEntity(toAtlasEntityHeader((AtlasVertex)element));
+                            ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)element));
                         } else {
                             LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
                         }
@@ -115,7 +111,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                     Object entry = ((List)value).get(0);
 
                                     if (entry instanceof AtlasVertex) {
-                                        ret.addEntity(toAtlasEntityHeader((AtlasVertex)entry));
+                                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)entry));
                                     }
                                 }
                             }
@@ -136,7 +132,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public AtlasSearchResult searchUsingFullTextQuery(String fullTextQuery, int limit, int offset) {
+    public AtlasSearchResult searchUsingFullTextQuery(String fullTextQuery, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret      = new AtlasSearchResult(fullTextQuery, AtlasQueryType.FULL_TEXT);
         QueryParams       params   = validateSearchParams(limit, offset);
         AtlasIndexQuery   idxQuery = toAtlasIndexQuery(fullTextQuery);
@@ -149,7 +145,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
-    private List<AtlasFullTextResult> getIndexQueryResults(AtlasIndexQuery query, QueryParams params) {
+    private List<AtlasFullTextResult> getIndexQueryResults(AtlasIndexQuery query, QueryParams params) throws AtlasBaseException {
         List<AtlasFullTextResult> ret  = new ArrayList<>();
         Iterator<Result>          iter = query.vertices();
 
@@ -159,7 +155,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String guid = vertex != null ? vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) : null;
 
             if (guid != null) {
-                AtlasEntityHeader entity = toAtlasEntityHeader(vertex);
+                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex);
                 Double score = idxQueryResult.getScore();
                 ret.add(new AtlasFullTextResult(entity, score));
             }
@@ -202,37 +198,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return new QueryParams(limit, offset);
-    }
-
-    private AtlasEntityHeader toAtlasEntityHeader(AtlasVertex vertex) {
-        if (vertex == null) {
-            return null;
-        }
-
-        AtlasEntityHeader ret = new AtlasEntityHeader();
-
-        String typeName = vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-
-        ret.setTypeName(typeName);
-        ret.setGuid(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class));
-        ret.setDisplayText(vertex.getProperty(Constants.QUALIFIED_NAME, String.class));
-        ret.setAttribute(AtlasClient.NAME, vertex.getProperty(PROPERTY_KEY_NAME, String.class));
-        ret.setAttribute(AtlasClient.DESCRIPTION, vertex.getProperty(PROPERTY_KEY_DESCRIPTION, String.class));
-        ret.setAttribute(AtlasClient.OWNER, vertex.getProperty(PROPERTY_KEY_OWNER, String.class));
-
-        Collection<String> classificationNames = vertex.getPropertyValues(Constants.TRAIT_NAMES_PROPERTY_KEY, String.class);
-
-        if (CollectionUtils.isNotEmpty(classificationNames)) {
-            ret.setClassificationNames(new ArrayList<>(classificationNames));
-        }
-
-        String state = vertex.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
-        if (state != null) {
-            Status status = (state.equalsIgnoreCase("ACTIVE") ? Status.ACTIVE : Status.DELETED);
-            ret.setStatus(status);
-        }
-
-        return ret;
     }
 
     private AtlasIndexQuery toAtlasIndexQuery(String fullTextQuery) {

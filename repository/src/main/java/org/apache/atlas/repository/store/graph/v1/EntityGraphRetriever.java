@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-import com.google.common.base.Optional;
 import com.sun.istack.Nullable;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -27,9 +27,11 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -120,6 +122,10 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
+        return entityVertex != null ? mapVertexToAtlasEntityHeader(entityVertex) : null;
+    }
+
     private AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
         try {
             return graphHelper.getVertexForGUID(guid);
@@ -169,6 +175,41 @@ public final class EntityGraphRetriever {
         }
 
         return entity;
+    }
+
+    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasEntityHeader ret = new AtlasEntityHeader();
+
+        String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+        String guid     = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+
+        ret.setTypeName(typeName);
+        ret.setGuid(guid);
+        ret.setStatus(GraphHelper.getStatus(entityVertex));
+        ret.setClassificationNames(GraphHelper.getTraitNames(entityVertex));
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null) {
+            Object name        = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.NAME));
+            Object description = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.DESCRIPTION));
+            Object owner       = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.OWNER));
+            Object displayText = name;
+
+            if (displayText == null) {
+                displayText = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.QUALIFIED_NAME));
+            }
+
+            ret.setAttribute(AtlasClient.NAME, name);
+            ret.setAttribute(AtlasClient.DESCRIPTION, description);
+            ret.setAttribute(AtlasClient.OWNER, owner);
+
+            if (displayText != null) {
+                ret.setDisplayText(displayText.toString());
+            }
+        }
+
+        return ret;
     }
 
     private AtlasEntity mapSystemAttributes(AtlasVertex entityVertex, AtlasEntity entity) {
@@ -494,5 +535,9 @@ public final class EntityGraphRetriever {
         }
 
         return ret;
+    }
+
+    private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
+        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null) : null;
     }
 }
