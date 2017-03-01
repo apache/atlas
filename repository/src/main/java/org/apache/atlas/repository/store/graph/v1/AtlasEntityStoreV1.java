@@ -430,6 +430,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
         graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
+        // notify listeners on classification addition
+        entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
     }
 
     @Override
@@ -448,8 +450,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
 
+        List<AtlasClassification> classifications = Collections.singletonList(classification);
+
         for (String guid : guids) {
-            graphMapper.addClassifications(new EntityMutationContext(), guid, Collections.singletonList(classification));
+            graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
+
+            // notify listeners on classification addition
+            entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
         }
 
     }
@@ -470,6 +477,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
         entityGraphMapper.deleteClassifications(guid, classificationNames);
+
+        // notify listeners on classification deletion
+        entityChangeNotifier.onClassificationDeletedFromEntity(guid, classificationNames);
     }
 
     @Override

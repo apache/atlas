@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
@@ -32,8 +33,10 @@ import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +108,39 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    public void onClassificationAddedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
+        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
+        List<ITypedStruct>          traits = toITypedStructs(classifications);
+
+        if (entity == null || CollectionUtils.isEmpty(traits)) {
+            return;
+        }
+
+        for (EntityChangeListener listener : entityChangeListeners) {
+            try {
+                listener.onTraitsAdded(entity, traits);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+            }
+        }
+    }
+
+    public void onClassificationDeletedFromEntity(String entityId, List<String> traitNames) throws AtlasBaseException {
+        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
+
+        if (entity == null || CollectionUtils.isEmpty(traitNames)) {
+            return;
+        }
+
+        for (EntityChangeListener listener : entityChangeListeners) {
+            try {
+                listener.onTraitsDeleted(entity, traitNames);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+            }
+        }
+    }
+
     private void notifyListeners(List<ITypedReferenceableInstance> typedRefInsts, EntityOperation operation) throws AtlasBaseException {
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
@@ -131,6 +167,32 @@ public class AtlasEntityChangeNotifier {
 
         for (AtlasEntityHeader entityHeader : entityHeaders) {
             ret.add(instanceConverter.getITypedReferenceable(entityHeader.getGuid()));
+        }
+
+        return ret;
+    }
+
+    private ITypedReferenceableInstance toITypedReferenceable(String entityId) throws AtlasBaseException {
+        ITypedReferenceableInstance ret = null;
+
+        if (StringUtils.isNotEmpty(entityId)) {
+            ret = instanceConverter.getITypedReferenceable(entityId);
+        }
+
+        return ret;
+    }
+
+    private List<ITypedStruct> toITypedStructs(List<AtlasClassification> classifications) throws AtlasBaseException {
+        List<ITypedStruct> ret = null;
+
+        if (classifications != null) {
+            ret = new ArrayList<>(classifications.size());
+
+            for (AtlasClassification classification : classifications) {
+                if (classification != null) {
+                    ret.add(instanceConverter.getTrait(classification));
+                }
+            }
         }
 
         return ret;

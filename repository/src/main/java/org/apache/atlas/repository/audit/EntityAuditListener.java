@@ -77,18 +77,26 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
-    public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException {
-        EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_ADD,
-                                             "Added trait: " + InstanceSerialization.toJson(trait, true));
+    public void onTraitsAdded(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
+        if (traits != null) {
+            for (IStruct trait : traits) {
+                EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_ADD,
+                                                     "Added trait: " + InstanceSerialization.toJson(trait, true));
 
-        auditRepository.putEvents(event);
+                auditRepository.putEvents(event);
+            }
+        }
     }
 
     @Override
-    public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName) throws AtlasException {
-        EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
+    public void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames) throws AtlasException {
+        if (traitNames != null) {
+            for (String traitName : traitNames) {
+                EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
 
-        auditRepository.putEvents(event);
+                auditRepository.putEvents(event);
+            }
+        }
     }
 
     @Override

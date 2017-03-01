@@ -87,12 +87,12 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     }
 
     @Override
-    public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException {
+    public void onTraitsAdded(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
         notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_ADD);
     }
 
     @Override
-    public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName) throws AtlasException {
+    public void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames) throws AtlasException {
         notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_DELETE);
     }
 

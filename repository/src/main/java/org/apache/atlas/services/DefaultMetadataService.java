@@ -72,11 +72,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -724,14 +720,18 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     private void onTraitAddedToEntity(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException {
+        Collection<IStruct> traits = Collections.singletonList(trait);
+
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onTraitAdded(entity, trait);
+            listener.onTraitsAdded(entity, traits);
         }
     }
 
     private void onTraitDeletedFromEntity(ITypedReferenceableInstance entity, String traitName) throws AtlasException {
+        Collection<String> traitNames = Collections.singletonList(traitName);
+
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onTraitDeleted(entity, traitName);
+            listener.onTraitsDeleted(entity, traitNames);
         }
     }
 

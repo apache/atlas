@@ -1258,12 +1258,12 @@ public class DefaultMetadataServiceTest {
         }
 
         @Override
-        public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait)
+        public void onTraitsAdded(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits)
             throws AtlasException {
         }
 
         @Override
-        public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName)
+        public void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames)
             throws AtlasException {
         }
 
