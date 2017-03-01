@@ -33,25 +33,20 @@
     should be configured to exclude all but the
     proper dependency
     -->
-    
+
     <description>Apache Atlas Graph Database Implementation Dependencies</description>
     <name>Apache Atlas Graph Database Implementation Dependencies</name>
     <packaging>pom</packaging>
-
     <dependencies>
-      
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-titan1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-titan0</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-	<!-- Additional dependencies should be added here
-	as more implementations are introduced.  In the
-	profile corresponding to the implementation in 
-	the root pom.xml, all dependencies except for
-	that one should be excluded. -->
-
     </dependencies>
-
 </project>

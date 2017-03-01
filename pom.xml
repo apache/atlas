@@ -490,7 +490,7 @@
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-	    <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
+        <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
         <atlas.surefire.options></atlas.surefire.options>
 
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
@@ -532,6 +532,28 @@
             <properties>
                 <skipDocs>false</skipDocs>
             </properties>
+        </profile>
+        <profile>
+            <id>titan1</id>
+             <properties>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase</graphdb.backend.impl>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.atlas</groupId>
+                        <artifactId>atlas-graphdb-impls</artifactId>
+                        <version>${project.version}</version>
+                        <type>pom</type>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>org.apache.atlas</groupId>
+                                <artifactId>atlas-graphdb-titan0</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
         </profile>
     </profiles>
 
@@ -1251,9 +1273,14 @@
                 <artifactId>atlas-graphdb-impls</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
-		        <!-- exclusions should be added here for all of the non-titan0 implementations -->
-                <scope>test</scope>
-	        </dependency>
+                <!-- exclusions for all of the non-titan0 implementations -->
+                <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.atlas</groupId>
+                            <artifactId>atlas-graphdb-titan1</artifactId>
+                        </exclusion>
+                 </exclusions>
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>

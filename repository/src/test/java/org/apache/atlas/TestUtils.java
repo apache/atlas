@@ -53,6 +53,7 @@ import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.services.DefaultMetadataService;
@@ -85,6 +86,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
+import org.testng.SkipException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -778,4 +780,12 @@ public final class TestUtils {
         checker.removeAll(actual);
         assertEquals(checker.size(), 0);
     }
+
+    public static void skipForGremlin3EnabledGraphDb() throws SkipException {
+        //ATLAS-1579 Currently, some tests are skipped for titan1 backened. As these tests are hard coded to use Gremlin2. See ATLAS-1579, ATLAS-1591 once it is fixed, please remove it.
+         if (TestUtils.getGraph().getSupportedGremlinVersion() == GremlinVersion.THREE) {
+             throw new SkipException ("This test requires Gremlin2. Skipping test ");
+         }
+    }
+
 }

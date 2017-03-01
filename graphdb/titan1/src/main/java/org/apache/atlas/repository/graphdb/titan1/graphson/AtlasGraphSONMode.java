@@ -15,24 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.atlas.utils;
-
-import java.util.Iterator;
+package org.apache.atlas.repository.graphdb.titan1.graphson;
 
 /**
- * Adapter class that allows an Iterator to be presented as an instance of java.util.Iterable.
+ * Modes of operation of the GraphSONUtility.
+ *
+ * @author Stephen Mallette
  */
-public final class IteratorToIterableAdapter<T> implements Iterable<T> {
+public enum AtlasGraphSONMode {
+    /**
+     * COMPACT constructs GraphSON on the assumption that all property keys
+     * are fair game for exclusion including _type, _inV, _outV, _label and _id.
+     * It is possible to write GraphSON that cannot be read back into Graph,
+     * if some or all of these keys are excluded.
+     */
+    COMPACT,
 
-    private final Iterator<T> wrapped;
+    /**
+     * NORMAL includes the _type field and JSON data typing.
+     */
+    NORMAL,
 
-    public IteratorToIterableAdapter(Iterator<T> wrapped) {
-        this.wrapped = wrapped;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        return wrapped;
-    }
+    /**
+     * EXTENDED includes the _type field and explicit data typing.
+     */
+    EXTENDED
 }

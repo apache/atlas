@@ -34,8 +34,8 @@
     <properties>
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
         <debug.jetty.daemon>true</debug.jetty.daemon>
+        <log4j.configuration.url>file:///${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
         <packages.to.exclude />
-        <log4j.configuration.url>file://${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
     </properties>
 
     <profiles>
@@ -46,7 +46,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/titan-berkeleyje-${titan.version}.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/titan-es-${titan.version}.jar,WEB-INF/lib/elasticsearch-*.jar</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/titan-*.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/lucene-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
@@ -59,7 +59,6 @@
                 <packages.to.exclude>WEB-INF/lib/je-*.jar</packages.to.exclude>
             </properties>
         </profile>
-
         <profile>
             <id>Windows</id>
             <activation>
@@ -68,9 +67,48 @@
                 </os>
             </activation>
             <properties>
-                <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>                
+                <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
             </properties>
-        </profile>    
+        </profile>
+        <profile>
+            <id>titan1</id>
+            <!-- remove conflicting lucene/titan versions from catalog when using titan 1 -->
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.atlas</groupId>
+                        <artifactId>atlas-catalog</artifactId>
+                        <version>${project.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>com.thinkaurelius.titan</groupId>
+                                <artifactId>titan-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.apache.lucene</groupId>
+                                <artifactId>lucene-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.apache.lucene</groupId>
+                                <artifactId>lucene-queryparser</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.apache.lucene</groupId>
+                                <artifactId>lucene-analyzers-common</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.atlas</groupId>
+                    <artifactId>atlas-catalog</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <dependencies>
@@ -79,7 +117,6 @@
             <artifactId>atlas-graphdb-impls</artifactId>
             <type>pom</type>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-common</artifactId>
@@ -100,26 +137,25 @@
             <artifactId>atlas-client</artifactId>
         </dependency>
 
-	    <dependency>
+        <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-authorization</artifactId>
-	    <version>${project.version}</version>	
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
         </dependency>
+
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -136,6 +172,11 @@
             <artifactId>atlas-catalog</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-impls</artifactId>
+            <type>pom</type>
+        </dependency>
         <!-- Zookeeper, curator -->
         <dependency>
             <groupId>org.apache.curator</groupId>
@@ -155,8 +196,9 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
-        </dependency>
 
+
+        </dependency>
         <!-- supports simple auth handler -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -274,60 +316,60 @@
         </dependency>
 
         <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-                <version>${spring.version}</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>${spring.version}</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-                <version>${spring.security.version}</version>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-                <version>${spring.security.version}</version>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-config</artifactId>
-                <version>${spring.security.version}</version>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
 
         <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-ldap</artifactId>
-                <version>${spring.security.version}</version>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-ldap</artifactId>
+            <version>${spring.security.version}</version>
         </dependency>
         <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>${javax.servlet.version}</version>
-        </dependency>
-        <dependency>
-                <groupId>org.springframework.ldap</groupId>
-                <artifactId>spring-ldap-core</artifactId>
-                <version>${spring-ldap-core.version}</version>
+            <groupId>org.springframework.ldap</groupId>
+            <artifactId>spring-ldap-core</artifactId>
+            <version>${spring-ldap-core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-dashboardv2</artifactId>
             <type>war</type>
+        </dependency>
+        <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>${javax.servlet.version}</version>
         </dependency>
         <dependency>
             <groupId>org.easymock</groupId>
@@ -342,15 +384,13 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
-	 <dependency>
+        <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
             <version>3.9</version>
@@ -393,7 +433,7 @@
                             <artifactId>atlas-dashboardv2</artifactId>
                         </overlay>
                         <overlay>
-                             <!-- empty groupId/artifactId represents the current build -->
+                            <!-- empty groupId/artifactId represents the current build -->
                         </overlay>
                     </overlays>
                     <archive>
@@ -439,7 +479,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Running unit tests in pre-integration-test phase after war is built -->
+        <!-- Running unit tests in pre-integration-test phase after war is built -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -448,7 +488,7 @@
                         <user.dir>${project.basedir}</user.dir>
                         <projectBaseDir>${project.basedir}/..</projectBaseDir>
                     </systemProperties>
-                    <!--<skipTests>true</skipTests>-->
+                    <!--<skipTests>true</skipTests> -->
                     <forkMode>always</forkMode>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
@@ -494,8 +534,7 @@
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/src/test/webapp/WEB-INF/web.xml</descriptor>
-                        <!-- ${project.build.directory}/atlas-webapp-${project.version} -->
-                        <extraClasspath>${project.build.directory}/../../webapp/target/test-classes/</extraClasspath>
+                        <extraClasspath>${project.build.testOutputDirectory}</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
@@ -512,13 +551,17 @@
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
+                            <name>atlas.graphdb.backend</name>
+                            <value>${graphdb.backend.impl}</value>
+                        </systemProperty>
+                        <systemProperty>
                             <name>keystore.file</name>
-                            <value>${project.build.directory}/../../webapp/target/atlas.keystore
+                            <value>${project.build.directory}/atlas.keystore
                             </value>
                         </systemProperty>
                         <systemProperty>
                             <name>truststore.file</name>
-                            <value>${project.build.directory}/../../webapp/target/atlas.keystore</value>
+                            <value>${project.build.directory}/atlas.keystore</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.home</name>
@@ -529,6 +572,10 @@
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
                         <systemProperty>
+                            <name>atlas.graphdb.backend</name>
+                            <value>${graphdb.backend.impl}</value>
+                        </systemProperty>
+                        <systemProperty>
                             <key>atlas.conf</key>
                             <value>${project.build.directory}/../../typesystem/target/test-classes</value>
                         </systemProperty>
@@ -537,26 +584,9 @@
                     <stopPort>31001</stopPort>
                     <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
                     <daemon>${debug.jetty.daemon}</daemon>
-                    <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
+                    <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.eclipse.jetty</groupId>
-                        <artifactId>jetty-jsp</artifactId>
-                        <version>${jetty.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>javax.servlet</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.glassfish</groupId>
-                                <artifactId>javax.el</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>start-jetty</id>
@@ -578,7 +608,7 @@
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
             </plugin>
-            <plugin>
+           <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
@@ -655,4 +685,6 @@
             </plugin>
         </plugins>
     </build>
+
+
 </project>

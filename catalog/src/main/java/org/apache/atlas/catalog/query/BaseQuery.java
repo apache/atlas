@@ -30,10 +30,10 @@ import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.projection.Projection;
 import org.apache.atlas.catalog.projection.ProjectionResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.typesystem.persistence.Id;
 
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -165,10 +165,9 @@ public abstract class BaseQuery implements AtlasQuery {
         return request;
     }
 
-    //todo: abstract
     // Underlying method is synchronized and caches the graph in a static field
-    protected TitanGraph getGraph() {
-        return Titan0GraphDatabase.getGraphInstance();
+    protected AtlasGraph getGraph() {
+        return AtlasGraphProvider.getGraphInstance();
     }
 
     protected VertexWrapper wrapVertex(Vertex v) {

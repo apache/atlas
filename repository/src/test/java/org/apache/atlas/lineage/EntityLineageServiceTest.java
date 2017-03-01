@@ -18,18 +18,30 @@
 
 package org.apache.atlas.lineage;
 
-import com.google.common.collect.ImmutableList;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.EntityLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
-import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
@@ -37,17 +49,12 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.testng.Assert.*;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Unit tests for the new v2 Instance LineageService.
@@ -73,6 +80,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
      */
     @Test
     public void testCircularLineage() throws Exception{
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String entityGuid = getEntityId(HIVE_TABLE_TYPE, "name", "table2");
         AtlasLineageInfo circularLineage = getInputLineageInfo(entityGuid, 5);
 
@@ -108,6 +116,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testGetInputLineageInfo() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String entityGuid = getEntityId(HIVE_TABLE_TYPE, "name", "sales_fact_monthly_mv");
         AtlasLineageInfo inputLineage = getInputLineageInfo(entityGuid, 4);
 
@@ -143,6 +152,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testGetOutputLineageInfo() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String entityGuid = getEntityId(HIVE_TABLE_TYPE, "name", "sales_fact");
         AtlasLineageInfo outputLineage = getOutputLineageInfo(entityGuid, 4);
 
@@ -178,6 +188,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testGetLineageInfo() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String entityGuid = getEntityId(HIVE_TABLE_TYPE, "name", "sales_fact_monthly_mv");
         AtlasLineageInfo bothLineage = getBothLineageInfo(entityGuid, 5);
 
@@ -241,6 +252,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testNewLineageWithDelete() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String tableName = "table" + random();
         createTable(tableName, 3, true);
         String entityGuid = getEntityId(HIVE_TABLE_TYPE, "name", tableName);
@@ -344,4 +356,5 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
     private String getEntityId(String typeName, String attributeName, String attributeValue) throws Exception {
         return repository.getEntityDefinition(typeName, attributeName, attributeValue).getId()._getId();
     }
+
 }

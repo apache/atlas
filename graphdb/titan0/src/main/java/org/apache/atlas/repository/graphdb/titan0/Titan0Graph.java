@@ -45,8 +45,8 @@ import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.titan0.query.Titan0GraphQuery;
+import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.utils.IteratorToIterableAdapter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;

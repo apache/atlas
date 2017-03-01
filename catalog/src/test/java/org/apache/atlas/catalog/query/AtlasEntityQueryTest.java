@@ -22,10 +22,12 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.Pipe;
+
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.VertexWrapper;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.easymock.Capture;
 import org.testng.annotations.Test;
 
@@ -44,7 +46,7 @@ public class AtlasEntityQueryTest {
     //todo: add tests for instance query and getInitialPipeline()
     @Test
     public void testExecute_Collection() throws Exception {
-        TitanGraph graph = createStrictMock(TitanGraph.class);
+        AtlasGraph graph = createStrictMock(AtlasGraph.class);
         QueryExpression expression = createStrictMock(QueryExpression.class);
         ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
         Request request = createStrictMock(Request.class);
@@ -107,7 +109,7 @@ public class AtlasEntityQueryTest {
 
     @Test
     public void testExecute_Collection_rollbackOnException() throws Exception {
-        TitanGraph graph = createStrictMock(TitanGraph.class);
+        AtlasGraph graph = createStrictMock(AtlasGraph.class);
         QueryExpression expression = createStrictMock(QueryExpression.class);
         ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
         Request request = createStrictMock(Request.class);
@@ -151,7 +153,7 @@ public class AtlasEntityQueryTest {
 
     @Test
     public void testExecute_Collection_update() throws Exception {
-        TitanGraph graph = createStrictMock(TitanGraph.class);
+        AtlasGraph graph = createStrictMock(AtlasGraph.class);
         QueryExpression expression = createStrictMock(QueryExpression.class);
         ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
         Request request = createStrictMock(Request.class);
@@ -227,7 +229,7 @@ public class AtlasEntityQueryTest {
         private final GremlinPipeline initialPipeline;
         private final Pipe queryPipe;
         private final Pipe notDeletedPipe;
-        private final TitanGraph graph;
+        private final AtlasGraph graph;
         private final VertexWrapper vWrapper;
 
         public TestAtlasEntityQuery(QueryExpression queryExpression,
@@ -236,7 +238,7 @@ public class AtlasEntityQueryTest {
                                     GremlinPipeline initialPipeline,
                                     Pipe queryPipe,
                                     Pipe notDeletedPipe,
-                                    TitanGraph graph,
+                                    AtlasGraph graph,
                                     VertexWrapper vWrapper) {
 
             super(queryExpression, resourceDefinition, request);
@@ -263,7 +265,7 @@ public class AtlasEntityQueryTest {
         }
 
         @Override
-        protected TitanGraph getGraph() {
+        protected AtlasGraph getGraph() {
             return graph;
         }
 

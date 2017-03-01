@@ -49,6 +49,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -63,6 +64,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -275,6 +277,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     @Test
     public void testRawSearch1() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         // Query for all Vertices in Graph
         Object r = discoveryService.searchByGremlin("g.V.toList()");
         Assert.assertTrue(r instanceof List);
@@ -398,7 +401,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db has name", 3},
                 {"hive_db, hive_table", 10},
                 {"View is JdbcAccess", 2},
-                {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
+                {"hive_db as db1, hive_table where db1.name = \"Reporting\"",  isGremlin3() ? 4 : 0}, //Not working in with Titan 0 - ATLAS-145
                 // - Final working query -> discoveryService.searchByGremlin("L:{_var_0 = [] as Set;g.V().has(\"__typeName\", \"hive_db\").fill(_var_0);g.V().has(\"__superTypeNames\", \"hive_db\").fill(_var_0);_var_0._().as(\"db1\").in(\"__hive_table.db\").back(\"db1\").and(_().has(\"hive_db.name\", T.eq, \"Reporting\")).toList()}")
                 /*
                 {"hive_db, hive_process has name"}, //Invalid query
@@ -419,7 +422,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
                 {"hive_db hive_table", 10},
                 {"hive_db where hive_db has name", 3},
-                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
+                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")",  isGremlin3() ? 4 : 0}, //Not working in Titan 0 -> ATLAS-145
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 ", 1},
@@ -528,7 +531,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"View is JdbcAccess", 2},
                 {"View is JdbcAccess limit 1", 1},
                 {"View is JdbcAccess limit 2 offset 1", 1},
-                {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
+                {"hive_db as db1, hive_table where db1.name = \"Reporting\"", isGremlin3() ? 4 : 0}, //Not working in Titan 0 - ATLAS-145
 
 
                 {"from hive_table", 10},
@@ -586,7 +589,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where hive_db has name limit 2 offset 0", 2},
                 {"hive_db where hive_db has name limit 2 offset 1", 2},
 
-                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
+                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")",  isGremlin3() ? 4 : 0}, //Not working in Titan 0 -> ATLAS-145
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 limit 10", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 limit 10 offset 1", 0},
@@ -1251,5 +1254,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     private FieldValueValidator makeNoResultsValidator() {
         return new FieldValueValidator();
+    }
+
+    private boolean isGremlin3() {
+        return TestUtils.getGraph().getSupportedGremlinVersion() == GremlinVersion.THREE;
     }
 }

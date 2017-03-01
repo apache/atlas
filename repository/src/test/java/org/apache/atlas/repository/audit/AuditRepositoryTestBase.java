@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.TestUtils;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.BeforeTest;
@@ -44,6 +45,7 @@ public class AuditRepositoryTestBase {
 
     @Test
     public void testAddEvents() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         EntityAuditEvent event = new EntityAuditEvent(rand(), System.currentTimeMillis(), "u1",
                 EntityAuditEvent.EntityAuditAction.ENTITY_CREATE, "d1", new Referenceable(rand()));
 
@@ -57,6 +59,7 @@ public class AuditRepositoryTestBase {
 
     @Test
     public void testListPagination() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         String id1 = "id1" + rand();
         String id2 = "id2" + rand();
         String id3 = "id3" + rand();
@@ -90,6 +93,7 @@ public class AuditRepositoryTestBase {
 
     @Test
     public void testInvalidEntityId() throws Exception {
+        TestUtils.skipForGremlin3EnabledGraphDb();
         List<EntityAuditEvent> events = eventRepository.listEvents(rand(), null, (short) 3);
         assertEquals(events.size(), 0);
     }
