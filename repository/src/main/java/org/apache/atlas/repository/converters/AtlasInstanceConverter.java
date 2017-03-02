@@ -49,6 +49,7 @@ import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
+import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -149,6 +150,13 @@ public class AtlasInstanceConverter {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
         }
 
+        // validate
+        try {
+            metadataService.validateAndConvertToTypedInstance(referenceable, entityType.getTypeName());
+        } catch (AtlasException excp) {
+            throw toAtlasBaseException(excp);
+        }
+
         ConverterContext ctx    = new ConverterContext();
         AtlasEntity      entity = converter.fromV1ToV2(referenceable, entityType, ctx);
 
@@ -197,6 +205,10 @@ public class AtlasInstanceConverter {
 
         if ( e instanceof TypeNotFoundException) {
             return new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
+        }
+
+        if (e instanceof ValueConversionException) {
+            return new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, e, e.getMessage());
         }
 
         return new AtlasBaseException(e);

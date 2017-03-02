@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
@@ -309,4 +310,7 @@ public interface MetadataService {
      * @throws AtlasException
      */
     ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition) throws AtlasException;
+
+    ITypedReferenceableInstance validateAndConvertToTypedInstance(IReferenceableInstance updatedEntity, String typeName)
+                                                                                                throws AtlasException;
 }

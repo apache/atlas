@@ -42,6 +42,7 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -476,7 +477,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         newEntity = ParamChecker.notNull(newEntity, "updatedEntity cannot be null");
         ITypedReferenceableInstance existInstance = validateEntityExists(guid);
 
-        ITypedReferenceableInstance newInstance = convertToTypedInstance(newEntity, existInstance.getTypeName());
+        ITypedReferenceableInstance newInstance = validateAndConvertToTypedInstance(newEntity, existInstance.getTypeName());
         ((ReferenceableInstance)newInstance).replaceWithNewId(new Id(guid, 0, newInstance.getTypeName()));
 
         CreateUpdateEntitiesResult result = repository.updatePartial(newInstance);
@@ -484,10 +485,11 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         return result;
     }
 
-    private ITypedReferenceableInstance convertToTypedInstance(Referenceable updatedEntity, String typeName)
+    @Override
+    public ITypedReferenceableInstance validateAndConvertToTypedInstance(IReferenceableInstance updatedEntity, String typeName)
             throws AtlasException {
         ClassType type = typeSystem.getDataType(ClassType.class, typeName);
-        ITypedReferenceableInstance newInstance = type.createInstance();
+        ITypedReferenceableInstance newInstance = type.createInstance(updatedEntity.getId());
 
         for (String attributeName : updatedEntity.getValuesMap().keySet()) {
             AttributeInfo attributeInfo = type.fieldMapping.fields.get(attributeName);
@@ -538,7 +540,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
         ITypedReferenceableInstance oldInstance = getEntityDefinitionReference(typeName, uniqueAttributeName, attrValue);
 
-        final ITypedReferenceableInstance newInstance = convertToTypedInstance(updatedEntity, typeName);
+        final ITypedReferenceableInstance newInstance = validateAndConvertToTypedInstance(updatedEntity, typeName);
         ((ReferenceableInstance)newInstance).replaceWithNewId(oldInstance.getId());
 
         CreateUpdateEntitiesResult result = repository.updatePartial(newInstance);
