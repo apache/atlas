@@ -414,7 +414,7 @@ public class AtlasBuiltInTypes {
                 } else if (obj instanceof BigInteger) {
                     return new BigDecimal((BigInteger) obj);
                 } else if (obj instanceof Number) {
-                    return BigDecimal.valueOf(((Number) obj).doubleValue());
+                    return obj.equals(0) ? BigDecimal.ZERO : BigDecimal.valueOf(((Number) obj).doubleValue());
                 } else {
                     try {
                         return new BigDecimal(obj.toString());

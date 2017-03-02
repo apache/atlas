@@ -32,12 +32,12 @@ public class TestAtlasBigDecimalType {
     private final AtlasBigDecimalType bigDecimalType = new AtlasBigDecimalType();
     private final Object[] validValues = {
         null, Byte.valueOf((byte)1), Short.valueOf((short)1), Integer.valueOf(1), Long.valueOf(1L), Float.valueOf(1),
-        Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
+        Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1.0), "1.0",
     };
 
     private final Object[] negativeValues = {
         Byte.valueOf((byte)-1), Short.valueOf((short)-1), Integer.valueOf(-1), Long.valueOf(-1L), Float.valueOf(-1),
-        Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
+        Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1.0), "-1.0",
     };
 
     private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab" };
@@ -77,14 +77,23 @@ public class TestAtlasBigDecimalType {
             BigDecimal normalizedValue = bigDecimalType.getNormalizedValue(value);
 
             assertNotNull(normalizedValue, "value=" + value);
-            assertEquals(normalizedValue, BigDecimal.valueOf(1), "value=" + value);
+
+            if (value instanceof BigInteger) {
+                assertEquals(normalizedValue, BigDecimal.valueOf(1), "value=" + value);
+            } else {
+                assertEquals(normalizedValue, BigDecimal.valueOf(1.0), "value=" + value);
+            }
         }
 
         for (Object value : negativeValues) {
             BigDecimal normalizedValue = bigDecimalType.getNormalizedValue(value);
 
             assertNotNull(normalizedValue, "value=" + value);
-            assertEquals(normalizedValue, BigDecimal.valueOf(-1), "value=" + value);
+            if (value instanceof BigInteger) {
+                assertEquals(normalizedValue, BigDecimal.valueOf(-1), "value=" + value);
+            } else {
+                assertEquals(normalizedValue, BigDecimal.valueOf(-1.0), "value=" + value);
+            }
         }
 
         for (Object value : invalidValues) {
