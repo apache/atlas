@@ -160,7 +160,6 @@ public abstract class AtlasBaseClient {
         // Enable POJO mapping feature
         config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
         int readTimeout = configuration.getInt("atlas.client.readTimeoutMSecs", 60000);
-        ;
         int connectTimeout = configuration.getInt("atlas.client.connectTimeoutMSecs", 60000);
         if (configuration.getBoolean(TLS_ENABLED, false)) {
             // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced
