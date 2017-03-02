@@ -365,11 +365,13 @@ public class AtlasBuiltInTypes {
             if (obj != null) {
                 if (obj instanceof BigInteger) {
                     return (BigInteger) obj;
+                } else if (obj instanceof BigDecimal) {
+                    return ((BigDecimal) obj).toBigInteger();
                 } else if (obj instanceof Number) {
                     return BigInteger.valueOf(((Number) obj).longValue());
                 } else {
                     try {
-                        return new BigInteger(obj.toString());
+                        return new BigDecimal(obj.toString()).toBigInteger();
                     } catch (NumberFormatException excp) {
                         // ignore
                     }
@@ -409,8 +411,10 @@ public class AtlasBuiltInTypes {
             if (obj != null) {
                 if (obj instanceof BigDecimal) {
                     return (BigDecimal) obj;
+                } else if (obj instanceof BigInteger) {
+                    return new BigDecimal((BigInteger) obj);
                 } else if (obj instanceof Number) {
-                    return BigDecimal.valueOf(((Number) obj).longValue());
+                    return BigDecimal.valueOf(((Number) obj).doubleValue());
                 } else {
                     try {
                         return new BigDecimal(obj.toString());
