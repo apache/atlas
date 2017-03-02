@@ -174,7 +174,7 @@ public class TestEntityREST {
 
         dbAttrs.putAll(dbEntity.getAttributes());
 
-        response = entityREST.partialUpdateByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
+        response = entityREST.partialUpdateEntityByUniqueAttrs(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), new AtlasEntityWithExtInfo(dbEntity));
 
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
@@ -199,7 +199,7 @@ public class TestEntityREST {
 
         dbEntity.setAttribute(TestUtilsV2.NAME, updatedDBName);
 
-        response = entityREST.partialUpdateByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), dbEntity);
+        response = entityREST.partialUpdateEntityByUniqueAttrs(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, prevDBName), new AtlasEntityWithExtInfo(dbEntity));
 
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 

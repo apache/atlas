@@ -241,39 +241,23 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
-                                                           AtlasEntity updatedEntity) throws AtlasBaseException {
+                                                           AtlasEntityWithExtInfo updatedEntityInfo) throws AtlasBaseException {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> updateByUniqueAttributes({}, {})", entityType.getTypeName(), uniqAttributes);
         }
 
-        if (updatedEntity == null) {
+        if (updatedEntityInfo == null || updatedEntityInfo.getEntity() == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entity to update.");
         }
 
         String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, uniqAttributes);
 
-        updatedEntity.setGuid(guid);
+        AtlasEntity entity = updatedEntityInfo.getEntity();
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
-    }
+        entity.setGuid(guid);
 
-    @Override
-    @GraphTransaction
-    public EntityMutationResponse updateByGuid(AtlasEntityType entityType, String guid, AtlasEntity updatedEntity)
-            throws AtlasBaseException {
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> updateByUniqueAttributes({}, {})", entityType.getTypeName(), guid);
-        }
-
-        if (updatedEntity == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entity to update.");
-        }
-
-        updatedEntity.setGuid(guid);
-
-        return createOrUpdate(new AtlasEntityStream(updatedEntity), true);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true);
     }
 
     @Override
@@ -306,8 +290,18 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         switch (attrType.getTypeCategory()) {
             case PRIMITIVE:
-            case OBJECT_ID_TYPE:
                 updateEntity.setAttribute(attrName, attrValue);
+                break;
+            case OBJECT_ID_TYPE:
+                AtlasObjectId objId;
+
+                if (attrValue instanceof String) {
+                    objId = new AtlasObjectId((String) attrValue, attr.getAttributeDef().getTypeName());
+                } else {
+                    objId = (AtlasObjectId) attrType.getNormalizedValue(attrValue);
+                }
+
+                updateEntity.setAttribute(attrName, objId);
                 break;
 
             default:

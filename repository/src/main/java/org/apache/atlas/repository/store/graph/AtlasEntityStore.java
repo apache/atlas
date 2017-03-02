@@ -87,17 +87,7 @@ public interface AtlasEntityStore {
      *
      */
     EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
-                                                    AtlasEntity entity) throws AtlasBaseException;
-
-    /**
-     * Partial update a single entity using its guid.
-     * @param entityType type of the entity
-     * @param guid Entity guid
-     * @return EntityMutationResponse details of the updates performed by this call
-     * @throws AtlasBaseException
-     *
-     */
-    EntityMutationResponse updateByGuid(AtlasEntityType entityType, String guid, AtlasEntity entity) throws AtlasBaseException;
+                                                    AtlasEntityWithExtInfo entity) throws AtlasBaseException;
 
     /**
      * Partial update entities attribute using its guid.

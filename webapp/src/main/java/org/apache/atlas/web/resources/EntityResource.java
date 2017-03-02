@@ -37,6 +37,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -47,11 +49,13 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.rest.EntityREST;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -204,7 +208,7 @@ public class EntityResource {
         URI locationURI = null;
         if (uriInfo != null) {
             UriBuilder ub = uriInfo.getAbsolutePathBuilder();
-            locationURI = guids.isEmpty() ? null : ub.path(guids.get(0)).build();
+            locationURI = CollectionUtils.isEmpty(guids) ? null : ub.path(guids.get(0)).build();
         } else {
             String uriPath = AtlasClient.API.GET_ENTITY.getPath();
             locationURI = guids.isEmpty() ? null : UriBuilder
@@ -368,9 +372,17 @@ public class EntityResource {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(attribute, value);
 
+            // update referenceable with Id if not specified in payload
+            Id updateId = updatedEntity.getId();
+
+            if (updateId != null && !updateId.isAssigned()) {
+                String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(getEntityType(entityType), attributes);
+
+                updatedEntity.replaceWithNewId(new Id(guid, 0, updatedEntity.getTypeName()));
+            }
+
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
-            AtlasEntity                entity           = entitiesInfo.getEntity(updatedEntity.getId()._getId());
-            EntityMutationResponse     mutationResponse = entitiesStore.updateByUniqueAttributes(getEntityType(entityType), attributes, entity);
+            EntityMutationResponse     mutationResponse = entitiesStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), true);
             CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {
@@ -458,10 +470,17 @@ public class EntityResource {
                 LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
             }
 
-            Referenceable              updatedEntity    = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            Referenceable updatedEntity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+
+            // update referenceable with Id if not specified in payload
+            Id updateId = updatedEntity.getId();
+
+            if (updateId != null && !updateId.isAssigned()) {
+                updatedEntity.replaceWithNewId(new Id(guid, 0, updatedEntity.getTypeName()));
+            }
+
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
-            AtlasEntity                entity           = entitiesInfo.getEntity(updatedEntity.getId()._getId());
-            EntityMutationResponse     mutationResponse = entitiesStore.updateByGuid(getEntityType(updatedEntity.getTypeName()), guid, entity);
+            EntityMutationResponse     mutationResponse = entitiesStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), true);
             CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {

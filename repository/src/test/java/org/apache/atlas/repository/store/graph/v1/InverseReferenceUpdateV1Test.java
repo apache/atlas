@@ -36,6 +36,7 @@ import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -134,7 +135,7 @@ public abstract class InverseReferenceUpdateV1Test {
         maxEntityForUpdate.setAttribute("manager", juliusId);
         AtlasEntityType employeeType = typeRegistry.getEntityTypeByName(TestUtilsV2.EMPLOYEE_TYPE);
         Map<String, Object> uniqAttributes = Collections.<String, Object>singletonMap("name", "Max");
-        EntityMutationResponse updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes , maxEntityForUpdate);
+        EntityMutationResponse updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes , new AtlasEntityWithExtInfo(maxEntityForUpdate));
         List<AtlasEntityHeader> partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
         // 3 entities should have been updated:
         // * Max to change the Employee.manager reference
@@ -178,7 +179,7 @@ public abstract class InverseReferenceUpdateV1Test {
         AtlasEntity bForPartialUpdate = new AtlasEntity("B");
         bForPartialUpdate.setAttribute("manyA", ImmutableList.of(AtlasTypeUtil.getAtlasObjectId(a1), AtlasTypeUtil.getAtlasObjectId(a2)));
         init();
-        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), bForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), new AtlasEntityWithExtInfo(bForPartialUpdate));
         List<AtlasEntityHeader> partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 3 entities were updated:
         // * set b.manyA reference to a1 and a2
@@ -197,7 +198,7 @@ public abstract class InverseReferenceUpdateV1Test {
 
         bForPartialUpdate.setAttribute("manyA", ImmutableList.of(AtlasTypeUtil.getAtlasObjectId(a3)));
         init();
-        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), bForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), new AtlasEntityWithExtInfo(bForPartialUpdate));
         partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 4 entities were updated:
         // * set b.manyA reference to a3
@@ -235,7 +236,7 @@ public abstract class InverseReferenceUpdateV1Test {
         AtlasEntity bForPartialUpdate = new AtlasEntity("B");
         bForPartialUpdate.setAttribute("a", AtlasTypeUtil.getAtlasObjectId(a1));
         init();
-        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), bForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), new AtlasEntityWithExtInfo(bForPartialUpdate));
         List<AtlasEntityHeader> partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 2 entities were updated:
         // * set b.a reference to a1
@@ -250,7 +251,7 @@ public abstract class InverseReferenceUpdateV1Test {
         // Update b.a to reference a2.
         bForPartialUpdate.setAttribute("a", AtlasTypeUtil.getAtlasObjectId(a2));
         init();
-        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), bForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b.getAttribute(NAME)), new AtlasEntityWithExtInfo(bForPartialUpdate));
         partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 3 entities were updated:
         // * set b.a reference to a2
@@ -294,7 +295,7 @@ public abstract class InverseReferenceUpdateV1Test {
         AtlasEntity b1ForPartialUpdate = new AtlasEntity("B");
         b1ForPartialUpdate.setAttribute("manyToManyA", ImmutableList.of(AtlasTypeUtil.getAtlasObjectId(a1), AtlasTypeUtil.getAtlasObjectId(a2)));
         init();
-        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b1.getAttribute(NAME)), b1ForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(bType, Collections.<String, Object>singletonMap(NAME, b1.getAttribute(NAME)), new AtlasEntityWithExtInfo(b1ForPartialUpdate));
         List<AtlasEntityHeader> partialUpdatedEntities = response.getPartialUpdatedEntities();
         assertEquals(partialUpdatedEntities.size(), 3);
         AtlasEntitiesWithExtInfo storedEntities = entityStore.getByIds(ImmutableList.of(a1.getGuid(), a2.getGuid(), b1.getGuid()));
@@ -328,7 +329,7 @@ public abstract class InverseReferenceUpdateV1Test {
         AtlasEntity aForPartialUpdate = new AtlasEntity("A");
         aForPartialUpdate.setAttribute("mapToB", ImmutableMap.<String, AtlasObjectId>of("b1", AtlasTypeUtil.getAtlasObjectId(b1), "b2", AtlasTypeUtil.getAtlasObjectId(b2)));
         init();
-        response = entityStore.updateByUniqueAttributes(aType, Collections.<String, Object>singletonMap(NAME, a1.getAttribute(NAME)), aForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(aType, Collections.<String, Object>singletonMap(NAME, a1.getAttribute(NAME)), new AtlasEntityWithExtInfo(aForPartialUpdate));
         List<AtlasEntityHeader> partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 3 entities were updated:
         // * set a1.mapToB to "b1"->b1, "b2"->b2
@@ -352,7 +353,7 @@ public abstract class InverseReferenceUpdateV1Test {
 
         aForPartialUpdate.setAttribute("mapToB", ImmutableMap.<String, AtlasObjectId>of("b3", AtlasTypeUtil.getAtlasObjectId(b3)));
         init();
-        response = entityStore.updateByUniqueAttributes(aType, Collections.<String, Object>singletonMap(NAME, a1.getAttribute(NAME)), aForPartialUpdate);
+        response = entityStore.updateByUniqueAttributes(aType, Collections.<String, Object>singletonMap(NAME, a1.getAttribute(NAME)), new AtlasEntityWithExtInfo(aForPartialUpdate));
         partialUpdatedEntities = response.getPartialUpdatedEntities();
         // Verify 4 entities were updated:
         // * set a1.mapToB to "b3"->b3

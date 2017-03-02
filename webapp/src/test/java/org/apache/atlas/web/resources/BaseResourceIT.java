@@ -551,12 +551,12 @@ public abstract class BaseResourceIT {
 
         tableInstance.setAttribute(NAME, tableName);
         tableInstance.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
-        tableInstance.setAttribute("db", databaseInstance);
+        tableInstance.setAttribute("db", AtlasTypeUtil.getAtlasObjectId(databaseInstance));
         tableInstance.setAttribute(DESCRIPTION, "bar table");
         tableInstance.setAttribute("lastAccessTime", "2014-07-11T08:00:00.000Z");
         tableInstance.setAttribute("type", "managed");
         tableInstance.setAttribute("level", 2);
-        tableInstance.setAttribute("tableType", 1); // enum
+        tableInstance.setAttribute("tableType", "MANAGED"); // enum
         tableInstance.setAttribute("compressed", false);
 
         AtlasClassification classification = tableInstance.getClassifications().get(0);

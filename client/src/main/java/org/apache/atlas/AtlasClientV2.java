@@ -258,10 +258,11 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(GET_ENTITY_BY_ATTRIBUTE, AtlasEntityWithExtInfo.class, queryParams, type);
     }
 
-    public EntityMutationResponse updateEntityByAttribute(String type, Map<String, String> attributes, AtlasEntity entity) throws AtlasServiceException {
+    public EntityMutationResponse updateEntityByAttribute(String type, Map<String, String> attributes, AtlasEntityWithExtInfo entityInfo)
+            throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
 
-        return callAPI(UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entity, queryParams, type);
+        return callAPI(UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entityInfo, queryParams, type);
     }
 
     public EntityMutationResponse deleteEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {

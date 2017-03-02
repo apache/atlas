@@ -144,15 +144,15 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Path("/uniqueAttribute/type/{typeName}")
-    public EntityMutationResponse partialUpdateByUniqueAttributes(@PathParam("typeName") String typeName,
-                                                                  @Context HttpServletRequest servletRequest,
-                                                                  AtlasEntity entity) throws Exception {
+    public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName,
+                                                                   @Context HttpServletRequest servletRequest,
+                                                                   AtlasEntityWithExtInfo entityInfo) throws Exception {
         AtlasEntityType     entityType       = ensureEntityType(typeName);
         Map<String, Object> uniqueAttributes = getAttributes(servletRequest);
 
         validateUniqueAttribute(entityType, uniqueAttributes);
 
-        return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entity);
+        return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
     }
 
     /*******
@@ -165,9 +165,9 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Path("/guid/{guid}")
-    public EntityMutationResponse partialUpdateByGuid(@PathParam("guid") String guid,
-                                                      @QueryParam("name") String attrName,
-                                                      Object attrValue) throws Exception {
+    public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid,
+                                                                @QueryParam("name") String attrName,
+                                                                Object attrValue) throws Exception {
 
         return entitiesStore.updateEntityAttributeByGuid(guid, attrName, attrValue);
     }
