@@ -51,23 +51,15 @@ public class AtlasEntityChangeNotifier {
 
     private final Set<EntityChangeListener> entityChangeListeners;
     private final AtlasInstanceConverter    instanceConverter;
-    private final FullTextMapper fullTextMapper;
 
     @Inject
-    private DeleteHandler deleteHandler;
+    private FullTextMapperV2 fullTextMapperV2;
 
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      AtlasInstanceConverter    instanceConverter) {
         this.entityChangeListeners = entityChangeListeners;
         this.instanceConverter     = instanceConverter;
-
-        // This is only needed for the Legacy FullTextMapper, once the V2 changes are in place this can be replaced/removed
-        AtlasGraphProvider graphProvider = new AtlasGraphProvider();
-        GraphToTypedInstanceMapper graphToTypedInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
-        TypedInstanceToGraphMapper typedInstanceToGraphMapper = new TypedInstanceToGraphMapper(graphToTypedInstanceMapper, deleteHandler);
-
-        this.fullTextMapper        = new FullTextMapper(typedInstanceToGraphMapper, graphToTypedInstanceMapper);
     }
 
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse) throws AtlasBaseException {
@@ -208,18 +200,19 @@ public class AtlasEntityChangeNotifier {
         }
 
         for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
-            AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(atlasEntityHeader.getGuid());
+            String      guid        = atlasEntityHeader.getGuid();
+            AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(guid);
 
             if(atlasVertex == null) {
                 continue;
             }
 
             try {
-                String fullText = fullTextMapper.mapRecursive(atlasVertex, true);
+                String fullText = fullTextMapperV2.map(guid);
 
                 GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
-            } catch (AtlasException e) {
-                LOG.error("FullText mapping failed for Vertex[ guid = {} ]", atlasEntityHeader.getGuid(), e);
+            } catch (AtlasBaseException e) {
+                LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }
         }
     }

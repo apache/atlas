@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -43,12 +44,13 @@ public class RequestContext {
     private Set<String> updatedEntityIds = new LinkedHashSet<>();
     private Set<String> deletedEntityIds = new LinkedHashSet<>();
     private List<ITypedReferenceableInstance> deletedEntities = new ArrayList<>();
-    private Map<String,ITypedReferenceableInstance> entityCache = new HashMap<>();
+    private Map<String,ITypedReferenceableInstance> entityCacheV1 = new HashMap<>();
+    private Map<String,AtlasEntityWithExtInfo> entityCacheV2 = new HashMap<>();
 
     private String user;
     private long requestTime;
 
-    TypeSystem typeSystem = TypeSystem.getInstance();
+    private TypeSystem typeSystem = TypeSystem.getInstance();
     private Metrics metrics = new Metrics();
 
     private RequestContext() {
@@ -83,7 +85,17 @@ public class RequestContext {
      *
      */
     public void cache(ITypedReferenceableInstance instance) {
-        entityCache.put(instance.getId()._getId(), instance);
+        entityCacheV1.put(instance.getId()._getId(), instance);
+    }
+
+    /**
+     * Adds the specified instance to the cache
+     *
+     */
+    public void cache(AtlasEntityWithExtInfo entity) {
+        if (entity != null && entity.getEntity() != null && entity.getEntity().getGuid() != null) {
+            entityCacheV2.put(entity.getEntity().getGuid(), entity);
+        }
     }
 
     /**
@@ -93,16 +105,31 @@ public class RequestContext {
      * @param guid the guid to find
      * @return Either the instance or null if it is not in the cache.
      */
-    public ITypedReferenceableInstance getInstance(String guid) {
-        return entityCache.get(guid);
+    public ITypedReferenceableInstance getInstanceV1(String guid) {
+        return entityCacheV1.get(guid);
+    }
+
+    /**
+     * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
+     * or null if it is not in the cache.
+     *
+     * @param guid the guid to find
+     * @return Either the instance or null if it is not in the cache.
+     */
+    public AtlasEntityWithExtInfo getInstanceV2(String guid) {
+        return entityCacheV2.get(guid);
     }
 
     public static void clear() {
         RequestContext instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            if (instance.entityCache != null) {
-                instance.entityCache.clear();
+            if (instance.entityCacheV1 != null) {
+                instance.entityCacheV1.clear();
+            }
+
+            if (instance.entityCacheV2 != null) {
+                instance.entityCacheV2.clear();
             }
         }
 

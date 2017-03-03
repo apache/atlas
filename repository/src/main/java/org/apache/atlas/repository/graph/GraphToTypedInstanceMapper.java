@@ -73,7 +73,7 @@ public final class GraphToTypedInstanceMapper {
             //We don't do a cache check here since we want that to be at a higher level
             //where the vertex lookup can also be avoided.  However, this is a convenient
             //place to add a check to see if there are any places that were missed.
-            if(RequestContext.get().getInstance(guid) != null) {
+            if(RequestContext.get().getInstanceV1(guid) != null) {
                 LOG.warn("Looking up previously cached guid at: ", new Exception());
             }
 
@@ -216,7 +216,7 @@ public final class GraphToTypedInstanceMapper {
             if (attributeInfo.isComposite) {
                 //Also, when you retrieve a type's instance, you get the complete object graph of the composites
                 LOG.debug("Found composite, mapping vertex to instance");
-                ITypedReferenceableInstance cached = RequestContext.get().getInstance(guid);
+                ITypedReferenceableInstance cached = RequestContext.get().getInstanceV1(guid);
                 if(cached != null) {
                     return cached;
                 }

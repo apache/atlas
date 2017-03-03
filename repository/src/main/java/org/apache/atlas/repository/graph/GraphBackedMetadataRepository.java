@@ -197,7 +197,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             String guid = guids[i];
 
             // First, check the cache.
-            ITypedReferenceableInstance cached = context.getInstance(guid);
+            ITypedReferenceableInstance cached = context.getInstanceV1(guid);
             if (cached != null) {
                 result[i] = cached;
             } else {
@@ -254,7 +254,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         String guid = GraphHelper.getGuid(instanceVertex);
-        ITypedReferenceableInstance cached = RequestContext.get().getInstance(guid);
+        ITypedReferenceableInstance cached = RequestContext.get().getInstanceV1(guid);
         if(cached != null) {
             return cached;
         }

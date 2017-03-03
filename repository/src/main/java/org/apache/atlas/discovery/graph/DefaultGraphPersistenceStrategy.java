@@ -183,7 +183,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 AtlasVertex classVertex = (AtlasVertex) value;
                 String guid = classVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
                 // Check if the instance we need was previously loaded.
-                ITypedReferenceableInstance classInstance = RequestContext.get().getInstance(guid);
+                ITypedReferenceableInstance classInstance = RequestContext.get().getInstanceV1(guid);
                 if (classInstance == null) {
                     classInstance = metadataRepository.getGraphToInstanceMapper().mapGraphToTypedInstance(guid, classVertex);
                 }

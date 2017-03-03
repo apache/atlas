@@ -55,7 +55,7 @@ public class FullTextMapper {
         String guid = GraphHelper.getGuid(instanceVertex);
         ITypedReferenceableInstance typedReference;
         RequestContext context = RequestContext.get();
-        typedReference = context.getInstance(guid);
+        typedReference = context.getInstanceV1(guid);
         if (typedReference != null) {
 
             if (LOG.isDebugEnabled()) {
