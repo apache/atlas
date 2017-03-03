@@ -360,7 +360,8 @@ define(['require',
                         this.ui.toggleRequired.prop('checked', true);
                     } else {
                         this.ui.entityInputData.find('fieldset').each(function() {
-                            if (!$(this).find('div').hasClass('false')) {
+                            // if checkbox is alredy selected then dont hide
+                            if (!$(this).find('div').hasClass('false') && !that.ui.toggleRequired.is(":checked")) {
                                 $(this).hide();
                             }
                         });

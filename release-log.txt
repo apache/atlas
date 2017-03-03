@@ -9,6 +9,14 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1595:Create Entity in UI : All attributes are not listed for hdfs_path. (Kalyanikashikar via kevalbhatt)
+ATLAS-1618: updated export to support scope option - full/connected
+ATLAS-1621: fixed webapp integration tests failures
+ATLAS-1622: Full text mapping using v2 model
+ATLAS-1617: Update error code pattern to ATLAS-nnn-mm-xxx
+ATLAS-1613: fix for bigdecimal value handling to avoid casting to long (#2 - fix for unittest failures)
+ATLAS-1613: fix for bigdecimal value handling to avoid casting to long; fixed incorrect HTTP status code for an error
+ATLAS-1614: updated v1 partial-update to perform attribute validation
 ATLAS-695: Add Titan 1.0.0 support to Atlas (guptaneeru via jnhagelberg)
 ATLAS-1552: automatic update of inverse references in V2 code path (dkantor)
 ATLAS-1603: fix to handle null value for object_id type attributes (mneethiraj via kevalbhatt)
