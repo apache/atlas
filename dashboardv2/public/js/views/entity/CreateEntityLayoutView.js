@@ -167,9 +167,6 @@ define(['require',
                     }
                 });
 
-                if (this.guid) {
-                    this.bindNonRequiredField();
-                }
                 this.ui.entityInputData.on('keyup change dp.change', 'input.true,select.true', function(e) {
                     if (this.value !== "") {
                         if ($(this).data('select2')) {
@@ -200,7 +197,7 @@ define(['require',
             },
             bindNonRequiredField: function() {
                 var that = this;
-                this.ui.entityInputData.off('keyup change', 'input.false,select.false').on('keyup change', 'input.false,select.false', function(e) {
+                this.ui.entityInputData.off('keyup change dp.change', 'input.false,select.false').on('keyup change dp.change', 'input.false,select.false', function(e) {
                     if (that.modal.$el.find('button.ok').prop('disabled') && that.ui.entityInputData.find('.errorClass').length === 0) {
                         that.modal.$el.find('button.ok').prop("disabled", false);
                     }
@@ -350,11 +347,14 @@ define(['require',
                             });
                         }
                     });
+                    if (this.guid) {
+                        this.bindNonRequiredField();
+                    }
                     this.initializeValidation();
-
                     if (this.ui.entityInputData.find('fieldset').length > 0 && this.ui.entityInputData.find('select.true,input.true').length === 0) {
                         this.requiredAllToggle(this.ui.entityInputData.find('select.true,input.true').length === 0);
                         if (!this.guid) {
+                            // For create entity bind keyup for non-required field when all elements are optional
                             this.bindNonRequiredField();
                         }
                         this.ui.toggleRequired.prop('checked', true);
@@ -404,6 +404,10 @@ define(['require',
 
                 this.$('input[data-type="long"],input[data-type="int"]').on('keyup click', function(e) {
                     removeText(e, e.currentTarget.value);
+                });
+
+                this.$('input[data-type="date"]').on('dp.hide', function() {
+                    this.blur();
                 });
             },
             getContainer: function(value) {
