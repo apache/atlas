@@ -64,6 +64,15 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                         "loop('src', {it.loops <= %s}, {((it.object.'__superTypeNames') ? " +
                         "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
                         "path().toList()";
+
+            case BASIC_SEARCH_QUERY_FILTER:
+                return ".has('entityText', com.thinkaurelius.titan.core.attribute.Text.CONTAINS, '%s')";
+            case BASIC_SEARCH_TYPE_FILTER:
+                return ".has('__typeName', T.in, ['%s'])";
+            case BASIC_SEARCH_CLASSIFICATION_FILTER:
+                return ".has('__traitNames', T.in, ['%s'])";
+            case TO_RANGE_LIST:
+                return " [%s..<%s].toList()";
         }
         // Should never reach this point
         return null;

@@ -90,4 +90,32 @@ public class DiscoveryREST {
 
         return ret;
     }
+
+    /**
+     * Retrieve data for the specified fulltext query
+     * @param query Fulltext query
+     * @param type limit the result to only entities of specified type or its sub-types
+     * @param classification limit the result to only entities tagged with the given classification or or its sub-types
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid fulltext or query parameters
+     */
+    @GET
+    @Path("/basic")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query") String query,
+                                              @QueryParam("type") String type,
+                                              @QueryParam("classification") String classification,
+                                              @QueryParam("limit") int limit,
+                                              @QueryParam("offset") int offset) throws AtlasBaseException {
+
+        AtlasSearchResult ret = atlasDiscoveryService.searchUsingBasicQuery(query, type, classification, limit, offset);
+
+        return ret;
+    }
 }
