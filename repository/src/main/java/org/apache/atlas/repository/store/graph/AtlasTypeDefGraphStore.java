@@ -31,6 +31,8 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.util.FilterUtil;
@@ -46,14 +48,13 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
-import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -96,6 +97,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
                     getStructDefStore(ttr).getAll(),
                     getClassificationDefStore(ttr).getAll(),
                     getEntityDefStore(ttr).getAll());
+
+            rectifyTypeErrorsIfAny(typesDef);
 
             ttr.addTypes(typesDef);
 
@@ -654,6 +657,90 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         new TypeRegistryUpdateHook(ttr);
 
         return ttr;
+    }
+
+    private void rectifyTypeErrorsIfAny(AtlasTypesDef typesDef) {
+        final Set<String> entityNames = new HashSet<>();
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
+                entityNames.add(entityDef.getName());
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasStructDef structDef : typesDef.getStructDefs()) {
+                rectifyAttributesIfNeeded(entityNames, structDef);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                rectifyAttributesIfNeeded(entityNames, classificationDef);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
+                rectifyAttributesIfNeeded(entityNames, entityDef);
+            }
+        }
+    }
+
+    private void rectifyAttributesIfNeeded(final Set<String> entityNames, AtlasStructDef structDef) {
+        List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
+
+        if (CollectionUtils.isNotEmpty(attributeDefs)) {
+            for (AtlasAttributeDef attributeDef : attributeDefs) {
+                if (!hasOwnedReferenceConstraint(attributeDef.getConstraints())) {
+                    continue;
+                }
+
+                Set<String> referencedTypeNames = AtlasTypeUtil.getReferencedTypeNames(attributeDef.getTypeName());
+
+                boolean valid = false;
+
+                for (String referencedTypeName : referencedTypeNames) {
+                    if (entityNames.contains(referencedTypeName)) {
+                        valid = true;
+                        break;
+                    }
+                }
+
+                if (!valid) {
+                    rectifyOwnedReferenceError(structDef, attributeDef);
+                }
+            }
+        }
+    }
+
+    private boolean hasOwnedReferenceConstraint(List<AtlasConstraintDef> constraints) {
+        if (CollectionUtils.isNotEmpty(constraints)) {
+            for (AtlasConstraintDef constraint : constraints) {
+                if (constraint.isConstraintType(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void rectifyOwnedReferenceError(AtlasStructDef structDef, AtlasAttributeDef attributeDef) {
+        List<AtlasConstraintDef> constraints = attributeDef.getConstraints();
+
+        if (CollectionUtils.isNotEmpty(constraints)) {
+            for (int i = 0; i < constraints.size(); i++) {
+                AtlasConstraintDef constraint = constraints.get(i);
+
+                if (constraint.isConstraintType(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF)) {
+                    LOG.warn("Invalid constraint ownedRef for attribute {}.{}", structDef.getName(), attributeDef.getName());
+
+                    constraints.remove(i);
+                    i--;
+                }
+            }
+        }
     }
 
     private class TypeRegistryUpdateHook extends GraphTransactionInterceptor.PostTransactionHook {
