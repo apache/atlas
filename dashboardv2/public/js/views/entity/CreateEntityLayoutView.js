@@ -406,8 +406,14 @@ define(['require',
                     removeText(e, e.currentTarget.value);
                 });
 
-                this.$('input[data-type="date"]').on('dp.hide', function() {
-                    this.blur();
+                this.$('input[data-type="date"]').on('dp.hide keydown', function(event) {
+                    if (event.type) {
+                        if (event.type == 'dp') {
+                            this.blur();
+                        } else if (event.type == 'keydown') {
+                            return false;
+                        }
+                    }
                 });
             },
             getContainer: function(value) {

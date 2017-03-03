@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1628 Restrict user from entering text in datepicker input (kevalbhatt)
 ATLAS-1538 Make AtlasLdapAuthenticationProvider like Ranger for OpenLdap type (nixonrodrigues via kevalbhatt)
 ATLAS-1605 Edit Entity in UI : Update button is not enabled when updating attribute of type date (Kalyanikashikar via kevalbhatt)
 ATLAS-1595:Create Entity in UI : All attributes are not listed for hdfs_path. (Kalyanikashikar via kevalbhatt)
