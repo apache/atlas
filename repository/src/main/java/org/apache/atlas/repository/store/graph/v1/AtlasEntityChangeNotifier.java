@@ -72,32 +72,16 @@ public class AtlasEntityChangeNotifier {
         List<AtlasEntityHeader> partiallyUpdatedEntities = entityMutationResponse.getPartialUpdatedEntities();
         List<AtlasEntityHeader> deletedEntities          = entityMutationResponse.getDeletedEntities();
 
-        if (CollectionUtils.isNotEmpty(createdEntities)) {
-            List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(createdEntities);
+        // complete full text mapping before calling toITypedReferenceable(), from notifyListners(), to
+        // include all vertex updates in the current graph-transaction
+        doFullTextMapping(createdEntities);
+        doFullTextMapping(updatedEntities);
+        doFullTextMapping(partiallyUpdatedEntities);
 
-            doFullTextMapping(createdEntities);
-            notifyListeners(typedRefInst, EntityOperation.CREATE);
-        }
-
-        if (CollectionUtils.isNotEmpty(updatedEntities)) {
-            List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(updatedEntities);
-
-            doFullTextMapping(updatedEntities);
-            notifyListeners(typedRefInst, EntityOperation.UPDATE);
-        }
-
-        if (CollectionUtils.isNotEmpty(partiallyUpdatedEntities)) {
-            List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(partiallyUpdatedEntities);
-
-            doFullTextMapping(partiallyUpdatedEntities);
-            notifyListeners(typedRefInst, EntityOperation.PARTIAL_UPDATE);
-        }
-
-        if (CollectionUtils.isNotEmpty(deletedEntities)) {
-            List<ITypedReferenceableInstance> typedRefInst = toITypedReferenceable(deletedEntities);
-
-            notifyListeners(typedRefInst, EntityOperation.DELETE);
-        }
+        notifyListeners(createdEntities, EntityOperation.CREATE);
+        notifyListeners(updatedEntities, EntityOperation.UPDATE);
+        notifyListeners(partiallyUpdatedEntities, EntityOperation.PARTIAL_UPDATE);
+        notifyListeners(deletedEntities, EntityOperation.DELETE);
     }
 
     public void onClassificationAddedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
@@ -133,7 +117,13 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
-    private void notifyListeners(List<ITypedReferenceableInstance> typedRefInsts, EntityOperation operation) throws AtlasBaseException {
+    private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(entityHeaders)) {
+            return;
+        }
+
+        List<ITypedReferenceableInstance> typedRefInsts = toITypedReferenceable(entityHeaders);
+
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 switch (operation) {
@@ -191,6 +181,10 @@ public class AtlasEntityChangeNotifier {
     }
 
     private void doFullTextMapping(List<AtlasEntityHeader> atlasEntityHeaders) {
+        if (CollectionUtils.isEmpty(atlasEntityHeaders)) {
+            return;
+        }
+
         try {
             if(!AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
                 return;

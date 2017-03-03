@@ -20,7 +20,6 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.sun.istack.Nullable;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -127,29 +126,36 @@ public final class EntityGraphRetriever {
     }
 
     private AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
-        try {
-            return graphHelper.getVertexForGUID(guid);
-        } catch (AtlasException excp) {
+        AtlasVertex ret = AtlasGraphUtilsV1.findByGuid(guid);
+
+        if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
+
+        return ret;
     }
 
     private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
-        try {
-            if (! AtlasTypeUtil.isValid(objId)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
-            }
-            if (AtlasTypeUtil.isAssignedGuid(objId)) {
-                return graphHelper.getVertexForGUID(objId.getGuid());
-            } else {
-                AtlasEntityType     entityType     = typeRegistry.getEntityTypeByName(objId.getTypeName());
-                Map<String, Object> uniqAttributes = objId.getUniqueAttributes();
+        AtlasVertex ret = null;
 
-                return AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
-            }
-        } catch (AtlasException excp) {
+        if (! AtlasTypeUtil.isValid(objId)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
+        }
+
+        if (AtlasTypeUtil.isAssignedGuid(objId)) {
+            ret = AtlasGraphUtilsV1.findByGuid(objId.getGuid());
+        } else {
+            AtlasEntityType     entityType     = typeRegistry.getEntityTypeByName(objId.getTypeName());
+            Map<String, Object> uniqAttributes = objId.getUniqueAttributes();
+
+            ret = AtlasGraphUtilsV1.getVertexByUniqueAttributes(entityType, uniqAttributes);
+        }
+
+        if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, objId.toString());
         }
+
+        return ret;
     }
 
     private AtlasEntity mapVertexToAtlasEntity(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
