@@ -56,7 +56,6 @@ public abstract class AtlasGremlinQueryProvider {
         PARTIAL_LINEAGE,
 
         // Discovery Queries
-        BASIC_SEARCH_QUERY_FILTER,
         BASIC_SEARCH_TYPE_FILTER,
         BASIC_SEARCH_CLASSIFICATION_FILTER,
         TO_RANGE_LIST

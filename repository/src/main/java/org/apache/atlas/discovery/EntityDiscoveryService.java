@@ -37,6 +37,7 @@ import org.apache.atlas.query.SelectExpressionHelper;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
@@ -64,6 +65,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
 import static org.apache.atlas.AtlasErrorCode.UNKNOWN_TYPENAME;
@@ -166,9 +168,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);
         }
 
-        Map<String, Object> bindings   = new HashMap<>();
-        QueryParams         params     = validateSearchParams(limit, offset);
-        String              basicQuery = "g.V()";
+        final QueryParams params              = validateSearchParams(limit, offset);
+        Set<String>       typeNames           = null;
+        Set<String>       classificationNames = null;
 
         if (StringUtils.isNotEmpty(typeName)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
@@ -177,9 +179,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw new AtlasBaseException(UNKNOWN_TYPENAME, typeName);
             }
 
-            bindings.put("typeNames", entityType.getTypeAndAllSubTypes());
-
-            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
+            typeNames = entityType.getTypeAndAllSubTypes();
 
             ret.setType(typeName);
         }
@@ -191,50 +191,103 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw new AtlasBaseException(CLASSIFICATION_NOT_FOUND, classification);
             }
 
-            bindings.put("traitNames", classificationType.getTypeAndAllSubTypes());
-
-            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER);
+            classificationNames = classificationType.getTypeAndAllSubTypes();
 
             ret.setClassification(classification);
         }
 
+        // if query was provided, perform indexQuery and filter for typeName & classification in memory; this approach
+        // results in a faster and accurate results than using CONTAINS/CONTAINS_PREFIX filter on entityText property
         if (StringUtils.isNotEmpty(query)) {
-            bindings.put("queryStr", query);
+            final String                idxQuery   = String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
+            final Iterator<Result<?,?>> qryResult  = graph.indexQuery(Constants.FULLTEXT_INDEX, idxQuery).vertices();
+            final int                   startIdx   = params.offset();
+            final int                   resultSize = params.limit();
 
-            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_QUERY_FILTER);
+            int resultIdx = 0;
 
-            ret.setQueryText(query);
-        }
+            while (qryResult.hasNext()) {
+                AtlasVertex<?,?> vertex = qryResult.next().getVertex();
 
-        bindings.put("offset", params.offset());
-        bindings.put("limit", params.limit());
+                String vertexTypeName = GraphHelper.getTypeName(vertex);
 
-        basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.TO_RANGE_LIST);
+                // skip non-entity vertices
+                if (StringUtils.isEmpty(vertexTypeName) || StringUtils.isEmpty(GraphHelper.getGuid(vertex))) {
+                    continue;
+                }
 
-        ScriptEngine scriptEngine = graph.getGremlinScriptEngine();
+                if (typeNames != null && !typeNames.contains(vertexTypeName)) {
+                    continue;
+                }
 
-        try {
-            Object result = graph.executeGremlinScript(scriptEngine, bindings, basicQuery, false);
+                if (classificationNames != null) {
+                    List<String> traitNames = GraphHelper.getTraitNames(vertex);
 
-            if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
-                List   queryResult  = (List) result;
-                Object firstElement = queryResult.get(0);
+                    if (CollectionUtils.isEmpty(traitNames) ||
+                        !CollectionUtils.containsAny(classificationNames, traitNames)) {
+                        continue;
+                    }
+                }
 
-                if (firstElement instanceof AtlasVertex) {
-                    for (Object element : queryResult) {
-                        if (element instanceof AtlasVertex) {
-                            ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) element));
+                resultIdx++;
 
-                        } else {
-                            LOG.warn("searchUsingBasicQuery({}): expected an AtlasVertex; found unexpected entry in result {}", basicQuery, element);
+                if (resultIdx <= startIdx) {
+                    continue;
+                }
+
+                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex);
+
+                ret.addEntity(header);
+
+                if (ret.getEntities().size() == resultSize) {
+                    break;
+                }
+            }
+        } else {
+            final Map<String, Object> bindings   = new HashMap<>();
+            String                    basicQuery = "g.V()";
+
+            if (typeNames != null) {
+                bindings.put("typeNames", typeNames);
+
+                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
+            }
+
+            if (classificationNames != null) {
+                bindings.put("traitNames", classificationNames);
+
+                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER);
+            }
+
+            bindings.put("startIdx", params.offset());
+            bindings.put("endIdx", params.offset() + params.limit());
+
+            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.TO_RANGE_LIST);
+
+            ScriptEngine scriptEngine = graph.getGremlinScriptEngine();
+
+            try {
+                Object result = graph.executeGremlinScript(scriptEngine, bindings, basicQuery, false);
+
+                if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
+                    List   queryResult  = (List) result;
+                    Object firstElement = queryResult.get(0);
+
+                    if (firstElement instanceof AtlasVertex) {
+                        for (Object element : queryResult) {
+                            if (element instanceof AtlasVertex) {
+                                ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) element));
+                            } else {
+                                LOG.warn("searchUsingBasicQuery({}): expected an AtlasVertex; found unexpected entry in result {}", basicQuery, element);
+                            }
                         }
                     }
                 }
+            } catch (ScriptException e) {
+                throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, basicQuery);
+            } finally {
+                graph.releaseGremlinScriptEngine(scriptEngine);
             }
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, basicQuery);
-        } finally {
-            graph.releaseGremlinScriptEngine(scriptEngine);
         }
 
         return ret;
