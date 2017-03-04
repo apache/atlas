@@ -426,7 +426,7 @@ define(['require',
             getFieldSet: function(data, alloptional, attributeInput) {
                 return '<fieldset class="scheduler-border' + (alloptional ? " alloptional" : "") + '"><legend class="scheduler-border">' + data.name + '</legend>' + attributeInput + '</fieldset>';
             },
-            getSelect: function(value, entityValue) {
+            getSelect: function(value, entityValue, disabled) {
                 if (value.typeName === "boolean") {
                     return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName + '" data-key="' + value.name + '" data-id="entityInput">' +
                         '<option value="">--Select true or false--</option><option value="true">true</option>' +
@@ -439,7 +439,7 @@ define(['require',
                         splitTypeName = value.typeName;
                     }
                     return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName +
-                        '" data-key="' + value.name + '"data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
+                        '" data-key="' + value.name + '" ' + (disabled ? 'disabled data-skip="true"' : "") + ' data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
                 }
 
             },
@@ -498,15 +498,16 @@ define(['require',
                     if (splitTypeName.length > 1) {
                         splitTypeName = splitTypeName[1].split(">")[0];
                         if (splitTypeName && this.entityDefCollection.fullCollection.find({ name: splitTypeName })) {
-                            if (!_.contains(this.searchQueryList, splitTypeName)) {
+                            if (!_.contains(this.searchQueryList, splitTypeName) && !value.isOptional) {
                                 this.searchQueryList.push(splitTypeName);
                                 $.extend(this.searchCollection.queryParams, { query: splitTypeName });
                                 ++this.asyncFetchLOVCounter;
                                 this.searchCollection.fetch({ reset: true });
                             }
+                            return this.getSelect(value, entityValue, value.isOptional);
                         }
                     }
-                    return this.getSelect(value, entityValue);
+                    return this.getSelect(value, entityValue, false); // Don't disable select for non entity attributes.
                 } else if (typeName.indexOf("map") > -1) {
                     return this.getTextArea(value, entityValue);
                 } else {
@@ -561,6 +562,9 @@ define(['require',
                 }
                 try {
                     this.ui.entityInputData.find("input,select,textarea").each(function() {
+                        if ($(this).data('skip') === true) {
+                            return;
+                        }
                         var value = $(this).val();
                         if ($(this).val() && $(this).val().trim) {
                             value = $(this).val().trim();
@@ -705,10 +709,11 @@ define(['require',
                             keyData = $(this).data("key"),
                             typeData = $(this).data("type"),
                             queryData = $(this).data("querydata"),
+                            skip = $(this).data('skip'),
                             placeholderName = "Select a " + typeData + " from the dropdown list";
 
                         //add options.
-                        if (that.selectStoreCollection.length && !this.options.length) {
+                        if (that.selectStoreCollection.length && !this.options.length && !skip) {
                             that.selectStoreCollection.where({ queryText: queryData }).forEach(function(model) {
                                 var obj = model.toJSON();
                                 if (obj.status) {
@@ -726,40 +731,65 @@ define(['require',
 
                         // Select Value.
                         if (that.guid) {
-                            var dataValue = that.entityData.get("entity").attributes[keyData];
-                            var selectedValue = [];
-                            var setValue = function(selectValue) {
-                                var obj = selectValue.toJSON();
-                                if (dataValue !== null && _.isArray(dataValue)) {
-                                    _.each(dataValue, function(obj) {
-                                        if (obj.guid === selectValue.attributes.guid) {
-                                            selectedValue.push(selectValue.attributes.labelName);
-                                        }
-                                    });
-                                } else if (dataValue !== null) {
-                                    if (dataValue.guid === selectValue.attributes.guid) {
-                                        selectedValue.push(selectValue.attributes.labelName);
+                            var dataValue = that.entityData.get("entity").attributes[keyData],
+                                referredEntities = that.entityData.get("referredEntities"),
+                                selectedValue = [];
+                            if (!skip) {
+
+                                //Uncoment when array of entity is not read-only
+
+                                // var setValue = function(selectValue) {
+                                //     var obj = selectValue.toJSON();
+                                //     if (dataValue !== null && _.isArray(dataValue)) {
+                                //         _.each(dataValue, function(obj) {
+                                //             if (obj.guid === selectValue.attributes.guid) {
+                                //                 selectedValue.push(selectValue.attributes.labelName);
+                                //             }
+                                //         });
+                                //     } else if (dataValue !== null) {
+                                //         if (dataValue.guid === selectValue.attributes.guid) {
+                                //             selectedValue.push(selectValue.attributes.labelName);
+                                //         }
+                                //     }
+                                // }
+                                // that.selectStoreCollection.each(function(storedValue) {
+                                //     var obj = storedValue.toJSON();
+                                //     if (obj.status) {
+                                //         if (!Enums.entityStateReadOnly[obj.status]) {
+                                //             setValue(storedValue);
+                                //         }
+                                //     } else {
+                                //         setValue(storedValue);
+                                //     }
+                                // });
+                                if (dataValue) {
+                                    var storeEntity = that.selectStoreCollection.findWhere({ guid: dataValue.guid });
+                                    var refEntiyFound = referredEntities[dataValue.guid]
+                                    if (storeEntity) {
+                                        var name = Utils.getName(storeEntity, 'displayText');
+                                    } else if (!storeEntity && refEntiyFound && refEntiyFound.typeName) {
+                                        that.selectStoreCollection.push(refEntiyFound);
+                                        var name = Utils.getName(refEntiyFound, 'displayText');
+                                        var str = '<option>' + name + '</option>';
+                                        that.$('select[data-queryData="' + refEntiyFound.typeName + '"]').append(str);
+                                    }
+                                    if (name && name.length) {
+                                        selectedValue.push(name);
                                     }
                                 }
                             }
-                            that.selectStoreCollection.each(function(storedValue) {
-                                var obj = storedValue.toJSON();
-                                if (obj.status) {
-                                    if (!Enums.entityStateReadOnly[obj.status]) {
-                                        setValue(storedValue);
-                                    }
-                                } else {
-                                    setValue(storedValue);
-                                }
-                            });
 
                             // Array of string.
-                            if (selectedValue.length === 0 && dataValue && dataValue.length && $this.data('querydata') === "string") {
+                            if (selectedValue.length === 0 && dataValue && dataValue.length && ($this.data('querydata') === "string" || skip === true)) {
                                 var str = "";
                                 _.each(dataValue, function(obj) {
                                     if (_.isString(obj)) {
                                         selectedValue.push(obj);
                                         str += '<option>' + _.escape(obj) + '</option>';
+                                    } else if (_.isObject(obj) && obj.guid && referredEntities[obj.guid]) {
+                                        var name = Utils.getName(referredEntities[obj.guid], 'qualifiedName');
+                                        selectedValue.push(name);
+                                        str += '<option>' + name + '</option>';
                                     }
                                 });
                                 $this.html(str);
