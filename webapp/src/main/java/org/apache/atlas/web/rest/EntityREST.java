@@ -18,11 +18,9 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
@@ -36,12 +34,12 @@ import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAtlasBaseException;
 
 /**
  * REST for a single entity
@@ -70,6 +67,7 @@ import static org.apache.atlas.repository.converters.AtlasInstanceConverter.toAt
 @Path("v2/entity")
 @Singleton
 public class EntityREST {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityREST");
 
     public static final String PREFIX_ATTR = "attr:";
 
@@ -98,7 +96,17 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid) throws AtlasBaseException {
-        return entitiesStore.getById(guid);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ")");
+            }
+
+            return entitiesStore.getById(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -113,12 +121,23 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName,
                                                         @Context HttpServletRequest servletRequest) throws AtlasBaseException {
-        AtlasEntityType     entityType = ensureEntityType(typeName);
-        Map<String, Object> attributes = getAttributes(servletRequest);
+        AtlasPerfTracer perf = null;
 
-        validateUniqueAttribute(entityType, attributes);
+        try {
+            Map<String, Object> attributes = getAttributes(servletRequest);
 
-        return entitiesStore.getByUniqueAttributes(entityType, attributes);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getByUniqueAttributes(" + typeName + "," + attributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            validateUniqueAttribute(entityType, attributes);
+
+            return entitiesStore.getByUniqueAttributes(entityType, attributes);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -132,7 +151,17 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
-        return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
+            }
+
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /*******
@@ -147,12 +176,23 @@ public class EntityREST {
     public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName,
                                                                    @Context HttpServletRequest servletRequest,
                                                                    AtlasEntityWithExtInfo entityInfo) throws Exception {
-        AtlasEntityType     entityType       = ensureEntityType(typeName);
-        Map<String, Object> uniqueAttributes = getAttributes(servletRequest);
+        AtlasPerfTracer perf = null;
 
-        validateUniqueAttribute(entityType, uniqueAttributes);
+        try {
+            Map<String, Object> uniqueAttributes = getAttributes(servletRequest);
 
-        return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.partialUpdateEntityByUniqueAttrs(" + typeName + "," + uniqueAttributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            validateUniqueAttribute(entityType, uniqueAttributes);
+
+            return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /*******
@@ -168,8 +208,17 @@ public class EntityREST {
     public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid,
                                                                 @QueryParam("name") String attrName,
                                                                 Object attrValue) throws Exception {
+        AtlasPerfTracer perf = null;
 
-        return entitiesStore.updateEntityAttributeByGuid(guid, attrName, attrValue);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.partialUpdateEntityAttrByGuid(" + guid + "," + attrName + ")");
+            }
+
+            return entitiesStore.updateEntityAttributeByGuid(guid, attrName, attrValue);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -182,7 +231,17 @@ public class EntityREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse deleteByGuid(@PathParam("guid") final String guid) throws AtlasBaseException {
-        return entitiesStore.deleteById(guid);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuid(" + guid + ")");
+            }
+
+            return entitiesStore.deleteById(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -197,10 +256,21 @@ public class EntityREST {
     @Path("/uniqueAttribute/type/{typeName}")
     public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
                                                           @Context HttpServletRequest servletRequest) throws AtlasBaseException {
-        AtlasEntityType     entityType = ensureEntityType(typeName);
-        Map<String, Object> attributes = getAttributes(servletRequest);
+        AtlasPerfTracer perf = null;
 
-        return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
+        try {
+            Map<String, Object> attributes = getAttributes(servletRequest);
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByUniqueAttribute(" + typeName + "," + attributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -212,13 +282,22 @@ public class EntityREST {
     @Path("/guid/{guid}/classification/{classificationName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassification getClassification(@PathParam("guid") String guid, @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getClassification(" + guid + "," + classificationName + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            ensureClassificationType(classificationName);
+            return entitiesStore.getClassification(guid, classificationName);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        ensureClassificationType(classificationName);
-        return entitiesStore.getClassification(guid, classificationName);
     }
 
     /**
@@ -230,17 +309,21 @@ public class EntityREST {
     @Path("/guid/{guid}/classifications")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassification.AtlasClassifications getClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getClassifications(" + guid + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            return new AtlasClassification.AtlasClassifications(entitiesStore.getClassifications(guid));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        AtlasClassification.AtlasClassifications classifications = new AtlasClassification.AtlasClassifications();
-
-        final List<AtlasClassification> classificationList = entitiesStore.getClassifications(guid);
-        classifications.setList(classificationList);
-
-        return classifications;
     }
 
     /**
@@ -252,12 +335,21 @@ public class EntityREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void addClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassifications(" + guid + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            entitiesStore.addClassifications(guid, classifications);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        entitiesStore.addClassifications(guid, classifications);
     }
 
     /**
@@ -269,15 +361,24 @@ public class EntityREST {
     @Path("/guid/{guid}/classification/{classificationName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteClassification(@PathParam("guid") String guid,
-        @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+                                     @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteClassification(" + guid + "," + classificationName + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            ensureClassificationType(classificationName);
+
+            entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(classificationName);}} );
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        ensureClassificationType(classificationName);
-
-        entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(classificationName);}} );
     }
 
     /******************************************************************/
@@ -292,14 +393,21 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getByGuids(" + guids + ")");
+            }
+
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
+            }
+
+            return entitiesStore.getByIds(guids);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        AtlasEntitiesWithExtInfo entities = entitiesStore.getByIds(guids);
-
-        return entities;
     }
 
     /**
@@ -311,10 +419,20 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        EntityStream entityStream = new AtlasEntityStream(entities);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
+                                                               (entities == null || entities.getEntities() == null ? 0 : entities.getEntities().size()) + ")");
+            }
 
-        return entitiesStore.createOrUpdate(entityStream, false);
+            EntityStream entityStream = new AtlasEntityStream(entities);
+
+            return entitiesStore.createOrUpdate(entityStream, false);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -325,7 +443,17 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse deleteByGuids(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
-        return entitiesStore.deleteByIds(guids);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuids(" + guids  + ")");
+            }
+
+            return entitiesStore.deleteByIds(guids);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -336,18 +464,28 @@ public class EntityREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void addClassification(ClassificationAssociateRequest request) throws AtlasBaseException {
-        AtlasClassification classification = request == null ? null : request.getClassification();
-        List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
+        AtlasPerfTracer perf = null;
 
-        if (classification == null || org.apache.commons.lang.StringUtils.isEmpty(classification.getTypeName())) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassification(" + request  + ")");
+            }
+
+            AtlasClassification classification = request == null ? null : request.getClassification();
+            List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
+
+            if (classification == null || org.apache.commons.lang.StringUtils.isEmpty(classification.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
+            }
+
+            if (CollectionUtils.isEmpty(entityGuids)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty guid list");
+            }
+
+            entitiesStore.addClassification(entityGuids, classification);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        if (CollectionUtils.isEmpty(entityGuids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty guid list");
-        }
-
-        entitiesStore.addClassification(entityGuids, classification);
     }
 
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {

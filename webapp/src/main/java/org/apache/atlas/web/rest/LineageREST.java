@@ -23,7 +23,9 @@ import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,6 +45,8 @@ import javax.ws.rs.core.Context;
 @Path("v2/lineage")
 @Singleton
 public class LineageREST {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageREST");
+
     private final AtlasLineageService atlasLineageService;
     private static final String DEFAULT_DIRECTION = "BOTH";
     private static final String DEFAULT_DEPTH     = "3";
@@ -73,9 +77,17 @@ public class LineageREST {
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        AtlasLineageInfo ret = atlasLineageService.getAtlasLineageInfo(guid, direction, depth);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + guid + "," + direction +
+                                                               "," + depth + ")");
+            }
 
-        return ret;
+            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }

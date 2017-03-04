@@ -20,8 +20,10 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,6 +39,8 @@ import javax.ws.rs.QueryParam;
 @Path("v2/search")
 @Singleton
 public class DiscoveryREST {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
+
     private final AtlasDiscoveryService atlasDiscoveryService;
 
     @Inject
@@ -61,27 +65,36 @@ public class DiscoveryREST {
     @Path("/dsl")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingDSL(@QueryParam("query") String query,
-                                            @QueryParam("type") String type,
+    public AtlasSearchResult searchUsingDSL(@QueryParam("query")          String query,
+                                            @QueryParam("type")           String type,
                                             @QueryParam("classification") String classification,
-                                            @QueryParam("limit") int limit,
-                                            @QueryParam("offset") int offset) throws AtlasBaseException {
-        String queryStr = query == null ? "" : query;
+                                            @QueryParam("limit")          int    limit,
+                                            @QueryParam("offset")         int    offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        if (StringUtils.isNoneEmpty(type)) {
-            queryStr = type + " " + queryStr;
-        }
-
-        if (StringUtils.isNoneEmpty(classification)) {
-            // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
-            if (StringUtils.isEmpty(query)) {
-                queryStr += (" isa " + classification);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + type +
+                                                               "," + classification + "," + limit + "," + offset + ")");
             }
+
+            String queryStr = query == null ? "" : query;
+
+            if (StringUtils.isNoneEmpty(type)) {
+                queryStr = type + " " + queryStr;
+            }
+
+            if (StringUtils.isNoneEmpty(classification)) {
+                // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
+                if (StringUtils.isEmpty(query)) {
+                    queryStr += (" isa " + classification);
+                }
+            }
+
+            return atlasDiscoveryService.searchUsingDslQuery(queryStr, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        AtlasSearchResult ret = atlasDiscoveryService.searchUsingDslQuery(queryStr, limit, offset);
-
-        return ret;
     }
 
     /**
@@ -99,13 +112,21 @@ public class DiscoveryREST {
     @Path("/fulltext")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingFullText(@QueryParam("query") String query,
-                                                 @QueryParam("limit") int limit,
-                                                 @QueryParam("offset") int offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingFullText(@QueryParam("query")  String query,
+                                                 @QueryParam("limit")  int    limit,
+                                                 @QueryParam("offset") int    offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        AtlasSearchResult ret = atlasDiscoveryService.searchUsingFullTextQuery(query, limit, offset);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingFullText(" + query + "," +
+                                                               limit + "," + offset + ")");
+            }
 
-        return ret;
+            return atlasDiscoveryService.searchUsingFullTextQuery(query, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -125,14 +146,22 @@ public class DiscoveryREST {
     @Path("/basic")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingBasic(@QueryParam("query") String query,
-                                              @QueryParam("type") String type,
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query")          String query,
+                                              @QueryParam("type")           String type,
                                               @QueryParam("classification") String classification,
-                                              @QueryParam("limit") int limit,
-                                              @QueryParam("offset") int offset) throws AtlasBaseException {
+                                              @QueryParam("limit")          int    limit,
+                                              @QueryParam("offset")         int    offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
 
-        AtlasSearchResult ret = atlasDiscoveryService.searchUsingBasicQuery(query, type, classification, limit, offset);
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingBasic(" + query + "," + type +
+                                                               "," + classification + "," + limit + "," + offset + ")");
+            }
 
-        return ret;
+            return atlasDiscoveryService.searchUsingBasicQuery(query, type, classification, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }

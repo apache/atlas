@@ -378,4 +378,44 @@ public class AtlasTypeUtil {
 
         return false;
     }
+
+    public static String toDebugString(AtlasTypesDef typesDef) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("typesDef={");
+        if (typesDef != null) {
+            sb.append("enumDefs=[");
+            dumpTypeNames(typesDef.getEnumDefs(), sb);
+            sb.append("],");
+
+            sb.append("structDefs=[");
+            dumpTypeNames(typesDef.getStructDefs(), sb);
+            sb.append("],");
+
+            sb.append("classificationDefs=[");
+            dumpTypeNames(typesDef.getClassificationDefs(), sb);
+            sb.append("],");
+
+            sb.append("entityDefs=[");
+            dumpTypeNames(typesDef.getEntityDefs(), sb);
+            sb.append("]");
+        }
+        sb.append("}");
+
+        return sb.toString();
+    }
+
+    private static void dumpTypeNames(List<? extends AtlasBaseTypeDef> typeDefs, StringBuilder sb) {
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (int i = 0; i < typeDefs.size(); i++) {
+                AtlasBaseTypeDef typeDef = typeDefs.get(i);
+
+                if (i > 0) {
+                    sb.append(",");
+                }
+
+                sb.append(typeDef.getName());
+            }
+        }
+    }
 }

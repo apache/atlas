@@ -29,8 +29,10 @@ import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.http.annotation.Experimental;
+import org.slf4j.Logger;
 
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +54,7 @@ import java.util.Set;
 @Path("v2/types")
 @Singleton
 public class TypesREST {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 
     private final AtlasTypeDefStore typeDefStore;
 
@@ -282,9 +285,18 @@ public class TypesREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
-        AtlasTypesDef ret = typeDefStore.createTypesDef(typesDef);
+        AtlasPerfTracer perf = null;
 
-        return ret;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
+                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+            }
+
+            return typeDefStore.createTypesDef(typesDef);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -301,9 +313,18 @@ public class TypesREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
-        AtlasTypesDef ret = typeDefStore.updateTypesDef(typesDef);
+        AtlasPerfTracer perf = null;
 
-        return ret;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
+                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+            }
+
+            return typeDefStore.updateTypesDef(typesDef);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -319,7 +340,18 @@ public class TypesREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
-        typeDefStore.deleteTypesDef(typesDef);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
+                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+            }
+
+            typeDefStore.deleteTypesDef(typesDef);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -334,4 +366,5 @@ public class TypesREST {
         }
 
         return ret;
-    }}
+    }
+}
