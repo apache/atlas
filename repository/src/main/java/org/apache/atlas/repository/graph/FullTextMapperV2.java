@@ -30,6 +30,7 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +123,10 @@ public class FullTextMapperV2 {
     }
 
     private void mapAttributes(Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids) throws AtlasBaseException {
+        if (MapUtils.isEmpty(attributes)) {
+            return;
+        }
+
         for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
             String attribKey = attributeEntry.getKey();
             Object attrValue = attributeEntry.getValue();

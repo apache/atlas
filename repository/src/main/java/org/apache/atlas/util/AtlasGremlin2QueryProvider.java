@@ -44,15 +44,15 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
                 return "g.V('__guid', startGuid).outE().inV().has('__guid').__guid.dedup().toList()";
             case EXPORT_TYPE_STARTS_WITH:
-                return "g.V().has('__typeName','%s').filter({it.'%s'.startsWith(attrValue)}).has('__guid').__guid.toList()";
+                return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).startsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_ENDS_WITH:
-                return "g.V().has('__typeName','%s').filter({it.'%s'.endsWith(attrValue)}).has('__guid').__guid.toList()";
+                return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).endsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_CONTAINS:
-                return "g.V().has('__typeName','%s').filter({it.'%s'.contains(attrValue)}).has('__guid').__guid.toList()";
+                return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).contains(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_MATCHES:
-                return "g.V().has('__typeName','%s').filter({it.'%s'.matches(attrValue)}).has('__guid').__guid.toList()";
+                return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).matches(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_DEFAULT:
-                return "g.V().has('__typeName','%s').has('%s', attrValue).has('__guid').__guid.toList()";
+                return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').__guid.toList()";
             case FULL_LINEAGE:
                 return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
                         "loop('src', {((it.path.contains(it.object)) ? false : true)}, " +
@@ -66,13 +66,13 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                         "path().toList()";
 
             case BASIC_SEARCH_QUERY_FILTER:
-                return ".has('entityText', com.thinkaurelius.titan.core.attribute.Text.CONTAINS, '%s')";
+                return ".has('entityText', com.thinkaurelius.titan.core.attribute.Text.CONTAINS, queryStr)";
             case BASIC_SEARCH_TYPE_FILTER:
-                return ".has('__typeName', T.in, ['%s'])";
+                return ".has('__typeName', T.in, typeNames)";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
-                return ".has('__traitNames', T.in, ['%s'])";
+                return ".has('__traitNames', T.in, traitNames)";
             case TO_RANGE_LIST:
-                return " [%s..<%s].toList()";
+                return " [offset..<limit].toList()";
         }
         // Should never reach this point
         return null;

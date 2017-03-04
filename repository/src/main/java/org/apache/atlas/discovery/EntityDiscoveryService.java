@@ -57,8 +57,10 @@ import scala.util.Either;
 import scala.util.parsing.combinator.Parsers.NoSuccess;
 
 import javax.inject.Inject;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -164,8 +166,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);
         }
 
-        QueryParams params     = validateSearchParams(limit, offset);
-        String      basicQuery = "g.V()";
+        Map<String, Object> bindings   = new HashMap<>();
+        QueryParams         params     = validateSearchParams(limit, offset);
+        String              basicQuery = "g.V()";
 
         if (StringUtils.isNotEmpty(typeName)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
@@ -174,10 +177,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw new AtlasBaseException(UNKNOWN_TYPENAME, typeName);
             }
 
-            String typeFilterExpr = gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
+            bindings.put("typeNames", entityType.getTypeAndAllSubTypes());
 
-            basicQuery += String.format(typeFilterExpr,
-                                        StringUtils.join(entityType.getTypeAndAllSubTypes(), "','"));
+            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
 
             ret.setType(typeName);
         }
@@ -189,24 +191,30 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw new AtlasBaseException(CLASSIFICATION_NOT_FOUND, classification);
             }
 
-            String classificationFilterExpr = gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER);
+            bindings.put("traitNames", classificationType.getTypeAndAllSubTypes());
 
-            basicQuery += String.format(classificationFilterExpr,
-                                        StringUtils.join(classificationType.getTypeAndAllSubTypes(), "','"));
+            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER);
 
             ret.setClassification(classification);
         }
 
         if (StringUtils.isNotEmpty(query)) {
-            basicQuery += String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_QUERY_FILTER), query);
+            bindings.put("queryStr", query);
+
+            basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_QUERY_FILTER);
 
             ret.setQueryText(query);
         }
 
-        basicQuery += String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.TO_RANGE_LIST), params.offset(), params.limit());
+        bindings.put("offset", params.offset());
+        bindings.put("limit", params.limit());
+
+        basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.TO_RANGE_LIST);
+
+        ScriptEngine scriptEngine = graph.getGremlinScriptEngine();
 
         try {
-            Object result = graph.executeGremlinScript(basicQuery, false);
+            Object result = graph.executeGremlinScript(scriptEngine, bindings, basicQuery, false);
 
             if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
                 List   queryResult  = (List) result;
@@ -225,6 +233,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         } catch (ScriptException e) {
             throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, basicQuery);
+        } finally {
+            graph.releaseGremlinScriptEngine(scriptEngine);
         }
 
         return ret;

@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.resources;
 
-import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
@@ -46,8 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.Bindings;
-import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -106,6 +104,8 @@ public class ExportService {
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
         } finally {
+            atlasGraph.releaseGremlinScriptEngine(context.scriptEngine);
+
             LOG.info("<== export(user={}, from={}): status {}", userName, requestingIP, context.result.getOperationStatus());
         }
 
@@ -182,8 +182,12 @@ public class ExportService {
                     continue;
                 }
 
-                String       query = String.format(queryTemplate, typeName, attribute.getQualifiedName());
-                List<String> guids = executeGremlinQuery(query, "attrValue", attrValue.toString(), context);
+                context.bindings.clear();
+                context.bindings.put("typeName", typeName);
+                context.bindings.put("attrName", attribute.getQualifiedName());
+                context.bindings.put("attrValue", attrValue);
+
+                List<String> guids = executeGremlinQuery(queryTemplate, context);
 
                 if (CollectionUtils.isNotEmpty(guids)) {
                     for (String guid : guids) {
@@ -263,48 +267,46 @@ public class ExportService {
             return;
         }
 
-        try {
-            for (TraversalDirection direction : directions) {
-                String query = getQueryForTraversalDirection(direction);
+        for (TraversalDirection direction : directions) {
+            String query = getQueryForTraversalDirection(direction);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
-                }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
+            }
 
-                List<String> guids = executeGremlinQuery(query, entity.getGuid(), context);
+            context.bindings.clear();
+            context.bindings.put("startGuid", entity.getGuid());
 
-                if (CollectionUtils.isEmpty(guids)) {
-                    continue;
-                }
+            List<String> guids = executeGremlinQuery(query, context);
 
-                for (String guid : guids) {
-                    TraversalDirection currentDirection = context.guidDirection.get(guid);
+            if (CollectionUtils.isEmpty(guids)) {
+                continue;
+            }
 
-                    if (currentDirection == null) {
-                        context.guidDirection.put(guid, direction);
+            for (String guid : guids) {
+                TraversalDirection currentDirection = context.guidDirection.get(guid);
 
-                        if (!context.guidsToProcess.contains(guid)) {
-                            context.guidsToProcess.add(guid);
-                        }
-                    } else if (currentDirection == TraversalDirection.OUTWARD && direction == TraversalDirection.INWARD) {
-                        context.guidDirection.put(guid, direction);
+                if (currentDirection == null) {
+                    context.guidDirection.put(guid, direction);
 
-                        // the entity should be reprocessed to get inward entities
-                        context.guidsProcessed.remove(guid);
-
-                        if (!context.guidsToProcess.contains(guid)) {
-                            context.guidsToProcess.add(guid);
-                        }
+                    if (!context.guidsToProcess.contains(guid)) {
+                        context.guidsToProcess.add(guid);
                     }
-                }
+                } else if (currentDirection == TraversalDirection.OUTWARD && direction == TraversalDirection.INWARD) {
+                    context.guidDirection.put(guid, direction);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), guids.size(), context.guidsToProcess.size());
+                    // the entity should be reprocessed to get inward entities
+                    context.guidsProcessed.remove(guid);
+
+                    if (!context.guidsToProcess.contains(guid)) {
+                        context.guidsToProcess.add(guid);
+                    }
                 }
             }
 
-        } catch (ScriptException e) {
-            LOG.error("Child entities could not be added for %s", entity.getGuid());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), guids.size(), context.guidsToProcess.size());
+            }
         }
     }
 
@@ -320,35 +322,33 @@ public class ExportService {
     }
 
     private void getEntityGuidsForFullFetch(AtlasEntity entity, ExportContext context) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+        }
 
-        try {
-            String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
+        String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
-            }
+        context.bindings.clear();
+        context.bindings.put("startGuid", entity.getGuid());
 
-            List<String> result = executeGremlinQuery(query, entity.getGuid(), context);
+        List<String> result = executeGremlinQuery(query, context);
 
-            if (result == null) {
-                return;
-            }
+        if (result == null) {
+            return;
+        }
 
-            for (String guid : result) {
-                if (!context.guidsProcessed.contains(guid)) {
-                    if (!context.guidsToProcess.contains(guid)) {
-                        context.guidsToProcess.add(guid);
-                    }
-
-                    context.guidDirection.put(guid, TraversalDirection.BOTH);
+        for (String guid : result) {
+            if (!context.guidsProcessed.contains(guid)) {
+                if (!context.guidsToProcess.contains(guid)) {
+                    context.guidsToProcess.add(guid);
                 }
-            }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
+                context.guidDirection.put(guid, TraversalDirection.BOTH);
             }
-        } catch (ScriptException e) {
-            LOG.error("Child entities could not be added for %s", entity.getGuid());
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
         }
     }
 
@@ -393,21 +393,9 @@ public class ExportService {
         }
     }
 
-    private List<String> executeGremlinQuery(String query, String guid, ExportContext context) throws ScriptException {
-        context.bindings.put("startGuid", guid);
-        return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine,
-                context.bindings,
-                query,
-                false);
-    }
-
-    private List<String> executeGremlinQuery(String query, String parameterName, String parameterValue, ExportContext context) {
-        context.bindings.put(parameterName, parameterValue);
+    private List<String> executeGremlinQuery(String query, ExportContext context) {
         try {
-            return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine,
-                    context.bindings,
-                    query,
-                    false);
+            return (List<String>) atlasGraph.executeGremlinScript(context.scriptEngine, context.bindings, query, false);
         } catch (ScriptException e) {
             LOG.error("Script execution failed for query: ", query, e);
             return null;
@@ -451,25 +439,19 @@ public class ExportService {
         final AtlasExportResult               result;
         final ZipSink                         sink;
 
-        private final GremlinGroovyScriptEngine scriptEngine;
-        private final Bindings                  bindings;
-        private final ExportFetchType fetchType;
-        private final String                    matchType;
+        private final ScriptEngine        scriptEngine;
+        private final Map<String, Object> bindings;
+        private final ExportFetchType     fetchType;
+        private final String              matchType;
 
         ExportContext(AtlasExportResult result, ZipSink sink) {
             this.result = result;
             this.sink   = sink;
 
-            this.scriptEngine  = new GremlinGroovyScriptEngine();
-
-            //Do not cache script compilations due to memory implications
-            scriptEngine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals",
-                    "phantom",
-                    ScriptContext.ENGINE_SCOPE);
-
-            bindings  = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE);
-            fetchType = getFetchType(result.getRequest());
-            matchType = getMatchType(result.getRequest());
+            scriptEngine = atlasGraph.getGremlinScriptEngine();
+            bindings     = new HashMap<>();
+            fetchType    = getFetchType(result.getRequest());
+            matchType    = getMatchType(result.getRequest());
         }
 
         private ExportFetchType getFetchType(AtlasExportRequest request) {

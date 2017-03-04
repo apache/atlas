@@ -63,12 +63,15 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import com.tinkerpop.pipes.util.structures.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Titan 0.5.4 implementation of AtlasGraph.
  */
 public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
+    private static final Logger LOG = LoggerFactory.getLogger(Titan0Graph.class);
 
     private final Set<String> multiProperties;
 
@@ -282,25 +285,54 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public Object executeGremlinScript(ScriptEngine scriptEngine, Bindings bindings, String query, boolean isPath) throws ScriptException {
-        if(!bindings.containsKey("g")) {
-            bindings.put("g", getGraph());
+    public ScriptEngine getGremlinScriptEngine() {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine        engine  = manager.getEngineByName("gremlin-groovy");
+
+        //Do not cache script compilations due to memory implications
+        engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
+
+        return engine;
+    }
+
+    @Override
+    public void releaseGremlinScriptEngine(ScriptEngine scriptEngine) {
+        // no action needed
+    }
+
+    @Override
+    public Object executeGremlinScript(ScriptEngine scriptEngine, Map<? extends  String, ? extends  Object> userBindings, String query, boolean isPath) throws ScriptException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("executeGremlinScript(query={}, userBindings={})", query, userBindings);
         }
 
-        Object result = scriptEngine.eval(query, bindings);
-        return convertGremlinScriptResult(isPath, result);
+        Bindings bindings = scriptEngine.createBindings();
 
+        if (userBindings != null) {
+            bindings.putAll(userBindings);
+        }
+
+        bindings.put("g", getGraph());
+
+        Object result = scriptEngine.eval(query, bindings);
+
+        return convertGremlinScriptResult(isPath, result);
     }
 
     private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
+        Object       result = null;
+        ScriptEngine engine = getGremlinScriptEngine();
 
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
-        Bindings bindings = engine.createBindings();
-        bindings.put("g", getGraph());
-        //Do not cache script compilations due to memory implications
-        engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
-        Object result = engine.eval(gremlinQuery, bindings);
+        try {
+            Bindings bindings = engine.createBindings();
+
+            bindings.put("g", getGraph());
+
+            result = engine.eval(gremlinQuery, bindings);
+        } finally {
+            releaseGremlinScriptEngine(engine);
+        }
+
         return result;
     }
 

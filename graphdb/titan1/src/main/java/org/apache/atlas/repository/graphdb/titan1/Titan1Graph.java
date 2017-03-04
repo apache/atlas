@@ -290,14 +290,7 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
     }
 
     @Override
-    public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
-
-        Object result = executeGremlinScript(query);
-        return convertGremlinValue(result);
-    }
-
-    private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
-
+    public GremlinGroovyScriptEngine getGremlinScriptEngine() {
         Set<String> extraImports = new HashSet<String>();
         extraImports.add(java.util.function.Function.class.getName());
 
@@ -307,29 +300,54 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
         CompilerCustomizerProvider provider = new DefaultImportCustomizerProvider(extraImports, extraStaticImports);
 
         GremlinGroovyScriptEngine scriptEngine = new GremlinGroovyScriptEngine(provider);
-        try {
-            Bindings bindings = scriptEngine.createBindings();
-            bindings.put("graph", getGraph());
-            bindings.put("g", getGraph().traversal());
-            Object result = scriptEngine.eval(gremlinQuery, bindings);
-            return result;
-        } finally {
+
+        return scriptEngine;
+    }
+
+    @Override
+    public void releaseGremlinScriptEngine(ScriptEngine scriptEngine) {
+        if (scriptEngine instanceof GremlinGroovyScriptEngine) {
             try {
-                scriptEngine.close();
+                ((GremlinGroovyScriptEngine)scriptEngine).close();
             } catch (Exception e) {
-                throw new ScriptException(e);
+                // ignore
             }
         }
     }
 
     @Override
-    public Object executeGremlinScript(ScriptEngine scriptEngine,
-            Bindings bindings, String query, boolean isPath)
-            throws ScriptException {
+    public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
 
-        if(!bindings.containsKey("g")) {
-            bindings.put("g", getGraph());
+        Object result = executeGremlinScript(query);
+        return convertGremlinValue(result);
+    }
+
+    private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
+        GremlinGroovyScriptEngine scriptEngine = getGremlinScriptEngine();
+
+        try {
+            Bindings bindings = scriptEngine.createBindings();
+
+            bindings.put("graph", getGraph());
+            bindings.put("g", getGraph().traversal());
+
+            Object result = scriptEngine.eval(gremlinQuery, bindings);
+
+            return result;
+        } finally {
+            releaseGremlinScriptEngine(scriptEngine);
         }
+    }
+
+    @Override
+    public Object executeGremlinScript(ScriptEngine scriptEngine,
+            Map<? extends  String, ? extends  Object> userBindings, String query, boolean isPath)
+            throws ScriptException {
+        Bindings bindings = scriptEngine.createBindings();
+
+        bindings.putAll(userBindings);
+        bindings.put("g", getGraph());
+
         Object result = scriptEngine.eval(query, bindings);
         return convertGremlinValue(result);
     }

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.Set;
 
 import javax.script.Bindings;
@@ -256,6 +257,20 @@ public interface AtlasGraph<V, E> {
     GroovyExpression addOutputTransformationPredicate(GroovyExpression expr, boolean isSelect, boolean isPath);
 
     /**
+     * Get an instance of the script engine to execute Gremlin queries
+     *
+     * @return script engine to execute Gremlin queries
+     */
+    ScriptEngine getGremlinScriptEngine();
+
+    /**
+     * Release an instance of the script engine obtained with getGremlinScriptEngine()
+     *
+     * @param scriptEngine: ScriptEngine to release
+     */
+    void releaseGremlinScriptEngine(ScriptEngine scriptEngine);
+
+    /**
      * Executes a Gremlin script, returns an object with the result.
      *
      * @param gremlinQuery
@@ -280,7 +295,7 @@ public interface AtlasGraph<V, E> {
      *
      * @throws ScriptException
      */
-    Object executeGremlinScript(ScriptEngine scriptEngine, Bindings bindings, String query, boolean isPath) throws ScriptException;
+    Object executeGremlinScript(ScriptEngine scriptEngine, Map<? extends  String, ? extends  Object> bindings, String query, boolean isPath) throws ScriptException;
 
 
     /**
