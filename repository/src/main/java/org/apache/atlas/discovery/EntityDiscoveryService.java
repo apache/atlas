@@ -158,7 +158,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, int limit, int offset) throws AtlasBaseException {
-        AtlasSearchResult ret = new AtlasSearchResult(query, AtlasQueryType.BASIC);
+        AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);
@@ -197,7 +197,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setClassification(classification);
         }
 
-        basicQuery += String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_QUERY_FILTER), query);
+        if (StringUtils.isNotEmpty(query)) {
+            basicQuery += String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_QUERY_FILTER), query);
+
+            ret.setQueryText(query);
+        }
+
         basicQuery += String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.TO_RANGE_LIST), params.offset(), params.limit());
 
         try {

@@ -52,6 +52,10 @@ public class AtlasSearchResult implements Serializable {
 
     public AtlasSearchResult() {}
 
+    public AtlasSearchResult(AtlasQueryType queryType) {
+        this(null, queryType);
+    }
+
     public AtlasSearchResult(String queryText, AtlasQueryType queryType) {
         setQueryText(queryText);
         setQueryType(queryType);

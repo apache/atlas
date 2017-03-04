@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,6 +47,8 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified DSL
      * @param query DSL query
+     * @param type limit the result to only entities of specified type or its sub-types
+     * @param classification limit the result to only entities tagged with the given classification or or its sub-types
      * @param limit limit the result set to only include the specified number of entries
      * @param offset start offset of the result set (useful for pagination)
      * @return Search results
@@ -59,10 +62,24 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingDSL(@QueryParam("query") String query,
+                                            @QueryParam("type") String type,
+                                            @QueryParam("classification") String classification,
                                             @QueryParam("limit") int limit,
                                             @QueryParam("offset") int offset) throws AtlasBaseException {
+        String queryStr = query == null ? "" : query;
 
-        AtlasSearchResult ret = atlasDiscoveryService.searchUsingDslQuery(query, limit, offset);
+        if (StringUtils.isNoneEmpty(type)) {
+            queryStr = type + " " + queryStr;
+        }
+
+        if (StringUtils.isNoneEmpty(classification)) {
+            // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
+            if (StringUtils.isEmpty(query)) {
+                queryStr += (" isa " + classification);
+            }
+        }
+
+        AtlasSearchResult ret = atlasDiscoveryService.searchUsingDslQuery(queryStr, limit, offset);
 
         return ret;
     }
