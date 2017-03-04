@@ -17,38 +17,45 @@
  */
 
 define(['require',
-    'utils/Globals',
-    'collection/BaseCollection',
-    'models/VSearch',
-    'utils/UrlLinks'
-], function(require, Globals, BaseCollection, VSearch, UrlLinks) {
-    'use strict';
-    var VSearchList = BaseCollection.extend(
-        //Prototypal attributes
-        {
-            url: UrlLinks.searchApiUrl(),
+    'backbone',
+    'hbs!tmpl/search/AdvancedSearchInfo_tmpl',
+], function(require, Backbone, AdvancedSearchInfoTmpl) {
 
-            model: VSearch,
-
-            initialize: function() {
-                this.modelName = 'VSearch';
-                this.modelAttrName = '';
-            },
-            parseRecords: function(resp, options) {
-                this.queryType = resp.queryType;
-                this.queryText = resp.queryText;
-                return resp.entities ? resp.entities : [];
-            },
-        },
-        //Static Class Members
+    var AdvancedSearchInfoView = Backbone.Marionette.LayoutView.extend(
+        /** @lends AdvancedSearchInfoView */
         {
+            _viewName: 'AdvancedSearchInfoView',
+
+            template: AdvancedSearchInfoTmpl,
+
+
+
+            /** Layout sub regions */
+            regions: {},
+
+
+            /** ui selector cache */
+            ui: {
+
+            },
+            /** ui events hash */
+            events: function() {
+                var events = {};
+                return events;
+            },
             /**
-             * Table Cols to be passed to Backgrid
-             * UI has to use this as base and extend this.
-             *
+             * intialize a new AdvancedSearchInfoView Layout
+             * @constructs
              */
-            tableCols: {}
-        }
-    );
-    return VSearchList;
+            initialize: function(options) {
+
+            },
+            bindEvents: function() {},
+            onRender: function() {
+
+            },
+
+
+        });
+    return AdvancedSearchInfoView;
 });

@@ -63,7 +63,8 @@ define(['require',
             },
             templateHelpers: function() {
                 return {
-                    entityCreate: Globals.entityCreate
+                    entityCreate: Globals.entityCreate,
+                    searchType: this.searchType
                 };
             },
             /** ui events hash */
@@ -147,6 +148,10 @@ define(['require',
                 this.bindEvents();
                 this.bradCrumbList = [];
                 this.arr = [];
+                this.searchType = 'Basic Search';
+                if (this.value && this.value.searchType && this.value.searchType == 'dsl') {
+                    this.searchType = 'Advanced Search';
+                }
             },
             bindEvents: function() {
                 var that = this;
@@ -160,11 +165,7 @@ define(['require',
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var term = [];
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = item.toJSON();
-                            } else {
-                                var obj = item.get('entity');
-                            }
+                            var obj = model.toJSON();
                             that.arr.push({
                                 id: obj.guid,
                                 model: obj
@@ -202,7 +203,7 @@ define(['require',
                     } else {
                         value = {
                             'query': '',
-                            'searchType': 'fulltext'
+                            'searchType': 'basic'
                         };
                     }
                     this.fetchCollection(value);
@@ -223,9 +224,6 @@ define(['require',
             },
             fetchCollection: function(value) {
                 var that = this;
-                if (value && (value.query === undefined || value.query.trim() === "")) {
-                    return;
-                }
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
@@ -240,7 +238,7 @@ define(['require',
                     if (Utils.getUrlState.isTagTab()) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(Enums.searchUrlType.DSL);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() });
+                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() || null, 'type': value.type || null, 'classification': value.tag || null });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     skipDefaultError: true,
@@ -293,7 +291,7 @@ define(['require',
                         if (Globals.taxonomy) {
                             multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
                         }
-                        if (Globals.entityCreate && (resultText.indexOf("\`") != 0) && Globals.entityTypeConfList) {
+                        if (Globals.entityCreate && Globals.entityTypeConfList) {
                             createEntityTag = "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
                         that.$('.searchResult').html(resultData + multiAssignDataTag + multiAssignDataTerm + createEntityTag);
@@ -349,14 +347,9 @@ define(['require',
                     className: "searchTableName",
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = model.toJSON();
-                            } else {
-                                var obj = model.get('entity');
-                            }
-                            var nameHtml = "";
-
-                            var name = Utils.getName(obj);
+                            var obj = model.toJSON(),
+                                nameHtml = "",
+                                name = Utils.getName(obj);
                             if (obj.guid) {
                                 nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + '">' + name + '</a>';
                             } else {
@@ -388,11 +381,7 @@ define(['require',
                     sortable: false,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = model.toJSON();
-                            } else {
-                                var obj = model.get('entity');
-                            }
+                            var obj = model.toJSON();
                             if (obj && obj.attributes && obj.attributes.description) {
                                 return obj.attributes.description;
                             }
@@ -406,11 +395,7 @@ define(['require',
                     sortable: false,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = model.toJSON();
-                            } else {
-                                var obj = model.get('entity');
-                            }
+                            var obj = model.toJSON();
                             if (obj && obj.typeName) {
                                 return '<a title="Search ' + obj.typeName + '" href="#!/search/searchResult?query=' + obj.typeName + ' &searchType=dsl&dslChecked=true">' + obj.typeName + '</a>';
                             }
@@ -424,11 +409,7 @@ define(['require',
                     sortable: false,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = model.toJSON();
-                            } else {
-                                var obj = model.get('entity');
-                            }
+                            var obj = model.toJSON();
                             if (obj && obj.attributes && obj.attributes.owner) {
                                 return obj.attributes.owner;
                             }
@@ -444,11 +425,7 @@ define(['require',
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
-                            if (that.searchCollection.queryType == "DSL") {
-                                var obj = model.toJSON();
-                            } else {
-                                var obj = model.get('entity');
-                            }
+                            var obj = model.toJSON();
                             if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                 return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
                             } else {
@@ -468,11 +445,7 @@ define(['require',
                         className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                if (that.searchCollection.queryType == "DSL") {
-                                    var obj = model.toJSON();
-                                } else {
-                                    var obj = model.get('entity');
-                                }
+                                var obj = model.toJSON();
                                 var returnObject = CommonViewFunction.termTableBreadcrumbMaker(obj);
                                 if (returnObject.object) {
                                     that.bradCrumbList.push(returnObject.object);
@@ -509,21 +482,13 @@ define(['require',
                 var that = this;
                 if (!multiple || multiple.length === 0) {
                     var modal = this.searchCollection.find(function(item) {
-                        if (that.searchCollection.queryType == "DSL") {
-                            var obj = item.toJSON();
-                        } else {
-                            var obj = item.get('entity');
-                        }
+                        var obj = model.toJSON();
                         if (obj.guid === guid) {
                             return true;
                         }
                     });
                     if (modal) {
-                        if (that.searchCollection.queryType == "DSL") {
-                            var obj = modal.toJSON();
-                        } else {
-                            var obj = modal.get('entity');
-                        }
+                        var obj = model.toJSON();
                     } else {
                         return [];
                     }

@@ -9,6 +9,12 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1608 :Search UI improvement (kevalbhatt)
+ATLAS-1630: basic search implementation (#2)
+ATLAS-1630: basic search implementation using fulltext with support for filter by type & classification
+ATLAS-1629: updated copyright date in NOTICE file
+ATLAS-1627: fix for missed update to full-text index attribute on entity-update
+ATLAS-1626: updated Atlas type-load to be resilient to incorrect constraints in the store (from earlier version env)
 ATLAS-1628 Restrict user from entering text in datepicker input (kevalbhatt)
 ATLAS-1538 Make AtlasLdapAuthenticationProvider like Ranger for OpenLdap type (nixonrodrigues via kevalbhatt)
 ATLAS-1605 Edit Entity in UI : Update button is not enabled when updating attribute of type date (Kalyanikashikar via kevalbhatt)

@@ -42,7 +42,9 @@ define(['require',
                 searchBtn: '[data-id="searchBtn"]',
                 clearSearch: '[data-id="clearSearch"]',
                 typeLov: '[data-id="typeLOV"]',
-                refreshBtn: '[data-id="refreshBtn"]'
+                tagLov: '[data-id="tagLOV"]',
+                refreshBtn: '[data-id="refreshBtn"]',
+                advancedInfoBtn: '[data-id="advancedInfo"]'
             },
 
             /** ui events hash */
@@ -51,19 +53,18 @@ define(['require',
                     that = this;
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
-                    this.ui.searchBtn.removeAttr("disabled");
                     if (code == 13) {
                         that.findSearchResult();
                     }
-                    if (code == 8 && this.ui.searchInput.val() == "" && this.ui.typeLov.val() == "") {
-                        this.ui.searchBtn.attr("disabled", "true");
-                    }
+                    this.checkForButtonVisiblity();
                 };
                 events["change " + this.ui.searchType] = 'dslFulltextToggle';
                 events["click " + this.ui.searchBtn] = 'findSearchResult';
                 events["click " + this.ui.clearSearch] = 'clearSearchData';
-                events["change " + this.ui.typeLov] = 'onChangeTypeList';
+                events["change " + this.ui.typeLov] = 'checkForButtonVisiblity';
+                events["change " + this.ui.tagLov] = 'checkForButtonVisiblity';
                 events["click " + this.ui.refreshBtn] = 'onRefreshButton';
+                events["click " + this.ui.advancedInfoBtn] = 'advancedInfo';
                 return events;
             },
             /**
@@ -72,42 +73,68 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'typeHeaders'));
-                this.type = "fulltext";
+                this.type = "basic";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
-                        query: ""
+                        query: "",
+                        type: ""
                     },
-                    fulltext: {
-                        query: ""
+                    basic: {
+                        query: "",
+                        type: "",
+                        tag: ""
                     }
                 };
                 this.dsl = false;
-                if (param && param.query && param.searchType) {
-                    this.query[param.searchType].query = param.query;
+                if (param && param.searchType) {
+                    _.extend(this.query[param.searchType], _.pick(param, 'query', 'type', 'tag'));
                 }
             },
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
-                    this.renderTypeList();
+                    this.renderTypeTagList();
                     this.setValues();
                     this.ui.typeLov.select2({
-                        placeholder: "Search For",
+                        placeholder: "Select",
                         allowClear: true
                     });
+                    this.ui.tagLov.select2({
+                        placeholder: "Select",
+                        allowClear: true
+                    });
+                    this.checkForButtonVisiblity();
                 }, this);
+            },
+            checkForButtonVisiblity: function() {
+                var that = this,
+                    value = this.ui.searchInput.val() || this.ui.typeLov.val();
+                if (!this.dsl && !value.length) {
+                    value = this.ui.tagLov.val();
+                }
+                if (value && value.length) {
+                    this.ui.searchBtn.removeAttr("disabled");
+                    setTimeout(function() {
+                        that.ui.searchInput.focus();
+                    }, 0);
+                } else {
+                    this.ui.searchBtn.attr("disabled", "true");
+                }
             },
             onRender: function() {
                 // array of tags which is coming from url
-                this.$('.typeLOV').hide();
-                this.renderTypeList();
+                this.renderTypeTagList();
                 this.setValues();
                 this.ui.typeLov.select2({
-                    placeholder: "Search For",
+                    placeholder: "Select",
                     allowClear: true
                 });
-                this.ui.searchBtn.attr("disabled", "true");
+                this.ui.tagLov.select2({
+                    placeholder: "Select",
+                    allowClear: true
+                });
                 this.bindEvents();
+                this.checkForButtonVisiblity();
             },
             fetchCollection: function(value) {
                 this.typeHeaders.fetch({ reset: true });
@@ -115,33 +142,45 @@ define(['require',
             onRefreshButton: function() {
                 this.fetchCollection();
             },
+            advancedInfo: function(e) {
+                require([
+                    'views/search/AdvancedSearchInfoView',
+                    'modules/Modal'
+                ], function(AdvancedSearchInfoView, Modal) {
+                    var view = new AdvancedSearchInfoView();
+                    var modal = new Modal({
+                        title: 'Advanced Search Queries',
+                        content: view,
+                        okCloses: true,
+                        showFooter: true,
+                        allowCancel: false
+                    }).open();
+                    view.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                });
+            },
             manualRender: function(paramObj) {
                 this.setValues(paramObj);
             },
-            renderTypeList: function() {
+            renderTypeTagList: function() {
                 var that = this;
                 this.ui.typeLov.empty();
-                var str = '<option></option>';
+                var typeStr = '<option></option>',
+                    tagStr = typeStr;
                 this.typeHeaders.fullCollection.comparator = function(model) {
                     return Utils.getName(model.toJSON(), 'name').toLowerCase();
                 }
                 this.typeHeaders.fullCollection.sort().each(function(model) {
                     if (model.get('category') == 'ENTITY') {
-                        str += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
+                        typeStr += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
+                    }
+                    if (model.get('category') == 'CLASSIFICATION') {
+                        tagStr += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
                     }
                 });
-                that.ui.typeLov.html(str);
-            },
-            onChangeTypeList: function(e) {
-                var that = this;
-                if (this.ui.typeLov.select2('val') !== "") {
-                    this.ui.searchBtn.removeAttr("disabled");
-                } else if (this.ui.searchInput.val() === "") {
-                    this.ui.searchBtn.attr("disabled", "true");
-                }
-                setTimeout(function() {
-                    that.ui.searchInput.focus();
-                }, 0);
+                that.ui.typeLov.html(typeStr);
+                that.ui.tagLov.html(tagStr);
             },
             setValues: function(paramObj) {
                 var arr = [],
@@ -157,56 +196,42 @@ define(['require',
                     }
                     if (this.value.query !== undefined) {
                         // get only search value and append it to input box
-                        if (this.dsl) {
-                            var query = this.value.query.split(" ");
-                            if (query.length > 1) {
-                                var typeList = query.shift();
-                            } else {
-                                var typeList = "";
-                            }
-                            if (this.ui.typeLov.data('select2')) {
-                                this.ui.typeLov.val(typeList).trigger('change');
-                            } else {
-                                this.ui.typeLov.val(typeList);
-                                setTimeout(function() {
-                                    that.ui.searchInput.focus();
-                                }, 0);
-                            }
-                            this.ui.searchInput.val(query.join(" "));
+
+                        if (this.ui.typeLov.data('select2')) {
+                            this.ui.typeLov.val(this.value.type).trigger('change');
                         } else {
-                            this.ui.searchInput.val(this.value.query);
-                            setTimeout(function() {
-                                that.ui.searchInput.focus();
-                            }, 0);
+                            this.ui.typeLov.val(this.value.type);
                         }
-                        if (this.ui.searchBtn.val() !== "" || this.ui.typeLov.val() !== "") {
-                            this.ui.searchBtn.removeAttr("disabled");
+                        if (!this.dsl) {
+                            if (this.ui.tagLov.data('select2')) {
+                                this.ui.tagLov.val(this.value.tag).trigger('change');
+                            } else {
+                                this.ui.tagLov.val(this.value.tag);
+                            }
                         }
+                        this.ui.searchInput.val(this.value.query);
+                        setTimeout(function() {
+                            that.ui.searchInput.focus();
+                        }, 0);
                     }
                 }
-                this.bindEvents(arr);
             },
             findSearchResult: function() {
                 this.triggerSearch(this.ui.searchInput.val());
             },
             triggerSearch: function(value) {
-                if (this.ui.searchType.is(':checked')) {
-                    this.type = "dsl";
-                } else if (!this.ui.searchType.is(':checked')) {
-                    this.type = "fulltext";
+                this.query[this.type].query = value;
+                this.query[this.type].type = this.ui.typeLov.select2('val');
+                if (!this.dsl) {
+                    this.query[this.type].tag = this.ui.tagLov.select2('val');
                 }
-                if (this.ui.typeLov.select2('val') !== null && this.dsl === true) {
-                    this.query[this.type].query = this.ui.typeLov.select2('val') + ' ' + value;
-                } else {
-                    this.query[this.type].query = value
-                }
+
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: {
-                        query: this.query[this.type].query,
+                    urlParams: _.extend(this.query[this.type], {
                         searchType: this.type,
                         dslChecked: this.ui.searchType.is(':checked')
-                    },
+                    }),
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
                     },
@@ -219,35 +244,34 @@ define(['require',
                 if (e.currentTarget.checked) {
                     this.type = "dsl";
                     this.dsl = true;
-                    this.$('.typeLOV').show();
+                    this.$('.tagBox').hide();
                 } else {
+                    this.$('.tagBox').show();
                     this.dsl = false;
-                    this.$('.typeLOV').hide();
-                    this.type = "fulltext";
+                    this.type = "basic";
                 }
                 if (Utils.getUrlState.getQueryParams() && this.query[this.type].query !== Utils.getUrlState.getQueryParams().query && this.type == Utils.getUrlState.getQueryParams().searchType) {
                     this.query[this.type].query = Utils.getUrlState.getQueryParams().query;
                 }
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: {
-                        query: this.query[this.type].query,
+                    urlParams: _.extend(this.query[this.type], {
                         searchType: this.type,
                         dslChecked: this.ui.searchType.is(':checked')
-                    },
+                    }),
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
                     },
                     mergeBrowserUrl: false,
                     trigger: true
                 });
-                this.ui.searchInput.attr("placeholder", this.type == "dsl" ? 'Optional conditions' : 'Search using a query string: e.g. sales_fact');
             },
             clearSearchData: function() {
                 this.query[this.type].query = "";
                 this.ui.typeLov.val("").trigger("change");
+                this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
-                this.ui.searchBtn.attr("disabled", "true");
+                this.checkForButtonVisiblity()
                 Utils.setUrl({
                     url: '#!/search',
                     mergeBrowserUrl: false,

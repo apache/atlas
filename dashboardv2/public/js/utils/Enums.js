@@ -44,7 +44,7 @@ define(['require'], function(require) {
 
     Enums.searchUrlType = {
         DSL: 'dsl',
-        FULLTEXT: 'fulltext'
+        FULLTEXT: 'basic'
     }
 
     return Enums;

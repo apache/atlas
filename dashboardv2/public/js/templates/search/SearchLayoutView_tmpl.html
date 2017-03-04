@@ -17,29 +17,41 @@
 <div class="row row-margin-bottom">
     <div class="col-sm-12" style="margin:15px 0px;">
         <div class="row">
-            <div class="col-md-6">
-                <span class="pull-left">Text</span>
+            <div class="col-md-9" style="margin-top: 5px;">
+                <span class="pull-left">Basic</span>
                 <label class="switch pull-left">
                     <input type="checkbox" class="switch-input" name="queryType" value="text" />
                     <span class="switch-slider"></span>
                 </label>
-                <span class="pull-left">DSL</span>
+                <span class="pull-left">Advanced</span>
+                <span class="advancedInfo" data-id="advancedInfo"><i class="fa fa-question-circle-o"></i></span>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <button type="button" class="btn btn-atlasAction btn-atlas pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
             </div>
         </div>
     </div>
     <div class="col-sm-12">
         <div class="form-group">
-            <div class="typeLOV">
-                <select data-id="typeLOV"></select>
+            <div class="srchType">
+                <span class="srchTitle">Search By Type</span>
+                <div class="typeLOV">
+                    <select data-id="typeLOV"></select>
+                </div>
             </div>
-            <div class="searchInputClick">
-                <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
+            <div class="srchType tagBox">
+                <span class="srchTitle">Search By Tag</span>
+                <div class="typeLOV">
+                    <select data-id="tagLOV"></select>
+                </div>
+            </div>
+            <div class="srchType">
+                <span class="srchTitle">Search By Query</span>
+                <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin: 5px 0px;">
             </div>
         </div>
         <div class="clearAdvanceSearch" data-id="clearSearch">Clear</div>
         <button type="button" class="btn btn-atlas advanceSearchBtn" data-id="searchBtn" disabled="disabled">Search</button>
     </div>
     <div id="searchResult"></div>
+</div>

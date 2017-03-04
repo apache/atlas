@@ -338,7 +338,7 @@ define(['require',
                 var dataURL = this.$('.taxonomyTree').find('li[data-id="Parent"]').find("a").data('href');
                 if (dataURL) {
                     this.url = dataURL;
-                    if (this.viewBased) {
+                    if (this.viewBased && Utils.getUrlState.isTaxonomyTab()) {
                         Utils.setUrl({
                             url: "#!/taxonomy/detailCatalog" + dataURL,
                             mergeBrowserUrl: false,

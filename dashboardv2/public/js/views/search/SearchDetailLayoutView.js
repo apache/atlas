@@ -53,16 +53,10 @@ define(['require',
                 var that = this;
 
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {};
-                    if (that.value) {
-                        value = {
-                            'query': that.value.query,
-                            'searchType': that.value.searchType
-                        };
-                    }
+
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                            value: value,
+                            value: that.value,
                             tag: that.tag,
                             initialView: that.initialView,
                             entityDefCollection: that.entityDefCollection,

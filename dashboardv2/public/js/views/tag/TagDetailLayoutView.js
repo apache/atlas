@@ -55,8 +55,7 @@ define(['require',
                 var that = this;
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
                     var value = {
-                        'query': "`" + that.tag + "`",
-                        'type': 'dsl'
+                        'query': "`" + that.tag + "`"
                     };
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                         value: value,
