@@ -197,14 +197,18 @@ public final class EntityGraphRetriever {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         if (entityType != null) {
+            for (AtlasAttribute uniqueAttribute : entityType.getUniqAttributes().values()) {
+                Object attrValue = getVertexAttribute(entityVertex, uniqueAttribute);
+
+                if (attrValue != null) {
+                    ret.setAttribute(uniqueAttribute.getName(), attrValue);
+                }
+            }
+
             Object name        = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.NAME));
             Object description = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.DESCRIPTION));
             Object owner       = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.OWNER));
-            Object displayText = name;
-
-            if (displayText == null) {
-                displayText = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.QUALIFIED_NAME));
-            }
+            Object displayText = name != null ? name : ret.getAttribute(AtlasClient.QUALIFIED_NAME);
 
             ret.setAttribute(AtlasClient.NAME, name);
             ret.setAttribute(AtlasClient.DESCRIPTION, description);

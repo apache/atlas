@@ -72,8 +72,13 @@ public final class LineageUtils {
                     vertexIdMap.put(idType.stateAttrName(), (entityHeader.getStatus() == AtlasEntity.Status.ACTIVE) ? "ACTIVE" : "DELETED");
                     vertexIdMap.put(idType.typeNameAttrName(), entityHeader.getTypeName());
 
+                    Object qualifiedName = entityHeader.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
+                    if (qualifiedName == null) {
+                        qualifiedName = entityHeader.getDisplayText();
+                    }
+
                     Map<String, Object> values = new HashMap<>();
-                    values.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, entityHeader.getDisplayText());
+                    values.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
                     values.put(VERTEX_ID_ATTR_NAME, constructResultStruct(vertexIdMap, true));
                     values.put(AtlasClient.NAME, entityHeader.getDisplayText());
                     verticesMap.put(guid, constructResultStruct(values, false));
