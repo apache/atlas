@@ -234,6 +234,8 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     }
 
     private void createTypes() throws Exception {
+        createTypeDefinitionsV1();
+
         HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition = TypesUtil
                 .createClassTypeDef("dsl_test_type", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
