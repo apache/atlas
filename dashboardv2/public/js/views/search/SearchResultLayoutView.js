@@ -238,7 +238,7 @@ define(['require',
                     if (Utils.getUrlState.isTagTab()) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(Enums.searchUrlType.DSL);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() || null, 'type': value.type || null, 'classification': value.tag || null });
+                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() || null, 'typeName': value.type || null, 'classification': value.tag || null });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     skipDefaultError: true,
