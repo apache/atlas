@@ -165,7 +165,7 @@ define(['require',
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var term = [];
-                            var obj = model.toJSON();
+                            var obj = item.toJSON();
                             that.arr.push({
                                 id: obj.guid,
                                 model: obj
@@ -481,13 +481,13 @@ define(['require',
             getTagList: function(guid, multiple) {
                 var that = this;
                 if (!multiple || multiple.length === 0) {
-                    var modal = this.searchCollection.find(function(item) {
-                        var obj = model.toJSON();
+                    var model = this.searchCollection.find(function(item) {
+                        var obj = item.toJSON();
                         if (obj.guid === guid) {
                             return true;
                         }
                     });
-                    if (modal) {
+                    if (model) {
                         var obj = model.toJSON();
                     } else {
                         return [];
