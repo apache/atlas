@@ -65,6 +65,7 @@ import com.google.inject.Singleton;
  * as a Graph Service.
  */
 @Singleton
+@Deprecated
 public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedMetadataRepository.class);

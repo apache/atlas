@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Deprecated
 public abstract class HierarchicalTypeStore {
 
     final MemRepository repository;

@@ -48,6 +48,7 @@ import javax.ws.rs.core.Response;
 
 @Path("lineage")
 @Singleton
+@Deprecated
 public class LineageResource {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageResource");

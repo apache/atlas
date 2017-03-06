@@ -38,6 +38,7 @@ import java.util.Map;
 /**
  * Metadata service.
  */
+@Deprecated
 public interface MetadataService {
 
     /**

@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class AttributeStores {
 
     private static final Object NULL_VAL = new Object();

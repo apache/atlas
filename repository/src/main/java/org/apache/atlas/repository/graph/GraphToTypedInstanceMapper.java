@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Singleton;
 
 @Singleton
+@Deprecated
 public final class GraphToTypedInstanceMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphToTypedInstanceMapper.class);

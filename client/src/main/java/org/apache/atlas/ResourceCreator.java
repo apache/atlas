@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.WebResource;
 /**
  * An interface to capture the closure of how a WebResource is created.
  */
+@Deprecated
 public interface ResourceCreator {
     WebResource createResource();
 }

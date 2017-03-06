@@ -45,6 +45,7 @@ import javax.ws.rs.core.Response;
  */
 @Path("lineage/hive")
 @Singleton
+@Deprecated
 public class DataSetLineageResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);

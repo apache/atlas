@@ -52,6 +52,7 @@ import com.google.inject.Singleton;
  * are also loaded from the store if they are not already in the cache.
  */
 @Singleton
+@Deprecated
 public class StoreBackedTypeCache extends DefaultTypeCache {
 
     private ITypeStore typeStore;

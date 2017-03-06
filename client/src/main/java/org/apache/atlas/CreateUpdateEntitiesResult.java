@@ -27,6 +27,7 @@ import org.apache.atlas.type.AtlasType;
 /**
  * Result from creating or updating entities.
  */
+@Deprecated
 public class CreateUpdateEntitiesResult {
 
     /**

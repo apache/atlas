@@ -88,6 +88,7 @@ import java.util.Map;
  */
 @Path("entities")
 @Singleton
+@Deprecated
 public class EntityResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);

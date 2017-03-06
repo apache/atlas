@@ -65,6 +65,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 /**
  * Client for metadata.
  */
+@Deprecated
 public class AtlasClient extends AtlasBaseClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClient.class);
 

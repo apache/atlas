@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class FullTextMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapper.class);

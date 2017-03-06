@@ -25,6 +25,7 @@ import org.apache.atlas.typesystem.types.TraitType;
 
 import java.util.ArrayList;
 
+@Deprecated
 public class TraitStore extends HierarchicalTypeStore {
 
     final ArrayList<String> classNameStore;

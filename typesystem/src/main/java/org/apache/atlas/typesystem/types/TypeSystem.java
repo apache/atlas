@@ -45,6 +45,7 @@ import javax.inject.Singleton;
 
 @Singleton
 @InterfaceAudience.Private
+@Deprecated
 public class TypeSystem {
     private static final Logger LOG = LoggerFactory.getLogger(TypeSystem.class);
 

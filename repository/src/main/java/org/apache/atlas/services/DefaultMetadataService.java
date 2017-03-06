@@ -85,6 +85,7 @@ import javax.inject.Singleton;
  * for listening to changes to the repository.
  */
 @Singleton
+@Deprecated
 public class DefaultMetadataService implements MetadataService, ActiveStateChangeHandler, TypeDefChangeListener {
     private enum OperationType {
         CREATE, UPDATE, DELETE

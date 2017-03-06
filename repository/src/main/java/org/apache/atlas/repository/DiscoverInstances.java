@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Graph walker implementation for discovering instances.
  */
+@Deprecated
 public class DiscoverInstances implements ObjectGraphWalker.NodeProcessor {
 
     public final Map<Id, Id> idToNewIdMap;

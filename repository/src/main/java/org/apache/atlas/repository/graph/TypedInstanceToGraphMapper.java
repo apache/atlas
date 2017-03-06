@@ -67,6 +67,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
+@Deprecated
 public final class TypedInstanceToGraphMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypedInstanceToGraphMapper.class);

@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Deprecated
 public class MemRepository implements IRepository {
 
     final TypeSystem typeSystem;

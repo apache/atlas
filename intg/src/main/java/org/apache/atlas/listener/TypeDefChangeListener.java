@@ -19,6 +19,7 @@ package org.apache.atlas.listener;
 
 import org.apache.atlas.exception.AtlasBaseException;
 
+@Deprecated
 public interface TypeDefChangeListener {
     void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException;
 }

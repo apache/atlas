@@ -22,6 +22,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.persistence.StructInstance;
 import org.apache.atlas.typesystem.types.IConstructableType;
 
+@Deprecated
 public interface IAttributeStore {
     /**
      * Store the attribute's value from the 'instance' into this store.

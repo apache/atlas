@@ -34,6 +34,7 @@ import org.apache.atlas.typesystem.json.InstanceSerialization;
 
 import java.lang.reflect.Type;
 
+@Deprecated
 public class SerDe {
     public static final Gson GSON = new GsonBuilder().
              registerTypeAdapter(IStruct.class, new StructDeserializer()).

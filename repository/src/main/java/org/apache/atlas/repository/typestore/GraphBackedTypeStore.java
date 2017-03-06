@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 @Singleton
+@Deprecated
 public class GraphBackedTypeStore implements ITypeStore {
     public static final String VERTEX_TYPE = "typeSystem";
     private static final String PROPERTY_PREFIX = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";

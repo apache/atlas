@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.types.StructType;
 import java.util.Collection;
 import java.util.Map;
 
+@Deprecated
 public class StructStore extends AttributeStores.AbstractAttributeStore implements IAttributeStore {
 
     final StructType structType;

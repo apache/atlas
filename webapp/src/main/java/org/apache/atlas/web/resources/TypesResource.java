@@ -63,6 +63,7 @@ import java.util.List;
  */
 @Path("types")
 @Singleton
+@Deprecated
 public class TypesResource {
     private static final Logger LOG = LoggerFactory.getLogger(TypesResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesResource");

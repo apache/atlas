@@ -35,6 +35,7 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
 

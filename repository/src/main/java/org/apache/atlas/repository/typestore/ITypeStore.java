@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
+@Deprecated
 public interface ITypeStore {
 
     /**

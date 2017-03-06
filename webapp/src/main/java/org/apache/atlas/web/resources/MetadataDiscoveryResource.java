@@ -52,6 +52,7 @@ import java.util.Map;
  */
 @Path("discovery")
 @Singleton
+@Deprecated
 public class MetadataDiscoveryResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);

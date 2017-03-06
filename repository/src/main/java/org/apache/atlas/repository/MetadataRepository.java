@@ -34,6 +34,7 @@ import java.util.List;
 /**
  * An interface for persisting metadata into a blueprints enabled graph db.
  */
+@Deprecated
 public interface MetadataRepository {
 
     /**

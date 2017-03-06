@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.types.ClassType;
 import java.util.ArrayList;
 import java.util.Objects;
 
+@Deprecated
 public class ClassStore extends HierarchicalTypeStore {
 
     final ArrayList<ImmutableList<String>> traitNamesStore;

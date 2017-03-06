@@ -30,6 +30,7 @@ import java.util.List;
 /**
  * Metadata Repository interface.
  */
+@Deprecated
 public interface IRepository {
 
     ITypedReferenceableInstance create(IReferenceableInstance i) throws RepositoryException;
