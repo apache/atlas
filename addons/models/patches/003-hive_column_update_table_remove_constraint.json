@@ -1,0 +1,21 @@
+{
+  "patches": [
+    {
+      "action": "UPDATE_ATTRIBUTE",
+      "typeName": "hive_column",
+      "applyToVersion": "1.2",
+      "updateToVersion": "1.3",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "table",
+          "typeName": "hive_table",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}
