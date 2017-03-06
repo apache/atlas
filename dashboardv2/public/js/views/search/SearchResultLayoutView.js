@@ -291,7 +291,7 @@ define(['require',
                         if (Globals.taxonomy) {
                             multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
                         }
-                        if (Globals.entityCreate && Globals.entityTypeConfList) {
+                        if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                             createEntityTag = "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
                         that.$('.searchResult').html(resultData + multiAssignDataTag + multiAssignDataTerm + createEntityTag);

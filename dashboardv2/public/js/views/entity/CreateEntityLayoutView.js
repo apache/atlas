@@ -438,6 +438,9 @@ define(['require',
                     } else {
                         splitTypeName = value.typeName;
                     }
+                    if (!this.guid) {
+                        disabled = value.isOptional;
+                    }
                     return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName +
                         '" data-key="' + value.name + '" ' + (disabled ? 'disabled data-skip="true"' : "") + ' data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
                 }
@@ -504,7 +507,7 @@ define(['require',
                                 ++this.asyncFetchLOVCounter;
                                 this.searchCollection.fetch({ reset: true });
                             }
-                            return this.getSelect(value, entityValue, value.isOptional);
+                            return this.getSelect(value, entityValue, true);
                         }
                     }
                     return this.getSelect(value, entityValue, false); // Don't disable select for non entity attributes.
@@ -766,7 +769,7 @@ define(['require',
                                     var storeEntity = that.selectStoreCollection.findWhere({ guid: dataValue.guid });
                                     var refEntiyFound = referredEntities[dataValue.guid]
                                     if (storeEntity) {
-                                        var name = Utils.getName(storeEntity, 'displayText');
+                                        var name = Utils.getName(storeEntity.toJSON(), 'displayText');
                                     } else if (!storeEntity && refEntiyFound && refEntiyFound.typeName) {
                                         that.selectStoreCollection.push(refEntiyFound);
                                         var name = Utils.getName(refEntiyFound, 'displayText');
