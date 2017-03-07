@@ -22,21 +22,21 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
     public String getQuery(final AtlasGremlinQuery gremlinQuery) {
         switch (gremlinQuery) {
             case TYPE_COUNT_METRIC:
-                return "g.V().has('__type', 'typeSystem').filter({it.'__type.category'.name() != 'TRAIT'}).count()";
+                return "g.V().has('__type', 'typeSystem').filter({!it.'__type.category'.name().matches('TRAIT')}).count()";
             case TYPE_UNUSED_COUNT_METRIC:
-                return "g.V('__type', 'typeSystem').filter({ it.'__type.category'.name() != 'TRAIT' && it.inE.count() == 0}).count()";
+                return "g.V('__type', 'typeSystem').filter({ !it.getProperty('__type.category').name().matches('TRAIT') && it.inE().count() == 0}).count()";
             case ENTITY_COUNT_METRIC:
                 return "g.V().has('__superTypeNames', T.in, ['Referenceable']).count()";
             case TAG_COUNT_METRIC:
-                return "g.V().has('__type', 'typeSystem').filter({it.'__type.category'.name() == 'TRAIT'}).count()";
+                return "g.V().has('__type', 'typeSystem').filter({it.getProperty('__type.category').name().matches('TRAIT')}).count()";
             case ENTITY_DELETED_METRIC:
-                return "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__status', 'DELETED').count()";
+                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name().matches('CLASS')}.'__type.name'.toSet()).has('__status', 'DELETED').count()";
             case ENTITIES_PER_TYPE_METRIC:
-                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter({it.'__type.category'.name() != 'TRAIT'}).'__type.name'.toSet()).groupCount{it.'__typeName'}.cap.toList()";
+                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'CLASS'}.'__type.name'.toSet()).groupCount{it.getProperty('__typeName')}.cap.toList()";
             case TAGGED_ENTITIES_METRIC:
-                return "g.V().has('__superTypeNames', T.in, ['Referenceable']).has('__traitNames').count()";
+                return "g.V().has('__traitNames', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'TRAIT'}.'__type.name'.toSet()).count()";
             case ENTITIES_FOR_TAG_METRIC:
-                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.'__type.category'.name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.'__typeName'}.cap.toList()";
+                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.getProperty('__typeName')}.cap.toList()";
             case EXPORT_BY_GUID_FULL:
                 return "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_IN_EDGE:
