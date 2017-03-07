@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-         <version>0.8-incubating-SNAPSHOT</version>
+         <version>0.8-incubating</version>
     </parent>
     <artifactId>atlas-catalog</artifactId>
     <description>Apache Atlas Business Catalog Module</description>
