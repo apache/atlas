@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-        <version>0.8-incubating-SNAPSHOT</version>
+        <version>0.9-incubating-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-docs</artifactId>
     <description>Apache Atlas Documentation</description>
