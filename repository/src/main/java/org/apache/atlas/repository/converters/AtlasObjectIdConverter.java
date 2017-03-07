@@ -19,6 +19,7 @@ package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -27,7 +28,10 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
+import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.persistence.StructInstance;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -50,23 +54,24 @@ AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
         if (v1Obj != null) {
             if (v1Obj instanceof Id) {
                 Id id = (Id) v1Obj;
+
                 ret = new AtlasObjectId(id._getId(), id.getTypeName());
             } else if (v1Obj instanceof IReferenceableInstance) {
                 IReferenceableInstance refInst = (IReferenceableInstance) v1Obj;
+                String                 guid    = refInst.getId()._getId();
 
-                String guid = refInst.getId()._getId();
                 ret = new AtlasObjectId(guid, refInst.getTypeName());
 
-                if (!converterContext.entityExists(guid)) {
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(refInst.getTypeName());
-                    AtlasEntityFormatConverter entityFormatConverter = (AtlasEntityFormatConverter) converterRegistry.getConverter(TypeCategory.ENTITY);
-
-                    AtlasEntity entity = entityFormatConverter.fromV1ToV2(v1Obj, entityType, converterContext);
+                if (!converterContext.entityExists(guid) && hasAnyAssignedAttribute(refInst)) {
+                    AtlasEntityType            entityType = typeRegistry.getEntityTypeByName(refInst.getTypeName());
+                    AtlasEntityFormatConverter converter  = (AtlasEntityFormatConverter) converterRegistry.getConverter(TypeCategory.ENTITY);
+                    AtlasEntity                entity     = converter.fromV1ToV2(v1Obj, entityType, converterContext);
 
                     converterContext.addReferredEntity(entity);
                 }
             }
         }
+
         return ret;
     }
 
@@ -95,6 +100,41 @@ AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, type.getTypeCategory().name());
             }
         }
+        return ret;
+    }
+
+    private boolean hasAnyAssignedAttribute(IReferenceableInstance rInstance) {
+        boolean ret = false;
+
+        if (rInstance instanceof StructInstance) {
+            StructInstance sInstance = (StructInstance) rInstance;
+
+            Map<String, Object> attributes = null;
+
+            try {
+                attributes = sInstance.getValuesMap();
+            } catch (AtlasException e) {
+                // ignore
+            }
+
+            if (MapUtils.isNotEmpty(attributes)) {
+                for (String attrName : attributes.keySet()) {
+                    try {
+                        if (sInstance.isValueSet(attrName)) {
+                            ret = true;
+                            break;
+                        }
+                    } catch (AtlasException e) {
+                            // ignore
+                    }
+                }
+            }
+        } else if (rInstance instanceof Referenceable) {
+            Referenceable referenceable = (Referenceable) rInstance;
+
+            ret = MapUtils.isNotEmpty(referenceable.getValuesMap());
+        }
+
         return ret;
     }
 }

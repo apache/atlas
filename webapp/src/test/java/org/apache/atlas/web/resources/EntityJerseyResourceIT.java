@@ -738,7 +738,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         LOG.debug("Updating entity= {}", tableUpdated);
         AtlasClient.EntityResult entityResult = atlasClientV1.updateEntity(tableId._getId(), tableUpdated);
-        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
