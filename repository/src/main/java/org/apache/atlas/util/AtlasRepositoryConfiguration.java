@@ -94,6 +94,7 @@ public class AtlasRepositoryConfiguration {
     }
 
     private static final String DELETE_HANDLER_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandler.impl";
+    private static final String DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandlerV1.impl";
 
     @SuppressWarnings("unchecked")
     public static Class<? extends DeleteHandler> getDeleteHandlerImpl() {
@@ -110,7 +111,7 @@ public class AtlasRepositoryConfiguration {
         try {
             Configuration config = ApplicationProperties.get();
             return ApplicationProperties.getClass(config,
-                DELETE_HANDLER_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
+                    DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
