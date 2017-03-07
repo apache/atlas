@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.titan0;
 
+import java.lang.Override;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -134,7 +135,7 @@ public class Titan0Element<T extends Element> implements AtlasElement {
 
     }
 
-    // not in interface
+    @Override
     public T getWrappedElement() {
         return wrappedElement;
     }

@@ -65,6 +65,7 @@ public abstract class BaseService {
         try {
             return provider.getResources(request);
         } catch (RuntimeException e) {
+            LOG.error("Error while retrieving taxonomy ", e);
             throw wrapRuntimeException(e);
         }
     }

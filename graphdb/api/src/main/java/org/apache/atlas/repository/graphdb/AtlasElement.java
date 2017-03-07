@@ -166,4 +166,6 @@ public interface AtlasElement {
      * @return
      */
     boolean isIdAssigned();
+
+    <T> T getWrappedElement();
 }

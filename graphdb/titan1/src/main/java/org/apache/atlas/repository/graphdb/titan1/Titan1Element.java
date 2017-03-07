@@ -48,7 +48,6 @@ import com.thinkaurelius.titan.core.TitanElement;
  */
 public class Titan1Element<T extends Element> implements AtlasElement {
 
-
     private T element;
     protected Titan1Graph graph;
 
@@ -121,8 +120,7 @@ public class Titan1Element<T extends Element> implements AtlasElement {
         return element.id();
     }
 
-
-    //not in interface
+    @Override
     public T getWrappedElement() {
         return element;
     }
