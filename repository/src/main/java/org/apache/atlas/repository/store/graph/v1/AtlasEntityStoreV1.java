@@ -36,6 +36,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -427,6 +428,10 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Adding classifications={} to entity={}", classifications, guid);
         }
 
+        for (AtlasClassification classification : classifications) {
+            validateAndNormalize(classification);
+        }
+
         EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
         graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
@@ -449,6 +454,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
+
+        validateAndNormalize(classification);
 
         List<AtlasClassification> classifications = Collections.singletonList(classification);
 
@@ -572,5 +579,23 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         return response;
+    }
+
+    private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {
+        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
+        }
+
+        List<String> messages = new ArrayList<>();
+
+        type.validateValue(classification, classification.getTypeName(), messages);
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, messages);
+        }
+
+        type.getNormalizedValue(classification);
     }
 }

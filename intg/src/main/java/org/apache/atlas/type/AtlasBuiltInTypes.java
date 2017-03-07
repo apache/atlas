@@ -18,17 +18,17 @@
 package org.apache.atlas.type;
 
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.Date;
-import java.util.Map;
-
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
 
 
 /**
@@ -446,6 +446,10 @@ public class AtlasBuiltInTypes {
         @Override
         public boolean isValidValue(Object obj) {
             if (obj == null || obj instanceof Date || obj instanceof Number) {
+                return true;
+            }
+
+            if (obj instanceof String && StringUtils.isEmpty((String) obj)) {
                 return true;
             }
 

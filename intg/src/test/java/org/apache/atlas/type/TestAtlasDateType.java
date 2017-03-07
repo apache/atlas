@@ -34,7 +34,7 @@ public class TestAtlasDateType {
     private final AtlasDateType dateType = new AtlasDateType();
 
     private final Object[] validValues    = {
-        null, Byte.valueOf((byte)1), Short.valueOf((short)1), Integer.valueOf(1), Long.valueOf(1L), Float.valueOf(1),
+        null, "", Byte.valueOf((byte)1), Short.valueOf((short)1), Integer.valueOf(1), Long.valueOf(1L), Float.valueOf(1),
         Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
     };
 
@@ -43,7 +43,7 @@ public class TestAtlasDateType {
         Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
     };
 
-    private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab", };
+    private final Object[] invalidValues  = { "12ab", "abcd", "-12ab", };
 
     private final Date   now    = new Date();
     private final String strNow = AtlasBaseTypeDef.DATE_FORMATTER.format(now);
@@ -78,7 +78,7 @@ public class TestAtlasDateType {
         assertNull(dateType.getNormalizedValue(null), "value=" + null);
 
         for (Object value : validValues) {
-            if (value == null) {
+            if (value == null || value == "") {
                 continue;
             }
 
