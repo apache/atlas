@@ -35,6 +35,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -109,6 +110,10 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
 
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+
+    static {
+        DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
 
     private final TypeCategory category;
     private String  guid       = null;

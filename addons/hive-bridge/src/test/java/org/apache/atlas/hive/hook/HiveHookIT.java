@@ -942,7 +942,8 @@ public class HiveHookIT extends HiveITBase {
 
     private String createTrait(String guid) throws AtlasServiceException, JSONException {
         //add trait
-        String traitName = "PII_Trait" + RandomStringUtils.random(10);
+        //valid type names in v2 must consist of a letter followed by a sequence of letter, number, or _ characters
+        String traitName = "PII_Trait" + random();
         atlasClient.createTraitType(traitName);
 
         Struct traitInstance = new Struct(traitName);
