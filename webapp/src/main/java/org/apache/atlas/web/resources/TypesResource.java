@@ -26,7 +26,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.util.RestUtils;
+import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.rest.TypesREST;
 import org.apache.atlas.web.util.Servlets;
@@ -105,9 +105,9 @@ public class TypesResource {
                 LOG.debug("Creating type with definition {} ", typeDefinition);
             }
 
-            AtlasTypesDef createTypesDef  = RestUtils.toAtlasTypesDef(typeDefinition, typeRegistry);
+            AtlasTypesDef createTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef createdTypesDef = typesRest.createAtlasTypeDefs(createTypesDef);
-            List<String>  typeNames       = RestUtils.getTypeNames(createdTypesDef);
+            List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
                 final String name = typeNames.get(i);
@@ -173,9 +173,9 @@ public class TypesResource {
                 LOG.debug("Updating type with definition {} ", typeDefinition);
             }
 
-            AtlasTypesDef updateTypesDef  = RestUtils.toAtlasTypesDef(typeDefinition, typeRegistry);
+            AtlasTypesDef updateTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef updatedTypesDef = typesRest.updateAtlasTypeDefs(updateTypesDef);
-            List<String>  typeNames       = RestUtils.getTypeNames(updatedTypesDef);
+            List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
                 final String name = typeNames.get(i);
@@ -231,7 +231,7 @@ public class TypesResource {
         JSONObject response = new JSONObject();
 
         try {
-            TypesDef typesDef       = RestUtils.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
+            TypesDef typesDef       = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
             String   typeDefinition = TypesSerialization.toJson(typesDef);
 
             response.put(AtlasClient.TYPENAME, typeName);
@@ -290,7 +290,7 @@ public class TypesResource {
         TypesREST typesRest  = resourceContext.getResource(TypesREST.class);
         JSONObject response  = new JSONObject();
         try {
-            List<String> result = RestUtils.getTypeNames(typesRest.getTypeDefHeaders(request));
+            List<String> result = TypeConverterUtil.getTypeNames(typesRest.getTypeDefHeaders(request));
 
             response.put(AtlasClient.RESULTS, new JSONArray(result));
             response.put(AtlasClient.COUNT, result.size());

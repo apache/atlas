@@ -27,7 +27,9 @@ import org.apache.atlas.catalog.EntityTagResourceProvider;
 import org.apache.atlas.catalog.InstanceRequest;
 import org.apache.atlas.catalog.Result;
 import org.apache.atlas.catalog.exception.CatalogException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -63,8 +65,8 @@ public class EntityService extends BaseService {
     private final EntityTagResourceProvider entityTagResourceProvider;
 
     @Inject
-    public EntityService(MetadataService metadataService) throws AtlasException {
-        DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService);
+    public EntityService(MetadataService metadataService, AtlasTypeDefStore typeDefStore) throws AtlasBaseException {
+        DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService, typeDefStore);
         entityResourceProvider = new EntityResourceProvider(typeSystem);
         entityTagResourceProvider = new EntityTagResourceProvider(typeSystem);
     }

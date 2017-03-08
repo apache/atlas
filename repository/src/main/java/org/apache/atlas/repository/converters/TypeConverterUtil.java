@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.util;
+package org.apache.atlas.repository.converters;
 
 import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -63,36 +62,28 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-
-import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
-import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 
 
-public final class RestUtils {
-    private RestUtils() {}
-    private static final Logger LOG = LoggerFactory.getLogger(RestUtils.class);
+public final class TypeConverterUtil {
+    private TypeConverterUtil() {}
+    private static final Logger LOG = LoggerFactory.getLogger(TypeConverterUtil.class);
 
     public static TypesDef toTypesDef(AtlasType type, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         final TypesDef ret;
 
         if (type instanceof AtlasEnumType) {
-            ret = RestUtils.enumToTypesDef((AtlasEnumType)type);
+            ret = TypeConverterUtil.enumToTypesDef((AtlasEnumType) type);
         } else if (type instanceof AtlasEntityType) {
-            ret = RestUtils.entityToTypesDef((AtlasEntityType)type, typeRegistry);
+            ret = TypeConverterUtil.entityToTypesDef((AtlasEntityType) type, typeRegistry);
         } else if (type instanceof AtlasClassificationType) {
-            ret = RestUtils.classificationToTypesDef((AtlasClassificationType)type, typeRegistry);
+            ret = TypeConverterUtil.classificationToTypesDef((AtlasClassificationType) type, typeRegistry);
         } else if (type instanceof AtlasStructType) {
-            ret = RestUtils.structToTypesDef((AtlasStructType)type, typeRegistry);
+            ret = TypeConverterUtil.structToTypesDef((AtlasStructType) type, typeRegistry);
         } else {
             ret = new TypesDef();
         }
@@ -356,7 +347,7 @@ public final class RestUtils {
         return ret.toArray(new EnumValue[ret.size()]);
     }
 
-    private static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
+    public static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
         AtlasAttributeDef ret = new AtlasAttributeDef();
 
         ret.setName(attrDefinition.name);
