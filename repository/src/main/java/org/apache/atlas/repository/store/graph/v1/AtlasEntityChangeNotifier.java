@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -85,6 +86,10 @@ public class AtlasEntityChangeNotifier {
     }
 
     public void onClassificationAddedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
+        // Only new classifications need to be used for a partial full text string which can be
+        // appended to the existing fullText
+        updateFullTextMapping(entityId, classifications);
+
         ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
         List<ITypedStruct>          traits = toITypedStructs(classifications);
 
@@ -102,6 +107,9 @@ public class AtlasEntityChangeNotifier {
     }
 
     public void onClassificationDeletedFromEntity(String entityId, List<String> traitNames) throws AtlasBaseException {
+        // Since the entity has already been modified in the graph, we need to recursively remap the entity
+        doFullTextMapping(entityId);
+
         ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
 
         if (entity == null || CollectionUtils.isEmpty(traitNames)) {
@@ -202,12 +210,44 @@ public class AtlasEntityChangeNotifier {
             }
 
             try {
-                String fullText = fullTextMapperV2.map(guid);
+                String fullText = fullTextMapperV2.getIndexTextForEntity(guid);
 
                 GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
             } catch (AtlasBaseException e) {
                 LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }
         }
+    }
+
+    private void updateFullTextMapping(String entityId, List<AtlasClassification> classifications) {
+        try {
+            if(!AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
+                return;
+            }
+        } catch (AtlasException e) {
+            LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
+        }
+
+        if (StringUtils.isEmpty(entityId) || CollectionUtils.isEmpty(classifications)) {
+            return;
+        }
+        AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(entityId);
+
+        try {
+            String classificationFullText = fullTextMapperV2.getIndexTextForClassifications(entityId, classifications);
+            String existingFullText = (String) GraphHelper.getProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY);
+
+            String newFullText = existingFullText + " " + classificationFullText;
+            GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, newFullText);
+        } catch (AtlasBaseException e) {
+            LOG.error("FullText mapping failed for Vertex[ guid = {} ]", entityId, e);
+        }
+    }
+
+    private void doFullTextMapping(String guid) {
+        AtlasEntityHeader entityHeader = new AtlasEntityHeader();
+        entityHeader.setGuid(guid);
+
+        doFullTextMapping(Collections.singletonList(entityHeader));
     }
 }
