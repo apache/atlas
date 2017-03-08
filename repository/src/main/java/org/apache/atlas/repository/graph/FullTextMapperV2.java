@@ -54,7 +54,7 @@ public class FullTextMapperV2 {
 
     @Inject
     public FullTextMapperV2(AtlasTypeRegistry typeRegistry) {
-        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
+        entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
 
         Configuration configuration = null;
 
@@ -69,22 +69,41 @@ public class FullTextMapperV2 {
         }
     }
 
-    public String map(String guid) throws AtlasBaseException {
+    /**
+     * Map newly associated/defined classifications for the entity with given GUID
+     * @param guid Entity guid
+     * @param classifications new classifications added to the entity
+     * @return Full text string ONLY for the added classifications
+     * @throws AtlasBaseException
+     */
+    public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         String                 ret     = null;
-        RequestContext         context = RequestContext.get();
-        AtlasEntityWithExtInfo entity  = context.getInstanceV2(guid);
+        AtlasEntityWithExtInfo entityWithExtInfo  = getAndCacheEntity(guid);
 
-        if (entity == null) {
-            entity = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+        if (entityWithExtInfo != null) {
+            StringBuilder sb = new StringBuilder();
 
-            if (entity != null) {
-                context.cache(entity);
+            if (CollectionUtils.isNotEmpty(classifications)) {
+                for (AtlasClassification classification : classifications) {
+                    sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
+                    mapAttributes(classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>());
                 }
             }
+
+            ret = sb.toString();
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
+        }
+
+        return ret;
+    }
+
+    public String getIndexTextForEntity(String guid) throws AtlasBaseException {
+        String                 ret     = null;
+        AtlasEntityWithExtInfo entity  = getAndCacheEntity(guid);
 
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
@@ -178,5 +197,23 @@ public class FullTextMapperV2 {
         } else {
             sb.append(String.valueOf(value)).append(FULL_TEXT_DELIMITER);
         }
+    }
+
+    private AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
+        RequestContext         context = RequestContext.get();
+        AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
+
+        if (entityWithExtInfo == null) {
+            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+
+            if (entityWithExtInfo != null) {
+                context.cache(entityWithExtInfo);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
+        }
+        return entityWithExtInfo;
     }
 }
