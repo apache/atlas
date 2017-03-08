@@ -307,7 +307,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (traits) {
             traits.map(function(term) {
-                if (term.split(".").length > 1) {
+                var checkTagOrTerm = Utils.checkTagOrTerm(term);
+                if (checkTagOrTerm.term) {
                     terms.push({
                         deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + entityName + '" data-name="' + term + '" data-guid="' + obj.guid + '" ></i></a>',
                         url: _.unescape(term).split(".").join("/"),
@@ -322,7 +323,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 className += "showHideDiv hide";
             }
             obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
-            html += '<div class="' + className + '" dataterm-name="' + entityName + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
+            html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
         })
         if (terms.length > 1) {
             html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
@@ -349,7 +350,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (traits) {
             traits.map(function(tag) {
-                if (tag.split(".").length === 1) {
+                var checkTagOrTerm = Utils.checkTagOrTerm(tag);
+                if (checkTagOrTerm.tag) {
                     var className = "inputTag";
                     if (count >= 1) {
                         popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';

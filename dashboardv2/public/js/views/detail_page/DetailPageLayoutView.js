@@ -247,12 +247,11 @@ define(['require',
                     termData = "";
 
                 _.each(tagObject, function(val) {
-                    //var isTerm = Utils.checkTagOrTerm(val);
-                    if (val.typeName && val.typeName.split('.').length === 1) {
-                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
-                    }
-                    if (val.typeName && val.typeName.split('.').length > 1) {
+                    var checkTagOrTerm = Utils.checkTagOrTerm(val);
+                    if (checkTagOrTerm.term) {
                         termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val.typeName + '"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
+                    } else {
+                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
                     }
                 });
                 this.ui.tagList.find("span.inputTag").remove();
