@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasStructDefStoreV1;
@@ -178,7 +178,7 @@ public class RestUtilsTest {
         for (int i = 0; i < toConvert.size(); i++) {
             AtlasEntityDef entityDef = toConvert.get(i);
             AtlasEntityType entity = reg.getEntityTypeByName(entityDef.getName());
-            HierarchicalTypeDefinition<ClassType> converted = RestUtils.toTypesDef(entity, reg)
+            HierarchicalTypeDefinition<ClassType> converted = TypeConverterUtil.toTypesDef(entity, reg)
                     .classTypesAsJavaList().get(0);
             result.add(converted);
         }
@@ -205,7 +205,7 @@ public class RestUtilsTest {
 
         String json = TypesSerialization.toJson(toConvert);
         AtlasTypeRegistry emptyRegistry = new AtlasTypeRegistry();
-        AtlasTypesDef converted = RestUtils.toAtlasTypesDef(json, emptyRegistry);
+        AtlasTypesDef converted = TypeConverterUtil.toAtlasTypesDef(json, emptyRegistry);
         List<AtlasEntityDef> convertedEntityDefs = converted.getEntityDefs();
         return convertedEntityDefs;
     }

@@ -22,7 +22,9 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.catalog.exception.CatalogException;
 import org.apache.atlas.catalog.exception.InvalidPayloadException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -58,8 +60,8 @@ public class TaxonomyService extends BaseService {
     private ResourceProvider termResourceProvider;
 
     @Inject
-    public void setMetadataService(MetadataService metadataService) throws AtlasException {
-        DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService);
+    public void setMetadataService(MetadataService metadataService, AtlasTypeDefStore typeDefStore) throws AtlasBaseException {
+        DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService, typeDefStore);
         taxonomyResourceProvider = createTaxonomyResourceProvider(typeSystem);
         termResourceProvider = createTermResourceProvider(typeSystem);
     }

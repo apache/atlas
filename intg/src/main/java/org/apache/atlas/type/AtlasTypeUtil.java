@@ -121,10 +121,11 @@ public class AtlasTypeUtil {
     }
 
     public static void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
-        String typeName = typeDef.getName();
+        boolean isValidName = (typeDef instanceof AtlasClassificationDef) ? isValidTraitTypeName(typeDef.getName())
+            : isValidTypeName(typeDef.getName());
 
-        if (!isValidTypeName(typeName)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeName, typeDef.getCategory().name());
+        if (!isValidName) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
         }
     }
 
