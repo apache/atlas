@@ -57,6 +57,7 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.util.AttributeValueMap;
 import org.apache.atlas.util.IndexedInstance;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
@@ -611,6 +612,19 @@ public final class GraphHelper {
             traits.add(value);
         }
         return traits;
+    }
+
+    public static List<String> getSuperTypeNames(AtlasVertex<?,?> entityVertex) {
+        ArrayList<String>  superTypes     = new ArrayList<>();
+        Collection<String> propertyValues = entityVertex.getPropertyValues(Constants.SUPER_TYPES_PROPERTY_KEY, String.class);
+
+        if (CollectionUtils.isNotEmpty(propertyValues)) {
+            for(String value : propertyValues) {
+                superTypes.add(value);
+            }
+        }
+
+        return superTypes;
     }
 
     public static String getEdgeLabel(ITypedInstance typedInstance, AttributeInfo aInfo) throws AtlasException {
