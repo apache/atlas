@@ -28,9 +28,9 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -172,14 +172,16 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean entityExists(String guid) {
-        boolean ret = false;
+        boolean               ret     = false;
         Iterator<AtlasVertex> results = graph.query()
-                .has(Constants.GUID_PROPERTY_KEY, guid)
-                .has(Constants.SUPER_TYPES_PROPERTY_KEY, AtlasClient.DATA_SET_SUPER_TYPE)
-                .vertices().iterator();
+                                        .has(Constants.GUID_PROPERTY_KEY, guid)
+                                        .vertices().iterator();
 
         while (results.hasNext()) {
-            return true;
+            AtlasVertex  entityVertex = results.next();
+            List<String> superTypes   = GraphHelper.getSuperTypeNames(entityVertex);
+
+            ret = (CollectionUtils.isNotEmpty(superTypes)) ? superTypes.contains(AtlasClient.DATA_SET_SUPER_TYPE) : false;
         }
 
         return ret;
