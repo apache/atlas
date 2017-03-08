@@ -295,6 +295,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 fullName: value
             }
         }
+        if (value && _.isString(value)) {
+            value = {
+                typeName: value
+            }
+        }
         if (_.isObject(value)) {
             var name = "";
             if (value && value.$typeName$) {
@@ -306,11 +311,14 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 return {}
             }
             name = _.escape(name).split('.');
+
             var trem = false;
             if (value['taxonomy.namespace']) {
                 trem = true;
             } else if (value.values && value.values['taxonomy.namespace']) {
                 trem = true;
+            } else if (name.length > 1) {
+                trem = true; // Temp fix
             }
 
             if (trem) {
