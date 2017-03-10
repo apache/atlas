@@ -180,6 +180,16 @@ public class AtlasExportResult implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+    public void clear() {
+        if(this.data != null) {
+            this.data.clear();
+        }
+
+        if(this.metrics != null) {
+            this.metrics.clear();
+        }
+    }
+
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
@@ -233,6 +243,16 @@ public class AtlasExportResult implements Serializable {
         @Override
         public String toString() {
             return toString(new StringBuilder()).toString();
+        }
+
+        public void clear() {
+            if(this.typesDef!= null) {
+                this.typesDef.clear();
+            }
+
+            if(this.entityCreationOrder != null) {
+                this.entityCreationOrder.clear();
+            }
         }
     }
 }

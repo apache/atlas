@@ -51,7 +51,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.inject.Singleton;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
@@ -309,7 +308,7 @@ public class AdminResource {
 
         ZipSink exportSink = null;
         try {
-            exportSink = new ZipSink();
+            exportSink = new ZipSink(httpServletResponse.getOutputStream());
             ExportService exportService = new ExportService(this.typeRegistry);
 
             AtlasExportResult result = exportService.run(exportSink, request, Servlets.getUserName(httpServletRequest),
@@ -318,14 +317,13 @@ public class AdminResource {
 
             exportSink.close();
 
-            ServletOutputStream outStream = httpServletResponse.getOutputStream();
-            exportSink.writeTo(outStream);
-
+            httpServletResponse.addHeader("Content-Encoding","gzip");
             httpServletResponse.setContentType("application/zip");
             httpServletResponse.setHeader("Content-Disposition",
                                           "attachment; filename=" + result.getClass().getSimpleName());
+            httpServletResponse.setHeader("Transfer-Encoding", "chunked");
 
-            outStream.flush();
+            httpServletResponse.getOutputStream().flush();
             return Response.ok().build();
         } catch (IOException excp) {
             LOG.error("export() failed", excp);

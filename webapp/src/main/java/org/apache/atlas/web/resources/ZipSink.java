@@ -18,18 +18,16 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -37,15 +35,9 @@ public class ZipSink {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSink.class);
 
     private ZipOutputStream zipOutputStream;
-    private ByteArrayOutputStream byteArrayOutputStream;
 
-    public ZipSink() {
-        init();
-    }
-
-    private void init() {
-        byteArrayOutputStream = new ByteArrayOutputStream();
-        zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
+    public ZipSink(OutputStream outputStream) {
+        zipOutputStream = new ZipOutputStream(outputStream);
     }
 
     public void add(AtlasEntity entity) throws AtlasBaseException {
@@ -66,10 +58,6 @@ public class ZipSink {
     public void setExportOrder(List<String> result) throws AtlasBaseException {
         String jsonData = convertToJSON(result);
         saveToZip(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME, jsonData);
-    }
-
-    public void writeTo(OutputStream stream) throws IOException {
-        byteArrayOutputStream.writeTo(stream);
     }
 
     public void close() {
