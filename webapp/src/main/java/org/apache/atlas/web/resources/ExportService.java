@@ -105,8 +105,9 @@ public class ExportService {
             LOG.error("Operation failed: ", ex);
         } finally {
             atlasGraph.releaseGremlinScriptEngine(context.scriptEngine);
-
             LOG.info("<== export(user={}, from={}): status {}", userName, requestingIP, context.result.getOperationStatus());
+            context.clear();
+            result.clear();
         }
 
         return context.result;
@@ -124,8 +125,8 @@ public class ExportService {
                 processEntity(entity, context, TraversalDirection.UNKNOWN);
             }
 
-            while (!context.guidsToProcess.isEmpty()) {
-                String             guid      = context.guidsToProcess.remove(0);
+            while (!context.guidsToProcessIsEmpty()) {
+                String             guid      = context.guidsToProcessRemove(0);
                 TraversalDirection direction = context.guidDirection.get(guid);
                 AtlasEntity        entity    = entityGraphRetriever.toAtlasEntity(guid);
 
@@ -245,7 +246,7 @@ public class ExportService {
 
     private void getEntityGuidsForConnectedFetch(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
         if (direction == TraversalDirection.UNKNOWN) {
-            getConnectedEntityGuids(entity, context, TraversalDirection.OUTWARD, TraversalDirection.OUTWARD);
+            getConnectedEntityGuids(entity, context, TraversalDirection.OUTWARD, TraversalDirection.INWARD);
         } else {
             if (isProcessEntity(entity)) {
                 direction = TraversalDirection.OUTWARD;
@@ -271,7 +272,7 @@ public class ExportService {
             String query = getQueryForTraversalDirection(direction);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
+                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcessSize(), query);
             }
 
             context.bindings.clear();
@@ -289,8 +290,8 @@ public class ExportService {
                 if (currentDirection == null) {
                     context.guidDirection.put(guid, direction);
 
-                    if (!context.guidsToProcess.contains(guid)) {
-                        context.guidsToProcess.add(guid);
+                    if (!context.guidsToProcessContains(guid)) {
+                        context.guidsToProcessAdd(guid);
                     }
                 } else if (currentDirection == TraversalDirection.OUTWARD && direction == TraversalDirection.INWARD) {
                     context.guidDirection.put(guid, direction);
@@ -298,14 +299,14 @@ public class ExportService {
                     // the entity should be reprocessed to get inward entities
                     context.guidsProcessed.remove(guid);
 
-                    if (!context.guidsToProcess.contains(guid)) {
-                        context.guidsToProcess.add(guid);
+                    if (!context.guidsToProcessContains(guid)) {
+                        context.guidsToProcessAdd(guid);
                     }
                 }
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), guids.size(), context.guidsToProcess.size());
+                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), guids.size(), context.guidsToProcessSize());
             }
         }
     }
@@ -323,7 +324,7 @@ public class ExportService {
 
     private void getEntityGuidsForFullFetch(AtlasEntity entity, ExportContext context) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+            LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcessSize());
         }
 
         String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
@@ -339,8 +340,8 @@ public class ExportService {
 
         for (String guid : result) {
             if (!context.guidsProcessed.contains(guid)) {
-                if (!context.guidsToProcess.contains(guid)) {
-                    context.guidsToProcess.add(guid);
+                if (!context.guidsToProcessContains(guid)) {
+                    context.guidsToProcessAdd(guid);
                 }
 
                 context.guidDirection.put(guid, TraversalDirection.BOTH);
@@ -348,7 +349,7 @@ public class ExportService {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
+            LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcessSize());
         }
     }
 
@@ -434,7 +435,8 @@ public class ExportService {
 
     private class ExportContext {
         final Set<String>                     guidsProcessed = new HashSet<>();
-        final List<String>                    guidsToProcess = new ArrayList<>();
+        private final List<String>            guidsToProcessList = new ArrayList<>();
+        private final Set<String>             guidsToProcessSet = new HashSet<>();
         final Map<String, TraversalDirection> guidDirection  = new HashMap<>();
         final AtlasExportResult               result;
         final ZipSink                         sink;
@@ -476,6 +478,36 @@ public class ExportService {
             }
 
             return matchType;
+        }
+
+        public void clear() {
+            guidsToProcessList.clear();
+            guidsToProcessSet.clear();
+            guidsProcessed.clear();
+            guidDirection.clear();
+        }
+
+        public boolean guidsToProcessIsEmpty() {
+            return this.guidsToProcessList.isEmpty();
+        }
+
+        public String guidsToProcessRemove(int i) {
+            String s = this.guidsToProcessList.remove(i);
+            guidsToProcessSet.remove(s);
+            return s;
+        }
+
+        public int guidsToProcessSize() {
+            return this.guidsToProcessList.size();
+        }
+
+        public boolean guidsToProcessContains(String guid) {
+            return guidsToProcessSet.contains(guid);
+        }
+
+        public void guidsToProcessAdd(String guid) {
+            this.guidsToProcessList.add(guid);
+            guidsToProcessSet.add(guid);
         }
     }
 }
