@@ -144,18 +144,17 @@ define(['require',
                 };
                 that.collection.fullCollection.sort().each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
-                    if (name.indexOf(".") > -1) {
-                        return;
-                    }
-                    if (searchString) {
-                        if (name.search(new RegExp(searchString, "i")) != -1) {
-                            // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name=" `' + name + '`" >' + name + '</a></li>';
+                    var checkTagOrTerm = Utils.checkTagOrTerm(name);
+                    if (checkTagOrTerm.tag) {
+                        if (searchString) {
+                            if (name.search(new RegExp(searchString, "i")) != -1) {
+                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="`' + name + '`" >' + name + '</a></li>';
+                            } else {
+                                return;
+                            }
                         } else {
-                            return;
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="`' + name + '`">' + name + '</a></li>';
                         }
-                    } else {
-                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name=" `' + name + '`">' + name + '</a></li>';
                     }
                 });
                 this.ui.tagsParent.empty().html(str);

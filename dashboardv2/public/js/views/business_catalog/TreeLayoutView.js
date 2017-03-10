@@ -377,7 +377,6 @@ define(['require',
                         }
                         var name = Utils.checkTagOrTerm(model.get('name'), true);
                         if (name.name) {
-                            // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
                             if (that.viewBased) {
                                 parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
                             } else {

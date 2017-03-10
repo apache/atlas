@@ -74,9 +74,9 @@ define(['require',
                             }
                             var obj = {
                                 termName: termName,
-                                guid: that.multiple[i].id.id,
-                                deletedEntity: Enums.entityStateReadOnly[that.multiple[i].id.state],
-                                entityName: that.multiple[i].model.get('name')
+                                guid: that.multiple[i].id,
+                                deletedEntity: Enums.entityStateReadOnly[that.multiple[i].model.status],
+                                entityName: Utils.getName(that.multiple[i].model)
                             };
                             if (obj.deletedEntity) {
                                 Utils.notifyError({

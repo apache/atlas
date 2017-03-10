@@ -172,11 +172,15 @@ define(['require',
                     return Utils.getName(model.toJSON(), 'name').toLowerCase();
                 }
                 this.typeHeaders.fullCollection.sort().each(function(model) {
+                    var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY') {
-                        typeStr += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
+                        typeStr += '<option>' + (name) + '</option>';
                     }
                     if (model.get('category') == 'CLASSIFICATION') {
-                        tagStr += '<option>' + (Utils.getName(model.toJSON(), 'name')) + '</option>';
+                        var checkTagOrTerm = Utils.checkTagOrTerm(name);
+                        if (checkTagOrTerm.tag) {
+                            tagStr += '<option>' + (name) + '</option>';
+                        }
                     }
                 });
                 that.ui.typeLov.html(typeStr);
