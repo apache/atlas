@@ -98,7 +98,11 @@ define(['require',
                     that = this;
                 this.ui.parentTag.empty();
                 this.tagCollection.fullCollection.each(function(val) {
-                    str += '<option>' + (Utils.getName(val.toJSON())) + '</option>';
+                    var name = Utils.getName(val.toJSON()),
+                        checkTagOrTerm = Utils.checkTagOrTerm(name);
+                    if (checkTagOrTerm.tag) {
+                        str += '<option>' + (name) + '</option>';
+                    }
                 });
                 that.ui.parentTag.html(str);
                 // IE9 support

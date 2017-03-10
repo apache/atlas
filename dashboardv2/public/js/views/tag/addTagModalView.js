@@ -193,6 +193,9 @@ define(['require',
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             this.collection.fullCollection.sort().each(function(obj, key) {
                 var name = Utils.getName(obj.toJSON(), 'name');
+                if (name === "TaxonomyTerm") {
+                    return;
+                }
                 // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
                 if (_.indexOf(that.tagList, obj.get('name')) === -1) {
                     str += '<option>' + name + '</option>';

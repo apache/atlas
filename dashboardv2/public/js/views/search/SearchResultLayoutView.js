@@ -294,7 +294,7 @@ define(['require',
                         if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                             createEntityTag = "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
-                        that.$('.searchResult').html(resultData + multiAssignDataTag + multiAssignDataTerm + createEntityTag);
+                        that.$('.searchResult').html(resultData + multiAssignDataTerm + multiAssignDataTag + createEntityTag);
                     },
                     silent: true,
                     reset: true
