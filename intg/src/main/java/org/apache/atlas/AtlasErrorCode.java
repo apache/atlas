@@ -67,6 +67,7 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS-400-00-026", "Invalid lineage query parameters passed {0}: {1}"),
     ATTRIBUTE_UPDATE_NOT_SUPPORTED(400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported"),
 	INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
+    BAD_REQUEST(400, "ATLAS-400-00-020", "{0}"),
 
      // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
@@ -78,11 +79,12 @@ public enum AtlasErrorCode {
     CLASSIFICATION_NOT_FOUND(404, "ATLAS-404-00-008", "Given classification {0} was invalid"),
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS-404-00-009", "Instance {0} with unique attribute {1} does not exist"),
     REFERENCED_ENTITY_NOT_FOUND(404, "ATLAS-404-00-00A", "Referenced entity {0} is not found"),
+    INSTANCE_NOT_FOUND(404, "ATLAS-404-00-00B", "Given instance is invalid/not found: {0}"),
 
      // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
-    INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "Given entity {0} already exists"),
+    INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
 
      // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

@@ -45,6 +45,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
@@ -199,19 +200,23 @@ public class AtlasInstanceConverter {
     }
 
     public static AtlasBaseException toAtlasBaseException(AtlasException e) {
+        if (e instanceof EntityExistsException) {
+            return new AtlasBaseException(AtlasErrorCode.INSTANCE_ALREADY_EXISTS, e.getMessage());
+        }
+
         if ( e instanceof EntityNotFoundException || e instanceof TraitNotFoundException) {
-            return new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, e);
+            return new AtlasBaseException(AtlasErrorCode.INSTANCE_NOT_FOUND, e.getMessage());
         }
 
         if ( e instanceof TypeNotFoundException) {
-            return new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
+            return new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e.getMessage());
         }
 
         if (e instanceof ValueConversionException) {
             return new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, e, e.getMessage());
         }
 
-        return new AtlasBaseException(e);
+        return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
     }
 
 
