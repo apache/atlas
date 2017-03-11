@@ -247,16 +247,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             final Map<String, Object> bindings   = new HashMap<>();
             String                    basicQuery = "g.V()";
 
-            if (typeNames != null) {
-                bindings.put("typeNames", typeNames);
-
-                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
-            }
-
             if (classificationNames != null) {
                 bindings.put("traitNames", classificationNames);
 
                 basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER);
+            }
+
+            if (typeNames != null) {
+                bindings.put("typeNames", typeNames);
+
+                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
             }
 
             bindings.put("startIdx", params.offset());
