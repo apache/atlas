@@ -120,6 +120,7 @@ define(['require',
                     obj['label'] = relationObj.displayText.trunc(18);
                     obj['toolTipLabel'] = relationObj.displayText;
                     obj['id'] = relationObj.guid;
+                    obj['isLineage'] = true;
                     obj['queryText'] = relationObj.queryText;
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
@@ -141,10 +142,34 @@ define(['require',
                         that.fromToObj[obj.toEntityId] = makeNodeObj(guidEntityMap[obj.toEntityId]);
                         that.g.setNode(obj.toEntityId, that.fromToObj[obj.toEntityId]);
                     }
-                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis' });
+                    var styleObj = {
+                        fill: 'none',
+                        stroke: '#8bc152'
+                    }
+                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + "", 'styleObj': styleObj });
                 });
+
+                if (this.fromToObj[this.guid]) {
+                    this.fromToObj[this.guid]['isLineage'] = false;
+                    this.checkForLineageOrImpactFlag(relations, this.guid);
+                }
                 if (this.asyncFetchCounter == 0) {
                     this.createGraph();
+                }
+            },
+            checkForLineageOrImpactFlag: function(relations, guid) {
+                var that = this,
+                    nodeFound = _.where(relations, { 'fromEntityId': guid });
+                if (nodeFound.length) {
+                    _.each(nodeFound, function(node) {
+                        that.fromToObj[node.toEntityId]['isLineage'] = false;
+                        var styleObj = {
+                            fill: 'none',
+                            stroke: '#fb4200'
+                        }
+                        that.g.setEdge(node.fromEntityId, node.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + "", 'styleObj': styleObj });
+                        that.checkForLineageOrImpactFlag(relations, node.toEntityId);
+                    });
                 }
             },
             createGraph: function() {
@@ -175,8 +200,8 @@ define(['require',
                         .attr("d", "M 0 0 L 10 5 L 0 10 z")
                         .style("stroke-width", 1)
                         .style("stroke-dasharray", "1,0")
-                        .style("fill", "#cccccc")
-                        .style("stroke", "#cccccc");
+                        .style("fill", edge.styleObj.stroke)
+                        .style("stroke", edge.styleObj.stroke);
                     dagreD3.util.applyStyle(path, edge[type + "Style"]);
                 };
                 render.shapes().img = function circle(parent, bbox, node) {
@@ -273,9 +298,14 @@ define(['require',
                 d3.selectAll('button.zoomButton').on('click', zoomClick);
                 var tooltip = d3Tip()
                     .attr('class', 'd3-tip')
+                    .offset([-13, 0])
                     .html(function(d) {
                         var value = that.g.node(d);
-                        var htmlStr = "<h5 class='text-center'><span style='color:#359f89'>" + value.toolTipLabel + "</span></h5> ";
+                        var htmlStr = "";
+                        if (value.id !== that.guid) {
+                            htmlStr = "<h5 style='text-align: center;'>" + (value.isLineage ? "Lineage" : "Impact") + "</h5>";
+                        }
+                        htmlStr += "<h5 class='text-center'><span style='color:#359f89'>" + value.toolTipLabel + "</span></h5> ";
                         if (value.typeName) {
                             htmlStr += "<h5 class='text-center'><span>(" + value.typeName + ")</span></h5> ";
                         }
