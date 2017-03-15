@@ -352,11 +352,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             traits.map(function(tag) {
                 var checkTagOrTerm = Utils.checkTagOrTerm(tag);
                 if (checkTagOrTerm.tag) {
-                    var className = "inputTag";
+                    var className = "inputTag",
+                        tagString = '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
                     if (count >= 1) {
-                        popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                        popTag += tagString;
                     } else {
-                        atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + entityName + '" data-name="' + tag + '"  data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                        atags += tagString;
                     }
                     ++count;
                 }

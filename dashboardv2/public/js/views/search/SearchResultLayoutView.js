@@ -172,12 +172,17 @@ define(['require',
                             });
                         }
                     });
+
                     if (this.arr.length > 0) {
-                        this.$('.searchResult').find(".inputAssignTag.multiSelect").show();
-                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").show();
+                        if (Globals.taxonomy) {
+                            this.$('.multiSelectTerm').show();
+                        }
+                        this.$('.multiSelectTag').show();
                     } else {
-                        this.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
-                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").hide();
+                        if (Globals.taxonomy) {
+                            this.$('.multiSelectTerm').hide();
+                        }
+                        this.$('.multiSelectTag').hide();
                     }
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
@@ -283,18 +288,21 @@ define(['require',
                         if (that.searchCollection.models.length) {
                             that.renderTableLayoutView();
                         }
-                        var resultData = 'Results for <b>' + _.escape(that.searchCollection.queryParams.query) + '</b>';
-                        var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>';
-                        var resultText = that.searchCollection.queryParams.query;
-                        var multiAssignDataTerm = "",
-                            createEntityTag = "";
-                        if (Globals.taxonomy) {
-                            multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
+                        var resultArr = [];
+                        if (that.searchCollection.queryParams.typeName) {
+                            resultArr.push(that.searchCollection.queryParams.typeName)
                         }
+                        if (that.searchCollection.queryParams.classification) {
+                            resultArr.push(that.searchCollection.queryParams.classification)
+                        }
+                        if (that.searchCollection.queryParams.query) {
+                            resultArr.push(that.searchCollection.queryParams.query)
+                        }
+                        var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
                         if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
-                            createEntityTag = "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+                            searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
-                        that.$('.searchResult').html(resultData + multiAssignDataTerm + multiAssignDataTag + createEntityTag);
+                        that.$('.searchResult').html(searchString);
                     },
                     silent: true,
                     reset: true
@@ -309,7 +317,7 @@ define(['require',
                         columns: columns
                     })));
                     that.ui.paginationDiv.show();
-                    that.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
+                    that.$(".ellipsis .inputAssignTag").hide();
                     that.renderBreadcrumb();
                 });
             },
@@ -501,12 +509,12 @@ define(['require',
             showLoader: function() {
                 this.$('.fontLoader').show();
                 this.$('.searchTable').hide();
-                this.$('.searchResult').hide();
+                this.$('.ellipsis').hide();
             },
             hideLoader: function() {
                 this.$('.fontLoader').hide();
                 this.$('.searchTable').show();
-                this.$('.searchResult').show();
+                this.$('.ellipsis').show();
             },
             checkedValue: function(e) {
                 var guid = "",
