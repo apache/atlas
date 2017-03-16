@@ -424,7 +424,7 @@ public class EntityREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
-                                                               (entities == null || entities.getEntities() == null ? 0 : entities.getEntities().size()) + ")");
+                                                               (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
             EntityStream entityStream = new AtlasEntityStream(entities);
