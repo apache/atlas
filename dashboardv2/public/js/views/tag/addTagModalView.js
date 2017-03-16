@@ -66,7 +66,7 @@ define(['require',
                 var tagAttributeNames = this.$(".attrName");
                 tagAttributeNames.each(function(i, item) {
                     var selection = $(item).data("key");
-                    tagAttributes[selection] = $(item).val();
+                    tagAttributes[selection] = $(item).val() || null;
                 });
                 var obj = {
                     tagName: tagName,
