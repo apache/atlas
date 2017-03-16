@@ -290,7 +290,9 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         ScriptEngine        engine  = manager.getEngineByName("gremlin-groovy");
 
         //Do not cache script compilations due to memory implications
-        engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
+        if (engine != null) {
+            engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
+        }
 
         return engine;
     }
