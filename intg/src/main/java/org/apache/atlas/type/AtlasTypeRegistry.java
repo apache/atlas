@@ -100,7 +100,7 @@ public class AtlasTypeRegistry {
 
                 ret = new AtlasMapType(keyTypeName, valueTypeName, this);
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
             }
         }
 
