@@ -42,7 +42,7 @@ public final class StormTopologyUtil {
     private StormTopologyUtil() {
     }
 
-    public static Set<String> getTerminalUserBoltNames(StormTopology topology) throws Exception {
+    public static Set<String> getTerminalUserBoltNames(StormTopology topology) {
         Set<String> terminalBolts = new HashSet<>();
         Set<String> inputs = new HashSet<>();
         for (Map.Entry<String, Bolt> entry : topology.get_bolts().entrySet()) {

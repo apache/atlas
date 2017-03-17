@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.params;
 
+import org.apache.atlas.exception.AtlasBaseException;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -100,7 +102,7 @@ public abstract class AbstractParam<T> {
      * @return {@code input}, parsed as an instance of {@code T}
      * @throws Exception if there is an error parsing the input
      */
-    protected abstract T parse(String input) throws Exception;
+    protected abstract T parse(String input) throws AtlasBaseException;
 
     /**
      * Returns the underlying value.

@@ -19,6 +19,8 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -88,9 +90,13 @@ public class EmbeddedServer {
         return connector;
     }
 
-    public void start() throws Exception {
-        server.start();
-        server.join();
+    public void start() throws AtlasBaseException {
+        try {
+            server.start();
+            server.join();
+        } catch(Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.EMBEDDED_SERVER_START, e);
+        }
     }
 
     public void stop() {

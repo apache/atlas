@@ -18,6 +18,9 @@
 
 package org.apache.atlas.web.params;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+
 /**
  * A parameter encapsulating boolean values. If the query parameter value is {@code "true"},
  * regardless of case, the returned value is {@link Boolean#TRUE}. If the query parameter value is
@@ -36,13 +39,13 @@ public class BooleanParam extends AbstractParam<Boolean> {
     }
 
     @Override
-    protected Boolean parse(String input) throws Exception {
+    protected Boolean parse(String input) throws AtlasBaseException {
         if ("true".equalsIgnoreCase(input)) {
             return Boolean.TRUE;
         }
         if ("false".equalsIgnoreCase(input)) {
             return Boolean.FALSE;
         }
-        throw new Exception();
+        throw new AtlasBaseException(AtlasErrorCode.PARAMETER_PARSING_FAILED, "Boolean.parse: input=" + input);
     }
 }
