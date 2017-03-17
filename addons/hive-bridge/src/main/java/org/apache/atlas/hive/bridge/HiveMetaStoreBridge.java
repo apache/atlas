@@ -18,16 +18,15 @@
 
 package org.apache.atlas.hive.bridge;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.hook.AtlasHookException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -55,8 +54,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.ClientResponse;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store
@@ -420,7 +420,7 @@ public class HiveMetaStoreBridge {
      * @throws Exception
      */
     public Referenceable createTableInstance(Referenceable dbReference, Table hiveTable)
-            throws Exception {
+            throws AtlasHookException {
         return createOrUpdateTableInstance(dbReference, null, hiveTable);
     }
 
@@ -429,7 +429,7 @@ public class HiveMetaStoreBridge {
     }
 
     private Referenceable createOrUpdateTableInstance(Referenceable dbReference, Referenceable tableReference,
-                                                      final Table hiveTable) throws Exception {
+                                                      final Table hiveTable) throws AtlasHookException {
         LOG.info("Importing objects from {}.{}", hiveTable.getDbName(), hiveTable.getTableName());
 
         if (tableReference == null) {
@@ -494,22 +494,26 @@ public class HiveMetaStoreBridge {
         return entityQualifiedName + "_storage";
     }
 
-    private Referenceable registerTable(Referenceable dbReference, Table table) throws Exception {
-        String dbName = table.getDbName();
-        String tableName = table.getTableName();
-        LOG.info("Attempting to register table [{}]", tableName);
-        Referenceable tableReference = getTableReference(table);
-        LOG.info("Found result {}", tableReference);
-        if (tableReference == null) {
-            tableReference = createTableInstance(dbReference, table);
-            tableReference = registerInstance(tableReference);
-        } else {
-            LOG.info("Table {}.{} is already registered with id {}. Updating entity.", dbName, tableName,
-                    tableReference.getId().id);
-            tableReference = createOrUpdateTableInstance(dbReference, tableReference, table);
-            updateInstance(tableReference);
+    private Referenceable registerTable(Referenceable dbReference, Table table) throws AtlasHookException {
+        try {
+            String dbName = table.getDbName();
+            String tableName = table.getTableName();
+            LOG.info("Attempting to register table [{}]", tableName);
+            Referenceable tableReference = getTableReference(table);
+            LOG.info("Found result {}", tableReference);
+            if (tableReference == null) {
+                tableReference = createTableInstance(dbReference, table);
+                tableReference = registerInstance(tableReference);
+            } else {
+                LOG.info("Table {}.{} is already registered with id {}. Updating entity.", dbName, tableName,
+                        tableReference.getId().id);
+                tableReference = createOrUpdateTableInstance(dbReference, tableReference, table);
+                updateInstance(tableReference);
+            }
+            return tableReference;
+        } catch (Exception e) {
+            throw new AtlasHookException("HiveMetaStoreBridge.getStorageDescQFName() failed.", e);
         }
-        return tableReference;
     }
 
     private void updateInstance(Referenceable referenceable) throws AtlasServiceException {
@@ -523,7 +527,7 @@ public class HiveMetaStoreBridge {
     }
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,
-        String sdQualifiedName, Id tableId) throws Exception {
+        String sdQualifiedName, Id tableId) throws AtlasHookException {
         LOG.debug("Filling storage descriptor information for {}", storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -590,7 +594,7 @@ public class HiveMetaStoreBridge {
         return String.format("%s.%s@%s", tableName, colName.toLowerCase(), clusterName);
     }
 
-    public List<Referenceable> getColumns(List<FieldSchema> schemaList, Referenceable tableReference) throws Exception {
+    public List<Referenceable> getColumns(List<FieldSchema> schemaList, Referenceable tableReference) throws AtlasHookException {
         List<Referenceable> colList = new ArrayList<>();
         int columnPosition = 0;
         for (FieldSchema fs : schemaList) {
@@ -612,8 +616,8 @@ public class HiveMetaStoreBridge {
     }
 
 
-    public static void main(String[] args) throws Exception {
-
+    public static void main(String[] args) throws AtlasHookException {
+        try {
         Configuration atlasConf = ApplicationProperties.get();
         String[] atlasEndpoint = atlasConf.getStringArray(ATLAS_ENDPOINT);
         if (atlasEndpoint == null || atlasEndpoint.length == 0){
@@ -640,5 +644,9 @@ public class HiveMetaStoreBridge {
 
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClient);
         hiveMetaStoreBridge.importHiveMetadata(failOnError);
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveMetaStoreBridge.main() failed.", e);
+        }
     }
 }

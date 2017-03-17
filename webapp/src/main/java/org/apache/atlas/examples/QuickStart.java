@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -323,39 +325,48 @@ public class QuickStart {
     }
 
     Id database(String name, String description, String owner, String locationUri, String... traitNames)
-    throws Exception {
-        Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("description", description);
-        referenceable.set("owner", owner);
-        referenceable.set("locationUri", locationUri);
-        referenceable.set("createTime", System.currentTimeMillis());
+            throws AtlasBaseException {
+        try {
+            Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
+            referenceable.set("name", name);
+            referenceable.set("description", description);
+            referenceable.set("owner", owner);
+            referenceable.set("locationUri", locationUri);
+            referenceable.set("createTime", System.currentTimeMillis());
 
-        return createInstance(referenceable);
+            return createInstance(referenceable);
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, String.format("%s database entity creation failed", name));
+        }
     }
 
-    Referenceable rawStorageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed)
-    throws Exception {
-        Referenceable referenceable = new Referenceable(STORAGE_DESC_TYPE);
-        referenceable.set("location", location);
-        referenceable.set("inputFormat", inputFormat);
-        referenceable.set("outputFormat", outputFormat);
-        referenceable.set("compressed", compressed);
+    Referenceable rawStorageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed) {
+            Referenceable referenceable = new Referenceable(STORAGE_DESC_TYPE);
+            referenceable.set("location", location);
+            referenceable.set("inputFormat", inputFormat);
+            referenceable.set("outputFormat", outputFormat);
+            referenceable.set("compressed", compressed);
 
-        return referenceable;
+            return referenceable;
     }
 
-    Referenceable rawColumn(String name, String dataType, String comment, String... traitNames) throws Exception {
-        Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("dataType", dataType);
-        referenceable.set("comment", comment);
+    Referenceable rawColumn(String name, String dataType, String comment, String... traitNames) throws AtlasBaseException {
+        try {
+            Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
+            referenceable.set("name", name);
+            referenceable.set("dataType", dataType);
+            referenceable.set("comment", comment);
 
-        return referenceable;
+            return referenceable;
+        }
+        catch(Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, String.format("%s, column entity creation failed", name));
+        }
     }
 
     Id table(String name, String description, Id dbId, Referenceable sd, String owner, String tableType,
-            List<Referenceable> columns, String... traitNames) throws Exception {
+            List<Referenceable> columns, String... traitNames) throws AtlasBaseException {
+        try {
         Referenceable referenceable = new Referenceable(TABLE_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
@@ -370,46 +381,61 @@ public class QuickStart {
         referenceable.set("columns", columns);
 
         return createInstance(referenceable);
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, String.format("%s table entity creation failed", name));
+        }
     }
 
     Id loadProcess(String name, String description, String user, List<Id> inputTables, List<Id> outputTables,
-            String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames)
-    throws Exception {
-        Referenceable referenceable = new Referenceable(LOAD_PROCESS_TYPE, traitNames);
-        // super type attributes
-        referenceable.set(AtlasClient.NAME, name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        referenceable.set("description", description);
-        referenceable.set(INPUTS_ATTRIBUTE, inputTables);
-        referenceable.set(OUTPUTS_ATTRIBUTE, outputTables);
+                   String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames)
+            throws AtlasBaseException {
+        try {
+            Referenceable referenceable = new Referenceable(LOAD_PROCESS_TYPE, traitNames);
+            // super type attributes
+            referenceable.set(AtlasClient.NAME, name);
+            referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+            referenceable.set("description", description);
+            referenceable.set(INPUTS_ATTRIBUTE, inputTables);
+            referenceable.set(OUTPUTS_ATTRIBUTE, outputTables);
 
-        referenceable.set("user", user);
-        referenceable.set("startTime", System.currentTimeMillis());
-        referenceable.set("endTime", System.currentTimeMillis() + 10000);
+            referenceable.set("user", user);
+            referenceable.set("startTime", System.currentTimeMillis());
+            referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        referenceable.set("queryText", queryText);
-        referenceable.set("queryPlan", queryPlan);
-        referenceable.set("queryId", queryId);
-        referenceable.set("queryGraph", queryGraph);
+            referenceable.set("queryText", queryText);
+            referenceable.set("queryPlan", queryPlan);
+            referenceable.set("queryId", queryId);
+            referenceable.set("queryGraph", queryGraph);
 
-        return createInstance(referenceable);
+            return createInstance(referenceable);
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, String.format("%s process entity creation failed", name));
+        }
     }
 
-    Id view(String name, Id dbId, List<Id> inputTables, String... traitNames) throws Exception {
-        Referenceable referenceable = new Referenceable(VIEW_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        referenceable.set("db", dbId);
+    Id view(String name, Id dbId, List<Id> inputTables, String... traitNames) throws AtlasBaseException {
+        try {
+            Referenceable referenceable = new Referenceable(VIEW_TYPE, traitNames);
+            referenceable.set("name", name);
+            referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+            referenceable.set("db", dbId);
 
-        referenceable.set(INPUT_TABLES_ATTRIBUTE, inputTables);
+            referenceable.set(INPUT_TABLES_ATTRIBUTE, inputTables);
 
-        return createInstance(referenceable);
+            return createInstance(referenceable);
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, String.format("%s Id creation", name));
+        }
     }
 
-    private void verifyTypesCreated() throws Exception {
-        List<String> types = metadataServiceClient.listTypes();
-        for (String type : TYPES) {
-            assert types.contains(type);
+    private void verifyTypesCreated() throws AtlasBaseException {
+        try {
+            List<String> types = metadataServiceClient.listTypes();
+            for (String type : TYPES) {
+                assert types.contains(type);
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, "view creation failed.");
         }
     }
 
@@ -461,14 +487,18 @@ public class QuickStart {
                 "from DataSet", "from Process",};
     }
 
-    private void search() throws Exception {
-        for (String dslQuery : getDSLQueries()) {
-            JSONArray results = metadataServiceClient.search(dslQuery, 10, 0);
-            if (results != null) {
-                System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
-            } else {
-                System.out.println("query [" + dslQuery + "] failed, results:" + results);
+    private void search() throws AtlasBaseException {
+        try {
+            for (String dslQuery : getDSLQueries()) {
+                JSONArray results = metadataServiceClient.search(dslQuery, 10, 0);
+                if (results != null) {
+                    System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
+                } else {
+                    System.out.println("query [" + dslQuery + "] failed, results:" + results);
+                }
             }
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, "one or more dsl queries failed");
         }
     }
 }

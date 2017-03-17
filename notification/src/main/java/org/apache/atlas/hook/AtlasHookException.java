@@ -15,25 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.atlas.web.params;
-
-import org.apache.atlas.exception.AtlasBaseException;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+package org.apache.atlas.hook;
 
 /**
- * A parameter encapsulating date/time values. All non-parsable values will return a {@code 400 Bad
- * Request} response. All values returned are in UTC.
+ * Exception class for Atlas Hooks.
  */
-public class DateTimeParam extends AbstractParam<DateTime> {
+public class AtlasHookException extends Exception {
 
-    public DateTimeParam(String input) {
-        super(input);
+    public AtlasHookException() {
     }
 
-    @Override
-    protected DateTime parse(String input) throws AtlasBaseException {
-            return new DateTime(input, DateTimeZone.UTC);
+    public AtlasHookException(String message) {
+        super(message);
+    }
+
+    public AtlasHookException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public AtlasHookException(Throwable cause) {
+        super(cause);
+    }
+
+    public AtlasHookException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

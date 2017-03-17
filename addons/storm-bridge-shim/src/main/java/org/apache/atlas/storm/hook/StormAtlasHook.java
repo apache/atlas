@@ -34,6 +34,7 @@ import java.util.Map;
 public class StormAtlasHook implements ISubmitterHook {
     private static final Logger LOG = LoggerFactory.getLogger(StormAtlasHook.class);
 
+
     private static final String ATLAS_PLUGIN_TYPE = "storm";
     private static final String ATLAS_STORM_HOOK_IMPL_CLASSNAME = "org.apache.atlas.storm.hook.StormAtlasHook";
 

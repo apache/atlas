@@ -23,10 +23,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.bridge.ColumnLineageUtils;
+import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
+import org.apache.atlas.hook.AtlasHookException;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.StringUtils;
@@ -36,8 +37,13 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.hooks.*;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
+import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.LineageInfo;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -48,7 +54,6 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -67,7 +72,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -378,76 +382,86 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return Pair.of(changedColStringOldName, changedColStringNewName);
     }
 
-    private void renameColumn(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
-        assert event.getInputs() != null && event.getInputs().size() == 1;
-        assert event.getOutputs() != null && event.getOutputs().size() > 0;
+    private void renameColumn(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws AtlasHookException {
+        try {
+            assert event.getInputs() != null && event.getInputs().size() == 1;
+            assert event.getOutputs() != null && event.getOutputs().size() > 0;
 
-        Table oldTable = event.getInputs().iterator().next().getTable();
-        List<FieldSchema> oldColList = oldTable.getAllCols();
-        Table outputTbl = event.getOutputs().iterator().next().getTable();
-        outputTbl = dgiBridge.hiveClient.getTable(outputTbl.getDbName(), outputTbl.getTableName());
-        List<FieldSchema> newColList = outputTbl.getAllCols();
-        assert oldColList.size() == newColList.size();
+            Table oldTable = event.getInputs().iterator().next().getTable();
+            List<FieldSchema> oldColList = oldTable.getAllCols();
+            Table outputTbl = event.getOutputs().iterator().next().getTable();
+            outputTbl = dgiBridge.hiveClient.getTable(outputTbl.getDbName(), outputTbl.getTableName());
+            List<FieldSchema> newColList = outputTbl.getAllCols();
+            assert oldColList.size() == newColList.size();
 
-        Pair<String, String> changedColNamePair = findChangedColNames(oldColList, newColList);
-        String oldColName = changedColNamePair.getLeft();
-        String newColName = changedColNamePair.getRight();
-        for (WriteEntity writeEntity : event.getOutputs()) {
-            if (writeEntity.getType() == Type.TABLE) {
-                Table newTable = writeEntity.getTable();
-                createOrUpdateEntities(dgiBridge, event, writeEntity, true, oldTable);
-                final String newQualifiedTableName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
-                    newTable);
-                String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, oldColName);
-                String newColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, newColName);
-                Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
-                newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
+            Pair<String, String> changedColNamePair = findChangedColNames(oldColList, newColList);
+            String oldColName = changedColNamePair.getLeft();
+            String newColName = changedColNamePair.getRight();
+            for (WriteEntity writeEntity : event.getOutputs()) {
+                if (writeEntity.getType() == Type.TABLE) {
+                    Table newTable = writeEntity.getTable();
+                    createOrUpdateEntities(dgiBridge, event, writeEntity, true, oldTable);
+                    final String newQualifiedTableName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                            newTable);
+                    String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, oldColName);
+                    String newColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, newColName);
+                    Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+                    newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
 
-                event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
-                    HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                    oldColumnQFName, newColEntity));
-            }
-        }
-        handleEventOutputs(dgiBridge, event, Type.TABLE);
-    }
-
-    private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
-        //crappy, no easy of getting new name
-        assert event.getInputs() != null && event.getInputs().size() == 1;
-        assert event.getOutputs() != null && event.getOutputs().size() > 0;
-
-        //Update entity if not exists
-        ReadEntity oldEntity = event.getInputs().iterator().next();
-        Table oldTable = oldEntity.getTable();
-
-        for (WriteEntity writeEntity : event.getOutputs()) {
-            if (writeEntity.getType() == Entity.Type.TABLE) {
-                Table newTable = writeEntity.getTable();
-                //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
-                if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
-                    final String oldQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
-                        oldTable);
-                    final String newQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
-                        newTable);
-
-                    //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
-                    //We always use the new entity while creating the table since some flags, attributes of the table are not set in inputEntity and Hive.getTable(oldTableName) also fails since the table doesnt exist in hive anymore
-                    final LinkedHashMap<Type, Referenceable> tables = createOrUpdateEntities(dgiBridge, event, writeEntity, true);
-                    Referenceable tableEntity = tables.get(Type.TABLE);
-
-                    //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
-                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.COLUMNS), oldQualifiedName, newQualifiedName);
-
-                    //Reset partition key column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
-                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.PART_COLS), oldQualifiedName, newQualifiedName);
-
-                    //Reset SD QF Name to old Name and create a new partial notification request to replace old SD QFName to newName to retain any existing traits
-                    replaceSDQFName(event, tableEntity, oldQualifiedName, newQualifiedName);
-
-                    //Reset Table QF Name to old Name and create a new partial notification request to replace old Table QFName to newName
-                    replaceTableQFName(event, oldTable, newTable, tableEntity, oldQualifiedName, newQualifiedName);
+                    event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+                            HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                            oldColumnQFName, newColEntity));
                 }
             }
+            handleEventOutputs(dgiBridge, event, Type.TABLE);
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.renameColumn() failed.", e);
+        }
+    }
+
+    private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws AtlasHookException {
+        try {
+            //crappy, no easy of getting new name
+            assert event.getInputs() != null && event.getInputs().size() == 1;
+            assert event.getOutputs() != null && event.getOutputs().size() > 0;
+
+            //Update entity if not exists
+            ReadEntity oldEntity = event.getInputs().iterator().next();
+            Table oldTable = oldEntity.getTable();
+
+            for (WriteEntity writeEntity : event.getOutputs()) {
+                if (writeEntity.getType() == Entity.Type.TABLE) {
+                    Table newTable = writeEntity.getTable();
+                    //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
+                    if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
+                        final String oldQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                                oldTable);
+                        final String newQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                                newTable);
+
+                        //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
+                        //We always use the new entity while creating the table since some flags, attributes of the table are not set in inputEntity and Hive.getTable(oldTableName) also fails since the table doesnt exist in hive anymore
+                        final LinkedHashMap<Type, Referenceable> tables = createOrUpdateEntities(dgiBridge, event, writeEntity, true);
+                        Referenceable tableEntity = tables.get(Type.TABLE);
+
+                        //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
+                        replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.COLUMNS), oldQualifiedName, newQualifiedName);
+
+                        //Reset partition key column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
+                        replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.PART_COLS), oldQualifiedName, newQualifiedName);
+
+                        //Reset SD QF Name to old Name and create a new partial notification request to replace old SD QFName to newName to retain any existing traits
+                        replaceSDQFName(event, tableEntity, oldQualifiedName, newQualifiedName);
+
+                        //Reset Table QF Name to old Name and create a new partial notification request to replace old Table QFName to newName
+                        replaceTableQFName(event, oldTable, newTable, tableEntity, oldQualifiedName, newQualifiedName);
+                    }
+                }
+            }
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.renameTable() failed.", e);
         }
     }
 
@@ -494,7 +508,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         final Referenceable sdRef = ((Referenceable) tableEntity.get(HiveMetaStoreBridge.STORAGE_DESC));
         sdRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getStorageDescQFName(oldTblQFName));
 
-        //Replace SD QF name first to retain tags
+        //Replace SD QF name fir    st to retain tags
         final String oldSDQFName = HiveMetaStoreBridge.getStorageDescQFName(oldTblQFName);
         final String newSDQFName = HiveMetaStoreBridge.getStorageDescQFName(newTblQFName);
 
@@ -507,81 +521,95 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return newSDEntity;
     }
 
-    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables, Table existTable) throws Exception {
-        Database db = null;
-        Table table = null;
-        Partition partition = null;
-        LinkedHashMap<Type, Referenceable> result = new LinkedHashMap<>();
-        List<Referenceable> entities = new ArrayList<>();
+    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables, Table existTable) throws AtlasHookException {
+        try {
+            Database db = null;
+            Table table = null;
+            Partition partition = null;
+            LinkedHashMap<Type, Referenceable> result = new LinkedHashMap<>();
+            List<Referenceable> entities = new ArrayList<>();
 
-        switch (entity.getType()) {
-        case DATABASE:
-            db = entity.getDatabase();
-            break;
+            switch (entity.getType()) {
+                case DATABASE:
+                    db = entity.getDatabase();
+                    break;
 
-        case TABLE:
-            table = entity.getTable();
-            db = dgiBridge.hiveClient.getDatabase(table.getDbName());
-            break;
+                case TABLE:
+                    table = entity.getTable();
+                    db = dgiBridge.hiveClient.getDatabase(table.getDbName());
+                    break;
 
-        case PARTITION:
-            partition = entity.getPartition();
-            table = partition.getTable();
-            db = dgiBridge.hiveClient.getDatabase(table.getDbName());
-            break;
+                case PARTITION:
+                    partition = entity.getPartition();
+                    table = partition.getTable();
+                    db = dgiBridge.hiveClient.getDatabase(table.getDbName());
+                    break;
 
-        default:
-            LOG.info("{}: entity-type not handled by Atlas hook. Ignored", entity.getType());
-        }
-
-        if (db != null) {
-            db = dgiBridge.hiveClient.getDatabase(db.getName());
-        }
-
-        if (db != null) {
-            Referenceable dbEntity = dgiBridge.createDBInstance(db);
-
-            entities.add(dbEntity);
-            result.put(Type.DATABASE, dbEntity);
-
-            Referenceable tableEntity = null;
-
-            if (table != null) {
-                if (existTable != null) {
-                    table = existTable;
-                } else {
-                    table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
-                }
-                //If its an external table, even though the temp table skip flag is on,
-                // we create the table since we need the HDFS path to temp table lineage.
-                if (skipTempTables &&
-                        table.isTemporary() &&
-                        !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                    LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
-
-                } else {
-                    tableEntity = dgiBridge.createTableInstance(dbEntity, table);
-                    entities.add(tableEntity);
-                    result.put(Type.TABLE, tableEntity);
-                }
+                default:
+                    LOG.info("{}: entity-type not handled by Atlas hook. Ignored", entity.getType());
             }
 
-            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
-        }
-        return result;
-    }
-
-    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables) throws Exception{
-        return createOrUpdateEntities(dgiBridge, event, entity, skipTempTables, null);
-    }
-
-    private LinkedHashMap<Type, Referenceable> handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Type entityType) throws Exception {
-        for (Entity entity : event.getOutputs()) {
-            if (entity.getType() == entityType) {
-                return createOrUpdateEntities(dgiBridge, event, entity, true);
+            if (db != null) {
+                db = dgiBridge.hiveClient.getDatabase(db.getName());
             }
+
+            if (db != null) {
+                Referenceable dbEntity = dgiBridge.createDBInstance(db);
+
+                entities.add(dbEntity);
+                result.put(Type.DATABASE, dbEntity);
+
+                Referenceable tableEntity = null;
+
+                if (table != null) {
+                    if (existTable != null) {
+                        table = existTable;
+                    } else {
+                        table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
+                    }
+                    //If its an external table, even though the temp table skip flag is on,
+                    // we create the table since we need the HDFS path to temp table lineage.
+                    if (skipTempTables &&
+                            table.isTemporary() &&
+                            !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                        LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
+
+                    } else {
+                        tableEntity = dgiBridge.createTableInstance(dbEntity, table);
+                        entities.add(tableEntity);
+                        result.put(Type.TABLE, tableEntity);
+                    }
+                }
+
+                event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
+            }
+            return result;
         }
-        return null;
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.createOrUpdateEntities() failed.", e);
+        }
+    }
+
+    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables) throws AtlasHookException {
+        try {
+            return createOrUpdateEntities(dgiBridge, event, entity, skipTempTables, null);
+        } catch (Exception e) {
+            throw new AtlasHookException("HiveHook.createOrUpdateEntities() failed.", e);
+        }
+    }
+
+    private LinkedHashMap<Type, Referenceable> handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Type entityType) throws AtlasHookException {
+        try {
+            for (Entity entity : event.getOutputs()) {
+                if (entity.getType() == entityType) {
+                    return createOrUpdateEntities(dgiBridge, event, entity, true);
+                }
+            }
+            return null;
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.handleEventOutputs() failed.", e);
+        }
     }
 
     private static Entity getEntityByType(Set<? extends Entity> entities, Type entityType) {
@@ -600,97 +628,107 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return str.toLowerCase().trim();
     }
 
-    private void registerProcess(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
-        Set<ReadEntity> inputs = event.getInputs();
-        Set<WriteEntity> outputs = event.getOutputs();
+    private void registerProcess(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws AtlasHookException {
+        try {
+            Set<ReadEntity> inputs = event.getInputs();
+            Set<WriteEntity> outputs = event.getOutputs();
 
-        //Even explain CTAS has operation name as CREATETABLE_AS_SELECT
-        if (inputs.isEmpty() && outputs.isEmpty()) {
-            LOG.info("Explain statement. Skipping...");
-            return;
-        }
-
-        if (event.getQueryId() == null) {
-            LOG.info("Query id/plan is missing for {}", event.getQueryStr());
-        }
-
-        final SortedMap<ReadEntity, Referenceable> source = new TreeMap<>(entityComparator);
-        final SortedMap<WriteEntity, Referenceable> target = new TreeMap<>(entityComparator);
-
-        final Set<String> dataSets = new HashSet<>();
-        final Set<Referenceable> entities = new LinkedHashSet<>();
-
-        boolean isSelectQuery = isSelectQuery(event);
-
-        // filter out select queries which do not modify data
-        if (!isSelectQuery) {
-
-            SortedSet<ReadEntity> sortedHiveInputs = new TreeSet<>(entityComparator);
-            if ( event.getInputs() != null) {
-                sortedHiveInputs.addAll(event.getInputs());
+            //Even explain CTAS has operation name as CREATETABLE_AS_SELECT
+            if (inputs.isEmpty() && outputs.isEmpty()) {
+                LOG.info("Explain statement. Skipping...");
+                return;
             }
 
-            SortedSet<WriteEntity> sortedHiveOutputs = new TreeSet<>(entityComparator);
-            if ( event.getOutputs() != null) {
-                sortedHiveOutputs.addAll(event.getOutputs());
+            if (event.getQueryId() == null) {
+                LOG.info("Query id/plan is missing for {}", event.getQueryStr());
             }
 
-            for (ReadEntity readEntity : sortedHiveInputs) {
-                processHiveEntity(dgiBridge, event, readEntity, dataSets, source, entities);
-            }
+            final SortedMap<ReadEntity, Referenceable> source = new TreeMap<>(entityComparator);
+            final SortedMap<WriteEntity, Referenceable> target = new TreeMap<>(entityComparator);
 
-            for (WriteEntity writeEntity : sortedHiveOutputs) {
-                processHiveEntity(dgiBridge, event, writeEntity, dataSets, target, entities);
-            }
+            final Set<String> dataSets = new HashSet<>();
+            final Set<Referenceable> entities = new LinkedHashSet<>();
 
-            if (source.size() > 0 || target.size() > 0) {
-                Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event, sortedHiveInputs, sortedHiveOutputs, source, target);
-                // setup Column Lineage
-                List<Referenceable> sourceList = new ArrayList<>(source.values());
-                List<Referenceable> targetList = new ArrayList<>(target.values());
-                List<Referenceable> colLineageProcessInstances = new ArrayList<>();
-                try {
-                    Map<String, Referenceable> columnQNameToRef =
-                            ColumnLineageUtils.buildColumnReferenceableMap(sourceList, targetList);
-                    colLineageProcessInstances = createColumnLineageProcessInstances(processReferenceable,
-                            event.lineageInfo,
-                            columnQNameToRef);
-                }catch (Exception e){
-                    LOG.warn("Column lineage process setup failed with exception {}", e);
+            boolean isSelectQuery = isSelectQuery(event);
+
+            // filter out select queries which do not modify data
+            if (!isSelectQuery) {
+
+                SortedSet<ReadEntity> sortedHiveInputs = new TreeSet<>(entityComparator);
+                if (event.getInputs() != null) {
+                    sortedHiveInputs.addAll(event.getInputs());
                 }
-                colLineageProcessInstances.add(0, processReferenceable);
-                entities.addAll(colLineageProcessInstances);
-                event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<>(entities)));
+
+                SortedSet<WriteEntity> sortedHiveOutputs = new TreeSet<>(entityComparator);
+                if (event.getOutputs() != null) {
+                    sortedHiveOutputs.addAll(event.getOutputs());
+                }
+
+                for (ReadEntity readEntity : sortedHiveInputs) {
+                    processHiveEntity(dgiBridge, event, readEntity, dataSets, source, entities);
+                }
+
+                for (WriteEntity writeEntity : sortedHiveOutputs) {
+                    processHiveEntity(dgiBridge, event, writeEntity, dataSets, target, entities);
+                }
+
+                if (source.size() > 0 || target.size() > 0) {
+                    Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event, sortedHiveInputs, sortedHiveOutputs, source, target);
+                    // setup Column Lineage
+                    List<Referenceable> sourceList = new ArrayList<>(source.values());
+                    List<Referenceable> targetList = new ArrayList<>(target.values());
+                    List<Referenceable> colLineageProcessInstances = new ArrayList<>();
+                    try {
+                        Map<String, Referenceable> columnQNameToRef =
+                                ColumnLineageUtils.buildColumnReferenceableMap(sourceList, targetList);
+                        colLineageProcessInstances = createColumnLineageProcessInstances(processReferenceable,
+                                event.lineageInfo,
+                                columnQNameToRef);
+                    } catch (Exception e) {
+                        LOG.warn("Column lineage process setup failed with exception {}", e);
+                    }
+                    colLineageProcessInstances.add(0, processReferenceable);
+                    entities.addAll(colLineageProcessInstances);
+                    event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<>(entities)));
+                } else {
+                    LOG.info("Skipped query {} since it has no getInputs() or resulting getOutputs()", event.getQueryStr());
+                }
             } else {
-                LOG.info("Skipped query {} since it has no getInputs() or resulting getOutputs()", event.getQueryStr());
+                LOG.info("Skipped query {} for processing since it is a select query ", event.getQueryStr());
             }
-        } else {
-            LOG.info("Skipped query {} for processing since it is a select query ", event.getQueryStr());
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.registerProcess() failed.", e);
         }
     }
 
     private  <T extends Entity> void processHiveEntity(HiveMetaStoreBridge dgiBridge, HiveEventContext event, T entity, Set<String> dataSetsProcessed,
-        SortedMap<T, Referenceable> dataSets, Set<Referenceable> entities) throws Exception {
-        if (entity.getType() == Type.TABLE || entity.getType() == Type.PARTITION) {
-            final String tblQFName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
-            if (!dataSetsProcessed.contains(tblQFName)) {
-                LinkedHashMap<Type, Referenceable> result = createOrUpdateEntities(dgiBridge, event, entity, false);
-                dataSets.put(entity, result.get(Type.TABLE));
-                dataSetsProcessed.add(tblQFName);
-                entities.addAll(result.values());
-            }
-        } else if (entity.getType() == Type.DFS_DIR) {
-            URI location = entity.getLocation();
-            if(location != null) {
-                final String pathUri = lower(new Path(location).toString());
-                LOG.debug("Registering DFS Path {} ", pathUri);
-                if (!dataSetsProcessed.contains(pathUri)) {
-                    Referenceable hdfsPath = dgiBridge.fillHDFSDataSet(pathUri);
-                    dataSets.put(entity, hdfsPath);
-                    dataSetsProcessed.add(pathUri);
-                    entities.add(hdfsPath);
+        SortedMap<T, Referenceable> dataSets, Set<Referenceable> entities) throws AtlasHookException {
+        try {
+            if (entity.getType() == Type.TABLE || entity.getType() == Type.PARTITION) {
+                final String tblQFName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
+                if (!dataSetsProcessed.contains(tblQFName)) {
+                    LinkedHashMap<Type, Referenceable> result = createOrUpdateEntities(dgiBridge, event, entity, false);
+                    dataSets.put(entity, result.get(Type.TABLE));
+                    dataSetsProcessed.add(tblQFName);
+                    entities.addAll(result.values());
+                }
+            } else if (entity.getType() == Type.DFS_DIR) {
+                URI location = entity.getLocation();
+                if (location != null) {
+                    final String pathUri = lower(new Path(location).toString());
+                    LOG.debug("Registering DFS Path {} ", pathUri);
+                    if (!dataSetsProcessed.contains(pathUri)) {
+                        Referenceable hdfsPath = dgiBridge.fillHDFSDataSet(pathUri);
+                        dataSets.put(entity, hdfsPath);
+                        dataSetsProcessed.add(pathUri);
+                        entities.add(hdfsPath);
+                    }
                 }
             }
+        }
+        catch(Exception e) {
+            throw new AtlasHookException("HiveHook.processHiveEntity() failed.", e);
         }
     }
 

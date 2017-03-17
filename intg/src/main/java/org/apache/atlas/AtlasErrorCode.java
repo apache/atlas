@@ -67,9 +67,10 @@ public enum AtlasErrorCode {
     INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS-400-00-026", "Invalid lineage query parameters passed {0}: {1}"),
     ATTRIBUTE_UPDATE_NOT_SUPPORTED(400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported"),
 	INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
-    BAD_REQUEST(400, "ATLAS-400-00-020", "{0}"),
+    BAD_REQUEST(400, "ATLAS-400-00-029", "{0}"),
+    PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
 
-     // All Not found enums go here
+    // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
     EMPTY_RESULTS(404, "ATLAS-404-00-004", "No result found for {0}"),
@@ -96,7 +97,15 @@ public enum AtlasErrorCode {
     NOTIFICATION_FAILED(500, "ATLAS-500-00-007", "Failed to notify for change {0}"),
     GREMLIN_GROOVY_SCRIPT_ENGINE_FAILED(500, "ATLAS-500-00-008", "scriptEngine cannot be initialized for: {0}"),
     JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED(500, "ATLAS-500-00-009", "ObjectMapper.readValue returned NULL for class: {0}"),
-    GREMLIN_SCRIPT_EXECUTION_FAILED(500, "ATLAS-500-00-00A", "Script execution failed for: {0}");
+    GREMLIN_SCRIPT_EXECUTION_FAILED(500, "ATLAS-500-00-00A", "Script execution failed for: {0}"),
+
+    CURATOR_FRAMEWORK_UPDATE(500, "ATLAS-500-00-00B", "ActiveInstanceState.update resulted in exception."),
+    QUICK_START(500, "ATLAS-500-00-00C", "Failed to run QuickStart: {0}"),
+    EMBEDDED_SERVER_START(500, "ATLAS-500-00-00D", "EmbeddedServer.Start: failed!"),
+    STORM_TOPOLOGY_UTIL(500, "ATLAS-500-00-00E", "StormToplogyUtil: {0}"),
+    SQOOP_HOOK(500, "ATLAS-500-00-00F", "SqoopHook: {0}"),
+    HIVE_HOOK(500, "ATLAS-500-00-010", "HiveHook: {0}"),
+    HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}");
 
     private String errorCode;
     private String errorMessage;

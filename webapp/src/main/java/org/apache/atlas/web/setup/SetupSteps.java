@@ -119,11 +119,15 @@ public class SetupSteps {
     }
 
     private void clearSetupInProgress(HAConfiguration.ZookeeperProperties zookeeperProperties)
-            throws Exception {
+            throws SetupException {
         CuratorFramework client = curatorFactory.clientInstance();
         String path = lockPath(zookeeperProperties);
-        client.delete().forPath(path);
-        LOG.info("Deleted lock path after completing setup {}", path);
+        try {
+            client.delete().forPath(path);
+            LOG.info("Deleted lock path after completing setup {}", path);
+        } catch (Exception e) {
+            throw new SetupException(String.format("SetupSteps.clearSetupInProgress: Failed to get Zookeeper node patH: %s", path), e);
+        }
     }
 
     private String lockPath(HAConfiguration.ZookeeperProperties zookeeperProperties) {

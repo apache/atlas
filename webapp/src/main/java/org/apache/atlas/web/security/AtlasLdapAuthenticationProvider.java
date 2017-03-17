@@ -18,15 +18,11 @@
 
 package org.apache.atlas.web.security;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import javax.annotation.PostConstruct;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -41,7 +37,10 @@ import org.springframework.security.ldap.authentication.LdapAuthenticationProvid
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch;
 import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopulator;
 import org.springframework.stereotype.Component;
-import org.apache.commons.lang.StringUtils;
+
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Properties;
 
 @Component
 public class AtlasLdapAuthenticationProvider extends
@@ -87,7 +86,7 @@ public class AtlasLdapAuthenticationProvider extends
     }
 
     private Authentication getLdapBindAuthentication(
-            Authentication authentication) throws Exception {
+            Authentication authentication) {
         try {
             if (isDebugEnabled) {
                 LOG.debug("==> AtlasLdapAuthenticationProvider getLdapBindAuthentication");

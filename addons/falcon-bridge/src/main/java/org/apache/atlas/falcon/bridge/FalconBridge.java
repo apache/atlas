@@ -73,8 +73,7 @@ public class FalconBridge {
      * @param cluster ClusterEntity
      * @return cluster instance reference
      */
-    public static Referenceable createClusterEntity(final org.apache.falcon.entity.v0.cluster.Cluster cluster)
-            throws Exception {
+    public static Referenceable createClusterEntity(final org.apache.falcon.entity.v0.cluster.Cluster cluster) {
         LOG.info("Creating cluster Entity : {}", cluster.getName());
 
         Referenceable clusterRef = new Referenceable(FalconDataTypes.FALCON_CLUSTER.getName());
@@ -97,7 +96,7 @@ public class FalconBridge {
         return clusterRef;
     }
 
-    private static Referenceable createFeedEntity(Feed feed, Referenceable clusterReferenceable) throws Exception {
+    private static Referenceable createFeedEntity(Feed feed, Referenceable clusterReferenceable) {
         LOG.info("Creating feed dataset: {}", feed.getName());
 
         Referenceable feedEntity = new Referenceable(FalconDataTypes.FALCON_FEED.getName());
@@ -338,8 +337,7 @@ public class FalconBridge {
         return entities;
     }
 
-    private static Referenceable createHiveDatabaseInstance(String clusterName, String dbName)
-            throws Exception {
+    private static Referenceable createHiveDatabaseInstance(String clusterName, String dbName) {
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
         dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         dbRef.set(AtlasClient.NAME, dbName);
@@ -349,7 +347,7 @@ public class FalconBridge {
     }
 
     private static List<Referenceable> createHiveTableInstance(String clusterName, String dbName,
-                                                               String tableName) throws Exception {
+                                                               String tableName) {
         List<Referenceable> entities = new ArrayList<>();
         Referenceable dbRef = createHiveDatabaseInstance(clusterName, dbName);
         entities.add(dbRef);
