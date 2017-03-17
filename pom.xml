@@ -399,6 +399,7 @@
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
         </developer>
