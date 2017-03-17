@@ -18,17 +18,29 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-
-import java.util.List;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 
 public class AtlasEntityStreamForImport extends AtlasEntityStream implements EntityImportStream {
-    public AtlasEntityStreamForImport(AtlasEntity entity) {
-        super(entity);
+    public AtlasEntityStreamForImport(AtlasEntityWithExtInfo entityWithExtInfo, EntityStream entityStream) {
+        super(entityWithExtInfo, entityStream);
     }
 
-    public AtlasEntityStreamForImport(AtlasEntity entity, EntityStream entityStream) {
-        super(entity, entityStream);
+    @Override
+    public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
+        AtlasEntity entity = next();
+
+        return entity != null ? new AtlasEntityWithExtInfo(entity, super.entitiesWithExtInfo) : null;
+    }
+
+    @Override
+    public AtlasEntity getByGuid(String guid) {
+        AtlasEntity ent = super.entitiesWithExtInfo.getEntity(guid);
+
+        if(ent == null && entityStream != null) {
+            return entityStream.getByGuid(guid);
+        }
+
+        return ent;
     }
 
     @Override

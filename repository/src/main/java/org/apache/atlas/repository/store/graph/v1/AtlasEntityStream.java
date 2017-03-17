@@ -24,9 +24,9 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import java.util.Iterator;
 
 public class AtlasEntityStream implements EntityStream {
-    private final AtlasEntitiesWithExtInfo entitiesWithExtInfo;
-    private final EntityStream             entityStream;
-    private Iterator<AtlasEntity>         iterator;
+    protected final AtlasEntitiesWithExtInfo entitiesWithExtInfo;
+    protected final EntityStream             entityStream;
+    private         Iterator<AtlasEntity>    iterator;
 
 
     public AtlasEntityStream(AtlasEntity entity) {
@@ -49,6 +49,12 @@ public class AtlasEntityStream implements EntityStream {
         this.entityStream        = entityStream;
     }
 
+    public AtlasEntityStream(AtlasEntityWithExtInfo entityWithExtInfo, EntityStream entityStream) {
+        this.entitiesWithExtInfo = new AtlasEntitiesWithExtInfo(entityWithExtInfo);
+        this.iterator            = this.entitiesWithExtInfo.getEntities().iterator();
+        this.entityStream        = entityStream;
+    }
+
     @Override
     public boolean hasNext() {
         return iterator.hasNext();
@@ -66,7 +72,7 @@ public class AtlasEntityStream implements EntityStream {
 
     @Override
     public AtlasEntity getByGuid(String guid) {
-        return entityStream != null ? entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
+        return entityStream != null ?  entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
     }
 
     @Override

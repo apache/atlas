@@ -38,11 +38,11 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case ENTITIES_FOR_TAG_METRIC:
                 return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.getProperty('__typeName')}.cap.toList()";
             case EXPORT_BY_GUID_FULL:
-                return "g.V('__guid', startGuid).bothE().bothV().has('__guid').__guid.dedup().toList()";
+                return "g.V('__guid', startGuid).bothE().bothV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_IN_EDGE:
-                return "g.V('__guid', startGuid).inE().outV().has('__guid').__guid.dedup().toList()";
+                return "g.V('__guid', startGuid).inE().outV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
-                return "g.V('__guid', startGuid).outE().inV().has('__guid').__guid.dedup().toList()";
+                return "g.V('__guid', startGuid).outE().inV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_TYPE_STARTS_WITH:
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).startsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_ENDS_WITH:
