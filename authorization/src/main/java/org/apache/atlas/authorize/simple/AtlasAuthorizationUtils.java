@@ -18,6 +18,7 @@
 
 package org.apache.atlas.authorize.simple;
 
+import javax.servlet.http.HttpServletRequest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
@@ -27,7 +28,8 @@ import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -53,7 +55,7 @@ public class AtlasAuthorizationUtils {
         String[] split = contextPath.split("/", 3);
 
         String api = split[0];
-        if(Pattern.matches("v\\d", api)) {
+        if (Pattern.matches("v\\d", api)) {
             api = split[1];
         }
 
@@ -98,16 +100,16 @@ public class AtlasAuthorizationUtils {
      * @param contextPath
      * @return set of AtlasResourceTypes types api mapped with AtlasResourceTypes.TYPE eg :- /api/atlas/types/*
      *
-     *         gremlin discovery,admin,graph apis are mapped with AtlasResourceTypes.OPERATION eg :-/api/atlas/admin/*
-     *         /api/atlas/discovery/search/gremlin /api/atlas/graph/*
+     * gremlin discovery,admin,graph apis are mapped with AtlasResourceTypes.OPERATION eg :-/api/atlas/admin/*
+     * /api/atlas/discovery/search/gremlin /api/atlas/graph/*
      *
-     *         entities,lineage and discovery apis are mapped with AtlasResourceTypes.ENTITY eg :- /api/atlas/lineage/hive/table/*
-     *         /api/atlas/entities/{guid}* /api/atlas/discovery/*
-     * 
-     *         taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have
-     *         added AtlasResourceTypes.TERM associations.
+     * entities,lineage and discovery apis are mapped with AtlasResourceTypes.ENTITY eg :- /api/atlas/lineage/hive/table/*
+     * /api/atlas/entities/{guid}* /api/atlas/discovery/*
      *
-     *         unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
+     * taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have
+     * added AtlasResourceTypes.TERM associations.
+     *
+     * unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
      */
     public static Set<AtlasResourceTypes> getAtlasResourceType(String contextPath) {
         Set<AtlasResourceTypes> resourceTypes = new HashSet<>();
@@ -123,7 +125,7 @@ public class AtlasAuthorizationUtils {
                 || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);
         } else if (api.startsWith("entities") || api.startsWith("lineage") ||
-                api.startsWith("discovery") || api.startsWith("entity")  || api.startsWith("search")) {
+                api.startsWith("discovery") || api.startsWith("entity") || api.startsWith("search")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
         } else if (api.startsWith("taxonomies")) {
             resourceTypes.add(AtlasResourceTypes.TAXONOMY);
@@ -134,7 +136,7 @@ public class AtlasAuthorizationUtils {
             }
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : {}\nSetting {}"
-                , api, AtlasResourceTypes.UNKNOWN.name());
+                    , api, AtlasResourceTypes.UNKNOWN.name());
             resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         }
 
@@ -144,13 +146,13 @@ public class AtlasAuthorizationUtils {
         return resourceTypes;
     }
 
-    public static boolean isAccessAllowed(AtlasResourceTypes resourcetype, AtlasActionTypes actionType, String userName, Set<String> groups) {
+    public static boolean isAccessAllowed(AtlasResourceTypes resourcetype, AtlasActionTypes actionType, String userName, Set<String> groups, HttpServletRequest request) {
         AtlasAuthorizer authorizer = null;
         boolean isaccessAllowed = false;
 
         Set<AtlasResourceTypes> resourceTypes = new HashSet<>();
         resourceTypes.add(resourcetype);
-        AtlasAccessRequest atlasRequest = new AtlasAccessRequest(resourceTypes, "*", actionType, userName, groups);
+        AtlasAccessRequest atlasRequest = new AtlasAccessRequest(resourceTypes, "*", actionType, userName, groups, AtlasAuthorizationUtils.getRequestIpAddress(request));
         try {
             authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
             if (authorizer != null) {
@@ -161,5 +163,18 @@ public class AtlasAuthorizationUtils {
         }
 
         return isaccessAllowed;
+    }
+
+    public static String getRequestIpAddress(HttpServletRequest httpServletRequest) {
+        try {
+            InetAddress inetAddr = InetAddress.getByName(httpServletRequest.getRemoteAddr());
+
+            String ip = inetAddr.getHostAddress();
+
+            return ip;
+        } catch (UnknownHostException ex) {
+            LOG.error("Error occured when retrieving IP address", ex);
+            return "";
+        }
     }
 }

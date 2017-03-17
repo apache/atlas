@@ -60,7 +60,7 @@ public class SimpleAtlasAuthorizerTest {
         userGroups.add("grp3");
         try {
             AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
-                    resource, action, user, userGroups);
+                    resource, action, user, userGroups,"127.0.0.1");
             SimpleAtlasAuthorizer authorizer = (SimpleAtlasAuthorizer) AtlasAuthorizerFactory
                     .getAtlasAuthorizer();
 
@@ -103,7 +103,7 @@ public class SimpleAtlasAuthorizerTest {
         Set<String> userGroups = new HashSet<>();
         userGroups.add("grp1");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
-                resource, action, user, userGroups);
+                resource, action, user, userGroups,"127.0.0.1");
         try {
             SimpleAtlasAuthorizer authorizer = (SimpleAtlasAuthorizer) AtlasAuthorizerFactory
                     .getAtlasAuthorizer();
@@ -146,7 +146,7 @@ public class SimpleAtlasAuthorizerTest {
         Set<String> userGroups = new HashSet<>();
         userGroups.add("grp1");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
-                resource, action, user, userGroups);
+                resource, action, user, userGroups,"127.0.0.1");
         try {
             SimpleAtlasAuthorizer authorizer = (SimpleAtlasAuthorizer) AtlasAuthorizerFactory
                     .getAtlasAuthorizer();
@@ -188,7 +188,7 @@ public class SimpleAtlasAuthorizerTest {
         Set<String> userGroups = new HashSet<>();
         userGroups.add("grp3");
         AtlasAccessRequest request = new AtlasAccessRequest(resourceType,
-                resource, action, user, userGroups);
+                resource, action, user, userGroups,"127.0.0.1");
         try {
             SimpleAtlasAuthorizer authorizer = (SimpleAtlasAuthorizer) AtlasAuthorizerFactory
                     .getAtlasAuthorizer();
