@@ -45,6 +45,11 @@ public class ZipSink {
         saveToZip(entity.getGuid(), jsonData);
     }
 
+    public void add(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        String jsonData = convertToJSON(entityWithExtInfo);
+        saveToZip(entityWithExtInfo.getEntity().getGuid(), jsonData);
+    }
+
     public void setResult(AtlasExportResult result) throws AtlasBaseException {
         String jsonData = convertToJSON(result);
         saveToZip(ZipExportFileNames.ATLAS_EXPORT_INFO_NAME, jsonData);

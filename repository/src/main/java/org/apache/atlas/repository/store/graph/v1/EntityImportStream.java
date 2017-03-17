@@ -18,7 +18,11 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+
 public interface EntityImportStream extends EntityStream {
+
+    AtlasEntityWithExtInfo getNextEntityWithExtInfo();
 
     void onImportComplete(String guid);
 }

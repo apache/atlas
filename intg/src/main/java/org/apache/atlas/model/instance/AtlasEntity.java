@@ -196,6 +196,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
 
         sb.append("AtlasEntity{");
+        super.toString(sb);
         sb.append("guid='").append(guid).append('\'');
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
@@ -207,7 +208,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         AtlasBaseTypeDef.dumpObjects(classifications, sb);
         sb.append(']');
         sb.append(", ");
-        super.toString(sb);
         sb.append('}');
 
         return sb;

@@ -159,13 +159,14 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         int         progressReportedAtCount = 0;
 
         while (entityStream.hasNext()) {
-            AtlasEntity entity = entityStream.next();
+            AtlasEntityWithExtInfo entityWithExtInfo = entityStream.getNextEntityWithExtInfo();
+            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
 
             if(entity == null || processedGuids.contains(entity.getGuid())) {
                 continue;
             }
 
-            AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entity, entityStream);
+            AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, entityStream);
 
             EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
 
@@ -177,7 +178,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
 
-            if ((processedGuids.size() - progressReportedAtCount) > 10) {
+            if ((processedGuids.size() - progressReportedAtCount) > 1000) {
                 progressReportedAtCount = processedGuids.size();
 
                 LOG.info("bulkImport(): in progress.. number of entities imported: {}", progressReportedAtCount);
