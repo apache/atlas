@@ -432,6 +432,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             validateAndNormalize(classification);
         }
 
+        // validate if entity, not already associated with classifications
+        validateEntityAssociations(guid, classifications);
+
         EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
         graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
@@ -460,6 +463,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         List<AtlasClassification> classifications = Collections.singletonList(classification);
 
         for (String guid : guids) {
+            // validate if entity, not already associated with classifications
+            validateEntityAssociations(guid, classifications);
+
             graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
             // notify listeners on classification addition
@@ -597,5 +603,38 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         type.getNormalizedValue(classification);
+    }
+
+    /**
+     * Validate if classification is not already associated with the entities
+     * @param guid unique entity id
+     * @param classifications list of classifications to be associated
+     */
+    private void validateEntityAssociations(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        List<String> entityClassifications = getClassificationNames(guid);
+
+        for (AtlasClassification classification : classifications) {
+            String newClassification = classification.getTypeName();
+
+            if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
+                                             ", already associated with classification: " + newClassification);
+            }
+        }
+    }
+
+    private List<String> getClassificationNames(String guid) throws AtlasBaseException {
+        List<String>              ret             = null;
+        List<AtlasClassification> classifications = getClassifications(guid);
+
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            ret = new ArrayList<>();
+
+            for (AtlasClassification classification : classifications) {
+                ret.add(classification.getTypeName());
+            }
+        }
+
+        return ret;
     }
 }
