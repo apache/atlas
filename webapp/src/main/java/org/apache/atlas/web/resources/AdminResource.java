@@ -244,10 +244,11 @@ public class AdminResource {
                 for (GrantedAuthority c : authorities) {
                     groups.add(c.getAuthority());
                 }
+
                 isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.UPDATE, userName, groups);
+                        AtlasActionTypes.UPDATE, userName, groups, httpServletRequest);
                 isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.CREATE, userName, groups);
+                        AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
             }
 
             JSONObject responseData = new JSONObject();
@@ -313,7 +314,7 @@ public class AdminResource {
 
             AtlasExportResult result = exportService.run(exportSink, request, Servlets.getUserName(httpServletRequest),
                                                          Servlets.getHostName(httpServletRequest),
-                                                         Servlets.getRequestIpAddress(httpServletRequest));
+                                                         AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
 
             exportSink.close();
 
@@ -364,7 +365,7 @@ public class AdminResource {
 
             result = importService.run(zipSource, request, Servlets.getUserName(httpServletRequest),
                                        Servlets.getHostName(httpServletRequest),
-                                       Servlets.getRequestIpAddress(httpServletRequest));
+                                       AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
         } catch (Exception excp) {
             LOG.error("importData(binary) failed", excp);
 
@@ -398,7 +399,7 @@ public class AdminResource {
 
             result = importService.run(request, Servlets.getUserName(httpServletRequest),
                                        Servlets.getHostName(httpServletRequest),
-                                       Servlets.getRequestIpAddress(httpServletRequest));
+                                       AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
         } catch (Exception excp) {
             LOG.error("importFile() failed", excp);
 

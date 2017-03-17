@@ -40,11 +40,11 @@ public class AtlasAccessRequest {
 
     public AtlasAccessRequest(HttpServletRequest request, String user, Set<String> userGroups) {
         this(AtlasAuthorizationUtils.getAtlasResourceType(request.getServletPath()), "*", AtlasAuthorizationUtils
-            .getAtlasAction(request.getMethod()), user, userGroups);
+            .getAtlasAction(request.getMethod()), user, userGroups,AtlasAuthorizationUtils.getRequestIpAddress(request));
     }
 
     public AtlasAccessRequest(Set<AtlasResourceTypes> resourceType, String resource, AtlasActionTypes action,
-        String user, Set<String> userGroups) {
+        String user, Set<String> userGroups, String clientIPAddress) {
         if (isDebugEnabled) {
             LOG.debug("==> AtlasAccessRequestImpl-- Initializing AtlasAccessRequest");
         }
@@ -56,7 +56,7 @@ public class AtlasAccessRequest {
 
         // set remaining fields to default value
         setAccessTime(null);
-        setClientIPAddress(null);
+        setClientIPAddress(clientIPAddress);
     }
 
     public Set<AtlasResourceTypes> getResourceTypes() {
