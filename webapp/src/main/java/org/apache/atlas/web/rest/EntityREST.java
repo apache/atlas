@@ -474,7 +474,7 @@ public class EntityREST {
             AtlasClassification classification = request == null ? null : request.getClassification();
             List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
 
-            if (classification == null || org.apache.commons.lang.StringUtils.isEmpty(classification.getTypeName())) {
+            if (classification == null || StringUtils.isEmpty(classification.getTypeName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
             }
 
