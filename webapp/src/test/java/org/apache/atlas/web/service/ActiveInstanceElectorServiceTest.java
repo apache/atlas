@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-
+import org.apache.atlas.exception.AtlasBaseException;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -268,7 +268,7 @@ public class ActiveInstanceElectorServiceTest {
             }
         });
 
-        doThrow(new Exception()).when(activeInstanceState).update("id1");
+        doThrow(new AtlasBaseException()).when(activeInstanceState).update("id1");
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, changeHandlers, curatorFactory,
@@ -294,7 +294,7 @@ public class ActiveInstanceElectorServiceTest {
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
         when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
-        doThrow(new Exception()).when(activeInstanceState).update("id1");
+        doThrow(new AtlasBaseException()).when(activeInstanceState).update("id1");
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -392,7 +392,7 @@ public class ActiveInstanceElectorServiceTest {
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
         when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
-        doThrow(new Exception()).when(activeInstanceState).update("id1");
+        doThrow(new AtlasBaseException()).when(activeInstanceState).update("id1");
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(),
