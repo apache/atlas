@@ -105,7 +105,11 @@ public class AtlasBuiltInTypes {
                     String strValue = obj.toString();
 
                     if (StringUtils.isNotEmpty(strValue)) {
-                        return Byte.valueOf(strValue);
+                        try {
+                            return Byte.valueOf(strValue);
+                        } catch(NumberFormatException excp) {
+                            // ignore
+                        }
                     }
                 }
             }
