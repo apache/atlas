@@ -231,7 +231,13 @@ public class AtlasEntityChangeNotifier {
         if (StringUtils.isEmpty(entityId) || CollectionUtils.isEmpty(classifications)) {
             return;
         }
+
         AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(entityId);
+
+        if (atlasVertex == null) {
+            LOG.warn("updateFullTextMapping(): no entity exists with guid {}", entityId);
+            return;
+        }
 
         try {
             String classificationFullText = fullTextMapperV2.getIndexTextForClassifications(entityId, classifications);
