@@ -196,7 +196,8 @@ public class ZipSource implements EntityImportStream {
 
     private AtlasEntity getEntity(String guid) throws AtlasBaseException {
         if(guidEntityJsonMap.containsKey(guid)) {
-            return getEntityWithExtInfo(guid).getEntity();
+            AtlasEntityWithExtInfo extInfo = getEntityWithExtInfo(guid);
+            return (extInfo != null) ? extInfo.getEntity() : null;
         }
 
         return null;
