@@ -493,6 +493,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             }
         }
 
+        // Remove all from
+        ttr.removeTypesDef(typesDef);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),

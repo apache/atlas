@@ -234,6 +234,22 @@ public class AtlasGraphUtilsV1 {
         return vertex;
     }
 
+    public static boolean typeHasInstanceVertex(String typeName) throws AtlasBaseException {
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance()
+                .query()
+                .has(Constants.TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        boolean hasInstanceVertex = results != null && results.hasNext();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("typeName {} has instance vertex {}", typeName, hasInstanceVertex);
+        }
+
+        return hasInstanceVertex;
+    }
+
     public static AtlasVertex findByTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                     .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
