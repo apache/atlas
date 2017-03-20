@@ -463,7 +463,6 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertNotNull(createdHeader);
         assertNotNull(createdHeader.getGuid());
         hiveTableInstanceV2.setGuid(createdHeader.getGuid());
-        atlasClientV2.addClassifications(createdHeader.getGuid(), hiveTableInstanceV2.getClassifications());
         tableEntity = hiveTableInstanceV2;
         return hiveTableInstanceV2;
     }
