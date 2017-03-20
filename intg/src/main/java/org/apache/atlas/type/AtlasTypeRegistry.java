@@ -512,6 +512,63 @@ public class AtlasTypeRegistry {
             }
         }
 
+        public void removeTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+            if (null != typesDef && !typesDef.isEmpty()) {
+                removeTypesWithNoRefResolve(typesDef.getEnumDefs());
+                removeTypesWithNoRefResolve(typesDef.getStructDefs());
+                removeTypesWithNoRefResolve(typesDef.getClassificationDefs());
+                removeTypesWithNoRefResolve(typesDef.getEntityDefs());
+
+                resolveReferences();
+            }
+        }
+
+        private void removeTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) {
+            if (CollectionUtils.isNotEmpty(typeDefs)) {
+                for (AtlasBaseTypeDef typeDef : typeDefs) {
+                    if (StringUtils.isNotEmpty(typeDef.getGuid())) {
+                        removeTypeByGuidWithNoRefResolve(typeDef);
+                    } else {
+                        removeTypeByNameWithNoRefResolve(typeDef);
+                    }
+                }
+            }
+        }
+
+        private void removeTypeByNameWithNoRefResolve(AtlasBaseTypeDef typeDef) {
+            switch (typeDef.getCategory()) {
+                case ENUM:
+                    registryData.enumDefs.removeTypeDefByName(typeDef.getName());
+                    break;
+                case STRUCT:
+                    registryData.structDefs.removeTypeDefByName(typeDef.getName());
+                    break;
+                case CLASSIFICATION:
+                    registryData.classificationDefs.removeTypeDefByName(typeDef.getName());
+                    break;
+                case ENTITY:
+                    registryData.entityDefs.removeTypeDefByName(typeDef.getName());
+                    break;
+            }
+        }
+
+        private void removeTypeByGuidWithNoRefResolve(AtlasBaseTypeDef typeDef) {
+            switch (typeDef.getCategory()) {
+                case ENUM:
+                    registryData.enumDefs.removeTypeDefByGuid(typeDef.getGuid());
+                    break;
+                case STRUCT:
+                    registryData.structDefs.removeTypeDefByGuid(typeDef.getGuid());
+                    break;
+                case CLASSIFICATION:
+                    registryData.classificationDefs.removeTypeDefByGuid(typeDef.getGuid());
+                    break;
+                case ENTITY:
+                    registryData.entityDefs.removeTypeDefByGuid(typeDef.getGuid());
+                    break;
+            }
+        }
+
         public void removeTypeByGuid(String guid) throws AtlasBaseException {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.removeTypeByGuid({})", guid);
@@ -892,7 +949,7 @@ class TypeCache {
 
     public void removeTypeByName(String name) {
         if (name != null) {
-            typeNameMap.get(name);
+            typeNameMap.remove(name);
         }
     }
 
