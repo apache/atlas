@@ -231,6 +231,10 @@ public class AtlasTypeRegistry {
             entityDefs         = new TypeDefCache<>(allTypes);
             allDefCaches       = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs };
 
+            init();
+        }
+
+        void init() {
             allTypes.addType(new AtlasBuiltInTypes.AtlasBooleanType());
             allTypes.addType(new AtlasBuiltInTypes.AtlasByteType());
             allTypes.addType(new AtlasBuiltInTypes.AtlasShortType());
@@ -303,6 +307,16 @@ public class AtlasTypeRegistry {
                 entityDefs.removeTypeDefByName(typeName);
             }
         }
+
+        void clear() {
+            allTypes.clear();
+            enumDefs.clear();
+            structDefs.clear();
+            classificationDefs.clear();
+            entityDefs.clear();
+
+            init();
+        }
     }
 
     public static class AtlasTransientTypeRegistry extends AtlasTypeRegistry {
@@ -332,6 +346,10 @@ public class AtlasTypeRegistry {
             for (AtlasType type : registryData.allTypes.getAllTypes()) {
                 type.resolveReferencesPhase2(this);
             }
+        }
+
+        public void clear() {
+            registryData.clear();
         }
 
         public void addType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
@@ -863,10 +881,16 @@ class TypeCache {
             typeNameMap.get(name);
         }
     }
+
+    public void clear() {
+        typeGuidMap.clear();
+        typeNameMap.clear();
+    }
 }
 
 class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDefCache.class);
+
     private final TypeCache       typeCache;
     private final Map<String, T1> typeDefGuidMap;
     private final Map<String, T1> typeDefNameMap;
@@ -984,5 +1008,12 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
                 typeCache.removeTypeByGuid(guid);
             }
         }
+    }
+
+    public void clear() {
+        typeCache.clear();
+        typeDefGuidMap.clear();
+        typeDefNameMap.clear();
+        typeNameMap.clear();
     }
 }

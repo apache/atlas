@@ -93,6 +93,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
 
+            ttr.clear();
+
             AtlasTypesDef typesDef = new AtlasTypesDef(getEnumDefStore(ttr).getAll(),
                     getStructDefStore(ttr).getAll(),
                     getClassificationDefStore(ttr).getAll(),
