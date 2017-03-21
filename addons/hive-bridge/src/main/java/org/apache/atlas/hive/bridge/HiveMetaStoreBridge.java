@@ -584,6 +584,7 @@ public class HiveMetaStoreBridge {
         Path path = new Path(pathUri);
         ref.set(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
+        ref.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         return ref;
     }
 
