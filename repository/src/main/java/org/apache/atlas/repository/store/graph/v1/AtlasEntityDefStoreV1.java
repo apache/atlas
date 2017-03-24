@@ -19,19 +19,15 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasEntityDefs;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
-import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -336,7 +332,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         }
     }
 
-    private void updateVertexPreCreate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) {
+    private void updateVertexPreCreate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV1.updateVertexPreCreate(entityDef, entityType, vertex, typeDefStore);
     }
 
