@@ -19,14 +19,11 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
-import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -250,15 +247,24 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
         }
     }
 
-    private void toVertex(AtlasEnumDef enumDef, AtlasVertex vertex) {
+    private void toVertex(AtlasEnumDef enumDef, AtlasVertex vertex) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(enumDef.getElementDefs())) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "values");
+        }
+
         List<String> values = new ArrayList<>(enumDef.getElementDefs().size());
 
         for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
+            // Validate the enum element
+            if (StringUtils.isEmpty(element.getValue()) || null == element.getOrdinal()) {
+                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "elementValue");
+            }
+
             String elemKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(enumDef, element.getValue());
 
             AtlasGraphUtilsV1.setProperty(vertex, elemKey, element.getOrdinal());
 
-            if (StringUtils.isNoneBlank(element.getDescription())) {
+            if (StringUtils.isNotBlank(element.getDescription())) {
                 String descKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(elemKey, "description");
 
                 AtlasGraphUtilsV1.setProperty(vertex, descKey, element.getDescription());

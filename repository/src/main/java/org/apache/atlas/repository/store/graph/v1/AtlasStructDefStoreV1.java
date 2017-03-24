@@ -17,18 +17,16 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
-import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -42,8 +40,6 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -358,10 +354,18 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     public static void updateVertexPreCreate(AtlasStructDef structDef, AtlasStructType structType,
-                                             AtlasVertex vertex, AtlasTypeDefGraphStoreV1 typeDefStore) {
+                                             AtlasVertex vertex, AtlasTypeDefGraphStoreV1 typeDefStore) throws AtlasBaseException {
         List<String> attrNames = new ArrayList<>(structDef.getAttributeDefs().size());
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+            // Validate the mandatory features of an attribute (compatibility with legacy type system)
+            if (StringUtils.isEmpty(attributeDef.getName())) {
+                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
+            }
+            if (StringUtils.isEmpty(attributeDef.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
+            }
+
             String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef, attributeDef.getName());
 
             AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
@@ -404,6 +408,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
                     if (!attributeDef.getIsOptional()) {
                         throw new AtlasBaseException(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, structDef.getName(), attributeDef.getName());
                     }
+                }
+                // Validate the mandatory features of an attribute (compatibility with legacy type system)
+                if (StringUtils.isEmpty(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
+                }
+                if (StringUtils.isEmpty(attributeDef.getTypeName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
                 }
 
                 String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef, attributeDef.getName());
