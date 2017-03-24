@@ -73,6 +73,7 @@
     padding: 12px;
     background: $black_80;
     color: $white;
+    z-index: 999;
     //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 2px;
     &:after {

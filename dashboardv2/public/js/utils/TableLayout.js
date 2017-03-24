@@ -125,6 +125,8 @@ define(['require',
 
             includeOrderAbleColumns: false,
 
+            includeOverlayLoader: false,
+
 
             /** ui events hash */
             events: function() {
@@ -140,7 +142,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination',
                     'includeHeaderSearch', 'includeFilter', 'includePageSize',
-                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns'));
+                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeOverlayLoader'));
 
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.filterOpts, options.filterOpts);
@@ -155,9 +157,15 @@ define(['require',
             bindEvents: function() {
                 this.listenTo(this.collection, 'request', function() {
                     this.$('div[data-id="r_tableSpinner"]').addClass('show');
+                    if (this.includeOverlayLoader) {
+                        this.$('.t_tableOverlay').show();
+                    }
                 }, this);
                 this.listenTo(this.collection, 'sync error', function() {
                     this.$('div[data-id="r_tableSpinner"]').removeClass('show');
+                    if (this.includeOverlayLoader) {
+                        this.$('.t_tableOverlay').hide();
+                    }
                 }, this);
 
                 this.listenTo(this.collection, 'reset', function(collection, response) {

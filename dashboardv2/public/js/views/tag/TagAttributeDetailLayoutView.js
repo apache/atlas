@@ -118,17 +118,16 @@ define(['require',
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.$('.tagDetail'));
             },
             onSaveButton: function(saveObject, message) {
-                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 var that = this;
                 var validate = true;
-                if (this.modal.$el.find(".attributeInput").length > 1) {
-                    this.modal.$el.find(".attributeInput").each(function() {
-                        if ($(this).val() === "") {
-                            $(this).css('borderColor', "red")
-                            validate = false;
-                        }
-                    });
-                }
+
+                this.modal.$el.find(".attributeInput").each(function() {
+                    if ($(this).val() === "") {
+                        $(this).css('borderColor', "red")
+                        validate = false;
+                    }
+                });
+
                 this.modal.$el.find(".attributeInput").keyup(function() {
                     $(this).css('borderColor', "#e8e9ee");
                 });
@@ -138,7 +137,7 @@ define(['require',
                     });
                     return;
                 }
-
+                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 this.model.saveTagAttribute(this.model.get('guid'), {
                     data: JSON.stringify({
                         classificationDefs: [saveObject],
@@ -155,9 +154,9 @@ define(['require',
                         Utils.notifySuccess({
                             content: message
                         });
-                        that.modal.close();
                     }
                 });
+                that.modal.close();
             },
             onClickAddTagAttributeBtn: function(e) {
                 var that = this;
@@ -172,10 +171,11 @@ define(['require',
                             cancelText: "Cancel",
                             okText: 'Add',
                             allowCancel: true,
+                            okCloses: false
                         }).open();
                         that.modal.$el.find('button.ok').attr("disabled", "true");
-                        $(view.ui.addAttributeDiv).on('keyup', that.modal.$el.find('attributeInput'), function(e) {
-                            if ((e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 32) && e.target.value.trim() == "") {
+                        view.ui.addAttributeDiv.on('keyup', '.attributeInput', function(e) {
+                            if (e.target.value.trim() == "") {
                                 that.modal.$el.find('button.ok').attr("disabled", "disabled");
                             } else {
                                 that.modal.$el.find('button.ok').removeAttr("disabled");

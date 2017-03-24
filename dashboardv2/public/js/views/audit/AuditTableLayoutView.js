@@ -86,7 +86,6 @@ define(['require',
                     nextClick: false,
                     previous: this.ui.previousAuditData
                 });
-                this.renderTableLayoutView();
             },
             bindEvents: function() {},
             getToOffset: function() {
@@ -124,7 +123,7 @@ define(['require',
             fetchCollection: function(options) {
                 var that = this;
                 this.$('.fontLoader').show();
-                this.$('.auditTable').hide();
+                this.$('.tableOverlay').show();
                 if (that.entityCollection.models.length > 1) {
                     if (options.nextClick) {
                         this.pervOld.push(that.entityCollection.first().get('eventKey'));
@@ -132,12 +131,13 @@ define(['require',
                 }
                 this.entityCollection.fetch({
                     success: function() {
+                        if (!(that.ui.pageRecordText instanceof jQuery)) {
+                            return;
+                        }
                         if (that.entityCollection.models.length < that.count) {
                             options.previous.attr('disabled', true);
                             options.next.attr('disabled', true);
                         }
-                        that.$('.fontLoader').hide();
-                        that.$('.auditTable').show();
                         that.renderOffset(options);
                         if (that.entityCollection.models.length) {
                             if (that.entityCollection && (that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
@@ -148,9 +148,12 @@ define(['require',
                                 if (that.pervOld.length === 0) {
                                     options.previous.attr('disabled', true);
                                 }
+                                that.renderTableLayoutView();
                             }
                         }
-                        that.renderTableLayoutView();
+                        that.$('.fontLoader').hide();
+                        that.$('.tableOverlay').hide();
+                        that.$('.auditTable').show(); // Only for first time table show because we never hide after first render.
                     },
                     silent: true
                 });

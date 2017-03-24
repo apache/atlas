@@ -148,12 +148,12 @@ define(['require',
                     if (checkTagOrTerm.tag) {
                         if (searchString) {
                             if (name.search(new RegExp(searchString, "i")) != -1) {
-                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="`' + name + '`" >' + name + '</a></li>';
+                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
                             } else {
                                 return;
                             }
                         } else {
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="`' + name + '`">' + name + '</a></li>';
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
                         }
                     }
                 });
@@ -220,6 +220,7 @@ define(['require',
                 }
                 modal.$el.find(".attributeInput").keyup(function() {
                     $(this).css('borderColor', "#e8e9ee");
+                    modal.$el.find('button.ok').removeAttr("disabled");
                 });
                 if (!validate) {
                     Utils.notifyInfo({
@@ -304,9 +305,9 @@ define(['require',
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        query: this.ui.tagsParent.find('li.active').find("a").data('name'),
-                        searchType: "dsl",
-                        dslChecked: true
+                        tag: this.ui.tagsParent.find('li.active').find("a").data('name'),
+                        searchType: "basic",
+                        dslChecked: false
                     },
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };

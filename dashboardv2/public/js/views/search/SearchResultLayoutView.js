@@ -123,7 +123,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -187,6 +187,7 @@ define(['require',
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.$('.fontLoader').hide();
+                    this.$('.tableOverlay').hide();
                     var responseJSON = response ? response.responseJSON : response;
                     if (response && responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
                         Utils.notifyError({
@@ -198,6 +199,9 @@ define(['require',
                         });
                     }
                 }, this);
+                this.listenTo(this.searchVent, "search:refresh", function(model, response) {
+                    this.fetchCollection();
+                }, this);
             },
             onRender: function() {
                 if (!this.initialView) {
@@ -207,7 +211,7 @@ define(['require',
                         value = this.value;
                     } else {
                         value = {
-                            'query': '',
+                            'query': null,
                             'searchType': 'basic'
                         };
                     }
@@ -233,76 +237,82 @@ define(['require',
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
-                $.extend(this.searchCollection.queryParams, { limit: this.limit });
-                if (value) {
+
+                if (value && !value.paginationChange) {
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit });
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                         $.extend(this.searchCollection.queryParams, { limit: this.limit });
                         this.offset = 0;
                     }
-                    if (Utils.getUrlState.isTagTab()) {
-                        this.searchCollection.url = UrlLinks.searchApiUrl(Enums.searchUrlType.DSL);
-                    }
-                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() || null, 'typeName': value.type || null, 'classification': value.tag || null });
+                    _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     skipDefaultError: true,
                     success: function() {
-                        if (that.searchCollection.models.length < that.limit) {
-                            that.ui.nextData.attr('disabled', true);
-                        }
                         Globals.searchApiCallRef = undefined;
-                        if (that.offset === 0) {
-                            that.pageFrom = 1;
-                            that.pageTo = that.limit;
-                            if (that.searchCollection.length > 0) {
-                                that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.searchCollection.length);
+                        if (!(that.ui.pageRecordText instanceof jQuery)) {
+                            return;
+                        }
+                        if (value) {
+                            if (that.searchCollection.models.length < that.limit) {
+                                that.ui.nextData.attr('disabled', true);
                             }
-                        } else if (that.searchCollection.models.length && !that.previousClick) {
-                            //on next click, adding "1" for showing the another records..
-                            that.pageFrom = that.pageTo + 1;
-                            that.pageTo = that.pageTo + that.searchCollection.models.length;
-                            if (that.pageFrom && that.pageTo) {
+                            if (that.offset === 0) {
+                                that.pageFrom = 1;
+                                that.pageTo = that.limit;
+                                if (that.searchCollection.length > 0) {
+                                    that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.searchCollection.length);
+                                }
+                            } else if (that.searchCollection.models.length && !that.previousClick) {
+                                //on next click, adding "1" for showing the another records..
+                                that.pageFrom = that.pageTo + 1;
+                                that.pageTo = that.pageTo + that.searchCollection.models.length;
+                                if (that.pageFrom && that.pageTo) {
+                                    that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
+                                }
+                            } else if (that.previousClick) {
+                                that.pageTo = (that.pageTo - (that.pageTo - that.pageFrom)) - 1;
+                                //if limit is 0 then result is change to 1 because page count is showing from 1
+                                that.pageFrom = (that.pageFrom - that.limit === 0 ? 1 : that.pageFrom - that.limit);
                                 that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
                             }
-                        } else if (that.previousClick) {
-                            that.pageTo = (that.pageTo - (that.pageTo - that.pageFrom)) - 1;
-                            //if limit is 0 then result is change to 1 because page count is showing from 1
-                            that.pageFrom = (that.pageFrom - that.limit === 0 ? 1 : that.pageFrom - that.limit);
-                            that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
-                        }
-                        if (that.searchCollection.models.length === 0) {
-                            that.checkTableFetch();
-                            that.offset = that.offset - that.limit;
-                            if (that.firstFetch) {
-                                that.renderTableLayoutView();
+                            if (that.offset < that.limit) {
+                                that.ui.previousData.attr('disabled', true);
+                            }
+                            if (that.searchCollection.models.length === 0) {
+                                that.checkTableFetch();
+                                that.offset = that.offset - that.limit;
+                                if (that.firstFetch) {
+                                    that.renderTableLayoutView();
+                                }
                             }
                         }
                         if (that.firstFetch) {
                             that.firstFetch = false;
                         }
-                        if (that.offset < that.limit) {
-                            that.ui.previousData.attr('disabled', true);
-                        }
+
                         // checking length for not rendering the table
                         if (that.searchCollection.models.length) {
                             that.renderTableLayoutView();
                         }
-                        var resultArr = [];
-                        if (that.searchCollection.queryParams.typeName) {
-                            resultArr.push(that.searchCollection.queryParams.typeName)
+                        if (value) {
+                            var resultArr = [];
+                            if (that.searchCollection.queryParams.typeName) {
+                                resultArr.push(that.searchCollection.queryParams.typeName)
+                            }
+                            if (that.searchCollection.queryParams.classification) {
+                                resultArr.push(that.searchCollection.queryParams.classification)
+                            }
+                            if (that.searchCollection.queryParams.query) {
+                                resultArr.push(that.searchCollection.queryParams.query)
+                            }
+                            var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
+                            if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
+                                searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+                            }
+                            that.$('.searchResult').html(searchString);
                         }
-                        if (that.searchCollection.queryParams.classification) {
-                            resultArr.push(that.searchCollection.queryParams.classification)
-                        }
-                        if (that.searchCollection.queryParams.query) {
-                            resultArr.push(that.searchCollection.queryParams.query)
-                        }
-                        var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
-                        if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
-                            searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
-                        }
-                        that.$('.searchResult').html(searchString);
                     },
                     silent: true,
                     reset: true
@@ -319,6 +329,7 @@ define(['require',
                     that.ui.paginationDiv.show();
                     that.$(".ellipsis .inputAssignTag").hide();
                     that.renderBreadcrumb();
+                    that.checkTableFetch();
                 });
             },
             renderBreadcrumb: function() {
@@ -332,7 +343,6 @@ define(['require',
             },
             checkTableFetch: function() {
                 if (this.asyncFetchCounter <= 0) {
-                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                     this.hideLoader();
                 }
             },
@@ -467,7 +477,6 @@ define(['require',
                         })
                     };
                 }
-                that.checkTableFetch();
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
             },
             addTagModalView: function(guid, multiple) {
@@ -508,13 +517,12 @@ define(['require',
             },
             showLoader: function() {
                 this.$('.fontLoader').show();
-                this.$('.searchTable').hide();
-                this.$('.ellipsis').hide();
+                this.$('.tableOverlay').show();
             },
             hideLoader: function() {
                 this.$('.fontLoader').hide();
-                this.$('.searchTable').show();
-                this.$('.ellipsis').show();
+                this.$('.ellipsis,.labelShowRecord').show(); // only for first time
+                this.$('.tableOverlay').hide();
             },
             checkedValue: function(e) {
                 var guid = "",
@@ -589,6 +597,8 @@ define(['require',
                     'tagName': tagName,
                     'guid': guid,
                     'tagOrTerm': tagOrTerm,
+                    showLoader: that.showLoader.bind(that),
+                    hideLoader: that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
                     }
@@ -602,7 +612,7 @@ define(['require',
                     offset: that.offset
                 });
                 this.previousClick = false;
-                this.fetchCollection();
+                this.fetchCollection({ paginationChange: true });
             },
             onClickpreviousData: function() {
                 var that = this;
@@ -612,7 +622,7 @@ define(['require',
                     offset: that.offset
                 });
                 this.previousClick = true;
-                this.fetchCollection();
+                this.fetchCollection({ paginationChange: true });
             },
 
             onClickEditEntity: function(e) {

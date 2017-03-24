@@ -202,8 +202,16 @@ define(['require',
                     'tagName': tagName,
                     'guid': that.guid,
                     'tagOrTerm': (that.term ? "term" : "tag"),
-                    callback: function() {
+                    showLoader: function() {
                         that.$('.fontLoader').show();
+                        that.$('.tableOverlay').show();
+                    },
+                    hideLoader: function() {
+                        that.$('.fontLoader').hide();
+                        that.$('.tableOverlay').hide();
+                    },
+                    callback: function() {
+                        this.hideLoader();
                         if (that.fetchCollection) {
                             that.fetchCollection();
                         }
