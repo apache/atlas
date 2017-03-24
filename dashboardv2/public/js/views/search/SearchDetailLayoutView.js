@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -60,7 +60,8 @@ define(['require',
                             tag: that.tag,
                             initialView: that.initialView,
                             entityDefCollection: that.entityDefCollection,
-                            typeHeaders: that.typeHeaders
+                            typeHeaders: that.typeHeaders,
+                            searchVent: that.searchVent
                         }));
                     }
                 });

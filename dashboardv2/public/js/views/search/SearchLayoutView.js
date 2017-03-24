@@ -72,24 +72,26 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent'));
                 this.type = "basic";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
-                        query: "",
-                        type: ""
+                        query: null,
+                        type: null
                     },
                     basic: {
-                        query: "",
-                        type: "",
-                        tag: ""
+                        query: null,
+                        type: null,
+                        tag: null
                     }
                 };
                 this.dsl = false;
                 if (param && param.searchType) {
-                    _.extend(this.query[param.searchType], _.pick(param, 'query', 'type', 'tag'));
+                    this.type = param.searchType;
+                    this.updateQueryObject(param);
                 }
+                this.bindEvents();
             },
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
@@ -109,7 +111,7 @@ define(['require',
             checkForButtonVisiblity: function() {
                 var that = this,
                     value = this.ui.searchInput.val() || this.ui.typeLov.val();
-                if (!this.dsl && !value.length) {
+                if (!this.dsl && !value) {
                     value = this.ui.tagLov.val();
                 }
                 if (value && value.length) {
@@ -136,11 +138,25 @@ define(['require',
                 this.bindEvents();
                 this.checkForButtonVisiblity();
             },
+            updateQueryObject: function(param) {
+                if (param && param.searchType) {
+                    this.type = param.searchType;
+                }
+                _.extend(this.query[this.type], {
+                        query: null,
+                        type: null,
+                        tag: null
+                    },
+                    param);
+            },
             fetchCollection: function(value) {
                 this.typeHeaders.fetch({ reset: true });
             },
             onRefreshButton: function() {
                 this.fetchCollection();
+                if (this.searchVent) {
+                    this.searchVent.trigger('search:refresh');
+                }
             },
             advancedInfo: function(e) {
                 require([
@@ -161,6 +177,7 @@ define(['require',
                 });
             },
             manualRender: function(paramObj) {
+                this.updateQueryObject(paramObj);
                 this.setValues(paramObj);
             },
             renderTypeTagList: function() {
@@ -198,36 +215,33 @@ define(['require',
                     } else if (this.value.dslChecked == "false" && this.dsl == true) {
                         this.ui.searchType.prop("checked", false).trigger("change");
                     }
-                    if (this.value.query !== undefined) {
-                        // get only search value and append it to input box
-
-                        if (this.ui.typeLov.data('select2')) {
-                            this.ui.typeLov.val(this.value.type).trigger('change');
-                        } else {
-                            this.ui.typeLov.val(this.value.type);
-                        }
-                        if (!this.dsl) {
-                            if (this.ui.tagLov.data('select2')) {
-                                this.ui.tagLov.val(this.value.tag).trigger('change');
-                            } else {
-                                this.ui.tagLov.val(this.value.tag);
-                            }
-                        }
-                        this.ui.searchInput.val(this.value.query);
-                        setTimeout(function() {
-                            that.ui.searchInput.focus();
-                        }, 0);
+                    if (this.ui.typeLov.data('select2')) {
+                        this.ui.typeLov.val(this.value.type).trigger('change');
+                    } else {
+                        this.ui.typeLov.val(this.value.type);
                     }
+
+                    if (!this.dsl) {
+                        if (this.ui.tagLov.data('select2')) {
+                            this.ui.tagLov.val(this.value.tag).trigger('change');
+                        } else {
+                            this.ui.typeLov.val(this.value.tag);
+                        }
+                    }
+                    this.ui.searchInput.val(this.value.query || "");
+                    setTimeout(function() {
+                        that.ui.searchInput.focus();
+                    }, 0);
                 }
             },
             findSearchResult: function() {
                 this.triggerSearch(this.ui.searchInput.val());
             },
             triggerSearch: function(value) {
-                this.query[this.type].query = value;
-                this.query[this.type].type = this.ui.typeLov.select2('val');
+                this.query[this.type].query = value || null;
+                this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
-                    this.query[this.type].tag = this.ui.tagLov.select2('val');
+                    this.query[this.type].tag = this.ui.tagLov.select2('val') || null;
                 }
 
                 Utils.setUrl({
@@ -254,8 +268,8 @@ define(['require',
                     this.dsl = false;
                     this.type = "basic";
                 }
-                if (Utils.getUrlState.getQueryParams() && this.query[this.type].query !== Utils.getUrlState.getQueryParams().query && this.type == Utils.getUrlState.getQueryParams().searchType) {
-                    this.query[this.type].query = Utils.getUrlState.getQueryParams().query;
+                if (Utils.getUrlState.getQueryParams() && this.type == Utils.getUrlState.getQueryParams().searchType) {
+                    this.updateQueryObject(Utils.getUrlState.getQueryParams());
                 }
                 Utils.setUrl({
                     url: '#!/search/searchResult',
@@ -271,13 +285,17 @@ define(['require',
                 });
             },
             clearSearchData: function() {
-                this.query[this.type].query = "";
+                this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
                 this.checkForButtonVisiblity()
                 Utils.setUrl({
-                    url: '#!/search',
+                    url: '#!/search/searchResult',
+                    urlParams: {
+                        searchType: this.type,
+                        dslChecked: this.ui.searchType.is(':checked')
+                    },
                     mergeBrowserUrl: false,
                     trigger: true
                 });

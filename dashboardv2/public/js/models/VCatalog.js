@@ -38,7 +38,7 @@ define(['require',
             return this.get('name');
         },
         deleteTerm: function(termURL, options) {
-            var url = UrlLinks.baseURL + termURL;
+            var url = termURL;
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

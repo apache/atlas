@@ -298,7 +298,7 @@ define(['require',
                 d3.selectAll('button.zoomButton').on('click', zoomClick);
                 var tooltip = d3Tip()
                     .attr('class', 'd3-tip')
-                    .offset([-13, 0])
+                    .offset([-18, 0])
                     .html(function(d) {
                         var value = that.g.node(d);
                         var htmlStr = "";

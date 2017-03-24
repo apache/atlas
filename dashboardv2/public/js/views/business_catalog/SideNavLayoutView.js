@@ -66,7 +66,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'collection', 'typeHeaders'));
+            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'collection', 'typeHeaders', 'searchVent'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -106,6 +106,7 @@ define(['require',
             require(['views/search/SearchLayoutView'], function(SearchLayoutView) {
                 that.RSearchLayoutView.show(new SearchLayoutView({
                     value: that.value,
+                    searchVent: that.searchVent,
                     typeHeaders: that.typeHeaders
                 }));
             });

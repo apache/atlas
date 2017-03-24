@@ -70,7 +70,9 @@ define(['require',
                     if (that.multiple) {
                         for (var i = 0; i < that.multiple.length; i++) {
                             if (i == 0) {
-                                that.showLoader();
+                                if (that.showLoader) {
+                                    that.showLoader();
+                                }
                             }
                             var obj = {
                                 termName: termName,
@@ -92,6 +94,9 @@ define(['require',
                         }
                     } else {
                         that.asyncFetchCounter = 0;
+                        if (that.showLoader) {
+                            that.showLoader();
+                        }
                         CommonViewFunction.saveTermToAsset({
                             termName: termName,
                             guid: this.guid

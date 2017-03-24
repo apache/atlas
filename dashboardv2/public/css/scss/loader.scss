@@ -59,3 +59,13 @@
     right: 50%;
     height: 60px;
 }
+
+.tableOverlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: $gray;
+    z-index: 99;
+    display: none;
+    opacity: 0.2;
+}

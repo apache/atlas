@@ -38,7 +38,7 @@ define(['require',
 
             /** Layout sub regions */
             regions: {
-                RTagLayoutView: "#r_tagLayoutView",
+                RSchemaTableLayoutView: "#r_schemaTableLayoutView",
             },
             /** ui selector cache */
             ui: {
@@ -171,9 +171,11 @@ define(['require',
             },
             showLoader: function() {
                 this.$('.fontLoader').show();
+                this.$('.tableOverlay').show()
             },
             hideLoader: function(argument) {
                 this.$('.fontLoader').hide();
+                this.$('.tableOverlay').hide();
             },
             renderTableLayoutView: function() {
                 var that = this;
@@ -201,7 +203,7 @@ define(['require',
                     });
                     var columns = new columnCollection(that.getSchemaTableColumns());
                     //columns.setPositions().sort();
-                    that.RTagLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                    that.RSchemaTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns,
                         includeOrderAbleColumns: true
                     })));

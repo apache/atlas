@@ -55,12 +55,12 @@ define(['require',
                 var that = this;
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
                     var value = {
-                        'query': "`" + that.tag + "`"
+                        'tag': that.tag,
+                        'searchType': 'basic'
                     };
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                         value: value,
                         entityDefCollection: that.entityDefCollection,
-                        tag: that.tag,
                         typeHeaders: that.typeHeaders
                     }));
                 });
