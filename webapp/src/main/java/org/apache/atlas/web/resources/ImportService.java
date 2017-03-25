@@ -120,13 +120,14 @@ public class ImportService {
 
     private void processTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
         setGuidToEmpty(typeDefinitionMap);
+
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typeDefinitionMap, this.typeRegistry);
+
         if (!typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
-        }
 
-        typeDefStore.updateTypesDef(typeDefinitionMap);
-        updateMetricsForTypesDef(typeDefinitionMap, result);
+            updateMetricsForTypesDef(typesToCreate, result);
+        }
     }
 
     private void updateMetricsForTypesDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) {
