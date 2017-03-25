@@ -233,6 +233,9 @@ public class AtlasEntityChangeNotifier {
         }
 
         AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(entityId);
+        if(atlasVertex == null) {
+            return;
+        }
 
         if (atlasVertex == null) {
             LOG.warn("updateFullTextMapping(): no entity exists with guid {}", entityId);

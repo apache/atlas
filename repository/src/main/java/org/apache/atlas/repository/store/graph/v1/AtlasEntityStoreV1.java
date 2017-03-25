@@ -170,10 +170,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
             EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
 
-            if(CollectionUtils.isNotEmpty(entity.getClassifications())) {
-                addClassifications(entity.getGuid(), entity.getClassifications());
-            }
-
             updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
             updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
@@ -566,6 +562,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     entity.setGuid(generatedGuid);
 
                     context.addCreated(guid, entity, entityType, vertex);
+                }
+
+                // during import, update the system attributes
+                if (entityStream instanceof EntityImportStream) {
+                    entityGraphMapper.updateSystemAttributes(vertex, entity);
                 }
             }
         }

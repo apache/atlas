@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,6 +111,28 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV1.setProperty(ret, Constants.VERSION_PROPERTY_KEY, getEntityVersion(entity));
 
         return ret;
+    }
+
+    public void updateSystemAttributes(AtlasVertex vertex, AtlasEntity entity) {
+        if (entity.getStatus() != null) {
+            AtlasGraphUtilsV1.setProperty(vertex, Constants.STATE_PROPERTY_KEY, entity.getStatus().name());
+        }
+
+        if (entity.getCreateTime() != null) {
+            AtlasGraphUtilsV1.setProperty(vertex, Constants.TIMESTAMP_PROPERTY_KEY, entity.getCreateTime().getTime());
+        }
+
+        if (entity.getUpdateTime() != null) {
+            AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, entity.getUpdateTime().getTime());
+        }
+
+        if (StringUtils.isNotEmpty(entity.getCreatedBy())) {
+            AtlasGraphUtilsV1.setProperty(vertex, Constants.CREATED_BY_KEY, entity.getCreatedBy());
+        }
+
+        if (StringUtils.isNotEmpty(entity.getUpdatedBy())) {
+            AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFIED_BY_KEY, entity.getUpdatedBy());
+        }
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {

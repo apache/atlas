@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -29,13 +30,22 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -87,6 +97,32 @@ public class ExportService {
             }
 
             long endTime = System.currentTimeMillis();
+
+            AtlasTypesDef typesDef = context.result.getData().getTypesDef();
+
+            for (String entityType : context.entityTypes) {
+                AtlasEntityDef entityDef = typeRegistry.getEntityDefByName(entityType);
+
+                typesDef.getEntityDefs().add(entityDef);
+            }
+
+            for (String classificationType : context.classificationTypes) {
+                AtlasClassificationDef classificationDef = typeRegistry.getClassificationDefByName(classificationType);
+
+                typesDef.getClassificationDefs().add(classificationDef);
+            }
+
+            for (String structType : context.structTypes) {
+                AtlasStructDef structDef = typeRegistry.getStructDefByName(structType);
+
+                typesDef.getStructDefs().add(structDef);
+            }
+
+            for (String enumType : context.enumTypes) {
+                AtlasEnumDef enumDef = typeRegistry.getEnumDefByName(enumType);
+
+                typesDef.getEnumDefs().add(enumDef);
+            }
 
             context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
             context.sink.setTypesDef(context.result.getData().getTypesDef());
@@ -221,16 +257,14 @@ public class ExportService {
             context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
 
             addEntity(entityWithExtInfo, context);
-            addTypesAsNeeded(entityWithExtInfo.getEntity().getTypeName(), context);
-            addClassificationsAsNeeded(entityWithExtInfo.getEntity(), context);
+            addTypes(entityWithExtInfo.getEntity(), context);
 
             context.guidsProcessed.add(entityWithExtInfo.getEntity().getGuid());
             getConntedEntitiesBasedOnOption(entityWithExtInfo.getEntity(), context, direction);
 
             if(entityWithExtInfo.getReferredEntities() != null) {
                 for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
-                    addTypesAsNeeded(e.getTypeName(), context);
-                    addClassificationsAsNeeded(e, context);
+                    addTypes(e, context);
                     getConntedEntitiesBasedOnOption(e, context, direction);
                 }
 
@@ -371,33 +405,114 @@ public class ExportService {
         context.reportProgress();
     }
 
-    private void addClassificationsAsNeeded(AtlasEntity entity, ExportContext context) {
-        AtlasExportResult result   = context.result;
-        AtlasTypesDef     typesDef = result.getData().getTypesDef();
+    private void addTypes(AtlasEntity entity, ExportContext context) {
+        addEntityType(entity.getTypeName(), context);
 
         if(CollectionUtils.isNotEmpty(entity.getClassifications())) {
             for (AtlasClassification c : entity.getClassifications()) {
-                if (typesDef.hasClassificationDef(c.getTypeName())) {
-                    continue;
-                }
-
-                AtlasClassificationDef cd = typeRegistry.getClassificationDefByName(c.getTypeName());
-
-                typesDef.getClassificationDefs().add(cd);
-                result.incrementMeticsCounter("typedef:classification");
+                addClassificationType(c.getTypeName(), context);
             }
         }
     }
 
-    private void addTypesAsNeeded(String typeName, ExportContext context) {
-        AtlasExportResult result   = context.result;
-        AtlasTypesDef     typesDef = result.getData().getTypesDef();
+    private void addType(String typeName, ExportContext context) {
+        AtlasType type = null;
 
-        if(!typesDef.hasEntityDef(typeName)) {
-            AtlasEntityDef typeDefinition = typeRegistry.getEntityDefByName(typeName);
+        try {
+            type = typeRegistry.getType(typeName);
 
-            typesDef.getEntityDefs().add(typeDefinition);
-            result.incrementMeticsCounter("typedef:" + typeDefinition.getName());
+            addType(type, context);
+        } catch (AtlasBaseException excp) {
+            LOG.error("unknown type {}", typeName);
+        }
+    }
+
+    private void addEntityType(String typeName, ExportContext context) {
+        if (!context.entityTypes.contains(typeName)) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            addEntityType(entityType, context);
+        }
+    }
+
+    private void addClassificationType(String typeName, ExportContext context) {
+        if (!context.classificationTypes.contains(typeName)) {
+            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(typeName);
+
+            addClassificationType(classificationType, context);
+        }
+    }
+
+    private void addType(AtlasType type, ExportContext context) {
+        if (type.getTypeCategory() == TypeCategory.PRIMITIVE) {
+            return;
+        }
+
+        if (type instanceof AtlasArrayType) {
+            AtlasArrayType arrayType = (AtlasArrayType)type;
+
+            addType(arrayType.getElementType(), context);
+        } else if (type instanceof AtlasMapType) {
+            AtlasMapType mapType = (AtlasMapType)type;
+
+            addType(mapType.getKeyType(), context);
+            addType(mapType.getValueType(), context);
+        } else if (type instanceof AtlasEntityType) {
+            addEntityType((AtlasEntityType)type, context);
+        } else if (type instanceof AtlasClassificationType) {
+            addClassificationType((AtlasClassificationType)type, context);
+        } else if (type instanceof AtlasStructType) {
+            addStructType((AtlasStructType)type, context);
+        } else if (type instanceof AtlasEnumType) {
+            addEnumType((AtlasEnumType)type, context);
+        }
+    }
+
+    private void addEntityType(AtlasEntityType entityType, ExportContext context) {
+        if (!context.entityTypes.contains(entityType.getTypeName())) {
+            context.entityTypes.add(entityType.getTypeName());
+
+            addAttributeTypes(entityType, context);
+
+            if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
+                for (String superType : entityType.getAllSuperTypes()) {
+                    addEntityType(superType, context);
+                }
+            }
+        }
+    }
+
+    private void addClassificationType(AtlasClassificationType classificationType, ExportContext context) {
+        if (!context.classificationTypes.contains(classificationType.getTypeName())) {
+            context.classificationTypes.add(classificationType.getTypeName());
+
+            addAttributeTypes(classificationType, context);
+
+            if (CollectionUtils.isNotEmpty(classificationType.getAllSuperTypes())) {
+                for (String superType : classificationType.getAllSuperTypes()) {
+                    addClassificationType(superType, context);
+                }
+            }
+        }
+    }
+
+    private void addStructType(AtlasStructType structType, ExportContext context) {
+        if (!context.structTypes.contains(structType.getTypeName())) {
+            context.structTypes.add(structType.getTypeName());
+
+            addAttributeTypes(structType, context);
+        }
+    }
+
+    private void addEnumType(AtlasEnumType enumType, ExportContext context) {
+        if (!context.enumTypes.contains(enumType.getTypeName())) {
+            context.enumTypes.add(enumType.getTypeName());
+        }
+    }
+
+    private void addAttributeTypes(AtlasStructType structType, ExportContext context) {
+        for (AtlasAttributeDef attributeDef : structType.getStructDef().getAttributeDefs()) {
+            addType(attributeDef.getTypeName(), context);
         }
     }
 
@@ -499,6 +614,10 @@ public class ExportService {
         final UniqueList<String>              guidsToProcess = new UniqueList<>();
         final UniqueList<String>              guidsLineageToProcess = new UniqueList<>();
         final Map<String, TraversalDirection> guidDirection  = new HashMap<>();
+        final Set<String>                     entityTypes         = new HashSet<>();
+        final Set<String>                     classificationTypes = new HashSet<>();
+        final Set<String>                     structTypes         = new HashSet<>();
+        final Set<String>                     enumTypes           = new HashSet<>();
         final AtlasExportResult               result;
         final ZipSink                         sink;
 
