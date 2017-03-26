@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -31,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import javax.script.ScriptException;
 import java.util.List;
 import java.util.Map;
 
@@ -100,7 +100,7 @@ public class MetricsService {
                         LOG.debug("Executing query: {}", metricQuery);
                     }
                     executeGremlinQuery(metrics, metricQuery.group, metricQuery.name, metricQuery.query);
-                } catch (ScriptException e) {
+                } catch (AtlasBaseException e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Gremlin execution failed for metric {}", metricQuery, e);
                     } else {
@@ -120,7 +120,7 @@ public class MetricsService {
         return cachedMetrics;
     }
 
-    private void executeGremlinQuery(AtlasMetrics metrics, String type, String name, String query) throws ScriptException {
+    private void executeGremlinQuery(AtlasMetrics metrics, String type, String name, String query) throws AtlasBaseException {
         Object result = atlasGraph.executeGremlinScript(query, false);
 
         if (result instanceof Number) {

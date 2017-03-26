@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.services;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -26,7 +27,6 @@ import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,7 +49,7 @@ public class MetricsServiceTest {
     private Number mockCount = 10;
 
     @BeforeClass
-    public void init() throws ScriptException {
+    public void init() throws AtlasBaseException {
         Map<String, Object> mockMap = new HashMap<>();
         mockMap.put("a", 1);
         mockMap.put("b", 2);
@@ -66,7 +66,7 @@ public class MetricsServiceTest {
         metricsService = new MetricsService(mockConfig, mockGraph);
     }
 
-    private void setupMockGraph() throws ScriptException {
+    private void setupMockGraph() throws AtlasBaseException {
         if (mockGraph == null) mockGraph = mock(AtlasGraph.class);
         when(mockGraph.executeGremlinScript(anyString(), eq(false))).thenAnswer(new Answer<Object>() {
             @Override
@@ -81,7 +81,7 @@ public class MetricsServiceTest {
     }
 
     @Test
-    public void testGetMetrics() throws InterruptedException, ScriptException {
+    public void testGetMetrics() throws InterruptedException, AtlasBaseException {
         assertNotNull(metricsService);
         AtlasMetrics metrics = metricsService.getMetrics(false);
         assertNotNull(metrics);

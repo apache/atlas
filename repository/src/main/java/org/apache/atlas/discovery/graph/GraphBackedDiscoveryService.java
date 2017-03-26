@@ -27,12 +27,12 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.script.ScriptException;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GremlinEvaluator;
 import org.apache.atlas.query.GremlinQuery;
@@ -197,8 +197,8 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         try {
             Object o = graph.executeGremlinScript(gremlinQuery, false);
             return extractResult(o);
-        } catch (ScriptException se) {
-            throw new DiscoveryException(se);
+        } catch (AtlasBaseException e) {
+            throw new DiscoveryException(e);
         }
     }
 

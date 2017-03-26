@@ -94,53 +94,48 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         AtlasSearchResult ret = new AtlasSearchResult(dslQuery, AtlasQueryType.DSL);
         GremlinQuery gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
 
-        try {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Executing DSL query: {}", dslQuery);
-            }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing DSL query: {}", dslQuery);
+        }
 
-            Object result = graph.executeGremlinScript(gremlinQuery.queryStr(), false);
+        Object result = graph.executeGremlinScript(gremlinQuery.queryStr(), false);
 
-            if (result instanceof List && CollectionUtils.isNotEmpty((List)result)) {
-                List   queryResult  = (List) result;
-                Object firstElement = queryResult.get(0);
+        if (result instanceof List && CollectionUtils.isNotEmpty((List)result)) {
+            List   queryResult  = (List) result;
+            Object firstElement = queryResult.get(0);
 
-                if (firstElement instanceof AtlasVertex) {
-                    for (Object element : queryResult) {
-                        if (element instanceof AtlasVertex) {
-                            ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)element));
-                        } else {
-                            LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
-                        }
+            if (firstElement instanceof AtlasVertex) {
+                for (Object element : queryResult) {
+                    if (element instanceof AtlasVertex) {
+                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)element));
+                    } else {
+                        LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
                     }
-                } else if (firstElement instanceof Map &&
-                           (((Map)firstElement).containsKey("theInstance") || ((Map)firstElement).containsKey("theTrait"))) {
-                    for (Object element : queryResult) {
-                        if (element instanceof Map) {
-                            Map map = (Map)element;
+                }
+            } else if (firstElement instanceof Map &&
+                       (((Map)firstElement).containsKey("theInstance") || ((Map)firstElement).containsKey("theTrait"))) {
+                for (Object element : queryResult) {
+                    if (element instanceof Map) {
+                        Map map = (Map)element;
 
-                            if (map.containsKey("theInstance")) {
-                                Object value = map.get("theInstance");
+                        if (map.containsKey("theInstance")) {
+                            Object value = map.get("theInstance");
 
-                                if (value instanceof List && CollectionUtils.isNotEmpty((List)value)) {
-                                    Object entry = ((List)value).get(0);
+                            if (value instanceof List && CollectionUtils.isNotEmpty((List)value)) {
+                                Object entry = ((List)value).get(0);
 
-                                    if (entry instanceof AtlasVertex) {
-                                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)entry));
-                                    }
+                                if (entry instanceof AtlasVertex) {
+                                    ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)entry));
                                 }
                             }
-                        } else {
-                            LOG.warn("searchUsingDslQuery({}): expected a trait result; found unexpected entry in result {}", dslQuery, element);
                         }
+                    } else {
+                        LOG.warn("searchUsingDslQuery({}): expected a trait result; found unexpected entry in result {}", dslQuery, element);
                     }
-                } else if (gremlinQuery.hasSelectList()) {
-                    ret.setAttributes(toAttributesResult(queryResult, gremlinQuery));
                 }
+            } else if (gremlinQuery.hasSelectList()) {
+                ret.setAttributes(toAttributesResult(queryResult, gremlinQuery));
             }
-
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, gremlinQuery.queryStr());
         }
 
         return ret;

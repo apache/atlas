@@ -22,11 +22,10 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
-import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.typesystem.types.IDataType;
 
@@ -261,7 +260,7 @@ public interface AtlasGraph<V, E> {
      *
      * @return script engine to execute Gremlin queries
      */
-    ScriptEngine getGremlinScriptEngine();
+    ScriptEngine getGremlinScriptEngine() throws AtlasBaseException;
 
     /**
      * Release an instance of the script engine obtained with getGremlinScriptEngine()
@@ -280,7 +279,7 @@ public interface AtlasGraph<V, E> {
      *
      * @throws ScriptException
      */
-    Object executeGremlinScript(String query, boolean isPath) throws ScriptException;
+    Object executeGremlinScript(String query, boolean isPath) throws AtlasBaseException;
 
     /**
      * Executes a Gremlin script using a ScriptEngineManager provided by consumer, returns an object with the result.
