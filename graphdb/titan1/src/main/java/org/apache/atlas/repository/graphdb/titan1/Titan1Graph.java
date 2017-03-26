@@ -30,6 +30,8 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -316,13 +318,12 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
     }
 
     @Override
-    public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
-
+    public Object executeGremlinScript(String query, boolean isPath) throws AtlasBaseException {
         Object result = executeGremlinScript(query);
         return convertGremlinValue(result);
     }
 
-    private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
+    private Object executeGremlinScript(String gremlinQuery) throws AtlasBaseException {
         GremlinGroovyScriptEngine scriptEngine = getGremlinScriptEngine();
 
         try {
@@ -334,6 +335,8 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
             Object result = scriptEngine.eval(gremlinQuery, bindings);
 
             return result;
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, gremlinQuery);
         } finally {
             releaseGremlinScriptEngine(scriptEngine);
         }

@@ -628,7 +628,7 @@ public class ExportService {
 
         private       int                 progressReportCount = 0;
 
-        ExportContext(AtlasExportResult result, ZipSink sink) {
+        ExportContext(AtlasExportResult result, ZipSink sink) throws AtlasBaseException {
             this.result = result;
             this.sink   = sink;
 

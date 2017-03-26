@@ -87,48 +87,43 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
-        Map<String, AtlasEntityHeader> entities     = new HashMap<String, AtlasEntityHeader>();
-        Set<LineageRelation>           relations    = new HashSet<LineageRelation>();
+        Map<String, AtlasEntityHeader> entities     = new HashMap<>();
+        Set<LineageRelation>           relations    = new HashSet<>();
         String                         lineageQuery = getLineageQuery(guid, direction, depth);
 
-        try {
-            List paths = (List) graph.executeGremlinScript(lineageQuery, true);
+        List paths = (List) graph.executeGremlinScript(lineageQuery, true);
 
-            if (CollectionUtils.isNotEmpty(paths)) {
-                for (Object path : paths) {
-                    if (path instanceof List) {
-                        List vertices = (List) path;
+        if (CollectionUtils.isNotEmpty(paths)) {
+            for (Object path : paths) {
+                if (path instanceof List) {
+                    List vertices = (List) path;
 
-                        if (CollectionUtils.isNotEmpty(vertices)) {
-                            AtlasEntityHeader prev = null;
+                    if (CollectionUtils.isNotEmpty(vertices)) {
+                        AtlasEntityHeader prev = null;
 
-                            for (Object vertex : vertices) {
-                                if (!(vertex instanceof AtlasVertex)) {
-                                    continue;
-                                }
-
-                                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex)vertex);
-
-                                if (!entities.containsKey(entity.getGuid())) {
-                                    entities.put(entity.getGuid(), entity);
-                                }
-
-                                if (prev != null) {
-                                    if (direction.equals(LineageDirection.INPUT)) {
-                                        relations.add(new LineageRelation(entity.getGuid(), prev.getGuid()));
-                                    } else if (direction.equals(LineageDirection.OUTPUT)) {
-                                        relations.add(new LineageRelation(prev.getGuid(), entity.getGuid()));
-                                    }
-                                }
-                                prev = entity;
+                        for (Object vertex : vertices) {
+                            if (!(vertex instanceof AtlasVertex)) {
+                                continue;
                             }
+
+                            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex)vertex);
+
+                            if (!entities.containsKey(entity.getGuid())) {
+                                entities.put(entity.getGuid(), entity);
+                            }
+
+                            if (prev != null) {
+                                if (direction.equals(LineageDirection.INPUT)) {
+                                    relations.add(new LineageRelation(entity.getGuid(), prev.getGuid()));
+                                } else if (direction.equals(LineageDirection.OUTPUT)) {
+                                    relations.add(new LineageRelation(prev.getGuid(), entity.getGuid()));
+                                }
+                            }
+                            prev = entity;
                         }
                     }
                 }
             }
-
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED, lineageQuery);
         }
 
         return new AtlasLineageInfo(guid, entities, relations, direction, depth);

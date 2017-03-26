@@ -96,9 +96,9 @@ public enum AtlasErrorCode {
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS-500-00-005", "Failed to get the lock; another type update might be in progress. Please try again"),
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS-500-00-006", "Another import or export is in progress. Please try again"),
     NOTIFICATION_FAILED(500, "ATLAS-500-00-007", "Failed to notify for change {0}"),
-    GREMLIN_GROOVY_SCRIPT_ENGINE_FAILED(500, "ATLAS-500-00-008", "scriptEngine cannot be initialized for: {0}"),
+    FAILED_TO_OBTAIN_GREMLIN_SCRIPT_ENGINE(500, "ATLAS-500-00-008", "Failed to obtain gremlin script engine: {0}"),
     JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED(500, "ATLAS-500-00-009", "ObjectMapper.readValue returned NULL for class: {0}"),
-    GREMLIN_SCRIPT_EXECUTION_FAILED(500, "ATLAS-500-00-00A", "Script execution failed for: {0}"),
+    GREMLIN_SCRIPT_EXECUTION_FAILED(500, "ATLAS-500-00-00A", "Gremlin script execution failed: {0}"),
 
     CURATOR_FRAMEWORK_UPDATE(500, "ATLAS-500-00-00B", "ActiveInstanceState.update resulted in exception."),
     QUICK_START(500, "ATLAS-500-00-00C", "Failed to run QuickStart: {0}"),

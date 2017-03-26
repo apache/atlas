@@ -35,6 +35,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -264,7 +266,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
+    public Object executeGremlinScript(String query, boolean isPath) throws AtlasBaseException {
 
         Object result = executeGremlinScript(query);
         return convertGremlinScriptResult(isPath, result);
@@ -285,14 +287,16 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public ScriptEngine getGremlinScriptEngine() {
+    public ScriptEngine getGremlinScriptEngine() throws AtlasBaseException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine        engine  = manager.getEngineByName("gremlin-groovy");
 
-        //Do not cache script compilations due to memory implications
-        if (engine != null) {
-            engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
+        if (engine == null) {
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_GREMLIN_SCRIPT_ENGINE, "gremlin-groovy");
         }
+
+        //Do not cache script compilations due to memory implications
+        engine.getContext().setAttribute("#jsr223.groovy.engine.keep.globals", "phantom", ScriptContext.ENGINE_SCOPE);
 
         return engine;
     }
@@ -321,7 +325,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         return convertGremlinScriptResult(isPath, result);
     }
 
-    private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
+    private Object executeGremlinScript(String gremlinQuery) throws AtlasBaseException {
         Object       result = null;
         ScriptEngine engine = getGremlinScriptEngine();
 
@@ -331,6 +335,8 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
             bindings.put("g", getGraph());
 
             result = engine.eval(gremlinQuery, bindings);
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, gremlinQuery);
         } finally {
             releaseGremlinScriptEngine(engine);
         }
