@@ -51,7 +51,7 @@ public class IDBasedEntityResolver implements EntityResolver {
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV1.findByGuid(guid) : null;
 
-            if (vertex == null) { // if not found in the store, look if the entity is present in the stream
+            if (vertex == null && !(entityStream instanceof EntityImportStream)) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
 
                 if (entity != null) { // look for the entity in the store using unique-attributes
