@@ -83,6 +83,8 @@ public interface AtlasTypeDefStore {
 
     AtlasTypesDef updateTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
 
+    AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreate, AtlasTypesDef typesToUpdate) throws AtlasBaseException;
+
     void deleteTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;

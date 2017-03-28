@@ -485,16 +485,30 @@ public class AtlasTypeRegistry {
             }
 
             if (typesDef != null) {
-                updateTypesWithNoRefResolve(typesDef.getEnumDefs());
-                updateTypesWithNoRefResolve(typesDef.getStructDefs());
-                updateTypesWithNoRefResolve(typesDef.getClassificationDefs());
-                updateTypesWithNoRefResolve(typesDef.getEntityDefs());
+                updateTypesWithNoRefResolve(typesDef);
 
                 resolveReferences();
             }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateTypes({})", typesDef);
+            }
+        }
+
+        public void updateTypesWithNoRefResolve(AtlasTypesDef typesDef) throws AtlasBaseException {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> AtlasTypeRegistry.updateTypesWithNoRefResolve({})", typesDef);
+            }
+
+            if (typesDef != null) {
+                updateTypesWithNoRefResolve(typesDef.getEnumDefs());
+                updateTypesWithNoRefResolve(typesDef.getStructDefs());
+                updateTypesWithNoRefResolve(typesDef.getClassificationDefs());
+                updateTypesWithNoRefResolve(typesDef.getEntityDefs());
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AtlasTypeRegistry.updateTypesWithNoRefResolve({})", typesDef);
             }
         }
 

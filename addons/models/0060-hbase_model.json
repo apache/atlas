@@ -8,7 +8,7 @@
             "superTypes": [
                 "DataSet"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "uri",
