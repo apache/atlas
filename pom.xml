@@ -434,6 +434,16 @@
             </roles>
             <organization>Hortonworks Inc.</organization>
         </developer>
+        <developer>
+            <id>sarath</id>
+            <name>Sarath Subramanian</name>
+            <email>sarath@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+        </developer>
     </developers>
 
     <properties>
