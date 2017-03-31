@@ -444,6 +444,16 @@
             </roles>
             <organization>Hortonworks Inc.</organization>
         </developer>
+        <developer>
+            <id>ayubpathan</id>
+            <name>Ayub Pathan</name>
+            <email>ayubpathan@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+        </developer>
     </developers>
 
     <properties>
