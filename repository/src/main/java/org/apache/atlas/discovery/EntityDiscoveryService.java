@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
@@ -45,6 +46,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
@@ -156,7 +159,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, int limit, int offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName,
+                                                   String attrValue, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         if (LOG.isDebugEnabled()) {
@@ -166,6 +170,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         final QueryParams params              = validateSearchParams(limit, offset);
         Set<String>       typeNames           = null;
         Set<String>       classificationNames = null;
+        String            attrQualifiedName   = null;
 
         if (StringUtils.isNotEmpty(typeName)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
@@ -189,6 +194,36 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             classificationNames = classificationType.getTypeAndAllSubTypes();
 
             ret.setClassification(classification);
+        }
+
+        boolean isAttributeSearch = StringUtils.isNotEmpty(attrName) && StringUtils.isNotEmpty(attrValue);
+
+        if (isAttributeSearch) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Executing attribute search attrName: {} and attrValue: {}", attrName, attrValue);
+            }
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType != null) {
+                AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                if (attribute == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, typeName);
+                }
+
+                attrQualifiedName = entityType.getAttribute(attrName).getQualifiedName();
+            }
+
+            String attrQuery = String.format("%s AND (%s *)", attrName, attrValue.replaceAll("\\.", " "));
+
+            if (StringUtils.isEmpty(query)) {
+                query = attrQuery;
+            } else {
+                query = String.format("(%s) AND (%s)", query, attrQuery);
+            }
+
+            ret.setQueryType(AtlasQueryType.ATTRIBUTE);
         }
 
         // if query was provided, perform indexQuery and filter for typeName & classification in memory; this approach
@@ -220,6 +255,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                     if (CollectionUtils.isEmpty(traitNames) ||
                         !CollectionUtils.containsAny(classificationNames, traitNames)) {
+                        continue;
+                    }
+                }
+
+                if (isAttributeSearch) {
+                    String vertexAttrValue = vertex.getProperty(attrQualifiedName, String.class);
+
+                    if (StringUtils.isNotEmpty(vertexAttrValue) && !vertexAttrValue.startsWith(attrValue)) {
                         continue;
                     }
                 }
