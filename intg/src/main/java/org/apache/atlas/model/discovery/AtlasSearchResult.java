@@ -149,7 +149,7 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
-    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC }
+    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

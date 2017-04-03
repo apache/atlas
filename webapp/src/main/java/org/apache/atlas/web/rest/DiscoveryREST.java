@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -146,11 +147,11 @@ public class DiscoveryREST {
     @Path("/basic")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingBasic(@QueryParam("query")          String query,
-                                              @QueryParam("typeName")       String typeName,
-                                              @QueryParam("classification") String classification,
-                                              @QueryParam("limit")          int    limit,
-                                              @QueryParam("offset")         int    offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query")          String  query,
+                                              @QueryParam("typeName")       String  typeName,
+                                              @QueryParam("classification") String  classification,
+                                              @QueryParam("limit")          int     limit,
+                                              @QueryParam("offset")         int     offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -159,7 +160,49 @@ public class DiscoveryREST {
                                                     typeName + "," + classification + "," + limit + "," + offset + ")");
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(query, typeName, classification, limit, offset);
+            return atlasDiscoveryService.searchUsingBasicQuery(query, typeName, classification, null, null, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Retrieve data for the specified attribute search query
+     * @param attrName  Attribute name
+     * @param attrValue Attibute value to search on
+     * @param typeName limit the result to only entities of specified type or its sub-types
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid wildcard or query parameters
+     */
+    @GET
+    @Path("/attribute")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasSearchResult searchUsingAttribute(@QueryParam("stringName")  String attrName,
+                                                  @QueryParam("stringValue") String attrValue,
+                                                  @QueryParam("typeName")    String typeName,
+                                                  @QueryParam("limit")       int    limit,
+                                                  @QueryParam("offset")      int    offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingAttribute(" + attrName + "," +
+                        attrValue + "," + typeName + "," + limit + "," + offset + ")");
+            }
+
+            if (StringUtils.isEmpty(attrName) || StringUtils.isEmpty(attrValue)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                        String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValue));
+            }
+
+            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValue, limit, offset);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
