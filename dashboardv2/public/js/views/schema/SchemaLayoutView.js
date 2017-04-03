@@ -99,7 +99,7 @@ define(['require',
                     includePagination: true,
                     includePageSize: false,
                     includeFooterRecords: true,
-                    includeOrderAbleColumns: true,
+                    includeOrderAbleColumns: false,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -204,8 +204,7 @@ define(['require',
                     var columns = new columnCollection(that.getSchemaTableColumns());
                     //columns.setPositions().sort();
                     that.RSchemaTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        columns: columns,
-                        includeOrderAbleColumns: true
+                        columns: columns
                     })));
                     that.$('.multiSelectTerm').hide();
                     that.$('.multiSelectTag').hide();

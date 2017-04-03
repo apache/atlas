@@ -320,8 +320,23 @@ ul {
 
 @media (min-width: 768px) {
     .col-sm-custom {
-        width: 92%;
-        margin: 36px 36px 0px;
+        //width: 92%;
+        margin: 25px 25px 0px;
         position: relative;
     }
+}
+
+.panel-fullscreen {
+    position: fixed;
+    height: 100%;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    right: 0;
+    z-index: 999;
+}
+
+.no-padding {
+    padding: 0px !important;
 }

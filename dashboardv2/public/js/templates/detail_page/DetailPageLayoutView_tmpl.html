@@ -23,20 +23,20 @@
             <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
         </div>
         <h1><span  data-id="title"></span></h1> {{#if entityUpdate}}
-        <button data-id="editButton" style="display:none" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
+        <button data-id="editButton" title="Edit Entity" style="display:none" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
         {{/if}}
         <div class="tagTerm">
             <span class="tagSpan">Tags:</span>
             <div class="" data-id="tagList">
                 <div class="addTag-dropdown" data-id="addTag">
-                    <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
+                    <div class="addTagBase tagBox" title="Add Tag" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
                 </div>
             </div>
             <hr class="termTagLine"> {{#if taxonomy}}
             <span class="termSpan">Terms:</span>
             <div class="" data-id="termList">
                 <div class="addTag-dropdown" data-id="addTerm">
-                    <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
+                    <div class="addTagBase termBox" title="Add Term" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
                 </div>
             </div>
             {{/if}}
@@ -46,12 +46,23 @@
 <div class="container-fluid gray-bg">
     <div class="row">
         <div class="col-sm-custom">
-            <div class="atlast-tabbable">
-                <h4 class="lineageLabel">LINEAGE & IMPACT</h4>
-                <div class="panel panel-default lineageLayout">
-                    <div id="r_lineageLayoutView" style="height:405px">
-                        <div class="fontLoader">
-                            <i class="fa fa-refresh fa-spin-custom"></i>
+            <div class="">
+                <!--  <h4 class="lineageLabel"></h4> -->
+                <div class="lineageLayout">
+                    <div class="panel panel-default" id="panel">
+                        <div class="panel-heading clearfix">
+                            <h4 class="panel-title pull-left"> LINEAGE & IMPACT</h4>
+                            <div class="btn-group pull-right">
+                                <button type="button" class="fullscreen_panel" id="fullscreen_panel" title="Fullscreen"><i class="fa fa-expand" aria-hidden="true"></i></button>
+                                <button type="button" id="expand_collapse_panel" class="expand_collapse_panel" title="Collapse"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                        <div id="panel_body" class="panel-body graph-bg resize-graph animated" align="center" style="height:375px;">
+                            <div id="r_lineageLayoutView">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -60,50 +71,61 @@
     </div>
     <div class="row">
         <div class="col-sm-custom">
-            <div class="atlast-tabbable">
-                <h4 class="detailLabel">DETAILS</h4>
-                <ul class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                    <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
-                    {{#if taxonomy}}
-                    <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
-                    {{/if}}
-                    <li role="presentation" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
-                    <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
-                </ul>
-                <div class="tab-content">
-                    <div id="tab-details" role="tabpanel" class="tab-pane active">
-                        <div id="r_entityDetailTableLayoutView" style="position: relative;">
-                            <div class="fontLoader">
-                                <i class="fa fa-refresh fa-spin-custom"></i>
-                            </div>
+            <div class="panel with-nav-tabs panel-default">
+                <div class="panel-heading clearfix">
+                    <h4 class="panel-title pull-left">DETAILS</h4>
+                    <div class="btn-group pull-right">
+                        <button type="button" class="expand_collapse_panel" title="Collapse"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <ul class="nav nav-tabs ">
+                                <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
+                                <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
+                                {{#if taxonomy}}
+                                <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
+                                {{/if}}
+                                <li role="presentation" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                                <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
+                            </ul>
                         </div>
                     </div>
-                    <div id="tab-tagTable" role="tabpanel" class="tab-pane">
-                        <div id="r_tagTableLayoutView" style="position: relative;">
-                            <div class="fontLoader">
-                                <i class="fa fa-refresh fa-spin-custom"></i>
+                    <div class="tab-content">
+                        <div id="tab-details" role="tabpanel" class="tab-pane active">
+                            <div id="r_entityDetailTableLayoutView" style="position: relative;">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="tab-termTable" role="tabpanel" class="tab-pane">
-                        <div id="r_termTableLayoutView" style="position: relative;">
-                            <div class="fontLoader">
-                                <i class="fa fa-refresh fa-spin-custom"></i>
+                        <div id="tab-tagTable" role="tabpanel" class="tab-pane fade">
+                            <div id="r_tagTableLayoutView" style="position: relative;">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="tab-audit" role="tabpanel" class="tab-pane">
-                        <div id="r_auditTableLayoutView" style="position: relative;">
-                            <div class="fontLoader">
-                                <i class="fa fa-refresh fa-spin-custom"></i>
+                        <div id="tab-termTable" role="tabpanel" class="tab-pane">
+                            <div id="r_termTableLayoutView" style="position: relative;">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="tab-schema" role="tabpanel" class="tab-pane">
-                        <div id="r_schemaTableLayoutView" style="position: relative;">
-                            <div class="fontLoader">
-                                <i class="fa fa-refresh fa-spin-custom"></i>
+                        <div id="tab-audit" role="tabpanel" class="tab-pane">
+                            <div id="r_auditTableLayoutView" style="position: relative;">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tab-schema" role="tabpanel" class="tab-pane">
+                            <div id="r_schemaTableLayoutView" style="position: relative;">
+                                <div class="fontLoader">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -111,4 +133,5 @@
             </div>
         </div>
     </div>
+</div>
 </div>
