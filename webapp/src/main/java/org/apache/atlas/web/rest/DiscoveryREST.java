@@ -199,7 +199,7 @@ public class DiscoveryREST {
                         attrValuePrefix + "," + typeName + "," + limit + "," + offset + ")");
             }
 
-            if (StringUtils.isEmpty(attrName) || StringUtils.isEmpty(attrValuePrefix)) {
+            if (StringUtils.isEmpty(attrName) && StringUtils.isEmpty(attrValuePrefix)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
                         String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValuePrefix));
             }

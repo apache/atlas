@@ -71,6 +71,8 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".has('__traitNames', T.in, traitNames)";
             case TO_RANGE_LIST:
                 return " [startIdx..<endIdx].toList()";
+            case GUID_PREFIX_FILTER:
+                return ".filter{it.'__guid'.matches(guid)}";
         }
         // Should never reach this point
         return null;

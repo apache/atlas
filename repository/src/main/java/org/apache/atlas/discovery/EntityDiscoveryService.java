@@ -64,6 +64,7 @@ import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -199,34 +200,53 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setClassification(classification);
         }
 
-        boolean isAttributeSearch = StringUtils.isNotEmpty(attrName) && StringUtils.isNotEmpty(attrValuePrefix);
+        boolean isAttributeSearch  = StringUtils.isNotEmpty(attrName) || StringUtils.isNotEmpty(attrValuePrefix);
+        boolean isGuidPrefixSearch = false;
 
         if (isAttributeSearch) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            ret.setQueryType(AtlasQueryType.ATTRIBUTE);
+
+            if (entityType != null) {
+                AtlasAttribute attribute = null;
+
+                if (StringUtils.isNotEmpty(attrName)) {
+                    attribute = entityType.getAttribute(attrName);
+
+                    if (attribute == null) {
+                        throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, typeName);
+                    }
+                    
+                } else {
+                    // if attrName is null|empty iterate defaultAttrNames to get attribute value
+                    final List<String> defaultAttrNames = new ArrayList<>(Arrays.asList("qualifiedName", "name"));
+                    Iterator<String>   iter             = defaultAttrNames.iterator();
+
+                    while (iter.hasNext() && attribute == null) {
+                        attrName  = iter.next();
+                        attribute = entityType.getAttribute(attrName);
+                    }
+                }
+
+                if (attribute == null) {
+                    // for guid prefix search use gremlin and nullify query to avoid using fulltext
+                    // (guids cannot be searched in fulltext)
+                    isGuidPrefixSearch = true;
+                    query              = null;
+
+                } else {
+                    attrQualifiedName = attribute.getQualifiedName();
+
+                    String  attrQuery = String.format("%s AND (%s *)", attrName, attrValuePrefix.replaceAll("\\.", " "));
+
+                    query = StringUtils.isEmpty(query) ? attrQuery : String.format("(%s) AND (%s)", query, attrQuery);
+                }
+            }
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Executing attribute search attrName: {} and attrValue: {}", attrName, attrValuePrefix);
             }
-
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
-            if (entityType != null) {
-                AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                if (attribute == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, typeName);
-                }
-
-                attrQualifiedName = entityType.getAttribute(attrName).getQualifiedName();
-            }
-
-            String attrQuery = String.format("%s AND (%s *)", attrName, attrValuePrefix.replaceAll("\\.", " "));
-
-            if (StringUtils.isEmpty(query)) {
-                query = attrQuery;
-            } else {
-                query = String.format("(%s) AND (%s)", query, attrQuery);
-            }
-
-            ret.setQueryType(AtlasQueryType.ATTRIBUTE);
         }
 
         // if query was provided, perform indexQuery and filter for typeName & classification in memory; this approach
@@ -302,6 +322,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 bindings.put("typeNames", typeNames);
 
                 basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
+            }
+
+            if (isGuidPrefixSearch) {
+                bindings.put("guid", attrValuePrefix + ".*");
+
+                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.GUID_PREFIX_FILTER);
             }
 
             bindings.put("startIdx", params.offset());
