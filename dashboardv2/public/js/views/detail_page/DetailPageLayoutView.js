@@ -24,7 +24,8 @@ define(['require',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
-    'utils/UrlLinks'
+    'utils/UrlLinks',
+    'jquery-ui'
 ], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
@@ -57,7 +58,8 @@ define(['require',
                 addTag: '[data-id="addTag"]',
                 addTerm: '[data-id="addTerm"]',
                 tagList: '[data-id="tagList"]',
-                termList: '[data-id="termList"]'
+                termList: '[data-id="termList"]',
+                fullscreenPanel: "#fullscreen_panel"
             },
             templateHelpers: function() {
                 return {
@@ -197,7 +199,43 @@ define(['require',
                 var that = this;
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader').show(); // to show tab loader
-                this.renderLineageLayoutView({ guid: this.id, entityDefCollection: this.entityDefCollection });
+                this.renderLineageLayoutView({
+                    guid: this.id,
+                    entityDefCollection: this.entityDefCollection,
+                    actionCallBack: function() {
+                        that.$('#expand_collapse_panel').click();
+                    }
+                });
+                this.$(".resize-graph").resizable({
+                    handles: ' s',
+                    minHeight: 375,
+                    stop: function(event, ui) {
+                        that.$('.resize-graph').height(($(this).height()));
+                    },
+                });
+                this.ui.fullscreenPanel.on('fullscreen_done', function(e, panel) {
+                    var svgEl = panel.find('.panel-body svg'),
+                        scaleEl = svgEl.find('>g'),
+                        zoom = that.RLineageLayoutView.currentView.zoom,
+                        svg = that.RLineageLayoutView.currentView.svg,
+                        viewThis = that.RLineageLayoutView.currentView,
+                        setGraphZoomPositionCal = that.RLineageLayoutView.currentView.setGraphZoomPositionCal,
+                        zoomed = that.RLineageLayoutView.currentView.zoomed;;
+
+                    if (zoom) {
+                        setGraphZoomPositionCal.call(viewThis);
+                        zoomed.call(viewThis);
+                        if ($(e.currentTarget).find('i').hasClass('fa fa-compress')) {
+                            svg.call(zoom)
+                                .on("dblclick.zoom", null);
+
+                        } else {
+                            svg.call(zoom)
+                                .on("wheel.zoom", null)
+                                .on("dblclick.zoom", null);
+                        }
+                    }
+                })
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });

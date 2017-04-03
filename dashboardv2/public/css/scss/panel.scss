@@ -19,27 +19,57 @@
 
 /* panel.scss */
 
-.panel {
-    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-    border-radius: 0;
-}
-
-.panel-primary {
-    border-color: $color_hoki_approx;
+.panel-default {
     > .panel-heading {
-        color: $white;
-        background-color: $color_hoki_approx;
-        border-color: $color_hoki_approx;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 0;
+        color: $color_jungle_green_approx;
+        background: $white;
+        border-color: $color_jungle_green_approx;
+        button {
+            color: $color_jungle_green_approx;
+            background: $white;
+            border: none;
+        }
+        .panel-title {
+            font-weight: bold;
+            padding-top: 8px;
+        }
+    }
+    .nav-tabs {
+        > li {
+            &.active {
+                >a {
+                    color: $color_jungle_green_approx;
+                }
+            }
+            >a {
+                color: $black;
+            }
+        }
     }
 }
 
-.appForm {
+.panel-fullscreen {
     .panel-body {
-        padding-bottom: 0;
+        //overflow: hidden;
+        height: calc(100% - 46px)!important;
     }
-    .panel-footer {
-        margin-bottom: 0;
+    .ui-resizable-handle{
+     display: none !important;
+}
+}
+
+.nav-tabs {
+    >li {
+        &:first-child {
+            margin-left: 25px;
+        }
+    }
+}
+
+.with-nav-tabs {
+    .tab-content {
+        > .tab-pane.active {
+            padding: 20px 10px 0px 10px;
+        }
     }
 }

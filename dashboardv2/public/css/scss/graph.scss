@@ -28,11 +28,6 @@
 
 .node {
     cursor: pointer;
-    circle {
-        fill: $white;
-        stroke: $steel_blue;
-        stroke-width: 1.5px;
-    }
     text {
         font-size: 10px;
         font-family: $font_1;
@@ -45,15 +40,40 @@
     .label {
         fill: $color_suva_gray_approx;
     }
-    image {
+    circle {
+        -moz-transition: all 0.3s;
+        -webkit-transition: all 0.3s;
+        transition: all 0.3s;
+        stroke-width: 1.5px;
         &.nodeImage {
-            -moz-transition: all 0.3s;
-            -webkit-transition: all 0.3s;
-            transition: all 0.3s;
+            &.green:hover {
+                stroke: #8bc152;
+            }
+            &.blue:hover {
+                stroke: #4b91e2;
+            }
+            &.currentNode {
+                stroke: #fb4200;
+            }
             &:hover {
                 -moz-transform: scale(1.4);
                 -webkit-transform: scale(1.4);
                 transform: scale(1.4);
+            }
+        }
+    }
+    &.active {
+        circle {
+            -moz-transform: scale(1.4);
+            -webkit-transform: scale(1.4);
+            transform: scale(1.4);
+            &.nodeImage {
+                &.green {
+                    stroke: #8bc152;
+                }
+                &.blue {
+                    stroke: #4b91e2;
+                }
             }
         }
     }
@@ -74,19 +94,12 @@
     background: $black_80;
     color: $white;
     z-index: 999;
+    max-width: 300px;
     //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 2px;
-    &:after {
-        //Instead of the line below you could use @include box-sizing($bs)
-        box-sizing: border-box;
-        display: inline;
-        font-size: 10px;
-        width: 100%;
-        line-height: 1;
-        color: $black_80;
-        content: "\25BC";
-        position: absolute;
-        text-align: center;
+    .tip-inner-scroll {
+        overflow: auto;
+        max-height: 300px;
     }
     &.n:after {
         margin: -1px 0 0;
@@ -100,6 +113,7 @@ g.type-TK > rect {
 }
 
 .zoomButtonGroup {
+    background-color: $white;
     position: absolute;
     top: 4px;
     right: 5px;

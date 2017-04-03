@@ -25,8 +25,7 @@ define(['require',
     'dagreD3',
     'd3-tip',
     'utils/Enums',
-    'utils/UrlLinks',
-    'jquery-ui'
+    'utils/UrlLinks'
 ], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks) {
     'use strict';
 
@@ -56,7 +55,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection'));
+                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack'));
                 this.entityModel = new VEntity();
                 this.collection = new VLineageList();
                 this.typeMap = {};
@@ -66,13 +65,9 @@ define(['require',
             onRender: function() {
                 var that = this;
                 this.$('.fontLoader').show();
-                this.$(".resize-graph").resizable({
-                    handles: ' s',
-                    minHeight: 355,
-                    stop: function(event, ui) {
-                        that.$('svg').height(($(this).height() - 5))
-                    },
-                });
+                if (this.layoutRendered) {
+                    this.layoutRendered();
+                }
                 this.g = new dagreD3.graphlib.Graph()
                     .setGraph({
                         nodesep: 50,
@@ -109,6 +104,9 @@ define(['require',
                 this.$('.fontLoader').hide();
                 //this.$('svg').height('100');
                 this.$('svg').html('<text x="' + (this.$('svg').width() - 150) / 2 + '" y="' + this.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                if (this.actionCallBack) {
+                    this.actionCallBack();
+                }
             },
             generateData: function(relations, guidEntityMap) {
                 var that = this;
@@ -172,9 +170,38 @@ define(['require',
                     });
                 }
             },
+            setGraphZoomPositionCal: function(argument) {
+                var initialScale = 1.2,
+                    svgEl = this.$('svg'),
+                    scaleEl = this.$('svg').find('>g'),
+                    translateValue = [(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2]
+                if (_.keys(this.g._nodes).length > 15) {
+                    translateValue = [((this.$('svg').width() / 2)) / 2, 20];
+                    initialScale = 0;
+                    this.$('svg').addClass('noScale');
+                }
+                if (svgEl.parents('.panel.panel-fullscreen').length && svgEl.hasClass('noScale')) {
+                    if (!scaleEl.hasClass('scaleLinage')) {
+                        scaleEl.addClass('scaleLinage');
+                        initialScale = 1.2;
+                    } else {
+                        scaleEl.removeClass('scaleLinage');
+                        initialScale = 0;
+                    }
+                } else {
+                    scaleEl.removeClass('scaleLinage');
+                }
+                this.zoom.translate(translateValue)
+                    .scale(initialScale);
+            },
+            zoomed: function(that) {
+                this.$('svg').find('>g').attr("transform",
+                    "translate(" + this.zoom.translate() + ")" +
+                    "scale(" + this.zoom.scale() + ")"
+                );
+            },
             createGraph: function() {
-                var that = this
-
+                var that = this;
                 this.g.nodes().forEach(function(v) {
                     var node = that.g.node(v);
                     // Round the corners of the nodes
@@ -206,8 +233,23 @@ define(['require',
                 };
                 render.shapes().img = function circle(parent, bbox, node) {
                     //var r = Math.max(bbox.width, bbox.height) / 2,
-                    var shapeSvg = parent.insert("image")
-                        .attr("class", "nodeImage")
+                    if (node.id == that.guid) {
+                        var currentNode = true
+                    }
+                    var shapeSvg = parent.append('circle')
+                        .attr('fill', 'url(#img_' + node.id + ')')
+                        .attr('r', currentNode ? '15px' : '14px')
+                        .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "blue" : "green")));
+
+                    parent.insert("defs")
+                        .append("pattern")
+                        .attr("x", "0%")
+                        .attr("y", "0%")
+                        .attr("patternUnits", "objectBoundingBox")
+                        .attr("id", "img_" + node.id)
+                        .attr("width", "100%")
+                        .attr("height", "100%")
+                        .append('image')
                         .attr("xlink:href", function(d) {
                             if (node) {
                                 if (node.isProcess) {
@@ -228,29 +270,25 @@ define(['require',
                                     }
                                 }
                             }
-                        }).attr("x", "-12px")
-                        .attr("y", "-12px")
-                        .attr("width", "24px")
-                        .attr("height", "24px");
+                        })
+                        .attr("x", "2")
+                        .attr("y", "2")
+                        .attr("width", currentNode ? "26" : "24")
+                        .attr("height", currentNode ? "26" : "24")
+
                     node.intersect = function(point) {
                         //return dagreD3.intersect.circle(node, points, point);
-                        return dagreD3.intersect.circle(node, 13, point);
+                        return dagreD3.intersect.circle(node, currentNode ? 16 : 13, point);
                     };
                     return shapeSvg;
                 };
                 // Set up an SVG group so that we can translate the final graph.
-                var svg = d3.select(this.$("svg")[0]),
+                var svg = this.svg = d3.select(this.$("svg")[0]),
                     svgGroup = svg.append("g");
-                var zoom = d3.behavior.zoom()
+                var zoom = this.zoom = d3.behavior.zoom()
                     .scaleExtent([0.5, 6])
-                    .on("zoom", zoomed);
+                    .on("zoom", that.zoomed.bind(this));
 
-                function zoomed() {
-                    svgGroup.attr("transform",
-                        "translate(" + zoom.translate() + ")" +
-                        "scale(" + zoom.scale() + ")"
-                    );
-                }
 
                 function interpolateZoom(translate, scale) {
                     var self = this;
@@ -261,7 +299,7 @@ define(['require',
                             zoom
                                 .scale(iScale(t))
                                 .translate(iTranslate(t));
-                            zoomed();
+                            that.zoomed();
                         };
                     });
                 }
@@ -295,7 +333,7 @@ define(['require',
 
                     interpolateZoom([view.x, view.y], view.k);
                 }
-                d3.selectAll('button.zoomButton').on('click', zoomClick);
+                d3.selectAll(this.$('span.lineageZoomButton')).on('click', zoomClick);
                 var tooltip = d3Tip()
                     .attr('class', 'd3-tip')
                     .offset([-18, 0])
@@ -312,8 +350,9 @@ define(['require',
                         if (value.queryText) {
                             htmlStr += "<h5>Query: <span style='color:#359f89'>" + value.queryText + "</span></h5> ";
                         }
-                        return htmlStr;
+                        return "<div class='tip-inner-scroll'>" + htmlStr + "</div>";
                     });
+
                 svg.call(zoom)
                     .call(tooltip);
                 this.$('.fontLoader').hide();
@@ -325,7 +364,30 @@ define(['require',
                     .attr("transform", "translate(2,-30)");
                 svgGroup.selectAll("g.nodes g.node")
                     .on('mouseenter', function(d) {
-                        tooltip.show(d);
+                        that.activeNode = true;
+                        var matrix = this.getScreenCTM()
+                            .translate(+this.getAttribute("cx"), +this.getAttribute("cy"));
+                        that.$('svg').find('.node').removeClass('active');
+                        $(this).addClass('active');
+
+                        // Fix
+                        var width = $('body').width();
+                        var currentELWidth = $(this).offset();
+                        var direction = 'e';
+                        if (((width - currentELWidth.left) < 330)) {
+                            direction = (((width - currentELWidth.left) < 330) && ((currentELWidth.top) < 400)) ? 'sw' : 'w';
+                            if (((width - currentELWidth.left) < 330) && ((currentELWidth.top) > 600)) {
+                                direction = 'nw';
+                            }
+                        } else if (((currentELWidth.top) > 600)) {
+                            direction = (((width - currentELWidth.left) < 330) && ((currentELWidth.top) > 600)) ? 'nw' : 'n';
+                            if ((currentELWidth.left) < 50) {
+                                direction = 'ne'
+                            }
+                        } else if ((currentELWidth.top) < 400) {
+                            direction = ((currentELWidth.left) < 50) ? 'se' : 's';
+                        }
+                        tooltip.direction(direction).show(d)
                     })
                     .on('dblclick', function(d) {
                         tooltip.hide(d);
@@ -334,15 +396,28 @@ define(['require',
                             mergeBrowserUrl: false,
                             trigger: true
                         });
-                    })
-                    .on('mouseleave', function(d) {
-                        tooltip.hide(d);
+                    }).on('mouseleave', function(d) {
+                        that.activeNode = false;
+                        var nodeEL = this;
+                        setTimeout(function(argument) {
+                            if (!(that.activeTip || that.activeNode)) {
+                                $(nodeEL).removeClass('active');
+                                tooltip.hide(d);
+                            }
+                        }, 400)
                     });
+                $('body').on('mouseover', '.d3-tip', function(el) {
+                    that.activeTip = true;
+                });
+                $('body').on('mouseleave', '.d3-tip', function(el) {
+                    that.activeTip = false;
+                    that.$('svg').find('.node').removeClass('active');
+                    tooltip.hide();
+                });
+
                 // Center the graph
-                var initialScale = 1.2;
-                zoom.translate([(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2])
-                    .scale(initialScale)
-                    .event(svg);
+                this.setGraphZoomPositionCal();
+                zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
 
             }
