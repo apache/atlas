@@ -1,0 +1,33 @@
+---+ Export & Import REST APIs
+
+
+---+++ Background
+The Import-Export APIs for Atlas facilitate transfer of data to and from a cluster that has Atlas provisioned.
+
+The APIs when integrated with backup and/or disaster recovery process will ensure participation of Atlas.
+
+---+++ Introduction
+There are 2 broad categories viz. Export & Import. The details of the APIs are discussed below.
+
+The APIs are available only to _admin_ user.
+
+Only a single import or export operation can be performed at a given time. The operations have a potential for generating large amount. They can also put pressure on resources. This restriction tries to alleviate this problem.
+
+For Import-Export APIs relating to HDFS path, can be found [[Import-Export-HDFS-Path][here]].
+
+For additional information please refer to the following:
+   * [[https://issues.apache.org/jira/browse/ATLAS-1503][ATLAS-1503]] Original Import-Export API requirements.
+   * [[https://issues.apache.org/jira/browse/ATLAS-1618][ATLAS-1618]] Export API Scope Specification.
+
+---+++ Errors
+If an import or export operation is initiated while another is in progress, the consumer will receive this error:
+<verbatim>
+"ATLAS5005E": "Another import or export is in progress. Please try again."
+</verbatim>
+
+Unhandled errors will be returned as Internal error code 500.
+
+---++ REST API Reference
+   * __[[Export-API][Export API]]__
+   * __[[Export-HDFS-API][Export HDFS API]]__
+   * __[[Import-API][Import API]]__
