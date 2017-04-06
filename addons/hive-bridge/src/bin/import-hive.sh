@@ -118,7 +118,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hive.log
--Dlog4j.configuration=atlas-log4j.xml"
+-Dlog4j.configuration=atlas-hive-import-log4j.xml"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do
