@@ -1,0 +1,79 @@
+---+ Export & Import APIs for HDFS Path
+
+---+++ Introduction
+
+The general approach for using the Import-Export APIs for HDFS Paths remain the same. There are minor variations caused how HDFS paths are handled within Atlas.
+
+Unlike HIVE entities, HDFS entities within Atlas are created manually using the _Create Entity_ link within the Atlas Web UI.
+
+Also, HDFS paths tend to be hierarchical, in the sense that users tend to model the same HDFS storage structure within Atlas.
+
+__Sample HDFS Setup__
+
+
+<table border="1" cellpadding="pixels" cellspacing="pixels">
+  <tr>
+    <th><strong>HDFS Path</strong></th> <th><strong>Atlas Entity</strong></th>
+  </tr>
+  <tr>
+    <td style="padding:0 15px 0 15px;">
+        <em>/apps/warehouse/finance</em>
+    </td>
+    <td  style="padding:0 15px 0 15px;">
+        <strong>Entity type: </strong><em>hdfs_path</em> <br/>
+        <strong>Name: </strong><em>Finance</em> <br/>
+        <strong>QualifiedName: </strong><em>FinanceAll</em>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 15px 0 15px;">
+        <em>/apps/warehouse/finance/accounts-receivable</em>
+    </td>
+    <td  style="padding:0 15px 0 15px;">
+        <strong>Entity type: </strong><em>hdfs_path</em> <br/>
+        <strong>Name: </strong><em>FinanceReceivable</em> <br/>
+        <strong>QualifiedName: </strong><em>FinanceReceivable</em> <br/>
+        <strong>Path: </strong><em>/apps/warehouse/finance</em>
+    </td>
+  </tr>
+    <td style="padding:0 15px 0 15px;">
+        <em>/apps/warehouse/finance/accounts-payable</em>
+    </td>
+    <td  style="padding:0 15px 0 15px;">
+        <strong>Entity type: </strong><em>hdfs_path</em> <br/>
+        <strong>Name: </strong><em>Finance-Payable</em> <br/>
+        <strong>QualifiedName: </strong><em>FinancePayable</em> <br/>
+        <strong>Path: </strong><em>/apps/warehouse/finance/accounts-payable</em>
+    </td>
+  </tr>
+    </tr>
+      <td style="padding:0 15px 0 15px;">
+          <em>/apps/warehouse/finance/billing</em>
+      </td>
+      <td  style="padding:0 15px 0 15px;">
+          <strong>Entity type: </strong><em>hdfs_path</em> <br/>
+          <strong>Name: </strong><em>FinanceBilling</em> <br/>
+          <strong>QualifiedName: </strong><em>FinanceBilling</em> <br/>
+          <strong>Path: </strong><em>/apps/warehouse/finance/billing</em>
+      </td>
+    </tr>
+</table>
+
+---+++ Export API Using matchType
+To export entities that represent HDFS path, use the Export API using the _matchType_ option. Details can be found [[Export-API][here]].
+
+---+++ Example Using CURL Calls
+Below are sample CURL calls that performs export operation on the _Sample HDFS Setup_ shown above.
+
+<verbatim>
+curl -X POST -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+    "itemsToExport": [
+            { "typeName": "hdfs_path", "uniqueAttributes": { "name": "FinanceAll" }
+        }
+    ],
+    "options": {
+     "fetchType": "full",
+     "matchType": "startsWith"
+    }
+}' "http://localhost:21000/api/atlas/admin/export" > financeAll.zip
+</verbatim>

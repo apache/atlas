@@ -1,0 +1,150 @@
+---+ Export API
+The general approach is:
+   * Consumer specifies the scope of data to be exported (details below).
+   * The API if successful, will return the stream in the format specified.
+   * Error will be returned on failure of the call.
+
+See [[Export-HDFS-API][here]] for details on exporting *hdfs_path* entities.
+
+|*Title*|*Export API*|
+| _Example_ | See Examples sections below. |
+| _URL_ |_api/atlas/admin/export_ |
+| _Method_ |_POST_ |
+| _URL Parameters_ |_None_ |
+| _Data Parameters_| The class _!AtlasExportRequest_ is used to specify the items to export. The list of _!AtlasObjectId_(s) allow for specifying the multiple items to export in a session. The _!AtlasObjectId_ is a tuple of entity type, name of unique attribute, value of unique attribute. Several items can be specified. See examples below.|
+| _Success Response_|File stream as _application/zip_.|
+|_Error Response_|Errors that are handled within the system will be returned as _!AtlasBaseException_. |
+| _Notes_ | Consumer could choose to consume the output of the API by programmatically using _java.io.ByteOutputStream_ or by manually, save the contents of the stream to a file on the disk.|
+
+__Method Signature__
+<verbatim>
+@POST
+@Path("/export")
+@Consumes("application/json;charset=UTF-8")
+</verbatim>
+
+---+++ Additional Options
+It is possible to specify additional parameters for the _Export_ operation.
+
+Current implementation has 2 options. Both are optional:
+   * _matchType_ This option configures the approach used for fetching the starting entity. It has follow values:
+      * _startsWith_ Search for an entity that is prefixed with the specified criteria.
+      * _endsWith_ Search for an entity that is suffixed with the specified criteria.
+      * _contains_ Search for an entity that has the specified criteria as a sub-string.
+      * _matches_ Search for an entity that is a regular expression match with the specified criteria.
+
+   * _fetchType_ This option configures the approach used for fetching entities. It has following values:
+      * _FULL_: This fetches all the entities that are connected directly and indirectly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table, database and all the other tables within the database.
+      * _CONNECTED_: This fetches all the etnties that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
+
+If no _matchType_ is specified, exact match is used. Which means, that the entire string is used in the search criteria.
+
+Searching using _matchType_ applies for all types of entities. It is particularly useful for matching entities of type hdfs_path (see [[Export-HDFS-API][here]]).
+
+The _fetchType_ option defaults to _FULL_.
+
+For complete example see section below.
+
+---+++ Contents of Exported ZIP File
+
+The exported ZIP file has the following entries within it:
+   * _atlas-export-result.json_:
+      * Input filters: The scope of export.
+      * File format: The format chosen for the export operation.
+      * Metrics: The number of entity definitions, classifications and entities exported.
+   * _atlas-typesdef.json_: Type definitions for the entities exported.
+   * _atlas-export-order.json_: Order in which entities should be exported.
+   * _{guid}.json_: Individual entities are exported with file names that correspond to their id.
+
+---+++ Examples
+The _!AtlasExportRequest_ below shows filters that attempt to export 2 databases in cluster cl1:
+<verbatim>
+{
+    "itemsToExport": [
+       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "accounts@cl1" } },
+       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "hr@cl1" } }
+    ]
+}
+</verbatim>
+
+The _!AtlasExportRequest_ below specifies the _fetchType_ as _FULL_. The _matchType_ option will fetch _accounts@cl1_.
+<verbatim>
+{
+    "itemsToExport": [
+       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "accounts@" } },
+    ],
+    "options" {
+        "fetchType": "FULL",
+        "matchType": "startsWith"
+    }
+}
+</verbatim>
+
+The _!AtlasExportRequest_ below specifies the _fetchType_ as _connected_. The _matchType_ option will fetch _accountsReceivable_, _accountsPayable_, etc present in the database.
+<verbatim>
+{
+    "itemsToExport": [
+       { "typeName": "hive_db", "uniqueAttributes": { "name": "accounts" } },
+    ],
+    "options" {
+        "fetchType": "CONNECTED",
+        "matchType": "startsWith"
+    }
+}
+</verbatim>
+
+Below is the _!AtlasExportResult_ JSON for the export of the _Sales_ DB present in the _!QuickStart_.
+
+The _metrics_ contains the number of types and entities exported as part of the operation.
+
+<verbatim>
+{
+    "clientIpAddress": "10.0.2.15",
+    "hostName": "10.0.2.2",
+    "metrics": {
+        "duration": 1415,
+        "entitiesWithExtInfo": 12,
+        "entity:DB_v1": 2,
+        "entity:LoadProcess_v1": 2,
+        "entity:Table_v1": 6,
+        "entity:View_v1": 2,
+        "typedef:Column_v1": 1,
+        "typedef:DB_v1": 1,
+        "typedef:LoadProcess_v1": 1,
+        "typedef:StorageDesc_v1": 1,
+        "typedef:Table_v1": 1,
+        "typedef:View_v1": 1,
+        "typedef:classification": 6
+    },
+    "operationStatus": "SUCCESS",
+    "request": {
+        "itemsToExport": [
+            {
+                "typeName": "DB_v1",
+                "uniqueAttributes": {
+                    "name": "Sales"
+                }
+            }
+        ],
+        "options": {
+            "fetchType": "full"
+        }
+    },
+    "userName": "admin"
+}
+</verbatim>
+
+---+++ CURL Calls
+Below are sample CURL calls that demonstrate Export of _!QuickStart_ database.
+
+<verbatim>
+curl -X POST -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+    "itemsToExport": [
+            { "typeName": "DB", "uniqueAttributes": { "name": "Sales" }
+            { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" }
+            { "typeName": "DB", "uniqueAttributes": { "name": "Logging" }
+        }
+    ],
+    "options": "full"
+}' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip
+</verbatim>
