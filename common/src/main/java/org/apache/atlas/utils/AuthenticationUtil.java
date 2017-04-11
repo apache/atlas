@@ -22,9 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.Console;
 
 /**
  * Util class for Authentication.
@@ -54,11 +52,9 @@ public final class AuthenticationUtil {
         String password = null;
 
         try {
-            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter username for atlas :-");
-            username = bufferRead.readLine();
-            System.out.println("Enter password for atlas :-");
-            password = bufferRead.readLine();
+            Console console = System.console();
+            username = console.readLine("Enter username for atlas :- ");
+            password = new String(console.readPassword("Enter password for atlas :- "));
         } catch (Exception e) {
             System.out.print("Error while reading ");
             System.exit(1);
