@@ -145,7 +145,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         inputOutputField['attributes'] = inputOutputField.values;
                     }
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
-                        if (inputOutputField.indexOf("$") == -1) {
+                        var tempVarfor$check = inputOutputField.toString();
+                        if (tempVarfor$check.indexOf("$") == -1) {
                             valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
@@ -157,8 +158,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             }
                         }
                         _.each(attributesList, function(objValue, objKey) {
-                            var value = objValue;
-                            if (objKey.indexOf("$") == -1) {
+                            var value = objValue,
+                                tempVarfor$check = objKey.toString();
+                            if (tempVarfor$check.indexOf("$") == -1) {
                                 if (_.isObject(value)) {
                                     value = JSON.stringify(value);
                                 }
@@ -204,21 +206,24 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     table += '<tr><td>' + _.escape(key) + '</td><td>' + subLink + '</td></tr>';
                 }
             } else {
-                if (key.indexOf("Time") !== -1 || key == "retention") {
-                    if (searchTable) {
-                        table = new Date(valueObject[key]);
-                    } else {
-                        table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
-                    }
-                } else {
-                    if (searchTable) {
-                        if (_.isBoolean(valueObject[key])) {
-                            table = valueObject[key].toString();
+                var tempVarfor$check = key.toString();
+                if (tempVarfor$check.indexOf("$") == -1) {
+                    if (key.indexOf("Time") !== -1 || key == "retention") {
+                        if (searchTable) {
+                            table = new Date(valueObject[key]);
                         } else {
-                            table = valueObject[key];
+                            table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
                         }
                     } else {
-                        table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
+                        if (searchTable) {
+                            if (_.isBoolean(valueObject[key])) {
+                                table = valueObject[key].toString();
+                            } else {
+                                table = valueObject[key];
+                            }
+                        } else {
+                            table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
+                        }
                     }
                 }
             }
