@@ -51,7 +51,11 @@ define(['require',
             _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList'));
             this.collection = new VTagList();
             this.commonCollection = new VTagList();
+            this.enumCollection = new VTagList();
+            this.enumCollection.url = UrlLinks.typedefsUrl().defs;
+            this.enumCollection.modelAttrName = "enumDefs";
             this.asyncAttrFetchCounter = 0;
+            this.asyncEnumFetchCounter = 2;
             this.modal = new Modal({
                 title: 'Add Tag',
                 content: this,
@@ -86,7 +90,6 @@ define(['require',
                             } else {
                                 obj.skipEntity.push(name);
                             }
-
                         }
                     });
                     if (obj.deletedEntity.length) {
@@ -168,20 +171,32 @@ define(['require',
         },
 
         onRender: function() {
+            var that = this;
             $.extend(this.collection.queryParams, { type: 'TRAIT', notsupertype: 'TaxonomyTerm' });
-            this.collection.fetch({ reset: true });
+            this.hideAttributeBox();
+            this.collection.fetch({
+                reset: true,
+                complete: function() {
+                    --that.asyncEnumFetchCounter;
+                    that.showAttributeBox(that.asyncEnumFetchCounter);
+                },
+            });
+            that.enumCollection.fetch({
+                complete: function() {
+                    --that.asyncEnumFetchCounter;
+                    that.showAttributeBox(that.asyncEnumFetchCounter);
+                },
+                reset: true
+            });
         },
         bindEvents: function() {
+            var that = this;
+            this.enumArr = [];
             this.listenTo(this.collection, 'reset', function() {
                 this.tagsCollection();
             }, this);
             this.listenTo(this.commonCollection, 'reset', function() {
-                --this.asyncAttrFetchCounter
                 this.subAttributeData();
-            }, this);
-            this.listenTo(this.commonCollection, 'error', function() {
-                --this.asyncAttrFetchCounter
-                this.$('.attrLoader').hide();
             }, this);
         },
         tagsCollection: function() {
@@ -216,13 +231,21 @@ define(['require',
             this.fetchTagSubData(tagname);
         },
         fetchTagSubData: function(tagname) {
+            var that = this;
+            ++this.asyncAttrFetchCounter;
             this.commonCollection.url = UrlLinks.typesClassicationApiUrl(tagname);
-            ++this.asyncAttrFetchCounter
-            this.commonCollection.fetch({ reset: true });
+            this.commonCollection.fetch({
+                reset: true,
+                complete: function() {
+                    --that.asyncAttrFetchCounter;
+                    that.showAttributeBox();
+                }
+            });
         },
-        showAttributeBox: function() {
-            if (this.asyncAttrFetchCounter === 0) {
+        showAttributeBox: function(counter) {
+            if ((counter || this.asyncAttrFetchCounter) === 0) {
                 this.$('.attrLoader').hide();
+                this.$('.form-group.hide').removeClass('hide');
                 if (this.ui.tagAttribute.children().length !== 0) {
                     this.ui.tagAttribute.parent().show();
                 }
@@ -239,11 +262,22 @@ define(['require',
                 if (this.commonCollection.models[0].get('attributeDefs')) {
                     _.each(this.commonCollection.models[0].get('attributeDefs'), function(obj) {
                         var name = Utils.getName(obj, 'name');
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
-                            '<input type="text" class="form-control attributeInputVal attrName" data-key="' + name + '" ></input></div>');
+                        var typeName = Utils.getName(obj, 'typeName');
+                        var typeNameValue = that.enumCollection.fullCollection.findWhere({ 'name': typeName });
+                        if (typeNameValue) {
+                            var str = "<option disabled='disabled' selected>-- Select " + typeName + " --</option>";
+                            var enumValue = typeNameValue.get('elementDefs');
+                            _.each(enumValue, function(key, value) {
+                                str += '<option>' + key.value + '</option>';
+                            })
+                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
+                                '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
+                        } else {
+                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
+                                '<input type="text" class="form-control attributeInputVal attrName" data-key="' + name + '" ></input></div>');
+                        }
                     });
                 }
-
                 if (this.commonCollection.models[0].get('superTypes')) {
                     var superTypes = this.commonCollection.models[0].get('superTypes');
                     if (!_.isArray(superTypes)) {
@@ -256,7 +290,6 @@ define(['require',
                     } else {
                         this.showAttributeBox();
                     }
-
                 } else {
                     this.showAttributeBox();
                 }
@@ -292,7 +325,6 @@ define(['require',
                     if (that.callback) {
                         that.callback();
                     }
-
                 },
                 cust_error: function(model, response) {
                     var message = "Tag " + tagName + " could not be added";
@@ -305,7 +337,6 @@ define(['require',
                     if (that.hideLoader) {
                         that.hideLoader();
                     }
-
                 }
             });
         },
