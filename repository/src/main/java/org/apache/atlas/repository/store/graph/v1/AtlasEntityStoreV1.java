@@ -232,7 +232,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret);
+        entityChangeNotifier.onEntitiesMutated(ret, entityStream instanceof EntityImportStream);
 
         return ret;
     }
@@ -340,7 +340,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret);
+        entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
     }
@@ -376,7 +376,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret);
+        entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
     }
@@ -406,7 +406,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret);
+        entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
     }

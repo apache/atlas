@@ -19,7 +19,6 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 
@@ -29,24 +28,25 @@ import java.util.Collection;
  * Entity (a Typed instance) change notification listener.
  */
 public interface EntityChangeListener {
-
     /**
      * This is upon adding new entities to the repository.
      *
      * @param entities  the created entities
      *
+     * @param isImport
      * @throws AtlasException if the listener notification fails
      */
-    void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException;
+    void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
 
     /**
      * This is upon updating an entity.
      *
      * @param entities        the updated entities
      *
+     * @param isImport
      * @throws AtlasException if the listener notification fails
      */
-    void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException;
+    void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.
@@ -72,7 +72,8 @@ public interface EntityChangeListener {
      * This is upon deleting entities from the repository.
      *
      * @param entities the deleted entities
+     * @param isImport
      * @throws AtlasException
      */
-    void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException;
+    void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
 }

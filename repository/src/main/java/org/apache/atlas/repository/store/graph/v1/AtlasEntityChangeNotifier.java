@@ -63,7 +63,7 @@ public class AtlasEntityChangeNotifier {
         this.instanceConverter     = instanceConverter;
     }
 
-    public void onEntitiesMutated(EntityMutationResponse entityMutationResponse) throws AtlasBaseException {
+    public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners) || instanceConverter == null) {
             return;
         }
@@ -79,10 +79,10 @@ public class AtlasEntityChangeNotifier {
         doFullTextMapping(updatedEntities);
         doFullTextMapping(partiallyUpdatedEntities);
 
-        notifyListeners(createdEntities, EntityOperation.CREATE);
-        notifyListeners(updatedEntities, EntityOperation.UPDATE);
-        notifyListeners(partiallyUpdatedEntities, EntityOperation.PARTIAL_UPDATE);
-        notifyListeners(deletedEntities, EntityOperation.DELETE);
+        notifyListeners(createdEntities, EntityOperation.CREATE, isImport);
+        notifyListeners(updatedEntities, EntityOperation.UPDATE, isImport);
+        notifyListeners(partiallyUpdatedEntities, EntityOperation.PARTIAL_UPDATE, isImport);
+        notifyListeners(deletedEntities, EntityOperation.DELETE, isImport);
     }
 
     public void onClassificationAddedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
@@ -125,7 +125,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
-    private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
+    private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityHeaders)) {
             return;
         }
@@ -136,14 +136,14 @@ public class AtlasEntityChangeNotifier {
             try {
                 switch (operation) {
                     case CREATE:
-                        listener.onEntitiesAdded(typedRefInsts);
+                        listener.onEntitiesAdded(typedRefInsts, isImport);
                         break;
                     case UPDATE:
                     case PARTIAL_UPDATE:
-                        listener.onEntitiesUpdated(typedRefInsts);
+                        listener.onEntitiesUpdated(typedRefInsts, isImport);
                         break;
                     case DELETE:
-                        listener.onEntitiesDeleted(typedRefInsts);
+                        listener.onEntitiesDeleted(typedRefInsts, isImport);
                         break;
                 }
             } catch (AtlasException e) {

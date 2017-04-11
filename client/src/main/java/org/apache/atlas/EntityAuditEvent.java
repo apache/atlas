@@ -20,7 +20,6 @@ package org.apache.atlas;
 
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.Objects;
 
@@ -29,7 +28,8 @@ import java.util.Objects;
  */
 public class EntityAuditEvent {
     public enum EntityAuditAction {
-        ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE
+        ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE,
+        ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE
     }
 
     private String entityId;

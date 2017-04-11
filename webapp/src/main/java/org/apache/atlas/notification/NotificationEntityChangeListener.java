@@ -77,12 +77,12 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     // ----- EntityChangeListener ----------------------------------------------
 
     @Override
-    public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_CREATE);
     }
 
     @Override
-    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_UPDATE);
     }
 
@@ -97,7 +97,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     }
 
     @Override
-    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_DELETE);
     }
 
