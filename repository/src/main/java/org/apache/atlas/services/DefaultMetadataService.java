@@ -21,7 +21,6 @@ package org.apache.atlas.services;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Provider;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
@@ -73,10 +72,14 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 
 
@@ -701,7 +704,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private void onEntitiesAdded(List<String> guids) throws AtlasException {
         List<ITypedReferenceableInstance> entities = loadEntities(guids);
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onEntitiesAdded(entities);
+            listener.onEntitiesAdded(entities, false);
         }
     }
 
@@ -718,7 +721,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private void onEntitiesUpdated(List<String> guids) throws AtlasException {
         List<ITypedReferenceableInstance> entities = loadEntities(guids);
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onEntitiesUpdated(entities);
+            listener.onEntitiesUpdated(entities, false);
         }
     }
 
@@ -787,7 +790,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     private void onEntitiesDeleted(List<ITypedReferenceableInstance> entities) throws AtlasException {
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onEntitiesDeleted(entities);
+            listener.onEntitiesDeleted(entities, false);
         }
     }
 

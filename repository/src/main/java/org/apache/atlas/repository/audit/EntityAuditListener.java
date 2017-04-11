@@ -55,10 +55,10 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
-    public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
         for (ITypedReferenceableInstance entity : entities) {
-            EntityAuditEvent event = createEvent(entity, EntityAuditAction.ENTITY_CREATE);
+            EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_CREATE : EntityAuditAction.ENTITY_CREATE);
             events.add(event);
         }
 
@@ -66,10 +66,10 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
-    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
         for (ITypedReferenceableInstance entity : entities) {
-            EntityAuditEvent event = createEvent(entity, EntityAuditAction.ENTITY_UPDATE);
+            EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_UPDATE : EntityAuditAction.ENTITY_UPDATE);
             events.add(event);
         }
 
@@ -100,10 +100,10 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
-    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
         for (ITypedReferenceableInstance entity : entities) {
-            EntityAuditEvent event = createEvent(entity, EntityAuditAction.ENTITY_DELETE, "Deleted entity");
+            EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_DELETE : EntityAuditAction.ENTITY_DELETE, "Deleted entity");
             events.add(event);
         }
 
@@ -278,6 +278,15 @@ public class EntityAuditListener implements EntityChangeListener {
                 break;
             case TAG_DELETE:
                 ret = "Deleted trait: ";
+                break;
+            case ENTITY_IMPORT_CREATE:
+                ret = "Created by import: ";
+                break;
+            case ENTITY_IMPORT_UPDATE:
+                ret = "Updated by import: ";
+                break;
+            case ENTITY_IMPORT_DELETE:
+                ret = "Deleted by import: ";
                 break;
             default:
                 ret = "Unknown: ";

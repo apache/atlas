@@ -1244,12 +1244,12 @@ public class DefaultMetadataServiceTest {
         private List<String> updatedEntities = new ArrayList<>();
 
         @Override
-        public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities)
+        public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport)
             throws AtlasException {
         }
 
         @Override
-        public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities)
+        public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport)
             throws AtlasException {
             updatedEntities.clear();
             for (ITypedReferenceableInstance entity : entities) {
@@ -1268,7 +1268,7 @@ public class DefaultMetadataServiceTest {
         }
 
         @Override
-        public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities)
+        public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport)
             throws AtlasException {
             deletedEntities.clear();
             for (ITypedReferenceableInstance entity : entities) {
