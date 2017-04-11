@@ -228,6 +228,7 @@ define(['require',
                     });
                     return;
                 }
+
                 this.name = ref.ui.tagName.val();
                 this.description = ref.ui.description.val();
                 var superTypes = [];
@@ -237,6 +238,57 @@ define(['require',
                 var attributeObj = ref.collection.toJSON();
                 if (ref.collection.length === 1 && ref.collection.first().get("name") === "") {
                     attributeObj = [];
+                }
+
+                if (attributeObj.length) {
+                    var superTypesAttributes = [];
+                    _.each(superTypes, function(name) {
+                        var parentTags = that.collection.fullCollection.findWhere({ name: name });
+                        superTypesAttributes = superTypesAttributes.concat(parentTags.get('attributeDefs'));
+                    });
+
+
+                    var duplicateAttributeList = [];
+                    _.each(attributeObj, function(obj) {
+                        var duplicateCheck = _.find(superTypesAttributes, function(activeTagObj) {
+                            return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
+                        });
+                        if (duplicateCheck) {
+                            duplicateAttributeList.push(obj.name);
+                        }
+                    });
+
+
+                    var notifyObj = {
+                        confirm: {
+                            confirm: true,
+                            buttons: [{
+                                    text: 'Ok',
+                                    addClass: 'btn-primary',
+                                    click: function(notice) {
+                                        notice.remove();
+                                    }
+                                },
+                                null
+                            ]
+                        }
+                    }
+
+                    if (duplicateAttributeList.length) {
+                        if (duplicateAttributeList.length < 2) {
+                            var text = "Attribute <b>" + duplicateAttributeList.join(",") + "</b> is duplicate !"
+                        } else {
+                            if (attributeObj.length > duplicateAttributeList.length) {
+                                var text = "Attributes: <b>" + duplicateAttributeList.join(",") + "</b> are duplicate !"
+                            } else {
+                                var text = "All attributes are duplicate !"
+                            }
+                        }
+                        notifyObj['text'] = text;
+                        Utils.notifyConfirm(notifyObj);
+                        return false;
+                    }
+
                 }
                 this.json = {
                     classificationDefs: [{

@@ -118,3 +118,11 @@ g.type-TK > rect {
     top: 4px;
     right: 5px;
 }
+
+.legends {
+    > i {
+        > span {
+            font-family: 'Source Sans Pro';
+        }
+    }
+}
