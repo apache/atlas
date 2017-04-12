@@ -20,8 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/tag/AddTagAttributeView_tmpl',
     'views/tag/TagAttributeItemView',
+    'utils/UrlLinks',
+    'collection/VTagList'
 
-], function(require, Backbone, AddTagAttributeView_tmpl, TagAttributeItemView) {
+], function(require, Backbone, AddTagAttributeView_tmpl, TagAttributeItemView, UrlLinks, VTagList) {
     'use strict';
 
     return Backbone.Marionette.CompositeView.extend(
@@ -61,13 +63,25 @@ define(['require',
             initialize: function(options) {
                 // this.parentView = options.parentView;
                 this.collection = new Backbone.Collection();
-                this.collectionAttribute();
+                this.typeEnum = new VTagList();
+                this.typeEnum.url = UrlLinks.typedefsUrl().defs;
+                this.typeEnum.modelAttrName = "enumDefs";
             },
             onRender: function() {
+                var that = this;
+                this.$('.fontLoader').show();
                 this.ui.addAttributeDiv.find('.closeInput').hide();
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.addAttributeDiv.find('input,textarea').placeholder();
                 }
+                that.typeEnum.fetch({
+                    reset: true,
+                    complete: function(model, response) {
+                        that.collectionAttribute();
+                        that.$('.fontLoader').hide();
+                        that.$('.hide').removeClass('hide');
+                    }
+                });
             },
             bindEvents: function() {},
             collectionAttribute: function() {
@@ -81,6 +95,7 @@ define(['require',
                     "isUnique": false,
                     "isIndexable": false
                 }));
+
             },
             onClickAddAttriBtn: function() {
                 if (this.ui.addAttributeDiv.find("input").length > 0) {

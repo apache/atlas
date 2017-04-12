@@ -35,7 +35,7 @@ define(['require',
             ui: {
                 attributeInput: "[data-id='attributeInput']",
                 close: "[data-id='close']",
-                dataTypeSelector: "[data-id='dataTypeSelector']",
+                dataTypeSelector: "[data-id='dataTypeSelector']"
             },
             /** ui events hash */
             events: function() {
@@ -56,11 +56,14 @@ define(['require',
              */
             initialize: function(options) {
                 this.parentView = options.parentView;
-            },
-            onRender: function() {
 
             },
-            bindEvents: function() {},
+            onRender: function() {
+                var that = this;
+                _.each(this.parentView.typeEnum.models, function(objValue) {
+                    that.ui.dataTypeSelector.append("<option>" + objValue.attributes.name + "</option>");
+                });
+            },
             onCloseButton: function() {
                 if (this.parentView.collection.models.length > 0) {
                     this.model.destroy();
