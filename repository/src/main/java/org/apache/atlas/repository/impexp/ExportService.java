@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.resources;
+package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -30,8 +30,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -40,8 +40,8 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -86,7 +86,7 @@ public class ExportService {
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
                                  String requestingIP) throws AtlasBaseException {
         long              startTime = System.currentTimeMillis();
-        AtlasExportResult result    = new AtlasExportResult(request, userName, hostName, requestingIP, startTime);
+        AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP, hostName, startTime);
         ExportContext     context   = new ExportContext(result, exportSink);
 
         try {

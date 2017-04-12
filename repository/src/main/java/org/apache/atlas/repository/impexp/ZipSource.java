@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.resources;
+package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -27,9 +28,9 @@ import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -43,12 +44,12 @@ import static org.apache.atlas.AtlasErrorCode.JSON_ERROR_OBJECT_MAPPER_NULL_RETU
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
 
-    private final ByteArrayInputStream          inputStream;
+    private final InputStream                   inputStream;
     private List<String>                        creationOrder;
     private Iterator<String>                    iterator;
     private Map<String, String>                 guidEntityJsonMap;
 
-    public ZipSource(ByteArrayInputStream inputStream) throws IOException {
+    public ZipSource(InputStream inputStream) throws IOException {
         this.inputStream = inputStream;
         guidEntityJsonMap = new HashMap<>();
 
@@ -61,6 +62,13 @@ public class ZipSource implements EntityImportStream {
 
         String s = (String) getFromCache(fileName);
         return convertFromJson(AtlasTypesDef.class, s);
+    }
+
+    public AtlasExportResult getExportResult() throws AtlasBaseException {
+        final String fileName = ZipExportFileNames.ATLAS_EXPORT_INFO_NAME.toString();
+
+        String s = getFromCache(fileName);
+        return convertFromJson(AtlasExportResult.class, s);
     }
 
     private void setCreationOrder() {
@@ -76,8 +84,6 @@ public class ZipSource implements EntityImportStream {
     }
 
     private void updateGuidZipEntryMap() throws IOException {
-
-        inputStream.reset();
 
         ZipInputStream zipInputStream = new ZipInputStream(inputStream);
         ZipEntry zipEntry = zipInputStream.getNextEntry();

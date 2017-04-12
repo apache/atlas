@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.resources;
+package org.apache.atlas.repository.impexp;
 
 public enum ZipExportFileNames {
     ATLAS_EXPORT_INFO_NAME("atlas-export-info"),
