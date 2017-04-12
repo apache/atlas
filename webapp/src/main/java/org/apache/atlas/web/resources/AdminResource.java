@@ -31,6 +31,10 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.repository.impexp.ZipSink;
+import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -53,7 +57,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -359,7 +369,7 @@ public class AdminResource {
         try {
             AtlasImportRequest   request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
             ByteArrayInputStream inputStream   = new ByteArrayInputStream(bytes);
-            ImportService        importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
+            ImportService importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
 
             ZipSource zipSource = new ZipSource(inputStream);
 
