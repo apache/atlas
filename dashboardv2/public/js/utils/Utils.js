@@ -431,6 +431,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             //first show body to get width and height for postion then trigger the event.
             $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
         } else if (panelBody.hasClass('full-visible')) {
+            $('body').removeAttr("style");
             $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
             //first trigger the event to getwidth and height for postion then hide body.
             panelBody.hide();
