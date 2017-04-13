@@ -160,7 +160,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName,
-                                                   String attrValue, int limit, int offset) throws AtlasBaseException {
+                                                   String attrValuePrefix, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         if (LOG.isDebugEnabled()) {
@@ -196,11 +196,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setClassification(classification);
         }
 
-        boolean isAttributeSearch = StringUtils.isNotEmpty(attrName) && StringUtils.isNotEmpty(attrValue);
+        boolean isAttributeSearch = StringUtils.isNotEmpty(attrName) && StringUtils.isNotEmpty(attrValuePrefix);
 
         if (isAttributeSearch) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Executing attribute search attrName: {} and attrValue: {}", attrName, attrValue);
+                LOG.debug("Executing attribute search attrName: {} and attrValue: {}", attrName, attrValuePrefix);
             }
 
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
@@ -215,7 +215,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 attrQualifiedName = entityType.getAttribute(attrName).getQualifiedName();
             }
 
-            String attrQuery = String.format("%s AND (%s *)", attrName, attrValue.replaceAll("\\.", " "));
+            String attrQuery = String.format("%s AND (%s *)", attrName, attrValuePrefix.replaceAll("\\.", " "));
 
             if (StringUtils.isEmpty(query)) {
                 query = attrQuery;
@@ -262,7 +262,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (isAttributeSearch) {
                     String vertexAttrValue = vertex.getProperty(attrQualifiedName, String.class);
 
-                    if (StringUtils.isNotEmpty(vertexAttrValue) && !vertexAttrValue.startsWith(attrValue)) {
+                    if (StringUtils.isNotEmpty(vertexAttrValue) && !vertexAttrValue.startsWith(attrValuePrefix)) {
                         continue;
                     }
                 }
