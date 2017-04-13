@@ -169,7 +169,7 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified attribute search query
      * @param attrName  Attribute name
-     * @param attrValue Attibute value to search on
+     * @param attrValuePrefix Attibute value to search on
      * @param typeName limit the result to only entities of specified type or its sub-types
      * @param limit limit the result set to only include the specified number of entries
      * @param offset start offset of the result set (useful for pagination)
@@ -183,8 +183,8 @@ public class DiscoveryREST {
     @Path("/attribute")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingAttribute(@QueryParam("stringName")  String attrName,
-                                                  @QueryParam("stringValue") String attrValue,
+    public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")  String attrName,
+                                                  @QueryParam("attrValuePrefix") String attrValuePrefix,
                                                   @QueryParam("typeName")    String typeName,
                                                   @QueryParam("limit")       int    limit,
                                                   @QueryParam("offset")      int    offset) throws AtlasBaseException {
@@ -193,15 +193,15 @@ public class DiscoveryREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingAttribute(" + attrName + "," +
-                        attrValue + "," + typeName + "," + limit + "," + offset + ")");
+                        attrValuePrefix + "," + typeName + "," + limit + "," + offset + ")");
             }
 
-            if (StringUtils.isEmpty(attrName) || StringUtils.isEmpty(attrValue)) {
+            if (StringUtils.isEmpty(attrName) || StringUtils.isEmpty(attrValuePrefix)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
-                        String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValue));
+                        String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValuePrefix));
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValue, limit, offset);
+            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, limit, offset);
 
         } finally {
             AtlasPerfTracer.log(perf);
