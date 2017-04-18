@@ -49,6 +49,7 @@ public class ZipSourceTest {
     @Test(dataProvider = "zipFileStocks")
     public void examineContents_BehavesAsExpected(ZipSource zipSource) throws IOException, AtlasBaseException {
         List<String> creationOrder = zipSource.getCreationOrder();
+
         Assert.assertNotNull(creationOrder);
         Assert.assertEquals(creationOrder.size(), 4);
 
@@ -98,6 +99,8 @@ public class ZipSourceTest {
         List<String> creationOrder = zipSource.getCreationOrder();
         for (int i = 0; i < creationOrder.size(); i++) {
             AtlasEntity e = zipSource.next();
+
+            Assert.assertNotNull(e);
             Assert.assertEquals(e.getGuid(), creationOrder.get(i));
         }
 

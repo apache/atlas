@@ -253,6 +253,8 @@ public class ExportServiceTest {
 
         while (zipSource.hasNext()) {
             AtlasEntity entity = zipSource.next();
+
+            Assert.assertNotNull(entity);
             Assert.assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
             Assert.assertTrue(expectedEntityTypes.contains(entity.getTypeName()));
         }
@@ -266,6 +268,8 @@ public class ExportServiceTest {
         Assert.assertTrue(zipSource.hasNext());
 
         AtlasEntity entity = zipSource.next();
+
+        Assert.assertNotNull(entity);
         Assert.assertTrue(entity.getTypeName().equals("Department"));
         Assert.assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
         verifyTypeDefs(zipSource);
@@ -277,6 +281,8 @@ public class ExportServiceTest {
         Assert.assertTrue(zipSource.hasNext());
 
         AtlasEntity entity = zipSource.next();
+
+        Assert.assertNotNull(entity);
         Assert.assertTrue(entity.getTypeName().equals("Department"));
         Assert.assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
         verifyTypeDefs(zipSource);
