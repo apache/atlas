@@ -54,7 +54,12 @@ public final class AuthenticationUtil {
         try {
             Console console = System.console();
             username = console.readLine("Enter username for atlas :- ");
-            password = new String(console.readPassword("Enter password for atlas :- "));
+
+            char[] pwdChar = console.readPassword("Enter password for atlas :- ");
+            if(pwdChar != null) {
+                password = new String(pwdChar);
+            }
+
         } catch (Exception e) {
             System.out.print("Error while reading ");
             System.exit(1);
