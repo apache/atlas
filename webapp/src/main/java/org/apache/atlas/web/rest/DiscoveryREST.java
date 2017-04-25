@@ -82,7 +82,7 @@ public class DiscoveryREST {
             String queryStr = query == null ? "" : query;
 
             if (StringUtils.isNoneEmpty(typeName)) {
-                queryStr = typeName + " " + queryStr;
+                queryStr = escapeTypeName(typeName) + " " + queryStr;
             }
 
             if (StringUtils.isNoneEmpty(classification)) {
@@ -206,5 +206,17 @@ public class DiscoveryREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private String escapeTypeName(String typeName) {
+        String ret;
+
+        if (StringUtils.startsWith(typeName, "`") && StringUtils.endsWith(typeName, "`")) {
+            ret = typeName;
+        } else {
+            ret = String.format("`%s`", typeName);
+        }
+
+        return ret;
     }
 }
