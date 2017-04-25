@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.web.security.AtlasAuthenticationProvider;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
@@ -266,13 +267,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     }
 
                     if ((existingAuth == null || !existingAuth.isAuthenticated()) && (!StringUtils.isEmpty(userName))) {
-                        UserGroupInformation ugi = UserGroupInformation.getLoginUser();
-                        String[] groupsName = ugi.getGroupNames();
 
-                        final List<GrantedAuthority> grantedAuths = new ArrayList<>();
-                        for (String group : groupsName) {
-                            grantedAuths.add(new SimpleGrantedAuthority(group));
-                        }
+                        List<GrantedAuthority> grantedAuths = AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
 
                         final UserDetails principal = new User(userName, "", grantedAuths);
                         final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
