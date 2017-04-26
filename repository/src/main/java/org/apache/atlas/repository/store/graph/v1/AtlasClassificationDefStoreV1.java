@@ -27,7 +27,6 @@ import org.apache.atlas.repository.store.graph.AtlasClassificationDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -36,12 +35,18 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * ClassificationDef store in v1 format.
  */
 public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasClassificationDefStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationDefStoreV1.class);
+
+    private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ .]*";
+
+    private static final Pattern TRAIT_NAME_PATTERN = Pattern.compile(TRAIT_NAME_REGEX);
 
     public AtlasClassificationDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
         super(typeDefStore, typeRegistry);
@@ -53,7 +58,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.preCreate({})", classificationDef);
         }
 
-        AtlasTypeUtil.validateType(classificationDef);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -173,7 +178,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }
 
-        AtlasTypeUtil.validateType(classifiDef);
+        validateType(classifiDef);
 
         AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
                   ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
@@ -192,7 +197,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
         }
 
-        AtlasTypeUtil.validateType(classificationDef);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -224,7 +229,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
         }
 
-        AtlasTypeUtil.validateType(classificationDef);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
@@ -374,5 +379,12 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         }
 
         return ret;
+    }
+
+    @Override
+    public boolean isValidName(String typeName) {
+        Matcher m = TRAIT_NAME_PATTERN.matcher(typeName);
+
+        return m.matches();
     }
 }

@@ -99,7 +99,6 @@ public class AtlasTypeUtil {
             && StringUtils.endsWith(typeName, ATLAS_TYPE_MAP_SUFFIX);
     }
 
-
     public static boolean isValidTypeName(String typeName) {
         Matcher m = NAME_PATTERN.matcher(typeName);
 
@@ -118,15 +117,6 @@ public class AtlasTypeUtil {
 
     public static String getInvalidTraitTypeNameErrorMessage() {
         return InvalidTraitTypeNameErrorMessage;
-    }
-
-    public static void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
-        boolean isValidName = (typeDef instanceof AtlasClassificationDef) ? isValidTraitTypeName(typeDef.getName())
-            : isValidTypeName(typeDef.getName());
-
-        if (!isValidName) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
-        }
     }
 
     public static String getStringValue(Map map, Object key) {

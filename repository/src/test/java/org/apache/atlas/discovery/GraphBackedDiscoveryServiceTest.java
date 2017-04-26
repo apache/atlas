@@ -1006,6 +1006,18 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         System.out.println("results = " + results);
     }
 
+    @Test
+    public void testSearchForTypeWithReservedKeywordAttributes() throws Exception {
+        createTypesWithReservedKeywordAttributes();
+
+        String dslQuery = "from OrderType where `order` = 1";
+        String jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        System.out.println("results = " + results);
+    }
+
     /*
      * Type Hierarchy is:
      *   A(a)
@@ -1026,6 +1038,15 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 createClassTypeDef("D", ImmutableSet.of("C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         TypeSystem.getInstance().defineClassTypes(A, B, C, D);
+    }
+
+    private void createTypesWithReservedKeywordAttributes() throws Exception {
+        HierarchicalTypeDefinition orderType = createClassTypeDef("OrderType", null, createRequiredAttrDef("order", DataTypes.INT_TYPE));
+
+        HierarchicalTypeDefinition limitType =
+            createClassTypeDef("LimitType", null, createOptionalAttrDef("limit", DataTypes.BOOLEAN_TYPE));
+
+        TypeSystem.getInstance().defineClassTypes(orderType, limitType);
     }
 
     private void createInstances() throws Exception {

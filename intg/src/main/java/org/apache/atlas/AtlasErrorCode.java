@@ -52,6 +52,7 @@ public enum AtlasErrorCode {
     PATCH_FOR_UNKNOWN_TYPE(400, "ATLAS-400-00-017", "{0} - patch references unknown type {1}"),
     PATCH_INVALID_DATA(400, "ATLAS-400-00-018", "{0} - patch data is invalid for type {1}"),
     TYPE_NAME_INVALID_FORMAT(400, "ATLAS-400-00-019", "{0}: invalid name for {1}.  Names must consist of a letter followed by a sequence of letter, number, or '_' characters"),
+    ATTRIBUTE_NAME_INVALID(400, "ATLAS-400-00-020", "{0}: invalid name. Attribute name must not contain query keywords"),
     INVALID_PARAMETERS(400, "ATLAS-400-00-01A", "invalid parameters: {0}"),
     CLASSIFICATION_ALREADY_ASSOCIATED(400, "ATLAS-400-00-01B", "instance {0} already is associated with classification {1}"),
     CONSTRAINT_INVERSE_REF_ATTRIBUTE_INVALID_TYPE(400, "ATLAS-400-00-01C", "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type"),

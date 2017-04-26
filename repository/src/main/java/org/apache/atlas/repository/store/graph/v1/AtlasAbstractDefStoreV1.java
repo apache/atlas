@@ -17,7 +17,18 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.type.AtlasTypeRegistry;
+
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Abstract typedef-store for v1 format.
@@ -26,8 +37,40 @@ public abstract class AtlasAbstractDefStoreV1 {
     protected final AtlasTypeDefGraphStoreV1 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
 
+    private static final String  NAME_REGEX         = "[a-zA-Z][a-zA-Z0-9_ ]*";
+    private static final Pattern NAME_PATTERN       = Pattern.compile(NAME_REGEX);
+
+    private static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
+
     public AtlasAbstractDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
         this.typeRegistry = typeRegistry;
+    }
+
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        if (!isValidName(typeDef.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
+        }
+
+        try {
+            final boolean allowReservedKeywords = ApplicationProperties.get().getBoolean(ALLOW_RESERVED_KEYWORDS, false);
+
+            if (!allowReservedKeywords && typeDef instanceof AtlasStructDef) {
+                final List<AtlasStructDef.AtlasAttributeDef> attributeDefs = ((AtlasStructDef) typeDef).getAttributeDefs();
+                for (AtlasStructDef.AtlasAttributeDef attrDef : attributeDefs) {
+                    if (QueryParser.isKeyword(attrDef.getName())) {
+                        throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID, attrDef.getName(), typeDef.getCategory().name());
+                    }
+                }
+            }
+        } catch (AtlasException e) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Could not load configuration");
+        }
+    }
+
+    public boolean isValidName(String typeName) {
+        Matcher m = NAME_PATTERN.matcher(typeName);
+
+        return m.matches();
     }
 }
