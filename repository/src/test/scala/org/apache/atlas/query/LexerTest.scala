@@ -18,8 +18,9 @@
 
 package org.apache.atlas.query
 
+import org.apache.atlas.DBSandboxer
 import org.testng.Assert
-import org.testng.annotations.Test
+import org.testng.annotations.{Listeners, Test}
 
 import scala.util.parsing.input.CharArrayReader
 

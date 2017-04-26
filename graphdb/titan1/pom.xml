@@ -210,6 +210,14 @@
             <artifactId>tinkergraph-gremlin</artifactId>
             <version>3.0.1-incubating</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-common</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

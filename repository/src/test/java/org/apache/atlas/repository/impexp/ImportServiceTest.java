@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -36,7 +36,7 @@ import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZip
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runAndVerifyQuickStart_v1_Import;
 
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class ImportServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceTest.class);
 

@@ -18,24 +18,15 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
-import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
-import org.testng.annotations.Test;
 
-import java.io.IOException;
-
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runAndVerifyQuickStart_v1_Import;
-
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class ImportServiceReportingTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceReportingTest.class);
 

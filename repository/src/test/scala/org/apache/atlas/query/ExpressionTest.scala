@@ -18,9 +18,10 @@
 
 package org.apache.atlas.query
 
+import org.apache.atlas.DBSandboxer
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.repository.BaseTest
-import org.testng.annotations.{BeforeMethod,Test}
+import org.testng.annotations.{BeforeMethod, Listeners, Test}
 
 class ExpressionTest extends BaseTest {
 

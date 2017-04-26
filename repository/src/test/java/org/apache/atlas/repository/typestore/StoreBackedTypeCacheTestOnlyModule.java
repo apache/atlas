@@ -19,7 +19,7 @@ package org.apache.atlas.repository.typestore;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.configuration.Configuration;
 
@@ -28,7 +28,8 @@ import org.apache.commons.configuration.Configuration;
  * Guice module which sets TypeCache implementation class configuration property to {@link StoreBackedTypeCache}.
  *
  */
-public class StoreBackedTypeCacheTestModule extends RepositoryMetadataModule {
+public class StoreBackedTypeCacheTestOnlyModule extends TestOnlyModule {
+
     @Override
     protected Configuration getConfiguration() {
         try {
