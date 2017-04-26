@@ -100,6 +100,18 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
+    public void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
+        if (traits != null) {
+            for (IStruct trait : traits) {
+                EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_UPDATE,
+                                                     "Updated trait: " + InstanceSerialization.toJson(trait, true));
+
+                auditRepository.putEvents(event);
+            }
+        }
+    }
+
+    @Override
     public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
         for (ITypedReferenceableInstance entity : entities) {
@@ -278,6 +290,9 @@ public class EntityAuditListener implements EntityChangeListener {
                 break;
             case TAG_DELETE:
                 ret = "Deleted trait: ";
+                break;
+            case TAG_UPDATE:
+                ret = "Updated trait: ";
                 break;
             case ENTITY_IMPORT_CREATE:
                 ret = "Created by import: ";

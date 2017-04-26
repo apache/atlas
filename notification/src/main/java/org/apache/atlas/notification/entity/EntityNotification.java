@@ -35,7 +35,8 @@ public interface EntityNotification {
         ENTITY_UPDATE,
         ENTITY_DELETE,
         TRAIT_ADD,
-        TRAIT_DELETE
+        TRAIT_DELETE,
+        TRAIT_UPDATE
     }
 
 

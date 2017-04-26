@@ -516,6 +516,7 @@ public final class TestUtilsV2 {
     public static final String TABLE_NAME = "bar";
     public static final String CLASSIFICATION = "classification";
     public static final String PII = "PII";
+    public static final String PHI = "PHI";
     public static final String SUPER_TYPE_NAME = "Base";
     public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
     public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
@@ -787,9 +788,14 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, ImmutableSet.of(CLASSIFICATION),
                         AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
 
+        AtlasClassificationDef phiTypeDefinition = AtlasTypeUtil.createTraitTypeDef(PHI, PHI + _description, ImmutableSet.<String>of(),
+                                                                                    AtlasTypeUtil.createRequiredAttrDef("stringAttr", "string"),
+                                                                                    AtlasTypeUtil.createRequiredAttrDef("booleanAttr", "boolean"),
+                                                                                    AtlasTypeUtil.createRequiredAttrDef("integerAttr", "int"));
+
         return AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition, partitionDefinition),
-                ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition),
+                ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition, phiTypeDefinition),
                 ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition,
                         storageDescClsDef, partClsDef, processClsType));
     }

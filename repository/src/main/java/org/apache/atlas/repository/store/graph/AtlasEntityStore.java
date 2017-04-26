@@ -127,6 +127,11 @@ public interface AtlasEntityStore {
      */
     void addClassifications(String guid, List<AtlasClassification> classification) throws AtlasBaseException;
 
+    /**
+     * Update classification(s)
+     */
+    void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException;
+
     @GraphTransaction
     void addClassification(List<String> guids, AtlasClassification classification) throws AtlasBaseException;
 
