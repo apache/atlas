@@ -125,6 +125,26 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    public void onClassificationUpdatedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
+        // Since the classification attributes are updated in the graph, we need to recursively remap the entityText
+        doFullTextMapping(entityId);
+
+        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
+        List<ITypedStruct>          traits = toITypedStructs(classifications);
+
+        if (entity == null || CollectionUtils.isEmpty(traits)) {
+            return;
+        }
+
+        for (EntityChangeListener listener : entityChangeListeners) {
+            try {
+                listener.onTraitsUpdated(entity, traits);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+            }
+        }
+    }
+
     private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityHeaders)) {
             return;

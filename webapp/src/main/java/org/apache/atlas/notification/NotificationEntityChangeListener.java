@@ -97,6 +97,11 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     }
 
     @Override
+    public void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
+        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_UPDATE);
+    }
+
+    @Override
     public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
         notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_DELETE);
     }

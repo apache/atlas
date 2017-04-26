@@ -353,6 +353,33 @@ public class EntityREST {
     }
 
     /**
+     * Updates classifications to an existing entity represented by a guid.
+     * @param  guid globally unique identifier for the entity
+     * @return classification for the given entity guid
+     */
+    @PUT
+    @Path("/guid/{guid}/classifications")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void updateClassification(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.updateClassification(" + guid + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            entitiesStore.updateClassifications(guid, classifications);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Deletes a given classification from an existing entity represented by a guid.
      * @param guid      globally unique identifier for the entity
      * @param classificationName name of the classifcation

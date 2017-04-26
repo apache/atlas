@@ -67,6 +67,16 @@ public interface EntityChangeListener {
      * @throws AtlasException if the listener notification fails
      */
     void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames) throws AtlasException;
+
+    /**
+     * This is upon updating a trait from a typed instance.
+     *
+     * @param entity    the entity
+     * @param traits    trait that needs to be added to entity
+     *
+     * @throws AtlasException if the listener notification fails
+     */
+    void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException;
     
     /**
      * This is upon deleting entities from the repository.

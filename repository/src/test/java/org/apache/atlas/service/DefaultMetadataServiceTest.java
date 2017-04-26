@@ -1268,6 +1268,11 @@ public class DefaultMetadataServiceTest {
         }
 
         @Override
+        public void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits)
+            throws AtlasException {
+        }
+
+        @Override
         public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport)
             throws AtlasException {
             deletedEntities.clear();

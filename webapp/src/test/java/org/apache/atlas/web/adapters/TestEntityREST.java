@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -44,6 +45,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +62,8 @@ public class TestEntityREST {
     private AtlasEntity dbEntity;
 
     private AtlasClassification testClassification;
+    
+    private AtlasClassification phiClassification;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -123,7 +127,59 @@ public class TestEntityREST {
 
         Assert.assertNotNull(retrievedClassification);
         Assert.assertEquals(retrievedClassification, testClassification);
+    }
 
+    @Test(dependsOnMethods = "testGetEntityById")
+    public void testAddAndUpdateClassificationWithAttributes() throws Exception {
+        phiClassification = new AtlasClassification(TestUtilsV2.PHI, new HashMap<String, Object>() {{
+            put("stringAttr", "sample_string");
+            put("booleanAttr", true);
+            put("integerAttr", 100);
+        }});
+
+        testClassification = new AtlasClassification(TestUtilsV2.CLASSIFICATION, new HashMap<String, Object>() {{
+            put("tag", "tagName");
+        }});
+
+        entityREST.addClassifications(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification)));
+
+        final AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
+        Assert.assertNotNull(retrievedClassifications);
+
+        final List<AtlasClassification> retrievedClassificationsList = retrievedClassifications.getList();
+        Assert.assertNotNull(retrievedClassificationsList);
+
+        final AtlasClassification retrievedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+        Assert.assertNotNull(retrievedClassification);
+        Assert.assertEquals(retrievedClassification, phiClassification);
+
+        for (String attrName : retrievedClassification.getAttributes().keySet()) {
+            Assert.assertEquals(retrievedClassification.getAttribute(attrName), phiClassification.getAttribute(attrName));
+        }
+
+        // update multiple tags attributes
+        phiClassification = new AtlasClassification(TestUtilsV2.PHI, new HashMap<String, Object>() {{
+            put("stringAttr", "sample_string_v2");
+            put("integerAttr", 200);
+        }});
+
+        testClassification = new AtlasClassification(TestUtilsV2.CLASSIFICATION, new HashMap<String, Object>() {{
+            put("tag", "tagName_updated");
+        }});
+
+        entityREST.updateClassification(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification, testClassification)));
+
+        AtlasClassification updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+        Assert.assertNotNull(updatedClassification);
+        Assert.assertEquals(updatedClassification.getAttribute("stringAttr"), "sample_string_v2");
+        Assert.assertEquals(updatedClassification.getAttribute("integerAttr"), 200);
+        Assert.assertEquals(updatedClassification.getAttribute("booleanAttr"), true);
+
+        updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
+        Assert.assertNotNull(updatedClassification);
+        Assert.assertEquals(updatedClassification.getAttribute("tag"), testClassification.getAttribute("tag"));
+
+        entityREST.deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
     }
 
     @Test(dependsOnMethods = "testAddAndGetClassification")

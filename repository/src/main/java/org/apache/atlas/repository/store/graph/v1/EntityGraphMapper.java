@@ -941,6 +941,35 @@ public class EntityGraphMapper {
         }
     }
 
+    public void updateClassification(final EntityMutationContext context, String guid, AtlasClassification classification)
+                                     throws AtlasBaseException {
+
+        AtlasVertex instanceVertex = AtlasGraphUtilsV1.findByGuid(guid);
+
+        if (instanceVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String entityTypeName = AtlasGraphUtilsV1.getTypeName(instanceVertex);
+
+        final AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Updating classification {} for entity {}", classification, guid);
+        }
+
+        // get the classification vertex from entity
+        String      relationshipLabel    = GraphHelper.getTraitLabel(entityTypeName, classification.getTypeName());
+        AtlasEdge   classificationEdge   = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+        AtlasVertex classificationVertex = classificationEdge.getInVertex();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("updating vertex {} for trait {}", string(classificationVertex), classification.getTypeName());
+        }
+
+        mapClassification(EntityOperation.UPDATE, context, classification, entityType, instanceVertex, classificationVertex);
+    }
+
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification, AtlasEntityType entityType, AtlasVertex parentInstanceVertex, AtlasVertex traitInstanceVertex)
         throws AtlasBaseException {
 
