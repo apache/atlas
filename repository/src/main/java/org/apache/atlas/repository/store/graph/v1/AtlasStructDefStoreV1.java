@@ -64,7 +64,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasStructDefStoreV1.preCreate({})", structDef);
         }
 
-        AtlasTypeUtil.validateType(structDef);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
@@ -183,7 +183,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDef);
         }
 
-        AtlasTypeUtil.validateType(structDef);
+        validateType(structDef);
 
         AtlasStructDef ret = StringUtils.isNotBlank(structDef.getGuid()) ? updateByGuid(structDef.getGuid(), structDef)
                                                                          : updateByName(structDef.getName(), structDef);
@@ -201,7 +201,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasStructDefStoreV1.updateByName({}, {})", name, structDef);
         }
 
-        AtlasTypeUtil.validateType(structDef);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
@@ -233,7 +233,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasStructDefStoreV1.updateByGuid({})", guid);
         }
 
-        AtlasTypeUtil.validateType(structDef);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

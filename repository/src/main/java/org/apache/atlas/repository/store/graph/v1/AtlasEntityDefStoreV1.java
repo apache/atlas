@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -26,7 +27,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -42,6 +42,7 @@ import java.util.List;
 public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasEntityDefStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityDefStoreV1.class);
 
+    @Inject
     public AtlasEntityDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
         super(typeDefStore, typeRegistry);
     }
@@ -52,7 +53,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.preCreate({})", entityDef);
         }
 
-        AtlasTypeUtil.validateType(entityDef);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -172,7 +173,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
 
-        AtlasTypeUtil.validateType(entityDef);
+        validateType(entityDef);
 
         AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getGuid()) ? updateByGuid(entityDef.getGuid(), entityDef)
                                                                          : updateByName(entityDef.getName(), entityDef);
@@ -190,7 +191,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.updateByName({}, {})", name, entityDef);
         }
 
-        AtlasTypeUtil.validateType(entityDef);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -222,7 +223,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.updateByGuid({})", guid);
         }
 
-        AtlasTypeUtil.validateType(entityDef);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

@@ -52,7 +52,7 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
             LOG.debug("==> AtlasEnumDefStoreV1.create({})", enumDef);
         }
 
-        AtlasTypeUtil.validateType(enumDef);
+        validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByName(enumDef.getName());
 
@@ -143,7 +143,7 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
             LOG.debug("==> AtlasEnumDefStoreV1.update({})", enumDef);
         }
 
-        AtlasTypeUtil.validateType(enumDef);
+        validateType(enumDef);
 
         AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef)
                                                                      : updateByName(enumDef.getName(), enumDef);
@@ -161,7 +161,7 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
             LOG.debug("==> AtlasEnumDefStoreV1.updateByName({}, {})", name, enumDef);
         }
 
-        AtlasTypeUtil.validateType(enumDef);
+        validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
 
@@ -188,7 +188,7 @@ public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements Atla
             LOG.debug("==> AtlasEnumDefStoreV1.updateByGuid({})", guid);
         }
 
-        AtlasTypeUtil.validateType(enumDef);
+        validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.ENUM);
 

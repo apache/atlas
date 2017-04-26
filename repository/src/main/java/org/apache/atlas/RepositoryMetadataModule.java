@@ -41,7 +41,9 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityDefStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
@@ -76,6 +78,9 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the ITypeStore interface to an implementation
         bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
         bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV1.class).asEagerSingleton();
+
+        //For testing
+        bind(AtlasEntityDefStore.class).to(AtlasEntityDefStoreV1.class).asEagerSingleton();
         bind(AtlasTypeRegistry.class).asEagerSingleton();
 
         //GraphBackedSearchIndexer must be an eager singleton to force the search index creation to happen before
