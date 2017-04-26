@@ -17,17 +17,16 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
-import java.util.Map;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Inverse reference update test with {@link HardDeleteHandlerV1}

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.titan1;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.commons.configuration.Configuration;
 import org.testng.Assert;
@@ -34,6 +35,8 @@ public class TitanGraphProviderTest {
 
     @BeforeTest
     public void setUp() throws AtlasException {
+        GraphSandboxUtil.create();
+
         //First get Instance
         graph = new Titan1Graph();
         configuration = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(),

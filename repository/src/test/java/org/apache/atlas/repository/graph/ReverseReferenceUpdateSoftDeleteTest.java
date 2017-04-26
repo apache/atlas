@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.repository.graph;
 
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -27,6 +24,9 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
+
+import java.util.Iterator;
+import java.util.List;
 
 
 /**

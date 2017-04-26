@@ -17,16 +17,6 @@
  */
 package org.apache.atlas.repository.graph;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.gremlin.GremlinExpressionFactory;
 import org.apache.atlas.gremlin.optimizer.GremlinQueryOptimizer;
@@ -54,19 +44,31 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+
 
 public abstract class AbstractGremlinQueryOptimizerTest implements IAtlasGraphProvider {
 
     protected abstract GremlinExpressionFactory getFactory();
 
-    private MetadataRepository repo = new GraphBackedMetadataRepository(this, new HardDeleteHandler(TypeSystem.getInstance()));
+    private MetadataRepository repo;
     private final GraphPersistenceStrategies STRATEGY = mock(GraphPersistenceStrategies.class);
+
     @BeforeClass
     public void setUp() {
         GremlinQueryOptimizer.reset();
         GremlinQueryOptimizer.setExpressionFactory(getFactory());
         when(STRATEGY.typeAttributeName()).thenReturn(Constants.ENTITY_TYPE_PROPERTY_KEY);
         when(STRATEGY.superTypeAttributeName()).thenReturn(Constants.SUPER_TYPES_PROPERTY_KEY);
+        repo = new GraphBackedMetadataRepository(this, new HardDeleteHandler(TypeSystem.getInstance()));
     }
 
     private FieldInfo getTestFieldInfo() throws AtlasException {
@@ -695,6 +697,7 @@ public abstract class AbstractGremlinQueryOptimizerTest implements IAtlasGraphPr
 
 
     protected abstract String getExpectedGremlinForTestRangeWithOrderBy();
+
     @Override
     public AtlasGraph get() throws RepositoryException {
         AtlasGraph graph = mock(AtlasGraph.class);

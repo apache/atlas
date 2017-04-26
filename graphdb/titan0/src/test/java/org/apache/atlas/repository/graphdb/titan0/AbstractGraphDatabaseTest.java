@@ -18,10 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.titan0;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -31,6 +28,10 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -46,13 +47,10 @@ public abstract class AbstractGraphDatabaseTest {
 
     private AtlasGraph<?, ?> graph = null;
 
-
-    public AbstractGraphDatabaseTest() {
-       super();
-    }
-
     @BeforeClass
     public static void createIndices() {
+        GraphSandboxUtil.create();
+
         Titan0GraphDatabase db = new Titan0GraphDatabase();
         AtlasGraphManagement mgmt = db.getGraph().getManagementSystem();
 

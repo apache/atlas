@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.repository.graph;
 
-import java.util.List;
-
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
+
+import java.util.List;
 
 
 /**

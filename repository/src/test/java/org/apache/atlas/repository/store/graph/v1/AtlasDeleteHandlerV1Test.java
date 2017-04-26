@@ -20,9 +20,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -38,7 +37,6 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -69,7 +67,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,18 +74,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
-import static org.apache.atlas.TestUtils.COLUMN_TYPE;
-import static org.apache.atlas.TestUtils.DEPARTMENT_TYPE;
-import static org.apache.atlas.TestUtils.NAME;
-import static org.apache.atlas.TestUtils.TABLE_TYPE;
+import static org.apache.atlas.TestUtils.*;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public abstract class AtlasDeleteHandlerV1Test {
 
     @Inject

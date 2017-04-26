@@ -18,8 +18,9 @@
 
 package org.apache.atlas.query
 
+import org.apache.atlas.DBSandboxer
 import org.apache.atlas.repository.BaseTest
-import org.testng.annotations.{BeforeMethod,Test}
+import org.testng.annotations.{BeforeMethod, Listeners, Test}
 
 
 class ParserTest extends BaseTest {

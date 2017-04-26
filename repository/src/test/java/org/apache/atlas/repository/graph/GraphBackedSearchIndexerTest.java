@@ -18,16 +18,9 @@
 
 package org.apache.atlas.repository.graph;
 
-import static junit.framework.Assert.assertTrue;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-
-import java.util.Arrays;
-import java.util.Set;
-
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -45,12 +38,16 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.inject.Inject;
+import java.util.Arrays;
+import java.util.Set;
 
-@Guice(modules = RepositoryMetadataModule.class)
+import static junit.framework.Assert.assertTrue;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+
+@Guice(modules = TestOnlyModule.class)
 public class GraphBackedSearchIndexerTest {
-
- 
     @Inject
     private GraphBackedSearchIndexer graphBackedSearchIndexer;
 

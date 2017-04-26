@@ -20,8 +20,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -83,7 +83,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class AtlasEntityStoreV1Test {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1Test.class);
 

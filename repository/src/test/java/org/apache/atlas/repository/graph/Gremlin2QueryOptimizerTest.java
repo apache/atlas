@@ -24,12 +24,13 @@ import org.testng.annotations.Test;
 
 @Test
 public class Gremlin2QueryOptimizerTest extends AbstractGremlinQueryOptimizerTest {
-
-
-    private static final GremlinExpressionFactory FACTORY = new Gremlin2ExpressionFactory();
+    private static GremlinExpressionFactory FACTORY = null;
 
     @Override
     protected GremlinExpressionFactory getFactory() {
+        if (null == FACTORY) {
+            FACTORY = new Gremlin2ExpressionFactory();
+        }
         return FACTORY;
     }
 

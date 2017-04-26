@@ -18,7 +18,7 @@
 
 package org.apache.atlas.query
 
-import org.apache.atlas.TestUtils
+import org.apache.atlas.{DBSandboxer, TestUtils}
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._class
 import org.apache.atlas.query.Expressions.id
@@ -27,10 +27,7 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository
 import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.testng.annotations.AfterClass
-import org.testng.annotations.BeforeClass
-import org.testng.annotations.BeforeMethod
-import org.testng.annotations.Test
+import org.testng.annotations._
 
 class LineageQueryTest extends BaseGremlinTest {
 

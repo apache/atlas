@@ -18,8 +18,7 @@
 package org.apache.atlas.repository.store.graph;
 
 import com.google.inject.Inject;
-
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
@@ -39,18 +38,12 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class AtlasTypeDefGraphStoreTest {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStoreTest.class);
 

@@ -18,11 +18,11 @@
 
 package org.apache.atlas.util;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotSame;
-
 import org.apache.atlas.query.QueryParams;
 import org.testng.annotations.Test;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
 
 /**
  * Tests hashcode/equals behavior of CompiledQueryCacheKey

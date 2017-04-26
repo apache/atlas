@@ -23,10 +23,10 @@ import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.repository.graph.{AtlasGraphProvider, GraphBackedMetadataRepository}
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.testng.annotations.{Test,BeforeClass,AfterClass}
+import org.testng.annotations._
 import org.apache.atlas.repository.graph.AtlasGraphProvider
-import org.testng.annotations.BeforeMethod
-import org.apache.atlas.TestUtils
+import org.apache.atlas.{DBSandboxer, TestUtils}
+import org.apache.atlas.graph.GraphSandboxUtil
 
 class GremlinTest extends BaseGremlinTest {
 
@@ -41,10 +41,10 @@ class GremlinTest extends BaseGremlinTest {
   @BeforeClass
   def beforeAll() {
      TypeSystem.getInstance().reset()
-     var repo = new GraphBackedMetadataRepository(null);
-     TestUtils.setupGraphProvider(repo);
+     var repo = new GraphBackedMetadataRepository(null)
+     TestUtils.setupGraphProvider(repo)
     //force graph to be initialized first
-    AtlasGraphProvider.getGraphInstance();
+    AtlasGraphProvider.getGraphInstance()
     
     //create types and indices up front.  Without this, some of the property keys (particularly __traitNames and __superTypes)
     //get ended up created implicitly with some graph backends with the wrong multiplicity.  This also makes the queries
@@ -52,13 +52,12 @@ class GremlinTest extends BaseGremlinTest {
     QueryTestsUtils.setupTypesAndIndices()    
 
     gp = new DefaultGraphPersistenceStrategy(repo)
-    g = QueryTestsUtils.setupTestGraph(repo)    
-    g
-  }  
+    g = QueryTestsUtils.setupTestGraph(repo)
+  }
 
   @AfterClass
   def afterAll() {
-    AtlasGraphProvider.cleanup();
+    AtlasGraphProvider.cleanup()
   }
 
 
@@ -236,7 +235,7 @@ class GremlinTest extends BaseGremlinTest {
                       |            "clusterName": "test"
                       |        }
                       |    ]
-                      |}""".stripMargin);
+                      |}""".stripMargin)
   }
 
   @Test def testFilter2 {
@@ -315,7 +314,7 @@ class GremlinTest extends BaseGremlinTest {
                       |            "clusterName": "test"
                       |        }
                       |    ]
-                      |}""".stripMargin);
+                      |}""".stripMargin)
   }
 
   @Test def testSelect {
@@ -361,7 +360,7 @@ class GremlinTest extends BaseGremlinTest {
                       |            "_src1.name": "Reporting"
                       |        }
                       |    ]
-                      |}""".stripMargin);
+                      |}""".stripMargin)
   }
 
   @Test def testIsTrait {
@@ -774,7 +773,7 @@ class GremlinTest extends BaseGremlinTest {
                       |      "name":"sales_fact_monthly_mv"
                       |    }
                       |  ]
-                      |}""".stripMargin);
+                      |}""".stripMargin)
   }
 
   @Test def testBackReference {
@@ -868,13 +867,13 @@ class GremlinTest extends BaseGremlinTest {
                       |            "clusterName": "test"
                       |        }
                       |    ]
-                      |}""".stripMargin);
+                      |}""".stripMargin)
   }
 
   @Test def testJoinAndSelect1 {
     val r = QueryProcessor.evaluate(
       _class("DB").as("db1").where(id("name").`=`(string("Sales"))).field("Table").as("tab").
-        where((isTrait("Dimension"))).
+        where(isTrait("Dimension")).
         select(id("db1").field("name").as("dbName"), id("tab").field("name").as("tabName")), g, gp
     )
     validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct5\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")
@@ -902,7 +901,7 @@ class GremlinTest extends BaseGremlinTest {
   @Test def testJoinAndSelect4 {
     val r = QueryProcessor.evaluate(
       _class("DB").as("db1").where(id("name").`=`(string("Sales"))).field("Table").as("tab").
-        where((isTrait("Dimension"))).
+        where(isTrait("Dimension")).
         select(id("db1").as("dbO"), id("tab").field("name").as("tabName")), g, gp
     )
     validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1 as dbO, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbO\",\n        \"dataTypeName\":\"DB\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")

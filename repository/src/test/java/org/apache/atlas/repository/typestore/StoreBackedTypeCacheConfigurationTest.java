@@ -17,19 +17,18 @@
  */
 package org.apache.atlas.repository.typestore;
 
+import com.google.inject.Inject;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
-import com.google.inject.Inject;
 
 /**
  *  Verify Guice can successfully instantiate and inject StoreBackTypeCache.
  *  StoreBackedTypeCacheTestModule Guice module uses Atlas configuration
  *  which has type cache implementation class set to {@link StoreBackedTypeCache}.
  */
-@Guice(modules = StoreBackedTypeCacheTestModule.class)
+@Guice(modules = StoreBackedTypeCacheTestOnlyModule.class)
 public class StoreBackedTypeCacheConfigurationTest {
 
     @Inject

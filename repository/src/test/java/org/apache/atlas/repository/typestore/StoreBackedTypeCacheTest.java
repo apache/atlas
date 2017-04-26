@@ -17,13 +17,10 @@
  */
 package org.apache.atlas.repository.typestore;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.typesystem.types.AttributeInfo;
@@ -41,14 +38,15 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
  * Unit test for {@link StoreBackedTypeCache}
  */
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class StoreBackedTypeCacheTest {
 
     @Inject

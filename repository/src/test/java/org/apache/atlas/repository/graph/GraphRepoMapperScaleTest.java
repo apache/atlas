@@ -21,7 +21,7 @@ package org.apache.atlas.repository.graph;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
@@ -47,15 +47,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
-import javax.inject.Inject;
-
 @Test
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestOnlyModule.class)
 public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_NAME = "foo";
