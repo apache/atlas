@@ -60,6 +60,7 @@ define(['require',
                 addAssignTag: "[data-id='addAssignTag']",
                 editEntityButton: "[data-id='editEntityButton']",
                 createEntity: "[data-id='createEntity']",
+                checkDeletedEntity: "[data-id='checkDeletedEntity']"
             },
             templateHelpers: function() {
                 return {
@@ -116,6 +117,7 @@ define(['require',
                 events["click " + this.ui.previousData] = "onClickpreviousData";
                 events["click " + this.ui.editEntityButton] = "onClickEditEntity";
                 events["click " + this.ui.createEntity] = 'onClickCreateEntity';
+                events["click " + this.ui.checkDeletedEntity] = 'onCheckDeletedEntity';
                 return events;
             },
             /**
@@ -128,7 +130,6 @@ define(['require',
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
-                this.firstFetch = true;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
                 this.commonTableOptions = {
@@ -231,18 +232,19 @@ define(['require',
                     }
                 }
             },
-            fetchCollection: function(value) {
+            fetchCollection: function(value, deleteChecked) {
                 var that = this;
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
-
                 if (value && !value.paginationChange) {
                     $.extend(this.searchCollection.queryParams, { limit: this.limit });
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
-                        $.extend(this.searchCollection.queryParams, { limit: this.limit });
+                        if (deleteChecked === undefined) {
+                            $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
+                        }
                         this.offset = 0;
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
@@ -281,21 +283,10 @@ define(['require',
                                 that.ui.previousData.attr('disabled', true);
                             }
                             if (that.searchCollection.models.length === 0) {
-                                that.checkTableFetch();
                                 that.offset = that.offset - that.limit;
-                                if (that.firstFetch) {
-                                    that.renderTableLayoutView();
-                                }
                             }
                         }
-                        if (that.firstFetch) {
-                            that.firstFetch = false;
-                        }
-
-                        // checking length for not rendering the table
-                        if (that.searchCollection.models.length) {
-                            that.renderTableLayoutView();
-                        }
+                        that.renderTableLayoutView();
                         if (value) {
                             var resultArr = [];
                             if (that.searchCollection.queryParams.typeName) {
@@ -326,6 +317,11 @@ define(['require',
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     })));
+                    if (that.searchCollection.models.length && that.value.searchType !== "dsl") {
+                        that.ui.checkDeletedEntity.show();
+                    } else {
+                        that.ui.checkDeletedEntity.hide();
+                    }
                     that.ui.paginationDiv.show();
                     that.$(".ellipsis .inputAssignTag").hide();
                     that.renderBreadcrumb();
@@ -656,6 +652,14 @@ define(['require',
                         }
                     });
                 });
+            },
+            onCheckDeletedEntity: function(e) {
+                if (e.target.checked) {
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: false });
+                } else {
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
+                }
+                this.fetchCollection(this.value, e.target.checked);
             }
         });
     return SearchResultLayoutView;
