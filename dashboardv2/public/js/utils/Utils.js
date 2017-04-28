@@ -349,42 +349,76 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             }
         }
     }
-    Utils.getName = function(collectionJSON, priorityAttribute) {
+    Utils.getName = function() {
+        return Utils.extractKeyValueFromEntity.apply(this, arguments).name;
+    }
+    Utils.getNameWithProperties = function() {
+        return Utils.extractKeyValueFromEntity.apply(this, arguments);
+    }
+    Utils.extractKeyValueFromEntity = function() {
+        var collectionJSON = arguments[0],
+            priorityAttribute = arguments[1];
+        var returnObj = {
+            name: '-',
+            found: true,
+            key: null
+        }
         if (collectionJSON) {
             if (collectionJSON.attributes && collectionJSON.attributes[priorityAttribute]) {
-                return _.escape(collectionJSON.attributes[priorityAttribute]);
+                returnObj.name = _.escape(collectionJSON.attributes[priorityAttribute]);
+                returnObj.key = priorityAttribute;
+                return returnObj;
             }
             if (collectionJSON[priorityAttribute]) {
-                return _.escape(collectionJSON[priorityAttribute]);
+                returnObj.name = _.escape(collectionJSON[priorityAttribute]);
+                returnObj.key = priorityAttribute;
+                return returnObj;
             }
             if (collectionJSON.attributes) {
                 if (collectionJSON.attributes.name) {
-                    return _.escape(collectionJSON.attributes.name);
+                    returnObj.name = _.escape(collectionJSON.attributes.name);
+                    returnObj.key = 'name';
+                    return returnObj;
                 }
                 if (collectionJSON.attributes.qualifiedName) {
-                    return _.escape(collectionJSON.attributes.qualifiedName);
+                    returnObj.name = _.escape(collectionJSON.attributes.qualifiedName);
+                    returnObj.key = 'qualifiedName';
+                    return returnObj;
                 }
                 if (collectionJSON.attributes.id) {
-                    return _.escape(collectionJSON.attributes.id);
+                    returnObj.name = _.escape(collectionJSON.attributes.id);
+                    returnObj.key = 'id';
+                    return returnObj;
                 }
             }
             if (collectionJSON.name) {
-                return _.escape(collectionJSON.name);
+                returnObj.name = _.escape(collectionJSON.name);
+                returnObj.key = 'name';
+                return returnObj;
             }
             if (collectionJSON.qualifiedName) {
-                return _.escape(collectionJSON.qualifiedName);
+                returnObj.name = _.escape(collectionJSON.qualifiedName);
+                returnObj.key = 'qualifiedName';
+                return returnObj;
             }
             if (collectionJSON.displayText) {
-                return _.escape(collectionJSON.displayText);
+                returnObj.name = _.escape(collectionJSON.displayText);
+                returnObj.key = 'displayText';
+                return returnObj;
             }
             if (collectionJSON.guid) {
-                return _.escape(collectionJSON.guid);
+                returnObj.name = _.escape(collectionJSON.guid);
+                returnObj.key = 'guid';
+                return returnObj;
             }
             if (collectionJSON.id) {
-                return _.escape(collectionJSON.id);
+                returnObj.name = _.escape(collectionJSON.id);
+                returnObj.key = 'id';
+                return returnObj;
             }
         }
-        return "-";
+        returnObj.found = false;
+        return returnObj;
     }
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
         loaderEl.css({
@@ -401,7 +435,44 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         loaderEl.hide();
         titleBoxEl.fadeIn();
     }
+    Utils.getNestedSuperTypeObj = function(options) {
+        var flag = 0,
+            data = options.data,
+            collection = options.collection;
+        if (options.attrMerge) {
+            var attributeDefs = [];
+        } else {
+            var attributeDefs = {};
+        }
+        var getData = function(data, collection) {
+            if (options.attrMerge) {
+                attributeDefs = attributeDefs.concat(data.attributeDefs);
+            } else {
+                if (attributeDefs[data.name]) {
+                    if (_.isArray(attributeDefs[data.name])) {
+                        attributeDefs[data.name] = attributeDefs[data.name].concat(data.attributeDefs);
+                    } else {
+                        _.extend(attributeDefs[data.name], data.attributeDefs);
+                    }
 
+                } else {
+                    attributeDefs[data.name] = data.attributeDefs;
+                }
+            }
+            if (data.superTypes && data.superTypes.length) {
+                _.each(data.superTypes, function(superTypeName) {
+                    if (collection.fullCollection) {
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                    } else {
+                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                    }
+                    return getData(collectionData, collection);
+                });
+            }
+        }
+        getData(data, collection);
+        return attributeDefs
+    }
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {
             this.attr(attributeName, secondString);

@@ -142,8 +142,8 @@
 
 .inputTagAdd {
     display: inline-block;
-    border: 1px #4A90E2 solid;
-    color: #4A90E2;
+    border: 1px $color_havelock_blue_approx solid;
+    color: $color_havelock_blue_approx;
     font-size: 14px;
     border-radius: 4px;
     margin-right: 3px;
@@ -376,33 +376,19 @@ legend.scheduler-border {
 }
 
 .spanEntityType {
-    position: absolute;
-    right: 45px;
-    top: 10px;
     cursor: help;
-    width: 40px;
+    width: 100%;
+    display: block;
+    white-space: nowrap;
     overflow: hidden;
-    z-index: 9;
     text-overflow: ellipsis;
     font-size: 14px;
     color: #a7a19f;
 }
 
-.enitityInputBox {
-    padding-right: 69px;
-}
-
-.entityLoader {
-    margin-left: 286px;
-}
-
 .errorClass {
     border: 1px solid red !important;
     box-shadow: none !important;
-}
-
-.entityInputBox {
-    padding-right: 70px;
 }
 
 .attributeTag {

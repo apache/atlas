@@ -84,7 +84,8 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 escape: true,
                 animate: true,
                 contentWithFooter: false,
-                template: template
+                template: template,
+                width: null
             }, options);
         },
 
