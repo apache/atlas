@@ -57,7 +57,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName'));
+                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'entityDef'));
                 this.entityCollection = new VEntityList();
                 this.count = 26;
                 this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
@@ -227,9 +227,9 @@ define(['require',
                     'views/audit/CreateAuditTableLayoutView',
                 ], function(Modal, CreateAuditTableLayoutView) {
                     that.action = $(e.target).data("action");
-                    var eventModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
+                    var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
                         collectionModel = new that.entityCollection.model(eventModel),
-                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName });
+                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, entityDef: that.entityDef });
                     var modal = new Modal({
                         title: that.action,
                         content: view,
