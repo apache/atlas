@@ -88,13 +88,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         });
     }
-    CommonViewFunction.propertyTable = function(valueObject, scope, searchTable) {
+    CommonViewFunction.propertyTable = function(scope, valueObject, entityDef) {
         var table = "",
             fetchInputOutputValue = function(id) {
                 var that = this;
-                if (searchTable) {
-                    ++scope.fetchList
-                }
                 scope.entityModel.getEntity(id, {
                     success: function(serverData) {
                         var value = "",
@@ -118,113 +115,92 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             scope.$('td div[data-id="' + id + '"]').append(deleteButton);
                         }
                     },
-                    complete: function() {
-                        if (searchTable) {
-                            --scope.fetchList;
-                            scope.checkTableFetch();
-                        }
-                    }
+                    complete: function() {}
                 });
             }
         _.sortBy(_.keys(valueObject)).map(function(key) {
             key = _.escape(key)
             var keyValue = valueObject[key],
                 valueOfArray = [];
-            if (_.isObject(keyValue)) {
-                if (!_.isArray(keyValue) && _.isObject(keyValue)) {
-                    keyValue = [keyValue];
-                }
-                var subLink = "";
-                for (var i = 0; i < keyValue.length; i++) {
-                    var inputOutputField = keyValue[i],
-                        id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
-                        tempLink = "",
-                        status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
-                        readOnly = Enums.entityStateReadOnly[status];
-                    if (!inputOutputField.attributes && inputOutputField.values) {
-                        inputOutputField['attributes'] = inputOutputField.values;
+            var defEntity = _.find(entityDef, { name: key });
+            if (defEntity) {
+                var defEntityType = defEntity.typeName.toLocaleLowerCase();
+                if (defEntityType === 'date' || defEntityType === 'time') {
+                    table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(keyValue) + '</td></tr>';
+                } else if (_.isObject(keyValue)) {
+                    if (!_.isArray(keyValue) && _.isObject(keyValue)) {
+                        keyValue = [keyValue];
                     }
-                    if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
-                        var tempVarfor$check = inputOutputField.toString();
-                        if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
+                    var subLink = "";
+                    for (var i = 0; i < keyValue.length; i++) {
+                        var inputOutputField = keyValue[i],
+                            id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
+                            tempLink = "",
+                            status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
+                            readOnly = Enums.entityStateReadOnly[status];
+                        if (!inputOutputField.attributes && inputOutputField.values) {
+                            inputOutputField['attributes'] = inputOutputField.values;
                         }
-                    } else if (_.isObject(inputOutputField) && !id) {
-                        var attributesList = inputOutputField;
-                        if (scope.typeHeaders && inputOutputField.typeName) {
-                            var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
-                            if (attributesList.attributes && typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
-                                attributesList = attributesList.attributes;
-                            }
-                        }
-                        _.each(attributesList, function(objValue, objKey) {
-                            var value = objValue,
-                                tempVarfor$check = objKey.toString();
+                        if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
+                            var tempVarfor$check = inputOutputField.toString();
                             if (tempVarfor$check.indexOf("$") == -1) {
-                                if (_.isObject(value)) {
-                                    value = JSON.stringify(value);
+                                valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
+                            }
+                        } else if (_.isObject(inputOutputField) && !id) {
+                            var attributesList = inputOutputField;
+                            if (scope.typeHeaders && inputOutputField.typeName) {
+                                var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
+                                if (attributesList.attributes && typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
+                                    attributesList = attributesList.attributes;
                                 }
-                                valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
                             }
-                        });
-                    }
-
-                    if (id && inputOutputField) {
-                        var name = Utils.getName(inputOutputField);
-                        if (name === "-" || name === id) {
-                            var fetch = true;
-                            var fetchId = (_.isObject(id) ? id.id : id);
-                            fetchInputOutputValue(fetchId);
-                            tempLink += '<div data-id="' + fetchId + '"></div>';
-                        } else {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
-                        }
-                    }
-                    if (readOnly) {
-                        if (!fetch) {
-                            tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                            subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
-                        } else {
-                            fetch = false;
-                            subLink += tempLink;
+                            _.each(attributesList, function(objValue, objKey) {
+                                var value = objValue,
+                                    tempVarfor$check = objKey.toString();
+                                if (tempVarfor$check.indexOf("$") == -1) {
+                                    if (_.isObject(value)) {
+                                        value = JSON.stringify(value);
+                                    }
+                                    valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
+                                }
+                            });
                         }
 
-                    } else {
-                        if (tempLink.search('href') != -1) {
-                            subLink += '<div>' + tempLink + '</div>'
-                        } else if (tempLink.length) {
-                            subLink += tempLink
-                        }
-                    }
-                }
-                if (valueOfArray.length) {
-                    subLink = valueOfArray.join(', ');
-                }
-                if (searchTable) {
-                    table = subLink;
-                } else {
-                    table += '<tr><td>' + _.escape(key) + '</td><td>' + subLink + '</td></tr>';
-                }
-            } else {
-                var tempVarfor$check = key.toString();
-                if (tempVarfor$check.indexOf("$") == -1) {
-                    if (key.indexOf("Time") !== -1 || key == "retention") {
-                        if (searchTable) {
-                            table = new Date(valueObject[key]);
-                        } else {
-                            table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
-                        }
-                    } else {
-                        if (searchTable) {
-                            if (_.isBoolean(valueObject[key])) {
-                                table = valueObject[key].toString();
+                        if (id && inputOutputField) {
+                            var name = Utils.getName(inputOutputField);
+                            if (name === "-" || name === id) {
+                                var fetch = true;
+                                var fetchId = (_.isObject(id) ? id.id : id);
+                                fetchInputOutputValue(fetchId);
+                                tempLink += '<div data-id="' + fetchId + '"></div>';
                             } else {
-                                table = valueObject[key];
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                             }
+                        }
+                        if (readOnly) {
+                            if (!fetch) {
+                                tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
+                            } else {
+                                fetch = false;
+                                subLink += tempLink;
+                            }
+
                         } else {
-                            table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
+                            if (tempLink.search('href') != -1) {
+                                subLink += '<div>' + tempLink + '</div>'
+                            } else if (tempLink.length) {
+                                subLink += tempLink
+                            }
                         }
                     }
+                    if (valueOfArray.length) {
+                        subLink = valueOfArray.join(', ');
+                    }
+                    table += '<tr><td>' + _.escape(key) + '</td><td>' + subLink + '</td></tr>';
+
+                } else {
+                    table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
                 }
             }
         });

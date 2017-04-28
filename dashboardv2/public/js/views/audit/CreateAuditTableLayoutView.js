@@ -54,7 +54,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName'));
+                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName', 'entityDef'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -85,7 +85,7 @@ define(['require',
                     } else if (parseDetailsObject && parseDetailsObject.values) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
                         //CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
-                        table = CommonViewFunction.propertyTable(values, this);
+                        table = CommonViewFunction.propertyTable(this, values, this.entityDef);
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
