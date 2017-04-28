@@ -39,7 +39,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (options.showLoader) {
                     options.showLoader();
                 }
-                tagModel.deleteTag(options.guid, options.tagName, {
+                tagModel.deleteAssociation(options.guid, options.tagName, {
                     skipDefaultError: true,
                     success: function(data) {
                         var msg = "Tag " + name.name + Messages.removeSuccessMessage;

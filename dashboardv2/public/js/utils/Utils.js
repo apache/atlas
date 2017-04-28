@@ -94,10 +94,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 history: false
             }
         }, options)).get().on('pnotify.confirm', function() {
+            $('.ui-pnotify-modal-overlay').remove().fadeOut();
             if (options.ok) {
                 options.ok();
             }
         }).on('pnotify.cancel', function() {
+            $('.ui-pnotify-modal-overlay').remove().fadeOut();
             if (options.cancel) {
                 options.cancel();
             }
@@ -229,8 +231,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
     };
 
     Utils.getUrlState = {
-        getQueryUrl: function() {
+        getQueryUrl: function(url) {
             var hashValue = window.location.hash;
+            if (url) {
+                hashValue = url;
+            }
             return {
                 firstValue: hashValue.split('/')[1],
                 hash: hashValue,
@@ -259,8 +264,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         getFirstValue: function() {
             return this.getQueryUrl().firstValue;
         },
-        getQueryParams: function() {
-            var qs = this.getQueryUrl().queyParams[1];
+        getQueryParams: function(url) {
+            var qs = this.getQueryUrl(url).queyParams[1];
             if (typeof qs == "string") {
                 qs = qs.split('+').join(' ');
                 var params = {},

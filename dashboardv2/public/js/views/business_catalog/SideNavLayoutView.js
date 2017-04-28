@@ -97,7 +97,8 @@ define(['require',
             require(['views/tag/TagLayoutView'], function(TagLayoutView) {
                 that.RTagLayoutView.show(new TagLayoutView({
                     collection: that.collection,
-                    tag: that.tag
+                    tag: that.tag,
+                    typeHeaders: that.typeHeaders
                 }));
             });
         },
