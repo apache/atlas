@@ -223,6 +223,7 @@ define(['require',
             });
         },
         onChangeTagDefination: function() {
+            this.ui.addTagOptions.select2("open").select2("close");
             this.ui.tagAttribute.empty();
             var saveBtn = this.modal.$el.find('button.ok');
             saveBtn.prop("disabled", false);

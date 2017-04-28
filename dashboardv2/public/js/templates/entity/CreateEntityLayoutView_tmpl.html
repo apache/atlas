@@ -15,7 +15,7 @@
  * limitations under the License.
 -->
 <form name="entityDefinitionform" class="css-form">
-    <div class="form-group">
+    <div class="form-group clearfix">
         <div class="col-sm-12">
             <div class="row">
                 {{#if guid}}
@@ -37,9 +37,11 @@
                 </div>
             </div>
         </div>
-        <div class="entityLoader" style="display:none">
-            <i class="fa fa-refresh fa-spin-custom"></i>
-        </div>
         <div class="control-group entityInputData" data-id="entityInputData"></div>
     </div>
 </form>
+<div class="" style="position: relative;height: 8px;">
+    <div class="fontLoader entityLoader" style="display:none">
+        <i class="fa fa-refresh fa-spin-custom"></i>
+    </div>
+</div>
