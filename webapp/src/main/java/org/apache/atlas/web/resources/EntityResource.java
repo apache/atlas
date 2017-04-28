@@ -1190,8 +1190,14 @@ public class EntityResource {
         return jsonArray;
     }
 
-    private AtlasEntityType getEntityType(String typeName) {
-        return typeRegistry.getEntityTypeByName(typeName);
+    private AtlasEntityType getEntityType(String typeName) throws AtlasBaseException {
+        AtlasEntityType ret = typeRegistry.getEntityTypeByName(typeName);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+        }
+
+        return ret;
     }
 
     public static WebApplicationException toWebApplicationException(AtlasBaseException e) {
