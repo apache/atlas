@@ -114,6 +114,7 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingFullText(@QueryParam("query")  String query,
+                                                 @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                                  @QueryParam("limit")  int    limit,
                                                  @QueryParam("offset") int    offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -124,7 +125,7 @@ public class DiscoveryREST {
                                                                limit + "," + offset + ")");
             }
 
-            return atlasDiscoveryService.searchUsingFullTextQuery(query, limit, offset);
+            return atlasDiscoveryService.searchUsingFullTextQuery(query, excludeDeletedEntities, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -147,11 +148,12 @@ public class DiscoveryREST {
     @Path("/basic")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingBasic(@QueryParam("query")          String  query,
-                                              @QueryParam("typeName")       String  typeName,
-                                              @QueryParam("classification") String  classification,
-                                              @QueryParam("limit")          int     limit,
-                                              @QueryParam("offset")         int     offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
+                                              @QueryParam("typeName")               String  typeName,
+                                              @QueryParam("classification")         String  classification,
+                                              @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+                                              @QueryParam("limit")                  int     limit,
+                                              @QueryParam("offset")                 int     offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -160,7 +162,8 @@ public class DiscoveryREST {
                                                     typeName + "," + classification + "," + limit + "," + offset + ")");
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(query, typeName, classification, null, null, limit, offset);
+            return atlasDiscoveryService.searchUsingBasicQuery(query, typeName, classification, null, null,
+                                                               excludeDeletedEntities, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -183,11 +186,11 @@ public class DiscoveryREST {
     @Path("/attribute")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")  String attrName,
+    public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")        String attrName,
                                                   @QueryParam("attrValuePrefix") String attrValuePrefix,
-                                                  @QueryParam("typeName")    String typeName,
-                                                  @QueryParam("limit")       int    limit,
-                                                  @QueryParam("offset")      int    offset) throws AtlasBaseException {
+                                                  @QueryParam("typeName")        String typeName,
+                                                  @QueryParam("limit")           int    limit,
+                                                  @QueryParam("offset")          int    offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -201,7 +204,7 @@ public class DiscoveryREST {
                         String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValuePrefix));
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, limit, offset);
+            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, true, limit, offset);
 
         } finally {
             AtlasPerfTracer.log(perf);

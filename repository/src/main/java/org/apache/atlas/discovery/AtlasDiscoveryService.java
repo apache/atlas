@@ -35,11 +35,12 @@ public interface AtlasDiscoveryService {
     /**
      *
      * @param query search query.
+     * @param excludeDeletedEntities exclude deleted entities in search result.
      * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
      * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
      * @return AtlasSearchResult
      */
-    AtlasSearchResult searchUsingFullTextQuery(String query, int limit, int offset) throws AtlasBaseException;
+    AtlasSearchResult searchUsingFullTextQuery(String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
 
     /**
      *
@@ -48,10 +49,11 @@ public interface AtlasDiscoveryService {
      * @param classification classification name.
      * @param attrName attribute name.
      * @param attrValuePrefix attribute value prefix.
+     * @param excludeDeletedEntities exclude deleted entities in search result.
      * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
      * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
      * @return AtlasSearchResult
      */
     AtlasSearchResult searchUsingBasicQuery(String query, String type, String classification, String attrName,
-                                            String attrValuePrefix, int limit, int offset) throws AtlasBaseException;
+                                            String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
 }
