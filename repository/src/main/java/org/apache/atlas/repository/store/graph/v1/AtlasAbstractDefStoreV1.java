@@ -25,6 +25,8 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -34,13 +36,14 @@ import java.util.regex.Pattern;
  * Abstract typedef-store for v1 format.
  */
 public abstract class AtlasAbstractDefStoreV1 {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractDefStoreV1.class);
     protected final AtlasTypeDefGraphStoreV1 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
 
     private static final String  NAME_REGEX         = "[a-zA-Z][a-zA-Z0-9_ ]*";
     private static final Pattern NAME_PATTERN       = Pattern.compile(NAME_REGEX);
 
-    private static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
+    public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
 
     public AtlasAbstractDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
@@ -53,7 +56,7 @@ public abstract class AtlasAbstractDefStoreV1 {
         }
 
         try {
-            final boolean allowReservedKeywords = ApplicationProperties.get().getBoolean(ALLOW_RESERVED_KEYWORDS, false);
+            final boolean allowReservedKeywords = ApplicationProperties.get().getBoolean(ALLOW_RESERVED_KEYWORDS, true);
 
             if (!allowReservedKeywords && typeDef instanceof AtlasStructDef) {
                 final List<AtlasStructDef.AtlasAttributeDef> attributeDefs = ((AtlasStructDef) typeDef).getAttributeDefs();
@@ -64,6 +67,7 @@ public abstract class AtlasAbstractDefStoreV1 {
                 }
             }
         } catch (AtlasException e) {
+            LOG.error("Exception while loading configuration ", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Could not load configuration");
         }
     }
