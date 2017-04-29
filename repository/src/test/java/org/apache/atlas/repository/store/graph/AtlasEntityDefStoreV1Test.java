@@ -19,11 +19,14 @@ package org.apache.atlas.repository.store.graph;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.store.graph.v1.AtlasAbstractDefStoreV1;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -58,8 +61,9 @@ public class AtlasEntityDefStoreV1Test {
     }
 
     @Test(dataProvider = "invalidAttributeNameWithReservedKeywords")
-    public void testCreateTypeWithReservedKeywords(AtlasEntityDef atlasEntityDef) {
+    public void testCreateTypeWithReservedKeywords(AtlasEntityDef atlasEntityDef) throws AtlasException {
         try {
+            ApplicationProperties.get().setProperty(AtlasAbstractDefStoreV1.ALLOW_RESERVED_KEYWORDS, false);
             entityDefStore.create(atlasEntityDef, null);
         } catch (AtlasBaseException e) {
             Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_INVALID);
