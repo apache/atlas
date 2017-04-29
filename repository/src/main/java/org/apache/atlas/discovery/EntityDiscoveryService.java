@@ -25,6 +25,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.query.Expressions.AliasExpression;
 import org.apache.atlas.query.Expressions.Expression;
@@ -46,7 +47,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -145,7 +145,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public AtlasSearchResult searchUsingFullTextQuery(String fullTextQuery, int limit, int offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingFullTextQuery(String fullTextQuery, boolean excludeDeletedEntities, int limit, int offset)
+                                                      throws AtlasBaseException {
         AtlasSearchResult ret      = new AtlasSearchResult(fullTextQuery, AtlasQueryType.FULL_TEXT);
         QueryParams       params   = validateSearchParams(limit, offset);
         AtlasIndexQuery   idxQuery = toAtlasIndexQuery(fullTextQuery);
@@ -153,14 +154,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Executing Full text query: {}", fullTextQuery);
         }
-        ret.setFullTextResult(getIndexQueryResults(idxQuery, params));
+        ret.setFullTextResult(getIndexQueryResults(idxQuery, params, excludeDeletedEntities));
 
         return ret;
     }
 
     @Override
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName,
-                                                   String attrValuePrefix, int limit, int offset) throws AtlasBaseException {
+                                                   String attrValuePrefix, boolean excludeDeletedEntities, int limit,
+                                                   int offset) throws AtlasBaseException {
+
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         if (LOG.isDebugEnabled()) {
@@ -267,6 +270,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     }
                 }
 
+                if (skipDeletedEntities(excludeDeletedEntities, vertex)) {
+                    continue;
+                }
+
                 resultIdx++;
 
                 if (resultIdx <= startIdx) {
@@ -314,6 +321,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     if (firstElement instanceof AtlasVertex) {
                         for (Object element : queryResult) {
                             if (element instanceof AtlasVertex) {
+                                if (skipDeletedEntities(excludeDeletedEntities, (AtlasVertex) element)) {
+                                    continue;
+                                }
+
                                 ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) element));
                             } else {
                                 LOG.warn("searchUsingBasicQuery({}): expected an AtlasVertex; found unexpected entry in result {}", basicQuery, element);
@@ -331,13 +342,18 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
-    private List<AtlasFullTextResult> getIndexQueryResults(AtlasIndexQuery query, QueryParams params) throws AtlasBaseException {
+    private List<AtlasFullTextResult> getIndexQueryResults(AtlasIndexQuery query, QueryParams params, boolean excludeDeletedEntities) throws AtlasBaseException {
         List<AtlasFullTextResult> ret  = new ArrayList<>();
         Iterator<Result>          iter = query.vertices();
 
         while (iter.hasNext() && ret.size() < params.limit()) {
-            Result idxQueryResult = iter.next();
-            AtlasVertex vertex = idxQueryResult.getVertex();
+            Result      idxQueryResult = iter.next();
+            AtlasVertex vertex         = idxQueryResult.getVertex();
+
+            if (skipDeletedEntities(excludeDeletedEntities, vertex)) {
+                continue;
+            }
+
             String guid = vertex != null ? vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) : null;
 
             if (guid != null) {
@@ -421,5 +437,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return ret;
+    }
+
+    private boolean skipDeletedEntities(boolean excludeDeletedEntities, AtlasVertex<?, ?> vertex) {
+        return excludeDeletedEntities && GraphHelper.getStatus(vertex) == Status.DELETED;
     }
 }
