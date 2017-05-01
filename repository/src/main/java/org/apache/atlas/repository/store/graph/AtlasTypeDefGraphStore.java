@@ -137,7 +137,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasEnumDef updateEnumDefByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByName(name, enumDef);
+        tryUpdateByName(name, enumDef, ttr);
 
         return getEnumDefStore(ttr).updateByName(name, enumDef);
     }
@@ -147,7 +147,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasEnumDef updateEnumDefByGuid(String guid, AtlasEnumDef enumDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByGuid(guid, enumDef);
+        tryUpdateByGUID(guid, enumDef, ttr);
 
         return getEnumDefStore(ttr).updateByGuid(guid, enumDef);
     }
@@ -181,7 +181,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasStructDef updateStructDefByName(String name, AtlasStructDef structDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByName(name, structDef);
+        tryUpdateByName(name, structDef, ttr);
 
         return getStructDefStore(ttr).updateByName(name, structDef);
     }
@@ -191,7 +191,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasStructDef updateStructDefByGuid(String guid, AtlasStructDef structDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByGuid(guid, structDef);
+        tryUpdateByGUID(guid, structDef, ttr);
 
         return getStructDefStore(ttr).updateByGuid(guid, structDef);
     }
@@ -226,7 +226,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByName(name, classificationDef);
+        tryUpdateByName(name, classificationDef, ttr);
 
         return getClassificationDefStore(ttr).updateByName(name, classificationDef);
     }
@@ -237,7 +237,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByGuid(guid, classificationDef);
+        tryUpdateByGUID(guid, classificationDef, ttr);
 
         return getClassificationDefStore(ttr).updateByGuid(guid, classificationDef);
     }
@@ -271,7 +271,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasEntityDef updateEntityDefByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByName(name, entityDef);
+        tryUpdateByName(name, entityDef, ttr);
 
         return getEntityDefStore(ttr).updateByName(name, entityDef);
     }
@@ -281,7 +281,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     public AtlasEntityDef updateEntityDefByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypeByGuid(guid, entityDef);
+        tryUpdateByGUID(guid, entityDef, ttr);
 
         return getEntityDefStore(ttr).updateByGuid(guid, entityDef);
     }
@@ -298,8 +298,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
+        tryTypeCreation(typesDef, ttr);
 
-        ttr.addTypes(typesDef);
 
         AtlasTypesDef ret = addToGraphStore(typesDef, ttr);
 
@@ -327,7 +327,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             ttr.updateTypesWithNoRefResolve(typesToUpdate);
         }
 
-        ttr.addTypes(typesToCreate);
+        // Translate any NOT FOUND errors to BAD REQUEST
+        tryTypeCreation(typesToCreate, ttr);
 
         AtlasTypesDef ret = addToGraphStore(typesToCreate, ttr);
 
@@ -379,7 +380,16 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        ttr.updateTypes(typesDef);
+        // Translate any NOT FOUND errors to BAD REQUEST
+        try {
+            ttr.updateTypes(typesDef);
+        } catch (AtlasBaseException e) {
+            if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
+            } else {
+                throw e;
+            }
+        }
 
         AtlasTypesDef ret = updateGraphStore(typesDef, ttr);
 
@@ -813,6 +823,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     private class TypeRegistryUpdateHook extends GraphTransactionInterceptor.PostTransactionHook {
+
         private final AtlasTransientTypeRegistry ttr;
 
         private TypeRegistryUpdateHook(AtlasTransientTypeRegistry ttr) {
@@ -820,7 +831,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
             this.ttr = ttr;
         }
-
         @Override
         public void onComplete(boolean isSuccess) {
             if (LOG.isDebugEnabled()) {
@@ -851,6 +861,45 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
                         LOG.error("OnChange failed for listener {}", changeListener.getClass().getName(), t);
                     }
                 }
+            }
+        }
+
+    }
+
+    private void tryUpdateByName(String name, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
+        try {
+            ttr.updateTypeByName(name, typeDef);
+        } catch (AtlasBaseException e) {
+            if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private void tryUpdateByGUID(String guid, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
+        try {
+            ttr.updateTypeByGuid(guid, typeDef);
+        } catch (AtlasBaseException e) {
+            if (AtlasErrorCode.TYPE_GUID_NOT_FOUND == e.getAtlasErrorCode()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private void tryTypeCreation(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
+        // Translate any NOT FOUND errors to BAD REQUEST
+        try {
+            ttr.addTypes(typesDef);
+        } catch (AtlasBaseException e) {
+            if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode() ||
+                    AtlasErrorCode.TYPE_GUID_NOT_FOUND == e.getAtlasErrorCode()) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
+            } else {
+                throw e;
             }
         }
     }
