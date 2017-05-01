@@ -103,6 +103,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             vertex = (AtlasVertex)preCreateResult;
         }
 
+        if (CollectionUtils.isEmpty(structDef.getAttributeDefs())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Missing attributes for structdef");
+        }
+
         AtlasStructDefStoreV1.updateVertexAddReferences(structDef, vertex, typeDefStore);
 
         AtlasStructDef ret = toStructDef(vertex);
@@ -410,6 +414,9 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         typeDefStore.updateTypeVertex(structDef, vertex);
 
+        // Load up current struct definition for matching attributes
+        AtlasStructDef currentStructDef = toStructDef(vertex, new AtlasStructDef(), typeDefStore);
+
         // add/update attributes that are present in updated structDef
         if (CollectionUtils.isNotEmpty(structDef.getAttributeDefs())) {
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -419,12 +426,18 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
                         throw new AtlasBaseException(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, structDef.getName(), attributeDef.getName());
                     }
                 }
+
                 // Validate the mandatory features of an attribute (compatibility with legacy type system)
                 if (StringUtils.isEmpty(attributeDef.getName())) {
                     throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
                 }
                 if (StringUtils.isEmpty(attributeDef.getTypeName())) {
                     throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
+                }
+
+                AtlasAttributeDef existingAttribute = currentStructDef.getAttribute(attributeDef.getName());
+                if (null != existingAttribute && !attributeDef.getTypeName().equals(existingAttribute.getTypeName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Data type update for attribute is not supported");
                 }
 
                 String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(structDef, attributeDef.getName());

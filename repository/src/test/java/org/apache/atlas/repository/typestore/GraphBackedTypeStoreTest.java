@@ -18,18 +18,8 @@
 
 package org.apache.atlas.repository.typestore;
 
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
-
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -41,20 +31,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.typesystem.types.EnumType;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.EnumValue;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructType;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.*;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -62,8 +39,16 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import javax.inject.Inject;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedTypeStoreTest {
@@ -145,6 +130,37 @@ public class GraphBackedTypeStoreTest {
         Assert.assertEquals(DataTypes.INT_TYPE.getName(), attribute.dataTypeName);
 
         //validate the new types
+        ts.reset();
+        ts.defineTypes(types);
+    }
+
+    @Test
+    public void testTypeWithSpecialChars() throws AtlasException {
+        HierarchicalTypeDefinition<ClassType> specialTypeDef1 = createClassTypeDef("SpecialTypeDef1", "Typedef with special character",
+                ImmutableSet.<String>of(), createRequiredAttrDef("attribute$", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> specialTypeDef2 = createClassTypeDef("SpecialTypeDef2", "Typedef with special character",
+                ImmutableSet.<String>of(), createRequiredAttrDef("attribute%", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> specialTypeDef3 = createClassTypeDef("SpecialTypeDef3", "Typedef with special character",
+                ImmutableSet.<String>of(), createRequiredAttrDef("attribute{", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> specialTypeDef4 = createClassTypeDef("SpecialTypeDef4", "Typedef with special character",
+                ImmutableSet.<String>of(), createRequiredAttrDef("attribute}", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> specialTypeDef5 = createClassTypeDef("SpecialTypeDef5", "Typedef with special character",
+                ImmutableSet.<String>of(), createRequiredAttrDef("attribute$%{}", DataTypes.STRING_TYPE));
+
+        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(specialTypeDef1, specialTypeDef2, specialTypeDef3, specialTypeDef4, specialTypeDef5));
+
+        Map<String, IDataType> createdTypes = ts.defineTypes(typesDef);
+        typeStore.store(ts, ImmutableList.copyOf(createdTypes.keySet()));
+
+        //Validate the updated types
+        TypesDef types = typeStore.restore();
         ts.reset();
         ts.defineTypes(types);
     }
@@ -238,5 +254,4 @@ public class GraphBackedTypeStoreTest {
         }
         Assert.assertTrue(clsTypeFound, typeName + " type not restored");
     }
-
 }
