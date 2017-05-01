@@ -92,45 +92,11 @@ public class ExportService {
         try {
             LOG.info("==> export(user={}, from={})", userName, requestingIP);
 
-            for (AtlasObjectId item : request.getItemsToExport()) {
-                processObjectId(item, context);
-            }
+            AtlasExportResult.OperationStatus[] statuses = processItems(request, context);
 
-            long endTime = System.currentTimeMillis();
+            processTypesDef(context);
 
-            AtlasTypesDef typesDef = context.result.getData().getTypesDef();
-
-            for (String entityType : context.entityTypes) {
-                AtlasEntityDef entityDef = typeRegistry.getEntityDefByName(entityType);
-
-                typesDef.getEntityDefs().add(entityDef);
-            }
-
-            for (String classificationType : context.classificationTypes) {
-                AtlasClassificationDef classificationDef = typeRegistry.getClassificationDefByName(classificationType);
-
-                typesDef.getClassificationDefs().add(classificationDef);
-            }
-
-            for (String structType : context.structTypes) {
-                AtlasStructDef structDef = typeRegistry.getStructDefByName(structType);
-
-                typesDef.getStructDefs().add(structDef);
-            }
-
-            for (String enumType : context.enumTypes) {
-                AtlasEnumDef enumDef = typeRegistry.getEnumDefByName(enumType);
-
-                typesDef.getEnumDefs().add(enumDef);
-            }
-
-            context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
-            context.sink.setTypesDef(context.result.getData().getTypesDef());
-            context.result.setData(null);
-            context.result.setOperationStatus(AtlasExportResult.OperationStatus.SUCCESS);
-            context.result.incrementMeticsCounter("duration", (int) (endTime - startTime));
-
-            context.sink.setResult(context.result);
+            updateSinkWithOperationMetrics(context, statuses, getOperationDuration(startTime));
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
         } finally {
@@ -143,13 +109,84 @@ public class ExportService {
         return context.result;
     }
 
-    private void processObjectId(AtlasObjectId item, ExportContext context) throws AtlasServiceException, AtlasException, AtlasBaseException {
+    private void updateSinkWithOperationMetrics(ExportContext context, AtlasExportResult.OperationStatus[] statuses, int duration) throws AtlasBaseException {
+        context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
+        context.sink.setTypesDef(context.result.getData().getTypesDef());
+        clearContextData(context);
+        context.result.setOperationStatus(getOverallOperationStatus(statuses));
+        context.result.incrementMeticsCounter("duration", duration);
+        context.sink.setResult(context.result);
+    }
+
+    private void clearContextData(ExportContext context) {
+        context.result.setData(null);
+    }
+
+    private int getOperationDuration(long startTime) {
+        return (int) (System.currentTimeMillis() - startTime);
+    }
+
+    private void processTypesDef(ExportContext context) {
+        AtlasTypesDef typesDef = context.result.getData().getTypesDef();
+
+        for (String entityType : context.entityTypes) {
+            AtlasEntityDef entityDef = typeRegistry.getEntityDefByName(entityType);
+
+            typesDef.getEntityDefs().add(entityDef);
+        }
+
+        for (String classificationType : context.classificationTypes) {
+            AtlasClassificationDef classificationDef = typeRegistry.getClassificationDefByName(classificationType);
+
+            typesDef.getClassificationDefs().add(classificationDef);
+        }
+
+        for (String structType : context.structTypes) {
+            AtlasStructDef structDef = typeRegistry.getStructDefByName(structType);
+
+            typesDef.getStructDefs().add(structDef);
+        }
+
+        for (String enumType : context.enumTypes) {
+            AtlasEnumDef enumDef = typeRegistry.getEnumDefByName(enumType);
+
+            typesDef.getEnumDefs().add(enumDef);
+        }
+    }
+
+    private AtlasExportResult.OperationStatus[] processItems(AtlasExportRequest request, ExportContext context) throws AtlasServiceException, AtlasException, AtlasBaseException {
+        AtlasExportResult.OperationStatus statuses[] = new AtlasExportResult.OperationStatus[request.getItemsToExport().size()];
+        List<AtlasObjectId> itemsToExport = request.getItemsToExport();
+        for (int i = 0; i < itemsToExport.size(); i++) {
+            AtlasObjectId item = itemsToExport.get(i);
+            statuses[i] = processObjectId(item, context);
+        }
+        return statuses;
+    }
+
+    private AtlasExportResult.OperationStatus getOverallOperationStatus(AtlasExportResult.OperationStatus... statuses) {
+        AtlasExportResult.OperationStatus overall = (statuses.length == 0) ?
+                AtlasExportResult.OperationStatus.FAIL : statuses[0];
+
+        for (AtlasExportResult.OperationStatus s : statuses) {
+            if (overall != s) {
+                overall = AtlasExportResult.OperationStatus.PARTIAL_SUCCESS;
+            }
+        }
+
+        return overall;
+    }
+
+    private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context) throws AtlasServiceException, AtlasException, AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> processObjectId({})", item);
         }
 
         try {
             List<AtlasEntityWithExtInfo> entities = getStartingEntity(item, context);
+            if(entities.size() == 0) {
+                return AtlasExportResult.OperationStatus.FAIL;
+            }
 
             for (AtlasEntityWithExtInfo entityWithExtInfo : entities) {
                 processEntity(entityWithExtInfo.getEntity().getGuid(), context);
@@ -167,14 +204,15 @@ public class ExportService {
                 }
             }
         } catch (AtlasBaseException excp) {
-            context.result.setOperationStatus(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS);
-
             LOG.error("Fetching entity failed for: {}", item, excp);
+            return AtlasExportResult.OperationStatus.FAIL;
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== processObjectId({})", item);
         }
+
+        return AtlasExportResult.OperationStatus.SUCCESS;
     }
 
     private List<AtlasEntityWithExtInfo> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
