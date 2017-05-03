@@ -28,6 +28,7 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
+import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
@@ -57,6 +58,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import org.apache.commons.lang.StringUtils;
 
 
 public class AtlasKnoxSSOAuthenticationFilter implements Filter {
@@ -69,6 +71,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM = "atlas.sso.knox.query.param.originalurl";
     public static final String JWT_COOKIE_NAME_DEFAULT = "hadoop-jwt";
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT = "originalUrl";
+    public static final String DEFAULT_BROWSER_USERAGENT = "Mozilla,Opera,Chrome";
 
     private SSOAuthenticationProperties jwtProperties;
 
@@ -134,7 +137,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             return;
         }
 
-        if (!isWebUserAgent(httpRequest.getHeader("User-Agent")) || jwtProperties == null || isAuthenticated()) {
+        if (jwtProperties == null || isAuthenticated()) {
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }
@@ -171,18 +174,24 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
 
                     filterChain.doFilter(servletRequest, httpServletResponse);
                 } else {  // if the token is not valid then redirect to knox sso
-                    redirectToKnox(httpRequest,httpServletResponse);
+                    redirectToKnox(httpRequest, httpServletResponse, filterChain);
                 }
             } catch (ParseException e) {
                 LOG.warn("Unable to parse the JWT token", e);
+                redirectToKnox(httpRequest, httpServletResponse, filterChain);
             }
         } else {
-            redirectToKnox(httpRequest,httpServletResponse);
+            redirectToKnox(httpRequest, httpServletResponse, filterChain);
         }
 
     }
 
-    private void redirectToKnox(HttpServletRequest httpRequest, HttpServletResponse httpServletResponse) throws IOException {
+    private void redirectToKnox(HttpServletRequest httpRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws IOException, ServletException {
+
+        if (!isWebUserAgent(httpRequest.getHeader("User-Agent"))) {
+            filterChain.doFilter(httpRequest, httpServletResponse);
+            return;
+        }
 
         String ajaxRequestHeader = httpRequest.getHeader("X-Requested-With");
 
@@ -403,9 +412,11 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             jwtProperties.setAuthenticationProviderUrl(providerUrl);
             jwtProperties.setCookieName(configuration.getString(JWT_COOKIE_NAME, JWT_COOKIE_NAME_DEFAULT));
             jwtProperties.setOriginalUrlQueryParam(configuration.getString(JWT_ORIGINAL_URL_QUERY_PARAM, JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT));
-            String userAgent = configuration.getString(BROWSER_USERAGENT);
-            if (userAgent != null && !userAgent.isEmpty()) {
-                jwtProperties.setUserAgentList(userAgent.split(","));
+            String[] userAgent = configuration.getStringArray(BROWSER_USERAGENT);
+            if (userAgent != null && userAgent.length > 0) {
+                jwtProperties.setUserAgentList(userAgent);
+            } else {
+                jwtProperties.setUserAgentList(DEFAULT_BROWSER_USERAGENT.split(","));
             }
             try {
                 RSAPublicKey publicKey = parseRSAPublicKey(publicKeyPathStr);
