@@ -27,6 +27,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -402,6 +403,45 @@ public class AtlasTypeDefGraphStoreTest {
             assertEquals(typesDef.getEntityDefs().size(), 3);
         } catch (AtlasBaseException e) {
             fail("Search should've succeeded", e);
+        }
+    }
+
+    @Test
+    public void testTypeDeletionAndRecreate() {
+        AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
+        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        aTag.addAttribute(attributeDef);
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        typesDef.setClassificationDefs(Arrays.asList(aTag));
+
+        try {
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag creation should've succeeded");
+        }
+
+        try {
+            typeDefStore.deleteTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag deletion should've succeeded");
+        }
+
+        aTag = new AtlasClassificationDef("testTag");
+        attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        aTag.addAttribute(attributeDef);
+        typesDef.setClassificationDefs(Arrays.asList(aTag));
+
+        try {
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag re-creation should've succeeded");
         }
     }
 

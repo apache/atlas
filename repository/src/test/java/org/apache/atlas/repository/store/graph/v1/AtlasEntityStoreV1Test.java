@@ -25,6 +25,7 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
@@ -35,7 +36,10 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -64,6 +68,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +81,7 @@ import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class AtlasEntityStoreV1Test {
@@ -837,6 +843,58 @@ public class AtlasEntityStoreV1Test {
         final AtlasEntity            deletedDb2Entity  = getEntityFromStore(db2Entity.getGuid());
 
         assertEquals(deletedDb2Entity.getStatus(), AtlasEntity.Status.DELETED);
+    }
+
+    @Test
+    public void testTagAssociationAfterRedefinition(){
+        AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
+        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        aTag.addAttribute(attributeDef);
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        typesDef.setClassificationDefs(Arrays.asList(aTag));
+
+        try {
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag creation should've succeeded");
+        }
+
+        try {
+            typeDefStore.deleteTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag deletion should've succeeded");
+        }
+
+        aTag = new AtlasClassificationDef("testTag");
+        attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        aTag.addAttribute(attributeDef);
+        typesDef.setClassificationDefs(Arrays.asList(aTag));
+
+        try {
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag re-creation should've succeeded");
+        }
+
+        final AtlasEntity dbEntity  = TestUtilsV2.createDBEntity();
+
+        try {
+            EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+            List<AtlasEntityHeader> createdEntity = response.getCreatedEntities();
+            assertTrue(CollectionUtils.isNotEmpty(createdEntity));
+            String guid = createdEntity.get(0).getGuid();
+            entityStore.addClassification(Arrays.asList(guid), new AtlasClassification(aTag.getName(), "testAttribute", "test-string"));
+        } catch (AtlasBaseException e) {
+            fail("DB entity creation should've succeeded");
+        }
+
     }
 
     private String randomStrWithReservedChars() {

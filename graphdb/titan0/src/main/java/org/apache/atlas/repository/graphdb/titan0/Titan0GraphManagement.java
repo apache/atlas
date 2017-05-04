@@ -17,17 +17,6 @@
  */
 package org.apache.atlas.repository.graphdb.titan0;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.schema.Mapping;
@@ -37,6 +26,16 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Titan 0.5.4 implementation of AtlasGraphManagement.
@@ -109,6 +108,21 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
         }
         PropertyKey propertyKey = propertyKeyBuilder.make();
         return GraphDbObjectFactory.createPropertyKey(propertyKey);
+    }
+
+    @Override
+    public void deletePropertyKey(String propertyKey) {
+        PropertyKey titanPropertyKey = management.getPropertyKey(propertyKey);
+
+        if (null == titanPropertyKey) return;
+
+        for (int i = 0;; i++) {
+            String deletedKeyName = titanPropertyKey + "_deleted_" + i;
+            if (null == management.getPropertyKey(deletedKeyName)) {
+                management.changeName(titanPropertyKey, deletedKeyName);
+                break;
+            }
+        }
     }
 
     @Override

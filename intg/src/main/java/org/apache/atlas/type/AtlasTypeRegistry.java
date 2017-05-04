@@ -550,6 +550,7 @@ public class AtlasTypeRegistry {
                     registryData.entityDefs.removeTypeDefByName(typeDef.getName());
                     break;
             }
+            deletedTypes.add(typeDef);
         }
 
         private void removeTypeByGuidWithNoRefResolve(AtlasBaseTypeDef typeDef) {
@@ -567,6 +568,7 @@ public class AtlasTypeRegistry {
                     registryData.entityDefs.removeTypeDefByGuid(typeDef.getGuid());
                     break;
             }
+            deletedTypes.add(typeDef);
         }
 
         public void removeTypeByGuid(String guid) throws AtlasBaseException {
