@@ -17,10 +17,14 @@
  */
 package org.apache.atlas.repository.graphdb.titan1;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -32,14 +36,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.graphdb.internal.Token;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Titan 1.0.0 implementation of AtlasGraphManagement.
@@ -133,6 +132,21 @@ public class Titan1GraphManagement implements AtlasGraphManagement {
         }
         PropertyKey propertyKey = propertyKeyBuilder.make();
         return GraphDbObjectFactory.createPropertyKey(propertyKey);
+    }
+
+    @Override
+    public void deletePropertyKey(String propertyKey) {
+        PropertyKey titanPropertyKey = management.getPropertyKey(propertyKey);
+
+        if (null == titanPropertyKey) return;
+
+        for (int i = 0;; i++) {
+            String deletedKeyName = titanPropertyKey + "_deleted_" + i;
+            if (null == management.getPropertyKey(deletedKeyName)) {
+                management.changeName(titanPropertyKey, deletedKeyName);
+                break;
+            }
+        }
     }
 
     @Override

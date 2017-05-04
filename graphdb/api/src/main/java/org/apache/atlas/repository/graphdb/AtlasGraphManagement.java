@@ -63,7 +63,13 @@ public interface AtlasGraphManagement {
     AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, AtlasCardinality cardinality);
 
     /**
-     * @param propertyKey
+     *  @param propertyKey
+     *
+     */
+    void deletePropertyKey(String propertyKey);
+
+    /**
+     * @param propertyName
      * @return
      */
     AtlasPropertyKey getPropertyKey(String propertyName);
@@ -72,8 +78,8 @@ public interface AtlasGraphManagement {
      * Creates a composite index for the graph.
      *
      * @param propertyName
-     * @param propertyKey
      * @param isUnique
+     * @param propertyKeys
      */
     void createExactMatchIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys);
 
@@ -81,7 +87,7 @@ public interface AtlasGraphManagement {
      * Looks up the index with the specified name in the graph.  Returns null if
      * there is no index with the given name.
      *
-     * @param edgeIndex
+     * @param indexName
      * @return
      */
     AtlasGraphIndex getGraphIndex(String indexName);
@@ -89,7 +95,7 @@ public interface AtlasGraphManagement {
     /**
      * Creates a mixed Vertex index for the graph.
      *
-     * @param index the name of the index to create
+     * @param name the name of the index to create
      * @param backingIndex the name of the backing index to use
      */
     void createVertexIndex(String name, String backingIndex, List<AtlasPropertyKey> propertyKeys);

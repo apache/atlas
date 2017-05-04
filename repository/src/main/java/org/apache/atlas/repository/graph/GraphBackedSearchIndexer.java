@@ -214,7 +214,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      * This is upon adding a new type to Store.
      *
      * @param dataTypes data type
-     * @throws org.apache.atlas.AtlasException
+     * @throws AtlasException
      */
     @Override
     public void onAdd(Collection<? extends IDataType> dataTypes) throws AtlasException {
@@ -612,7 +612,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
-        LOG.info("Adding indexes for changed typedefs");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Processing changed typedefs {}", changedTypeDefs);
+        }
         AtlasGraphManagement management = null;
         try {
             management = provider.get().getManagementSystem();
@@ -631,6 +633,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
             }
 
+            // Invalidate the property key for deleted types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getDeletedTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getDeletedTypeDefs()) {
+                    cleanupIndices(management, typeDef);
+                }
+            }
+
             //Commit indexes
             commit(management);
         } catch (RepositoryException | IndexException e) {
@@ -638,6 +647,60 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             attemptRollback(changedTypeDefs, management);
         }
 
+    }
+
+    private void cleanupIndices(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
+        Preconditions.checkNotNull(typeDef, "Cannot process null typedef");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Cleaning up index for {}", typeDef);
+        }
+
+        if (typeDef instanceof AtlasEnumDef) {
+            // Only handle complex types like Struct, Classification and Entity
+            return;
+        }
+
+        if (typeDef instanceof AtlasStructDef) {
+            AtlasStructDef structDef = (AtlasStructDef) typeDef;
+            List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
+            if (CollectionUtils.isNotEmpty(attributeDefs)) {
+                for (AtlasAttributeDef attributeDef : attributeDefs) {
+                    cleanupIndexForAttribute(management, typeDef.getName(), attributeDef);
+                }
+            }
+        } else if (!AtlasTypeUtil.isBuiltInType(typeDef.getName())){
+            throw new IllegalArgumentException("bad data type" + typeDef.getName());
+        }
+    }
+
+    private void cleanupIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
+        final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
+        String attribTypeName = attributeDef.getTypeName();
+        boolean isBuiltInType = AtlasTypeUtil.isBuiltInType(attribTypeName);
+        boolean isArrayType = AtlasTypeUtil.isArrayType(attribTypeName);
+        boolean isMapType = AtlasTypeUtil.isMapType(attribTypeName);
+
+        try {
+            AtlasType atlasType = typeRegistry.getType(attribTypeName);
+
+            if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
+                LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
+            } else if (isBuiltInType || isEnumType(atlasType)) {
+                cleanupIndex(management, propertyName);
+            } else if (isStructType(atlasType)) {
+                AtlasStructDef structDef = typeRegistry.getStructDefByName(attribTypeName);
+                cleanupIndices(management, structDef);
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("No type exists for {}", attribTypeName, e);
+        }
+    }
+
+    private void cleanupIndex(AtlasGraphManagement management, String propertyKey) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Invalidating property key = {}", propertyKey);
+        }
+        management.deletePropertyKey(propertyKey);
     }
 
     private void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management)
