@@ -27,6 +27,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.powermock.reflect.Whitebox;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
@@ -93,6 +95,11 @@ public class ExportServiceTest {
     @BeforeTest
     public void setupExportService () throws AtlasBaseException {
         exportService = new ExportService(typeRegistry);
+    }
+
+    @AfterClass
+    public void clear() {
+        AtlasGraphProvider.cleanup();
     }
 
     private AtlasExportRequest getRequestForFullFetch() {
