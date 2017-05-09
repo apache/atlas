@@ -73,7 +73,11 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
         try {
             init();
-        } catch(AtlasBaseException excp) {
+            // commit/close the transaction after successful type store initialization.
+            atlasGraph.commit();
+
+        } catch (AtlasBaseException excp) {
+            atlasGraph.rollback();
             LOG.error("failed to initialize types from graph store", excp);
         }
 
