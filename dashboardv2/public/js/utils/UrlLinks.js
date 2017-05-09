@@ -52,6 +52,14 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return entitieDefUrl.defs + '?type=entity';
             }
         },
+        enumDefApiUrl: function(name) {
+            var enumDefApiUrl = this.typedefsUrl();
+            if (name) {
+                return enumDefApiUrl.def + '/name/' + name + '?type=enum';
+            } else {
+                return enumDefApiUrl.defs + '?type=enum';
+            }
+        },
         entitiesTraitsApiUrl: function(token) {
             if (token) {
                 return this.baseUrlV2 + '/entity/guid/' + token + '/classifications';

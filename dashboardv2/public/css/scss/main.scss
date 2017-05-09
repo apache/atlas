@@ -188,6 +188,9 @@ ul {
     background-color: $transparent;
     border: 1px solid $color_jungle_green_approx;
     cursor: pointer;
+    &+.auditDetailBtn {
+        margin-left: 5px;
+    }
 }
 
 .add-seperator {
@@ -315,6 +318,10 @@ ul {
         &.editbutton[data-id="editButton"] {
             display: none !important;
         }
+        &[data-id="delete"],
+        &[data-id="edit"] {
+            display: none;
+        }
     }
 }
 
@@ -339,4 +346,40 @@ ul {
 
 .no-padding {
     padding: 0px !important;
+}
+
+.no-padding-bottom {
+    padding-bottom: 0px !important;
+}
+
+.no-padding-top {
+    padding-top: 0px !important;
+}
+
+.no-padding-left {
+    padding-left: 0px !important;
+}
+
+.no-padding-right {
+    padding-right: 0px !important;
+}
+
+.no-margin {
+    margin: 0px !important;
+}
+
+.no-margin-bottom {
+    margin-bottom: 0px !important;
+}
+
+.no-margin-top {
+    margin-top: 0px !important;
+}
+
+.no-margin-left {
+    margin-left: 0px !important;
+}
+
+.no-margin-right {
+    margin-right: 0px !important;
 }

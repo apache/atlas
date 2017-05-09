@@ -31,6 +31,11 @@ define(['require',
 
     var AddTagModel = Marionette.LayoutView.extend({
         template: AddTagModalViewTmpl,
+        templateHelpers: function() {
+            return {
+                tagModel: this.tagModel
+            };
+        },
 
         regions: {},
         ui: {
@@ -47,38 +52,40 @@ define(['require',
          * @constructs
          */
         initialize: function(options) {
-            var that = this;
-            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList'));
+            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
             this.collection = new VTagList();
             this.commonCollection = new VTagList();
-            this.enumCollection = new VTagList();
-            this.enumCollection.url = UrlLinks.typedefsUrl().defs;
-            this.enumCollection.modelAttrName = "enumDefs";
-            this.asyncAttrFetchCounter = 0;
-            this.asyncEnumFetchCounter = 2;
-            this.modal = new Modal({
-                title: 'Add Tag',
-                content: this,
-                okText: 'Add',
-                cancelText: "Cancel",
-                allowCancel: true,
-            }).open();
-            this.modal.$el.find('button.ok').attr("disabled", true);
+            var that = this,
+                modalObj = {
+                    title: 'Add Tag',
+                    content: this,
+                    okText: 'Add',
+                    cancelText: "Cancel",
+                    allowCancel: true,
+                },
+                state = this.tagModel ? false : true;
+            if (this.tagModel) {
+                modalObj.title = 'Edit Tag';
+                modalObj.okText = 'Update';
+            }
+            this.modal = new Modal(modalObj).open();
+            this.modal.$el.find('button.ok').attr("disabled", state);
             this.on('ok', function() {
-                var tagName = this.ui.addTagOptions.val();
-                var tagAttributes = {};
-                var tagAttributeNames = this.$(".attrName");
+                var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
+                    tagAttributes = {},
+                    tagAttributeNames = this.$(".attrName"),
+                    obj = {
+                        tagName: tagName,
+                        tagAttributes: tagAttributes,
+                        guid: [],
+                        skipEntity: [],
+                        deletedEntity: []
+                    };
                 tagAttributeNames.each(function(i, item) {
                     var selection = $(item).data("key");
                     tagAttributes[selection] = $(item).val() || null;
                 });
-                var obj = {
-                    tagName: tagName,
-                    tagAttributes: tagAttributes,
-                    guid: [],
-                    skipEntity: [],
-                    deletedEntity: []
-                }
+
                 if (that.multiple) {
                     _.each(that.multiple, function(entity, i) {
                         var name = Utils.getName(entity.model);
@@ -172,21 +179,16 @@ define(['require',
 
         onRender: function() {
             var that = this;
-            $.extend(this.collection.queryParams, { type: 'TRAIT', notsupertype: 'TaxonomyTerm' });
+            $.extend(this.collection.queryParams, { type: 'classification' });
             this.hideAttributeBox();
             this.collection.fetch({
                 reset: true,
                 complete: function() {
-                    --that.asyncEnumFetchCounter;
-                    that.showAttributeBox(that.asyncEnumFetchCounter);
+                    if (that.tagModel) {
+                        that.fetchTagSubData(that.tagModel.typeName);
+                    }
+                    that.showAttributeBox();
                 },
-            });
-            that.enumCollection.fetch({
-                complete: function() {
-                    --that.asyncEnumFetchCounter;
-                    that.showAttributeBox(that.asyncEnumFetchCounter);
-                },
-                reset: true
             });
         },
         bindEvents: function() {
@@ -213,7 +215,7 @@ define(['require',
                 }
                 // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
                 if (_.indexOf(that.tagList, obj.get('name')) === -1) {
-                    str += '<option>' + name + '</option>';
+                    str += '<option ' + (that.tagModel && that.tagModel.typeName === name ? 'selected' : '') + '>' + name + '</option>';
                 }
             });
             this.ui.addTagOptions.html(str);
@@ -232,24 +234,18 @@ define(['require',
             this.fetchTagSubData(tagname);
         },
         fetchTagSubData: function(tagname) {
-            var that = this;
-            ++this.asyncAttrFetchCounter;
-            this.commonCollection.url = UrlLinks.typesClassicationApiUrl(tagname);
-            this.commonCollection.fetch({
-                reset: true,
-                complete: function() {
-                    --that.asyncAttrFetchCounter;
-                    that.showAttributeBox();
-                }
+            var attributeDefs = Utils.getNestedSuperTypeObj({
+                data: this.collection.fullCollection.find({ name: tagname }).toJSON(),
+                collection: this.collection,
+                attrMerge: true
             });
+            this.subAttributeData(attributeDefs);
         },
-        showAttributeBox: function(counter) {
-            if ((counter || this.asyncAttrFetchCounter) === 0) {
-                this.$('.attrLoader').hide();
-                this.$('.form-group.hide').removeClass('hide');
-                if (this.ui.tagAttribute.children().length !== 0) {
-                    this.ui.tagAttribute.parent().show();
-                }
+        showAttributeBox: function() {
+            this.$('.attrLoader').hide();
+            this.$('.form-group.hide').removeClass('hide');
+            if (this.ui.tagAttribute.children().length !== 0) {
+                this.ui.tagAttribute.parent().show();
             }
         },
         hideAttributeBox: function() {
@@ -257,44 +253,26 @@ define(['require',
             this.ui.tagAttribute.parent().hide();
             this.$('.attrLoader').show();
         },
-        subAttributeData: function() {
+        subAttributeData: function(attributeDefs) {
             var that = this;
-            if (this.commonCollection.models[0]) {
-                if (this.commonCollection.models[0].get('attributeDefs')) {
-                    _.each(this.commonCollection.models[0].get('attributeDefs'), function(obj) {
-                        var name = Utils.getName(obj, 'name');
-                        var typeName = Utils.getName(obj, 'typeName');
-                        var typeNameValue = that.enumCollection.fullCollection.findWhere({ 'name': typeName });
-                        if (typeNameValue) {
-                            var str = "<option disabled='disabled' selected>-- Select " + typeName + " --</option>";
-                            var enumValue = typeNameValue.get('elementDefs');
-                            _.each(enumValue, function(key, value) {
-                                str += '<option>' + key.value + '</option>';
-                            })
-                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
-                                '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
-                        } else {
-                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
-                                '<input type="text" class="form-control attributeInputVal attrName" data-key="' + name + '" ></input></div>');
-                        }
-                    });
-                }
-                if (this.commonCollection.models[0].get('superTypes')) {
-                    var superTypes = this.commonCollection.models[0].get('superTypes');
-                    if (!_.isArray(superTypes)) {
-                        superTypes = [superTypes];
-                    }
-                    if (superTypes.length) {
-                        _.each(superTypes, function(name) {
-                            that.fetchTagSubData(name);
-                        });
+            if (attributeDefs) {
+                _.each(attributeDefs, function(obj) {
+                    var name = Utils.getName(obj, 'name');
+                    var typeName = Utils.getName(obj, 'typeName');
+                    var typeNameValue = that.enumDefCollection.fullCollection.findWhere({ 'name': typeName });
+                    if (typeNameValue) {
+                        var str = "<option disabled='disabled'" + (!that.tagModel ? 'selected' : '') + ">-- Select " + typeName + " --</option>";
+                        var enumValue = typeNameValue.get('elementDefs');
+                        _.each(enumValue, function(key, value) {
+                            str += '<option ' + (that.tagModel && key.value === _.values(that.tagModel.attributes)[0] ? 'selected' : '') + '>' + key.value + '</option>';
+                        })
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
+                            '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
                     } else {
-                        this.showAttributeBox();
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
+                            '<input type="text" value="' + (that.tagModel ? (that.tagModel.attributes[name] == null ? '' : that.tagModel.attributes[name]) : '') + '" class="form-control attributeInputVal attrName" data-key="' + name + '" ></input></div>');
                     }
-                } else {
-                    this.showAttributeBox();
-                }
-            } else {
+                });
                 this.showAttributeBox();
             }
         },
@@ -310,15 +288,23 @@ define(['require',
                     },
                     "entityGuids": options.guid
                 };
+            if (this.tagModel) {
+                json = [{
+                    "typeName": tagName,
+                    "attributes": tagAttributes
+                }]
+            }
             if (this.showLoader) {
                 this.showLoader();
             }
-            this.entityModel.saveTraitsEntity({
+            this.entityModel.saveTraitsEntity(this.tagModel ? options.guid : null, {
                 skipDefaultError: true,
                 data: JSON.stringify(json),
+                type: this.tagModel ? 'PUT' : 'POST',
                 success: function(data) {
+                    var addupdatetext = that.tagModel ? 'updated successfully to ' : 'added to ';
                     Utils.notifySuccess({
-                        content: "Tag " + tagName + " has been added to " + (that.multiple ? "entities" : "entity")
+                        content: "Tag " + tagName + " has been " + addupdatetext + (that.multiple ? "entities" : "entity")
                     });
                     if (options.modalCollection) {
                         options.modalCollection.fetch({ reset: true });

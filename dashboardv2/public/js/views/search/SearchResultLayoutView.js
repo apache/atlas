@@ -126,7 +126,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -490,7 +490,8 @@ define(['require',
                         },
                         tagList: that.getTagList(guid, multiple),
                         showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that)
+                        hideLoader: that.hideLoader.bind(that),
+                        enumDefCollection: that.enumDefCollection
                     });
                 });
             },

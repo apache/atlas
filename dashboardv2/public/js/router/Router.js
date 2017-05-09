@@ -42,12 +42,17 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
             this.tagCollection = new VTagList();
             this.searchVent = new Backbone.Wreqr.EventAggregator();
+            this.preFetchedCollectionLists = {
+                'entityDefCollection': this.entityDefCollection,
+                'typeHeaders': this.typeHeaders,
+                'enumDefCollection': this.enumDefCollection
+            }
         },
         bindCommonEvents: function() {
             var that = this;
@@ -110,17 +115,29 @@ define([
                     var paramObj = Utils.getUrlState.getQueryParams();
                     this.collection = new VCatalogList();
                     this.collection.url = url;
-                    App.rNHeader.show(new BusinessCatalogHeader({ 'url': url, 'collection': this.collection }));
+                    App.rNHeader.show(new BusinessCatalogHeader(
+                        _.extend({
+                            'url': url,
+                            'collection': this.collection
+                        }, that.preFetchedCollectionLists)
+                    ));
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'url': url, 'collection': that.tagCollection, 'typeHeaders': that.typeHeaders }));
+                        App.rSideNav.show(new SideNavLayoutView(
+                            _.extend({
+                                'url': url,
+                                'collection': that.tagCollection
+                            }, that.preFetchedCollectionLists)
+                        ));
                     } else {
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
                         App.rSideNav.currentView.selectTab();
                     }
-                    App.rNContent.show(new BusinessCatalogDetailLayoutView({
-                        'url': url,
-                        'collection': this.collection
-                    }));
+                    App.rNContent.show(new BusinessCatalogDetailLayoutView(
+                        _.extend({
+                            'url': url,
+                            'collection': this.collection
+                        }, that.preFetchedCollectionLists)
+                    ));
                     this.collection.fetch({ reset: true });
                 } else {
                     that.defaultAction()
@@ -139,16 +156,18 @@ define([
                     this.entityCollection = new VEntityList([], {});
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView({ 'collection': that.tagCollection, 'typeHeaders': that.typeHeaders }));
+                        App.rSideNav.show(new SideNavLayoutView(
+                            _.extend({
+                                'collection': that.tagCollection,
+                            }, that.preFetchedCollectionLists)
+                        ));
                     } else {
                         App.rSideNav.currentView.selectTab();
                     }
-                    App.rNContent.show(new DetailPageLayoutView({
+                    App.rNContent.show(new DetailPageLayoutView(_.extend({
                         'collection': this.entityCollection,
                         'id': id,
-                        'entityDefCollection': that.entityDefCollection,
-                        'typeHeaders': that.typeHeaders
-                    }));
+                    }, that.preFetchedCollectionLists)));
                     this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });
                 });
@@ -164,23 +183,24 @@ define([
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, TagDetailLayoutView) {
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
-                    App.rSideNav.show(new SideNavLayoutView({
-                        'tag': tagName,
-                        'typeHeaders': that.typeHeaders,
-                        'collection': that.tagCollection
-                    }));
+                    App.rSideNav.show(new SideNavLayoutView(
+                        _.extend({
+                            'tag': tagName,
+                            'collection': that.tagCollection
+                        }, that.preFetchedCollectionLists)
+                    ));
                 } else {
                     App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
                     App.rSideNav.currentView.selectTab();
                 }
 
                 if (tagName) {
-                    App.rNContent.show(new TagDetailLayoutView({
-                        'tag': tagName,
-                        'entityDefCollection': that.entityDefCollection,
-                        'collection': that.tagCollection,
-                        'typeHeaders': that.typeHeaders
-                    }));
+                    App.rNContent.show(new TagDetailLayoutView(
+                        _.extend({
+                            'tag': tagName,
+                            'collection': that.tagCollection,
+                        }, that.preFetchedCollectionLists)
+                    ));
                 }
             });
         },
@@ -195,10 +215,11 @@ define([
                 var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
-                    App.rSideNav.show(new SideNavLayoutView({
-                        'collection': that.tagCollection,
-                        'typeHeaders': that.typeHeaders
-                    }));
+                    App.rSideNav.show(new SideNavLayoutView(
+                        _.extend({
+                            'collection': that.tagCollection
+                        }, that.preFetchedCollectionLists)
+                    ));
                 } else {
                     App.rSideNav.currentView.selectTab();
                     if (Utils.getUrlState.isTagTab()) {
@@ -208,12 +229,12 @@ define([
                     }
                 }
                 if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
-                    App.rNContent.show(new SearchDetailLayoutView({
-                        'value': paramObj,
-                        'entityDefCollection': that.entityDefCollection,
-                        'initialView': true,
-                        'typeHeaders': that.typeHeaders
-                    }))
+                    App.rNContent.show(new SearchDetailLayoutView(
+                        _.extend({
+                            'value': paramObj,
+                            'initialView': true
+                        }, that.preFetchedCollectionLists)
+                    ));
                 } else {
                     App.rNContent.$el.html("");
                     App.rNContent.destroy();
@@ -231,23 +252,24 @@ define([
                 var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
-                    App.rSideNav.show(new SideNavLayoutView({
-                        'value': paramObj,
-                        'collection': that.tagCollection,
-                        'searchVent': that.searchVent,
-                        'typeHeaders': that.typeHeaders
-                    }));
+                    App.rSideNav.show(new SideNavLayoutView(
+                        _.extend({
+                            'value': paramObj,
+                            'collection': that.tagCollection,
+                            'searchVent': that.searchVent
+                        }, that.preFetchedCollectionLists)
+                    ));
                 } else {
                     App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
                 }
                 App.rSideNav.currentView.selectTab();
-                App.rNContent.show(new SearchDetailLayoutView({
-                    'value': paramObj,
-                    'entityDefCollection': that.entityDefCollection,
-                    'typeHeaders': that.typeHeaders,
-                    'searchVent': that.searchVent,
-                    'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
-                }));
+                App.rNContent.show(new SearchDetailLayoutView(
+                    _.extend({
+                        'value': paramObj,
+                        'searchVent': that.searchVent,
+                        'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
+                    }, that.preFetchedCollectionLists)
+                ));
             });
         },
         defaultAction: function(actions) {

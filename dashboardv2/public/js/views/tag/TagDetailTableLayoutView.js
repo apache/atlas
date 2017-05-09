@@ -43,6 +43,7 @@ define(['require',
                 detailValue: "[data-id='detailValue']",
                 addTag: "[data-id='addTag']",
                 deleteTag: "[data-id='delete']",
+                editTag: "[data-id='edit']",
             },
             /** ui events hash */
             events: function() {
@@ -53,6 +54,9 @@ define(['require',
                 events["click " + this.ui.deleteTag] = function(e) {
                     this.deleteTagDataModal(e);
                 };
+                events["click " + this.ui.editTag] = function(e) {
+                    this.editTagDataModal(e);
+                };
                 return events;
             },
             /**
@@ -60,7 +64,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection', 'enumDefCollection'));
                 this.collectionObject = this.entity;
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject.classifications),
@@ -151,7 +155,7 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    return '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + model.get('typeName') + '"></i></a>';
+                                    return '<button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button> <button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>';
                                 }
                             })
                         },
@@ -164,7 +168,8 @@ define(['require',
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: that.guid,
-                        modalCollection: that.collection
+                        modalCollection: that.collection,
+                        enumDefCollection: that.enumDefCollection
                     });
                     // view.saveTagData = function() {
                     //override saveTagData function
@@ -217,6 +222,23 @@ define(['require',
                         }
 
                     }
+                });
+            },
+            editTagDataModal: function(e) {
+                var that = this,
+                    tagName = $(e.currentTarget).data('name'),
+                    tagModel = _.findWhere(that.collectionObject.classifications, { typeName: tagName });
+                require([
+                    'views/tag/addTagModalView'
+                ], function(AddTagModalView) {
+                    var view = new AddTagModalView({
+                        'tagModel': tagModel,
+                        callback: function() {
+                            that.fetchCollection();
+                        },
+                        guid: that.guid,
+                        'enumDefCollection': that.enumDefCollection
+                    });
                 });
             }
         });
