@@ -113,7 +113,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException {
         AtlasEnumDef ret = typeRegistry.getEnumDefByName(name);
         if (ret == null) {
@@ -123,7 +122,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasEnumDef getEnumDefByGuid(String guid) throws AtlasBaseException {
         AtlasEnumDef ret = typeRegistry.getEnumDefByGuid(guid);
         if (ret == null) {
@@ -153,7 +151,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasStructDef getStructDefByName(String name) throws AtlasBaseException {
         AtlasStructDef ret = typeRegistry.getStructDefByName(name);
 
@@ -165,7 +162,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasStructDef getStructDefByGuid(String guid) throws AtlasBaseException {
         AtlasStructDef ret = typeRegistry.getStructDefByGuid(guid);
 
@@ -197,7 +193,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasClassificationDef getClassificationDefByName(String name) throws AtlasBaseException {
         AtlasClassificationDef ret = typeRegistry.getClassificationDefByName(name);
 
@@ -209,7 +204,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasClassificationDef getClassificationDefByGuid(String guid) throws AtlasBaseException {
         AtlasClassificationDef ret = typeRegistry.getClassificationDefByGuid(guid);
 
@@ -243,7 +237,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasEntityDef getEntityDefByName(String name) throws AtlasBaseException {
         AtlasEntityDef ret = typeRegistry.getEntityDefByName(name);
 
@@ -255,7 +248,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasEntityDef getEntityDefByGuid(String guid) throws AtlasBaseException {
         AtlasEntityDef ret = typeRegistry.getEntityDefByGuid(guid);
 
@@ -516,7 +508,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException {
         final AtlasTypesDef typesDef = new AtlasTypesDef();
         Predicate searchPredicates = FilterUtil.getPredicateFromSearchFilter(searchFilter);
@@ -549,7 +540,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasBaseTypeDef getByName(String name) throws AtlasBaseException {
         if (StringUtils.isBlank(name)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
@@ -559,7 +549,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     }
 
     @Override
-    @GraphTransaction
     public AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException {
         if (StringUtils.isBlank(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
