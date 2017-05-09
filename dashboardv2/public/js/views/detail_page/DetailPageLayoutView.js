@@ -104,7 +104,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
                 this.bindEvents();
             },
             bindEvents: function() {
@@ -171,7 +171,8 @@ define(['require',
                         entityName: this.name,
                         typeHeaders: this.typeHeaders,
                         entityDefCollection: this.entityDefCollection,
-                        fetchCollection: this.fetchCollection.bind(that)
+                        fetchCollection: this.fetchCollection.bind(that),
+                        enumDefCollection: this.enumDefCollection
                     }
                     this.getEntityDef(obj);
                     this.renderTagTableLayoutView(obj);
@@ -325,7 +326,8 @@ define(['require',
                             that.fetchCollection();
                         },
                         showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that)
+                        hideLoader: that.hideLoader.bind(that),
+                        enumDefCollection: that.enumDefCollection
                     });
                     view.modal.on('ok', function() {
                         Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));

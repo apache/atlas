@@ -48,8 +48,7 @@ define(['require',
                 showMoreLess: '[data-id="showMoreLess"]',
                 showMoreLessTerm: '[data-id="showMoreLessTerm"]',
                 addAssignTag: "[data-id='addAssignTag']",
-                checkDeletedEntity: "[data-id='checkDeletedEntity']",
-
+                checkDeletedEntity: "[data-id='checkDeletedEntity']"
             },
             /** ui events hash */
             events: function() {
@@ -95,7 +94,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'attribute', 'referredEntities', 'fetchCollection'));
+                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'attribute', 'referredEntities', 'fetchCollection', 'enumDefCollection'));
                 this.schemaCollection = new VSchemaList([], {});
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
@@ -228,7 +227,7 @@ define(['require',
                         //     return this;
                         // }
                     });
-                    var columns = new columnCollection(that.getSchemaTableColumns());
+                    var columns = new columnCollection(that.getSchemaTableColumns(deleteEnity));
                     //columns.setPositions().sort();
                     that.RSchemaTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
@@ -247,7 +246,7 @@ define(['require',
                     });
                 });
             },
-            getSchemaTableColumns: function() {
+            getSchemaTableColumns: function(deleteEnity) {
                 var that = this,
                     col = {
                         Check: {
@@ -271,7 +270,7 @@ define(['require',
                                         var value = model.get('attributes')[key];
                                         if (key === "name" && model.get('guid')) {
                                             var nameHtml = '<a href="#!/detailPage/' + model.get('guid') + '">' + value + '</a>';
-                                            if (model.get('status') && Enums.entityStateReadOnly[model.get('status')]) {
+                                            if (model.get('status') && Enums.entityStateReadOnly[model.get('status')] && deleteEnity) {
                                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                                 return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                             } else {
@@ -369,7 +368,8 @@ define(['require',
                             that.arr = [];
                         },
                         hideLoader: that.hideLoader.bind(that),
-                        showLoader: that.showLoader.bind(that)
+                        showLoader: that.showLoader.bind(that),
+                        enumDefCollection: that.enumDefCollection
                     });
                     // view.saveTagData = function() {
                     //override saveTagData function 

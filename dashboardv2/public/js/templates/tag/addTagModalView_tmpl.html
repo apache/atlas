@@ -16,8 +16,11 @@
 -->
 <div>
     <div class="form-group hide">
+        {{#if tagModel}}
+        <h4>{{tagModel.typeName}}</h4> {{else}}
         <select class="form-control row-margin-bottom" data-id="addTagOptions" required>
         </select>
+        {{/if}}
     </div>
     <div class="row modalHeight">
         <div class="col-sm-12">

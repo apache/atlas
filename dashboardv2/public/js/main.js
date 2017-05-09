@@ -168,15 +168,19 @@ require(['App',
     'select2'
 ], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
     var that = this;
-    this.asyncFetchCounter = 3;
+    this.asyncFetchCounter = 4;
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
     this.typeHeaders = new VTagList();
     this.typeHeaders.url = UrlLinks.typesApiUrl();
+    this.enumDefCollection = new VTagList();
+    this.enumDefCollection.url = UrlLinks.enumDefApiUrl();
+    this.enumDefCollection.modelAttrName = "enumDefs";
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
-        typeHeaders: this.typeHeaders
+        typeHeaders: this.typeHeaders,
+        enumDefCollection: this.enumDefCollection
     });
 
     var startApp = function() {
@@ -222,6 +226,13 @@ require(['App',
         }
     });
     this.typeHeaders.fetch({
+        skipDefaultError: true,
+        complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+    this.enumDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;
