@@ -1848,7 +1848,8 @@
                     </argLine>
                     <skip>${skipITs}</skip>
                     <reuseForks>false</reuseForks>
-                    <forkCount>2C</forkCount>
+                    <!-- Don't fork the IT until there's sandbox capability for IT env -->
+                    <forkCount>0</forkCount>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
                 <executions>
