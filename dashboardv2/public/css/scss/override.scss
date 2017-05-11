@@ -224,11 +224,10 @@
 
 .backgrid-paginator ul > .disabled > span,
 .backgrid-paginator ul > .disabled > a {
-     &:hover {
+    &:hover {
         cursor: not-allowed;
         background-color: #7ed3be !important;
     }
-
 }
 
 .popover {
@@ -256,7 +255,13 @@
     word-break: break-all;
 }
 
-.advancedInfo{
+.checkbox-inline,
+.radio-inline {
+    padding-left: 0px;
+    font-weight: bold;
+}
+
+.advancedInfo {
     margin-left: 5px;
     cursor: pointer;
 }
