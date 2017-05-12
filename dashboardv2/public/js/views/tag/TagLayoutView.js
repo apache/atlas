@@ -258,6 +258,7 @@ define(['require',
                         }
                     });
                     var notifyObj = {
+                        modal: true,
                         confirm: {
                             confirm: true,
                             buttons: [{
@@ -372,6 +373,7 @@ define(['require',
                 this.tagName = this.ui.tagsParent.find('li.active').find("a").data('name');
                 this.tagDeleteData = this.ui.tagsParent.find('li.active');
                 var notifyObj = {
+                    modal: true,
                     ok: function(argument) {
                         that.onNotifyOk();
                     },
@@ -379,11 +381,6 @@ define(['require',
                 }
                 var text = "Are you sure you want to delete the tag"
                 notifyObj['text'] = text;
-                notifyObj['stack'] = {
-                    'dir1': 'down',
-                    'dir2': 'right',
-                    'modal': true
-                };
                 Utils.notifyConfirm(notifyObj);
             },
             onNotifyOk: function(data) {

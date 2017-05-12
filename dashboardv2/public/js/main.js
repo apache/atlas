@@ -139,9 +139,9 @@ require.config({
         'moment': 'libs/moment/js/moment.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
         'datetimepicker': 'external_lib/datetimepicker/bootstrap-datetimepicker',
-        'pnotify': 'external_lib/pnotify/pnotify',
-        'pnotify.buttons': 'external_lib/pnotify/pnotify.buttons',
-        'pnotify.confirm': 'external_lib/pnotify/pnotify.confirm',
+        'pnotify': 'external_lib/pnotify/pnotify.custom.min',
+        'pnotify.buttons': 'external_lib/pnotify/pnotify.custom.min',
+        'pnotify.confirm': 'external_lib/pnotify/pnotify.custom.min',
         'jquery-placeholder': 'libs/jquery-placeholder/js/jquery.placeholder',
         'platform': 'libs/platform/platform'
     },

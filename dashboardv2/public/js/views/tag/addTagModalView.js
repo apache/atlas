@@ -118,6 +118,7 @@ define(['require',
                         }
                         var notifyObj = {
                             text: text,
+                            modal: true,
                             ok: function(argument) {
                                 if (obj.guid.length) {
                                     that.saveTagData(obj);
@@ -157,7 +158,6 @@ define(['require',
                                 ]
                             }
                         }
-
                         Utils.notifyConfirm(notifyObj)
                     } else {
                         if (obj.guid.length) {

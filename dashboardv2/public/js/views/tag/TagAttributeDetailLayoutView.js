@@ -216,6 +216,7 @@ define(['require',
                                 }
                             });
                             var notifyObj = {
+                                modal: true,
                                 confirm: {
                                     confirm: true,
                                     buttons: [{
