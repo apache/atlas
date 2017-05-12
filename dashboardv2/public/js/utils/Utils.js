@@ -49,7 +49,19 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
     };
 
     var notify = function(options) {
-        return new pnotify(_.extend({ icon: true, hide: true, delay: 3000, remove: true }, options));
+        return new pnotify(_.extend({
+            icon: true,
+            hide: true,
+            delay: 3000,
+            remove: true,
+            buttons: {
+                classes: {
+                    closer: 'fa fa-times',
+                    pin_up: 'fa fa-pause',
+                    pin_down: 'fa fa-play'
+                }
+            }
+        }, options));
     }
     Utils.notifyInfo = function(options) {
         notify({
@@ -80,6 +92,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
     };
 
     Utils.notifyConfirm = function(options) {
+        var modal = {};
+        if (options && options.modal) {
+            var myStack = { "dir1": "down", "dir2": "right", "push": "top", 'modal': true };
+            modal['addclass'] = 'stack-modal';
+            modal['stack'] = myStack;
+        }
         notify(_.extend({
             title: 'Confirmation',
             hide: false,
@@ -93,13 +111,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             history: {
                 history: false
             }
-        }, options)).get().on('pnotify.confirm', function() {
-            $('.ui-pnotify-modal-overlay').remove().fadeOut();
+
+        }, modal, options)).get().on('pnotify.confirm', function() {
             if (options.ok) {
                 options.ok();
             }
         }).on('pnotify.cancel', function() {
-            $('.ui-pnotify-modal-overlay').remove().fadeOut();
             if (options.cancel) {
                 options.cancel();
             }
