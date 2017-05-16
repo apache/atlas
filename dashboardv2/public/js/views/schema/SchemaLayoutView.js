@@ -203,7 +203,7 @@ define(['require',
                 this.$('.fontLoader').hide();
                 this.$('.tableOverlay').hide();
             },
-            renderTableLayoutView: function(deleteEnity) {
+            renderTableLayoutView: function() {
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
                     var columnCollection = Backgrid.Columns.extend({
@@ -227,7 +227,7 @@ define(['require',
                         //     return this;
                         // }
                     });
-                    var columns = new columnCollection(that.getSchemaTableColumns(deleteEnity));
+                    var columns = new columnCollection(that.getSchemaTableColumns());
                     //columns.setPositions().sort();
                     that.RSchemaTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
@@ -270,7 +270,7 @@ define(['require',
                                         var value = model.get('attributes')[key];
                                         if (key === "name" && model.get('guid')) {
                                             var nameHtml = '<a href="#!/detailPage/' + model.get('guid') + '">' + value + '</a>';
-                                            if (model.get('status') && Enums.entityStateReadOnly[model.get('status')] && deleteEnity) {
+                                            if (model.get('status') && Enums.entityStateReadOnly[model.get('status')]) {
                                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                                 return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                             } else {
