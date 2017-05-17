@@ -76,6 +76,7 @@ public abstract class GremlinExpressionFactory {
     protected static final String SELECT_METHOD = "select";
     protected static final String ORDER_METHOD = "order";
     protected static final String FILL_METHOD = "fill";
+    protected static final String MATCHES = "matches";
 
     public static final GremlinExpressionFactory INSTANCE = AtlasGraphProvider.getGraphInstance()
             .getSupportedGremlinVersion() == GremlinVersion.THREE ? new Gremlin3ExpressionFactory()
@@ -181,6 +182,9 @@ public abstract class GremlinExpressionFactory {
      */
     public abstract GroovyExpression generateHasExpression(GraphPersistenceStrategies s, GroovyExpression parent,
             String propertyName, String symbol, GroovyExpression requiredValue, FieldInfo fInfo) throws AtlasException;
+
+    public abstract GroovyExpression generateLikeExpressionUsingFilter(GroovyExpression parent, String propertyName,
+                                                                       GroovyExpression propertyValue) throws AtlasException;
 
     /**
      * Generates a range expression

@@ -256,6 +256,22 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertEquals(entityState, Id.EntityState.ACTIVE.name());
     }
 
+    @DataProvider(name = "dslLikeQueriesProvider")
+    private Object[][] createDslLikeQueries() {
+        return new Object[][]{
+                {"hive_table where name like \"sa?es*\"", 3},
+                {"hive_db where name like \"R*\"", 1},
+                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3},
+                {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0},
+                {"hive_table where name like 'sales*', db where name like 'Sa?es'", 1},
+        };
+    }
+
+    @Test(dataProvider = "dslLikeQueriesProvider")
+    public void testDslSearchUsingLikeOperator(String dslQuery, Integer expectedNumRows) throws Exception {
+        runQuery(dslQuery, expectedNumRows, 50, 0);
+    }
+
     @Test(expectedExceptions = Throwable.class)
     public void testSearchByDSLBadQuery() throws Exception {
         String dslQuery = "from blah";

@@ -75,6 +75,7 @@ trait QueryKeywords {
     protected val SUM = Keyword("sum")
     protected val BY = Keyword("by")
     protected val ORDER = Keyword("order")
+    protected val LIKE = Keyword("like")
 }
 
 trait ExpressionUtils {
@@ -312,7 +313,7 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     def exprRight = (AND | OR) ~ compE ^^ { case op ~ c => (op, c)}
 
     def compE =
-        arithE ~ (LT | LTE | EQ | NEQ | GT | GTE) ~ arithE ^^ { case l ~ op ~ r => l.compareOp(op)(r)} |
+        arithE ~ (LT | LTE | EQ | NEQ | GT | GTE | LIKE) ~ arithE ^^ { case l ~ op ~ r => l.compareOp(op)(r)} |
             arithE ~ (ISA | IS) ~ ident ^^ { case l ~ i ~ t => l.isTrait(t)} |
             arithE ~ HAS ~ ident ^^ { case l ~ i ~ f => l.hasField(f)} |
             arithE | countClause | maxClause | minClause | sumClause
