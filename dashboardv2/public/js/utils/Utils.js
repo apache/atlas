@@ -229,16 +229,14 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             if (options.urlParams) {
                 var urlParams = "?";
                 _.each(options.urlParams, function(value, key, obj) {
-                    if (value != undefined || value != null) {
-                        value = String(value);
-                    }
-                    value = value || null;
                     if (value) {
+                        value = encodeURIComponent(String(value));
                         urlParams += key + "=" + value + "&";
                     }
                 });
                 urlParams = urlParams.slice(0, -1);
                 options.url += urlParams;
+
             }
             if (options.updateTabState) {
                 $.extend(Globals.saveApplicationState.tabState, options.updateTabState());
