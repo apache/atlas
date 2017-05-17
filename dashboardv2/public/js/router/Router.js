@@ -181,8 +181,19 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/tag/TagDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, TagDetailLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    url = Utils.getUrlState.getQueryUrl().queyParams[0];
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
+                    if (paramObj && paramObj.dlttag) {
+                        Utils.setUrl({
+                            url: url,
+                            trigger: false,
+                            updateTabState: function() {
+                                return { tagUrl: this.url, stateChanged: true };
+                            }
+                        });
+                    }
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'tag': tagName,
@@ -190,11 +201,24 @@ define([
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
+                    if (paramObj && paramObj.dlttag) {
+                        Utils.setUrl({
+                            url: url,
+                            trigger: false,
+                            updateTabState: function() {
+                                return { tagUrl: this.url, stateChanged: true };
+                            }
+                        });
+                    }
                     App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
                     App.rSideNav.currentView.selectTab();
                 }
-
                 if (tagName) {
+                    // updating paramObj to check for new queryparam.
+                    paramObj = Utils.getUrlState.getQueryParams();
+                    if (paramObj && paramObj.dlttag) {
+                        return false;
+                    }
                     App.rNContent.show(new TagDetailLayoutView(
                         _.extend({
                             'tag': tagName,

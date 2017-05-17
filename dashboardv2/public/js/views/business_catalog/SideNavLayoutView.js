@@ -74,7 +74,6 @@ define(['require',
             }
         },
         onRender: function() {
-            this.bindEvent();
             this.renderTagLayoutView();
             this.renderSearchLayoutView();
             if (Globals.taxonomy) {
@@ -83,7 +82,6 @@ define(['require',
             this.selectTab();
 
         },
-        bindEvent: function() {},
         rendeBusinessCatalogLayoutView: function() {
             var that = this;
             require(['views/business_catalog/BusinessCatalogLayoutView'], function(BusinessCatalogLayoutView) {

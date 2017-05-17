@@ -246,7 +246,7 @@ define(['require',
                     });
                 });
             },
-            getSchemaTableColumns: function(deleteEnity) {
+            getSchemaTableColumns: function() {
                 var that = this,
                     col = {
                         Check: {

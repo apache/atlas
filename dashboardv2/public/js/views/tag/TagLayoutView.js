@@ -97,30 +97,40 @@ define(['require',
                 }
             },
             setValues: function(manual) {
+                var $firstEl = this.ui.tagsParent.find('li a') ? this.ui.tagsParent.find('li a').first() : null;
                 if (Utils.getUrlState.isTagTab()) {
                     if (!this.tag) {
                         this.selectFirst = false;
                         this.ui.tagsParent.find('li').first().addClass('active');
-                        if (this.ui.tagsParent.find('li a').first().length) {
+                        if ($firstEl && $firstEl.length) {
+                            url: $firstEl.attr("href"),
                             Utils.setUrl({
-                                url: this.ui.tagsParent.find('li a').first().attr("href"),
+                                url: $firstEl.attr("href"),
                                 mergeBrowserUrl: false,
-                                trigger: true,
                                 updateTabState: function() {
                                     return { tagUrl: this.url, stateChanged: true };
                                 }
                             });
                         }
                     } else {
+                        var presentTag = this.collection.fullCollection.findWhere({ name: this.tag }),
+                            url = Utils.getUrlState.getQueryUrl().hash,
+                            tag = this.tag,
+                            query = null;
+                        if (!presentTag) {
+                            tag = $firstEl.data('name');
+                            url = $firstEl && $firstEl.length ? $firstEl.attr("href") : '#!/tag';
+                            query = $firstEl && $firstEl.length ? { dlttag: true } : null
+                        }
                         Utils.setUrl({
-                            url: Utils.getUrlState.getQueryUrl().hash,
+                            url: url,
+                            urlParams: query,
                             updateTabState: function() {
                                 return { tagUrl: this.url, stateChanged: true };
                             }
                         });
-                        var tag = Utils.getUrlState.getLastValue();
-                        if (this.tag) {
-                            tag = this.tag;
+                        if (!presentTag) {
+                            return false;
                         }
                         this.ui.tagsParent.find('li').removeClass('active');
                         var target = this.ui.tagsParent.find('li').filter(function() {
@@ -399,26 +409,14 @@ define(['require',
                         Utils.notifySuccess({
                             content: "Tag " + that.tagName + Messages.deleteSuccessMessage
                         });
+                        // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
                         var urlObj = Utils.getUrlState.getQueryParams(searchUrl);
                         if (urlObj && urlObj.tag && urlObj.tag === that.tagName) {
                             Globals.saveApplicationState.tabState.searchUrl = "#!/search";
                         }
-                        that.ui.tagsParent.find('li.active').removeClass('active');
-                        if (that.tagDeleteData.prev().length === 0) {
-                            that.tagDeleteData.next().addClass('active');
-                        } else {
-                            that.tagDeleteData.prev().addClass('active');
-                        }
-                        Utils.setUrl({
-                            url: that.ui.tagsParent.find('li.active').find("a").attr("href"),
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: function() {
-                                return { tagUrl: that.url, stateChanged: true };
-                            }
-                        });
                         that.collection.remove(deleteTagData);
+                        // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
                     }
                 });
