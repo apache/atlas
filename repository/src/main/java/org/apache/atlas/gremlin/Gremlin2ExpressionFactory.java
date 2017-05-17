@@ -40,6 +40,7 @@ import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
 import org.apache.atlas.groovy.RangeExpression;
 import org.apache.atlas.groovy.TernaryOperatorExpression;
 import org.apache.atlas.groovy.TraversalStepType;
+import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.TypeUtils.FieldInfo;
 import org.apache.atlas.typesystem.types.IDataType;
@@ -145,6 +146,37 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
         GroovyExpression op = gremlin2CompOp(symbol);
         GroovyExpression propertyNameExpr = new LiteralExpression(propertyName);
         return new FunctionCallExpression(TraversalStepType.FILTER, parent, HAS_METHOD, propertyNameExpr, op, requiredValue);
+    }
+
+    @Override
+    public GroovyExpression generateLikeExpressionUsingFilter(GroovyExpression parent, String propertyName, GroovyExpression propertyValue) throws AtlasException {
+        GroovyExpression itExpr      = getItVariable();
+        GroovyExpression nameExpr    = new FieldExpression(itExpr, propertyName);
+        GroovyExpression matchesExpr = new FunctionCallExpression(nameExpr, MATCHES, escapePropertyValue(propertyValue));
+        GroovyExpression closureExpr = new ClosureExpression(matchesExpr);
+        GroovyExpression filterExpr  = new FunctionCallExpression(parent, FILTER_METHOD, closureExpr);
+
+        return filterExpr;
+    }
+
+    private GroovyExpression escapePropertyValue(GroovyExpression propertyValue) {
+        GroovyExpression ret = propertyValue;
+
+        if (propertyValue instanceof LiteralExpression) {
+            LiteralExpression exp = (LiteralExpression) propertyValue;
+
+            if (exp != null && exp.getValue() instanceof String) {
+                String stringValue = (String) exp.getValue();
+
+                // replace '*' with ".*", replace '?' with '.'
+                stringValue = stringValue.replaceAll("\\*", ".*")
+                                         .replaceAll("\\?", ".");
+
+                ret = new LiteralExpression(stringValue);
+            }
+        }
+
+        return ret;
     }
 
     private GroovyExpression gremlin2CompOp(String op) throws AtlasException {

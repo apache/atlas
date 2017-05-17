@@ -437,6 +437,10 @@ class GremlinTranslator(expr: Expression,
                 genQuery(null, l, inClosure);
             }
 
+            if (symb == "like") {
+              return GremlinExpressionFactory.INSTANCE.generateLikeExpressionUsingFilter(childExpr, qualifiedPropertyName, persistentExprValue);
+            }
+
            return GremlinExpressionFactory.INSTANCE.generateHasExpression(gPersistenceBehavior, childExpr, qualifiedPropertyName, c.symbol, persistentExprValue, fInfo);
         }
         case fil@FilterExpression(child, condExpr) => {

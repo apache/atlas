@@ -29,6 +29,7 @@ import org.apache.atlas.groovy.ClosureExpression;
 import org.apache.atlas.groovy.ComparisonExpression;
 import org.apache.atlas.groovy.ComparisonExpression.ComparisonOperator;
 import org.apache.atlas.groovy.ComparisonOperatorExpression;
+import org.apache.atlas.groovy.FieldExpression;
 import org.apache.atlas.groovy.FunctionCallExpression;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.groovy.IdentifierExpression;
@@ -241,6 +242,37 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
             GroovyExpression valueMatches = new FunctionCallExpression(getComparisonFunction(symbol), requiredValue);
             return new FunctionCallExpression(TraversalStepType.FILTER, parent, HAS_METHOD, propertNameExpr, valueMatches);
         }
+    }
+
+    @Override
+    public GroovyExpression generateLikeExpressionUsingFilter(GroovyExpression parent, String propertyName, GroovyExpression propertyValue) throws AtlasException {
+        GroovyExpression itExpr      = getItVariable();
+        GroovyExpression nameExpr    = new FieldExpression(itExpr, propertyName);
+        GroovyExpression matchesExpr = new FunctionCallExpression(nameExpr, MATCHES, escapePropertyValue(propertyValue));
+        GroovyExpression closureExpr = new ClosureExpression(matchesExpr);
+        GroovyExpression filterExpr  = new FunctionCallExpression(parent, FILTER_METHOD, closureExpr);
+
+        return filterExpr;
+    }
+
+    private GroovyExpression escapePropertyValue(GroovyExpression propertyValue) {
+        GroovyExpression ret = propertyValue;
+
+        if (propertyValue instanceof LiteralExpression) {
+            LiteralExpression exp = (LiteralExpression) propertyValue;
+
+            if (exp != null && exp.getValue() instanceof String) {
+                String stringValue = (String) exp.getValue();
+
+                // replace '*' with ".*", replace '?' with '.'
+                stringValue = stringValue.replaceAll("\\*", ".*")
+                        .replaceAll("\\?", ".");
+
+                ret = new LiteralExpression(stringValue);
+            }
+        }
+
+        return ret;
     }
 
     @Override
