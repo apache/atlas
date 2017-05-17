@@ -583,7 +583,11 @@ define(['require',
                                 that.callback();
                             } else {
                                 if (model.mutatedEntities && model.mutatedEntities.CREATE && _.isArray(model.mutatedEntities.CREATE) && model.mutatedEntities.CREATE[0] && model.mutatedEntities.CREATE[0].guid) {
-                                    that.setUrl('#!/detailPage/' + (model.mutatedEntities.CREATE[0].guid), true);
+                                    Utils.setUrl({
+                                        url: '#!/detailPage/' + (model.mutatedEntities.CREATE[0].guid),
+                                        mergeBrowserUrl: false,
+                                        trigger: true
+                                    });
                                 }
                             }
                         },
@@ -598,16 +602,6 @@ define(['require',
                     });
                     that.hideLoader();
                 }
-            },
-            setUrl: function(url, create) {
-                Utils.setUrl({
-                    url: url,
-                    mergeBrowserUrl: false,
-                    trigger: true,
-                    updateTabState: function() {
-                        return { tagUrl: this.url, stateChanged: true };
-                    }
-                });
             },
             showLoader: function() {
                 this.$('.entityLoader').show();

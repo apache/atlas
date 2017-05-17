@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -58,20 +58,26 @@ define(['require',
                         'tag': that.tag,
                         'searchType': 'basic'
                     };
-                    that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                        value: value,
-                        entityDefCollection: that.entityDefCollection,
-                        typeHeaders: that.typeHeaders
-                    }));
+                    if (that.RSearchResultLayoutView) {
+                        that.RSearchResultLayoutView.show(new SearchResultLayoutView({
+                            value: value,
+                            entityDefCollection: that.entityDefCollection,
+                            typeHeaders: that.typeHeaders,
+                            tagCollection: that.collection,
+                            enumDefCollection: that.enumDefCollection
+                        }));
+                    }
                 });
             },
             renderTagAttributeCompositeView: function() {
                 var that = this;
                 require(['views/tag/TagAttributeDetailLayoutView'], function(TagAttributeDetailLayoutView) {
-                    that.RTagAttributeDetailLayoutView.show(new TagAttributeDetailLayoutView({
-                        tag: that.tag,
-                        collection: that.collection
-                    }));
+                    if (that.RTagAttributeDetailLayoutView) {
+                        that.RTagAttributeDetailLayoutView.show(new TagAttributeDetailLayoutView({
+                            tag: that.tag,
+                            collection: that.collection
+                        }));
+                    }
                 });
             }
         });
