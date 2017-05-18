@@ -324,6 +324,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER);
             }
 
+            if (excludeDeletedEntities) {
+                bindings.put("state", Status.ACTIVE.toString());
+
+                basicQuery += gremlinQueryProvider.getQuery(AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER);
+            }
+
             if (isGuidPrefixSearch) {
                 bindings.put("guid", attrValuePrefix + ".*");
 
@@ -347,9 +353,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     if (firstElement instanceof AtlasVertex) {
                         for (Object element : queryResult) {
                             if (element instanceof AtlasVertex) {
-                                if (skipDeletedEntities(excludeDeletedEntities, (AtlasVertex) element)) {
-                                    continue;
-                                }
 
                                 ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) element));
                             } else {

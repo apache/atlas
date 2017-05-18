@@ -69,6 +69,8 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".has('__typeName', T.in, typeNames)";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
                 return ".has('__traitNames', T.in, traitNames)";
+            case BASIC_SEARCH_STATE_FILTER:
+                return ".has('__state', state)";
             case TO_RANGE_LIST:
                 return " [startIdx..<endIdx].toList()";
             case GUID_PREFIX_FILTER:
