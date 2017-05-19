@@ -62,14 +62,13 @@ define(['require',
                     okText: 'Add',
                     cancelText: "Cancel",
                     allowCancel: true,
-                },
-                state = this.tagModel ? false : true;
+                };
             if (this.tagModel) {
                 modalObj.title = 'Edit Tag';
                 modalObj.okText = 'Update';
             }
             this.modal = new Modal(modalObj).open();
-            this.modal.$el.find('button.ok').attr("disabled", state);
+            this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
@@ -242,11 +241,17 @@ define(['require',
             this.subAttributeData(attributeDefs);
         },
         showAttributeBox: function() {
+            var that = this;
             this.$('.attrLoader').hide();
             this.$('.form-group.hide').removeClass('hide');
             if (this.ui.tagAttribute.children().length !== 0) {
                 this.ui.tagAttribute.parent().show();
             }
+            this.ui.tagAttribute.find('input,select').on("keyup change", function(e) {
+                if (e.keyCode != 32) {
+                    that.modal.$el.find('button.ok').attr("disabled", false);
+                }
+            });
         },
         hideAttributeBox: function() {
             this.ui.tagAttribute.children().empty();
@@ -264,7 +269,7 @@ define(['require',
                         var str = "<option disabled='disabled'" + (!that.tagModel ? 'selected' : '') + ">-- Select " + typeName + " --</option>";
                         var enumValue = typeNameValue.get('elementDefs');
                         _.each(enumValue, function(key, value) {
-                            str += '<option ' + (that.tagModel && key.value === _.values(that.tagModel.attributes)[0] ? 'selected' : '') + '>' + key.value + '</option>';
+                            str += '<option ' + (that.tagModel && key.value === that.tagModel.attributes[name] ? 'selected' : '') + '>' + key.value + '</option>';
                         })
                         that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' +
                             '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
