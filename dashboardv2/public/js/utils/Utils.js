@@ -401,7 +401,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                     return returnObj;
                 }
                 if (collectionJSON.attributes.id) {
-                    returnObj.name = _.escape(collectionJSON.attributes.id);
+                    if (_.isObject(collectionJSON.attributes.id)) {
+                        if (collectionJSON.id.id) {
+                            returnObj.name = _.escape(collectionJSON.attributes.id.id);
+                        }
+                    } else {
+                        returnObj.name = _.escape(collectionJSON.attributes.id);
+                    }
                     returnObj.key = 'id';
                     return returnObj;
                 }
@@ -427,7 +433,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 return returnObj;
             }
             if (collectionJSON.id) {
-                returnObj.name = _.escape(collectionJSON.id);
+                if (_.isObject(collectionJSON.id)) {
+                    if (collectionJSON.id.id) {
+                        returnObj.name = _.escape(collectionJSON.id.id);
+                    }
+                } else {
+                    returnObj.name = _.escape(collectionJSON.id);
+                }
                 returnObj.key = 'id';
                 return returnObj;
             }

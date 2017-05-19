@@ -65,7 +65,7 @@ define(['require',
                     });
                     attributeObject.columns = valueSorted;
                 }
-                var table = CommonViewFunction.propertyTable(this, attributeObject, this.entityDef);
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, entityDef: this.entityDef });
                 that.ui.detailValue.append(table);
             }
         });
