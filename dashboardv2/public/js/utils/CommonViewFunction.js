@@ -88,7 +88,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         });
     }
-    CommonViewFunction.propertyTable = function(scope, valueObject, entityDef) {
+    CommonViewFunction.propertyTable = function(options) {
+        var scope = options.scope,
+            valueObject = options.valueObject,
+            extractJSON = options.extractJSON,
+            entityDef = options.entityDef;
+
         var table = "",
             fetchInputOutputValue = function(id) {
                 var that = this;
@@ -117,92 +122,110 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     },
                     complete: function() {}
                 });
-            }
-        _.sortBy(_.keys(valueObject)).map(function(key) {
-            key = _.escape(key)
-            var keyValue = valueObject[key],
-                valueOfArray = [];
-            var defEntity = _.find(entityDef, { name: key });
-            if (defEntity) {
-                var defEntityType = defEntity.typeName.toLocaleLowerCase();
-                if (defEntityType === 'date' || defEntityType === 'time') {
-                    table += '<tr><td>' + _.escape(key) + '</td><td>' + new Date(keyValue) + '</td></tr>';
-                } else if (_.isObject(keyValue)) {
-                    if (!_.isArray(keyValue) && _.isObject(keyValue)) {
-                        keyValue = [keyValue];
+            },
+            extractObject = function(keyValue) {
+                var valueOfArray = [];
+                if (!_.isArray(keyValue) && _.isObject(keyValue)) {
+                    keyValue = [keyValue];
+                }
+                var subLink = "";
+                for (var i = 0; i < keyValue.length; i++) {
+                    var inputOutputField = keyValue[i],
+                        id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
+                        tempLink = "",
+                        status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
+                        readOnly = Enums.entityStateReadOnly[status];
+                    if (!inputOutputField.attributes && inputOutputField.values) {
+                        inputOutputField['attributes'] = inputOutputField.values;
                     }
-                    var subLink = "";
-                    for (var i = 0; i < keyValue.length; i++) {
-                        var inputOutputField = keyValue[i],
-                            id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
-                            tempLink = "",
-                            status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
-                            readOnly = Enums.entityStateReadOnly[status];
-                        if (!inputOutputField.attributes && inputOutputField.values) {
-                            inputOutputField['attributes'] = inputOutputField.values;
+                    if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
+                        var tempVarfor$check = inputOutputField.toString();
+                        if (tempVarfor$check.indexOf("$") == -1) {
+                            valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
                         }
-                        if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
-                            var tempVarfor$check = inputOutputField.toString();
+                    } else if (_.isObject(inputOutputField) && !id) {
+                        var attributesList = inputOutputField;
+                        if (scope.typeHeaders && inputOutputField.typeName) {
+                            var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
+                            if (attributesList.attributes && typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
+                                attributesList = attributesList.attributes;
+                            }
+                        }
+                        _.each(attributesList, function(objValue, objKey) {
+                            var value = objValue,
+                                tempVarfor$check = objKey.toString();
                             if (tempVarfor$check.indexOf("$") == -1) {
-                                valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
-                            }
-                        } else if (_.isObject(inputOutputField) && !id) {
-                            var attributesList = inputOutputField;
-                            if (scope.typeHeaders && inputOutputField.typeName) {
-                                var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
-                                if (attributesList.attributes && typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
-                                    attributesList = attributesList.attributes;
+                                if (_.isObject(value)) {
+                                    value = JSON.stringify(value);
                                 }
-                            }
-                            _.each(attributesList, function(objValue, objKey) {
-                                var value = objValue,
-                                    tempVarfor$check = objKey.toString();
-                                if (tempVarfor$check.indexOf("$") == -1) {
-                                    if (_.isObject(value)) {
-                                        value = JSON.stringify(value);
+                                if (extractJSON) {
+                                    if (extractJSON && extractJSON.extractKey) {
+                                        if (_.isObject(extractJSON.extractKey)) {
+                                            _.each(extractJSON.extractKey, function(extractKey) {
+                                                if (objKey === extractKey) {
+                                                    valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
+                                                }
+                                            });
+                                        } else if (_.isString(extractJSON.extractKey) && extractJSON.extractKey === objKey) {
+                                            valueOfArray.push(_.escape(value));
+                                        }
                                     }
+                                } else {
                                     valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
                                 }
-                            });
-                        }
-
-                        if (id && inputOutputField) {
-                            var name = Utils.getName(inputOutputField);
-                            if (name === "-" || name === id) {
-                                var fetch = true;
-                                var fetchId = (_.isObject(id) ? id.id : id);
-                                fetchInputOutputValue(fetchId);
-                                tempLink += '<div data-id="' + fetchId + '"></div>';
-                            } else {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                             }
-                        }
-                        if (readOnly) {
-                            if (!fetch) {
-                                tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                                subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
-                            } else {
-                                fetch = false;
-                                subLink += tempLink;
-                            }
-
+                        });
+                    }
+                    if (id && inputOutputField) {
+                        var name = Utils.getName(inputOutputField);
+                        if (name === "-" || name === id) {
+                            var fetch = true;
+                            var fetchId = (_.isObject(id) ? id.id : id);
+                            fetchInputOutputValue(fetchId);
+                            tempLink += '<div data-id="' + fetchId + '"></div>';
                         } else {
-                            if (tempLink.search('href') != -1) {
-                                subLink += '<div>' + tempLink + '</div>'
-                            } else if (tempLink.length) {
-                                subLink += tempLink
-                            }
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                         }
                     }
-                    if (valueOfArray.length) {
-                        subLink = valueOfArray.join(', ');
-                    }
-                    table += '<tr><td>' + _.escape(key) + '</td><td>' + subLink + '</td></tr>';
+                    if (readOnly) {
+                        if (!fetch) {
+                            tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                            subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
+                        } else {
+                            fetch = false;
+                            subLink += tempLink;
+                        }
 
-                } else {
-                    table += '<tr><td>' + _.escape(key) + '</td><td>' + _.escape(valueObject[key]) + '</td></tr>';
+                    } else {
+                        if (tempLink.search('href') != -1) {
+                            subLink += '<div>' + tempLink + '</div>'
+                        } else if (tempLink.length) {
+                            subLink += tempLink
+                        }
+                    }
+                }
+                if (valueOfArray.length) {
+                    subLink = valueOfArray.join(', ');
+                }
+                return subLink;
+            }
+        _.sortBy(_.keys(valueObject)).map(function(key) {
+            key = _.escape(key);
+            var keyValue = valueObject[key];
+            var defEntity = _.find(entityDef, { name: key });
+            if (defEntity && defEntity.typeName) {
+                var defEntityType = defEntity.typeName.toLocaleLowerCase();
+                if (defEntityType === 'date' || defEntityType === 'time') {
+                    keyValue = new Date(keyValue);
+                } else if (_.isObject(keyValue)) {
+                    keyValue = extractObject(keyValue);
+                }
+            } else {
+                if (_.isObject(keyValue)) {
+                    keyValue = extractObject(keyValue)
                 }
             }
+            table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
         });
         return table;
     }

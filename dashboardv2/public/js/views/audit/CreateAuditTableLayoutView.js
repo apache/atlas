@@ -41,7 +41,8 @@ define(['require',
                 auditCreate: "[data-id='auditCreate']",
                 noData: "[data-id='noData']",
                 tableAudit: "[data-id='tableAudit']",
-                auditHeaderValue: "[data-id='auditHeaderValue']"
+                auditHeaderValue: "[data-id='auditHeaderValue']",
+                tagHeader: "[data-id='tagHeader']"
             },
             /** ui events hash */
             events: function() {
@@ -79,13 +80,11 @@ define(['require',
                         }
                     }
                     var values = parseDetailsObject.values;
-                    if (this.action && (Enums.auditAction.ENTITY_CREATE !== this.action && Enums.auditAction.ENTITY_UPDATE !== this.action) && name) {
-                        this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
-                        this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
-                    } else if (parseDetailsObject && parseDetailsObject.values) {
+                    if (parseDetailsObject && parseDetailsObject.values) {
+                        var tagHeader = ((name ? name : this.entityName));
+                        this.ui.tagHeader.append(tagHeader);
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        //CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
-                        table = CommonViewFunction.propertyTable(this, values, this.entityDef);
+                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, entityDef: this.entityDef, extractJSON: { extractKey: 'value' } });
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
@@ -94,9 +93,7 @@ define(['require',
                             this.ui.noData.show();
                             this.ui.tableAudit.hide();
                         }
-                    }
-                } else {
-                    if (Enums.auditAction.ENTITY_DELETE === this.action) {
+                    } else {
                         this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
                         this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
                     }
