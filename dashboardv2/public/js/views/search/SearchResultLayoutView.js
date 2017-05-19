@@ -513,17 +513,19 @@ define(['require',
             },
             checkedValue: function(e) {
                 var guid = "",
-                    that = this;
-                var multiSelectTag = $(e.currentTarget).hasClass('assignTag');
-                if (multiSelectTag) {
-                    if (this.arr && this.arr.length && multiSelectTag) {
+                    that = this,
+                    isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag'),
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm'),
+                    isTagButton = $(e.currentTarget).hasClass('assignTag');
+                if (isTagButton) {
+                    if (isTagMultiSelect && this.arr && this.arr.length) {
                         that.addTagModalView(guid, this.arr);
                     } else {
                         guid = that.$(e.currentTarget).data("guid");
                         that.addTagModalView(guid);
                     }
                 } else {
-                    if (this.arr && this.arr.length) {
+                    if (isTermMultiSelect && this.arr && this.arr.length) {
                         that.addTermModalView(guid, this.arr);
                     } else {
                         guid = that.$(e.currentTarget).data("guid");
