@@ -235,20 +235,16 @@ define(['require',
                     }
                 }
             },
-            fetchCollection: function(value, deleteChecked) {
+            fetchCollection: function(value, clickObj) {
                 var that = this;
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
-                if (value && !value.paginationChange) {
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit });
+                if (value) {
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
-                        if (deleteChecked === undefined) {
-                            $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
-                        }
-                        this.offset = 0;
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
                 }
@@ -259,54 +255,45 @@ define(['require',
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if (value) {
-                            if (that.searchCollection.models.length < that.limit) {
-                                that.ui.nextData.attr('disabled', true);
-                            }
-                            if (that.offset === 0) {
-                                that.pageFrom = 1;
-                                that.pageTo = that.limit;
-                                if (that.searchCollection.length > 0) {
-                                    that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.searchCollection.length);
-                                }
-                            } else if (that.searchCollection.models.length && !that.previousClick) {
-                                //on next click, adding "1" for showing the another records..
-                                that.pageFrom = that.pageTo + 1;
-                                that.pageTo = that.pageTo + that.searchCollection.models.length;
-                                if (that.pageFrom && that.pageTo) {
-                                    that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
-                                }
-                            } else if (that.previousClick) {
-                                that.pageTo = (that.pageTo - (that.pageTo - that.pageFrom)) - 1;
-                                //if limit is 0 then result is change to 1 because page count is showing from 1
-                                that.pageFrom = (that.pageFrom - that.limit === 0 ? 1 : that.pageFrom - that.limit);
-                                that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
-                            }
-                            if (that.offset < that.limit) {
-                                that.ui.previousData.attr('disabled', true);
-                            }
-                            if (that.searchCollection.models.length === 0) {
-                                that.offset = that.offset - that.limit;
-                            }
+
+                        if (that.searchCollection.models.length < that.limit) {
+                            that.ui.nextData.attr('disabled', true);
+                        } else {
+                            that.ui.nextData.attr('disabled', false);
+                        }
+                        if (that.offset === 0) {
+                            that.pageFrom = 1;
+                            that.pageTo = that.limit;
+                        } else if (clickObj && clickObj.next) {
+                            //on next click, adding "1" for showing the another records.
+                            that.pageTo = that.offset + that.limit;
+                            that.pageFrom = that.offset + 1;
+                        } else if (clickObj && clickObj.previous) {
+                            that.pageTo = that.pageTo - that.limit;
+                            that.pageFrom = (that.pageTo - that.limit) + 1;
+                        }
+                        that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u>, from " + that.pageFrom + " - " + that.pageTo);
+                        if (that.offset < that.limit && that.pageFrom < 26) {
+                            that.ui.previousData.attr('disabled', true);
                         }
                         that.renderTableLayoutView();
-                        if (value) {
-                            var resultArr = [];
-                            if (that.searchCollection.queryParams.typeName) {
-                                resultArr.push(that.searchCollection.queryParams.typeName)
-                            }
-                            if (that.searchCollection.queryParams.classification) {
-                                resultArr.push(that.searchCollection.queryParams.classification)
-                            }
-                            if (that.searchCollection.queryParams.query) {
-                                resultArr.push(that.searchCollection.queryParams.query)
-                            }
-                            var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
-                            if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
-                                searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
-                            }
-                            that.$('.searchResult').html(searchString);
+
+                        var resultArr = [];
+                        if (that.searchCollection.queryParams.typeName) {
+                            resultArr.push(that.searchCollection.queryParams.typeName)
                         }
+                        if (that.searchCollection.queryParams.classification) {
+                            resultArr.push(that.searchCollection.queryParams.classification)
+                        }
+                        if (that.searchCollection.queryParams.query) {
+                            resultArr.push(that.searchCollection.queryParams.query)
+                        }
+                        var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
+                        if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
+                            searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+                        }
+                        that.$('.searchResult').html(searchString);
+
                     },
                     silent: true,
                     reset: true
@@ -611,8 +598,9 @@ define(['require',
                 $.extend(this.searchCollection.queryParams, {
                     offset: that.offset
                 });
-                this.previousClick = false;
-                this.fetchCollection({ paginationChange: true });
+                this.fetchCollection(null, {
+                    next: true
+                });
             },
             onClickpreviousData: function() {
                 var that = this;
@@ -621,8 +609,9 @@ define(['require',
                 $.extend(this.searchCollection.queryParams, {
                     offset: that.offset
                 });
-                this.previousClick = true;
-                this.fetchCollection({ paginationChange: true });
+                this.fetchCollection(null, {
+                    previous: true
+                });
             },
 
             onClickEditEntity: function(e) {
@@ -663,7 +652,7 @@ define(['require',
                 } else {
                     $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
                 }
-                this.fetchCollection(this.value, e.target.checked);
+                this.fetchCollection();
             }
         });
     return SearchResultLayoutView;
