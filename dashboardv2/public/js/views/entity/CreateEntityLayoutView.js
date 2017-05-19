@@ -115,6 +115,17 @@ define(['require',
                 this.listenTo(this.collection, 'error', function() {
                     this.hideLoader();
                 }, this);
+            },
+            onRender: function() {
+                this.bindEvents();
+                if (!this.guid) {
+                    this.bindRequiredField();
+                }
+                this.showLoader();
+                this.fetchCollections();
+            },
+            bindRequiredField: function() {
+                var that = this;
                 this.ui.entityInputData.on("keyup change", "textarea", function(e) {
                     var value = this.value;
                     if (!value.length && $(this).hasClass('false')) {
@@ -157,11 +168,6 @@ define(['require',
                         }
                     }
                 });
-            },
-            onRender: function() {
-                this.bindEvents();
-                this.showLoader();
-                this.fetchCollections();
             },
             bindNonRequiredField: function() {
                 var that = this;
@@ -332,9 +338,6 @@ define(['require',
                         });
                     }
                 });
-                if (this.guid) {
-                    this.bindNonRequiredField();
-                }
                 this.initializeValidation();
                 if (this.ui.entityInputData.find('fieldset').length > 0 && this.ui.entityInputData.find('select.true,input.true').length === 0) {
                     this.requiredAllToggle(this.ui.entityInputData.find('select.true,input.true').length === 0);
@@ -723,7 +726,12 @@ define(['require',
                     if (selectedValue) {
                         $this.val(selectedValue).trigger("change");
                     }
+
                 });
+                if (this.guid) {
+                    this.bindRequiredField();
+                    this.bindNonRequiredField();
+                }
                 this.hideLoader();
             }
         });
