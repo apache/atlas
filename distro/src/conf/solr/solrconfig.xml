@@ -277,19 +277,19 @@
                and old cache.  
       -->
     <filterCache class="solr.FastLRUCache"
-                 size="512"
-                 initialSize="512"
-                 autowarmCount="0"/>
+                 size="2000"
+                 initialSize="2000"
+                 autowarmCount="1000"/>
 
     <!-- Query Result Cache
          
          Caches results of searches - ordered lists of document ids
          (DocList) based on a query, a sort, and the range of documents requested.  
       -->
-    <queryResultCache class="solr.LRUCache"
-                     size="512"
-                     initialSize="512"
-                     autowarmCount="0"/>
+    <queryResultCache class="solr.FastLRUCache"
+                      size="26000"
+                      initialSize="26000"
+                      autowarmCount="400"/>
    
     <!-- Document Cache
 
@@ -297,10 +297,10 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.  
       -->
-    <documentCache class="solr.LRUCache"
-                   size="512"
-                   initialSize="512"
-                   autowarmCount="0"/>
+    <documentCache class="solr.FastLRUCache"
+                   size="26000"
+                   initialSize="26000"
+                   autowarmCount="400"/>
     
     <!-- custom cache currently used by block join --> 
     <cache name="perSegFilter"

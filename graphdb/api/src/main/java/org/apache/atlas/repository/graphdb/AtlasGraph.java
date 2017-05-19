@@ -158,6 +158,20 @@ public interface AtlasGraph<V, E> {
     AtlasIndexQuery<V, E> indexQuery(String indexName, String queryString);
 
     /**
+     * Creates an index query.
+     *
+     * @param indexName index name
+     * @param queryString the query
+     * @param offset specify the offset that should be applied for the query. This is useful for paging through
+     *               list of results
+     *
+     * @see <a
+     * href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">
+     * Elastic Search Reference</a> for query syntax
+     */
+    AtlasIndexQuery<V, E> indexQuery(String indexName, String queryString, int offset);
+
+    /**
      * Gets the management object associated with this graph and opens a transaction
      * for changes that are made.
      * @return
