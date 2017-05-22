@@ -104,7 +104,7 @@ $color_suva_gray_approx: #868686;
 $tag_color:#4A90E2;
 $delete_link:#BB5838;
 //urls
-$url_0: url(../img/loading.gif);
+$url_0: url(img/loading.gif);
 .card {
     background: $white none repeat scroll 0 0;
     //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)

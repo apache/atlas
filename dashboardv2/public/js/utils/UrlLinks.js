@@ -20,8 +20,8 @@ define(['require', 'utils/Enums'], function(require, Enums) {
     'use strict';
 
     var UrlLinks = {
-        baseUrl: '/api/atlas',
-        baseUrlV2: '/api/atlas/v2',
+        baseUrl: 'api/atlas',
+        baseUrlV2: 'api/atlas/v2',
         typedefsUrl: function() {
             return {
                 defs: this.baseUrlV2 + '/types/typedefs',
