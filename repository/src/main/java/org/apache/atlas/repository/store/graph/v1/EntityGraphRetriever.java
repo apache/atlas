@@ -275,6 +275,11 @@ public final class EntityGraphRetriever {
         }
 
         List<AtlasClassification> classifications = getClassifications(instanceVertex, classificationName);
+
+        if(CollectionUtils.isEmpty(classifications)) {
+            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
+        }
+
         return classifications.get(0);
     }
 
