@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.services;
 
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -33,7 +32,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.testng.Assert.assertEquals;
 
-@Guice(modules = TestOnlyModule.class)
 public class EntityDiscoveryServiceTest {
 
     private final String TEST_TYPE                = "test";
