@@ -19,15 +19,15 @@
 package org.apache.atlas.lineage;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.BaseRepositoryTest;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.EntityLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
@@ -56,7 +56,7 @@ import static org.testng.Assert.fail;
 /**
  * Unit tests for the new v2 Instance LineageService.
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class EntityLineageServiceTest extends BaseRepositoryTest {
 
     @Inject
@@ -301,7 +301,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
 
         //Delete the table entity. Lineage for entity returns the same results as before.
         //Lineage for table name throws EntityNotFoundException
-        AtlasClient.EntityResult deleteResult = repository.deleteEntities(Arrays.asList(entityGuid));
+        EntityResult deleteResult = repository.deleteEntities(Arrays.asList(entityGuid));
         assertTrue(deleteResult.getDeletedEntities().contains(entityGuid));
 
         inputLineage = getInputLineageInfo(entityGuid, 5);

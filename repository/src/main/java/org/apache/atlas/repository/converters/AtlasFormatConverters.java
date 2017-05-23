@@ -17,17 +17,19 @@
  */
 package org.apache.atlas.repository.converters;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
 @Singleton
+@Component
 public class AtlasFormatConverters {
 
     private final Map<TypeCategory, AtlasFormatConverter> registry = new HashMap<>();

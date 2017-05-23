@@ -20,8 +20,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -83,7 +83,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityStoreV1Test {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1Test.class);
 
@@ -106,6 +106,8 @@ public class AtlasEntityStoreV1Test {
     private AtlasEntityWithExtInfo   tblEntity;
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
+    @Inject
+    private EntityGraphMapper graphMapper;
 
 
     @BeforeClass
@@ -137,7 +139,7 @@ public class AtlasEntityStoreV1Test {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier);
+        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
         RequestContextV1.clear();
     }
 

@@ -18,12 +18,12 @@
 
 package org.apache.atlas.notification;
 
-import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.KafkaNotification;
+import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -39,7 +39,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.any;
@@ -47,14 +46,12 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-@Guice(modules = NotificationModule.class)
 public class NotificationHookConsumerKafkaTest {
 
     public static final String NAME = "name";
     public static final String DESCRIPTION = "description";
     public static final String QUALIFIED_NAME = "qualifiedName";
-    @Inject
-    private NotificationInterface notificationInterface;
+    private NotificationInterface notificationInterface = NotificationProvider.get();
 
 
     @Mock

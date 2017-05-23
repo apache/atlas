@@ -35,6 +35,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,15 +64,18 @@ import java.util.List;
  */
 @Path("types")
 @Singleton
+@Service
 @Deprecated
 public class TypesResource {
     private static final Logger LOG = LoggerFactory.getLogger(TypesResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesResource");
     private static AtlasTypeRegistry typeRegistry;
+    private final TypesREST typesREST;
 
     @Inject
-    public TypesResource(AtlasTypeRegistry typeRegistry) {
+    public TypesResource(AtlasTypeRegistry typeRegistry, TypesREST typesREST) {
         this.typeRegistry = typeRegistry;
+        this.typesREST = typesREST;
     }
 
     @Context
@@ -95,7 +99,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
         }
 
-        TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONArray typesResponse = new JSONArray();
 
         try {
@@ -106,7 +109,7 @@ public class TypesResource {
             }
 
             AtlasTypesDef createTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
-            AtlasTypesDef createdTypesDef = typesRest.createAtlasTypeDefs(createTypesDef);
+            AtlasTypesDef createdTypesDef = typesREST.createAtlasTypeDefs(createTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
@@ -164,7 +167,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
         }
 
-        TypesREST typesRest = resourceContext.getResource(TypesREST.class);
         JSONArray typesResponse = new JSONArray();
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
@@ -174,7 +176,7 @@ public class TypesResource {
             }
 
             AtlasTypesDef updateTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
-            AtlasTypesDef updatedTypesDef = typesRest.updateAtlasTypeDefs(updateTypesDef);
+            AtlasTypesDef updatedTypesDef = typesREST.updateAtlasTypeDefs(updateTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
@@ -287,10 +289,9 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + typeCategory + ", " + supertype + ", " + notsupertype + ")");
         }
 
-        TypesREST typesRest  = resourceContext.getResource(TypesREST.class);
         JSONObject response  = new JSONObject();
         try {
-            List<String> result = TypeConverterUtil.getTypeNames(typesRest.getTypeDefHeaders(request));
+            List<String> result = TypeConverterUtil.getTypeNames(typesREST.getTypeDefHeaders(request));
 
             response.put(AtlasClient.RESULTS, new JSONArray(result));
             response.put(AtlasClient.COUNT, result.size());

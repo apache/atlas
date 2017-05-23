@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.services;
 
+import org.apache.atlas.TestModules.TestOnlyModule;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;

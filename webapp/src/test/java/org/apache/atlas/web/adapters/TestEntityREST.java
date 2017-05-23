@@ -17,9 +17,9 @@
  */
 package org.apache.atlas.web.adapters;
 
+import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
@@ -30,7 +30,6 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.web.rest.EntityREST;
@@ -50,7 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Guice(modules = {TestOnlyModule.class})
+@Guice(modules = {TestModules.TestOnlyModule.class})
 public class TestEntityREST {
 
     @Inject
@@ -73,7 +72,7 @@ public class TestEntityREST {
 
     @AfterClass
     public void tearDown() throws Exception {
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @AfterMethod

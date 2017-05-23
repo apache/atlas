@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -56,7 +56,7 @@ import java.util.Set;
 
 import static org.testng.Assert.*;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphHelperTest {
 
 
@@ -104,7 +104,7 @@ public class GraphHelperTest {
 
     @AfterClass
     public void tearDown() {
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @Test

@@ -51,6 +51,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -78,6 +79,7 @@ import java.util.regex.Pattern;
  * todo: Subclass of {@link org.apache.hadoop.security.authentication.server.AuthenticationFilter}.
  */
 
+@Component
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
     static final String PREFIX = "atlas.authentication.method";

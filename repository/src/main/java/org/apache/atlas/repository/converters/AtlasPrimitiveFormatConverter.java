@@ -23,8 +23,8 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-
 public class AtlasPrimitiveFormatConverter extends AtlasAbstractFormatConverter {
+
     public AtlasPrimitiveFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         super(registry, typeRegistry, TypeCategory.PRIMITIVE);
     }

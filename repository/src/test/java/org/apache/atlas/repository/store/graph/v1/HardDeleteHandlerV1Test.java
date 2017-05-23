@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -28,11 +29,11 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.testng.Assert;
+import org.testng.annotations.Guice;
 
 import java.util.List;
 import java.util.Map;
@@ -44,12 +45,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertNotNull;
 
+@Guice(modules = TestModules.HardDeleteModule.class)
 public class HardDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
-
-    @Override
-    DeleteHandlerV1 getDeleteHandler(AtlasTypeRegistry typeRegistry) {
-        return new HardDeleteHandlerV1(typeRegistry);
-    }
 
 
     @Override

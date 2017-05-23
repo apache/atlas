@@ -17,12 +17,12 @@
  */
 package org.apache.atlas;
 
+import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.type.AtlasType;
+
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.atlas.AtlasClient.EntityResult;
-import org.apache.atlas.model.instance.GuidMapping;
-import org.apache.atlas.type.AtlasType;
 
 /**
  * Result from creating or updating entities.

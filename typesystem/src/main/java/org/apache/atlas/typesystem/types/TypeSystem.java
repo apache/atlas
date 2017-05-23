@@ -20,7 +20,6 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
@@ -31,6 +30,7 @@ import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Singleton;
 
 @Singleton
 @InterfaceAudience.Private

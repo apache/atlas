@@ -21,10 +21,9 @@ package org.apache.atlas.repository.typestore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -50,7 +49,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAt
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphBackedTypeStoreTest {
     
     private static final String DESCRIPTION = "_description";
@@ -70,7 +69,7 @@ public class GraphBackedTypeStoreTest {
     @AfterClass
     public void tearDown() throws Exception {
         ts.reset();
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
 

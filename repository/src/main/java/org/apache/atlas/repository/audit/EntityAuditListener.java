@@ -32,6 +32,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ import java.util.Map;
 /**
  * Listener on entity create/update/delete, tag add/delete. Adds the corresponding audit event to the audit repository.
  */
+@Component
 public class EntityAuditListener implements EntityChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListener.class);
 

@@ -19,8 +19,8 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
@@ -34,7 +34,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -52,7 +51,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -108,8 +106,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
         }
-
-        bootstrapTypes();
     }
 
     @Override
@@ -569,15 +565,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @Override
     public void instanceIsPassive() throws AtlasException {
         LOG.info("Not reacting to a Passive state change");
-    }
-
-    private void bootstrapTypes() {
-        AtlasTypeDefStoreInitializer storeInitializer = new AtlasTypeDefStoreInitializer();
-
-        String atlasHomeDir = System.getProperty("atlas.home");
-        String typesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
-
-        storeInitializer.initializeStore(this, typeRegistry, typesDirName);
     }
 
     private AtlasBaseTypeDef getTypeDefFromType(AtlasType type) throws AtlasBaseException {

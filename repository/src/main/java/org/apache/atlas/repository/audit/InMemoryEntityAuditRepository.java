@@ -18,21 +18,24 @@
 
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
-
-import com.google.inject.Singleton;
-
 /**
  * Entity audit repository where audit events are stored in-memory. Used only for integration tests
  */
 @Singleton
+@Component
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     private TreeMap<String, EntityAuditEvent> auditEvents = new TreeMap<>();
 

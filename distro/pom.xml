@@ -126,6 +126,9 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 <titan.storage.backend>berkeleyje</titan.storage.backend>
                 <titan.storage.properties>#Berkeley
 atlas.graph.storage.directory=${sys:atlas.home}/data/berkley
+atlas.graph.storage.lock.clean-expired=true
+atlas.graph.storage.lock.expiry-time=500
+atlas.graph.storage.lock.wait-time=300
                 </titan.storage.properties>
                 <titan.index.backend>elasticsearch</titan.index.backend>
                 <titan.index.properties>#ElasticSearch

@@ -26,6 +26,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,6 +45,7 @@ import javax.ws.rs.core.Context;
  */
 @Path("v2/lineage")
 @Singleton
+@Service
 public class LineageREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageREST");
 

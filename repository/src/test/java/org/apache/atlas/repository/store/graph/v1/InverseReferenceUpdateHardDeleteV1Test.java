@@ -18,10 +18,11 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.testng.annotations.Guice;
 
 import java.util.Map;
 
@@ -31,13 +32,8 @@ import static org.testng.Assert.assertTrue;
 /**
  * Inverse reference update test with {@link HardDeleteHandlerV1}
  */
+@Guice(modules = TestModules.HardDeleteModule.class)
 public class InverseReferenceUpdateHardDeleteV1Test extends InverseReferenceUpdateV1Test {
-
-    @Override
-    protected DeleteHandlerV1 getDeleteHandler(AtlasTypeRegistry typeRegistry) {
-
-        return new HardDeleteHandlerV1(typeRegistry);
-    }
 
     @Override
     protected void verify_testInverseReferenceAutoUpdate_NonComposite_OneToMany(AtlasEntity jane) throws Exception {

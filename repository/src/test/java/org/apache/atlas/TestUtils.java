@@ -20,10 +20,11 @@ package org.apache.atlas;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.audit.InMemoryEntityAuditRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -64,7 +65,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -600,20 +600,18 @@ public final class TestUtils {
             typeCache = new DefaultTypeCache();
         }
         final GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(new AtlasTypeRegistry());
-        Provider<TypesChangeListener> indexerProvider = new Provider<TypesChangeListener>() {
-
-            @Override
-            public TypesChangeListener get() {
-                return indexer;
-            }
-        };
 
         Configuration config = ApplicationProperties.get();
-        ITypeStore typeStore = new GraphBackedTypeStore();
+        ITypeStore typeStore = new GraphBackedTypeStore(AtlasGraphProvider.getGraphInstance());
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(repo,
                 typeStore,
-                Collections.singletonList(indexerProvider),
-                new ArrayList<Provider<EntityChangeListener>>(), TypeSystem.getInstance(), config, typeCache);
+                new HashSet<TypesChangeListener>() {{ add(indexer); }},
+                new HashSet<EntityChangeListener>(),
+                TypeSystem.getInstance(),
+                config,
+                typeCache,
+                // Fixme: Can we work with Noop
+                new InMemoryEntityAuditRepository());
 
         //commit the created types
         getGraph().commit();

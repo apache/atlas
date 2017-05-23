@@ -43,7 +43,7 @@ class GremlinTest2 extends BaseGremlinTest {
   def beforeAll() {
     TypeSystem.getInstance().reset()
     QueryTestsUtils.setupTypes
-    var repo = new GraphBackedMetadataRepository(null);
+    var repo = new GraphBackedMetadataRepository(null, null);
     gp = new DefaultGraphPersistenceStrategy(repo)
     g = QueryTestsUtils.setupTestGraph(repo)
   }

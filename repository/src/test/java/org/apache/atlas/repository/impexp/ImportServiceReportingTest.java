@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Guice;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceReportingTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceReportingTest.class);
 

@@ -20,7 +20,7 @@ package org.apache.atlas.web.adapters;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -32,7 +32,6 @@ import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
@@ -42,7 +41,6 @@ import org.apache.atlas.web.rest.EntityREST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -57,7 +55,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@Guice(modules = {TestOnlyModule.class})
+@Guice(modules = {TestModules.TestOnlyModule.class})
 public class TestEntitiesREST {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestEntitiesREST.class);
@@ -103,11 +101,6 @@ public class TestEntitiesREST {
     public void cleanup() throws Exception {
         RequestContext.clear();
         RequestContextV1.clear();
-    }
-
-    @AfterClass
-    public void tearDown() throws Exception {
-        AtlasGraphProvider.cleanup();
     }
 
     @Test

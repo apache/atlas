@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.BaseRequest;
 import org.apache.atlas.catalog.CollectionRequest;
 import org.apache.atlas.catalog.DefaultTypeSystem;
@@ -33,6 +32,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -58,6 +58,7 @@ import java.util.Map;
  */
 @Path("v1/entities")
 @Singleton
+@Service
 public class EntityService extends BaseService {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityService");
 

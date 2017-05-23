@@ -20,20 +20,19 @@ package org.apache.atlas.web.errors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ThreadLocalRandom;
-
-import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Exception mapper for Jersey.
  * @param <E>
  */
 @Provider
-@Singleton
+@Component
 public class AllExceptionMapper implements ExceptionMapper<Exception> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AllExceptionMapper.class);
 

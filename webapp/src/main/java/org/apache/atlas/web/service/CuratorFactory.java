@@ -20,7 +20,6 @@ package org.apache.atlas.web.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
-import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -36,7 +35,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +48,7 @@ import java.util.List;
  * Allows for stubbing in tests.
  */
 @Singleton
+@Component
 public class CuratorFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(CuratorFactory.class);

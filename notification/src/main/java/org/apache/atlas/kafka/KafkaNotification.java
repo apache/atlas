@@ -18,7 +18,6 @@
 package org.apache.atlas.kafka;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Singleton;
 import kafka.consumer.Consumer;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
@@ -46,8 +45,11 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 import scala.Option;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -64,7 +66,8 @@ import java.util.concurrent.Future;
 /**
  * Kafka specific access point to the Atlas notification framework.
  */
-@Singleton
+@Component
+@Order(3)
 public class KafkaNotification extends AbstractNotification implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(KafkaNotification.class);
 
@@ -105,6 +108,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
      *
      * @throws AtlasException if the notification interface can not be created
      */
+    @Inject
     public KafkaNotification(Configuration applicationProperties) throws AtlasException {
         super(applicationProperties);
         Configuration subsetConfiguration =

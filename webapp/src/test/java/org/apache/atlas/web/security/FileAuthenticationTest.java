@@ -18,13 +18,12 @@
 
 package org.apache.atlas.web.security;
 
-import java.io.File;
-import java.util.Collection;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -32,12 +31,15 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.testng.annotations.Test;
+
+import java.io.File;
+import java.util.Collection;
+
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -70,7 +72,7 @@ public class FileAuthenticationTest {
         System.setProperty("atlas.conf", persistDir);
 
         applicationContext = new ClassPathXmlApplicationContext(
-                "spring-security.xml");
+                "test-spring-security.xml");
         authProvider = applicationContext
                 .getBean(org.apache.atlas.web.security.AtlasAuthenticationProvider.class);
 

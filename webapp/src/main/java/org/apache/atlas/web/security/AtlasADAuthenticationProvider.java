@@ -18,11 +18,6 @@
 
 package org.apache.atlas.web.security;
 
-import java.util.List;
-import java.util.Properties;
-
-import javax.annotation.PostConstruct;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
 import org.apache.commons.configuration.Configuration;
@@ -32,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
@@ -42,9 +36,12 @@ import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAu
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Properties;
+
 @Component
-public class AtlasADAuthenticationProvider extends
-        AtlasAbstractAuthenticationProvider {
+public class AtlasADAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
     private static Logger LOG = LoggerFactory.getLogger(AtlasADAuthenticationProvider.class);
 
     private String adURL;

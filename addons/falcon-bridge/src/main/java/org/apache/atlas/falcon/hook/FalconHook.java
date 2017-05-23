@@ -19,15 +19,12 @@
 package org.apache.atlas.falcon.hook;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.falcon.bridge.FalconBridge;
 import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
 import org.apache.atlas.hook.AtlasHook;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.falcon.entity.store.ConfigurationStore;
@@ -112,8 +109,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
             STORE = ConfigurationStore.get();
 
-            Injector injector = Guice.createInjector(new NotificationModule());
-            notifInterface = injector.getInstance(NotificationInterface.class);
+            notificationInterface = NotificationProvider.get();
 
         } catch (Exception e) {
             LOG.error("Caught exception initializing the falcon hook.", e);

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
 import javax.servlet.FilterChain;
@@ -44,6 +45,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+@Component
 public class AtlasAuthorizationFilter extends GenericFilterBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationFilter.class);
@@ -95,7 +97,7 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
         responseWrapper.setHeader("X-Frame-Options", "DENY");
 
         String pathInfo = request.getServletPath();
-        if (!Strings.isNullOrEmpty(pathInfo) && pathInfo.startsWith(BASE_URL)) {
+        if (!Strings.isNullOrEmpty(pathInfo) && (pathInfo.startsWith(BASE_URL) || BASE_URL.startsWith(pathInfo))) {
             if (isDebugEnabled) {
                 LOG.debug("{} is a valid REST API request!!!", pathInfo);
             }
@@ -113,10 +115,11 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                 }
             } else {
                 if (LOG.isErrorEnabled()) {
-                    LOG.error("Cannot obtain Security Context : {}", auth);
+                    LOG.error("Cannot obtain Security Context");
                 }
-                throw new ServletException("Cannot obtain Security Context : " + auth);
+                throw new ServletException("Cannot obtain Security Context");
             }
+
             AtlasAccessRequest atlasRequest = new AtlasAccessRequest(request, userName, groups);
             if (isDebugEnabled) {
                 LOG.debug("============================\nUserName :: {}\nGroups :: {}\nURL :: {}\nAction :: {}\nrequest.getServletPath() :: {}\n============================\n", atlasRequest.getUser(), atlasRequest.getUserGroups(), request.getRequestURL(), atlasRequest.getAction(), pathInfo);

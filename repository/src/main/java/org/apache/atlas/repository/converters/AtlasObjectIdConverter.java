@@ -36,8 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 
-public class
-AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
+public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
 
     public AtlasObjectIdConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         this(registry, typeRegistry, TypeCategory.OBJECT_ID_TYPE);

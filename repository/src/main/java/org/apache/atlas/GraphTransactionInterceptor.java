@@ -20,30 +20,32 @@ package org.apache.atlas;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.typesystem.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
 
     private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks = new ThreadLocal<>();
 
-    private AtlasGraph graph;
+    private final AtlasGraph graph;
+
+    @Inject
+    public GraphTransactionInterceptor(AtlasGraph graph) {
+        this.graph = graph;
+    }
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        
-        if (graph == null) {
-            graph = AtlasGraphProvider.getGraphInstance();
-        }
-
         boolean isSuccess = false;
 
         try {

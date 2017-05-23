@@ -22,13 +22,10 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -41,7 +38,10 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,6 +53,7 @@ import java.util.Set;
 import static org.apache.atlas.repository.graph.GraphHelper.setProperty;
 
 @Singleton
+@Component
 @Deprecated
 public class GraphBackedTypeStore implements ITypeStore {
     public static final String VERTEX_TYPE = "typeSystem";
@@ -66,8 +67,8 @@ public class GraphBackedTypeStore implements ITypeStore {
     private GraphHelper graphHelper = GraphHelper.getInstance();
 
     @Inject
-    public GraphBackedTypeStore() {
-        graph = AtlasGraphProvider.getGraphInstance();
+    public GraphBackedTypeStore(AtlasGraph atlasGraph) {
+        this.graph = atlasGraph;
     }
 
     @Override
@@ -123,7 +124,7 @@ public class GraphBackedTypeStore implements ITypeStore {
         List<AtlasVertex> vertices = createVertices(typeVerticesNeeded);
 
         //Create a type name->AtlasVertex map with the result
-        Map<String, AtlasVertex> result = new HashMap<String,AtlasVertex>(typeVerticesNeeded.size());
+        Map<String, AtlasVertex> result = new HashMap<>(typeVerticesNeeded.size());
         for(int i = 0 ; i < typeVerticesNeeded.size(); i++) {
             TypeVertexInfo createdVertexInfo = typeVerticesNeeded.get(i);
             AtlasVertex createdVertex = vertices.get(i);
@@ -357,7 +358,6 @@ public class GraphBackedTypeStore implements ITypeStore {
 
         List<AtlasVertex> result = new ArrayList<>(infoList.size());
         List<String> typeNames = Lists.transform(infoList, new Function<TypeVertexInfo,String>() {
-
             @Override
             public String apply(TypeVertexInfo input) {
                 return input.getTypeName();

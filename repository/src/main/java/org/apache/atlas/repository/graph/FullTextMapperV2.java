@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Singleton;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -34,6 +32,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.HashSet;
@@ -42,7 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-@Singleton
+@Component
 public class FullTextMapperV2 {
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapperV2.class);
 
@@ -53,20 +52,9 @@ public class FullTextMapperV2 {
     private final boolean              followReferences;
 
     @Inject
-    public FullTextMapperV2(AtlasTypeRegistry typeRegistry) {
+    public FullTextMapperV2(AtlasTypeRegistry typeRegistry, Configuration configuration) {
         entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
-
-        Configuration configuration = null;
-
-        try {
-            configuration = ApplicationProperties.get();
-        } catch (Throwable e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasApplication properties couldn't be loaded", e);
-            }
-        } finally {
-            followReferences = configuration != null && configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
-        }
+        followReferences = configuration != null && configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
     }
 
     /**

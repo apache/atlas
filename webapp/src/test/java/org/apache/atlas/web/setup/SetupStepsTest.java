@@ -47,12 +47,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.testng.AssertJUnit.assertTrue;
 
 public class SetupStepsTest {
@@ -94,8 +89,8 @@ public class SetupStepsTest {
         InterProcessMutex lock = mock(InterProcessMutex.class);
         when(curatorFactory.lockInstance(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
                 thenReturn(lock);
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
-        setupSteps.runSetup(configuration);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
+        setupSteps.runSetup();
 
         verify(setupStep1).run();
         verify(setupStep2).run();
@@ -147,8 +142,8 @@ public class SetupStepsTest {
                 thenReturn(lock);
         InOrder inOrder = inOrder(lock, setupStep1, setupStep2);
 
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
-        setupSteps.runSetup(configuration);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
+        setupSteps.runSetup();
 
         inOrder.verify(lock).acquire();
         inOrder.verify(setupStep1).run();
@@ -175,9 +170,9 @@ public class SetupStepsTest {
                 thenReturn(lock);
         InOrder inOrder = inOrder(lock, setupStep1);
 
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
         try {
-            setupSteps.runSetup(configuration);
+            setupSteps.runSetup();
         } catch (Exception e) {
             assertTrue(e instanceof SetupException);
         }
@@ -205,8 +200,8 @@ public class SetupStepsTest {
         InterProcessMutex lock = mock(InterProcessMutex.class);
         when(curatorFactory.lockInstance(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
                 thenReturn(lock);
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
-        setupSteps.runSetup(configuration);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
+        setupSteps.runSetup();
 
         verify(createBuilder).withACL(aclList);
         verify(createBuilder).forPath(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT+SetupSteps.SETUP_IN_PROGRESS_NODE,
@@ -231,8 +226,8 @@ public class SetupStepsTest {
         InterProcessMutex lock = mock(InterProcessMutex.class);
         when(curatorFactory.lockInstance(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
                 thenReturn(lock);
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
-        setupSteps.runSetup(configuration);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
+        setupSteps.runSetup();
 
         verify(deleteBuilder).forPath(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT+SetupSteps.SETUP_IN_PROGRESS_NODE);
     }
@@ -252,10 +247,10 @@ public class SetupStepsTest {
         InterProcessMutex lock = mock(InterProcessMutex.class);
         when(curatorFactory.lockInstance(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
                 thenReturn(lock);
-        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory);
+        SetupSteps setupSteps = new SetupSteps(steps, curatorFactory, configuration);
 
         try {
-            setupSteps.runSetup(configuration);
+            setupSteps.runSetup();
         } catch (Exception e) {
             assertTrue(e instanceof SetupException);
         }

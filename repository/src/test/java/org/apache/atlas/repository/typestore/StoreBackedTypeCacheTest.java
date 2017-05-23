@@ -20,9 +20,8 @@ package org.apache.atlas.repository.typestore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -46,7 +45,7 @@ import java.util.Map;
 /**
  * Unit test for {@link StoreBackedTypeCache}
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class StoreBackedTypeCacheTest {
 
     @Inject
@@ -87,7 +86,7 @@ public class StoreBackedTypeCacheTest {
     @AfterClass
     public void tearDown() throws Exception {
         ts.reset();
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @BeforeMethod

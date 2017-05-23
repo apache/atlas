@@ -24,50 +24,51 @@
     <display-name>Apache Atlas</display-name>
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
 
-    <context-param>
-        <param-name>guice.packages</param-name>
-        <param-value>
-            org.apache.atlas.web.resources,org.apache.atlas.web.params,org.apache.atlas.web.rest,org.apache.atlas.web.errors
-        </param-value>
-    </context-param>
-  
-    <context-param>
-        <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
-        <param-value>true</param-value>
-    </context-param>
-
     <!--
         More information can be found here:
 
         https://jersey.java.net/nonav/apidocs/1.11/contribs/jersey-guice/com/sun/jersey/guice/spi/container/servlet/package-summary.html
      -->
 
+    <servlet>
+        <servlet-name>jersey-servlet</servlet-name>
+        <servlet-class>
+            com.sun.jersey.spi.spring.container.servlet.SpringServlet
+        </servlet-class>
+        <init-param>
+            <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>jersey-servlet</servlet-name>
+        <url-pattern>/api/atlas/*</url-pattern>
+    </servlet-mapping>
+
     <filter>
         <filter-name>springSecurityFilterChain</filter-name>
         <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
     </filter>
-    
-    <filter>
-        <filter-name>guiceFilter</filter-name>
-        <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
-    </filter>
-    
+
     <filter-mapping>
         <filter-name>springSecurityFilterChain</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
-    
+
+    <filter>
+        <filter-name>AuditFilter</filter-name>
+        <filter-class>org.apache.atlas.web.filters.AuditFilter</filter-class>
+    </filter>
+
     <filter-mapping>
-        <filter-name>guiceFilter</filter-name>
+        <filter-name>AuditFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
     <listener>
         <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
-    </listener>
-    
-    <listener>
-        <listener-class>org.apache.atlas.web.listeners.TestGuiceServletConfig</listener-class>
     </listener>
 
     <listener>
@@ -88,5 +89,5 @@
         </cookie-config>
     </session-config>
 
-	
+
 </web-app>

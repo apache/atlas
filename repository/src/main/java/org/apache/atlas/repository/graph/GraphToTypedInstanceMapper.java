@@ -17,20 +17,10 @@
  */
 package org.apache.atlas.repository.graph;
 
-import static org.apache.atlas.repository.graph.GraphHelper.string;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -50,10 +40,20 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@Singleton
+import static org.apache.atlas.repository.graph.GraphHelper.string;
+
+@Component
 @Deprecated
 public final class GraphToTypedInstanceMapper {
 
@@ -61,10 +61,11 @@ public final class GraphToTypedInstanceMapper {
     private static TypeSystem typeSystem = TypeSystem.getInstance();
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    private final IAtlasGraphProvider graphProvider;
+    private final AtlasGraph atlasGraph;
 
-    public GraphToTypedInstanceMapper(IAtlasGraphProvider graphProvider) {
-        this.graphProvider = graphProvider;
+    @Inject
+    public GraphToTypedInstanceMapper(AtlasGraph atlasGraph) {
+        this.atlasGraph = atlasGraph;
     }
 
     public ITypedReferenceableInstance mapGraphToTypedInstance(String guid, AtlasVertex instanceVertex)
@@ -448,7 +449,7 @@ public final class GraphToTypedInstanceMapper {
     }
 
     private AtlasGraph getGraph() throws RepositoryException {
-        return graphProvider.get();
+        return atlasGraph;
     }
 }
 

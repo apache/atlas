@@ -19,13 +19,15 @@
 package org.apache.atlas.web.service;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Singleton;
 
 /**
  * A class that maintains the state of this instance.
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * directed by {@link ActiveInstanceElectorService}.
  */
 @Singleton
+@Component
 public class ServiceState {
 
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);

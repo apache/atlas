@@ -21,6 +21,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
@@ -45,11 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 public class AtlasClientTest {
 
@@ -92,7 +89,7 @@ public class AtlasClientTest {
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.CREATED.getStatusCode());
 
-        JSONObject jsonResponse = new JSONObject(new AtlasClient.EntityResult(Arrays.asList("id"), null, null).toString());
+        JSONObject jsonResponse = new JSONObject(new EntityResult(Arrays.asList("id"), null, null).toString());
         when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
         when(response.getLength()).thenReturn(jsonResponse.length());
         String entityJson = InstanceSerialization.toJson(new Referenceable("type"), true);

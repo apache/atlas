@@ -19,12 +19,10 @@
 package org.apache.atlas.hook;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.atlas.typesystem.Referenceable;
@@ -51,7 +49,7 @@ public abstract class AtlasHook {
 
     protected static Configuration atlasProperties;
 
-    protected static NotificationInterface notifInterface;
+    protected static NotificationInterface notificationInterface;
 
     private static boolean logFailedMessages;
     private static FailedMessagesLogger failedMessagesLogger;
@@ -86,8 +84,7 @@ public abstract class AtlasHook {
         }
 
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
-        Injector injector = Guice.createInjector(new NotificationModule());
-        notifInterface = injector.getInstance(NotificationInterface.class);
+        notificationInterface = NotificationProvider.get();
 
         LOG.info("Created Atlas Hook");
     }
@@ -118,7 +115,7 @@ public abstract class AtlasHook {
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
     public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
-        notifyEntitiesInternal(messages, maxRetries, notifInterface, logFailedMessages, failedMessagesLogger);
+        notifyEntitiesInternal(messages, maxRetries, notificationInterface, logFailedMessages, failedMessagesLogger);
     }
 
     @VisibleForTesting

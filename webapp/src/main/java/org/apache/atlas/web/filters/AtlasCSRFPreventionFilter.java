@@ -18,12 +18,13 @@
 
 package org.apache.atlas.web.filters;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
+import org.apache.commons.configuration.Configuration;
+import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -33,15 +34,14 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.simple.JSONObject;
-
+@Component
 public class AtlasCSRFPreventionFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(AtlasCSRFPreventionFilter.class);
 	private static Configuration configuration;
@@ -238,13 +238,11 @@ public class AtlasCSRFPreventionFilter implements Filter {
 		@Override
 		public void sendError(int code, String message) throws IOException {
 			JSONObject json = new JSONObject();
-            ObjectMapper mapper = new ObjectMapper();
             json.put("msgDesc", message);
-            String jsonAsStr = mapper.writeValueAsString(json);
             httpResponse.setContentType("application/json");
             httpResponse.setStatus(code);
             httpResponse.setCharacterEncoding("UTF-8");
-            httpResponse.getWriter().write(jsonAsStr);
+            httpResponse.getWriter().write(json.toJSONString());
 		}
 	}
 }

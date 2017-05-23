@@ -19,12 +19,11 @@ package org.apache.atlas.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
-import org.apache.atlas.repository.typestore.StoreBackedTypeCacheTestOnlyModule;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
@@ -44,14 +43,17 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
+
 
 /**
  *  Verify MetadataService type operations trigger StoreBackedTypeCache to load non-cached types from the store.
  *  StoreBackedTypeCacheTestModule Guice module sets Atlas configuration
  *  to use {@link StoreBackedTypeCache} as the TypeCache implementation class.
  */
-@Guice(modules = StoreBackedTypeCacheTestOnlyModule.class)
-public class StoreBackedTypeCacheMetadataServiceTest {
+@Guice(modules = TestModules.StoreBackedTypeCacheTestModule.class)
+public class StoreBackedTypeCacheMetadataServiceTest
+{
     @Inject
     private MetadataService metadataService;
 

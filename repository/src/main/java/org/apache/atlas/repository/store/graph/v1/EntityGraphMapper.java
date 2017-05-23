@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
-import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
@@ -29,9 +28,8 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
@@ -45,48 +43,42 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import javax.inject.Inject;
+import java.util.*;
 
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
-
+@Component
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
 
-    private final AtlasGraph        graph       = AtlasGraphProvider.getGraphInstance();
     private final GraphHelper       graphHelper = GraphHelper.getInstance();
+    private final AtlasGraph        graph;
     private final DeleteHandlerV1   deleteHandler;
     private final AtlasTypeRegistry typeRegistry;
 
 
     @Inject
-    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry) {
+    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
         this.deleteHandler = deleteHandler;
         this.typeRegistry  = typeRegistry;
+        this.graph         = atlasGraph;
     }
 
     public AtlasVertex createVertex(AtlasEntity entity) {
@@ -284,7 +276,7 @@ public class EntityGraphMapper {
     }
 
     private Object mapToVertexByTypeCategory(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
-        if (ctx.getOp() == EntityMutations.EntityOperation.CREATE && ctx.getValue() == null) {
+        if (ctx.getOp() == CREATE && ctx.getValue() == null) {
             return null;
         }
 
@@ -509,7 +501,7 @@ public class EntityGraphMapper {
 
         try {
             AtlasAttribute      attribute   = ctx.getAttribute();
-            List<String>        currentKeys = GraphHelper.getListProperty(ctx.getReferringVertex(), ctx.getVertexProperty());
+            List<String> currentKeys = GraphHelper.getListProperty(ctx.getReferringVertex(), ctx.getVertexProperty());
             Map<String, Object> currentMap  = new HashMap<>();
 
             if (CollectionUtils.isNotEmpty(currentKeys)) {

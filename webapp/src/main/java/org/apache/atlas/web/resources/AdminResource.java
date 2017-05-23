@@ -18,8 +18,8 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.inject.Inject;
 import com.sun.jersey.multipart.FormDataParam;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
@@ -52,10 +52,13 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -82,6 +85,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Path("admin")
 @Singleton
+@Service
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
 
@@ -110,6 +114,10 @@ public class AdminResource {
     private final AtlasTypeDefStore typesDefStore;
     private final AtlasEntityStore  entityStore;
     private static Configuration atlasProperties;
+    private final ExportService exportService;
+
+    @Inject
+    ApplicationContext applicationContext;
 
     static {
         try {
@@ -122,12 +130,13 @@ public class AdminResource {
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
                          AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore,
-                         AtlasEntityStore entityStore) {
+                         AtlasEntityStore entityStore, ExportService exportService) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
         this.typeRegistry               = typeRegistry;
         this.typesDefStore              = typeDefStore;
         this.entityStore                = entityStore;
+        this.exportService = exportService;
         this.importExportOperationLock  = new ReentrantLock();
     }
 
@@ -322,8 +331,6 @@ public class AdminResource {
         ZipSink exportSink = null;
         try {
             exportSink = new ZipSink(httpServletResponse.getOutputStream());
-            ExportService exportService = new ExportService(this.typeRegistry);
-
             AtlasExportResult result = exportService.run(exportSink, request, Servlets.getUserName(httpServletRequest),
                                                          Servlets.getHostName(httpServletRequest),
                                                          AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));

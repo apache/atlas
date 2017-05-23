@@ -18,15 +18,15 @@
 package org.apache.atlas.web.errors;
 
 import org.apache.atlas.typesystem.exception.NotFoundException;
+import org.springframework.stereotype.Component;
 
-import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Provider
-@Singleton
+@Component
 public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
     @Override
     public Response toResponse(NotFoundException e) {

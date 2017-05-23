@@ -24,7 +24,6 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -55,9 +54,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
     // Type APIs
     public static final String TYPES_API = BASE_URI + "v2/types/";
     private static final String TYPEDEFS_API = TYPES_API + "typedefs/";
+    private static final String TYPEDEF_BY_NAME = TYPES_API + "typedef/name/";
+    private static final String TYPEDEF_BY_GUID = TYPES_API + "typedef/guid/";
+
     private static final String GET_BY_NAME_TEMPLATE = TYPES_API + "%s/name/%s";
     private static final String GET_BY_GUID_TEMPLATE = TYPES_API + "%s/guid/%s";
 
+    private static final APIInfo GET_TYPEDEF_BY_NAME = new APIInfo(TYPEDEF_BY_NAME, HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo GET_TYPEDEF_BY_GUID = new APIInfo(TYPEDEF_BY_GUID, HttpMethod.GET, Response.Status.OK);
     private static final APIInfo GET_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.GET, Response.Status.OK);
     private static final APIInfo CREATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.POST, Response.Status.OK);
     private static final APIInfo UPDATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.PUT, Response.Status.OK);
@@ -129,6 +133,24 @@ public class AtlasClientV2 extends AtlasBaseClient {
      */
     public AtlasTypesDef getAllTypeDefs(SearchFilter searchFilter) throws AtlasServiceException {
         return callAPI(GET_ALL_TYPE_DEFS, AtlasTypesDef.class, searchFilter.getParams());
+    }
+
+    public boolean typeWithGuidExists(String guid) {
+        try {
+            callAPI(GET_TYPEDEF_BY_GUID, String.class, null, guid);
+        } catch (AtlasServiceException e) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean typeWithNameExists(String name) {
+        try {
+            callAPI(GET_TYPEDEF_BY_NAME, String.class, null, name);
+        } catch (AtlasServiceException e) {
+            return false;
+        }
+        return true;
     }
 
     public AtlasEnumDef getEnumDefByName(final String name) throws AtlasServiceException {
@@ -389,13 +411,13 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     private <T> String getAtlasPath(Class<T> typeDefClass) {
-        if (typeDefClass.isAssignableFrom(AtlasEnumDef.class)) {
+        if (AtlasEnumDef.class.isAssignableFrom(typeDefClass)) {
             return "enumdef";
-        } else if (typeDefClass.isAssignableFrom(AtlasEntityDef.class)) {
+        } else if (AtlasEntityDef.class.isAssignableFrom(typeDefClass)) {
             return "entitydef";
-        } else if (typeDefClass.isAssignableFrom(AtlasClassificationDef.class)) {
+        } else if (AtlasClassificationDef.class.isAssignableFrom(typeDefClass)) {
             return "classificationdef";
-        } else if (typeDefClass.isAssignableFrom(AtlasStructDef.class)) {
+        } else if (AtlasStructDef.class.isAssignableFrom(typeDefClass)) {
             return "structdef";
         }
         // Code should never reach this point

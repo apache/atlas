@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.QueryParams;
@@ -62,7 +62,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAt
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     @Inject
