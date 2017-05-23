@@ -255,7 +255,12 @@ define(['require',
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-
+                        if (that.searchCollection.models.length === 0) {
+                            that.ui.nextData.attr('disabled', true);
+                            that.offset = that.offset - that.limit;
+                            that.hideLoader();
+                            return;
+                        }
                         if (that.searchCollection.models.length < that.limit) {
                             that.ui.nextData.attr('disabled', true);
                         } else {
@@ -272,7 +277,7 @@ define(['require',
                             that.pageTo = that.pageTo - that.limit;
                             that.pageFrom = (that.pageTo - that.limit) + 1;
                         }
-                        that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u>, from " + that.pageFrom + " - " + that.pageTo);
+                        that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u> From " + that.pageFrom + " - " + that.pageTo);
                         if (that.offset < that.limit && that.pageFrom < 26) {
                             that.ui.previousData.attr('disabled', true);
                         }
