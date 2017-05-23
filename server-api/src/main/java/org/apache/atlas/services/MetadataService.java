@@ -18,11 +18,11 @@
 
 package org.apache.atlas.services;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -267,7 +267,7 @@ public interface MetadataService {
      * @return List of guids for deleted entities
      * @throws AtlasException
      */
-    AtlasClient.EntityResult deleteEntities(List<String> guids) throws AtlasException;
+    EntityResult deleteEntities(List<String> guids) throws AtlasException;
     
     /**
      * Register a listener for entity change.
@@ -292,8 +292,8 @@ public interface MetadataService {
      * @return List of guids for deleted entities (including their composite references)
      * @throws AtlasException
      */
-    AtlasClient.EntityResult deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
-                                                           String attrValue) throws AtlasException;
+    EntityResult deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
+                                               String attrValue) throws AtlasException;
 
     /**
      * Returns entity audit events for entity id in the decreasing order of timestamp

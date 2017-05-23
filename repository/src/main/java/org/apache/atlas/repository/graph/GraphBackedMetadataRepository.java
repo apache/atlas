@@ -18,23 +18,13 @@
 
 package org.apache.atlas.repository.graph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.atlas.AtlasClient;
+import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
@@ -55,16 +45,18 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.*;
 
 /**
  * An implementation backed by a Graph database provided
  * as a Graph Service.
  */
 @Singleton
+@Component
 @Deprecated
 public class GraphBackedMetadataRepository implements MetadataRepository {
 
@@ -76,23 +68,15 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private DeleteHandler deleteHandler;
 
-    private final IAtlasGraphProvider graphProvider;
+    private final AtlasGraph atlasGraph;
     private final GraphToTypedInstanceMapper graphToInstanceMapper;
 
     @Inject
-    public GraphBackedMetadataRepository(DeleteHandler deleteHandler) {
-        this.graphProvider = new AtlasGraphProvider();
-        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
+    public GraphBackedMetadataRepository(DeleteHandler deleteHandler, AtlasGraph atlasGraph) {
+        this.atlasGraph = atlasGraph;
+        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(atlasGraph);
         this.deleteHandler = deleteHandler;
     }
-
-    //for testing only
-    public GraphBackedMetadataRepository(IAtlasGraphProvider graphProvider, DeleteHandler deleteHandler) {
-        this.graphProvider = graphProvider;
-        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(graphProvider);
-        this.deleteHandler = deleteHandler;
-    }
-
 
     public GraphToTypedInstanceMapper getGraphToInstanceMapper() {
         return graphToInstanceMapper;
@@ -161,7 +145,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.CREATE, entities);
             List<String> createdGuids = RequestContext.get().getCreatedEntityIds();
             CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
-            AtlasClient.EntityResult entityResult = new AtlasClient.EntityResult(createdGuids, null,  null);
+            EntityResult entityResult = new EntityResult(createdGuids, null,  null);
             GuidMapping mapping = instanceToGraphMapper.createGuidMapping();
             result.setEntityResult(entityResult);
             result.setGuidMapping(mapping);
@@ -174,6 +158,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException {
         return getEntityDefinitions(guid).get(0);
     }
@@ -469,7 +454,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public AtlasClient.EntityResult deleteEntities(List<String> guids) throws RepositoryException {
+    public EntityResult deleteEntities(List<String> guids) throws RepositoryException {
 
         if (guids == null || guids.size() == 0) {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
@@ -491,7 +476,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
         if (deletionCandidates.isEmpty()) {
             LOG.info("No deletion candidate entities were found for guids %s", guids);
-            return new AtlasClient.EntityResult(Collections.<String>emptyList(), Collections.<String>emptyList(), Collections.<String>emptyList());
+            return new EntityResult(Collections.<String>emptyList(), Collections.<String>emptyList(), Collections.<String>emptyList());
         }
 
         try {
@@ -505,14 +490,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return createEntityResultFromContext(requestContext);
     }
 
-    private AtlasClient.EntityResult createEntityResultFromContext(RequestContext requestContext) {
-        return new AtlasClient.EntityResult(
+    private EntityResult createEntityResultFromContext(RequestContext requestContext) {
+        return new EntityResult(
                 requestContext.getCreatedEntityIds(),
                 requestContext.getUpdatedEntityIds(),
                 requestContext.getDeletedEntityIds());
     }
 
     public AtlasGraph getGraph() throws RepositoryException {
-        return graphProvider.get();
+        return atlasGraph;
     }
 }

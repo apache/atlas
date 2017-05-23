@@ -21,7 +21,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
@@ -33,14 +33,13 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -94,7 +93,7 @@ public class AtlasClientTest {
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.CREATED.getStatusCode());
 
-        JSONObject jsonResponse = new JSONObject(new AtlasClient.EntityResult(Arrays.asList("id"), null, null).toString());
+        JSONObject jsonResponse = new JSONObject(new EntityResult(Arrays.asList("id"), null, null).toString());
         when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
         when(response.getLength()).thenReturn(jsonResponse.length());
         String entityJson = InstanceSerialization.toJson(new Referenceable("type"), true);

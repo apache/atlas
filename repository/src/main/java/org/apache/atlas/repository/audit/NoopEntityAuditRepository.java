@@ -18,18 +18,21 @@
 
 package org.apache.atlas.repository.audit;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.springframework.stereotype.Component;
 
-import com.google.inject.Singleton;
+import javax.inject.Singleton;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Implementation that completely disables the audit repository.
  */
 @Singleton
+@Component
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
 public class NoopEntityAuditRepository implements EntityAuditRepository {
 
     @Override

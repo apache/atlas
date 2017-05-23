@@ -23,9 +23,9 @@ import org.apache.atlas.web.service.ServiceState;
 import org.apache.hadoop.http.HtmlQuoting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -46,7 +46,7 @@ import java.io.IOException;
  * an error SERVICE_UNAVAILABLE. Identification of this state is carried out using
  * {@link ServiceState} and {@link ActiveInstanceState}.
  */
-@Singleton
+@Component
 public class ActiveServerFilter implements Filter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);

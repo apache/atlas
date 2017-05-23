@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -45,7 +44,7 @@ import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
 /**
  *  Base Class to set up hive types and instances for tests
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class BaseRepositoryTest {
 
     @Inject
@@ -70,7 +69,6 @@ public class BaseRepositoryTest {
 
     protected void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        AtlasGraphProvider.cleanup();
     }
 
     private void setUpTypes() throws Exception {

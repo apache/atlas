@@ -17,18 +17,23 @@
 
 package org.apache.atlas.web.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.atlas.web.dao.UserDao;
+import org.apache.atlas.web.model.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.apache.atlas.web.dao.UserDao;
-import org.apache.atlas.web.model.User;
+
+import javax.inject.Inject;
 
 @Service
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private UserDao userDao;
+    private final UserDao userDao;
+
+    @Inject
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
+    }
 
     @Override
     public User loadUserByUsername(final String username)

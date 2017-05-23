@@ -21,8 +21,8 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-
 public abstract class AtlasAbstractFormatConverter implements AtlasFormatConverter {
+
     protected final AtlasFormatConverters converterRegistry;
     protected final AtlasTypeRegistry     typeRegistry;
     protected final TypeCategory          typeCategory;

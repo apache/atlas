@@ -18,12 +18,17 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Inject;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+
+@Component
+@ConditionalOnAtlasProperty(property = "atlas.DeleteHandler.impl")
 public class HardDeleteHandler extends DeleteHandler {
 
     @Inject

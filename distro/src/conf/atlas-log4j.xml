@@ -69,6 +69,21 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <logger name="org.springframework" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
+    <logger name="org.eclipse" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
+    <logger name="com.sun.jersey" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
     <!-- to avoid logs - The configuration log.flush.interval.messages = 1 was supplied but isn't a known config -->
     <logger name="org.apache.kafka.common.config.AbstractConfig" additivity="false">
         <level value="error"/>

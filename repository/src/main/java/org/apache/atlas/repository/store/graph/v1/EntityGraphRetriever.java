@@ -289,16 +289,16 @@ public final class EntityGraphRetriever {
         List<String> classificationNames = GraphHelper.getTraitNames(instanceVertex);
 
         if (CollectionUtils.isNotEmpty(classificationNames)) {
-            for (String classficationName : classificationNames) {
-                AtlasClassification classification = null;
+            for (String classificationName : classificationNames) {
+                AtlasClassification classification;
                 if (StringUtils.isNotEmpty(classificationNameFilter)) {
-                    if (classficationName.equals(classificationNameFilter)) {
-                        classification = getClassification(instanceVertex, classficationName);
+                    if (classificationName.equals(classificationNameFilter)) {
+                        classification = getClassification(instanceVertex, classificationName);
                         classifications.add(classification);
                         return classifications;
                     }
                 } else {
-                    classification = getClassification(instanceVertex, classficationName);
+                    classification = getClassification(instanceVertex, classificationName);
                     classifications.add(classification);
                 }
             }

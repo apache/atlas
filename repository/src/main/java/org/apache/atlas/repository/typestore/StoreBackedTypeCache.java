@@ -17,14 +17,9 @@
  */
 package org.apache.atlas.repository.typestore;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -38,10 +33,16 @@ import org.apache.atlas.typesystem.types.TypeSystem.TransientTypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -52,7 +53,9 @@ import com.google.inject.Singleton;
  * are also loaded from the store if they are not already in the cache.
  */
 @Singleton
+@Component
 @Deprecated
+@ConditionalOnAtlasProperty(property = "atlas.TypeCache.impl")
 public class StoreBackedTypeCache extends DefaultTypeCache {
 
     private ITypeStore typeStore;

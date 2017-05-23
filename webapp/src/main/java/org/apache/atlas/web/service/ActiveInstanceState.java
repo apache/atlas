@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.service;
 
-import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -33,8 +32,10 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import scala.actors.threadpool.Arrays;
 
+import javax.inject.Inject;
 import java.nio.charset.Charset;
 import java.util.List;
 
@@ -45,6 +46,7 @@ import java.util.List;
  * under a read-write lock implemented using Curator's {@link InterProcessReadWriteLock} to
  * provide for safety across multiple processes.
  */
+@Component
 public class ActiveInstanceState {
 
     private final Configuration configuration;

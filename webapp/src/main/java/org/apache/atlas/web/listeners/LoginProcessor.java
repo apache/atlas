@@ -26,7 +26,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Shell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -34,6 +36,7 @@ import java.net.UnknownHostException;
 /**
  * A class capable of performing a simple or kerberos login.
  */
+@Component
 public class LoginProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoginProcessor.class);
@@ -46,6 +49,7 @@ public class LoginProcessor {
      * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured
      * principal and keytab (via atlas-application.properties).
      */
+    @PostConstruct
     public void login() {
         // first, let's see if we're running in a hadoop cluster and have the env configured
         boolean isHadoopCluster = isHadoopCluster();

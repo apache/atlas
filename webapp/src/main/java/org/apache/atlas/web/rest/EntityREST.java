@@ -26,11 +26,9 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
-import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -40,6 +38,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,22 +65,18 @@ import java.util.Map;
  */
 @Path("v2/entity")
 @Singleton
+@Service
 public class EntityREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityREST");
 
     public static final String PREFIX_ATTR = "attr:";
 
     private final AtlasTypeRegistry         typeRegistry;
-    private final AtlasInstanceConverter    instanceConverter;
-    private final MetadataService           metadataService;
     private final AtlasEntityStore          entitiesStore;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter,
-                      MetadataService metadataService, AtlasEntityStore entitiesStore) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
         this.typeRegistry    = typeRegistry;
-        this.instanceConverter = instanceConverter;
-        this.metadataService = metadataService;
         this.entitiesStore   = entitiesStore;
     }
 

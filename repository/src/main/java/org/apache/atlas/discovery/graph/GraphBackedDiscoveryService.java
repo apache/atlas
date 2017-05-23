@@ -18,18 +18,8 @@
 
 package org.apache.atlas.discovery.graph;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -43,7 +33,6 @@ import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.query.QueryProcessor;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -56,14 +45,24 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.stereotype.Component;
 import scala.util.Either;
 import scala.util.parsing.combinator.Parsers;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Graph backed implementation of Search.
  */
 @Singleton
+@Component
 public class GraphBackedDiscoveryService implements DiscoveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedDiscoveryService.class);
@@ -74,9 +73,9 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     public final static String SCORE = "score";
 
     @Inject
-    GraphBackedDiscoveryService(MetadataRepository metadataRepository)
+    GraphBackedDiscoveryService(MetadataRepository metadataRepository, AtlasGraph atlasGraph)
     throws DiscoveryException {
-        this.graph = AtlasGraphProvider.getGraphInstance();
+        this.graph = atlasGraph;
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
 

@@ -18,9 +18,9 @@
 
 package org.apache.atlas.repository;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
@@ -135,7 +135,7 @@ public interface MetadataRepository {
      * @return guids of deleted entities
      * @throws RepositoryException
      */
-    AtlasClient.EntityResult deleteEntities(List<String> guids) throws RepositoryException;
+    EntityResult deleteEntities(List<String> guids) throws RepositoryException;
     
     
     // Trait management functions

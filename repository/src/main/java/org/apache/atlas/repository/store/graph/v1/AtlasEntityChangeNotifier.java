@@ -18,8 +18,6 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -30,7 +28,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.repository.graph.*;
+import org.apache.atlas.repository.graph.FullTextMapperV2;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -39,14 +38,16 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 
-@Singleton
+@Component
 public class AtlasEntityChangeNotifier {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityChangeNotifier.class);
 
@@ -101,7 +102,7 @@ public class AtlasEntityChangeNotifier {
             try {
                 listener.onTraitsAdded(entity, traits);
             } catch (AtlasException e) {
-                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitAdd");
             }
         }
     }
@@ -120,7 +121,7 @@ public class AtlasEntityChangeNotifier {
             try {
                 listener.onTraitsDeleted(entity, traitNames);
             } catch (AtlasException e) {
-                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
             }
         }
     }
@@ -140,9 +141,13 @@ public class AtlasEntityChangeNotifier {
             try {
                 listener.onTraitsUpdated(entity, traits);
             } catch (AtlasException e) {
-                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e);
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
             }
         }
+    }
+
+    private String getListenerName(EntityChangeListener listener) {
+        return listener.getClass().getSimpleName();
     }
 
     private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
@@ -167,7 +172,7 @@ public class AtlasEntityChangeNotifier {
                         break;
                 }
             } catch (AtlasException e) {
-                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, operation.toString());
+                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), operation.toString());
             }
         }
     }

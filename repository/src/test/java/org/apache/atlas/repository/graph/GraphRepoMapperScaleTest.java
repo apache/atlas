@@ -20,9 +20,9 @@ package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.CreateUpdateEntitiesResult;
-import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -54,7 +54,7 @@ import java.util.Date;
 import java.util.Iterator;
 
 @Test
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_NAME = "foo";
@@ -89,7 +89,7 @@ public class GraphRepoMapperScaleTest {
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @Test

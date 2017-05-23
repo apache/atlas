@@ -17,20 +17,19 @@
  */
 package org.apache.atlas.web.security;
 
-import javax.annotation.PostConstruct;
-
+import org.apache.atlas.ApplicationProperties;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.commons.configuration.Configuration;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
 @Component
-public class AtlasAuthenticationProvider extends
-        AtlasAbstractAuthenticationProvider {
+public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
     private static final Logger LOG = LoggerFactory
             .getLogger(AtlasAuthenticationProvider.class);
 
@@ -44,22 +43,27 @@ public class AtlasAuthenticationProvider extends
 
     private boolean ssoEnabled = false;
 
-    @Autowired
-    AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
+    final AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
 
-    @Autowired
-    AtlasFileAuthenticationProvider fileAuthenticationProvider;
+    final AtlasFileAuthenticationProvider fileAuthenticationProvider;
 
-    @Autowired
-    AtlasADAuthenticationProvider adAuthenticationProvider;
+    final AtlasADAuthenticationProvider adAuthenticationProvider;
+
+    @Inject
+    public AtlasAuthenticationProvider(AtlasLdapAuthenticationProvider ldapAuthenticationProvider,
+                                       AtlasFileAuthenticationProvider fileAuthenticationProvider,
+                                       AtlasADAuthenticationProvider adAuthenticationProvider) {
+        this.ldapAuthenticationProvider = ldapAuthenticationProvider;
+        this.fileAuthenticationProvider = fileAuthenticationProvider;
+        this.adAuthenticationProvider = adAuthenticationProvider;
+    }
 
     @PostConstruct
     void setAuthenticationMethod() {
         try {
             Configuration configuration = ApplicationProperties.get();
 
-            this.fileAuthenticationMethodEnabled = configuration.getBoolean(
-                    FILE_AUTH_METHOD, true);
+            this.fileAuthenticationMethodEnabled = configuration.getBoolean(FILE_AUTH_METHOD, true);
 
             boolean ldapAuthenticationEnabled = configuration.getBoolean(LDAP_AUTH_METHOD, false);
 

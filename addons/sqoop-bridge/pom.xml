@@ -261,10 +261,6 @@
                                             <version>${scala.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.google.inject.extensions</groupId>
-                                            <artifactId>guice-multibindings</artifactId>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
                                             <artifactId>kafka_${scala.binary.version}</artifactId>
                                             <version>${kafka.version}</version>

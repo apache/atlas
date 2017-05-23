@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -34,14 +34,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
-
 /**
  * Tests for AtlasEntityStoreV1
  */
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityDefStoreV1Test {
 
     @Inject

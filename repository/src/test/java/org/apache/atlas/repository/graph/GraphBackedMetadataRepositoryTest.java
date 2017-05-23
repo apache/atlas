@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
-import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.Constants;
@@ -92,7 +92,7 @@ import static org.testng.Assert.assertTrue;
  * Guice loads the dependencies and injects the necessary objects
  *
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphBackedMetadataRepositoryTest {
 
     @Inject
@@ -126,7 +126,7 @@ public class GraphBackedMetadataRepositoryTest {
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @Test

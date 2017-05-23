@@ -21,12 +21,12 @@ package org.apache.atlas.repository.graph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
@@ -53,6 +53,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,7 +73,7 @@ import static org.testng.Assert.fail;
  * Guice loads the dependencies and injects the necessary objects
  *
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
     protected MetadataRepository repositoryService;
@@ -83,6 +84,9 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
     private ClassType compositeMapValueType;
 
+    @Inject
+    AtlasGraph atlasGraph;
+
     @BeforeClass
     public void setUp() throws Exception {
 
@@ -90,7 +94,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         typeSystem.reset();
 
         new GraphBackedSearchIndexer(new AtlasTypeRegistry());
-        final GraphBackedMetadataRepository delegate = new GraphBackedMetadataRepository(getDeleteHandler(typeSystem));
+        final GraphBackedMetadataRepository delegate = new GraphBackedMetadataRepository(getDeleteHandler(typeSystem), atlasGraph);
 
         repositoryService = TestUtils.addTransactionWrapper(delegate);
 
@@ -126,7 +130,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        AtlasGraphProvider.cleanup();
+//        AtlasGraphProvider.cleanup();
     }
 
     @Test
@@ -194,7 +198,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         table.set(COLUMNS_ATTR_NAME, Arrays.asList(new Id(colId, 0, COLUMN_TYPE)));
         String tableId = createInstance(table);
 
-        AtlasClient.EntityResult entityResult = deleteEntities(colId);
+        EntityResult entityResult = deleteEntities(colId);
         assertEquals(entityResult.getDeletedEntities().size(), 1);
         assertEquals(entityResult.getDeletedEntities().get(0), colId);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
@@ -227,7 +231,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
     protected abstract void assertEntityDeleted(String id) throws Exception;
 
-    private AtlasClient.EntityResult deleteEntities(String... id) throws Exception {
+    private EntityResult deleteEntities(String... id) throws Exception {
         RequestContext.createContext();
         return repositoryService.deleteEntities(Arrays.asList(id));
     }
@@ -261,7 +265,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         String colId = columns.get(0).getId()._getId();
         String tableId = tableInstance.getId()._getId();
 
-        AtlasClient.EntityResult entityResult = deleteEntities(colId);
+        EntityResult entityResult = deleteEntities(colId);
         assertEquals(entityResult.getDeletedEntities().size(), 1);
         assertEquals(entityResult.getDeletedEntities().get(0), colId);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
@@ -389,7 +393,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         return entityDefinition;
     }
 
-    private AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
+    private EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         RequestContext.createContext();
         return repositoryService.updatePartial(entity).getEntityResult();
     }
@@ -419,7 +423,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
         ITypedReferenceableInstance maxEntity = personType.createInstance(max.getId());
         maxEntity.set("mentor", johnGuid);
-        AtlasClient.EntityResult entityResult = updatePartial(maxEntity);
+        EntityResult entityResult = updatePartial(maxEntity);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
 
@@ -512,7 +516,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertTrue(subordinateIds.contains(maxGuid));
 
 
-        AtlasClient.EntityResult entityResult = deleteEntities(maxGuid);
+        EntityResult entityResult = deleteEntities(maxGuid);
         ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Person", "name", "John");
 
         assertEquals(entityResult.getDeletedEntities().size(), 1);
@@ -560,7 +564,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         String columnGuid = columns.get(0).getId()._getId();
 
         // Delete the column.
-        AtlasClient.EntityResult entityResult = deleteEntities(columnGuid);
+        EntityResult entityResult = deleteEntities(columnGuid);
         assertEquals(entityResult.getDeletedEntities().size(), 1);
         Assert.assertTrue(entityResult.getDeletedEntities().contains(columnGuid));
         assertEquals(entityResult.getUpdateEntities().size(), 1);
@@ -672,7 +676,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertEquals(refList.get(0).getId()._getId(), traitTargetGuid);
 
         // Delete the entities that are targets of the struct and trait instances.
-        AtlasClient.EntityResult entityResult = deleteEntities(structTargetGuid, traitTargetGuid);
+        EntityResult entityResult = deleteEntities(structTargetGuid, traitTargetGuid);
         Assert.assertEquals(entityResult.getDeletedEntities().size(), 2);
         Assert.assertTrue(entityResult.getDeletedEntities().containsAll(Arrays.asList(structTargetGuid, traitTargetGuid)));
         assertEntityDeleted(structTargetGuid);
@@ -1037,7 +1041,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         String table2Id = createInstance(table2);
 
         // Delete the tables and column
-        AtlasClient.EntityResult entityResult = deleteEntities(table1Id, colId, table2Id);
+        EntityResult entityResult = deleteEntities(table1Id, colId, table2Id);
         Assert.assertEquals(entityResult.getDeletedEntities().size(), 3);
         Assert.assertTrue(entityResult.getDeletedEntities().containsAll(Arrays.asList(colId, table1Id, table2Id)));
         assertEntityDeleted(table1Id);

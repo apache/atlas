@@ -51,7 +51,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>2.18.1</version>
                         <configuration>
-                            <skip>false</skip>
+                            <skip>${skipUTs}</skip>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -79,13 +79,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

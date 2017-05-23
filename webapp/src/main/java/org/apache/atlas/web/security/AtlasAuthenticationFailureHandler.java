@@ -18,12 +18,12 @@
 
 package org.apache.atlas.web.security;
 
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.simple.JSONObject;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
+@Component
 public class AtlasAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFailureHandler.class);
@@ -43,14 +44,12 @@ public class AtlasAuthenticationFailureHandler implements AuthenticationFailureH
         LOG.debug("Login Failure ", e);
 
         JSONObject json = new JSONObject();
-        ObjectMapper mapper = new ObjectMapper();
         json.put("msgDesc", e.getMessage());
 
-        String jsonAsStr = mapper.writeValueAsString(json);
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(jsonAsStr);
+        response.getWriter().write(json.toJSONString());
 
     }
 }

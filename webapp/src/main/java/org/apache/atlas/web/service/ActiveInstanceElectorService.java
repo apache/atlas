@@ -18,10 +18,6 @@
 
 package org.apache.atlas.web.service;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.Singleton;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.AtlasServerIdSelector;
 import org.apache.atlas.ha.HAConfiguration;
@@ -32,10 +28,14 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * A service that implements leader election to determine whether this Atlas server is Active.
@@ -47,7 +47,9 @@ import java.util.Collection;
  * on being removed from leadership, this instance is treated as a passive instance and calls
  * {@link ActiveStateChangeHandler}s to deactivate them.
  */
-@Singleton
+
+@Component
+@Order(1)
 public class ActiveInstanceElectorService implements Service, LeaderLatchListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceElectorService.class);
@@ -55,7 +57,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private final Configuration configuration;
     private final ServiceState serviceState;
     private final ActiveInstanceState activeInstanceState;
-    private Collection<Provider<ActiveStateChangeHandler>> activeStateChangeHandlerProviders;
+    private Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders;
     private Collection<ActiveStateChangeHandler> activeStateChangeHandlers;
     private CuratorFactory curatorFactory;
     private LeaderLatch leaderLatch;
@@ -68,17 +70,8 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
      * @throws AtlasException
      */
     @Inject
-    public ActiveInstanceElectorService(
-            Collection<Provider<ActiveStateChangeHandler>> activeStateChangeHandlerProviders,
-            CuratorFactory curatorFactory, ActiveInstanceState activeInstanceState,
-            ServiceState serviceState)
-            throws AtlasException {
-        this(ApplicationProperties.get(), activeStateChangeHandlerProviders,
-                curatorFactory, activeInstanceState, serviceState);
-    }
-
     ActiveInstanceElectorService(Configuration configuration,
-                                 Collection<Provider<ActiveStateChangeHandler>> activeStateChangeHandlerProviders,
+                                 Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
                                  CuratorFactory curatorFactory, ActiveInstanceState activeInstanceState,
                                  ServiceState serviceState) {
         this.configuration = configuration;
@@ -164,10 +157,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
 
     private void cacheActiveStateChangeHandlers() {
         if (activeStateChangeHandlers.size()==0) {
-            for (Provider<ActiveStateChangeHandler> provider : activeStateChangeHandlerProviders) {
-                ActiveStateChangeHandler handler = provider.get();
-                activeStateChangeHandlers.add(handler);
-            }
+            activeStateChangeHandlers.addAll(activeStateChangeHandlerProviders);
         }
     }
 

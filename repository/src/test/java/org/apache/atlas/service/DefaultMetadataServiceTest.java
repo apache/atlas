@@ -24,14 +24,15 @@ import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypeDefChangeListener;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
@@ -85,7 +86,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeD
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.testng.Assert.*;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class DefaultMetadataServiceTest {
     @Inject
     private MetadataService metadataService;
@@ -150,7 +151,7 @@ public class DefaultMetadataServiceTest {
             AtlasGraphProvider.cleanup();
         }
     }
-    private AtlasClient.EntityResult updateInstance(Referenceable entity) throws Exception {
+    private EntityResult updateInstance(Referenceable entity) throws Exception {
         RequestContext.createContext();
         ParamChecker.notNull(entity, "Entity");
         ParamChecker.notNull(entity.getId(), "Entity");
@@ -296,7 +297,7 @@ public class DefaultMetadataServiceTest {
         assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_DELETE);
     }
 
-    private AtlasClient.EntityResult deleteEntities(String... guids) throws AtlasException {
+    private EntityResult deleteEntities(String... guids) throws AtlasException {
         RequestContext.createContext();
         return metadataService.deleteEntities(Arrays.asList(guids));
     }
@@ -529,7 +530,7 @@ public class DefaultMetadataServiceTest {
         assertEquals(actualColumns, updatedColNameList);
     }
 
-    private AtlasClient.EntityResult updateEntityPartial(String guid, Referenceable entity) throws AtlasException {
+    private EntityResult updateEntityPartial(String guid, Referenceable entity) throws AtlasException {
         RequestContext.createContext();
         return metadataService.updateEntityPartialByGuid(guid, entity).getEntityResult();
     }
@@ -547,7 +548,7 @@ public class DefaultMetadataServiceTest {
             put(COLUMNS_ATTR_NAME, columns);
         }});
 
-        AtlasClient.EntityResult entityResult = updateEntityPartial(tableId._getId(), tableUpdated);
+        EntityResult entityResult = updateEntityPartial(tableId._getId(), tableUpdated);
         assertEquals(entityResult.getCreatedEntities().size(), 1);  //col1 created
         assertEquals(entityResult.getUpdateEntities().size(), 1);  //table updated
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
@@ -1020,7 +1021,7 @@ public class DefaultMetadataServiceTest {
 
         //Delete one column
         String columnId = table1Columns.get(0).getId()._getId();
-        AtlasClient.EntityResult entityResult = deleteEntities(columnId);
+        EntityResult entityResult = deleteEntities(columnId);
         //column is deleted and table is updated
         assertEquals(entityResult.getDeletedEntities().get(0), columnId);
         assertEquals(entityResult.getUpdateEntities().get(0), table1Entity.getId()._getId());

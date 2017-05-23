@@ -17,14 +17,13 @@
  */
 package org.apache.atlas.authorize;
 
-import java.util.Date;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
+import java.util.Set;
 
 public class AtlasAccessRequest {
 
@@ -39,7 +38,8 @@ public class AtlasAccessRequest {
     private String clientIPAddress = null;
 
     public AtlasAccessRequest(HttpServletRequest request, String user, Set<String> userGroups) {
-        this(AtlasAuthorizationUtils.getAtlasResourceType(request.getServletPath()), "*", AtlasAuthorizationUtils
+        // Spring Security 4 Change => request.getServletPath() -> request.getPathInfo()
+        this(AtlasAuthorizationUtils.getAtlasResourceType(request.getPathInfo()), "*", AtlasAuthorizationUtils
             .getAtlasAction(request.getMethod()), user, userGroups,AtlasAuthorizationUtils.getRequestIpAddress(request));
     }
 

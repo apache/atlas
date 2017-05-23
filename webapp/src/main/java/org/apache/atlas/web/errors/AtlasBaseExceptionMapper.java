@@ -21,8 +21,8 @@ package org.apache.atlas.web.errors;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
+import org.springframework.stereotype.Component;
 
-import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -34,7 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * AtlasBaseException mapper for Jersey.
  */
 @Provider
-@Singleton
+@Component
 public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseException> {
 
     @Override

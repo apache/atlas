@@ -18,8 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 
-import com.google.inject.Inject;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
@@ -33,20 +32,21 @@ import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.powermock.reflect.Whitebox;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
 
+import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -61,7 +61,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class ExportServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
 
@@ -71,6 +71,9 @@ public class ExportServiceTest {
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
+    @Inject
+    private EntityGraphMapper graphMapper;
+    @Inject
     ExportService exportService;
     private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
@@ -78,7 +81,7 @@ public class ExportServiceTest {
 
     @BeforeClass
     public void setupSampleData() throws AtlasBaseException {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier);;
+        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);;
 
         AtlasTypesDef sampleTypes = TestUtilsV2.defineDeptEmployeeTypes();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
@@ -92,11 +95,6 @@ public class ExportServiceTest {
         AtlasEntityStream entityStream = new AtlasEntityStream(hrDept);
         entityStore.createOrUpdate(entityStream, false);
         LOG.debug("==> setupSampleData: ", AtlasEntity.dumpObjects(hrDept.getEntities(), null).toString());
-    }
-
-    @BeforeTest
-    public void setupExportService () throws AtlasBaseException {
-        exportService = new ExportService(typeRegistry);
     }
 
     @AfterClass
@@ -257,33 +255,33 @@ public class ExportServiceTest {
     @Test
     public void verifyOverallStatus() throws Exception {
 
-        ExportService service = new ExportService(typeRegistry);
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(service,
+//        ExportService service = new ExportService(typeRegistry);
+        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus"));
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(service,
+        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus",
                 AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(service,
+        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus",
                                 AtlasExportResult.OperationStatus.SUCCESS,
                                 AtlasExportResult.OperationStatus.SUCCESS,
                                 AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(service,
+        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus",
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.PARTIAL_SUCCESS,
                 AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(service,
+        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus",
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.PARTIAL_SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(service,
+        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(exportService,
                 "getOverallOperationStatus",
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,

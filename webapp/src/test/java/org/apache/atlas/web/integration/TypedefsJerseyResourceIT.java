@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.resources;
+package org.apache.atlas.web.integration;
 
 import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
@@ -37,7 +37,6 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -48,7 +47,10 @@ import java.util.Collections;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import static org.apache.atlas.type.AtlasTypeUtil.createClassTypeDef;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * Integration test for types jersey resource.
@@ -63,7 +65,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
 
-        typeDefinitions = createHiveTypes();
+        typeDefinitions = createHiveTypesV2();
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             clientV2 = new AtlasClientV2(atlasUrls, new String[]{"admin", "admin"});
@@ -79,9 +81,25 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testCreate() throws Exception {
-        AtlasTypesDef atlasTypeDefs = clientV2.createAtlasTypeDefs(typeDefinitions);
-        Assert.assertNotNull(atlasTypeDefs);
-        assertFalse(atlasTypeDefs.isEmpty());
+        createType(typeDefinitions);
+
+        for (AtlasEnumDef enumDef : typeDefinitions.getEnumDefs()) {
+            AtlasEnumDef byName = atlasClientV2.getEnumDefByName(enumDef.getName());
+            assertNotNull(byName);
+        }
+        for (AtlasStructDef structDef : typeDefinitions.getStructDefs()) {
+            AtlasStructDef byName = atlasClientV2.getStructDefByName(structDef.getName());
+            assertNotNull(byName);
+        }
+        for (AtlasClassificationDef classificationDef : typeDefinitions.getClassificationDefs()) {
+            AtlasClassificationDef byName = atlasClientV2.getClassificationDefByName(classificationDef.getName());
+            assertNotNull(byName);
+        }
+        for (AtlasEntityDef entityDef : typeDefinitions.getEntityDefs()) {
+            AtlasEntityDef byName = atlasClientV2.getEntityDefByName(entityDef.getName());
+            assertNotNull(byName);
+        }
+
     }
 
     @Test
@@ -275,7 +293,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         assertEquals(searchDefs.getEntityDefs().size(), 1);
     }
 
-    private AtlasTypesDef createHiveTypes() throws Exception {
+    private AtlasTypesDef createHiveTypesV2() throws Exception {
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
 
         AtlasEntityDef databaseTypeDefinition =

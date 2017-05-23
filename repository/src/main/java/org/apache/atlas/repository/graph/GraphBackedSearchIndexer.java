@@ -60,6 +60,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.math.BigDecimal;
@@ -76,6 +77,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
+@Component
 public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler,
         TypeDefChangeListener {
 

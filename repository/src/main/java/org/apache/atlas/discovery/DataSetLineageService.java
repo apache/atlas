@@ -18,17 +18,11 @@
 
 package org.apache.atlas.discovery;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.GremlinQueryResult;
@@ -37,7 +31,6 @@ import org.apache.atlas.query.OutputLineageClosureQuery;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -49,16 +42,22 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.stereotype.Component;
 import scala.Option;
 import scala.Some;
 import scala.collection.JavaConversions;
 import scala.collection.immutable.List;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Arrays;
+import java.util.Iterator;
+
 /**
  * Hive implementation of Lineage service interface.
  */
 @Singleton
+@Component
 public class DataSetLineageService implements LineageService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageService.class);
@@ -91,8 +90,9 @@ public class DataSetLineageService implements LineageService {
 
     @Inject
     DataSetLineageService(MetadataRepository metadataRepository,
-                          GraphBackedDiscoveryService discoveryService) throws DiscoveryException {
-        this.graph = AtlasGraphProvider.getGraphInstance();
+                          GraphBackedDiscoveryService discoveryService,
+                          AtlasGraph atlasGraph) throws DiscoveryException {
+        this.graph = atlasGraph;
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.discoveryService = discoveryService;
     }

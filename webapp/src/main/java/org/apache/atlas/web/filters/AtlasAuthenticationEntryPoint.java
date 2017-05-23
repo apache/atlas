@@ -16,22 +16,31 @@
  */
 package org.apache.atlas.web.filters;
 
-import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import java.io.IOException;
 
 @SuppressWarnings("deprecation")
-class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
+@Component
+public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationEntryPoint.class);
 
     private String loginPath = "/login.jsp";
+
+    @Inject
+    public AtlasAuthenticationEntryPoint(@Value("/login.jsp") String loginFormUrl) {
+        super(loginFormUrl);
+    }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)

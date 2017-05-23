@@ -19,8 +19,7 @@
 package org.apache.atlas.web.setup;
 
 import com.google.common.base.Charsets;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.AtlasServerIdSelector;
@@ -37,32 +36,44 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 @Singleton
+@Component
+@Conditional(SetupSteps.SetupRequired.class)
 public class SetupSteps {
     private static final Logger LOG = LoggerFactory.getLogger(SetupSteps.class);
     public static final String SETUP_IN_PROGRESS_NODE = "/setup_in_progress";
 
     private final Set<SetupStep> setupSteps;
+    private final Configuration configuration;
     private CuratorFactory curatorFactory;
 
     @Inject
-    public SetupSteps(Set<SetupStep> steps, CuratorFactory curatorFactory) {
+    public SetupSteps(Set<SetupStep> steps, CuratorFactory curatorFactory, Configuration configuration) {
         setupSteps = steps;
         this.curatorFactory = curatorFactory;
+        this.configuration = configuration;
     }
 
     /**
      * Call each registered {@link SetupStep} one after the other.
      * @throws SetupException Thrown with any error during running setup, including Zookeeper interactions, and
      *                          individual failures in the {@link SetupStep}.
-     * @param configuration Configuration for Atlas server.
      */
-    public void runSetup(Configuration configuration) throws SetupException {
+    @PostConstruct
+    public void runSetup() throws SetupException {
         HAConfiguration.ZookeeperProperties zookeeperProperties = HAConfiguration.getZookeeperProperties(configuration);
         InterProcessMutex lock = curatorFactory.lockInstance(zookeeperProperties.getZkRoot());
         try {
@@ -160,6 +171,27 @@ public class SetupSteps {
             LOG.info("Created lock node {}", path);
         } catch (Exception e) {
             throw new SetupException("Could not create lock node before running setup.", e);
+        }
+    }
+
+    static class SetupRequired implements Condition {
+        private static final String ATLAS_SERVER_RUN_SETUP_KEY = "atlas.server.run.setup.on.start";
+
+        @Override
+        public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+            try {
+                Configuration configuration = ApplicationProperties.get();
+                boolean shouldRunSetup = configuration.getBoolean(ATLAS_SERVER_RUN_SETUP_KEY, false);
+                if (shouldRunSetup) {
+                    LOG.warn("Running setup per configuration {}.", ATLAS_SERVER_RUN_SETUP_KEY);
+                    return true;
+                } else {
+                    LOG.info("Not running setup per configuration {}.", ATLAS_SERVER_RUN_SETUP_KEY);
+                }
+            } catch (AtlasException e) {
+                LOG.error("Unable to read config to determine if setup is needed. Not running setup.");
+            }
+            return false;
         }
     }
 }

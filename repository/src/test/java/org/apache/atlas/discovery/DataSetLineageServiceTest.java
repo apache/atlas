@@ -19,10 +19,10 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -55,7 +55,7 @@ import static org.testng.Assert.fail;
 /**
  * Unit tests for Hive LineageService.
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
     @Inject
@@ -400,7 +400,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
         //Delete the entity. Lineage for entity returns the same results as before.
         //Lineage for table name throws EntityNotFoundException
-        AtlasClient.EntityResult deleteResult = repository.deleteEntities(Arrays.asList(tableId));
+        EntityResult deleteResult = repository.deleteEntities(Arrays.asList(tableId));
         assertTrue(deleteResult.getDeletedEntities().contains(tableId));
 
         results = new JSONObject(lineageService.getSchemaForEntity(tableId));

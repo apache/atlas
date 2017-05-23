@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.typesystem.types.cache;
 
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.EnumType;
@@ -29,7 +29,9 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,8 +43,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Caches the types in-memory within the same process space.
  */
-@Singleton
 @SuppressWarnings("rawtypes")
+@Singleton
+@Component
+@ConditionalOnAtlasProperty(property = "atlas.TypeCache.impl", isDefault = true)
 public class DefaultTypeCache implements TypeCache {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultTypeCache.class);
 

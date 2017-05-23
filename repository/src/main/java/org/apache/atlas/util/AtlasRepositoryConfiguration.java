@@ -17,18 +17,13 @@
  */
 package org.apache.atlas.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
-import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
@@ -36,6 +31,9 @@ import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Atlas configuration for repository project

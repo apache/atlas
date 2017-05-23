@@ -41,7 +41,7 @@ class GremlinTest extends BaseGremlinTest {
   @BeforeClass
   def beforeAll() {
      TypeSystem.getInstance().reset()
-     var repo = new GraphBackedMetadataRepository(null)
+     var repo = new GraphBackedMetadataRepository(null, new AtlasGraphProvider().get())
      TestUtils.setupGraphProvider(repo)
     //force graph to be initialized first
     AtlasGraphProvider.getGraphInstance()

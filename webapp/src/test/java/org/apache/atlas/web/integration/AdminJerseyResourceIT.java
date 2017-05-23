@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.resources;
+package org.apache.atlas.web.integration;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.commons.configuration.PropertiesConfiguration;

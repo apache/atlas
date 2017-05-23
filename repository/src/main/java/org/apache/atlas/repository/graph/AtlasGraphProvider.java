@@ -18,17 +18,19 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
-
-import com.google.common.annotations.VisibleForTesting;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Provides access to the AtlasGraph
  *
  */
+@Configuration
 public class AtlasGraphProvider implements IAtlasGraphProvider {
 
     private static volatile GraphDatabase<?,?> graphDb_;    
@@ -64,6 +66,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
     }
 
     @Override
+    @Bean
     public AtlasGraph get() throws RepositoryException {
         return getGraphInstance();
     }

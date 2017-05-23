@@ -20,7 +20,6 @@
 
 package org.apache.atlas.web.filters;
 
-import com.google.inject.Inject;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
@@ -42,6 +41,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Inject;
 import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -61,6 +63,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 
 
+@Component("ssoAuthenticationFilter")
 public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasKnoxSSOAuthenticationFilter.class);
 
@@ -73,6 +76,8 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT = "originalUrl";
     public static final String DEFAULT_BROWSER_USERAGENT = "Mozilla,Opera,Chrome";
 
+    private final AtlasAuthenticationProvider authenticationProvider;
+
     private SSOAuthenticationProperties jwtProperties;
 
     private String originalUrlQueryParam = "originalUrl";
@@ -84,7 +89,8 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private JWSVerifier verifier = null;
 
     @Inject
-    public AtlasKnoxSSOAuthenticationFilter() {
+    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider) {
+        this.authenticationProvider = authenticationProvider;
         try {
             configuration = ApplicationProperties.get();
         } catch (Exception e) {
@@ -97,8 +103,9 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         setJwtProperties();
     }
 
-    public AtlasKnoxSSOAuthenticationFilter(
-            SSOAuthenticationProperties jwtProperties) {
+    public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider,
+                                            SSOAuthenticationProperties jwtProperties) {
+        this.authenticationProvider = authenticationProvider;
         this.jwtProperties = jwtProperties;
         setJwtProperties();
     }
@@ -166,7 +173,6 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
                         final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
                         WebAuthenticationDetails webDetails = new WebAuthenticationDetails(httpRequest);
                         ((AbstractAuthenticationToken) finalAuthentication).setDetails(webDetails);
-                        AtlasAuthenticationProvider authenticationProvider = new AtlasAuthenticationProvider();
                         authenticationProvider.setSsoEnabled(ssoEnabled);
                         Authentication authentication = authenticationProvider.authenticate(finalAuthentication);
                         SecurityContextHolder.getContext().setAuthentication(authentication);

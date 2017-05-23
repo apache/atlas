@@ -18,19 +18,18 @@
 
 package org.apache.atlas.web.filters;
 
-import com.google.inject.Singleton;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.metrics.Metrics;
-import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -40,7 +39,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Date;
 import java.util.UUID;
@@ -49,7 +47,7 @@ import java.util.UUID;
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
  */
-@Singleton
+@Component
 public class AuditFilter implements Filter {
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
     private static final Logger LOG = LoggerFactory.getLogger(AuditFilter.class);

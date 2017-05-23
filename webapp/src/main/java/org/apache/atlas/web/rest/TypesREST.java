@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import com.google.inject.Inject;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -33,7 +32,9 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -53,6 +54,7 @@ import java.util.Set;
  */
 @Path("v2/types")
 @Singleton
+@Service
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 

@@ -19,14 +19,11 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
-
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -43,7 +40,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -59,15 +60,19 @@ import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.VERTE
 /**
  * Graph persistence store for TypeDef - v1
  */
+@Singleton
+@Component
 public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStoreV1.class);
 
-    protected final AtlasGraph atlasGraph = AtlasGraphProvider.getGraphInstance();
+    protected final AtlasGraph atlasGraph;
 
     @Inject
     public AtlasTypeDefGraphStoreV1(AtlasTypeRegistry typeRegistry,
-                                    Set<TypeDefChangeListener> typeDefChangeListeners) {
+                                    Set<TypeDefChangeListener> typeDefChangeListeners,
+                                    AtlasGraph atlasGraph) {
         super(typeRegistry, typeDefChangeListeners);
+        this.atlasGraph = atlasGraph;
 
         LOG.debug("==> AtlasTypeDefGraphStoreV1()");
 
@@ -105,6 +110,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     }
 
     @Override
+    @PostConstruct
     public void init() throws AtlasBaseException {
         LOG.debug("==> AtlasTypeDefGraphStoreV1.init()");
 

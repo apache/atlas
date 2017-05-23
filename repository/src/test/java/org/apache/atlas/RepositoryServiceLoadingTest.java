@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
  * Uses TestNG's Guice annotation to load the necessary modules and inject the
  * objects from Guice
  */
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class RepositoryServiceLoadingTest {
 
     @Test

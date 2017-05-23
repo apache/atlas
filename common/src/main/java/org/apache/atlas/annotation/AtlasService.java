@@ -15,16 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas;
+package org.apache.atlas.annotation;
 
-import org.apache.atlas.graph.GraphSandboxUtil;
+import org.springframework.stereotype.Service;
 
-public class TestOnlyModule extends RepositoryMetadataModule {
-    @Override
-    protected void configure() {
-        GraphSandboxUtil.create();
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-        // Configure extra stuff for test DI here
-        super.configure();
-    }
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Service
+@Inherited
+public @interface AtlasService {
 }

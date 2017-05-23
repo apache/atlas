@@ -18,7 +18,10 @@
 
 package org.apache.atlas.web.filters;
 
-import java.io.IOException;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -26,12 +29,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.inject.Singleton;
+import java.io.IOException;
 
 /**
  * Filter that rolls back the stale transaction associated with
@@ -39,7 +37,7 @@ import com.google.inject.Singleton;
  * see all of the committed changes.
  *
  */
-@Singleton
+@Component
 public class StaleTransactionCleanupFilter implements Filter {
 
     private static final Logger LOG = LoggerFactory.getLogger(StaleTransactionCleanupFilter.class);
@@ -52,6 +50,7 @@ public class StaleTransactionCleanupFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
+        LOG.info("Cleaning stale transactions");
         AtlasGraphProvider.getGraphInstance().rollback();
         filterChain.doFilter(request, response);
     }

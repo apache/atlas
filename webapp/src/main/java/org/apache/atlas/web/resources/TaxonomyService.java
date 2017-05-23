@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.catalog.exception.CatalogException;
 import org.apache.atlas.catalog.exception.InvalidPayloadException;
@@ -28,9 +27,9 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -52,7 +51,7 @@ import java.util.Map;
  * Service which handles API requests for taxonomy and term resources.
  */
 @Path("v1/taxonomies")
-@Singleton
+@Component
 public class TaxonomyService extends BaseService {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TaxonomyService");
 

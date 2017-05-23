@@ -20,7 +20,7 @@ package org.apache.atlas.repository.graph;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -41,12 +41,10 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.Set;
 
-import static junit.framework.Assert.assertTrue;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.*;
 
-@Guice(modules = TestOnlyModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class GraphBackedSearchIndexerTest {
     @Inject
     private GraphBackedSearchIndexer graphBackedSearchIndexer;

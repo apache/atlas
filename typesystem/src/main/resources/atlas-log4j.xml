@@ -75,6 +75,21 @@
         <appender-ref ref="console"/>
     </logger>
 
+    <logger name="org.springframework" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
+    <logger name="org.eclipse" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
+    <logger name="com.sun.jersey" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="console"/>
+    </logger>
+
     <logger name="AUDIT" additivity="false">
         <level value="info"/>
         <appender-ref ref="console"/>

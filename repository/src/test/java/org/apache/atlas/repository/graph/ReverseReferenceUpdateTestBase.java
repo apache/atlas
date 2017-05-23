@@ -21,10 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import org.apache.atlas.CreateUpdateEntitiesResult;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -40,7 +38,6 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
@@ -52,9 +49,7 @@ import java.util.Map;
  * Verifies automatic update of reverse references
  *
  */
-@Guice(modules = TestOnlyModule.class)
 public abstract class ReverseReferenceUpdateTestBase {
-
     @Inject
     MetadataRepository repositoryService;
 
@@ -63,8 +58,6 @@ public abstract class ReverseReferenceUpdateTestBase {
     protected ClassType typeA;
     protected ClassType typeB;
 
-    abstract DeleteHandler getDeleteHandler(TypeSystem typeSystem);
-
     abstract void assertTestOneToOneReference(Object actual, ITypedReferenceableInstance expectedValue, ITypedReferenceableInstance referencingInstance) throws Exception;
     abstract void assertTestOneToManyReference(Object refValue, ITypedReferenceableInstance referencingInstance) throws Exception;
 
@@ -72,8 +65,6 @@ public abstract class ReverseReferenceUpdateTestBase {
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
-
-        new GraphBackedSearchIndexer(new AtlasTypeRegistry());
 
         HierarchicalTypeDefinition<ClassType> aDef = TypesUtil.createClassTypeDef("A", ImmutableSet.<String>of(),
             TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
@@ -95,7 +86,6 @@ public abstract class ReverseReferenceUpdateTestBase {
         typeA = typeSystem.getDataType(ClassType.class, "A");
         typeB = typeSystem.getDataType(ClassType.class, "B");
 
-        repositoryService = new GraphBackedMetadataRepository(getDeleteHandler(typeSystem));
         repositoryService = TestUtils.addTransactionWrapper(repositoryService);
     }
 

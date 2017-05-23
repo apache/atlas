@@ -35,17 +35,6 @@
     </properties>
 
     <dependencies>
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-
         <!-- apache atlas core dependencies -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -229,22 +218,6 @@
                                             <groupId>org.scala-lang</groupId>
                                             <artifactId>scalap</artifactId>
                                             <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.inject</groupId>
-                                            <artifactId>guice</artifactId>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.inject.extensions</groupId>
-                                            <artifactId>guice-multibindings</artifactId>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.inject.extensions</groupId>
-                                            <artifactId>guice-servlet</artifactId>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.inject.extensions</groupId>
-                                            <artifactId>guice-throwingproviders</artifactId>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>

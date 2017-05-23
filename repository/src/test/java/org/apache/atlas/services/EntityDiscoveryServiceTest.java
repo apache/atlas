@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.services;
 
-import org.apache.atlas.TestOnlyModule;
+import org.apache.atlas.TestModules.TestOnlyModule;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -27,7 +27,6 @@ import org.powermock.reflect.Whitebox;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

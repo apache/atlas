@@ -16,32 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.web.resources;
+package org.apache.atlas.web.integration;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
@@ -67,36 +55,32 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.inject.Inject;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 
 /**
  * Integration tests for Entity Jersey Resource.
  */
-@Guice(modules = NotificationModule.class)
 public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityJerseyResourceIT.class);
 
-    private final String DATABASE_NAME = "db" + randomString();
-    private final String TABLE_NAME = "table" + randomString();
     private static final String TRAITS = "traits";
-    private Referenceable tableInstance;
-    private Id tableId;
-    private Id dbId;
-    private String traitName;
 
-    @Inject
-    private NotificationInterface notificationInterface;
+    private NotificationInterface notificationInterface = NotificationProvider.get();
     private NotificationConsumer<EntityNotification> notificationConsumer;
 
     @BeforeClass
@@ -104,8 +88,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         super.setUp();
 
         createTypeDefinitionsV1();
-        Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(DATABASE_NAME);
-        dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
@@ -150,35 +132,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         //Create the tables.  The database and columns should be created automatically, since
         //the tables reference them.
-        JSONArray entityArray = new JSONArray(tables.size());
-        for(int i = 0; i < tables.size(); i++) {
-            Referenceable table = tables.get(i);
-            entityArray.put(InstanceSerialization.toJson(table, true));
-        }
-        String json = entityArray.toString();
-
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, json);
-
-        GuidMapping guidMapping = AtlasType.fromJson(response.toString(), GuidMapping.class);
-
-        Map<String,String> guidsCreated = guidMapping.getGuidAssignments();
-        assertEquals(guidsCreated.size(), nTables * colsPerTable + nTables + 1);
-        assertNotNull(guidsCreated.get(databaseInstance.getId()._getId()));
-        for(Referenceable r : allColumns) {
-            assertNotNull(guidsCreated.get(r.getId()._getId()));
-        }
-        for(Referenceable r : tables) {
-            assertNotNull(guidsCreated.get(r.getId()._getId()));
-        }
+        List<String> entityGUIDs = atlasClientV1.createEntity(tables);
+        assertNotNull(entityGUIDs);
+        assertEquals(entityGUIDs.size(), nTables * (colsPerTable + 1) + 1);
     }
 
 
     @Test
     public void testSubmitEntity() throws Exception {
-        tableInstance = createHiveTableInstanceBuiltIn(DATABASE_NAME, TABLE_NAME, dbId);
-        tableId = createInstance(tableInstance);
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable referenceable = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(referenceable);
 
-        final String guid = tableId._getId();
+        final String guid = id._getId();
         try {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
@@ -235,14 +204,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        AtlasClient.EntityResult entityResult = AtlasClient.EntityResult.fromString(response.toString());
+        EntityResult entityResult = EntityResult.fromString(response.toString());
         assertEquals(entityResult.getCreatedEntities().size(), 1);
         assertNotNull(entityResult.getCreatedEntities().get(0));
     }
 
     @Test
     public void testEntityDeduping() throws Exception {
-        final Referenceable db = new Referenceable(DATABASE_TYPE_BUILTIN);
         final String dbName = "db" + randomString();
         Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
         Id dbIdReference = createInstance(HiveDBInstance);
@@ -280,7 +248,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         //Test the same across references
         Referenceable table = new Referenceable(HIVE_TABLE_TYPE_BUILTIN);
         final String tableName = randomString();
-        Referenceable tableInstance = createHiveTableInstanceBuiltIn(DATABASE_NAME, tableName, dbIdReference);
+        Referenceable tableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbIdReference);
         atlasClientV1.createEntity(tableInstance);
         results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, dbName));
         assertEquals(results.length(), 1);
@@ -366,9 +334,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmitEntityWithBadDateFormat() throws Exception {
         try {
-            Referenceable tableInstance = createHiveTableInstanceBuiltIn("db" + randomString(), "table" + randomString(), dbId);
-            tableInstance.set("lastAccessTime", "2014-07-11");
-            tableId = createInstance(tableInstance);
+            String dbName = "db" + randomString();
+            String tableName = "table" + randomString();
+            Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+            Id dbId = createInstance(hiveDBInstance);
+            Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+            hiveTableInstance.set("lastAccessTime", "2014-07-11");
+            Id tableId = createInstance(hiveTableInstance);
             Assert.fail("Was expecting an  exception here ");
         } catch (AtlasServiceException e) {
             Assert.assertTrue(
@@ -376,9 +348,21 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testAddProperty() throws Exception {
-        final String guid = tableId._getId();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable referenceable = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(referenceable);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
         //add property
         String description = "bar table - new desc";
         addProperty(guid, "description", description);
@@ -386,7 +370,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
-        tableInstance.set("description", description);
+        referenceable.set("description", description);
 
         //invalid property for the type
         try {
@@ -404,12 +388,25 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
-        tableInstance.set("createTime", currentTime);
+        referenceable.set("createTime", currentTime);
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity", expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testAddNullProperty() throws Exception {
-        final String guid = tableId._getId();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         //add property
         addProperty(guid, null, "foo bar");
         Assert.fail();
@@ -417,7 +414,20 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(enabled = false)
     public void testAddNullPropertyValue() throws Exception {
-        final String guid = tableId._getId();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         //add property
         try {
             addProperty(guid, "description", null);
@@ -427,11 +437,25 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testAddReferenceProperty() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         //Create new db instance
+        dbName = "db" + randomString();
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
         databaseInstance.set(NAME, dbName);
         databaseInstance.set(QUALIFIED_NAME, dbName);
         databaseInstance.set(CLUSTER_NAME, randomString());
@@ -443,29 +467,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("location", "/tmp");
 
         Id dbInstance = createInstance(databaseInstance);
-        String dbId = dbInstance._getId();
+        String newDBId = dbInstance._getId();
 
         //Add reference property
-        final String guid = tableId._getId();
-        addProperty(guid, "db", dbId);
+        addProperty(guid, "db", newDBId);
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testGetEntityDefinition() throws Exception {
-        final String guid = tableId._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
 
-        Assert.assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
 
-        final String definition = response.getString(AtlasClient.DEFINITION);
-        Assert.assertNotNull(definition);
-        LOG.debug("tableInstanceAfterGet = {}", definition);
-        InstanceSerialization.fromJsonReferenceable(definition, true);
+        Referenceable entity = atlasClientV1.getEntity(guid);
+        Assert.assertNotNull(entity);
     }
 
     private void addProperty(String guid, String property, String value) throws AtlasServiceException {
-        AtlasClient.EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, property, value);
+        EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, property, value);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), guid);
     }
@@ -480,11 +509,25 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testGetEntityList() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         List<String> entities = atlasClientV1.listEntities(HIVE_TABLE_TYPE_BUILTIN);
         Assert.assertNotNull(entities);
-        Assert.assertTrue(entities.contains(tableId._getId()));
+        Assert.assertTrue(entities.contains(guid));
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
@@ -525,21 +568,44 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         return typeName;
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testGetTraitNames() throws Exception {
-        final String guid = tableId._getId();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.LIST_TRAITS, null, guid, TRAITS);
-        assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
 
-        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
-        Assert.assertEquals(list.length(), 7);
+        List<String> traits = atlasClientV1.listTraits(guid);
+        assertNotNull(traits);
+        Assert.assertEquals(traits.size(), 7);
     }
 
-    @Test(dependsOnMethods = "testGetTraitNames")
+    @Test
     public void testAddTrait() throws Exception {
-        traitName = "PII_Trait" + randomString();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
@@ -547,20 +613,28 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
-        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
-        final String guid = tableId._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
-        assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-
+        atlasClientV1.addTrait(guid, traitInstance);
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
-    public void testgetTraitDefinitionForEntity() throws Exception{
-        traitName = "PII_Trait" + randomString();
+    @Test
+    public void testGetTraitDefinitionForEntity() throws Exception{
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
@@ -568,38 +642,66 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
-        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
-
-        final String guid = tableId._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
-        assertNotNull(response);
+        atlasClientV1.addTrait(guid, traitInstance);
         Struct traitDef = atlasClientV1.getTraitDefinition(guid, traitName);
-        System.out.println(traitDef.toString());
-        JSONObject responseAsJSON = new JSONObject(InstanceSerialization.toJson(traitDef, true));
-        Assert.assertEquals(responseAsJSON.get("typeName"), traitName);
+        Assert.assertEquals(traitDef.getTypeName(), traitName);
 
 
         List<Struct> allTraitDefs = atlasClientV1.listTraitDefinitions(guid);
         System.out.println(allTraitDefs.toString());
-        Assert.assertEquals(allTraitDefs.size(), 9);
+        Assert.assertEquals(allTraitDefs.size(), 8);
     }
 
-    @Test(dependsOnMethods = "testAddTrait", expectedExceptions = AtlasServiceException.class)
+    @Test
     public void testAddExistingTrait() throws Exception {
-        final String traitName = "PII_Trait" + randomString();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        String traitName = "PII_Trait" + randomString();
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
+        createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
-        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
+        atlasClientV1.addTrait(guid, traitInstance);
 
-        final String guid = tableId._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
-        assertNotNull(response);
+        try {
+            atlasClientV1.addTrait(guid, traitInstance);
+            fail("Duplicate trait addition should've failed");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
+        }
     }
 
-    @Test(dependsOnMethods = "testGetTraitNames")
+    @Test
     public void testAddTraitWithAttribute() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
+
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
                 .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
@@ -610,24 +712,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         Struct traitInstance = new Struct(traitName);
         traitInstance.set("type", "SSN");
-        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
-        LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
-
-        final String guid = tableId._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
-        assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        atlasClientV1.addTrait(guid, traitInstance);
 
         // verify the response
-        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        Referenceable entity = atlasClientV1.getEntity(guid);
+        Assert.assertNotNull(entity);
+        Assert.assertEquals(entity.getId()._getId(), guid);
 
-        final String definition = response.getString(AtlasClient.DEFINITION);
-        Assert.assertNotNull(definition);
-        Referenceable entityRef = InstanceSerialization.fromJsonReferenceable(definition, true);
-        IStruct traitRef = entityRef.getTrait(traitName);
-        String type = (String) traitRef.get("type");
-        Assert.assertEquals(type, "SSN");
+        assertNotNull(entity.getTrait(traitName));
+        assertEquals(entity.getTrait(traitName).get("type"), traitInstance.get("type"));
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
@@ -642,33 +735,85 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
+        atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
     }
 
-    @Test(dependsOnMethods = "testAddTrait")
+    @Test
     public void testDeleteTrait() throws Exception {
-        final String guid = tableId._getId();
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get("traitName"));
-        assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        String traitName = "PII_Trait" + randomString();
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
+        createType(traitDefinitionAsJSON);
+
+        Struct traitInstance = new Struct(traitName);
+
+        atlasClientV1.addTrait(guid, traitInstance);
+        assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
+
+        atlasClientV1.deleteTrait(guid, traitName);
+
+        try {
+            atlasClientV1.getTraitDefinition(guid, traitName);
+            fail("Deleted trait definition shouldn't exist");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
+        }
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testDeleteTraitNonExistent() throws Exception {
-        final String traitName = "blah_trait";
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
 
-        Assert.assertNotNull(response.get(AtlasClient.ERROR));
-        Assert.assertEquals(response.getString(AtlasClient.ERROR),
-                "trait=" + traitName + " should be defined in type system before it can be deleted");
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        final String traitName = "blah_trait";
+        atlasClientV1.deleteTrait(guid, traitName);
+        fail("trait=" + traitName + " should be defined in type system before it can be deleted");
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testDeleteExistentTraitNonExistentForEntity() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id id = createInstance(hiveTableInstance);
 
-        final String guid = tableId._getId();
+        final String guid = id._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
                 .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
@@ -677,7 +822,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createType(traitDefinitionAsJSON);
 
         try {
-            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+            atlasClientV1.deleteTrait(guid, traitName);
             fail("Call should've failed for deletion of invalid trait");
         } catch (AtlasServiceException e) {
             assertNotNull(e);
@@ -715,8 +860,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testPartialUpdate() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id tableId = createInstance(hiveTableInstance);
+
+        final String guid = tableId._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         String colName = "col1"+randomString();
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values = new HashMap<>();
@@ -728,7 +887,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values.put("owner", "user1");
         values.put("position", 0);
         values.put("description", "col1");
-        values.put("table", tableId ); //table is a required reference, can't be null
+        values.put("table", tableId); //table is a required reference, can't be null
 
         Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.add(ref);
@@ -737,13 +896,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= {}", tableUpdated);
-        AtlasClient.EntityResult entityResult = atlasClientV1.updateEntity(tableId._getId(), tableUpdated);
+        EntityResult entityResult = atlasClientV1.updateEntity(guid, tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
-        assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
+        assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
-        List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
+        Referenceable entity = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
 
         Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
 
@@ -757,20 +915,33 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         LOG.debug("Updating entity= {}", tableUpdated);
         entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                (String) tableInstance.get(QUALIFIED_NAME), tableUpdated);
+                (String) hiveTableInstance.get(QUALIFIED_NAME), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 2);
-        assertEquals(entityResult.getUpdateEntities().get(1), tableId._getId());
+        assertEquals(entityResult.getUpdateEntities().get(1), guid);
 
-        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
-        refs = (List<Referenceable>) getReferenceable.get("columns");
+        entity = atlasClientV1.getEntity(guid);
+        refs = (List<Referenceable>) entity.get("columns");
 
         Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
         Assert.assertEquals(refs.get(0).get("type"), "int");
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test
     public void testCompleteUpdate() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id tableId = createInstance(hiveTableInstance);
+
+        final String guid = tableId._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values1 = new HashMap<>();
         values1.put(NAME, "col3");
@@ -797,42 +968,19 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable ref2 = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values2);
         columns.add(ref1);
         columns.add(ref2);
-        tableInstance.set("columns", columns);
-        String entityJson = InstanceSerialization.toJson(tableInstance, true);
-        JSONArray entityArray = new JSONArray(1);
-        entityArray.put(entityJson);
-        LOG.debug("Replacing entity= {}", tableInstance);
+        hiveTableInstance.set("columns", columns);
+        LOG.debug("Replacing entity= {}", hiveTableInstance);
 
-        JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API.UPDATE_ENTITY, entityArray);
+        EntityResult updateEntity = atlasClientV1.updateEntities(hiveTableInstance);
 
-        // ATLAS-586: verify response entity can be parsed by GSON.
-        Gson gson = new Gson();
-        try {
-            UpdateEntitiesResponse updateEntitiesResponse = gson.fromJson(response.toString(), UpdateEntitiesResponse.class);
-        }
-        catch (JsonSyntaxException e) {
-            Assert.fail("Response entity from not parse-able by GSON", e);
-        }
+        assertNotNull(updateEntity.getUpdateEntities());
 
-        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
-        LOG.info("Response = {}", response.toString());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
-        List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
+        hiveTableInstance = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs = (List<Referenceable>) hiveTableInstance.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
         Assert.assertTrue(refs.get(0).getValuesMap().equals(values1));
         Assert.assertTrue(refs.get(1).getValuesMap().equals(values2));
-    }
-
-    private static class UpdateEntitiesResponse {
-        String requestId;
-        AtlasClient.EntityResult entities;
-        AtlasEntity definition;
-    }
-
-    private static class AtlasEntity {
-        String typeName;
-        final Map<String, Object> values = new HashMap<>();
     }
 
     @Test
@@ -868,7 +1016,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 
         JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.DELETE_ENTITIES, queryParams);
-        List<String> deletedGuidsList = AtlasClient.EntityResult.fromString(response.toString()).getDeletedEntities();
+        List<String> deletedGuidsList = EntityResult.fromString(response.toString()).getDeletedEntities();
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
         Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
 

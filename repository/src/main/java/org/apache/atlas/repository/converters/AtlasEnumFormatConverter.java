@@ -28,8 +28,8 @@ import org.apache.atlas.typesystem.types.EnumValue;
 
 import java.util.Map;
 
-
 public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
+
     public AtlasEnumFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         super(registry, typeRegistry, TypeCategory.ENUM);
     }

@@ -63,12 +63,12 @@ public abstract class AbstractGremlinQueryOptimizerTest implements IAtlasGraphPr
     private final GraphPersistenceStrategies STRATEGY = mock(GraphPersistenceStrategies.class);
 
     @BeforeClass
-    public void setUp() {
+    public void setUp() throws RepositoryException {
         GremlinQueryOptimizer.reset();
         GremlinQueryOptimizer.setExpressionFactory(getFactory());
         when(STRATEGY.typeAttributeName()).thenReturn(Constants.ENTITY_TYPE_PROPERTY_KEY);
         when(STRATEGY.superTypeAttributeName()).thenReturn(Constants.SUPER_TYPES_PROPERTY_KEY);
-        repo = new GraphBackedMetadataRepository(this, new HardDeleteHandler(TypeSystem.getInstance()));
+        repo = new GraphBackedMetadataRepository(new HardDeleteHandler(TypeSystem.getInstance()), this.get());
     }
 
     private FieldInfo getTestFieldInfo() throws AtlasException {

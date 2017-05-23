@@ -18,12 +18,12 @@
 
 package org.apache.atlas.web.security;
 
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.simple.JSONObject;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
+@Component
 public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessHandler.class);
@@ -41,7 +42,6 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
         LOG.debug("Login Success " + authentication.getPrincipal());
 
         JSONObject json = new JSONObject();
-        ObjectMapper mapper = new ObjectMapper();
         json.put("msgDesc", "Success");
 
         if (request.getSession() != null) { // incase of form based login mark it as local login in session
@@ -49,10 +49,9 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
             request.getServletContext().setAttribute(request.getSession().getId(), "locallogin");
         }
 
-        String jsonAsStr = mapper.writeValueAsString(json);
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(jsonAsStr);
+        response.getWriter().write(json.toJSONString());
     }
 }

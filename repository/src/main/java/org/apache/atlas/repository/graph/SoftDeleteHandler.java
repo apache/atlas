@@ -18,19 +18,25 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Inject;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Inject;
 
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 
+@Component
+@ConditionalOnAtlasProperty(property = "atlas.DeleteHandler.impl", isDefault = true)
 public class SoftDeleteHandler extends DeleteHandler {
+
     @Inject
     public SoftDeleteHandler(TypeSystem typeSystem) {
         super(typeSystem, false, true);

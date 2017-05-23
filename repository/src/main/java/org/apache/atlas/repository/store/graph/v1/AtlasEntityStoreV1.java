@@ -18,11 +18,9 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -47,7 +45,9 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,19 +61,22 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 
 
-@Singleton
+@Component
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
     private final DeleteHandlerV1           deleteHandler;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
+    private final EntityGraphMapper entityGraphMapper;
 
     @Inject
-    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry,
+                              AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
         this.deleteHandler        = deleteHandler;
         this.typeRegistry         = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     @Override
@@ -143,6 +146,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> bulkImport()");
@@ -208,7 +212,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
     }
 
-    @GraphTransaction
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
@@ -219,8 +222,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         // Create/Update entities
-        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
-
         EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
         EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
@@ -238,6 +239,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
         return createOrUpdate(entityStream, isPartialUpdate, false);
     }
@@ -315,6 +317,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         return createOrUpdate(new AtlasEntityStream(updateEntity), true);
     }
 
+    @Override
     @GraphTransaction
     public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
 
@@ -432,8 +435,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         // validate if entity, not already associated with classifications
         validateEntityAssociations(guid, classifications);
 
-        EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
-        graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
+        entityGraphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
         // notify listeners on classification addition
         entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
@@ -454,7 +456,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
         }
 
-        EntityGraphMapper         graphMapper            = new EntityGraphMapper(deleteHandler, typeRegistry);
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
 
         for (AtlasClassification newClassification : newClassifications) {
@@ -475,7 +476,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 }
             }
 
-            graphMapper.updateClassification(new EntityMutationContext(), guid, oldClassification);
+            entityGraphMapper.updateClassification(new EntityMutationContext(), guid, oldClassification);
 
             updatedClassifications.add(oldClassification);
         }
@@ -498,8 +499,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Adding classification={} to entities={}", classification, guids);
         }
 
-        EntityGraphMapper graphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
-
         validateAndNormalize(classification);
 
         List<AtlasClassification> classifications = Collections.singletonList(classification);
@@ -508,7 +507,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             // validate if entity, not already associated with classifications
             validateEntityAssociations(guid, classifications);
 
-            graphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
+            entityGraphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
 
             // notify listeners on classification addition
             entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
@@ -530,7 +529,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Deleting classifications={} from entity={}", classificationNames, guid);
         }
 
-        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteHandler, typeRegistry);
         entityGraphMapper.deleteClassifications(guid, classificationNames);
 
         // notify listeners on classification deletion
@@ -569,7 +567,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             AtlasEntity entity = entityStream.getByGuid(guid);
 
             if (entity != null) {
-                
+
                 if (vertex != null) {
                     // entity would be null if guid is not in the stream but referenced by an entity in the stream
                     if (!isPartialUpdate) {

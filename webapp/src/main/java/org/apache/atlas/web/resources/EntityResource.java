@@ -22,17 +22,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.AtlasClient.EntityResult;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -40,8 +40,8 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -62,6 +62,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -86,8 +87,9 @@ import java.util.Map;
  * An entity is an "instance" of a Type.  Entities conform to the definition
  * of the Type they correspond with.
  */
-@Path("entities")
 @Singleton
+@Path("entities")
+@Service
 @Deprecated
 public class EntityResource {
 
@@ -100,6 +102,7 @@ public class EntityResource {
     private final AtlasInstanceConverter restAdapters;
     private final AtlasEntityStore       entitiesStore;
     private final AtlasTypeRegistry      typeRegistry;
+    private final EntityREST entityREST;
 
     @Context
     UriInfo uriInfo;
@@ -114,11 +117,13 @@ public class EntityResource {
      * @param metadataService metadata service handle
      */
     @Inject
-    public EntityResource(MetadataService metadataService, AtlasInstanceConverter restAdapters, AtlasEntityStore entitiesStore, AtlasTypeRegistry typeRegistry) {
+    public EntityResource(MetadataService metadataService, AtlasInstanceConverter restAdapters,
+                          AtlasEntityStore entitiesStore, AtlasTypeRegistry typeRegistry, EntityREST entityREST) {
         this.metadataService = metadataService;
         this.restAdapters    = restAdapters;
         this.entitiesStore   = entitiesStore;
         this.typeRegistry    = typeRegistry;
+        this.entityREST    = entityREST;
     }
 
     /**
@@ -159,7 +164,6 @@ public class EntityResource {
                 LOG.debug("submitting entities {} ", entityJson);
             }
 
-            EntityREST               entityREST       = resourceContext.getResource(EntityREST.class);
             AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(entities);
             EntityMutationResponse   mutationResponse = entityREST.createOrUpdate(entitiesInfo);
 
@@ -220,7 +224,7 @@ public class EntityResource {
         return locationURI;
     }
 
-    private JSONObject getResponse(AtlasClient.EntityResult entityResult) throws AtlasException, JSONException {
+    private JSONObject getResponse(EntityResult entityResult) throws AtlasException, JSONException {
         CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
         result.setEntityResult(entityResult);
         return getResponse(result);
@@ -273,7 +277,6 @@ public class EntityResource {
                 LOG.info("updating entities {} ", entityJson);
             }
 
-            EntityREST                 entityREST       = resourceContext.getResource(EntityREST.class);
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(entities);
             EntityMutationResponse     mutationResponse = entityREST.createOrUpdate(entitiesInfo);
             CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
@@ -311,7 +314,7 @@ public class EntityResource {
         }
     }
 
-    private String getSample(AtlasClient.EntityResult entityResult) {
+    private String getSample(EntityResult entityResult) {
         String sample = getSample(entityResult.getCreatedEntities());
         if (sample == null) {
             sample = getSample(entityResult.getUpdateEntities());
@@ -585,7 +588,6 @@ public class EntityResource {
             }
 
             EntityResult entityResult;
-            EntityREST entityREST = resourceContext.getResource(EntityREST.class);
 
             if (guids != null && !guids.isEmpty()) {
                 if (LOG.isDebugEnabled()) {

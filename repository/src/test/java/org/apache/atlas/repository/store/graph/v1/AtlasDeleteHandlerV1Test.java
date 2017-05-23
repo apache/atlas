@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.TestOnlyModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -39,7 +38,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -63,7 +61,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
@@ -81,7 +78,6 @@ import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Guice(modules = TestOnlyModule.class)
 public abstract class AtlasDeleteHandlerV1Test {
 
     @Inject
@@ -90,6 +86,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     @Inject
     AtlasTypeDefStore typeDefStore;
 
+    @Inject
     AtlasEntityStore entityStore;
 
     @Inject
@@ -101,13 +98,9 @@ public abstract class AtlasDeleteHandlerV1Test {
 
     private TypeSystem typeSystem = TypeSystem.getInstance();
 
-    AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
-
-
     @BeforeClass
     public void setUp() throws Exception {
         metadataService = TestUtils.addSessionCleanupWrapper(metadataService);
-        new GraphBackedSearchIndexer(typeRegistry);
         final AtlasTypesDef deptTypesDef = TestUtilsV2.defineDeptEmployeeTypes();
         typeDefStore.createTypesDef(deptTypesDef);
 
@@ -144,8 +137,6 @@ public abstract class AtlasDeleteHandlerV1Test {
 
     @BeforeTest
     public void init() throws Exception {
-        DeleteHandlerV1 deleteHandler = getDeleteHandler(typeRegistry);
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier);
         RequestContextV1.clear();
 
     }
@@ -154,8 +145,6 @@ public abstract class AtlasDeleteHandlerV1Test {
     public void clear() {
         AtlasGraphProvider.cleanup();
     }
-
-    abstract DeleteHandlerV1 getDeleteHandler(AtlasTypeRegistry typeRegistry);
 
     @Test
     public void testDeleteAndCreate() throws Exception {
