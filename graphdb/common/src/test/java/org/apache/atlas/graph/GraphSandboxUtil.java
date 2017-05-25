@@ -24,29 +24,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.UUID;
 
 public class GraphSandboxUtil {
     private static final Logger LOG = LoggerFactory.getLogger(GraphSandboxUtil.class);
 
-    public static void create() {
+    public static void create(String sandboxName) {
         Configuration configuration;
         try {
             configuration = ApplicationProperties.get();
-            // Append a suffix to isolate the database for each instance
-            long currentMillisecs = System.currentTimeMillis();
 
             String newStorageDir = System.getProperty("atlas.data") +
-                    File.pathSeparator + "storage" +
-                    File.pathSeparator + currentMillisecs;
+                    File.separatorChar + "storage" +
+                    File.separatorChar + sandboxName;
+
             configuration.setProperty("atlas.graph.storage.directory", newStorageDir);
 
+
             String newIndexerDir = System.getProperty("atlas.data") +
-                    File.pathSeparator + "index" +
-                    File.pathSeparator + currentMillisecs;
+                    File.separatorChar + "index" +
+                    File.separatorChar + sandboxName;
+
             configuration.setProperty("atlas.graph.index.search.directory", newIndexerDir);
+
 
             LOG.debug("New Storage dir : {}", newStorageDir);
             LOG.debug("New Indexer dir : {}", newIndexerDir);
         } catch (AtlasException ignored) {}
+    }
+
+    public static void create() {
+        // Append a suffix to isolate the database for each instance
+        UUID uuid = UUID.randomUUID();
+        create(uuid.toString());
     }
 }

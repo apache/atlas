@@ -19,13 +19,31 @@ package org.apache.atlas;
 
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.ITestContext;
 import org.testng.TestListenerAdapter;
+import org.testng.xml.XmlClass;
+
+import java.util.List;
 
 public class DBSandboxer extends TestListenerAdapter {
     @Override
     public void onStart(ITestContext context) {
-        GraphSandboxUtil.create();
+        // This will only work if each test is run individually (test suite has only one running test)
+        // If there are multiple tests the the sandbox folder name is not provided and the GraphSandboxUtil provisions
+        // a unique name
+        List<XmlClass> testClassesToRun = context.getCurrentXmlTest().getClasses();
+        if (CollectionUtils.isNotEmpty(testClassesToRun) && 1 == testClassesToRun.size()) {
+            XmlClass currentTestClass = testClassesToRun.get(0);
+            if (null != currentTestClass && StringUtils.isNotEmpty(currentTestClass.getName())) {
+                GraphSandboxUtil.create(currentTestClass.getName());
+            } else {
+                GraphSandboxUtil.create();
+            }
+        } else {
+            GraphSandboxUtil.create();
+        }
     }
 
     @Override
