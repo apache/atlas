@@ -59,7 +59,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'entityDef'));
                 this.entityCollection = new VEntityList();
-                this.count = 26;
+                this.limit = 26;
                 this.entityCollection.url = UrlLinks.entityCollectionaudit(this.guid);
                 this.entityCollection.modelAttrName = "events";
                 this.entityModel = new this.entityCollection.model();
@@ -80,17 +80,20 @@ define(['require',
                 this.currPage = 1;
             },
             onRender: function() {
-                $.extend(this.entityCollection.queryParams, { count: this.count });
+                $.extend(this.entityCollection.queryParams, { count: this.limit });
                 this.fetchCollection({
                     next: this.ui.nextAuditData,
                     nextClick: false,
                     previous: this.ui.previousAuditData
                 });
+                this.entityCollection.comparator = function(model) {
+                    return -model.get('timestamp');
+                }
             },
             bindEvents: function() {},
             getToOffset: function() {
                 var toOffset = 0;
-                if (this.entityCollection.models.length < this.count) {
+                if (this.entityCollection.models.length < this.limit) {
                     toOffset = (this.getFromOffset() + (this.entityCollection.models.length));
                 } else {
                     toOffset = (this.getFromOffset() + (this.entityCollection.models.length - 1));
@@ -98,7 +101,7 @@ define(['require',
                 return toOffset;
             },
             getFromOffset: function(options) {
-                var count = (this.currPage - 1) * (this.count - 1);
+                var count = (this.currPage - 1) * (this.limit - 1);
                 if (options && (options.nextClick || options.previousClick || this.entityCollection.models.length)) {
                     return count + 1;
                 } else {
@@ -106,6 +109,7 @@ define(['require',
                 }
             },
             renderOffset: function(options) {
+                var entityLength;
                 if (options.nextClick) {
                     options.previous.removeAttr("disabled");
                     if (this.entityCollection.length != 0) {
@@ -118,7 +122,12 @@ define(['require',
                         this.currPage--;
                     }
                 }
-                this.ui.pageRecordText.html("Showing " + this.getFromOffset(options) + " - " + this.getToOffset());
+                if (this.entityCollection.models.length > 25) {
+                    entityLength = this.entityCollection.models.length - 1;
+                } else {
+                    entityLength = this.entityCollection.models.length
+                }
+                this.ui.pageRecordText.html("Showing  <u>" + entityLength + " records</u> From " + this.getFromOffset(options) + " - " + this.getToOffset());
             },
             fetchCollection: function(options) {
                 var that = this;
@@ -134,13 +143,14 @@ define(['require',
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if (that.entityCollection.models.length < that.count) {
+                        if (that.entityCollection.models.length < that.limit) {
                             options.previous.attr('disabled', true);
                             options.next.attr('disabled', true);
                         }
                         that.renderOffset(options);
+                        that.entityCollection.sort();
                         if (that.entityCollection.models.length) {
-                            if (that.entityCollection && (that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
+                            if (that.entityCollection && (that.entityCollection.models.length < that.limit && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
                                 options.next.attr('disabled', true);
                                 options.previous.removeAttr("disabled");
                             } else {
@@ -165,7 +175,7 @@ define(['require',
                     that.RAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: cols
                     })));
-                    if (!(that.entityCollection.models.length < that.count)) {
+                    if (!(that.entityCollection.models.length < that.limit)) {
                         that.RAuditTableLayoutView.$el.find('table tr').last().hide();
                     }
                 });
