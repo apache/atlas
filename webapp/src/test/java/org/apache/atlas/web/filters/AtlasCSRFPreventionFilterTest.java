@@ -16,15 +16,14 @@
  */
 package org.apache.atlas.web.filters;
 
-import java.io.IOException;
+import org.mockito.Mockito;
+import org.testng.annotations.Test;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.junit.Test;
-import org.mockito.Mockito;
+import java.io.IOException;
 
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
