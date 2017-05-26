@@ -464,6 +464,16 @@
             </roles>
             <organization>Freestone Infotech</organization>
         </developer>
+        <developer>
+            <id>kalyanikashikar</id>
+            <name>Kalyani Kashikar</name>
+            <email>kalyanikashikar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
     </developers>
 
     <properties>
