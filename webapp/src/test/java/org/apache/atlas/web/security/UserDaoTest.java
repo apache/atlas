@@ -16,14 +16,16 @@
  */
 package org.apache.atlas.web.security;
 
-import java.util.Collection;
-import java.util.Properties;
 import org.apache.atlas.web.dao.UserDao;
 import org.apache.atlas.web.model.User;
-import org.junit.Assert;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.Test;
+
+import java.util.Collection;
+import java.util.Properties;
+
+import static org.testng.Assert.assertTrue;
 
 public class UserDaoTest {
 
@@ -36,14 +38,14 @@ public class UserDaoTest {
         UserDao user = new UserDao();
         user.setUserLogins(userLogins);
         User userBean = user.loadUserByUsername("admin");
-        Assert.assertTrue(userBean.getPassword().equals("admin123"));
+        assertTrue(userBean.getPassword().equals("admin123"));
 
         Collection<? extends GrantedAuthority> authorities = userBean.getAuthorities();
         String role = "";
         for (GrantedAuthority gauth : authorities) {
             role = gauth.getAuthority();
         }
-        Assert.assertTrue("ADMIN".equals(role));
+        assertTrue("ADMIN".equals(role));
     }
 
     @Test
@@ -60,7 +62,7 @@ public class UserDaoTest {
         } catch (UsernameNotFoundException uex) {
             hadException = true;
         }
-        Assert.assertTrue(hadException);
+        assertTrue(hadException);
     }
 
 }

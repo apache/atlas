@@ -22,7 +22,6 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
@@ -42,6 +41,8 @@ import java.io.File;
 import java.util.Collection;
 
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class FileAuthenticationTest {
 
@@ -118,7 +119,7 @@ public class FileAuthenticationTest {
         Authentication auth = authProvider.authenticate(authentication);
         LOG.debug(" {}", auth);
 
-        Assert.assertTrue(auth.isAuthenticated());
+        assertTrue(auth.isAuthenticated());
     }
 
     @Test
@@ -131,7 +132,7 @@ public class FileAuthenticationTest {
             Authentication auth = authProvider.authenticate(authentication);
            LOG.debug(" {}", auth);
         } catch (BadCredentialsException bcExp) {
-            Assert.assertEquals("Wrong password", bcExp.getMessage());
+            assertEquals("Wrong password", bcExp.getMessage());
         }
     }
 
@@ -144,7 +145,7 @@ public class FileAuthenticationTest {
             Authentication auth = authProvider.authenticate(authentication);
           LOG.debug(" {}", auth);
         } catch (UsernameNotFoundException uExp) {
-            Assert.assertTrue(uExp.getMessage().contains("Username not found."));
+            assertTrue(uExp.getMessage().contains("Username not found."));
         }
     }
 
@@ -157,7 +158,7 @@ public class FileAuthenticationTest {
             Authentication auth = authProvider.authenticate(authentication);
             LOG.debug(" {}", auth);
         } catch (AtlasAuthenticationException uExp) {
-            Assert.assertTrue(uExp.getMessage().startsWith("User role credentials is not set properly for"));
+            assertTrue(uExp.getMessage().startsWith("User role credentials is not set properly for"));
         }
     }
 
@@ -171,7 +172,7 @@ public class FileAuthenticationTest {
             Authentication auth = authProvider.authenticate(authentication);
             LOG.debug(" {}", auth);
         } catch (UsernameNotFoundException uExp) {
-            Assert.assertTrue(uExp.getMessage().startsWith("Username not found"));
+            assertTrue(uExp.getMessage().startsWith("Username not found"));
         }
     }
 
@@ -184,7 +185,7 @@ public class FileAuthenticationTest {
         Authentication auth = authProvider.authenticate(authentication);
         LOG.debug(" {}", auth);
 
-        Assert.assertTrue(auth.isAuthenticated());
+        assertTrue(auth.isAuthenticated());
 
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
 
@@ -192,7 +193,7 @@ public class FileAuthenticationTest {
         for (GrantedAuthority gauth : authorities) {
             role = gauth.getAuthority();
         }
-        Assert.assertTrue("ADMIN".equals(role));
+        assertTrue("ADMIN".equals(role));
     }
 
 
