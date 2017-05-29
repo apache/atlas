@@ -130,7 +130,6 @@ require.config({
         'tmpl': 'templates',
         'requirejs.text': 'libs/requirejs-text/text',
         'handlebars': 'external_lib/require-handlebars-plugin/js/handlebars',
-        'json2': 'external_lib/require-handlebars-plugin/js/json2',
         'hbs': 'external_lib/require-handlebars-plugin/js/hbs',
         'i18nprecompile': 'external_lib/require-handlebars-plugin/js/i18nprecompile',
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',

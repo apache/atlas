@@ -11,11 +11,11 @@
 define: false, process: false, window: false */
 define([
     //>>excludeStart('excludeHbs', pragmas.excludeHbs)
-    'handlebars', 'underscore', 'i18nprecompile', 'json2'
+    'handlebars', 'underscore', 'i18nprecompile'
     //>>excludeEnd('excludeHbs')
 ], function(
     //>>excludeStart('excludeHbs', pragmas.excludeHbs)
-    Handlebars, _, precompile, JSON
+    Handlebars, _, precompile
     //>>excludeEnd('excludeHbs')
 ) {
     //>>excludeStart('excludeHbs', pragmas.excludeHbs)
