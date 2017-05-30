@@ -255,7 +255,7 @@ define(['require',
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if (that.searchCollection.models.length === 0) {
+                        if (that.searchCollection.models.length === 0 && that.offset > that.limit) {
                             that.ui.nextData.attr('disabled', true);
                             that.offset = that.offset - that.limit;
                             that.hideLoader();
