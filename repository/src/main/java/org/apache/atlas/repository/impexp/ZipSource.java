@@ -44,17 +44,29 @@ import static org.apache.atlas.AtlasErrorCode.JSON_ERROR_OBJECT_MAPPER_NULL_RETU
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
 
-    private final InputStream                   inputStream;
-    private List<String>                        creationOrder;
-    private Iterator<String>                    iterator;
-    private Map<String, String>                 guidEntityJsonMap;
+    private final InputStream    inputStream;
+    private List<String>         creationOrder;
+    private Iterator<String>     iterator;
+    private Map<String, String>  guidEntityJsonMap;
+    private ImportTransforms     importTransform;
 
     public ZipSource(InputStream inputStream) throws IOException {
-        this.inputStream = inputStream;
-        guidEntityJsonMap = new HashMap<>();
+        this(inputStream, null);
+    }
+
+    public ZipSource(InputStream inputStream, ImportTransforms importTransform) throws IOException {
+        this.inputStream       = inputStream;
+        this.guidEntityJsonMap = new HashMap<>();
+        this.importTransform   = importTransform;
 
         updateGuidZipEntryMap();
-        this.setCreationOrder();
+        setCreationOrder();
+    }
+
+    public ImportTransforms getImportTransform() { return this.importTransform; }
+
+    public void setImportTransform(ImportTransforms importTransform) {
+        this.importTransform = importTransform;
     }
 
     public AtlasTypesDef getTypesDef() throws AtlasBaseException {
@@ -113,8 +125,13 @@ public class ZipSource implements EntityImportStream {
     }
 
     public AtlasEntity.AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
-        String s = (String) getFromCache(guid);
+        String s = getFromCache(guid);
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntity.AtlasEntityWithExtInfo.class, s);
+
+        if (importTransform != null) {
+            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
+        }
+
         return entityWithExtInfo;
     }
 
@@ -193,7 +210,8 @@ public class ZipSource implements EntityImportStream {
     @Override
     public AtlasEntity getByGuid(String guid)  {
         try {
-            return getEntity(guid);
+            AtlasEntity entity = getEntity(guid);
+            return entity;
         } catch (AtlasBaseException e) {
             e.printStackTrace();
             return null;

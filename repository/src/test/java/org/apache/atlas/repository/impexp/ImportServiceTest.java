@@ -81,5 +81,4 @@ public class ImportServiceTest {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
         runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
     }
-
 }
