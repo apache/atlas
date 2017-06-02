@@ -39,21 +39,18 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasImportRequest implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long   serialVersionUID = 1L;
+    public  static final String TRANSFORMS_KEY   = "transforms";
 
-    private Map<String, Object> options;
+    private Map<String, String> options;
 
     public AtlasImportRequest() {
         this.options = new HashMap<>();
     }
 
-    public AtlasImportRequest(Map<String, Object> options) {
-        this.options = options;
-    }
+    public Map<String, String> getOptions() { return options; }
 
-    public Map<String, Object> getOptions() { return options; }
-
-    public void setOptions(Map<String, Object> options) { this.options = options; }
+    public void setOptions(Map<String, String> options) { this.options = options; }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {

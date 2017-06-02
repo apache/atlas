@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
+import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
@@ -38,6 +39,7 @@ import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
@@ -67,8 +69,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -356,10 +358,11 @@ public class AdminResource {
     @POST
     @Path("/import")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Consumes(Servlets.BINARY)
-    public AtlasImportResult importData(byte[] bytes) throws AtlasBaseException {
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public AtlasImportResult importData(@FormDataParam("request") String jsonData,
+                                        @FormDataParam("data") InputStream inputStream) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AdminResource.importData(bytes.length={})", bytes.length);
+            LOG.debug("==> AdminResource.importData(jsonData={}, inputStream={})", jsonData, (inputStream != null));
         }
 
         acquireExportImportLock("import");
@@ -367,15 +370,13 @@ public class AdminResource {
         AtlasImportResult result;
 
         try {
-            AtlasImportRequest   request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
-            ByteArrayInputStream inputStream   = new ByteArrayInputStream(bytes);
+            AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
             ImportService importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
-
             ZipSource zipSource = new ZipSource(inputStream);
 
             result = importService.run(zipSource, request, Servlets.getUserName(httpServletRequest),
-                                       Servlets.getHostName(httpServletRequest),
-                                       AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+                    Servlets.getHostName(httpServletRequest),
+                    AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
         } catch (Exception excp) {
             LOG.error("importData(binary) failed", excp);
 
@@ -394,7 +395,7 @@ public class AdminResource {
     @POST
     @Path("/importfile")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasImportResult importFile() throws AtlasBaseException {
+    public AtlasImportResult importFile(String jsonData) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.importFile()");
         }
@@ -404,9 +405,8 @@ public class AdminResource {
         AtlasImportResult result;
 
         try {
-            AtlasImportRequest request       = new AtlasImportRequest(Servlets.getParameterMap(httpServletRequest));
-            ImportService      importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
-
+            AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            ImportService importService = new ImportService(this.typesDefStore, this.entityStore, this.typeRegistry);
             result = importService.run(request, Servlets.getUserName(httpServletRequest),
                                        Servlets.getHostName(httpServletRequest),
                                        AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
