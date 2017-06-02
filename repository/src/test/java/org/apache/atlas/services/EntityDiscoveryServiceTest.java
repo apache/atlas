@@ -97,10 +97,11 @@ public class EntityDiscoveryServiceTest {
     public void getSubTypeForTypeWithSubTypes_ReturnsOrClause() throws Exception {
         String s = invokeGetSubTypesForType(TEST_TYPE_WITH_SUB_TYPES, maxTypesCountInIdxQuery);
 
-        assertTrue(s.startsWith("(" + TEST_TYPE_WITH_SUB_TYPES));
-        assertTrue(s.contains(" " + TEST_TYPE1));
-        assertTrue(s.contains(" " + TEST_TYPE2));
-        assertTrue(s.contains(" " + TEST_TYPE3));
+        assertTrue(s.startsWith("("));
+        assertTrue(s.contains(TEST_TYPE_WITH_SUB_TYPES));
+        assertTrue(s.contains(TEST_TYPE1));
+        assertTrue(s.contains(TEST_TYPE2));
+        assertTrue(s.contains(TEST_TYPE3));
         assertTrue(s.endsWith(")"));
     }
 

@@ -437,15 +437,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         AtlasEntityType type            = typeRegistry.getEntityTypeByName(typeName);
         Set<String>     typeAndSubTypes = type != null ? type.getTypeAndAllSubTypes() : null;
 
-        // adding debug info to investigate unit test failure in jenkins
-        // EntityDiscoveryServiceTest.getSubTypeForTypeWithSubTypes_ReturnsOrClause
-        if (StringUtils.isNotEmpty(typeName) && type != null) {
-            LOG.info("Getting type and subTypes for type name: {}, AtlasType: {}", typeName, type.getEntityDef().toString());
-            LOG.info("Type and subTypes list: {}", StringUtils.join(typeAndSubTypes, " "));
-            LOG.info("Maximum Types Count: {}", maxTypesCountInIdxQuery);
-        }
-
-
         if(CollectionUtils.isNotEmpty(typeAndSubTypes) && typeAndSubTypes.size() <= maxTypesCountInIdxQuery) {
             return String.format("(%s)", StringUtils.join(typeAndSubTypes, " "));
         }
