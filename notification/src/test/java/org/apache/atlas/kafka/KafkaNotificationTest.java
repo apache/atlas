@@ -28,6 +28,9 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import static org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -52,7 +55,7 @@ public class KafkaNotificationTest {
     }
 
     @Test
-    public void testNext() throws Exception {
+    public void testReceiveKafkaMessages() throws Exception {
         kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
                 new HookNotification.EntityCreateRequest("u1", new Referenceable("type")));
         kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
@@ -64,44 +67,21 @@ public class KafkaNotificationTest {
 
         NotificationConsumer<Object> consumer =
                 kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1).get(0);
-        assertTrue(consumer.hasNext());
-        HookNotification.HookNotificationMessage message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u1");
+        List<AtlasKafkaMessage<Object>> messages = null ;
+        long startTime = System.currentTimeMillis(); //fetch starting time
+        while ((System.currentTimeMillis() - startTime) < 10000) {
+             messages = consumer.receive(1000L);
+            if (messages.size() > 0) {
+                break;
+            }
+        }
 
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u2");
-        consumer.close();
+        int i=1;
+        for (AtlasKafkaMessage<Object> msg :  messages){
+            HookNotification.HookNotificationMessage message =  (HookNotificationMessage) msg.getMessage();
+            assertEquals(message.getUser(), "u"+i++);
+        }
 
-        //nothing committed(even though u1 and u2 are read), now should restart from u1
-        consumer = kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1).get(0);
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u1");
-        consumer.commit();
-
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u2");
-        consumer.close();
-
-        //u1 committed, u2 read, should start from u2
-        consumer = kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1).get(0);
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u2");
-
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u3");
-        consumer.commit();
-        consumer.close();
-
-        //u2, u3 read, but only u3 committed, should start from u4
-        consumer = kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1).get(0);
-        assertTrue(consumer.hasNext());
-        message = (HookNotification.HookNotificationMessage) consumer.next();
-        assertEquals(message.getUser(), "u4");
         consumer.close();
     }
 }

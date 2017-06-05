@@ -81,7 +81,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String TRAITS = "traits";
 
     private NotificationInterface notificationInterface = NotificationProvider.get();
-    private NotificationConsumer<EntityNotification> notificationConsumer;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -89,10 +88,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         createTypeDefinitionsV1();
 
-        List<NotificationConsumer<EntityNotification>> consumers =
-                notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
-
-        notificationConsumer = consumers.iterator().next();
     }
 
     @Test
@@ -218,29 +213,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         assertEntityAudit(dbId, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
-        waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
-            @Override
-            public boolean evaluate(EntityNotification notification) throws Exception {
-                return notification != null && notification.getEntity().getId()._getId().equals(dbId);
-            }
-        });
-
         JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, dbName));
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
         List<String> entityResults = atlasClientV1.createEntity(HiveDBInstance);
         assertEquals(entityResults.size(), 0);
-        try {
-            waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
-                @Override
-                public boolean evaluate(EntityNotification notification) throws Exception {
-                    return notification != null && notification.getEntity().getId()._getId().equals(dbId);
-                }
-            });
-        } catch (Exception e) {
-            //expected timeout
-        }
 
         results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, dbName));
         assertEquals(results.length(), 1);

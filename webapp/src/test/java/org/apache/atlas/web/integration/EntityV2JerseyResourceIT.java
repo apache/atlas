@@ -55,7 +55,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.apache.atlas.kafka.AtlasKafkaConsumer;
 import static org.testng.Assert.*;
 
 
@@ -72,8 +72,6 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     private AtlasEntity dbEntity;
     private AtlasEntity tableEntity;
-    private NotificationInterface notificationInterface = NotificationProvider.get();
-    private NotificationConsumer<EntityNotification> notificationConsumer;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -81,10 +79,6 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
         createTypeDefinitionsV2();
 
-        List<NotificationConsumer<EntityNotification>> consumers =
-                notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
-
-        notificationConsumer = consumers.iterator().next();
     }
 
     @Test
@@ -166,14 +160,6 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertEquals(results.length(), 1);
 
         final AtlasEntity hiveDBInstanceV2 = createHiveDB();
-        // Do the notification thing here
-        waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
-            @Override
-            public boolean evaluate(EntityNotification notification) throws Exception {
-                return notification != null && notification.getEntity().getId()._getId().equals(hiveDBInstanceV2.getGuid());
-            }
-        });
-
 
         results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
         assertEquals(results.length(), 1);

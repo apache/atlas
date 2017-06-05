@@ -21,7 +21,6 @@ package org.apache.atlas.web.integration;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
@@ -42,7 +41,9 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationConsumer;
+import org.apache.atlas.kafka.*;
 import org.apache.atlas.notification.entity.EntityNotification;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -634,14 +635,21 @@ public abstract class BaseResourceIT {
             @Override
             public boolean evaluate() throws Exception {
                 try {
-                    while (consumer.hasNext() && System.currentTimeMillis() < maxCurrentTime) {
-                        EntityNotification notification = consumer.next();
-                        if (predicate.evaluate(notification)) {
-                            pair.left = notification;
-                            return true;
-                        }
+
+                    while (System.currentTimeMillis() < maxCurrentTime) {
+                        List<AtlasKafkaMessage<EntityNotification>> messageList = consumer.receive(1000);
+                            if(messageList.size() > 0) {
+                                EntityNotification notification = messageList.get(0).getMessage();
+                                if (predicate.evaluate(notification)) {
+                                    pair.left = notification;
+                                    return true;
+                                }
+                            }else{
+                                LOG.info( System.currentTimeMillis()+ " messageList no records" +maxCurrentTime );
+                            }
                     }
-                } catch(ConsumerTimeoutException e) {
+                } catch(Exception e) {
+                    LOG.error(" waitForNotification", e);
                     //ignore
                 }
                 return false;

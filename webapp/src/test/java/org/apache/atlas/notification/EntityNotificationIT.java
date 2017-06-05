@@ -34,8 +34,6 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +53,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     private Id tableId;
     private Id dbId;
     private String traitName;
-    private NotificationConsumer<EntityNotification> notificationConsumer;
+    private NotificationConsumer notificationConsumer;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -64,13 +62,9 @@ public class EntityNotificationIT extends BaseResourceIT {
         Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(DATABASE_NAME);
         dbId = createInstance(HiveDBInstance);
 
-        List<NotificationConsumer<EntityNotification>> consumers =
-            notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
-
-        notificationConsumer = consumers.iterator().next();
+        notificationConsumer = notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1).get(0);
     }
 
-    @Test
     public void testCreateEntity() throws Exception {
         Referenceable tableInstance = createHiveTableInstanceBuiltIn(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
@@ -81,7 +75,6 @@ public class EntityNotificationIT extends BaseResourceIT {
                 newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
-    @Test(dependsOnMethods = "testCreateEntity")
     public void testUpdateEntity() throws Exception {
         final String property = "description";
         final String newValue = "New description!";
@@ -94,7 +87,6 @@ public class EntityNotificationIT extends BaseResourceIT {
                 newNotificationPredicate(EntityNotification.OperationType.ENTITY_UPDATE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
-    @Test
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
         final String dbName = "db-" + randomString();
@@ -116,7 +108,6 @@ public class EntityNotificationIT extends BaseResourceIT {
             newNotificationPredicate(EntityNotification.OperationType.ENTITY_DELETE, HIVE_TABLE_TYPE_BUILTIN, guid));
     }
 
-    @Test(dependsOnMethods = "testCreateEntity")
     public void testAddTrait() throws Exception {
         String superSuperTraitName = "SuperTrait" + randomString();
         createTrait(superSuperTraitName);
@@ -175,7 +166,6 @@ public class EntityNotificationIT extends BaseResourceIT {
         assertEquals(2, Collections.frequency(allTraitNames, superTraitName));
     }
 
-    @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String guid = tableId._getId();
 
