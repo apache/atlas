@@ -24,12 +24,13 @@ import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.testng.annotations.Test;
-
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +38,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
+import org.apache.atlas.kafka.AtlasKafkaConsumer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -55,35 +56,23 @@ public class KafkaNotificationMockTest {
     public void testCreateConsumers() throws Exception {
         Properties properties = mock(Properties.class);
         when(properties.getProperty("entities.group.id")).thenReturn("atlas");
-        final ConsumerConnector consumerConnector = mock(ConsumerConnector.class);
         Map<String, Integer> topicCountMap = new HashMap<>();
         topicCountMap.put(KafkaNotification.ATLAS_ENTITIES_TOPIC, 1);
 
-        Map<String, List<KafkaStream<String, String>>> kafkaStreamsMap =
-                new HashMap<>();
-        List<KafkaStream<String, String>> kafkaStreams = new ArrayList<>();
-        KafkaStream kafkaStream = mock(KafkaStream.class);
-        kafkaStreams.add(kafkaStream);
-        kafkaStreamsMap.put(KafkaNotification.ATLAS_ENTITIES_TOPIC, kafkaStreams);
-
-        when(consumerConnector.createMessageStreams(
-                eq(topicCountMap), any(StringDecoder.class), any(StringDecoder.class))).thenReturn(kafkaStreamsMap);
-
-        final KafkaConsumer consumer1 = mock(KafkaConsumer.class);
-        final KafkaConsumer consumer2 = mock(KafkaConsumer.class);
+        final AtlasKafkaConsumer consumer1 = mock(AtlasKafkaConsumer.class);
+        final AtlasKafkaConsumer consumer2 = mock(AtlasKafkaConsumer.class);
 
         KafkaNotification kafkaNotification =
-                new TestKafkaNotification(properties, consumerConnector, consumer1, consumer2);
+                new TestKafkaNotification(properties, consumer1, consumer2);
 
-        List<NotificationConsumer<String>> consumers =
+        List<NotificationConsumer<AtlasKafkaConsumer>> consumers =
                 kafkaNotification.createConsumers(NotificationInterface.NotificationType.ENTITIES, 2);
 
-        verify(consumerConnector, times(2)).createMessageStreams(
-                eq(topicCountMap), any(StringDecoder.class), any(StringDecoder.class));
         assertEquals(consumers.size(), 2);
         assertTrue(consumers.contains(consumer1));
         assertTrue(consumers.contains(consumer2));
     }
+
 
     @Test
     @SuppressWarnings("unchecked")
@@ -164,27 +153,28 @@ public class KafkaNotificationMockTest {
 
     class TestKafkaNotification extends KafkaNotification {
 
-        private final ConsumerConnector consumerConnector;
-        private final KafkaConsumer consumer1;
-        private final KafkaConsumer consumer2;
+        private final AtlasKafkaConsumer consumer1;
+        private final AtlasKafkaConsumer consumer2;
 
-        TestKafkaNotification(Properties properties, ConsumerConnector consumerConnector,
-                              KafkaConsumer consumer1, KafkaConsumer consumer2) {
+        TestKafkaNotification(Properties properties,
+                              AtlasKafkaConsumer consumer1, AtlasKafkaConsumer consumer2) {
             super(properties);
-            this.consumerConnector = consumerConnector;
             this.consumer1 = consumer1;
             this.consumer2 = consumer2;
         }
 
-        @Override
-        protected ConsumerConnector createConsumerConnector(Properties consumerProperties) {
-            return consumerConnector;
-        }
 
         @Override
-        protected <T> org.apache.atlas.kafka.KafkaConsumer<T>
-        createKafkaConsumer(Class<T> type, MessageDeserializer<T> deserializer, KafkaStream stream,
-                            int consumerId, ConsumerConnector connector, boolean autoCommitEnabled) {
+        public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType,
+                                                                 int numConsumers) {
+            List consumerList = new ArrayList<NotificationConsumer>();
+            consumerList.add(consumer1);
+            consumerList.add(consumer2);
+            return consumerList;
+        }
+
+        protected <T> AtlasKafkaConsumer<T>
+        createConsumers(Class<T> type, int consumerId,  boolean autoCommitEnabled) {
             if (consumerId == 0) {
                 return consumer1;
             } else if (consumerId == 1) {

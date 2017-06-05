@@ -19,16 +19,15 @@ package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -46,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-
+import org.apache.kafka.common.TopicPartition;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Date;
@@ -135,14 +134,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     private void startConsumers(ExecutorService executorService) {
         int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
-        List<NotificationConsumer<HookNotification.HookNotificationMessage>> notificationConsumers =
+        List<NotificationConsumer<HookNotificationMessage>> notificationConsumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
         if (executorService == null) {
             executorService = Executors.newFixedThreadPool(notificationConsumers.size(),
                     new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
         }
         executors = executorService;
-        for (final NotificationConsumer<HookNotification.HookNotificationMessage> consumer : notificationConsumers) {
+        for (final NotificationConsumer<HookNotificationMessage> consumer : notificationConsumers) {
             HookConsumer hookConsumer = new HookConsumer(consumer);
             consumers.add(hookConsumer);
             executors.submit(hookConsumer);
@@ -207,21 +206,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     class HookConsumer implements Runnable {
-        private final NotificationConsumer<HookNotification.HookNotificationMessage> consumer;
+        private final NotificationConsumer<HookNotificationMessage> consumer;
         private final AtomicBoolean shouldRun = new AtomicBoolean(false);
-        private List<HookNotification.HookNotificationMessage> failedMessages = new ArrayList<>();
+        private List<HookNotificationMessage> failedMessages = new ArrayList<>();
 
-        public HookConsumer(NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
+        public HookConsumer(NotificationConsumer<HookNotificationMessage> consumer) {
             this.consumer = consumer;
         }
 
-        private boolean hasNext() {
-            try {
-                return consumer.hasNext();
-            } catch (ConsumerTimeoutException e) {
-                return false;
-            }
-        }
 
         @Override
         public void run() {
@@ -233,8 +225,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             while (shouldRun.get()) {
                 try {
-                    if (hasNext()) {
-                        handleMessage(consumer.next());
+                    List<AtlasKafkaMessage<HookNotificationMessage>> messages = consumer.receive(1000L);
+                    for (AtlasKafkaMessage<HookNotificationMessage> msg :  messages){
+                        handleMessage(msg);
                     }
                 } catch (Throwable t) {
                     LOG.warn("Failure in NotificationHookConsumer", t);
@@ -243,7 +236,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         @VisibleForTesting
-        void handleMessage(HookNotificationMessage message) throws AtlasServiceException, AtlasException {
+        void handleMessage(AtlasKafkaMessage<HookNotificationMessage> kafkaMsg) throws AtlasServiceException, AtlasException {
+            HookNotificationMessage message = kafkaMsg.getMessage();
             String messageUser = message.getUser();
             // Used for intermediate conversions during create and update
             AtlasEntity.AtlasEntitiesWithExtInfo entities;
@@ -345,7 +339,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     RequestContextV1.clear();
                 }
             }
-            commit();
+            commit(kafkaMsg);
         }
 
         private void recordFailedMessages() {
@@ -356,9 +350,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             failedMessages.clear();
         }
 
-        private void commit() {
+        private void commit(AtlasKafkaMessage<HookNotificationMessage> kafkaMessage) {
             recordFailedMessages();
-            consumer.commit();
+            TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
+            consumer.commit(partition, kafkaMessage.getOffset());
         }
 
         boolean serverAvailable(Timer timer) {

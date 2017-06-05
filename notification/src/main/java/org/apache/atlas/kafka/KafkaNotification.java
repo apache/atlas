@@ -18,25 +18,22 @@
 package org.apache.atlas.kafka;
 
 import com.google.common.annotations.VisibleForTesting;
-import kafka.consumer.Consumer;
-import kafka.consumer.KafkaStream;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.serializer.StringDecoder;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.Time;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -56,10 +53,11 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
@@ -83,9 +81,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private KafkaServer kafkaServer;
     private ServerCnxnFactory factory;
     private Properties properties;
-
+    private KafkaConsumer consumer = null;
     private KafkaProducer producer = null;
-    private List<ConsumerConnector> consumerConnectors = new ArrayList<>();
 
     private static final Map<NotificationType, String> TOPIC_MAP = new HashMap<NotificationType, String>() {
         {
@@ -126,8 +123,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
-        properties.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "roundrobin");
-        properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "smallest");
+        properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
 
     @VisibleForTesting
@@ -171,34 +167,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType,
                                                              int numConsumers) {
         return createConsumers(notificationType, numConsumers,
-                Boolean.valueOf(properties.getProperty("auto.commit.enable", "true")));
+                Boolean.valueOf(properties.getProperty("enable.auto.commit", "true")));
     }
 
     @VisibleForTesting
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType,
                                                       int numConsumers, boolean autoCommitEnabled) {
-        String topic = TOPIC_MAP.get(notificationType);
 
         Properties consumerProperties = getConsumerProperties(notificationType);
 
-        List<NotificationConsumer<T>> consumers = new ArrayList<>(numConsumers);
-        for (int i = 0; i < numConsumers; i++) {
-            ConsumerConnector consumerConnector = createConsumerConnector(consumerProperties);
-            Map<String, Integer> topicCountMap = new HashMap<>();
-            topicCountMap.put(topic, 1);
-            StringDecoder decoder = new StringDecoder(null);
-            Map<String, List<KafkaStream<String, String>>> streamsMap =
-                    consumerConnector.createMessageStreams(topicCountMap, decoder, decoder);
-            List<KafkaStream<String, String>> kafkaConsumers = streamsMap.get(topic);
-            for (KafkaStream stream : kafkaConsumers) {
-                KafkaConsumer<T> kafkaConsumer =
-                        createKafkaConsumer(notificationType.getClassType(), notificationType.getDeserializer(),
-                                stream, i, consumerConnector, autoCommitEnabled);
-                consumers.add(kafkaConsumer);
-            }
-            consumerConnectors.add(consumerConnector);
-        }
-
+        List<NotificationConsumer<T>> consumers = new ArrayList<>();
+        AtlasKafkaConsumer kafkaConsumer = new AtlasKafkaConsumer(notificationType.getDeserializer(), getKafkaConsumer(consumerProperties,notificationType, autoCommitEnabled), autoCommitEnabled);
+        consumers.add(kafkaConsumer);
         return consumers;
     }
 
@@ -208,11 +188,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
             producer.close();
             producer = null;
         }
-
-        for (ConsumerConnector consumerConnector : consumerConnectors) {
-            consumerConnector.shutdown();
-        }
-        consumerConnectors.clear();
     }
 
 
@@ -254,43 +229,31 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
     }
 
-    // ----- helper methods --------------------------------------------------
 
-    /**
-     * Create a Kafka consumer connector from the given properties.
-     *
-     * @param consumerProperties  the properties for creating the consumer connector
-     *
-     * @return a new Kafka consumer connector
-     */
-    protected ConsumerConnector createConsumerConnector(Properties consumerProperties) {
-        return Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(consumerProperties));
+    public KafkaConsumer  getKafkaConsumer(Properties consumerProperties, NotificationType type, boolean autoCommitEnabled) {
+        if(this.consumer == null) {
+            try {
+                String topic = TOPIC_MAP.get(type);
+                consumerProperties.put("enable.auto.commit", autoCommitEnabled);
+                this.consumer = new KafkaConsumer(consumerProperties);
+                this.consumer.subscribe(Arrays.asList(topic));
+            }catch (Exception ee) {
+                LOG.error("Exception in getKafkaConsumer ", ee);
+            }
+        }
+
+        return this.consumer;
     }
 
-    /**
-     * Create a Kafka consumer from the given Kafka stream.
-     *
-     * @param type          the notification type to be returned by the consumer
-     * @param deserializer  the deserializer for the created consumers
-     * @param stream        the Kafka stream
-     * @param consumerId    the id for the new consumer
-     *
-     * @param consumerConnector
-     * @return a new Kafka consumer
-     */
-    protected <T> org.apache.atlas.kafka.KafkaConsumer<T>
-    createKafkaConsumer(Class<T> type, MessageDeserializer<T> deserializer, KafkaStream stream,
-                        int consumerId, ConsumerConnector consumerConnector, boolean autoCommitEnabled) {
-        return new org.apache.atlas.kafka.KafkaConsumer<>(deserializer, stream,
-                consumerId, consumerConnector, autoCommitEnabled);
-    }
+
+
 
     // Get properties for consumer request
     private Properties getConsumerProperties(NotificationType type) {
         // find the configured group id for the given notification type
-        String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 
-        if (groupId == null) {
+        String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
+        if (StringUtils.isEmpty(groupId)) {
             throw new IllegalStateException("No configuration group id set for the notification type " + type);
         }
 
@@ -298,7 +261,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         consumerProperties.putAll(properties);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
-        LOG.info("Consumer property: auto.commit.enable: {}", consumerProperties.getProperty("auto.commit.enable"));
+        LOG.info("Consumer property: atlas.kafka.enable.auto.commit: {}", consumerProperties.getProperty("enable.auto.commit"));
         return consumerProperties;
     }
 

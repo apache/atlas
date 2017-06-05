@@ -1,3 +1,5 @@
+package org.apache.atlas.kafka;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -15,31 +17,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification;
-import org.apache.kafka.common.TopicPartition;
 
-/**
- * Abstract notification consumer.
- */
-public abstract class AbstractNotificationConsumer<T> implements NotificationConsumer<T> {
+public class AtlasKafkaMessage<T> {
+    private final T    message;
+    private final long offset;
+    private final int  partition;
 
-    /**
-     * Deserializer used to deserialize notification messages for this consumer.
-     */
-    protected final MessageDeserializer<T> deserializer;
-
-
-
-    /**
-     * Construct an AbstractNotificationConsumer.
-     *
-     * @param deserializer  the message deserializer used by this consumer
-     */
-    public AbstractNotificationConsumer(MessageDeserializer<T> deserializer) {
-        this.deserializer = deserializer;
+    public AtlasKafkaMessage(T message, long offset, int partition) {
+        this.message   = message;
+        this.offset    = offset;
+        this.partition = partition;
     }
 
+    public T getMessage() {
+        return message;
+    }
 
+    public long getOffset() {
+        return offset;
+    }
 
-    public abstract void commit(TopicPartition partition, long offset);
+    public int getPartition() {
+        return partition;
+    }
+
 }

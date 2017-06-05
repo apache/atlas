@@ -128,7 +128,7 @@ public abstract class AbstractMessageDeserializer<T> extends VersionedMessageDes
     /**
      * Deserializer for JSONArray.
      */
-    protected static final class JSONArrayDeserializer implements JsonDeserializer<JSONArray> {
+    public static final class JSONArrayDeserializer implements JsonDeserializer<JSONArray> {
         @Override
         public JSONArray deserialize(final JsonElement json, final Type type,
                                      final JsonDeserializationContext context) {

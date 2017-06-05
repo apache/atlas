@@ -20,10 +20,12 @@ package org.apache.atlas.notification;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.slf4j.Logger;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +37,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
+import org.apache.kafka.common.TopicPartition;
 
 /**
  * AbstractNotificationConsumer tests.
@@ -44,7 +47,7 @@ public class AbstractNotificationConsumerTest {
     private static final Gson GSON = new Gson();
 
     @Test
-    public void testNext() throws Exception {
+    public void testReceive() throws Exception {
         Logger logger = mock(Logger.class);
 
         TestMessage testMessage1 = new TestMessage("sValue1", 99);
@@ -52,7 +55,7 @@ public class AbstractNotificationConsumerTest {
         TestMessage testMessage3 = new TestMessage("sValue3", 97);
         TestMessage testMessage4 = new TestMessage("sValue4", 96);
 
-        List<String> jsonList = new LinkedList<>();
+        List jsonList = new LinkedList<>();
 
         jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1)));
         jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage2)));
@@ -62,25 +65,19 @@ public class AbstractNotificationConsumerTest {
         Type versionedMessageType = new TypeToken<VersionedMessage<TestMessage>>(){}.getType();
 
         NotificationConsumer<TestMessage> consumer =
-            new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
+                new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
 
-        assertTrue(consumer.hasNext());
+        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
 
-        assertEquals(testMessage1, consumer.next());
+        assertFalse(messageList.isEmpty());
 
-        assertTrue(consumer.hasNext());
+        assertEquals(testMessage1, messageList.get(0).getMessage());
 
-        assertEquals(testMessage2, consumer.next());
+        assertEquals(testMessage2, messageList.get(1).getMessage());
 
-        assertTrue(consumer.hasNext());
+        assertEquals(testMessage3, messageList.get(2).getMessage());
 
-        assertEquals(testMessage3, consumer.next());
-
-        assertTrue(consumer.hasNext());
-
-        assertEquals(testMessage4, consumer.next());
-
-        assertFalse(consumer.hasNext());
+        assertEquals(testMessage4, messageList.get(3).getMessage());
     }
 
     @Test
@@ -92,7 +89,7 @@ public class AbstractNotificationConsumerTest {
         TestMessage testMessage3 = new TestMessage("sValue3", 97);
         TestMessage testMessage4 = new TestMessage("sValue4", 96);
 
-        List<String> jsonList = new LinkedList<>();
+        List jsonList = new LinkedList<>();
 
         String json1 = GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1));
         String json2 = GSON.toJson(new VersionedMessage<>(new MessageVersion("0.0.5"), testMessage2));
@@ -108,26 +105,17 @@ public class AbstractNotificationConsumerTest {
 
         NotificationConsumer<TestMessage> consumer =
             new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
-        assertTrue(consumer.hasNext());
 
-        assertEquals(new TestMessage("sValue1", 99), consumer.next());
+        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
 
-        assertTrue(consumer.hasNext());
+        assertEquals(new TestMessage("sValue1", 99), messageList.get(0).getMessage());
 
-        assertEquals(new TestMessage("sValue2", 98), consumer.next());
-        verify(logger).info(endsWith(json2));
+        assertEquals(new TestMessage("sValue2", 98), messageList.get(1).getMessage());
 
-        assertTrue(consumer.hasNext());
+        assertEquals(new TestMessage("sValue3", 97), messageList.get(2).getMessage());
 
-        assertEquals(new TestMessage("sValue3", 97), consumer.next());
-        verify(logger).info(endsWith(json3));
+        assertEquals(new TestMessage("sValue4", 96), messageList.get(3).getMessage());
 
-        assertTrue(consumer.hasNext());
-
-        assertEquals(new TestMessage("sValue4", 96), consumer.next());
-        verify(logger).info(endsWith(json4));
-
-        assertFalse(consumer.hasNext());
     }
 
     @Test
@@ -137,7 +125,7 @@ public class AbstractNotificationConsumerTest {
         TestMessage testMessage1 = new TestMessage("sValue1", 99);
         TestMessage testMessage2 = new TestMessage("sValue2", 98);
 
-        List<String> jsonList = new LinkedList<>();
+        List jsonList = new LinkedList<>();
 
         String json1 = GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1));
         String json2 = GSON.toJson(new VersionedMessage<>(new MessageVersion("2.0.0"), testMessage2));
@@ -149,52 +137,19 @@ public class AbstractNotificationConsumerTest {
 
         NotificationConsumer<TestMessage> consumer =
             new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
-        assertTrue(consumer.hasNext());
-
-        assertEquals(testMessage1, consumer.next());
-
-        assertTrue(consumer.hasNext());
-
         try {
-            consumer.next();
+            List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
+
+            messageList.get(1).getMessage();
+
             fail("Expected VersionMismatchException!");
         } catch (IncompatibleVersionException e) {
-            verify(logger).error(endsWith(json2));
+
         }
 
-        assertFalse(consumer.hasNext());
     }
 
-    @Test
-    public void testPeek() throws Exception {
-        Logger logger = mock(Logger.class);
 
-        TestMessage testMessage1 = new TestMessage("sValue1", 99);
-        TestMessage testMessage2 = new TestMessage("sValue2", 98);
-        TestMessage testMessage3 = new TestMessage("sValue3", 97);
-        TestMessage testMessage4 = new TestMessage("sValue4", 96);
-
-        List<String> jsonList = new LinkedList<>();
-
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage2)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage3)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage4)));
-
-        Type versionedMessageType = new TypeToken<VersionedMessage<TestMessage>>(){}.getType();
-
-        NotificationConsumer<TestMessage> consumer =
-            new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
-        assertTrue(consumer.hasNext());
-
-        assertEquals(testMessage1, consumer.peek());
-
-        assertTrue(consumer.hasNext());
-
-        assertEquals(testMessage1, consumer.peek());
-
-        assertTrue(consumer.hasNext());
-    }
 
     private static class TestMessage {
         private String s;
@@ -229,37 +184,31 @@ public class AbstractNotificationConsumerTest {
     }
 
     private static class TestNotificationConsumer<T> extends AbstractNotificationConsumer<T> {
-        private final List<String> messageList;
+        private final List<T> messageList;
         private int index = 0;
 
-        public TestNotificationConsumer(Type versionedMessageType, List<String> messages, Logger logger) {
+        public TestNotificationConsumer(Type versionedMessageType, List<T> messages, Logger logger) {
             super(new TestDeserializer<T>(versionedMessageType, logger));
             this.messageList = messages;
         }
 
         @Override
-        protected String getNext() {
-            return messageList.get(index++);
-        }
-
-        @Override
-        protected String peekMessage() {
-            return messageList.get(index);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index < messageList.size();
-        }
-
-        @Override
-        public void commit() {
+        public void commit(TopicPartition partition, long offset) {
             // do nothing.
         }
 
         @Override
         public void close() {
             //do nothing
+        }
+
+        @Override
+        public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
+            List<AtlasKafkaMessage<T>> tempMessageList = new ArrayList();
+            for(Object json :  messageList) {
+                tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String)json), -1, -1));
+            }
+            return tempMessageList;
         }
     }
 

@@ -17,32 +17,16 @@
  */
 package org.apache.atlas.notification;
 
+import java.util.List;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.atlas.kafka.AtlasKafkaMessage;
+
 /**
  * Atlas notification consumer.  This consumer blocks until a notification can be read.
  *
  * @param <T>  the class type of notifications returned by this consumer
  */
 public interface NotificationConsumer<T> {
-    /**
-     * Returns true when the consumer has more notifications.  Blocks until a notification becomes available.
-     *
-     * @return true when the consumer has notifications to be read
-     */
-    boolean hasNext();
-
-    /**
-     * Returns the next notification.
-     *
-     * @return the next notification
-     */
-    T next();
-
-    /**
-     * Returns the next notification without advancing.
-     *
-     * @return the next notification
-     */
-    T peek();
 
     /**
      * Commit the offset of messages that have been successfully processed.
@@ -51,7 +35,14 @@ public interface NotificationConsumer<T> {
      * the consumer is ready to handle the next message, which could happen even after a normal or an abnormal
      * restart.
      */
-    void commit();
+    void commit(TopicPartition partition, long offset);
 
     void close();
+
+    /**
+     * Fetch data for the topics from Kafka
+     * @param timeoutMilliSeconds poll timeout
+     * @return List containing kafka message and partionId and offset.
+     */
+    List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds);
 }
