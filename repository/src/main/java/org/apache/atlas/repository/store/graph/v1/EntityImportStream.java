@@ -22,6 +22,12 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 
 public interface EntityImportStream extends EntityStream {
 
+    int size();
+    void setPosition(int position);
+    int getPosition();
+
+    void setPositionUsingEntityGuid(String guid);
+
     AtlasEntityWithExtInfo getNextEntityWithExtInfo();
 
     void onImportComplete(String guid);

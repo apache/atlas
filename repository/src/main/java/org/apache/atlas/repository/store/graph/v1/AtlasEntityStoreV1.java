@@ -156,7 +156,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         ret.setGuidAssignments(new HashMap<String, String>());
 
         Set<String> processedGuids          = new HashSet<>();
-        int         progressReportedAtCount = 0;
+        int         streamSize              = entityStream.size();
+        float       currentPercent          = 0f;
 
         while (entityStream.hasNext()) {
             AtlasEntityWithExtInfo entityWithExtInfo = entityStream.getNextEntityWithExtInfo();
@@ -169,16 +170,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, entityStream);
 
             EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
-
-            updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
-            updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
-            updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
-
-            if ((processedGuids.size() - progressReportedAtCount) > 1000) {
-                progressReportedAtCount = processedGuids.size();
-
-                LOG.info("bulkImport(): in progress.. number of entities imported: {}", progressReportedAtCount);
-            }
+            currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids,
+                    entityStream.getPosition(), streamSize, currentPercent);
 
             if (resp.getGuidAssignments() != null) {
                 ret.getGuidAssignments().putAll(resp.getGuidAssignments());
@@ -188,12 +181,47 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         importResult.getProcessedEntities().addAll(processedGuids);
-        LOG.info("bulkImport(): done. Number of entities imported: {}", processedGuids.size());
+        LOG.info("bulkImport(): done. Total number of entities (including referred entities) imported: {}", processedGuids.size());
 
         return ret;
     }
 
-    private void updateImportMetrics(String prefix, List<AtlasEntityHeader> list, Set<String> processedGuids, AtlasImportResult importResult) {
+    private float updateImportMetrics(AtlasEntityWithExtInfo currentEntity,
+                                      EntityMutationResponse resp,
+                                      AtlasImportResult importResult,
+                                      Set<String> processedGuids,
+                                      int currentIndex, int streamSize, float currentPercent) {
+
+        updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
+        updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
+        updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
+
+        String lastEntityImported = String.format("entity:last-imported:%s:[%s]:(%s)",
+                                            currentEntity.getEntity().getTypeName(),
+                                            currentIndex,
+                                            currentEntity.getEntity().getGuid());
+
+        return updateImportProgress(LOG, currentIndex + 1, streamSize, currentPercent, lastEntityImported);
+    }
+
+    private static float updateImportProgress(Logger log, int currentIndex, int streamSize, float currentPercent,
+                                              String additionalInfo) {
+        final double tolerance = 0.000001;
+        final int MAX_PERCENT = 100;
+
+        float percent = (float) ((currentIndex * MAX_PERCENT)/streamSize);
+        boolean updateLog = Double.compare(percent, currentPercent) > tolerance;
+        float updatedPercent = (MAX_PERCENT < streamSize) ? percent :
+                                ((updateLog) ? ++currentPercent : currentPercent);
+
+        if (updateLog) {
+            log.info("bulkImport(): progress: {}% (of {}) - {}", (int) Math.ceil(percent), streamSize, additionalInfo);
+        }
+
+        return updatedPercent;
+    }
+
+    private static void updateImportMetrics(String prefix, List<AtlasEntityHeader> list, Set<String> processedGuids, AtlasImportResult importResult) {
         if (list == null) {
             return;
         }

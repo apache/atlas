@@ -19,6 +19,7 @@ package org.apache.atlas.model.impexp;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -41,6 +42,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 public class AtlasImportRequest implements Serializable {
     private static final long   serialVersionUID = 1L;
     public  static final String TRANSFORMS_KEY   = "transforms";
+    private static final String START_POSITION_KEY = "startPosition";
+    private static final String START_GUID_KEY = "startGuid";
 
     private Map<String, String> options;
 
@@ -69,5 +72,23 @@ public class AtlasImportRequest implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    @JsonIgnore
+    public String getStartGuid() {
+        if (this.options == null || !this.options.containsKey(START_GUID_KEY)) {
+            return null;
+        }
+
+        return (String) this.options.get(START_GUID_KEY);
+    }
+
+    @JsonIgnore
+    public String getStartPosition() {
+        if (this.options == null || !this.options.containsKey(START_POSITION_KEY)) {
+            return null;
+        }
+
+        return (String) this.options.get(START_GUID_KEY);
     }
  }

@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ public class ZipSource implements EntityImportStream {
     private Iterator<String>     iterator;
     private Map<String, String>  guidEntityJsonMap;
     private ImportTransforms     importTransform;
+    private int currentPosition;
 
     public ZipSource(InputStream inputStream) throws IOException {
         this(inputStream, null);
@@ -190,6 +192,7 @@ public class ZipSource implements EntityImportStream {
     @Override
     public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
         try {
+            currentPosition++;
             return getEntityWithExtInfo(this.iterator.next());
         } catch (AtlasBaseException e) {
             e.printStackTrace();
@@ -227,8 +230,43 @@ public class ZipSource implements EntityImportStream {
         return null;
     }
 
+    public int size() {
+        return this.creationOrder.size();
+    }
+
     @Override
     public void onImportComplete(String guid) {
         guidEntityJsonMap.remove(guid);
     }
+
+
+    @Override
+    public void setPosition(int index) {
+        currentPosition = index;
+        reset();
+        for (int i = 0; i < creationOrder.size() && i <= index; i++) {
+            iterator.next();
+        }
+    }
+
+    @Override
+    public void setPositionUsingEntityGuid(String guid) {
+        if(StringUtils.isBlank(guid)) {
+            return;
+        }
+
+        int index = creationOrder.indexOf(guid);
+        if (index == -1) {
+            return;
+        }
+
+        setPosition(index);
+    }
+
+    @Override
+    public int getPosition() {
+        return currentPosition;
+    }
+
+
 }

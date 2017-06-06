@@ -71,7 +71,9 @@ public class ImportService {
             source.setImportTransform(ImportTransforms.fromJson(transforms));
             startTimestamp = System.currentTimeMillis();
             processTypes(source.getTypesDef(), result);
+            setStartPosition(request, source);
             processEntities(source, result);
+
 
             result.setOperationStatus(AtlasImportResult.OperationStatus.SUCCESS);
         } catch (AtlasBaseException excp) {
@@ -88,6 +90,14 @@ public class ImportService {
         }
 
         return result;
+    }
+
+    private void setStartPosition(AtlasImportRequest request, ZipSource source) throws AtlasBaseException {
+        if(request.getStartGuid() != null) {
+            source.setPositionUsingEntityGuid(request.getStartGuid());
+        } else if(request.getStartPosition() != null) {
+            source.setPosition(Integer.parseInt(request.getStartPosition()));
+        }
     }
 
     public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP)
