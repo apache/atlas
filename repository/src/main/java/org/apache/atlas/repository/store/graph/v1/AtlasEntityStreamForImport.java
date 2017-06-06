@@ -21,12 +21,15 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 
 public class AtlasEntityStreamForImport extends AtlasEntityStream implements EntityImportStream {
+    private int currentPosition = 0;
+
     public AtlasEntityStreamForImport(AtlasEntityWithExtInfo entityWithExtInfo, EntityStream entityStream) {
         super(entityWithExtInfo, entityStream);
     }
 
     @Override
     public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
+        currentPosition++;
         AtlasEntity entity = next();
 
         return entity != null ? new AtlasEntityWithExtInfo(entity, super.entitiesWithExtInfo) : null;
@@ -41,6 +44,25 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
         }
 
         return ent;
+    }
+
+    @Override
+    public int size() {
+        return 1;
+    }
+
+    @Override
+    public void setPosition(int position) {
+        // not applicable for a single entity stream
+    }
+
+    @Override
+    public int getPosition() {
+        return currentPosition;
+    }
+
+    @Override
+    public void setPositionUsingEntityGuid(String guid) {
     }
 
     @Override

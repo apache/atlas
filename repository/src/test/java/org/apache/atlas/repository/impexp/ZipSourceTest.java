@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.testng.Assert;
+import org.testng.ITestContext;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -29,7 +30,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -39,6 +42,11 @@ public class ZipSourceTest {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks.zip");
 
         return new Object[][] {{ new ZipSource(fs) }};
+    }
+
+    @DataProvider(name = "sales")
+    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException {
+        return getZipSource("sales-v1-full.zip");
     }
 
     @Test
@@ -108,7 +116,27 @@ public class ZipSourceTest {
             assertEquals(e.getGuid(), creationOrder.get(i));
         }
 
-        Assert.assertFalse(zipSource.hasNext());
+        assertFalse(zipSource.hasNext());
+    }
+
+    @Test(dataProvider = "sales")
+    public void iteratorSetPositionBehavor(ZipSource zipSource) throws IOException, AtlasBaseException {
+        Assert.assertTrue(zipSource.hasNext());
+
+        List<String> creationOrder = zipSource.getCreationOrder();
+        int moveToPosition_2 = 2;
+        zipSource.setPosition(moveToPosition_2);
+
+        assertEquals(zipSource.getPosition(), moveToPosition_2);
+        assertTrue(zipSource.getPosition() < creationOrder.size());
+
+        assertTrue(zipSource.hasNext());
+        for (int i = 1; i < 4; i++) {
+            zipSource.next();
+            assertEquals(zipSource.getPosition(), moveToPosition_2 + i);
+        }
+
+        assertTrue(zipSource.hasNext());
     }
 
     @Test(dataProvider = "zipFileStocks")
@@ -123,6 +151,7 @@ public class ZipSourceTest {
             if(e.getTypeName().equals("hive_db")) {
                 Object o = e.getAttribute("qualifiedName");
                 String s = (String) o;
+
                 assertNotNull(e);
                 assertTrue(s.contains("@cl2"));
                 break;
