@@ -719,7 +719,7 @@ define(['require',
                                 return markup;
                             },
                             data: select2Options,
-                            minimumInputLength: 3
+                            minimumInputLength: 1
                         });
                     }
                     $this.select2(select2Option);
