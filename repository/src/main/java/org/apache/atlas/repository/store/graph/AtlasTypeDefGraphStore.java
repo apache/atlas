@@ -26,24 +26,13 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasEnumType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -83,6 +72,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
     protected abstract AtlasEntityDefStore getEntityDefStore(AtlasTypeRegistry typeRegistry);
 
+    protected abstract AtlasRelationshipDefStore getRelationshipDefStore(AtlasTypeRegistry typeRegistry);
+
     @Override
     public void init() throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr           = null;
@@ -96,7 +87,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             AtlasTypesDef typesDef = new AtlasTypesDef(getEnumDefStore(ttr).getAll(),
                     getStructDefStore(ttr).getAll(),
                     getClassificationDefStore(ttr).getAll(),
-                    getEntityDefStore(ttr).getAll());
+                    getEntityDefStore(ttr).getAll(),
+                    getRelationshipDefStore(ttr).getAll());
 
             rectifyTypeErrorsIfAny(typesDef);
 
@@ -160,6 +152,27 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @Override
     public AtlasStructDef getStructDefByGuid(String guid) throws AtlasBaseException {
         AtlasStructDef ret = typeRegistry.getStructDefByGuid(guid);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
+    }
+    @Override
+    public AtlasRelationshipDef getRelationshipDefByName(String name) throws AtlasBaseException {
+        AtlasRelationshipDef ret = typeRegistry.getRelationshipDefByName(name);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public AtlasRelationshipDef getRelationshipDefByGuid(String guid) throws AtlasBaseException {
+        AtlasRelationshipDef ret = typeRegistry.getRelationshipDefByGuid(guid);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
@@ -268,21 +281,36 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasEntityDef updateEntityDefByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
-
         tryUpdateByGUID(guid, entityDef, ttr);
-
         return getEntityDefStore(ttr).updateByGuid(guid, entityDef);
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+        AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
+        tryUpdateByName(name, relationshipDef, ttr);
+        return getRelationshipDefStore(ttr).updateByName(name, relationshipDef);
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasRelationshipDef updateRelationshipDefByGuid(String guid, AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+        AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
+        tryUpdateByGUID(guid, relationshipDef, ttr);
+        return getRelationshipDefStore(ttr).updateByGuid(guid, relationshipDef);
     }
 
     @Override
     @GraphTransaction
     public AtlasTypesDef createTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classifications={}, entities={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classifications={}, entities={}, relationships={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()));
+                    CollectionUtils.size(typesDef.getEntityDefs()),
+                    CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -292,11 +320,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         AtlasTypesDef ret = addToGraphStore(typesDef, ttr);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classfications={}, entities={})",
+            LOG.debug("<== AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()));
+                    CollectionUtils.size(typesDef.getEntityDefs()),
+                    CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
         return ret;
@@ -359,11 +388,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()));
+                    CollectionUtils.size(typesDef.getEntityDefs()),
+                    CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -397,11 +427,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()));
+                    CollectionUtils.size(typesDef.getEntityDefs()),
+                    CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -410,11 +441,25 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
         AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
         AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasRelationshipDefStore   relationshipDefStore = getRelationshipDefStore(ttr);
 
         List<Object> preDeleteStructDefs   = new ArrayList<>();
         List<Object> preDeleteClassifiDefs = new ArrayList<>();
         List<Object> preDeleteEntityDefs   = new ArrayList<>();
+        List<Object> preDeleteRelationshipDefs = new ArrayList<>();
 
+        // pre deletes
+
+        // do the relationships first.
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                if (StringUtils.isNotBlank(relationshipDef.getGuid())) {
+                    preDeleteRelationshipDefs.add(relationshipDefStore.preDeleteByGuid(relationshipDef.getGuid()));
+                } else {
+                    preDeleteRelationshipDefs.add(relationshipDefStore.preDeleteByName(relationshipDef.getName()));
+                }
+            }
+        }
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
                 if (StringUtils.isNotBlank(structDef.getGuid())) {
@@ -442,6 +487,21 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
                 } else {
                     preDeleteEntityDefs.add(entityDefStore.preDeleteByName(entityDef.getName()));
                 }
+            }
+        }
+
+        // run the actual deletes
+
+        // run the relationshipDef delete first - in case there is a enumDef or entityDef dependancy that is going to be deleted.
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            int i = 0;
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                if (StringUtils.isNotBlank(relationshipDef.getGuid())) {
+                    relationshipDefStore.deleteByGuid(relationshipDef.getGuid(), preDeleteRelationshipDefs.get(i));
+                } else {
+                    relationshipDefStore.deleteByName(relationshipDef.getName(), preDeleteRelationshipDefs.get(i));
+                }
+                i++;
             }
         }
 
@@ -529,6 +589,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         for(AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
             if (searchPredicates.evaluate(entityType)) {
                 typesDef.getEntityDefs().add(entityType.getEntityDef());
+            }
+        }
+
+        for(AtlasRelationshipType relationshipType : typeRegistry.getAllRelationshipTypes()) {
+            if (searchPredicates.evaluate(relationshipType)) {
+                typesDef.getRelationshipDefs().add(relationshipType.getRelationshipDef());
             }
         }
 
@@ -691,11 +757,14 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
         AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
         AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasRelationshipDefStore   relationshipDefStore   = getRelationshipDefStore(ttr);
 
         List<Object> preCreateStructDefs   = new ArrayList<>();
         List<Object> preCreateClassifiDefs = new ArrayList<>();
         List<Object> preCreateEntityDefs   = new ArrayList<>();
+        List<Object> preCreateRelationshipDefs   = new ArrayList<>();
 
+        // for enumerations run the create
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
                 AtlasEnumDef createdDef = enumDefStore.create(enumDef);
@@ -705,6 +774,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
                 ret.getEnumDefs().add(createdDef);
             }
         }
+        // run the preCreates
 
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
@@ -721,6 +791,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
                 preCreateEntityDefs.add(entityDefStore.preCreate(entityDef));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                preCreateRelationshipDefs.add(relationshipDefStore.preCreate(relationshipDef));
             }
         }
 
@@ -756,6 +832,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
                 ret.getEntityDefs().add(createdDef);
+                i++;
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            int i = 0;
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                AtlasRelationshipDef createdDef = relationshipDefStore.create(relationshipDef, preCreateRelationshipDefs.get(i));
+
+                ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
+
+                ret.getRelationshipDefs().add(createdDef);
                 i++;
             }
         }

@@ -57,6 +57,11 @@ public final class Constants {
     public static final String TYPEVERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.version";
     public static final String TYPEOPTIONS_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.options";
 
+    // relationship def constants
+    public static final String RELATIONSHIPTYPE_ENDPOINT1_KEY = "endPointDef1";
+    public static final String RELATIONSHIPTYPE_ENDPOINT2_KEY = "endPointDef2";
+    public static final String RELATIONSHIPTYPE_CATEGORY_KEY = "relationshipCategory";
+    public static final String RELATIONSHIPTYPE_TAG_PROPAGATION_KEY = "tagPropagation";
     /**
      * Trait names property key and index name.
      */
@@ -91,6 +96,7 @@ public final class Constants {
 
     public static final String QUALIFIED_NAME = "Referenceable.qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+
 
     private Constants() {
     }

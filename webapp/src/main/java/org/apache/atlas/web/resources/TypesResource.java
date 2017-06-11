@@ -266,7 +266,7 @@ public class TypesResource {
      * Return the list of type names in the type system which match the specified filter.
      *
      * @return list of type names
-     * @param typeCategory returns types whose category is the given typeCategory
+     * @param typeCategory returns types whose relationshipCategory is the given typeCategory
      * @param supertype returns types which contain the given supertype
      * @param notsupertype returns types which do not contain the given supertype
      *

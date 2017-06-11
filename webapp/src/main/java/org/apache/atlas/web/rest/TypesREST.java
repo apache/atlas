@@ -19,13 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -37,14 +31,7 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import java.util.List;
 import java.util.Set;
@@ -269,7 +256,39 @@ public class TypesREST {
 
         return ret;
     }
+    /**
+     * Get the relationship definition by it's name (unique)
+     * @param name relationship name
+     * @return relationship definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the relationship definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
+    @GET
+    @Path("/relationshipdef/name/{name}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByName(name);
 
+        return ret;
+    }
+
+    /**
+     * Get the relationship definition for the given guid
+     * @param guid relationship guid
+     * @return relationship definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the relationship definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
+    @GET
+    @Path("/relationshipdef/guid/{guid}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByGuid(guid);
+
+        return ret;
+    }
     /* Bulk API operation */
 
     /**

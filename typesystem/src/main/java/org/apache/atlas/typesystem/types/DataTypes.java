@@ -86,7 +86,8 @@ public class DataTypes {
         MAP,
         STRUCT,
         TRAIT,
-        CLASS
+        CLASS,
+        RELATIONSHIP
     }
 
     public static abstract class PrimitiveType<T> extends AbstractDataType<T> {

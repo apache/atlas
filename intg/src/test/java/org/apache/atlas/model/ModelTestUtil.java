@@ -21,12 +21,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -43,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_PRIMITIVE_TYPES;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES;
 
 
 public final class  ModelTestUtil {
@@ -436,6 +433,67 @@ public final class  ModelTestUtil {
         for (String ATLAS_PRIMITIVE_TYPE : ATLAS_PRIMITIVE_TYPES) {
             ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE,
                     AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE, getRandomBuiltInType()))));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Valid types for attributes in relationships. This has good coverage of all attribute type and includes enums
+     * maps and arrays.
+     * This test does not use getRandomBuiltInType() style - so that it is deterministic.
+     *
+     * It does cover very nested maps / arrays.
+     * @param attrNamePrefix
+     * @return
+     */
+    public static List<AtlasAttributeDef> newAttributeDefsWithAllBuiltInTypesForRelationship(String attrNamePrefix) {
+        List<AtlasAttributeDef> ret = new ArrayList<>();
+
+        // add enum types
+        ret.add(getAttributeDef(attrNamePrefix, ENUM_DEF.getName()));
+        ret.add(getAttributeDef(attrNamePrefix, ENUM_DEF_WITH_NO_DEFAULT.getName()));
+        // add array of enum types
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF.getName())));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName())));
+
+
+        for (String attributeType : ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES) {
+
+            // simple attributes
+            ret.add(getAttributeDef(attrNamePrefix, attributeType));
+            // array
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(attributeType)));
+            // map types with enum as key
+            ret.add(getAttributeDef(attrNamePrefix,
+                    AtlasBaseTypeDef.getMapTypeName(ENUM_DEF.getName(), attributeType)));
+            // map types with enum as key no default
+            ret.add(getAttributeDef(attrNamePrefix,
+                    AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), attributeType)));
+             // map types attribute as key enum no default as value
+            ret.add(getAttributeDef(attrNamePrefix,
+                    AtlasBaseTypeDef.getMapTypeName(attributeType, ENUM_DEF_WITH_NO_DEFAULT.getName())));
+            // map types with enum as value
+            ret.add(getAttributeDef(attrNamePrefix,
+                    AtlasBaseTypeDef.getMapTypeName(attributeType, ENUM_DEF.getName())));
+
+            for (String attributeType2 : ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES) {
+                // add map types
+                ret.add(getAttributeDef(attrNamePrefix,
+                        AtlasBaseTypeDef.getMapTypeName(attributeType, attributeType2)));
+                // add array of arrays
+                ret.add(getAttributeDef(attrNamePrefix,
+                        AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getArrayTypeName(attributeType2))));
+                // add array of maps
+                ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
+                        AtlasBaseTypeDef.getMapTypeName(attributeType, attributeType2))));
+                // add map of arrays
+                ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(attributeType,
+                        AtlasBaseTypeDef.getArrayTypeName(attributeType2))));
+                // add map of maps
+                ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(attributeType,
+                        AtlasBaseTypeDef.getMapTypeName(attributeType, attributeType2))));
+            }
         }
 
         return ret;

@@ -17,11 +17,8 @@
  */
 package org.apache.atlas.model.typedef;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +28,11 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import org.apache.commons.collections.CollectionUtils;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
@@ -44,29 +44,50 @@ public class AtlasTypesDef {
     private List<AtlasStructDef>         structDefs;
     private List<AtlasClassificationDef> classificationDefs;
     private List<AtlasEntityDef>         entityDefs;
+    private List<AtlasRelationshipDef>   relationshipDefs;
 
     public AtlasTypesDef() {
         enumDefs           = new ArrayList<>();
         structDefs         = new ArrayList<>();
         classificationDefs = new ArrayList<>();
         entityDefs         = new ArrayList<>();
+        relationshipDefs   = new ArrayList<>();
     }
 
+    /**
+     * tolerate typeDef creations that do not contain relationshipDefs, so that
+     * the older calls will still work.
+     * @param enumDefs
+     * @param structDefs
+     * @param classificationDefs
+     * @param entityDefs
+     */
+    public AtlasTypesDef(List<AtlasEnumDef> enumDefs, List<AtlasStructDef> structDefs,
+                         List<AtlasClassificationDef> classificationDefs, List<AtlasEntityDef> entityDefs) {
+       this(enumDefs, structDefs, classificationDefs, entityDefs,new ArrayList<AtlasRelationshipDef>());
+    }
+    /**
+     * Create the TypesDef. This created definitions for each of the types.
+     * @param enumDefs
+     * @param structDefs
+     * @param classificationDefs
+     * @param entityDefs
+     * @param relationshipDefs
+     */
     public AtlasTypesDef(List<AtlasEnumDef>           enumDefs,
                          List<AtlasStructDef>         structDefs,
                          List<AtlasClassificationDef> classificationDefs,
-                         List<AtlasEntityDef>         entityDefs) {
+                         List<AtlasEntityDef>         entityDefs,
+                         List<AtlasRelationshipDef>   relationshipDefs) {
         this.enumDefs           = enumDefs;
         this.structDefs         = structDefs;
         this.classificationDefs = classificationDefs;
         this.entityDefs         = entityDefs;
+        this.relationshipDefs   = relationshipDefs;
     }
-
-
     public List<AtlasEnumDef> getEnumDefs() {
         return enumDefs;
     }
-
     public void setEnumDefs(List<AtlasEnumDef> enumDefs) {
         this.enumDefs = enumDefs;
     }
@@ -94,7 +115,13 @@ public class AtlasTypesDef {
     public void setClassificationDefs(List<AtlasClassificationDef> classificationDefs) {
         this.classificationDefs = classificationDefs;
     }
+    public List<AtlasRelationshipDef> getRelationshipDefs() {
+        return relationshipDefs;
+    }
 
+    public void setRelationshipDefs(List<AtlasRelationshipDef> relationshipDefs) {
+        this.relationshipDefs = relationshipDefs;
+    }
 
     public boolean hasClassificationDef(String name) {
         return hasTypeDef(classificationDefs, name);
@@ -110,6 +137,9 @@ public class AtlasTypesDef {
 
     public boolean hasEntityDef(String name) {
         return hasTypeDef(entityDefs, name);
+    }
+    public boolean hasRelationshipDef(String name) {
+        return hasTypeDef(relationshipDefs, name);
     }
 
 
@@ -130,7 +160,8 @@ public class AtlasTypesDef {
         return CollectionUtils.isEmpty(enumDefs) &&
                 CollectionUtils.isEmpty(structDefs) &&
                 CollectionUtils.isEmpty(classificationDefs) &&
-                CollectionUtils.isEmpty(entityDefs);
+                CollectionUtils.isEmpty(entityDefs) &&
+                CollectionUtils.isEmpty(relationshipDefs);
     }
 
     public void clear() {
@@ -149,8 +180,10 @@ public class AtlasTypesDef {
         if (entityDefs != null) {
             entityDefs.clear();
         }
+        if (relationshipDefs != null) {
+            relationshipDefs.clear();
+        }
     }
-
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -168,6 +201,9 @@ public class AtlasTypesDef {
         sb.append("}");
         sb.append("entityDefs={");
         AtlasBaseTypeDef.dumpObjects(entityDefs, sb);
+        sb.append("}");
+        sb.append("relationshipDefs={");
+        AtlasBaseTypeDef.dumpObjects(relationshipDefs, sb);
         sb.append("}");
 
         return sb;

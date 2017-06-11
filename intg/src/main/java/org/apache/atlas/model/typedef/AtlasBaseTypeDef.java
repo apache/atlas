@@ -91,6 +91,22 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         ATLAS_TYPE_BIGDECIMAL,
         ATLAS_TYPE_STRING,
     };
+    /**
+     * The list of types that are valid for relationships. These are the
+     * primitive attributes and date.
+     */
+    public static final String[] ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES = { ATLAS_TYPE_BOOLEAN,
+            ATLAS_TYPE_BYTE,
+            ATLAS_TYPE_SHORT,
+            ATLAS_TYPE_INT,
+            ATLAS_TYPE_LONG,
+            ATLAS_TYPE_FLOAT,
+            ATLAS_TYPE_DOUBLE,
+            ATLAS_TYPE_BIGINTEGER,
+            ATLAS_TYPE_BIGDECIMAL,
+            ATLAS_TYPE_STRING,
+            ATLAS_TYPE_DATE
+    };
 
     public static final String[] ATLAS_BUILTIN_TYPES = {
         ATLAS_TYPE_BOOLEAN,
