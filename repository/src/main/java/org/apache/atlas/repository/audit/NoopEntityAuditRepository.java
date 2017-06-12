@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Singleton
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class NoopEntityAuditRepository implements EntityAuditRepository {
 
     @Override
