@@ -73,7 +73,7 @@ import java.util.Map;
  */
 @Singleton
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
 public class HBaseBasedAuditRepository implements Service, EntityAuditRepository, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
