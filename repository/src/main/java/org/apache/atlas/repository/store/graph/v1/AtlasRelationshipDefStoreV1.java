@@ -22,7 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndPointDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipDefStore;
@@ -347,9 +347,9 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
     private void updateVertexPreCreate(AtlasRelationshipDef relationshipDef, AtlasRelationshipType relationshipType,
                                        AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV1.updateVertexPreCreate(relationshipDef, relationshipType, vertex, typeDefStore);
-        // Update endpoints
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_ENDPOINT1_KEY, AtlasType.toJson(relationshipDef.getEndPointDef1()));
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_ENDPOINT2_KEY, AtlasType.toJson(relationshipDef.getEndPointDef2()));
+        // Update ends
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_END1_KEY, AtlasType.toJson(relationshipDef.getEndDef1()));
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_END2_KEY, AtlasType.toJson(relationshipDef.getEndDef2()));
         // Update RelationshipCategory
         vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipDef.getRelationshipCategory().name());
         vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, relationshipDef.getPropagateTags().name());
@@ -358,8 +358,8 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
     private void updateVertexPreUpdate(AtlasRelationshipDef relationshipDef, AtlasRelationshipType relationshipType,
                                        AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV1.updateVertexPreUpdate(relationshipDef, relationshipType, vertex, typeDefStore);
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_ENDPOINT1_KEY, AtlasType.toJson(relationshipDef.getEndPointDef1()));
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_ENDPOINT2_KEY, AtlasType.toJson(relationshipDef.getEndPointDef2()));
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_END1_KEY, AtlasType.toJson(relationshipDef.getEndDef1()));
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_END2_KEY, AtlasType.toJson(relationshipDef.getEndDef2()));
         // Update RelationshipCategory
         vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipDef.getRelationshipCategory().name());
         vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, relationshipDef.getPropagateTags().name());
@@ -372,14 +372,14 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
             String name         = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
             String description  = vertex.getProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
             String version      = vertex.getProperty(Constants.TYPEVERSION_PROPERTY_KEY, String.class);
-            String endPoint1Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_ENDPOINT1_KEY, String.class);
-            String endPoint2Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_ENDPOINT2_KEY, String.class);
+            String end1Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_END1_KEY, String.class);
+            String end2Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_END2_KEY, String.class);
             String relationStr  = vertex.getProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, String.class);
             String propagateStr = vertex.getProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class);
 
-            // set the endpoints
-            AtlasRelationshipEndPointDef endPointDef1 = AtlasType.fromJson(endPoint1Str, AtlasRelationshipEndPointDef.class);
-            AtlasRelationshipEndPointDef endPointDef2 = AtlasType.fromJson(endPoint2Str, AtlasRelationshipEndPointDef.class);
+            // set the ends
+            AtlasRelationshipEndDef endDef1 = AtlasType.fromJson(end1Str, AtlasRelationshipEndDef.class);
+            AtlasRelationshipEndDef endDef2 = AtlasType.fromJson(end2Str, AtlasRelationshipEndDef.class);
 
             // set the relationship Category
             RelationshipCategory relationshipCategory = null;
@@ -397,7 +397,7 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
                 }
             }
 
-            ret = new AtlasRelationshipDef(name, description, version, relationshipCategory,  propagateTags, endPointDef1, endPointDef2);
+            ret = new AtlasRelationshipDef(name, description, version, relationshipCategory,  propagateTags, endDef1, endDef2);
 
             // add in the attributes
             AtlasStructDefStoreV1.toStructDef(vertex, ret, typeDefStore);

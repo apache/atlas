@@ -32,7 +32,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
- * The relationshipEndPointsDef represents an end of the relationship. The end of the relationship is defined by a type, an
+ * The relationshipEndDef represents an end of the relationship. The end of the relationship is defined by a type, an
  * attribute name, cardinality and whether it  is the container end of the relationship.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
@@ -40,14 +40,14 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasRelationshipEndPointDef implements Serializable {
+public class AtlasRelationshipEndDef implements Serializable {
     private static final long serialVersionUID = 1L;
     /**
-     * The type associated with the endpoint.
+     * The type associated with the end.
      */
     private String type;
     /**
-     * The name of the attribute for this endpoint
+     * The name of the attribute for this end
      */
     private String name;
 
@@ -56,14 +56,14 @@ public class AtlasRelationshipEndPointDef implements Serializable {
      */
     private boolean isContainer;
     /**
-     * This is the cardinality of the end point
+     * This is the cardinality of the end
      */
     private Cardinality cardinality;
 
     /**
      * Base constructor
      */
-    public AtlasRelationshipEndPointDef() {
+    public AtlasRelationshipEndDef() {
         this(null, null, Cardinality.SINGLE, false);
     }
 
@@ -74,9 +74,9 @@ public class AtlasRelationshipEndPointDef implements Serializable {
      * @param name
      *   - The name of the new attribute that the entity instance will pick up.
      * @param cardinality
-     *   - this indicates whether the end point is SINGLE (1) or SET (many)
+     *   - this indicates whether the end is SINGLE (1) or SET (many)
      */
-    public AtlasRelationshipEndPointDef(String typeName, String name, Cardinality cardinality) {
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality) {
         this(typeName, name, cardinality, false);
     }
 
@@ -87,11 +87,11 @@ public class AtlasRelationshipEndPointDef implements Serializable {
      * @param name
      *   - The name of the new attribute that the entity instance will pick up.
      * @param cardinality
-     *   - whether the end point is SINGLE (1) or SET (many)
+     *   - whether the end is SINGLE (1) or SET (many)
      * @param isContainer
-     *   - whether the end point is a container or not
+     *   - whether the end is a container or not
      */
-    public AtlasRelationshipEndPointDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
         setType(typeName);
         setName(name);
         setCardinality(cardinality);
@@ -115,7 +115,7 @@ public class AtlasRelationshipEndPointDef implements Serializable {
     }
 
     /**
-     * set whether this endpoint is a container or not.
+     * set whether this end is a container or not.
      * @param isContainer
      */
     public void setIsContainer(boolean isContainer) {
@@ -127,7 +127,7 @@ public class AtlasRelationshipEndPointDef implements Serializable {
     }
 
     /**
-     * set the cardinality SINGLE or SET on the endpoint.
+     * set the cardinality SINGLE or SET on the end.
      * @param cardinality
      */
     public void setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality cardinality) {
@@ -143,10 +143,10 @@ public class AtlasRelationshipEndPointDef implements Serializable {
     }
 
     /**
-     * Construct using an existing AtlasRelationshipEndPointDef
+     * Construct using an existing AtlasRelationshipEndDef
      * @param other
      */
-    public AtlasRelationshipEndPointDef(AtlasRelationshipEndPointDef other) {
+    public AtlasRelationshipEndDef(AtlasRelationshipEndDef other) {
         if (other != null) {
             setType(other.getType());
             setName(other.getName());
@@ -160,7 +160,7 @@ public class AtlasRelationshipEndPointDef implements Serializable {
             sb = new StringBuilder();
         }
 
-        sb.append("AtlasRelationshipEndPointsDef{");
+        sb.append("AtlasRelationshipEndDef{");
         sb.append("type='").append(type).append('\'');
         sb.append(", name==>'").append(name).append('\'');
         sb.append(", isContainer==>'").append(isContainer).append('\'');
@@ -176,7 +176,7 @@ public class AtlasRelationshipEndPointDef implements Serializable {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        AtlasRelationshipEndPointDef that = (AtlasRelationshipEndPointDef) o;
+        AtlasRelationshipEndDef that = (AtlasRelationshipEndDef) o;
         return Objects.equals(type, that.type) && Objects.equals(name, that.name)
                 && (isContainer == that.isContainer) && (cardinality == that.cardinality);
     }

@@ -20,20 +20,20 @@ package org.apache.atlas.type;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndPointDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.testng.annotations.Test;
 
-import static org.testng.AssertJUnit.fail;
+import static org.testng.Assert.fail;
 public class TestAtlasRelationshipType {
     @Test
     public void testvalidateAtlasRelationshipDef() throws AtlasBaseException {
-        AtlasRelationshipEndPointDef ep1 = new AtlasRelationshipEndPointDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
-        AtlasRelationshipEndPointDef ep2 = new AtlasRelationshipEndPointDef("typeB", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
-        AtlasRelationshipEndPointDef ep3 = new AtlasRelationshipEndPointDef("typeC", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
-        AtlasRelationshipEndPointDef ep4 = new AtlasRelationshipEndPointDef("typeD", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
-        AtlasRelationshipEndPointDef ep5 = new AtlasRelationshipEndPointDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SET,true);
-        AtlasRelationshipEndPointDef ep6 = new AtlasRelationshipEndPointDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.LIST,true);
+        AtlasRelationshipEndDef ep1 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep2 = new AtlasRelationshipEndDef("typeB", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep3 = new AtlasRelationshipEndDef("typeC", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
+        AtlasRelationshipEndDef ep4 = new AtlasRelationshipEndDef("typeD", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
+        AtlasRelationshipEndDef ep5 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SET,true);
+        AtlasRelationshipEndDef ep6 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.LIST,true);
         AtlasRelationshipDef relationshipDef1 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
                 AtlasRelationshipDef.RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
         AtlasRelationshipDef relationshipDef2 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
@@ -88,7 +88,7 @@ public class TestAtlasRelationshipType {
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
-            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_ENDPOINT)) {
+            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END)) {
                 fail("This call expected a different error");
             }
         }
@@ -98,7 +98,7 @@ public class TestAtlasRelationshipType {
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
-            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_ENDPOINT)) {
+            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END)) {
                 fail("This call expected a different error");
             }
         }

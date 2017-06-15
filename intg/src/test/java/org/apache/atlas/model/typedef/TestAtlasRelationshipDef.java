@@ -38,8 +38,8 @@ public class TestAtlasRelationshipDef {
     @Test
     public void testRelationshipDefSerDeEmpty() throws AtlasBaseException {
 
-        AtlasRelationshipEndPointDef ep1 = new AtlasRelationshipEndPointDef("typeA", "attr1", Cardinality.SINGLE);
-        AtlasRelationshipEndPointDef ep2 = new AtlasRelationshipEndPointDef("typeB", "attr2", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep1 = new AtlasRelationshipEndDef("typeA", "attr1", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep2 = new AtlasRelationshipEndDef("typeB", "attr2", Cardinality.SINGLE);
         AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
                 RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
 
@@ -58,8 +58,8 @@ public class TestAtlasRelationshipDef {
     @Test
     public void testRelationshipDefSerDeAttributes() throws AtlasBaseException {
 
-        AtlasRelationshipEndPointDef ep1 = new AtlasRelationshipEndPointDef("typeA", "attr1", Cardinality.SINGLE);
-        AtlasRelationshipEndPointDef ep2 = new AtlasRelationshipEndPointDef("typeB", "attr2", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep1 = new AtlasRelationshipEndDef("typeA", "attr1", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep2 = new AtlasRelationshipEndDef("typeB", "attr2", Cardinality.SINGLE);
         AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
                 RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
         relationshipDef.setAttributeDefs(
@@ -77,8 +77,8 @@ public class TestAtlasRelationshipDef {
     @Test
     public void testRelationshipEquals() throws AtlasBaseException {
 
-        AtlasRelationshipEndPointDef ep1 = new AtlasRelationshipEndPointDef("typeA", "attr1", Cardinality.SINGLE);
-        AtlasRelationshipEndPointDef ep2 = new AtlasRelationshipEndPointDef("typeB", "attr2", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep1 = new AtlasRelationshipEndDef("typeA", "attr1", Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep2 = new AtlasRelationshipEndDef("typeB", "attr2", Cardinality.SINGLE);
         AtlasRelationshipDef relationshipDef1 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
                 RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
         List<AtlasStructDef.AtlasAttributeDef> attributeDefs = ModelTestUtil.newAttributeDefsWithAllBuiltInTypesForRelationship(PREFIX_ATTRIBUTE_NAME);

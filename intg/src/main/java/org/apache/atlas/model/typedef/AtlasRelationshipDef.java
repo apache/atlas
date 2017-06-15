@@ -39,8 +39,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
  * As with other typeDefs the AtlasRelationshipDef has a name. Once created the RelationshipDef has a guid.
  * The name and the guid are the 2 ways that the RelationshipDef is identified.
  *
- * RelationshipDefs have 2 endpoints, each of which specify cardinality, an EntityDef type name and name and optionally
- * whether the endpoint is a container.
+ * RelationshipDefs have 2 ends, each of which specify cardinality, an EntityDef type name and name and optionally
+ * whether the end is a container.
  * RelationshipDefs can have AttributeDefs - though only primitive types are allowed.
  * RelationshipDefs have a relationshipCategory specifying the UML type of relationship required
  * RelationshipDefs also have a PropogateTag - indicating which way tags could flow over the relationships.
@@ -51,9 +51,9 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
  * RelationshipDefs introduce new atributes to the entity instances. For example
  * EntityDef A might have attributes attr1,attr2,attr3
  * EntityDef B might have attributes attr4,attr5,attr6
- * RelationshipDef AtoB might define 2 endpoints
- *  endpoint1:  type A, name attr7
- *  endpoint1:  type B, name attr8
+ * RelationshipDef AtoB might define 2 ends
+ *  end1:  type A, name attr7
+ *  end1:  type B, name attr8
  *
  * When an instance of EntityDef A is created, it will have attributes attr1,attr2,attr3,attr7
  * When an instance of EntityDef B is created, it will have attributes attr4,attr5,attr6,attr8
@@ -88,11 +88,11 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      * PropagateTags indicates whether tags should propagate across the relationship instance.
      * Tags can propagate:
      * NONE - not at all
-     * ONE_TO_TWO - from endpoint 1 to 2
-     * TWO_TO_ONE - from endpoint 2 to 1
+     * ONE_TO_TWO - from end 1 to 2
+     * TWO_TO_ONE - from end 2 to 1
      * BOTH - both ways
      *
-     * Care needs to be taken when specifying. The use cases we are aware of this flag being useful are :
+     * Care needs to be taken when specifying. The use cases we are aware of where this flag is useful:
      *
      * - propagating confidentiality classifications from a table to columns - ONE_TO_TWO could be used here
      * - propagating classifications around Glossary synonyms - BOTH could be used here.
@@ -104,10 +104,10 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         NONE, ONE_TO_TWO, TWO_TO_ONE, BOTH
     };
 
-    private RelationshipCategory         relationshipCategory;
-    private PropagateTags                propagateTags;
-    private AtlasRelationshipEndPointDef endPointDef1;
-    private AtlasRelationshipEndPointDef endPointDef2;
+    private RelationshipCategory    relationshipCategory;
+    private PropagateTags           propagateTags;
+    private AtlasRelationshipEndDef endDef1;
+    private AtlasRelationshipEndDef endDef2;
 
     /**
      * AtlasRelationshipDef contructor
@@ -130,22 +130,23 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            and AGGREGATION
      * @param propagatetags
      *            -
-     * @param endPointDef1
-     *            - first endpoint. As endpoint specifies an entity
-     *            type and an attribute name. the attribute name then appears in
+     * @param endDef1
+     *            - first end. An end specifies an entity type and an attribute name. the attribute name then appears in
      *            the relationship instance
-     * @param endPointDef2
-     *            - second endpoint. The endpoints are defined as 1
-     *            ad 2 to avoid implying a direction. So we do not use to and
-     *            from.
+     * @param endDef2
+     *            - second end. An end specifies an entity type and an attribute name. the attribute name then appears in
+     *            the relationship instance
+     *
+     *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
+     *
      * @throws AtlasBaseException
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion,
                                 RelationshipCategory relationshipCategory,
                                 PropagateTags propagatetags,
-                                AtlasRelationshipEndPointDef endPointDef1,
-                                AtlasRelationshipEndPointDef endPointDef2) throws AtlasBaseException {
-        this(name, description, typeVersion, relationshipCategory,propagatetags, endPointDef1, endPointDef2,
+                                AtlasRelationshipEndDef endDef1,
+                                AtlasRelationshipEndDef endDef2) throws AtlasBaseException {
+        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
              new ArrayList<AtlasAttributeDef>());
     }
 
@@ -162,12 +163,12 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            and AGGREGATION
      * @param propagatetags
      *            -
-     * @param endPointDef1
-     *            - First endpoint. As endpoint specifies an entity
+     * @param endDef1
+     *            - First end. As end specifies an entity
      *            type and an attribute name. the attribute name then appears in
      *            the relationship instance
-     * @param endPointDef2
-     *            - Second endpoint. The endpoints are defined as 1
+     * @param endDef2
+     *            - Second end. The ends are defined as 1
      *            ad 2 to avoid implying a direction. So we do not use to and
      *            from.
      * @param attributeDefs
@@ -175,15 +176,15 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion,
                                 RelationshipCategory relationshipCategory,
-                                PropagateTags propagatetags, AtlasRelationshipEndPointDef endPointDef1,
-                                AtlasRelationshipEndPointDef endPointDef2, List<AtlasAttributeDef> attributeDefs)
+                                PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
+                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs)
             {
         super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, null);
 
         setRelationshipCategory(relationshipCategory);
         setPropagateTags(propagatetags);
-        setEndPointDef1(endPointDef1);
-        setEndPointDef2(endPointDef2);
+        setEndDef1(endDef1);
+        setEndDef2(endDef2);
     }
 
     public void setRelationshipCategory(RelationshipCategory relationshipCategory) {
@@ -202,20 +203,20 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         return this.propagateTags;
     }
 
-    public void setEndPointDef1(AtlasRelationshipEndPointDef endPointDef1) {
-        this.endPointDef1 = endPointDef1;
+    public void setEndDef1(AtlasRelationshipEndDef endDef1) {
+        this.endDef1 = endDef1;
     }
 
-    public AtlasRelationshipEndPointDef getEndPointDef1() {
-        return this.endPointDef1;
+    public AtlasRelationshipEndDef getEndDef1() {
+        return this.endDef1;
     }
 
-    public void setEndPointDef2(AtlasRelationshipEndPointDef endPointDef2) {
-        this.endPointDef2 = endPointDef2;
+    public void setEndDef2(AtlasRelationshipEndDef endDef2) {
+        this.endDef2 = endDef2;
     }
 
-    public AtlasRelationshipEndPointDef getEndPointDef2() {
-        return this.endPointDef2;
+    public AtlasRelationshipEndDef getEndDef2() {
+        return this.endDef2;
     }
 
     public AtlasRelationshipDef(AtlasRelationshipDef other) throws AtlasBaseException {
@@ -224,8 +225,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         if (other != null) {
             setRelationshipCategory(other.getRelationshipCategory());
             setPropagateTags(other.getPropagateTags());
-            setEndPointDef1(other.getEndPointDef1());
-            setEndPointDef2(other.getEndPointDef2());
+            setEndDef1(other.getEndDef1());
+            setEndDef2(other.getEndDef2());
         }
     }
     @Override
@@ -241,9 +242,9 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         sb.append(',');
         sb.append(this.propagateTags);
         sb.append(',');
-        sb.append(this.endPointDef1.toString());
+        sb.append(this.endDef1.toString());
         sb.append(',');
-        sb.append(this.endPointDef2.toString());
+        sb.append(this.endDef2.toString());
         sb.append('}');
         return sb;
     }
@@ -262,14 +263,14 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
             return false;
         if (!Objects.equals(propagateTags, that.getPropagateTags()))
             return false;
-        if (!Objects.equals(endPointDef1, that.getEndPointDef1()))
+        if (!Objects.equals(endDef1, that.getEndDef1()))
             return false;
-        return (Objects.equals(endPointDef2, that.getEndPointDef2()));
+        return (Objects.equals(endDef2, that.getEndDef2()));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), relationshipCategory, propagateTags, endPointDef1, endPointDef2);
+        return Objects.hash(super.hashCode(), relationshipCategory, propagateTags, endDef1, endDef2);
     }
 
     @Override

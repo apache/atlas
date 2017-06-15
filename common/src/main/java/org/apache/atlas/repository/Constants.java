@@ -58,8 +58,8 @@ public final class Constants {
     public static final String TYPEOPTIONS_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.options";
 
     // relationship def constants
-    public static final String RELATIONSHIPTYPE_ENDPOINT1_KEY = "endPointDef1";
-    public static final String RELATIONSHIPTYPE_ENDPOINT2_KEY = "endPointDef2";
+    public static final String RELATIONSHIPTYPE_END1_KEY = "endDef1";
+    public static final String RELATIONSHIPTYPE_END2_KEY = "endDef2";
     public static final String RELATIONSHIPTYPE_CATEGORY_KEY = "relationshipCategory";
     public static final String RELATIONSHIPTYPE_TAG_PROPAGATION_KEY = "tagPropagation";
     /**
