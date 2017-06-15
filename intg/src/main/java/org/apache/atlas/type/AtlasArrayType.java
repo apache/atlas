@@ -201,6 +201,10 @@ public class AtlasArrayType extends AtlasType {
             return null;
         }
 
+        if (obj instanceof String){
+             obj = AtlasType.fromJson(obj.toString(), List.class);
+        }
+
         if (obj instanceof List || obj instanceof Set) {
             List<Object> ret = new ArrayList<>();
 

@@ -511,6 +511,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         attribInfo.put("isIndexable", attributeDef.getIsIndexable());
         attribInfo.put("isComposite", attribute.isOwnedRef());
         attribInfo.put("reverseAttributeName", attribute.getInverseRefAttributeName());
+        attribInfo.put("defaultValue", attributeDef.getDefaultValue());
 
         final int lower;
         final int upper;
@@ -549,6 +550,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         ret.setTypeName((String) attribInfo.get("dataType"));
         ret.setIsUnique((Boolean) attribInfo.get("isUnique"));
         ret.setIsIndexable((Boolean) attribInfo.get("isIndexable"));
+        ret.setDefaultValue((String) attribInfo.get("defaultValue"));
 
         if ((Boolean)attribInfo.get("isComposite")) {
             ret.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));

@@ -66,6 +66,10 @@ public abstract class AtlasType {
         return createDefaultValue();
     }
 
+    public Object createDefaultValue(Object val){
+        return val == null ? createDefaultValue() : getNormalizedValue(val);
+    }
+
     public abstract boolean isValidValue(Object obj);
 
     public abstract Object getNormalizedValue(Object obj);

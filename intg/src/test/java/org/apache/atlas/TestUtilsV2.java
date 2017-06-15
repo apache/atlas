@@ -35,6 +35,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.lang.RandomStringUtils;
 
@@ -875,6 +876,58 @@ public final class TestUtilsV2 {
         ret.addReferredEntity(dbEntity);
 
         return ret;
+    }
+
+    public static AtlasEntityWithExtInfo createprimitiveEntityV2() {
+
+        AtlasEntity defaultprimitive = new AtlasEntity(createPrimitiveEntityDef());
+        defaultprimitive.setAttribute("name", "testname");
+        defaultprimitive.setAttribute("description","test");
+        defaultprimitive.setAttribute("check","check");
+
+        AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(defaultprimitive);
+
+        return ret;
+
+    }
+
+
+    public static AtlasEntityDef createPrimitiveEntityDef() {
+
+        AtlasEntityDef newtestEntityDef = new AtlasEntityDef("newtest");
+        AtlasAttributeDef attrName = new AtlasAttributeDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+
+        AtlasAttributeDef attrDescription = new AtlasAttributeDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        attrDescription.setIsOptional(false);
+
+        AtlasAttributeDef attrcheck = new AtlasAttributeDef("check", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        attrcheck.setIsOptional(true);
+
+        AtlasAttributeDef attrSourceCode = new AtlasAttributeDef("sourcecode", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        attrSourceCode.setDefaultValue("Hello World");
+        attrSourceCode.setIsOptional(true);
+
+        AtlasAttributeDef attrCost = new AtlasAttributeDef("Cost", AtlasBaseTypeDef.ATLAS_TYPE_INT);
+        attrCost.setIsOptional(true);
+        attrCost.setDefaultValue("30");
+
+        AtlasAttributeDef attrDiskUsage = new AtlasAttributeDef("diskUsage", AtlasBaseTypeDef.ATLAS_TYPE_FLOAT);
+        attrDiskUsage.setIsOptional(true);
+        attrDiskUsage.setDefaultValue("70.50");
+
+        AtlasAttributeDef attrisStoreUse = new AtlasAttributeDef("isstoreUse", AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN);
+        attrisStoreUse.setIsOptional(true);
+        attrisStoreUse.setDefaultValue("true");
+
+        newtestEntityDef.addAttribute(attrName);
+        newtestEntityDef.addAttribute(attrDescription);
+        newtestEntityDef.addAttribute(attrcheck);
+        newtestEntityDef.addAttribute(attrSourceCode);
+        newtestEntityDef.addAttribute(attrCost);
+        newtestEntityDef.addAttribute(attrDiskUsage);
+        newtestEntityDef.addAttribute(attrisStoreUse);
+
+        return newtestEntityDef;
     }
 
     public static AtlasEntity createColumnEntity(AtlasEntity tableEntity) {

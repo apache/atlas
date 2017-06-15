@@ -186,6 +186,15 @@ public class AtlasStructType extends AtlasType {
         return  ret;
     }
 
+    @Override
+    public Object createDefaultValue(Object defaultValue) {
+        AtlasStruct ret = new AtlasStruct(structDef.getName());
+
+        populateDefaultValues(ret);
+
+        return  ret;
+    }
+
     public Map<String, AtlasAttribute> getAllAttributes() {
         return allAttributes;
     }
@@ -480,7 +489,7 @@ public class AtlasStructType extends AtlasType {
             if (attribute != null) {
                 AtlasType dataType = attribute.getAttributeType();
 
-                ret = dataType.createDefaultValue();
+                ret = dataType.createDefaultValue(attributeDef.getDefaultValue());
             }
         }
 

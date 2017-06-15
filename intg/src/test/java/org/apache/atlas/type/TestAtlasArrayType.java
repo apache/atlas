@@ -59,7 +59,7 @@ public class TestAtlasArrayType {
         };
 
         invalidValues = new Object[] {
-            new String[] { "1", "abcd", "3", "xyz", "5" }, "1", Byte.valueOf((byte)1), Short.valueOf((short)1),
+            Byte.valueOf((byte)1), Short.valueOf((short)1),
             Integer.valueOf(1), Long.valueOf(1L), Float.valueOf(1), Double.valueOf(1), BigInteger.valueOf(1),
             BigDecimal.valueOf(1),
         };

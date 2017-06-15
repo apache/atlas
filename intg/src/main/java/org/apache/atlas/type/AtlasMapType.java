@@ -148,6 +148,10 @@ public class AtlasMapType extends AtlasType {
             return null;
         }
 
+        if (obj instanceof String) {
+            obj = AtlasType.fromJson(obj.toString(), Map.class);
+        }
+
         if (obj instanceof Map) {
             Map<Object, Object> ret = new HashMap<>();
 

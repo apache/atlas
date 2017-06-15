@@ -146,6 +146,14 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     @Override
+    public AtlasEntity createDefaultValue(Object defaultValue){
+        AtlasEntity ret = new AtlasEntity(entityDef.getName());
+
+        populateDefaultValues(ret);
+
+        return ret;
+    }
+    @Override
     public boolean isValidValue(Object obj) {
         if (obj != null) {
             for (AtlasEntityType superType : superTypes) {

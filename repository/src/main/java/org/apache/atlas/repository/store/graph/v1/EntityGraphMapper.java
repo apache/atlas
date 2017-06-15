@@ -33,7 +33,6 @@ import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -259,13 +258,17 @@ public class EntityGraphMapper {
 
     private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
         if (attrValue == null) {
+            AtlasAttributeDef attributeDef = attribute.getAttributeDef();
             AtlasType attrType = attribute.getAttributeType();
-
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
-                if (attribute.getAttributeDef().getIsOptional()) {
-                    attrValue = attrType.createOptionalDefaultValue();
+                if (attributeDef.getDefaultValue() != null) {
+                    attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
                 } else {
-                    attrValue = attrType.createDefaultValue();
+                    if (attribute.getAttributeDef().getIsOptional()) {
+                        attrValue = attrType.createOptionalDefaultValue();
+                    } else {
+                        attrValue = attrType.createDefaultValue();
+                    }
                 }
             }
         }
