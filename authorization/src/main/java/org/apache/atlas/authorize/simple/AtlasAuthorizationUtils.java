@@ -44,6 +44,11 @@ public class AtlasAuthorizationUtils {
         if (isDebugEnabled) {
             LOG.debug("==> getApi({})", contextPath);
         }
+
+        if(contextPath == null){
+            contextPath = "";
+        }
+
         if (contextPath.startsWith(BASE_URL)) {
             contextPath = contextPath.substring(BASE_URL.length());
         } else {
