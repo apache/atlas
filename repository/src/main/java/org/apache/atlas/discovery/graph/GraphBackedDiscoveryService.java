@@ -71,6 +71,22 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
 
     public final static String SCORE = "score";
+    /**
+     * Where the vertex' internal gremlin id is stored in the Map produced by extractResult()
+     */
+    public final static String GREMLIN_ID_KEY = "id";
+    /**
+     * Where the id of an edge's incoming vertex is stored in the Map produced by extractResult()
+     */
+    public final static String GREMLIN_INVERTEX_KEY = "inVertex";
+    /**
+     * Where the id of an edge's outgoing vertex is stored in the Map produced by extractResult()
+     */
+    public final static String GREMLIN_OUTVERTEX_KEY = "outVertex";
+    /**
+     * Where an edge's label is stored in the Map produced by extractResult()
+     */
+    public final static String GREMLIN_LABEL_KEY = "label";
 
     @Inject
     GraphBackedDiscoveryService(MetadataRepository metadataRepository, AtlasGraph atlasGraph)
@@ -223,15 +239,16 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                             oRow.put(key, propertyValue.toString());
                         }
                     }
+                    oRow.put(GREMLIN_ID_KEY, vertex.getId().toString());
 
                 } else if (value instanceof String) {
                     oRow.put("", value.toString());
                 } else if(value instanceof AtlasEdge) {
                     AtlasEdge edge = (AtlasEdge) value;
-                    oRow.put("id", edge.getId().toString());
-                    oRow.put("label", edge.getLabel());
-                    oRow.put("inVertex", edge.getInVertex().getId().toString());
-                    oRow.put("outVertex", edge.getOutVertex().getId().toString());
+                    oRow.put(GREMLIN_ID_KEY, edge.getId().toString());
+                    oRow.put(GREMLIN_LABEL_KEY, edge.getLabel());
+                    oRow.put(GREMLIN_INVERTEX_KEY, edge.getInVertex().getId().toString());
+                    oRow.put(GREMLIN_OUTVERTEX_KEY, edge.getOutVertex().getId().toString());
                     for (String propertyKey : edge.getPropertyKeys()) {
                         oRow.put(propertyKey, GraphHelper.getProperty(edge, propertyKey).toString());
                     }
