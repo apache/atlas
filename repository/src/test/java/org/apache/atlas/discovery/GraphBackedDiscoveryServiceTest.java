@@ -227,6 +227,32 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertEquals(rows.length(), 1);
     }
 
+    
+    /*
+     * https://issues.apache.org/jira/browse/ATLAS-1875
+     */
+    @Test
+    public void testGremlinSearchReturnVertexId() throws Exception {
+       List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.V.range(0,0).collect()");
+       assertEquals(gremlinResults.size(), 1);
+       Map<String, String> properties = gremlinResults.get(0);
+       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_ID_KEY));
+    }
+    
+    /*
+     * https://issues.apache.org/jira/browse/ATLAS-1875
+     */
+    @Test
+    public void testGremlinSearchReturnEdgeIds() throws Exception {
+       List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.E.range(0,0).collect()");
+       assertEquals(gremlinResults.size(), 1);
+       Map<String, String> properties = gremlinResults.get(0);
+       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_INVERTEX_KEY));
+       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_OUTVERTEX_KEY));
+       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_LABEL_KEY));
+    }
+
+
     @Test
     public void testSearchByDSLReturnsEntity() throws Exception {
         String dslQuery = "from Department";
