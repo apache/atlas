@@ -250,9 +250,8 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
         GroovyExpression nameExpr    = new FieldExpression(itExpr, propertyName);
         GroovyExpression matchesExpr = new FunctionCallExpression(nameExpr, MATCHES, escapePropertyValue(propertyValue));
         GroovyExpression closureExpr = new ClosureExpression(matchesExpr);
-        GroovyExpression filterExpr  = new FunctionCallExpression(parent, FILTER_METHOD, closureExpr);
 
-        return filterExpr;
+        return new FunctionCallExpression(TraversalStepType.FILTER, parent, FILTER_METHOD, closureExpr);
     }
 
     private GroovyExpression escapePropertyValue(GroovyExpression propertyValue) {

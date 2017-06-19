@@ -40,7 +40,6 @@ import org.apache.atlas.groovy.LogicalExpression.LogicalOperator;
 import org.apache.atlas.groovy.RangeExpression;
 import org.apache.atlas.groovy.TernaryOperatorExpression;
 import org.apache.atlas.groovy.TraversalStepType;
-import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.TypeUtils.FieldInfo;
 import org.apache.atlas.typesystem.types.IDataType;
@@ -154,9 +153,8 @@ public class Gremlin2ExpressionFactory extends GremlinExpressionFactory {
         GroovyExpression nameExpr    = new FieldExpression(itExpr, propertyName);
         GroovyExpression matchesExpr = new FunctionCallExpression(nameExpr, MATCHES, escapePropertyValue(propertyValue));
         GroovyExpression closureExpr = new ClosureExpression(matchesExpr);
-        GroovyExpression filterExpr  = new FunctionCallExpression(parent, FILTER_METHOD, closureExpr);
 
-        return filterExpr;
+        return new FunctionCallExpression(TraversalStepType.FILTER, parent, FILTER_METHOD, closureExpr);
     }
 
     private GroovyExpression escapePropertyValue(GroovyExpression propertyValue) {
