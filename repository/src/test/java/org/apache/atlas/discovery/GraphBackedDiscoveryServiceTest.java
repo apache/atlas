@@ -290,6 +290,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3},
                 {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0},
                 {"hive_table where name like 'sales*', db where name like 'Sa?es'", 1},
+                {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1},
+                {"hive_table where db.name like \"Sa*\"", 4},
+                {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3},
         };
     }
 
