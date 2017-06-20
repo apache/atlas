@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -232,6 +233,18 @@ public class AtlasGraphUtilsV1 {
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
 
         return vertex;
+    }
+
+    public static String getTypeNameFromGuid(String guid) {
+        String ret = null;
+
+        if (StringUtils.isNotEmpty(guid)) {
+            AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
+
+            ret = (vertex != null) ? AtlasGraphUtilsV1.getTypeName(vertex) : null;
+        }
+
+        return ret;
     }
 
     public static boolean typeHasInstanceVertex(String typeName) throws AtlasBaseException {

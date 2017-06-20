@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -121,8 +122,10 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
 
     @Override
     public Iterable<AtlasVertex<V, E>> vertices() {
-        LOG.debug("Executing: ");
-        LOG.debug(queryCondition.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition.toString());
+        }
+
         //compute the overall result by unioning the results from all of the
         //AndConditions together.
         Set<AtlasVertex<V, E>> result = new HashSet<>();
@@ -130,6 +133,24 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
             NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
             for(AtlasVertex<V, E> vertex : andQuery.vertices()) {
                 result.add(vertex);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Iterable<AtlasEdge<V, E>> edges() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition.toString());
+        }
+
+        //compute the overall result by unioning the results from all of the
+        //AndConditions together.
+        Set<AtlasEdge<V, E>> result = new HashSet<>();
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(AtlasEdge<V, E> edge : andQuery.edges()) {
+                result.add(edge);
             }
         }
         return result;

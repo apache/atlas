@@ -139,6 +139,8 @@ public class AtlasAuthorizationUtils {
             if (contextPath.contains("/terms")) {
                 resourceTypes.add(AtlasResourceTypes.TERM);
             }
+        } else if (api.startsWith("relation")) {
+            resourceTypes.add(AtlasResourceTypes.RELATION);
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : {}\nSetting {}"
                     , api, AtlasResourceTypes.UNKNOWN.name());

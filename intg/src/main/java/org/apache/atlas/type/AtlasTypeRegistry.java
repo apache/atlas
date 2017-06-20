@@ -186,6 +186,7 @@ public class AtlasTypeRegistry {
         return registryData.classificationDefs.getTypeByName(name);
     }
 
+    public Collection<AtlasRelationshipDef> getAllRelationshipDefs() { return registryData.relationshipDefs.getAll(); }
 
     public Collection<AtlasEntityDef> getAllEntityDefs() { return registryData.entityDefs.getAll(); }
     public AtlasEntityDef getEntityDefByGuid(String guid) {
@@ -211,6 +212,7 @@ public class AtlasTypeRegistry {
         return registryData.relationshipDefs.getTypeDefByName(name);
     }
     public AtlasRelationshipType getRelationshipTypeByName(String name) { return registryData.relationshipDefs.getTypeByName(name); }
+
     public AtlasTransientTypeRegistry lockTypeRegistryForUpdate() throws AtlasBaseException {
         return lockTypeRegistryForUpdate(DEFAULT_LOCK_MAX_WAIT_TIME_IN_SECONDS);
     }
@@ -347,6 +349,7 @@ public class AtlasTypeRegistry {
             addTypesWithNoRefResolve(parent.getAllStructDefs());
             addTypesWithNoRefResolve(parent.getAllClassificationDefs());
             addTypesWithNoRefResolve(parent.getAllEntityDefs());
+            addTypesWithNoRefResolve(parent.getAllRelationshipDefs());
 
             addedTypes.clear();
             updatedTypes.clear();

@@ -384,11 +384,6 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
         return expr;
     }
 
-    public Iterable<AtlasEdge<Titan1Vertex, Titan1Edge>> wrapEdges(Iterator<Edge> it) {
-        Iterable<Edge> iterable = new IteratorToIterableAdapter<Edge>(it);
-        return wrapEdges(iterable);
-    }
-
     public Iterable<AtlasVertex<Titan1Vertex, Titan1Edge>> wrapVertices(Iterator<? extends Vertex> it) {
         Iterable<? extends Vertex> iterable = new IteratorToIterableAdapter<>(it);
         return wrapVertices(iterable);
@@ -406,15 +401,21 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
 
     }
 
-    public Iterable<AtlasEdge<Titan1Vertex, Titan1Edge>> wrapEdges(Iterable<Edge> it) {
-        Iterable<Edge> result = (Iterable<Edge>) it;
-        return Iterables.transform(result, new Function<Edge, AtlasEdge<Titan1Vertex, Titan1Edge>>() {
+    public Iterable<AtlasEdge<Titan1Vertex, Titan1Edge>> wrapEdges(Iterator<? extends Edge> it) {
+        Iterable<? extends Edge> iterable = new IteratorToIterableAdapter<>(it);
+        return wrapEdges(iterable);
+    }
+
+    public Iterable<AtlasEdge<Titan1Vertex, Titan1Edge>> wrapEdges(Iterable<? extends Edge> it) {
+
+        return Iterables.transform(it, new Function<Edge, AtlasEdge<Titan1Vertex, Titan1Edge>>() {
 
             @Override
             public AtlasEdge<Titan1Vertex, Titan1Edge> apply(Edge input) {
                 return GraphDbObjectFactory.createEdge(Titan1Graph.this, input);
             }
         });
+
     }
 
     @Override

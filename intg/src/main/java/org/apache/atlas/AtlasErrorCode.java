@@ -79,6 +79,8 @@ public enum AtlasErrorCode {
     RELATIONSHIPDEF_AGGREGATION_NO_CONTAINER(400,  "ATLAS-400-00-032", "AGGREGATION relationshipDef {0} creation attempted without an end specifying isContainer"),
     RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER(400,  "ATLAS-400-00-033", "COMPOSITION relationshipDef {0} cannot have a SET cardinality and be a container"),
     RELATIONSHIPDEF_LIST_ON_END(400,  "ATLAS-400-00-034", "relationshipDef {0} cannot have a LIST cardinality on an end"),
+    RELATIONSHIPDEF_INVALID_END_TYPE(400,  "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}"),
+    INVALID_RELATIONSHIP_END_TYPE(400, "ATLAS-400-00-036", "invalid end type for relationship {0}: expected {1}, found {2}"),
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
@@ -90,11 +92,13 @@ public enum AtlasErrorCode {
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND(404, "ATLAS-404-00-009", "Instance {0} with unique attribute {1} does not exist"),
     REFERENCED_ENTITY_NOT_FOUND(404, "ATLAS-404-00-00A", "Referenced entity {0} is not found"),
     INSTANCE_NOT_FOUND(404, "ATLAS-404-00-00B", "Given instance is invalid/not found: {0}"),
+    RELATIONSHIP_GUID_NOT_FOUND(404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found"),
 
      // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
     INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
+    RELATIONSHIP_ALREADY_EXISTS(409, "ATLAS-409-00-004", "relationship {0} already exists between entities {1} and {2}"),
 
      // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

@@ -231,6 +231,8 @@ public class PolicyParser {
                     resourceType = AtlasResourceTypes.TAXONOMY;
                 } else if (type.equalsIgnoreCase("TERM")) {
                     resourceType = AtlasResourceTypes.TERM;
+                } else if (type.equalsIgnoreCase("RELATION")) {
+                    resourceType = AtlasResourceTypes.RELATION;
                 } else {
                     Log.warn(type + " is invalid resource please check PolicyStore file");
                     continue;

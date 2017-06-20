@@ -60,6 +60,12 @@ public interface AtlasGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices();
 
+    /**
+     * Executes the query and returns the matching edges.
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges();
+
 
     /**
      * Adds a predicate that the returned vertices must have the specified

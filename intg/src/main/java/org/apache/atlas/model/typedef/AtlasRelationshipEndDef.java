@@ -18,6 +18,7 @@
 package org.apache.atlas.model.typedef;
 
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -59,6 +60,10 @@ public class AtlasRelationshipEndDef implements Serializable {
      * This is the cardinality of the end
      */
     private Cardinality cardinality;
+    /**
+     * legacy edge label name of the endpoint
+     */
+    private String legacyLabel;
 
     /**
      * Base constructor
@@ -92,10 +97,29 @@ public class AtlasRelationshipEndDef implements Serializable {
      *   - whether the end is a container or not
      */
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
+        this(typeName, name, cardinality, isContainer, null);
+    }
+
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, String legacyLabel) {
         setType(typeName);
         setName(name);
         setCardinality(cardinality);
         setIsContainer(isContainer);
+        setLegacyLabel(legacyLabel);
+    }
+
+    /**
+     * Construct using an existing AtlasRelationshipEndDef
+     * @param other
+     */
+    public AtlasRelationshipEndDef(AtlasRelationshipEndDef other) {
+        if (other != null) {
+            setType(other.getType());
+            setName(other.getName());
+            setIsContainer(other.getIsContainer());
+            setCardinality(other.getCardinality());
+            setLegacyLabel(other.getLegacyLabel());
+        }
     }
 
     public void setType(String type) {
@@ -142,18 +166,15 @@ public class AtlasRelationshipEndDef implements Serializable {
         return this.cardinality;
     }
 
-    /**
-     * Construct using an existing AtlasRelationshipEndDef
-     * @param other
-     */
-    public AtlasRelationshipEndDef(AtlasRelationshipEndDef other) {
-        if (other != null) {
-            setType(other.getType());
-            setName(other.getName());
-            setIsContainer(other.getIsContainer());
-            setCardinality(other.getCardinality());
-        }
-    }
+    public boolean isContainer() { return isContainer; }
+
+    public void setContainer(boolean container) { isContainer = container; }
+
+    public String getLegacyLabel() { return legacyLabel; }
+
+    public void setLegacyLabel(String legacyLabel) {  this.legacyLabel = legacyLabel; }
+
+    public boolean hasLegacyRelation() { return StringUtils.isNotEmpty(getLegacyLabel()) ? true : false; }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -165,6 +186,7 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append(", name==>'").append(name).append('\'');
         sb.append(", isContainer==>'").append(isContainer).append('\'');
         sb.append(", cardinality==>'").append(cardinality).append('\'');
+        sb.append(", legacyLabel==>'").append(legacyLabel).append('\'');
         sb.append('}');
 
         return sb;
@@ -177,13 +199,17 @@ public class AtlasRelationshipEndDef implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
         AtlasRelationshipEndDef that = (AtlasRelationshipEndDef) o;
-        return Objects.equals(type, that.type) && Objects.equals(name, that.name)
-                && (isContainer == that.isContainer) && (cardinality == that.cardinality);
+
+        return Objects.equals(type, that.type) &&
+               Objects.equals(name, that.name) &&
+               isContainer == that.isContainer &&
+               cardinality == that.cardinality &&
+               Objects.equals(legacyLabel, that.legacyLabel);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, getName(), isContainer, cardinality);
+        return Objects.hash(type, getName(), isContainer, cardinality, legacyLabel);
     }
 
     @Override

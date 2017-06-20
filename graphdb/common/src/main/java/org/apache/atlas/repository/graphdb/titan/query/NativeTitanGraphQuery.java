@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.titan.query;
 
 import java.util.Collection;
 
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
@@ -39,6 +40,11 @@ public interface NativeTitanGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices();
 
+    /**
+     * Executes the graph query.
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges();
 
     /**
      * Adds an in condition to the query.

@@ -273,6 +273,10 @@ public class GraphBackedTypeStore implements ITypeStore {
                 traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, typeDescription, superTypes, attributes));
                 break;
 
+            case RELATIONSHIP:
+                // v1 typesystem is not notified on new relation type
+                break;
+
             default:
                 throw new IllegalArgumentException("Unhandled type category " + typeCategory);
             }

@@ -19,6 +19,8 @@ package org.apache.atlas.repository.graphdb.titan1.query;
 
 import java.util.Collection;
 
+import com.thinkaurelius.titan.core.TitanEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
@@ -50,6 +52,12 @@ public class NativeTitan1GraphQuery implements NativeTitanGraphQuery<Titan1Verte
     public Iterable<AtlasVertex<Titan1Vertex, Titan1Edge>> vertices() {
         Iterable<TitanVertex> it = query.vertices();
         return graph.wrapVertices(it);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<Titan1Vertex, Titan1Edge>> edges() {
+        Iterable<TitanEdge> it = query.edges();
+        return graph.wrapEdges(it);
     }
 
     @Override

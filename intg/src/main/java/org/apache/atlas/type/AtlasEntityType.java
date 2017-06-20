@@ -128,6 +128,10 @@ public class AtlasEntityType extends AtlasStructType {
         return StringUtils.isNotEmpty(entityTypeName) && allSubTypes.contains(entityTypeName);
     }
 
+    public boolean isTypeOrSuperTypeOf(String entityTypeName) {
+        return StringUtils.isNotEmpty(entityTypeName) && typeAndAllSubTypes.contains(entityTypeName);
+    }
+
     public boolean isSubTypeOf(AtlasEntityType entityType) {
         return entityType != null && allSuperTypes.contains(entityType.getTypeName());
     }

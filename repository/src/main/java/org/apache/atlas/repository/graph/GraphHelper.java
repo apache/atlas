@@ -24,7 +24,9 @@ import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -259,31 +261,42 @@ public final class GraphHelper {
      * Searches for a AtlasVertex with prop1=key1 && prop2=key2
      * @param args
      * @return AtlasVertex with the given property keys
-     * @throws EntityNotFoundException
+     * @throws AtlasBaseException
      */
     public AtlasVertex findVertex(Object... args) throws EntityNotFoundException {
+        return (AtlasVertex) findElement(true, args);
+    }
+
+    /**
+     * Args of the format prop1, key1, prop2, key2...
+     * Searches for a AtlasEdge with prop1=key1 && prop2=key2
+     * @param args
+     * @return AtlasEdge with the given property keys
+     * @throws AtlasBaseException
+     */
+    public AtlasEdge findEdge(Object... args) throws EntityNotFoundException {
+        return (AtlasEdge) findElement(false, args);
+    }
+
+    private AtlasElement findElement(boolean isVertexSearch, Object... args) throws EntityNotFoundException {
         AtlasGraphQuery query = graph.query();
-        for (int i = 0 ; i < args.length; i+=2) {
-            query = query.has((String) args[i], args[i+1]);
+
+        for (int i = 0; i < args.length; i += 2) {
+            query = query.has((String) args[i], args[i + 1]);
         }
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-        // returning one since entityType, qualifiedName should be unique
-        AtlasVertex vertex = results.hasNext() ? results.next() : null;
+        Iterator<AtlasElement> results = isVertexSearch ? query.vertices().iterator() : query.edges().iterator();
+        AtlasElement           element = (results != null && results.hasNext()) ? results.next() : null;
 
-        if (vertex == null) {
-            String conditionStr = getConditionString(args);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Could not find a vertex with {}", conditionStr);
-            }
-            throw new EntityNotFoundException("Could not find an entity in the repository with " + conditionStr);
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Found a vertex {} with {}", string(vertex), getConditionString(args));
-            }
+        if (element == null) {
+            throw new EntityNotFoundException("Could not find " + (isVertexSearch ? "vertex" : "edge") + " with condition: " + getConditionString(args));
         }
 
-        return vertex;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Found {} with condition {}", string(element), getConditionString(args));
+        }
+
+        return element;
     }
 
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
@@ -534,6 +547,9 @@ public final class GraphHelper {
         return findVertex(Constants.GUID_PROPERTY_KEY, guid);
     }
 
+    public AtlasEdge getEdgeForGUID(String guid) throws EntityNotFoundException {
+        return findEdge(Constants.GUID_PROPERTY_KEY, guid);
+    }
 
     /**
      * Finds the Vertices that correspond to the given property values.  Property
@@ -646,12 +662,12 @@ public final class GraphHelper {
         return getIdFromVertex(getTypeName(vertex), vertex);
     }
 
-    public static String getGuid(AtlasVertex vertex) {
-        return vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+    public static String getGuid(AtlasElement element) {
+        return element.<String>getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
-    public static String getTypeName(AtlasVertex instanceVertex) {
-        return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+    public static String getTypeName(AtlasElement element) {
+        return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
 
     public static Id.EntityState getState(AtlasElement element) {
@@ -663,14 +679,16 @@ public final class GraphHelper {
         return element.getProperty(Constants.VERSION_PROPERTY_KEY, Integer.class);
     }
 
-
-
     public static String getStateAsString(AtlasElement element) {
         return element.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
     }
 
     public static Status getStatus(AtlasElement element) {
         return (getState(element) == Id.EntityState.DELETED) ? Status.DELETED : Status.ACTIVE;
+    }
+
+    public static AtlasRelationship.Status getEdgeStatus(AtlasElement element) {
+        return (getState(element) == Id.EntityState.DELETED) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.ACTIVE;
     }
 
     //Added conditions in fetching system attributes to handle test failures in GremlinTest where these properties are not set

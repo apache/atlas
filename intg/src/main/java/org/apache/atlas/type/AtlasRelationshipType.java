@@ -35,6 +35,8 @@ public class AtlasRelationshipType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipType.class);
 
     private final AtlasRelationshipDef relationshipDef;
+    private       AtlasEntityType      end1Type;
+    private       AtlasEntityType      end2Type;
 
     public AtlasRelationshipType(AtlasRelationshipDef relationshipDef) {
         super(relationshipDef);
@@ -54,6 +56,24 @@ public class AtlasRelationshipType extends AtlasStructType {
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
+
+        String end1TypeName = relationshipDef != null && relationshipDef.getEndDef1() != null ? relationshipDef.getEndDef1().getType() : null;
+        String end2TypeName = relationshipDef != null && relationshipDef.getEndDef2() != null ? relationshipDef.getEndDef2().getType() : null;
+
+        AtlasType type1 = typeRegistry.getType(end1TypeName);
+        AtlasType type2 = typeRegistry.getType(end2TypeName);
+
+        if (type1 instanceof AtlasEntityType) {
+            end1Type = (AtlasEntityType)type1;
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
+        }
+
+        if (type2 instanceof AtlasEntityType) {
+            end2Type = (AtlasEntityType)type2;
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
+        }
 
         validateAtlasRelationshipDef(this.relationshipDef);
     }
@@ -81,6 +101,11 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         return ret;
     }
+
+    public AtlasEntityType getEnd1Type() { return end1Type; }
+
+    public AtlasEntityType getEnd2Type() { return end2Type; }
+
     /**
      * Validate the fields in the the RelationshipType are consistent with respect to themselves.
      * @param type
