@@ -44,6 +44,13 @@ public class ZipSourceTest {
         return new Object[][] {{ new ZipSource(fs) }};
     }
 
+    @DataProvider(name = "zipFileStocksFloat")
+    public static Object[][] getDataFromZipFileWithLongFloats() throws IOException {
+        FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks-float.zip");
+
+        return new Object[][] {{ new ZipSource(fs) }};
+    }
+
     @DataProvider(name = "sales")
     public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException {
         return getZipSource("sales-v1-full.zip");
@@ -135,6 +142,21 @@ public class ZipSourceTest {
             zipSource.next();
             assertEquals(zipSource.getPosition(), moveToPosition_2 + i);
         }
+
+        assertTrue(zipSource.hasNext());
+    }
+
+    @Test(dataProvider = "zipFileStocksFloat")
+    public void attemptToSerializeLongFloats(ZipSource zipSource) throws IOException, AtlasBaseException {
+        Assert.assertTrue(zipSource.hasNext());
+        assertTrue(zipSource.hasNext());
+        assertTrue(zipSource.hasNext());
+
+        AtlasEntity.AtlasEntityWithExtInfo e = zipSource.getNextEntityWithExtInfo();
+        assertNotNull(e);
+        assertTrue(e.getEntity().getClassifications().size() > 0);
+        assertNotNull(e.getEntity().getClassifications().get(0).getAttribute("fv"));
+        assertEquals(e.getEntity().getClassifications().get(0).getAttribute("fv").toString(), "3.4028235E+38");
 
         assertTrue(zipSource.hasNext());
     }
