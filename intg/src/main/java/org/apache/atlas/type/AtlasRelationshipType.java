@@ -124,16 +124,21 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     /**
      * Throw an exception so we can junit easily.
+     *
+     * This method assumes that the 2 ends are not null.
+     *
      * @param relationshipDef
      * @throws AtlasBaseException
      */
     public static void validateAtlasRelationshipDef(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+
         AtlasRelationshipEndDef endDef1              = relationshipDef.getEndDef1();
         AtlasRelationshipEndDef endDef2              = relationshipDef.getEndDef2();
-        boolean                 isContainer1         = endDef1.getIsContainer();
-        boolean                 isContainer2         = endDef2.getIsContainer();
         RelationshipCategory    relationshipCategory = relationshipDef.getRelationshipCategory();
         String                  name                 = relationshipDef.getName();
+
+        boolean                 isContainer1         = endDef1.getIsContainer();
+        boolean                 isContainer2         = endDef2.getIsContainer();
 
         if (isContainer1 && isContainer2) {
             // we support 0 or 1 of these flags.
@@ -157,20 +162,18 @@ public class AtlasRelationshipType extends AtlasStructType {
         }
         if (relationshipCategory == RelationshipCategory.COMPOSITION) {
             // composition containers should not be multiple cardinality
-            if (endDef1 != null &&
-                    endDef1.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
+            if (endDef1.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
                     endDef1.getIsContainer()) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER, name);
             }
-            if (endDef2 != null && endDef2 != null &&
-                    endDef2.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
+            if ((endDef2.getCardinality() == AtlasAttributeDef.Cardinality.SET) &&
                     endDef2.getIsContainer()) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER, name);
             }
-        }
-        if ((endDef1 != null && endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) ||
-                (endDef2 != null && endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
+            if ((endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) ||
+                    (endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
+            }
         }
     }
 }
