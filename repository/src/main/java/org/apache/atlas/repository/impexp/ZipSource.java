@@ -23,9 +23,8 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import static org.apache.atlas.AtlasErrorCode.JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED;
 
 
 public class ZipSource implements EntityImportStream {
@@ -90,7 +87,7 @@ public class ZipSource implements EntityImportStream {
 
         try {
             String s = getFromCache(fileName);
-            this.creationOrder = convertFromJson(new TypeReference<List<String>>(){}, s);
+            this.creationOrder = convertFromJson(List.class, s);
             this.iterator = this.creationOrder.iterator();
         } catch (AtlasBaseException e) {
             LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
@@ -137,26 +134,9 @@ public class ZipSource implements EntityImportStream {
         return entityWithExtInfo;
     }
 
-    private <T> T convertFromJson(TypeReference clazz, String jsonData) throws AtlasBaseException {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-
-            T ret = mapper.readValue(jsonData, clazz);
-            if(ret == null) {
-                throw new AtlasBaseException(JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED, clazz.toString());
-            }
-
-            return ret;
-        } catch (Exception e) {
-            throw new AtlasBaseException("Error converting file to JSON.", e);
-        }
-    }
-
     private <T> T convertFromJson(Class<T> clazz, String jsonData) throws AtlasBaseException {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-
-            return mapper.readValue(jsonData, clazz);
+            return AtlasType.fromJson(jsonData, clazz);
 
         } catch (Exception e) {
             throw new AtlasBaseException("Error converting file to JSON.", e);

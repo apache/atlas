@@ -283,7 +283,12 @@ public class AtlasBuiltInTypes {
                     return ((Number) obj).floatValue();
                 } else {
                     try {
-                        return Float.valueOf(obj.toString());
+                        Float f = Float.valueOf(obj.toString());
+                        if(!Float.isInfinite(f)) {
+                            return f;
+                        } else {
+                            return null;
+                        }
                     } catch (NumberFormatException excp) {
                         // ignore
                     }
@@ -329,7 +334,12 @@ public class AtlasBuiltInTypes {
                     return ((Number) obj).doubleValue();
                 } else {
                     try {
-                        return Double.valueOf(obj.toString());
+                        Double d = Double.valueOf(obj.toString());
+                        if(!Double.isInfinite(d)) {
+                            return d;
+                        } else {
+                            return null;
+                        }
                     } catch (NumberFormatException excp) {
                         // ignore
                     }
