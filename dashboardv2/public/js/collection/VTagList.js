@@ -26,7 +26,7 @@ define(['require',
     var VTagList = BaseCollection.extend(
         //Prototypal attributes
         {
-            url: UrlLinks.typesClassicationApiUrl(),
+            url: UrlLinks.classificationDefApiUrl(),
             model: VTag,
             initialize: function() {
                 this.modelName = 'VTag';

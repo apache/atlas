@@ -94,10 +94,6 @@ require.config({
             'deps': ['d3'],
             'exports': ['d3-tip']
         },
-        'datetimepicker': {
-            'deps': ['jquery'],
-            'exports': 'datetimepicker'
-        },
         'dagreD3': {
             'deps': ['d3'],
             'exports': ['dagreD3']
@@ -107,6 +103,12 @@ require.config({
         },
         'jquery-placeholder': {
             'deps': ['jquery']
+        },
+        'query-builder': {
+            'deps': ['jquery']
+        },
+        'daterangepicker': {
+            'deps': ['jquery', 'moment']
         }
     },
 
@@ -137,12 +139,13 @@ require.config({
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
         'moment': 'libs/moment/js/moment.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
-        'datetimepicker': 'external_lib/datetimepicker/bootstrap-datetimepicker',
         'pnotify': 'external_lib/pnotify/pnotify.custom.min',
         'pnotify.buttons': 'external_lib/pnotify/pnotify.custom.min',
         'pnotify.confirm': 'external_lib/pnotify/pnotify.custom.min',
         'jquery-placeholder': 'libs/jquery-placeholder/js/jquery.placeholder',
-        'platform': 'libs/platform/platform'
+        'platform': 'libs/platform/platform',
+        'query-builder': 'libs/jQueryQueryBuilder/js/query-builder.standalone.min',
+        'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker'
     },
 
     /**
@@ -167,7 +170,7 @@ require(['App',
     'select2'
 ], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
     var that = this;
-    this.asyncFetchCounter = 4;
+    this.asyncFetchCounter = 5;
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
     this.typeHeaders = new VTagList();
@@ -175,11 +178,13 @@ require(['App',
     this.enumDefCollection = new VTagList();
     this.enumDefCollection.url = UrlLinks.enumDefApiUrl();
     this.enumDefCollection.modelAttrName = "enumDefs";
+    this.classificationDefCollection = new VTagList();
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
         typeHeaders: this.typeHeaders,
-        enumDefCollection: this.enumDefCollection
+        enumDefCollection: this.enumDefCollection,
+        classificationDefCollection: this.classificationDefCollection
     });
 
     var startApp = function() {
@@ -232,6 +237,13 @@ require(['App',
         }
     });
     this.enumDefCollection.fetch({
+        skipDefaultError: true,
+        complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+    this.classificationDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;

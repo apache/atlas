@@ -114,3 +114,20 @@ $switchTransition: .4s ease-out;
         color: $gray
     }
 }
+
+.filterQuery {
+    word-break: break-all;
+    span {
+        font-size: 15px;
+        font-weight: bold;
+    }
+    .key {
+        color: $color_jungle_green_approx;
+    }
+    .operator {
+        color: $action_gray;
+    }
+    .value {
+        color: $tag_color;
+    }
+}

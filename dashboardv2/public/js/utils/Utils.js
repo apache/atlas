@@ -166,37 +166,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
             });
         }
     };
-    Utils.localStorage = {
-        checkLocalStorage: function(key, value) {
-            if (typeof(Storage) !== "undefined") {
-                return this.getLocalStorage(key, value);
-            } else {
-                console.log('Sorry! No Web Storage support');
-                Utils.cookie.checkCookie(key, value);
-            }
-        },
-        setLocalStorage: function(key, value) {
-            localStorage.setItem(key, value);
-            return { found: false, 'value': value };
-        },
-        getLocalStorage: function(key, value) {
-            var keyValue = localStorage.getItem(key);
-            if (!keyValue || keyValue == "undefined") {
-                return this.setLocalStorage(key, value);
-            } else {
-                return { found: true, 'value': keyValue };
-            }
-        }
-    };
     Utils.cookie = {
-        setCookie: function(cname, cvalue) {
-            //var d = new Date();
-            //d.setTime(d.getTime() + (exdays*24*60*60*1000));
-            //var expires = "expires=" + d.toGMTString();
+        setValue: function(cname, cvalue) {
             document.cookie = cname + "=" + cvalue + "; ";
-            return { found: false, 'value': cvalue };
         },
-        getCookie: function(findString) {
+        getValue: function(findString) {
             var search = findString + "=";
             var ca = document.cookie.split(';');
             for (var i = 0; i < ca.length; i++) {
@@ -207,16 +181,34 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 }
             }
             return "";
-        },
-        checkCookie: function(key, value) {
-            var findString = getCookie(key);
-            if (findString != "" || keyValue != "undefined") {
-                return { found: true, 'value': ((findString == "undefined") ? (undefined) : (findString)) };
-            } else {
-                return setCookie(key, value);
-            }
         }
     };
+    Utils.localStorage = function() {
+        this.setValue = function() {
+            localStorage.setItem(arguments[0], arguments[1]);
+        }
+        this.getValue = function(key, value) {
+            var keyValue = localStorage.getItem(key);
+            if ((!keyValue || keyValue == "undefined") && (value != undefined)) {
+                return this.setLocalStorage(key, value);
+            } else {
+                if (keyValue === "" || keyValue === "undefined" || keyValue === "null") {
+                    return null;
+                } else {
+                    return keyValue;
+                }
+
+            }
+        }
+        this.removeValue = function() {
+            localStorage.removeItem(arguments[0]);
+        }
+        if (typeof(Storage) === "undefined") {
+            _.extend(this, Utils.cookie);
+            console.log('Sorry! No Web Storage support');
+        }
+    }
+    Utils.localStorage = new Utils.localStorage();
 
     Utils.setUrl = function(options) {
         if (options) {
@@ -509,16 +501,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
     }
     $('body').on('click', '.expand_collapse_panel', function() {
         var icon = $(this).find('i'),
-            panel = $(this).parents('.panel'),
+            panel = $(this).parents('.panel').first(),
             panelBody = panel.find('.panel-body');
         icon.toggleClass('fa-chevron-up fa-chevron-down');
         $(this).toggleAttribute('title', 'Collapse', 'Expand');
-        panelBody.toggle('0.5', 'linear');
+        panelBody.toggle();
         $(this).trigger('expand_collapse_panel', [$(this).parents('.panel')]);
     });
     $('body').on('click', '.fullscreen_panel', function() {
         var icon = $(this).find('i'),
-            panel = $(this).parents('.panel'),
+            panel = $(this).parents('.panel').first(),
             panelBody = panel.find('.panel-body');
         icon.toggleClass('fa-expand fa-compress');
         $(this).toggleAttribute('title', 'Fullscreen', 'Exit Fullscreen');
