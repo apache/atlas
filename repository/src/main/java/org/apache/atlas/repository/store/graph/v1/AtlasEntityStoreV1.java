@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -456,6 +457,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Adding classifications={} to entity={}", classifications, guid);
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
         }
@@ -484,6 +486,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
 
         for (AtlasClassification newClassification : newClassifications) {
@@ -527,6 +530,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("Adding classification={} to entities={}", classification, guids);
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guids);
+
         validateAndNormalize(classification);
 
         List<AtlasClassification> classifications = Collections.singletonList(classification);
@@ -556,6 +561,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classifications={} from entity={}", classificationNames, guid);
         }
+
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         entityGraphMapper.deleteClassifications(guid, classificationNames);
 
