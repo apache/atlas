@@ -39,6 +39,17 @@ define(['require',
                 this.queryText = resp.queryText;
                 return resp.entities ? resp.entities : [];
             },
+            getBasicRearchResult: function(options) {
+                var url = UrlLinks.searchApiUrl('basic');
+
+                options = _.extend({
+                    contentType: 'application/json',
+                    dataType: 'json',
+                }, options);
+                options.data = JSON.stringify(options.data);
+
+                return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
+            }
         },
         //Static Class Members
         {

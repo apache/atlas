@@ -25,13 +25,13 @@ define(['require',
     'models/VEntity',
     'modules/Modal',
     'utils/Messages',
-    'datetimepicker',
     'moment',
     'utils/UrlLinks',
     'collection/VSearchList',
     'utils/Enums',
-    'utils/Globals'
-], function(require, Backbone, CreateEntityLayoutViewTmpl, Utils, VTagList, VEntityList, VEntity, Modal, Messages, datepicker, moment, UrlLinks, VSearchList, Enums, Globals) {
+    'utils/Globals',
+    'daterangepicker'
+], function(require, Backbone, CreateEntityLayoutViewTmpl, Utils, VTagList, VEntityList, VEntity, Modal, Messages, moment, UrlLinks, VSearchList, Enums, Globals) {
 
     var CreateEntityLayoutView = Backbone.Marionette.LayoutView.extend(
         /** @lends CreateEntityLayoutView */
@@ -145,7 +145,7 @@ define(['require',
                     }
                 });
 
-                this.ui.entityInputData.on('keyup change dp.change', 'input.true,select.true', function(e) {
+                this.ui.entityInputData.on('keyup change', 'input.true,select.true', function(e) {
                     if (this.value !== "") {
                         if ($(this).data('select2')) {
                             $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass");
@@ -171,7 +171,7 @@ define(['require',
             },
             bindNonRequiredField: function() {
                 var that = this;
-                this.ui.entityInputData.off('keyup change dp.change', 'input.false,select.false').on('keyup change dp.change', 'input.false,select.false', function(e) {
+                this.ui.entityInputData.off('keyup change', 'input.false,select.false').on('keyup change', 'input.false,select.false', function(e) {
                     if (that.modal.$el.find('button.ok').prop('disabled') && that.ui.entityInputData.find('.errorClass').length === 0) {
                         that.modal.$el.find('button.ok').prop("disabled", false);
                     }
@@ -331,11 +331,12 @@ define(['require',
             initilizeElements: function() {
                 var that = this;
                 this.$('input[data-type="date"]').each(function() {
-                    if (!$(this).data('datepicker')) {
-                        $(this).datetimepicker({
-                            format: 'DD MMMM YYYY',
-                            keepInvalid: true
-                        });
+                    if (!$(this).data('daterangepicker')) {
+                        var dateObj = { "singleDatePicker": true, "showDropdowns": true };
+                        if (that.guid) {
+                            dateObj["startDate"] = this.value
+                        }
+                        $(this).daterangepicker(dateObj);
                     }
                 });
                 this.initializeValidation();
@@ -387,9 +388,9 @@ define(['require',
                     removeText(e, e.currentTarget.value);
                 });
 
-                this.$('input[data-type="date"]').on('dp.hide keydown', function(event) {
+                this.$('input[data-type="date"]').on('hide.daterangepicker keydown', function(event) {
                     if (event.type) {
-                        if (event.type == 'dp') {
+                        if (event.type == 'hide') {
                             this.blur();
                         } else if (event.type == 'keydown') {
                             return false;
@@ -462,7 +463,7 @@ define(['require',
                             entityValue = dataValue;
                         }
                         if (value.typeName === "date" && dataValue) {
-                            entityValue = moment(dataValue).format("DD MMMM YYYY");
+                            entityValue = moment(dataValue).format("MM/DD/YYYY");
                         }
                     }
                 }
@@ -538,7 +539,7 @@ define(['require',
                         if (dataTypeEnitity && datakeyEntity) {
                             if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
                                 entity[datakeyEntity] = extractValue(value, typeName);
-                            } else if (typeof dataTypeEnitity === 'string' && datakeyEntity.indexOf("Time") > -1) {
+                            } else if (dataTypeEnitity === 'date' || dataTypeEnitity === 'time') {
                                 entity[datakeyEntity] = Date.parse(value);
                             } else if (dataTypeEnitity.indexOf("map") > -1 || (typeNameCategory && typeNameCategory.get('category') === 'STRUCT')) {
                                 try {

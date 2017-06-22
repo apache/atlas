@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'filterObj'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -62,6 +62,7 @@ define(['require',
                             entityDefCollection: that.entityDefCollection,
                             typeHeaders: that.typeHeaders,
                             searchVent: that.searchVent,
+                            filterObj: that.filterObj,
                             enumDefCollection: that.enumDefCollection
                         }));
                     }

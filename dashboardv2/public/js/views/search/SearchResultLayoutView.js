@@ -44,6 +44,7 @@ define(['require',
                 RTagLayoutView: "#r_tagLayoutView",
                 RSearchLayoutView: "#r_searchLayoutView",
                 REntityTableLayoutView: "#r_searchResultTableLayoutView",
+                RSearchQuery: '#r_searchQuery'
             },
 
             /** ui selector cache */
@@ -61,7 +62,9 @@ define(['require',
                 editEntityButton: "[data-id='editEntityButton']",
                 createEntity: "[data-id='createEntity']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
-                containerCheckBox: "[data-id='containerCheckBox']"
+                containerCheckBox: "[data-id='containerCheckBox']",
+                filterPanel: "#filterPanel",
+                filterQuery: "#filterQuery"
             },
             templateHelpers: function() {
                 return {
@@ -126,7 +129,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'filterObj'));
                 var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
@@ -198,13 +201,16 @@ define(['require',
                     } else {
                         if (response.statusText !== "abort") {
                             Utils.notifyError({
-                                content: "Invalid Expression : " + model.queryParams.query
+                                content: "Invalid Expression"
                             });
                         }
                     }
                 }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
                     this.fetchCollection();
+                }, this);
+                this.listenTo(this.searchVent, "searchAttribute", function(obj) {
+                    this.showHideFilter(obj);
                 }, this);
             },
             onRender: function() {
@@ -234,26 +240,73 @@ define(['require',
                         this.$(".entityLink").show();
                     }
                 }
+                this.showHideFilter();
+            },
+            generateQueryOfFilter: function() {
+                var value = this.value,
+                    entityFilters = this.filterObj && this.filterObj.entityFilters ? this.filterObj.entityFilters[value.type] : null,
+                    tagFilters = this.filterObj && this.filterObj.tagFilters ? this.filterObj.tagFilters[value.tag] : null,
+                    queryArray = [],
+                    objToString = function(filterObj) {
+                        var tempObj = [];
+                        _.each(filterObj.rules, function(obj) {
+                            tempObj.push('<span class="key">' + obj.field + '</span>&nbsp<span class="operator">' + obj.operator + '</span>&nbsp<span class="value">' + obj.value + "</span>")
+                        });
+                        return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
+                    }
+                if (entityFilters) {
+                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + value.type + '</span>&nbsp<span class="operator">AND</span>&nbsp';
+                    queryArray = queryArray.concat(typeKeyValue + objToString(entityFilters.rule));
+                }
+                if (tagFilters) {
+                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + value.tag + '</span>&nbsp<span class="operator">AND</span>&nbsp';
+                    queryArray = queryArray.concat(tagKeyValue + objToString(tagFilters.rule));
+
+                }
+                if (queryArray.length == 2) {
+                    return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
+                } else {
+                    return queryArray.join();
+                }
+            },
+            showHideFilter: function() {
+                if (this.value) {
+                    if (Utils.getUrlState.isSearchTab() && this.value.searchType == "basic") {
+                        var query = this.generateQueryOfFilter();
+                        if (query) {
+                            this.ui.filterQuery.html(query);
+                            this.ui.filterPanel.show();
+                        } else
+                            this.ui.filterPanel.hide();
+                    } else {
+                        this.ui.filterPanel.hide();
+                    }
+                } else {
+                    this.ui.filterPanel.hide();
+                }
             },
             fetchCollection: function(value, clickObj) {
-                var that = this;
+                var that = this,
+                    isPostMethod = this.value.searchType === "basic" && Utils.getUrlState.isSearchTab(),
+                    tagFilters = this.filterObj && this.filterObj.tagFilters ? this.filterObj.tagFilters[this.value.tag] : null,
+                    entityFilters = this.filterObj && this.filterObj.entityFilters ? this.filterObj.entityFilters[this.value.type] : null,
+                    filterObj = {
+                        'entityFilters': entityFilters ? entityFilters.result : null,
+                        'tagFilters': tagFilters ? tagFilters.result : null
+                    }
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
-                if (value) {
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
-                    if (value.searchType) {
-                        this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
-                    }
-                    _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
-                }
-                Globals.searchApiCallRef = this.searchCollection.fetch({
+                var apiObj = {
                     skipDefaultError: true,
-                    success: function() {
+                    success: function(model, response) {
                         Globals.searchApiCallRef = undefined;
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
+                        }
+                        if (isPostMethod) {
+                            that.searchCollection.reset(model.entities);
                         }
                         if (that.searchCollection.models.length === 0 && that.offset > that.limit) {
                             that.ui.nextData.attr('disabled', true);
@@ -302,6 +355,38 @@ define(['require',
                     },
                     silent: true,
                     reset: true
+                }
+                if (value) {
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
+                    if (value.searchType) {
+                        this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
+                    }
+                    _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
+                    if (isPostMethod) {
+                        apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
+                        Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
+                        this.showHideFilter();
+                    } else {
+                        apiObj.data = null;
+                        Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
+                    }
+                } else {
+                    if (isPostMethod) {
+                        apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'));
+                        Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
+                    } else {
+                        apiObj.data = null;
+                        Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
+                    }
+                }
+            },
+            renderSearchQueryView: function() {
+                var that = this;
+                require(['views/search/SearchQueryView'], function(SearchQueryView) {
+                    that.RSearchQuery.show(new SearchQueryView({
+                        value: that.value,
+                        searchVent: that.searchVent
+                    }));
                 });
             },
             renderTableLayoutView: function(col) {
@@ -343,7 +428,7 @@ define(['require',
                     col = {};
                 col['Check'] = {
                     name: "selected",
-                    label: "",
+                    label: "Select",
                     cell: "select-row",
                     headerCell: "select-all"
                 };

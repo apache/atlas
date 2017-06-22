@@ -44,7 +44,8 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                this.collection = this.classificationDefCollection;
             },
             bindEvents: function() {},
             onRender: function() {

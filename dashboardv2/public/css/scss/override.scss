@@ -46,6 +46,7 @@
     position: relative;
     padding: 15px;
     max-height: 400px;
+    min-height: 70px;
     overflow: auto;
 }
 
@@ -264,4 +265,24 @@
 .advancedInfo {
     margin-left: 5px;
     cursor: pointer;
+}
+
+.query-builder .rule-container .rule-value-container {
+    display: inline-block !important;
+}
+
+.rules-group-header .btn-group.pull-right.group-actions {
+    float: left !important;
+}
+
+.query-builder .rules-list>:first-child::before {
+    top: -8px;
+}
+
+.query-builder .rules-group-header .btn-group.group-conditions label {
+    display: none;
+}
+
+.query-builder .rule-value-container input {
+    padding: 6px 12px !important;
 }

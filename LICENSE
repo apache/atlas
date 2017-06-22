@@ -248,9 +248,12 @@ MIT License. For details, see 3party-licenses/es5-shim-LICENSE
 This product bundles Respond, which is available under
 MIT License. For details, see 3party-licenses/Respond-LICENSE
 
-This product bundles bootstrap-datepicker 4.14.30, which is available under
-MIT License.  For details, see 3party-licenses/bootstrap-datepicker-LICENSE
-
 This product bundles Google Fonts, which are available under
 Open Font License.  For details, see 3party-licenses/google-fonts-LICENSE
+
+This product bundles bootstrap-daterangepicker 2.1.25, which is available under
+MIT License.  For details, see 3party-licenses/bootstrap-daterangepicker-LICENSE
+
+This product bundles jQuery QueryBuilder 2.4.3, which is available under
+MIT License.  For details, see 3party-licenses/jQuery-QueryBuilder-LICENSE
 =======================================================================

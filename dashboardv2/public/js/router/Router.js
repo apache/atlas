@@ -42,16 +42,16 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
-            this.tagCollection = new VTagList();
             this.searchVent = new Backbone.Wreqr.EventAggregator();
             this.preFetchedCollectionLists = {
                 'entityDefCollection': this.entityDefCollection,
                 'typeHeaders': this.typeHeaders,
-                'enumDefCollection': this.enumDefCollection
+                'enumDefCollection': this.enumDefCollection,
+                'classificationDefCollection': this.classificationDefCollection
             }
         },
         bindCommonEvents: function() {
@@ -125,7 +125,6 @@ define([
                         App.rSideNav.show(new SideNavLayoutView(
                             _.extend({
                                 'url': url,
-                                'collection': that.tagCollection
                             }, that.preFetchedCollectionLists)
                         ));
                     } else {
@@ -157,9 +156,7 @@ define([
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
                         App.rSideNav.show(new SideNavLayoutView(
-                            _.extend({
-                                'collection': that.tagCollection,
-                            }, that.preFetchedCollectionLists)
+                            _.extend({}, that.preFetchedCollectionLists)
                         ));
                     } else {
                         App.rSideNav.currentView.selectTab();
@@ -196,8 +193,7 @@ define([
                     }
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
-                            'tag': tagName,
-                            'collection': that.tagCollection
+                            'tag': tagName
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -221,8 +217,7 @@ define([
                     }
                     App.rNContent.show(new TagDetailLayoutView(
                         _.extend({
-                            'tag': tagName,
-                            'collection': that.tagCollection,
+                            'tag': tagName
                         }, that.preFetchedCollectionLists)
                     ));
                 }
@@ -236,12 +231,17 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams();
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    filterObj = {
+                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
+                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
+                    }
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
-                            'collection': that.tagCollection
+                            'searchVent': that.searchVent,
+                            'filterObj': filterObj
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -256,7 +256,9 @@ define([
                     App.rNContent.show(new SearchDetailLayoutView(
                         _.extend({
                             'value': paramObj,
-                            'initialView': true
+                            'initialView': true,
+                            'filterObj': filterObj,
+                            'searchVent': that.searchVent
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -273,14 +275,42 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView'
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams();
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    filterObj = {
+                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
+                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
+                    }
+                if (paramObj && paramObj.searchType === "basic") {
+                    if (paramObj.type) {
+                        if (_.has(filterObj.entityFilters, paramObj.type)) {
+                            _.extend(paramObj, {
+                                'entityFilters': +new Date()
+                            })
+                        }
+                    }
+                    if (paramObj.tag) {
+                        if (_.has(filterObj.entityFilters, paramObj.type)) {
+                            _.extend(paramObj, {
+                                'tagFilters': +new Date()
+                            })
+                        }
+                    }
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        trigger: false,
+                        urlParams: paramObj,
+                        updateTabState: function() {
+                            return { searchUrl: this.url, stateChanged: true };
+                        },
+                    });
+                }
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'value': paramObj,
-                            'collection': that.tagCollection,
-                            'searchVent': that.searchVent
+                            'searchVent': that.searchVent,
+                            'filterObj': filterObj
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -291,6 +321,7 @@ define([
                     _.extend({
                         'value': paramObj,
                         'searchVent': that.searchVent,
+                        'filterObj': filterObj,
                         'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
                     }, that.preFetchedCollectionLists)
                 ));
