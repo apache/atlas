@@ -93,6 +93,7 @@ public enum AtlasErrorCode {
     REFERENCED_ENTITY_NOT_FOUND(404, "ATLAS-404-00-00A", "Referenced entity {0} is not found"),
     INSTANCE_NOT_FOUND(404, "ATLAS-404-00-00B", "Given instance is invalid/not found: {0}"),
     RELATIONSHIP_GUID_NOT_FOUND(404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found"),
+    RELATIONSHIP_CRUD_INVALID_PARAMS(404, "ATLAS-404-00-00D", "Invalid relationship creation/updation parameters passed : {0}"),
 
      // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),

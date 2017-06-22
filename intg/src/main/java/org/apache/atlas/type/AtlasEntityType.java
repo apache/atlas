@@ -47,10 +47,11 @@ public class AtlasEntityType extends AtlasStructType {
 
     private final AtlasEntityDef entityDef;
 
-    private List<AtlasEntityType> superTypes         = Collections.emptyList();
-    private Set<String>           allSuperTypes      = Collections.emptySet();
-    private Set<String>           allSubTypes        = Collections.emptySet();
-    private Set<String>           typeAndAllSubTypes = Collections.emptySet();
+    private List<AtlasEntityType>       superTypes             = Collections.emptyList();
+    private Set<String>                 allSuperTypes          = Collections.emptySet();
+    private Set<String>                 allSubTypes            = Collections.emptySet();
+    private Set<String>                 typeAndAllSubTypes     = Collections.emptySet();
+    private Map<String, AtlasAttribute> relationshipAttributes = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -88,12 +89,13 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        this.superTypes         = Collections.unmodifiableList(s);
-        this.allSuperTypes      = Collections.unmodifiableSet(allS);
-        this.allAttributes      = Collections.unmodifiableMap(allA);
-        this.uniqAttributes     = getUniqueAttributes(this.allAttributes);
-        this.allSubTypes        = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
-        this.typeAndAllSubTypes = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
+        this.superTypes             = Collections.unmodifiableList(s);
+        this.allSuperTypes          = Collections.unmodifiableSet(allS);
+        this.allAttributes          = Collections.unmodifiableMap(allA);
+        this.uniqAttributes         = getUniqueAttributes(this.allAttributes);
+        this.allSubTypes            = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
+        this.typeAndAllSubTypes     = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
+        this.relationshipAttributes = new HashMap<>();   // this will be populated in resolveReferencesPhase2()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
     }
@@ -138,6 +140,12 @@ public class AtlasEntityType extends AtlasStructType {
 
     public boolean isSubTypeOf(String entityTypeName) {
         return StringUtils.isNotEmpty(entityTypeName) && allSuperTypes.contains(entityTypeName);
+    }
+
+    public Map<String, AtlasAttribute> getRelationshipAttributes() { return Collections.unmodifiableMap(relationshipAttributes); }
+
+    public void addRelationshipAttribute(String attributeName, AtlasAttribute attribute) {
+        relationshipAttributes.put(attributeName, attribute);
     }
 
     @Override

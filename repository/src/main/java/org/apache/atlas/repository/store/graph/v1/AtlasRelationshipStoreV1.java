@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
@@ -29,11 +30,9 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.AtlasRelationshipDefStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -46,13 +45,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipStoreV1.class);
+    private static final int DEFAULT_RELATIONSHIP_VERSION = 0;
 
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
@@ -182,7 +184,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipName);
 
         if (relationshipType == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "unknown relationship '" + relationshipName + "'");
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "unknown relationship type'" + relationshipName + "'");
         }
 
         AtlasObjectId end1 = relationship.getEnd1();
@@ -222,6 +224,8 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         validateEnd(end1);
 
         validateEnd(end2);
+
+        validateAndNormalize(relationship);
     }
 
     private void validateEnd(AtlasObjectId end) throws AtlasBaseException {
@@ -239,6 +243,28 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, uniqueAttributes.toString());
             }
         }
+    }
+
+    private void validateAndNormalize(AtlasRelationship relationship) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        if (! AtlasTypeUtil.isValidGuid(relationship.getGuid())) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, relationship.getGuid());
+        }
+
+        AtlasRelationshipType type = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
+
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.RELATIONSHIP.name(), relationship.getTypeName());
+        }
+
+        type.validateValue(relationship, relationship.getTypeName(), messages);
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_CRUD_INVALID_PARAMS, messages);
+        }
+
+        type.getNormalizedValue(relationship);
     }
 
     private AtlasEdge getRelationshipEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipLabel) {
@@ -261,7 +287,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     private int getRelationVersion(AtlasRelationship relationship) {
         Long ret = relationship != null ? relationship.getVersion() : null;
 
-        return (ret != null) ? ret.intValue() : 0;
+        return (ret != null) ? ret.intValue() : DEFAULT_RELATIONSHIP_VERSION;
     }
 
     private AtlasVertex getVertexFromEndPoint(AtlasObjectId endPoint) {

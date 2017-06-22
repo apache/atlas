@@ -1,4 +1,5 @@
 /**
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -139,8 +139,8 @@ public class AtlasAuthorizationUtils {
             if (contextPath.contains("/terms")) {
                 resourceTypes.add(AtlasResourceTypes.TERM);
             }
-        } else if (api.startsWith("relation")) {
-            resourceTypes.add(AtlasResourceTypes.RELATION);
+        } else if (api.startsWith("relationship")) {
+            resourceTypes.add(AtlasResourceTypes.RELATIONSHIP);
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : {}\nSetting {}"
                     , api, AtlasResourceTypes.UNKNOWN.name());

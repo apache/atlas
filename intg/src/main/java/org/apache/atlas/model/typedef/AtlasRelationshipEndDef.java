@@ -166,10 +166,6 @@ public class AtlasRelationshipEndDef implements Serializable {
         return this.cardinality;
     }
 
-    public boolean isContainer() { return isContainer; }
-
-    public void setContainer(boolean container) { isContainer = container; }
-
     public String getLegacyLabel() { return legacyLabel; }
 
     public void setLegacyLabel(String legacyLabel) {  this.legacyLabel = legacyLabel; }

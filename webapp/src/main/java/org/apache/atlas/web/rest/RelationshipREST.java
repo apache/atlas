@@ -40,7 +40,7 @@ import javax.ws.rs.Produces;
 /**
  * REST interface for entity relationships.
  */
-@Path("v2/relation")
+@Path("v2/relationship")
 @Singleton
 @Service
 public class RelationshipREST {
@@ -68,6 +68,7 @@ public class RelationshipREST {
             }
 
             return relationshipStore.create(relationship);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -88,6 +89,7 @@ public class RelationshipREST {
             }
 
             return relationshipStore.update(relationship);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -109,6 +111,7 @@ public class RelationshipREST {
             }
 
             return relationshipStore.getById(guid);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }

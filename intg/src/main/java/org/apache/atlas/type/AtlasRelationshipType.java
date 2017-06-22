@@ -20,13 +20,15 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * class that implements behaviour of an relationship-type.
@@ -57,20 +59,26 @@ public class AtlasRelationshipType extends AtlasStructType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
-        String end1TypeName = relationshipDef != null && relationshipDef.getEndDef1() != null ? relationshipDef.getEndDef1().getType() : null;
-        String end2TypeName = relationshipDef != null && relationshipDef.getEndDef2() != null ? relationshipDef.getEndDef2().getType() : null;
+        if (relationshipDef == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "relationshipDef is null");
+        }
+
+        String end1TypeName = relationshipDef.getEndDef1() != null ? relationshipDef.getEndDef1().getType() : null;
+        String end2TypeName = relationshipDef.getEndDef2() != null ? relationshipDef.getEndDef2().getType() : null;
 
         AtlasType type1 = typeRegistry.getType(end1TypeName);
         AtlasType type2 = typeRegistry.getType(end2TypeName);
 
         if (type1 instanceof AtlasEntityType) {
-            end1Type = (AtlasEntityType)type1;
+            end1Type = (AtlasEntityType) type1;
+
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
         }
 
         if (type2 instanceof AtlasEntityType) {
-            end2Type = (AtlasEntityType)type2;
+            end2Type = (AtlasEntityType) type2;
+
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
         }
@@ -79,12 +87,25 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     @Override
+    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        super.resolveReferencesPhase2(typeRegistry);
+
+        addRelationshipAttributeToEndType(relationshipDef.getEndDef1(), end1Type, end2Type.getTypeName(), typeRegistry);
+
+        addRelationshipAttributeToEndType(relationshipDef.getEndDef2(), end2Type, end1Type.getTypeName(), typeRegistry);
+    }
+
+    @Override
     public boolean isValidValue(Object obj) {
         boolean ret = true;
 
         if (obj != null) {
-           validateAtlasRelationshipType((AtlasRelationshipType) obj);
-           ret = super.isValidValue(obj);
+
+            if (obj instanceof AtlasRelationshipType) {
+                validateAtlasRelationshipType((AtlasRelationshipType) obj);
+            }
+
+            ret = super.isValidValue(obj);
         }
 
         return ret;
@@ -175,5 +196,30 @@ public class AtlasRelationshipType extends AtlasStructType {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
             }
         }
+    }
+
+    private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef,
+                                                   AtlasEntityType entityType,
+                                                   String attrTypeName,
+                                                   AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+
+        String attrName = (endDef != null) ? endDef.getName() : null;
+
+        if (StringUtils.isEmpty(attrName)) {
+            return;
+        }
+
+        AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+        if (attribute == null) { //attr doesn't exist in type - is a new relationship attribute
+
+            if (endDef.getCardinality() == Cardinality.SET) {
+                attrTypeName = AtlasBaseTypeDef.getArrayTypeName(attrTypeName);
+            }
+
+            attribute = new AtlasAttribute(entityType, new AtlasAttributeDef(attrName, attrTypeName), typeRegistry.getType(attrTypeName));
+        }
+
+        entityType.addRelationshipAttribute(attrName, attribute);
     }
 }
