@@ -412,11 +412,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         AtlasTypesDef ret = updateGraphStore(typesDef, ttr);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={})",
+            LOG.debug("<== AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
-                    CollectionUtils.size(typesDef.getEntityDefs()));
+                    CollectionUtils.size(typesDef.getEntityDefs()),
+                    CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
         return ret;
@@ -857,6 +858,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
         AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
         AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasRelationshipDefStore   relationDefStore = getRelationshipDefStore(ttr);
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
@@ -879,6 +881,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
                 ret.getEntityDefs().add(entityDefStore.update(entityDef));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                ret.getRelationshipDefs().add(relationDefStore.update(relationshipDef));
             }
         }
 

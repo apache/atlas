@@ -242,6 +242,28 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         }
     }
 
+    /**
+     * Look to see if there are any IN edges with the supplied label
+     * @param vertex
+     * @param label
+     * @return
+     * @throws AtlasBaseException
+     */
+    boolean hasIncomingEdgesWithLabel(AtlasVertex vertex, String label) throws AtlasBaseException {
+        boolean foundEdges = false;
+        Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
+
+        while (inEdges.hasNext()) {
+            AtlasEdge edge = inEdges.next();
+
+            if (label.equals(edge.getLabel())) {
+                foundEdges = true;
+                break;
+            }
+        }
+        return foundEdges;
+    }
+
     void deleteTypeVertex(AtlasVertex vertex) throws AtlasBaseException {
         Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
 

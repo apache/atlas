@@ -67,7 +67,7 @@ public enum AtlasErrorCode {
     INVALID_STRUCT_VALUE(400, "ATLAS-400-00-025", "not a valid struct value {0}"),
     INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS-400-00-026", "Invalid lineage query parameters passed {0}: {1}"),
     ATTRIBUTE_UPDATE_NOT_SUPPORTED(400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported"),
-	INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
+    INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
     BAD_REQUEST(400, "ATLAS-400-00-029", "{0}"),
     PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
     MISSING_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value"),
@@ -80,7 +80,13 @@ public enum AtlasErrorCode {
     RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER(400,  "ATLAS-400-00-033", "COMPOSITION relationshipDef {0} cannot have a SET cardinality and be a container"),
     RELATIONSHIPDEF_LIST_ON_END(400,  "ATLAS-400-00-034", "relationshipDef {0} cannot have a LIST cardinality on an end"),
     RELATIONSHIPDEF_INVALID_END_TYPE(400,  "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}"),
-    INVALID_RELATIONSHIP_END_TYPE(400, "ATLAS-400-00-036", "invalid end type for relationship {0}: expected {1}, found {2}"),
+    INVALID_RELATIONSHIP_END_TYPE(400, "ATLAS-400-00-036", "invalid update for relationshipDef {0}: new end type {1}, existing end type {2}"),
+    RELATIONSHIPDEF_INVALID_END1_UPDATE(400, "ATLAS-400-00-037", "invalid update for relationshipDef {0}: new end1 {1}, existing end1 {2}"),
+    RELATIONSHIPDEF_INVALID_END2_UPDATE(400, "ATLAS-400-00-038", "invalid update for relationshipDef {0}: new end2 {1}, existing end2 {2}"),
+    RELATIONSHIPDEF_INVALID_CATEGORY_UPDATE(400, "ATLAS-400-00-039", "invalid  update for relationship {0}: new relationshipDef category {1}, existing relationshipDef category {2}"),
+    RELATIONSHIPDEF_INVALID_NAME_UPDATE(400, "ATLAS-400-00-040", "invalid relationshipDef rename for relationship guid {0}: new name {1}, existing name {2}"),
+    RELATIONSHIPDEF_END1_NAME_INVALID(400, "ATLAS-400-00-020", "{0}: invalid end1 name. Name must not contain query keywords"),
+    RELATIONSHIPDEF_END2_NAME_INVALID(400, "ATLAS-400-00-020", "{0}: invalid end2 name. Name must not contain query keywords"),
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
@@ -94,14 +100,14 @@ public enum AtlasErrorCode {
     INSTANCE_NOT_FOUND(404, "ATLAS-404-00-00B", "Given instance is invalid/not found: {0}"),
     RELATIONSHIP_GUID_NOT_FOUND(404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found"),
     RELATIONSHIP_CRUD_INVALID_PARAMS(404, "ATLAS-404-00-00D", "Invalid relationship creation/updation parameters passed : {0}"),
-
-     // All data conflict errors go here
+    // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
     INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
     RELATIONSHIP_ALREADY_EXISTS(409, "ATLAS-409-00-004", "relationship {0} already exists between entities {1} and {2}"),
+    TYPE_HAS_RELATIONSHIPS(409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs"),
 
-     // All internal errors go here
+    // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS-500-00-002", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS-500-00-003", "Index rollback failed for {0}"),

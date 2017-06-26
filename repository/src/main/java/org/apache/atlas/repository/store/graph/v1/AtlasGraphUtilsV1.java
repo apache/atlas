@@ -50,6 +50,7 @@ public class AtlasGraphUtilsV1 {
     public static final String PROPERTY_PREFIX      = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
     public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
     public static final String VERTEX_TYPE          = "typeSystem";
+    public static final String RELATIONSHIPTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".relationshipType";
 
 
     public static String getTypeDefPropertyKey(AtlasBaseTypeDef typeDef) {
@@ -287,6 +288,22 @@ public class AtlasGraphUtilsV1 {
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
 
         return vertex;
+    }
+
+    public static boolean relationshipTypeHasInstanceEdges(String typeName) throws AtlasBaseException {
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance()
+                .query()
+                .has(Constants.TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+
+        Iterator<AtlasEdge> results = query.edges().iterator();
+
+        boolean hasInstanceEdges = results != null && results.hasNext();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("relationshipType {} has instance edges {}", typeName, hasInstanceEdges);
+        }
+
+        return hasInstanceEdges;
     }
 
     private static String toString(AtlasElement element) {

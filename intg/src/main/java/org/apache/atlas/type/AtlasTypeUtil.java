@@ -23,6 +23,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
@@ -239,6 +241,18 @@ public class AtlasTypeUtil {
     public static AtlasEntityDef createClassTypeDef(String name, String description, String version,
         ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes);
+    }
+
+    public static AtlasRelationshipDef createRelationshipTypeDef(String                  name,
+                                                                 String                  description,
+                                                                 String                  version,
+                                                                 RelationshipCategory    relationshipCategory,
+                                                                 PropagateTags           propagateTags,
+                                                                 AtlasRelationshipEndDef endDef1,
+                                                                 AtlasRelationshipEndDef endDef2,
+                                                                 AtlasAttributeDef...    attrDefs) {
+        return new AtlasRelationshipDef(name, description, version, relationshipCategory, propagateTags,
+                                        endDef1, endDef2, Arrays.asList(attrDefs));
     }
 
     public static AtlasTypesDef getTypesDef(List<AtlasEnumDef> enums,
