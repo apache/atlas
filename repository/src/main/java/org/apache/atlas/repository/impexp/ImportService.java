@@ -21,12 +21,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -50,7 +45,6 @@ public class ImportService {
 
     private long startTimestamp;
     private long endTimestamp;
-
 
     public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
@@ -139,40 +133,12 @@ public class ImportService {
     }
 
     private void processTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        setGuidToEmpty(typeDefinitionMap);
-
-        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typeDefinitionMap, this.typeRegistry);
-
-        if (!typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate);
-
-            updateMetricsForTypesDef(typesToCreate, result);
-        }
-    }
-
-    private void updateMetricsForTypesDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) {
-        result.incrementMeticsCounter("typedef:classification", typeDefinitionMap.getClassificationDefs().size());
-        result.incrementMeticsCounter("typedef:enum", typeDefinitionMap.getEnumDefs().size());
-        result.incrementMeticsCounter("typedef:entitydef", typeDefinitionMap.getEntityDefs().size());
-        result.incrementMeticsCounter("typedef:struct", typeDefinitionMap.getStructDefs().size());
-    }
-
-    private void setGuidToEmpty(AtlasTypesDef typesDef) {
-        for (AtlasEntityDef def : typesDef.getEntityDefs()) {
-            def.setGuid(null);
+        if(result.getRequest().getUpdateTypeDefs() != null && !result.getRequest().getUpdateTypeDefs().equals("true")) {
+            return;
         }
 
-        for (AtlasClassificationDef def : typesDef.getClassificationDefs()) {
-            def.setGuid(null);
-        }
-
-        for (AtlasEnumDef def : typesDef.getEnumDefs()) {
-            def.setGuid(null);
-        }
-
-        for (AtlasStructDef def : typesDef.getStructDefs()) {
-            def.setGuid(null);
-        }
+        ImportTypeDefProcessor importTypeDefProcessor = new ImportTypeDefProcessor(this.typeDefStore, this.typeRegistry);
+        importTypeDefProcessor.processTypes(typeDefinitionMap, result);
     }
 
     private void processEntities(ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {

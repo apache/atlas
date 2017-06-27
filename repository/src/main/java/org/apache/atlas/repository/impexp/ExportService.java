@@ -603,7 +603,7 @@ public class ExportService {
         }
     }
 
-    private class UniqueList<T> {
+    public static class UniqueList<T> {
         private final List<T>   list = new ArrayList<>();
         private final Set<T>    set = new HashSet<>();
 

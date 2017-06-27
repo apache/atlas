@@ -27,66 +27,23 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.common.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.testng.Assert.*;
-
-public class ZipFileResourceTestUtils {
-    public static final Logger LOG = LoggerFactory.getLogger(ZipFileResourceTestUtils.class);
-
-    public static FileInputStream getFileInputStream(String fileName) {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getFilePath(userDir, fileName);
-        File f = new File(filePath);
-        FileInputStream fs = null;
-        try {
-            fs = new FileInputStream(f);
-        } catch (FileNotFoundException e) {
-            LOG.error("File could not be found at: %s", filePath, e);
-        }
-        return fs;
-    }
-
-    private static String getFilePath(String startPath, String fileName) {
-        return startPath + "/src/test/resources/" + fileName;
-    }
-
-    public static String getModelJson(String fileName) throws IOException {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = userDir + "/../addons/models/" + fileName;
-        File f = new File(filePath);
-        String s = FileUtils.readFileToString(f);
-        assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
-
-        return s;
-    }
-
-    public static Object[][] getZipSource(String fileName) throws IOException {
-        FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
-
-        return new Object[][]{{new ZipSource(fs)}};
-    }
-
+public class ImportServiceTestUtils {
 
     public static void verifyImportedEntities(List<String> creationOrder, List<String> processedEntities) {
         Set<String> lhs = com.google.common.collect.Sets.newHashSet(creationOrder);
         Set<String> rhs = com.google.common.collect.Sets.newHashSet(processedEntities);
         Set<String> difference = Sets.difference(lhs, rhs);
 
-        assertNotNull(difference);
-        assertEquals(difference.size(), 0);
+        Assert.assertNotNull(difference);
+        Assert.assertEquals(difference.size(), 0);
     }
 
     public static void verifyImportedMetrics(AtlasExportResult exportResult, AtlasImportResult importResult) {
@@ -97,8 +54,8 @@ public class ZipFileResourceTestUtils {
                     entry.getKey().contains("Column") ||
                     entry.getKey().contains("StorageDesc")) continue;
 
-            assertTrue(metricsForCompare.containsKey(entry.getKey()), entry.getKey());
-            assertEquals(entry.getValue(), metricsForCompare.get(entry.getKey()), entry.getKey());
+            Assert.assertTrue(metricsForCompare.containsKey(entry.getKey()));
+            Assert.assertEquals(entry.getValue(), metricsForCompare.get(entry.getKey()));
         }
     }
 
@@ -141,7 +98,7 @@ public class ZipFileResourceTestUtils {
         final String userName = "admin";
 
         AtlasImportResult result = importService.run(source, request, userName, hostName, requestingIP);
-        assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
+        Assert.assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
         return result;
     }
 
@@ -152,7 +109,7 @@ public class ZipFileResourceTestUtils {
         AtlasImportRequest request = getDefaultImportRequest();
         AtlasImportResult result = runImportWithParameters(importService, request, zipSource);
 
-        assertNotNull(result);
+        Assert.assertNotNull(result);
         verifyImportedMetrics(exportResult, result);
         verifyImportedEntities(creationOrder, result.getProcessedEntities());
     }
