@@ -44,6 +44,7 @@ public class AtlasImportRequest implements Serializable {
     public  static final String TRANSFORMS_KEY   = "transforms";
     private static final String START_POSITION_KEY = "startPosition";
     private static final String START_GUID_KEY = "startGuid";
+    private static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
 
     private Map<String, String> options;
 
@@ -76,19 +77,24 @@ public class AtlasImportRequest implements Serializable {
 
     @JsonIgnore
     public String getStartGuid() {
-        if (this.options == null || !this.options.containsKey(START_GUID_KEY)) {
-            return null;
-        }
-
-        return (String) this.options.get(START_GUID_KEY);
+        return getOptionForKey(START_GUID_KEY);
     }
 
     @JsonIgnore
     public String getStartPosition() {
-        if (this.options == null || !this.options.containsKey(START_POSITION_KEY)) {
+        return getOptionForKey(START_POSITION_KEY);
+    }
+
+    @JsonIgnore
+    public String getUpdateTypeDefs() {
+        return getOptionForKey(UPDATE_TYPE_DEFINITION_KEY);
+    }
+
+    private String getOptionForKey(String key) {
+        if (this.options == null || !this.options.containsKey(key)) {
             return null;
         }
 
-        return (String) this.options.get(START_GUID_KEY);
+        return (String) this.options.get(key);
     }
- }
+}

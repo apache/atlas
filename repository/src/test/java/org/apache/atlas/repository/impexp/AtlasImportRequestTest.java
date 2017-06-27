@@ -40,6 +40,47 @@ public class AtlasImportRequestTest {
     }
 
     @Test
+    public void serializeOptions_VerifyAccessors() {
+        String guid = "\"abcd\"";
+        String pos = "\"1\"";
+        String trueVal = "\"true\"";
+
+        String jsonData = "{ \"options\": " +
+                "               {" +
+                "\"startGuid\":" + guid + "," +
+                "\"startPosition\":" + pos + "," +
+                "\"updateTypeDefinition\":" + trueVal +
+                "}" +
+                "}";
+
+        AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+
+        assertNotNull(request);
+        assertNotNull(request.getStartGuid());
+        assertNotNull(request.getStartPosition());
+        assertNotNull(request.getUpdateTypeDefs());
+
+        assertEquals(request.getStartGuid(), guid.replace("\"", ""));
+        assertEquals(request.getStartPosition(), pos.replace("\"", ""));
+        assertEquals(request.getUpdateTypeDefs(), trueVal.replace("\"", ""));
+    }
+
+    @Test
+    public void optionsDefaultsTest() {
+        String jsonData = "{ \"options\": " +
+                "               {" +
+                    "}" +
+                "}";
+
+        AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+
+        assertNotNull(request);
+        assertNull(request.getStartGuid());
+        assertNull(request.getStartPosition());
+        assertNull(request.getUpdateTypeDefs());
+    }
+
+    @Test
     public void serializeAtlasImportRequstFromJsonWithEmptyTransforms() {
         String jsonData = "{ \"options\": { \"transforms\": \"{ }\" } }";
 
