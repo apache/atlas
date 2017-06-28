@@ -1,0 +1,114 @@
+{
+	"odf" : {
+		"instanceId" : "odf-default-id-CHANGEME",
+		"odfUrl" : "https://localhost:58081/odf-web-1.2.0-SNAPSHOT",
+		"odfUser" : "odf",
+		"odfPassword" : "ZzTeX3hKtVORgks+2TaLPWxerucPBoxK",
+		"runNewServicesOnRegistration": false,
+		"runAnalysisOnImport": false,
+		"reuseRequests": true,
+		"discoveryServiceWatcherWaitMs": 2000,
+		"enableAnnotationPropagation": true,
+		"messagingConfiguration": {
+			"type": "com.ibm.iis.odf.api.settings.KafkaMessagingConfiguration",
+			"analysisRequestRetentionMs": 86400000,
+			"queueConsumerWaitMs": 2000,
+			"kafkaBrokerTopicReplication": 1,
+			"kafkaConsumerConfig": {
+				"offsetsStorage": "kafka",
+				"zookeeperSessionTimeoutMs": 400,
+				"zookeeperConnectionTimeoutMs": 6000
+			}
+		},
+		"userDefined": {
+		}
+	},
+	"registeredServices": [{
+			"id": "asynctestservice",
+			"name": "Async test",
+			"description": "The async test service",
+			"resultingAnnotationTypes": [
+				"AsyncTestDummyAnnotation"
+			],
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestAsyncDiscoveryService1"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "asynctestservice-with-annotations",
+			"name": "Async test including metadata access",
+			"description": "The async test service writing annotations",
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestAsyncDiscoveryServiceWritingAnnotations1"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "synctestservice",
+			"name": "Sync test",
+			"description": "The Sync test service",
+			"resultingAnnotationTypes": [
+				"SyncTestDummyAnnotation"
+			],
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestSyncDiscoveryService1"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "synctestservice-with-annotations",
+			"name": "Sync test with annotations",
+			"description": "The Sync test service writing annotations",
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestSyncDiscoveryServiceWritingAnnotations1"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "synctestservice-with-extendedannotations",
+			"name": "Sync test with extended annotations",
+			"description": "The Sync test service writing annotations with extension mechanism",
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.annotation.TestSyncDiscoveryServiceWritingExtendedAnnotations"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "synctestservice-with-json-annotations",
+			"name": "Sync test with json annotations",
+			"description": "The Sync test service writing annotations returned from a json file",
+			"endpoint": {
+				"runtimeName": "Java",
+				"className": "com.ibm.iis.odf.core.test.annotation.TestSyncDiscoveryServiceWritingJsonAnnotations"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "spark-service-test",
+			"name": "Simple Spark mock test",
+			"description": "The Spark test is calling a mock version of the SparkAppExecutor",
+			"endpoint": {
+				"runtimeName": "Spark",
+				"inputMethod": "DataFrame",
+				"jar": "my-example-application-jar",
+				"className": "my-example-class-name"
+			},
+			"parallelismCount" : 2
+		},
+		{
+			"id": "testruntimeservice",
+			"name": "Runtime test service",
+			"description": "Runtime test service description",
+			"endpoint": {
+				"runtimeName": "TestServiceRuntime"
+			}
+		}
+		
+	]
+}

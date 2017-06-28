@@ -1,0 +1,11 @@
+[
+  {
+	"id": "${groupId}.${artifactId}.MyDiscoveryService",
+	"name": "My service",
+	"description": "My service creates my annotation for a data set",
+	"endpoint": {
+		"runtimeName": "Java",
+		"className": "${package}.MyDiscoveryService"
+	}
+  }
+]

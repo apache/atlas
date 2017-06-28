@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+
+<project name="prepare_embedded_jetty">
+
+	<dirname property="script.basedir" file="${ant.file.prepare_embedded_jetty}" />
+	<property name="source-dir" value="${script.basedir}/jettyconfig" />
+	<property name="download-dir" value="${script.basedir}/target/downloads/jettyconfig" />
+	<property name="target-dir" value="${script.basedir}/target/jettyconfig" />
+
+	<condition property="is-windows">
+		<os family="windows">
+		</os>
+	</condition>
+
+	<condition property="is-unix">
+		<os family="unix">
+		</os>
+	</condition>
+
+	<condition property="is-mac">
+		<os family="mac">
+		</os>
+	</condition>
+
+	<condition property="config-available">
+	   <available file="${target-dir}"/>
+    </condition>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="create-directories">
+		<mkdir dir="${download-dir}"/>
+		<mkdir dir="${target-dir}"/>
+	</target>
+
+	<target name="copy-config-files">
+		<copy todir="${target-dir}">
+			<fileset dir="${source-dir}" />
+			<fileset dir="${download-dir}" />
+		</copy>
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="download-keystore-file-windows" if="is-windows">
+		<get verbose="true" src="https://ibm.box.com/shared/static/k0qgh31ynbgnjsrbg5s97hsqbssh6pd4.jks" dest="${download-dir}/keystore.jks" />
+		<echo message="Downloaded IBM JDK keystore because we are on Windows." />
+	</target>
+
+	<target name="download-keystore-file-mac" if="is-mac">
+		<get verbose="true" src="https://ibm.box.com/shared/static/odnmhqua5sdue03z43vqsv0lp509ov70.jks" dest="${download-dir}/keystore.jks" />
+		<echo message="Downloaded OpenJDK keystore because we are on Mac." />
+	</target>
+
+	<target name="download-keystore-file-unix" if="is-unix">
+		<get verbose="true" src="https://ibm.box.com/shared/static/k0qgh31ynbgnjsrbg5s97hsqbssh6pd4.jks" dest="${download-dir}/keystore.jks" />
+		<echo message="Downloaded IBM JDK keystore because we are on UNIX (Other than Mac)." />
+	</target>
+
+	<target name="download-keystore-file" depends="download-keystore-file-unix,download-keystore-file-windows,download-keystore-file-mac">
+		<!-- keystore.jks file is stored in Box@IBM - Re-generate the file using the Java keytool -->
+		<!-- command: keytool -genkey -alias myatlas -keyalg RSA -keystore /tmp/atlas-security/keystore.jks -keysize 2048 -->
+		<!-- Note that ibm jdk uses different format than oracle/open jdk, therefore a separate version has to be generated for each jdk -->
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="prepare-jetty-config" unless="config-available">
+		<echo message="Preparing jetty configuration..." />
+		<antcall target="create-directories" />
+		<antcall target="download-keystore-file"/>
+		<antcall target="copy-config-files"/>
+		<echo message="Jetty configuration completed." />
+	</target>
+
+</project>

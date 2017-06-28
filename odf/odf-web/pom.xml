@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.apache.atlas.odf</groupId>
+		<artifactId>odf</artifactId>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>odf-web</artifactId>
+	<packaging>war</packaging>
+	<properties>
+		<!-- specify versions of components to be downloaded -->
+		<swagger.version>2.1.4</swagger.version>
+		<swagger.base.path>/${project.artifactId}-${project.version}/odf/api/v1</swagger.base.path>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-api</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-core</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-server</artifactId>
+			<version>2.22.2</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.ws.rs</groupId>
+			<artifactId>jsr311-api</artifactId>
+			<version>1.1.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<artifactId>swagger-jaxrs</artifactId>
+			<version>1.5.9</version>
+			<groupId>io.swagger</groupId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-doc</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>war</type>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-spark</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+			<exclusions>
+				<!-- Exclude this dependency to avoid the following error when running the jetty-maven-plugin:
+				 "A required class was missing while executing org.eclipse.jetty:jetty-maven-plugin:9.2.14.v20151106:start: com/sun/jersey/spi/inject/InjectableProvider" -->
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-hdfs</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- Required for compatibility with Spark cluster (must use same version) -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.5</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-core</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-messaging</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-messaging</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-store</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>iis-central</id>
+			<name>Archiva Managed Maven Repository</name>
+			<url>http://iis-repo.swg.usma.ibm.com:8080/archiva/repository/all/</url>
+		</repository>
+	</repositories>
+
+	<profiles>
+		<profile>
+			<id>atlas</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.apache.atlas.odf</groupId>
+					<artifactId>odf-atlas</artifactId>
+					<version>1.2.0-SNAPSHOT</version>
+					<scope>runtime</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>jenkinsbuild</id>
+			<properties>
+				<cf.password>${env.CFPASSWORD}</cf.password> <!-- Take cf.password from environment variable when running in Jenkins so that the password doesn't appear in the log -->
+			</properties>
+		</profile>
+		<profile>
+			<id>integration-tests</id>
+			<activation>
+				<property>
+					<name>reduced-tests</name>
+					<value>!true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<version>2.19</version>
+						<configuration>
+							<systemPropertyVariables>
+								<!-- we always use the embedded Kafka in our integration tests -->
+								<odf.zookeeper.connect>${testZookeepeConnectionString}</odf.zookeeper.connect>
+								<odf.test.base.url>${odf.test.base.url}</odf.test.base.url>
+								<odf.test.webapp.url>${odf.test.webapp.url}</odf.test.webapp.url>
+								<odf.test.user>${odf.test.user}</odf.test.user>
+								<odf.test.password>${odf.test.password}</odf.test.password>
+								<odf.logspec>${odf.integrationtest.logspec}.client</odf.logspec>
+								<!-- The atlas configuration properties are only required when the "atlas" profile is activated -->
+								<atlas.url>${atlas.url}</atlas.url>
+								<atlas.user>${atlas.user}</atlas.user>
+								<atlas.password>${atlas.password}</atlas.password>
+							</systemPropertyVariables>
+							<includes>
+								<include>**/integrationtest/**</include>
+							</includes>
+						</configuration>
+						<executions>
+							<execution>
+								<id>integration-test</id>
+								<goals>
+									<goal>integration-test</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>verify</id>
+								<goals>
+									<goal>verify</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+					<systemPropertyVariables>
+						<odf.logspec>${odf.unittest.logspec}</odf.logspec>
+						<odf.build.project.name>${project.name}</odf.build.project.name>
+					</systemPropertyVariables>
+					<excludes>
+						<exclude>**/integrationtest/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.2.14.v20151106</version>
+				<configuration>
+					<jettyXml>${project.parent.basedir}/jettyconfig/jetty.xml,${project.parent.basedir}/jettyconfig/jetty-ssl.xml,${project.parent.basedir}/jettyconfig/jetty-https.xml</jettyXml>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+					<stopPort>8005</stopPort>
+					<stopKey>STOP</stopKey>
+					<systemProperties>
+						<systemProperty>
+							<name>odf.zookeeper.connect</name>
+							<value>${testZookeepeConnectionString}</value>
+						</systemProperty>
+						<systemProperty>
+							<name>odf.logspec</name>
+							<value>${odf.integrationtest.logspec}.jettyserver</value>
+						</systemProperty>
+						<systemProperty>
+							<name>jetty.config.dir</name>
+							<value>${project.parent.basedir}/target/jettyconfig</value>
+						</systemProperty>
+						<systemProperty>
+							<name>atlas.url</name>
+							<value>${atlas.url}</value>
+						</systemProperty>
+						<systemProperty>
+							<name>atlas.user</name>
+							<value>${atlas.user}</value>
+						</systemProperty>
+						<systemProperty>
+							<name>atlas.password</name>
+							<value>${atlas.password}</value>
+						</systemProperty>
+					</systemProperties>
+				</configuration>
+				<executions>
+					<execution>
+						<id>start-jetty</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+						<configuration>
+							<scanIntervalSeconds>0</scanIntervalSeconds>
+							<daemon>true</daemon>
+						</configuration>
+					</execution>
+					<execution>
+						<id>stop-jetty</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>0.0.27</version>
+				<configuration>
+					<installDirectory>build</installDirectory>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>install node and npm</id>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+						<configuration>
+							<nodeVersion>v0.12.2</nodeVersion>
+							<npmVersion>2.7.6</npmVersion>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm install</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>install</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>webpack build</id>
+						<goals>
+							<goal>webpack</goal>
+						</goals>
+						<configuration>
+							<!-- change to -p for production mode -->
+							<arguments>-d</arguments>
+						</configuration>
+					</execution>
+					<!-- <execution> <id>npm-list-packages</id> <goals> <goal>npm</goal>
+						</goals> <phase>validate</phase> <configuration> <arguments>ls depth=0</arguments>
+						</configuration> </execution> -->
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<failOnMissingWebXml>false</failOnMissingWebXml>
+					<packagingExcludes>**/scripts/**</packagingExcludes>
+					<overlays>
+						<overlay>
+							<!-- define here which files you want to take over from the odf-doc
+								war. -->
+							<groupId>org.apache.atlas.odf</groupId>
+							<artifactId>odf-doc</artifactId>
+							<excludes>
+								<exclude>WEB-INF/web.xml</exclude>
+							</excludes>
+							<includes>
+								<include>doc/**</include>
+							</includes>
+						</overlay>
+					</overlays>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<inherited>false</inherited>
+						<id>prepare-embedded-jetty</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<ant antfile="../prepare_embedded_jetty.xml" target="prepare-jetty-config" />
+							</target>
+						</configuration>
+					</execution>
+					<execution>
+						<id>prepare-components</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<property name="unpack-dir" value="${project.build.directory}/downloads" />
+								<property name="swagger.version" value="${swagger.version}" />
+								<ant antfile="download_swagger-ui.xml" target="default"></ant>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/swagger</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.build.directory}/downloads/swagger-ui-${swagger.version}/dist</directory>
+									<filtering>false</filtering>
+									<excludes>
+										<exclude>index.html</exclude>
+									</excludes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.github.kongchen</groupId>
+				<artifactId>swagger-maven-plugin</artifactId>
+				<version>3.1.1</version>
+				<configuration>
+					<apiSources>
+						<apiSource>
+							<springmvc>false</springmvc>
+							<locations>org.apache.atlas.odf.admin.rest.resources</locations>
+							<schemes>https</schemes>
+							<basePath>${swagger.base.path}</basePath>
+							<info>
+								<title>Open Discovery Framework</title>
+								<version>v1</version>
+								<description>
+									API reference
+								</description>
+							</info>
+							<swaggerDirectory>${project.build.directory}/${project.artifactId}-${project.version}/swagger</swaggerDirectory>
+							<swaggerApiReader>com.wordnik.swagger.jaxrs.reader.DefaultJaxrsApiReader</swaggerApiReader>
+						</apiSource>
+					</apiSources>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

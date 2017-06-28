@@ -1,0 +1,16 @@
+{
+	"jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Reference",
+	"id": {
+		"jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Reference",
+		"id": "-1",
+		"version": 0,
+		"typeName": "ODFAnnotation"
+	},
+	"typeName": "ODFAnnotation",
+	"values": {
+		
+	},
+	"traitNames": [],
+	"traits": {
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"odf" : {
+		"instanceId" : "odf-default-id-CHANGEME",
+		"odfUrl" : "https://localhost:58081/odf-web-1.2.0-SNAPSHOT",
+		"odfUser" : "sdp",
+		"odfPassword" : "ZzTeX3hKtVORgks+2TaLPWxerucPBoxK",
+		"consumeMessageHubEvents" : false,
+		"discoveryServiceWatcherWaitMs": 2000,
+		"reuseRequests": true,
+		"runAnalysisOnImport": false,
+		"runNewServicesOnRegistration": false,
+		"enableAnnotationPropagation": true,
+		"messagingConfiguration": {
+			"type": "com.ibm.iis.odf.api.settings.KafkaMessagingConfiguration",
+			"analysisRequestRetentionMs": 86400000,
+			"kafkaBrokerTopicReplication": 1,
+			"queueConsumerWaitMs": 5000,
+			"kafkaConsumerConfig": {
+				"offsetsStorage": "kafka",
+				"zookeeperSessionTimeoutMs": 400,
+				"zookeeperConnectionTimeoutMs": 6000
+			}
+		},
+		"userDefined": {
+		}
+	},
+	"registeredServices" : []
+}

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>odf</artifactId>
+	<name>odf</name>
+	<groupId>org.apache.atlas.odf</groupId>
+	<version>1.2.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+
+	<modules>
+		<module>odf-api</module>
+		<module>odf-core</module>
+		<module>odf-store</module>
+		<module>odf-messaging</module>
+	</modules>
+
+	<profiles>
+		<profile>
+			<id>atlas</id>
+			<modules>
+				<module>odf-atlas</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>complete-build</id>
+			<activation>
+				<property>
+					<name>reduced-build</name>
+					<value>!true</value>
+				</property>
+			</activation>
+			<modules>
+				<module>odf-spark-example-application</module>
+				<module>odf-spark</module>
+				<module>odf-doc</module>
+				<module>odf-web</module>
+				<module>odf-archetype-discoveryservice</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>test-env</id>
+			<modules>
+				<module>odf-test-env</module>
+			</modules>
+		</profile>
+	</profiles>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<testZookeepeConnectionString>localhost:2181</testZookeepeConnectionString>
+		<odf.test.logdir>/tmp</odf.test.logdir>
+		<odf.unittest.logspec>ALL,${odf.test.logdir}/${project.name}-unit-trace.log</odf.unittest.logspec>
+		<odf.integrationtest.logspec>ALL,${odf.test.logdir}/${project.name}-integration-trace.log</odf.integrationtest.logspec>
+		<jackson.version>2.6.5</jackson.version>
+		<jetty.maven.plugin.port>58080</jetty.maven.plugin.port>
+		<odf.test.base.url>https://localhost:${jetty.maven.plugin.port}</odf.test.base.url>
+		<odf.test.webapp.url>https://localhost:${jetty.maven.plugin.port}/odf-web-1.2.0-SNAPSHOT</odf.test.webapp.url>
+		<odf.test.user>sdp</odf.test.user>
+		<odf.test.password>ZzTeX3hKtVORgks+2TaLPWxerucPBoxK</odf.test.password>
+		<atlas.version>0.7-incubating-release</atlas.version>
+		<atlas.url>https://localhost:21443</atlas.url>
+		<atlas.user>admin</atlas.user>
+		<atlas.password>UR0+HOiApXG9B8SNpKN5ww==</atlas.password>
+	</properties>
+
+	<build>
+		<plugins>
+			<!-- make sure we are compiling for Java 1.7 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<inherited>false</inherited>
+						<phase>test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<delete>
+									<fileset dir="/tmp/" includes="odf-test-execution-log.csv"/>
+								</delete>
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.10</version>
+				<executions>
+					<execution>
+						<id>list-dependencies</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>tree</goal>
+						</goals>
+						<configuration>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

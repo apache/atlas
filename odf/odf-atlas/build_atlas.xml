@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project name="build_atlas">
+	<dirname property="script.basedir" file="${ant.file.build_atlas}" />
+	<property name="atlas-dir" value="apache-atlas-${atlas.version}" />
+	<!-- Properties  provided by pom.xml: -->
+	<!-- <property name="atlas-unpack-dir" value="" /> -->
+	<!-- <property name="atlas.version" value="" /> -->
+
+	<property name="atlas-archive" value="/tmp/${atlas-dir}-bin.zip" />
+
+	<condition property="is-windows">
+		<os family="windows">
+		</os>
+	</condition>
+
+	<condition property="is-unix">
+		<os family="unix">
+		</os>
+	</condition>
+
+	<condition property="is-mac">
+		<os family="mac">
+		</os>
+	</condition>
+
+	<condition property="atlas-zip-not-found">
+		<not>
+			<available file="${atlas-archive}">
+			</available>
+		</not>
+	</condition>
+
+	<condition property="atlas-unpacked">
+	   <available file="${atlas-unpack-dir}/${atlas-dir}/bin/atlas_start.py"/>
+    </condition>
+
+	<condition property="atlas-running">
+		<available file="${atlas-unpack-dir}/${atlas-dir}/logs/atlas.pid"/>
+	</condition>
+
+	<condition property="running-build-process">
+		<equals arg1="${atlas-unpack-dir}" arg2="/tmp"/>
+	</condition>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="download-atlas" if="atlas-zip-not-found">
+		<echo message="Downloading Apache Atlas 0.7-incubating-release. Depending on your network this can last up to 20 (yes, twenty) minutes." />
+		<!-- Make sure to update text message when moving to a new Atlas release / revision -->
+		<get verbose="true" src="https://ibm.box.com/shared/static/ftwi0wlpjtyv3nnvyh354epayqfwynsn.zip" dest="${atlas-archive}" />
+		<echo message="Atlas downloaded" />
+	</target>
+
+	<target name="unzip-atlas" unless="atlas-unpacked">
+		<antcall target="download-atlas"/>
+		<echo message="Installing Atlas test instance" />
+		<echo message="Deleting ${atlas-unpack-dir}/${atlas-dir}" />
+		<delete dir="${atlas-unpack-dir}/${atlas-dir}" failonerror="false" />
+		<echo message="deleted" />
+		<chmod file="${atlas-unpack-dir}/${atlas-archive}" perm="755" os="unix,mac"/>
+		<unzip src="${atlas-archive}" dest="${atlas-unpack-dir}" />
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="stop-atlas" if="atlas-unpacked">
+		<echo message="Stopping atlas server if it exists" />
+		<exec dir="${atlas-unpack-dir}/${atlas-dir}/bin" executable="python">
+			<env key="JAVA_HOME" value="${java.home}" />
+        		<arg value="atlas_stop.py" />
+    		</exec>
+		<sleep seconds="10" />
+	</target>
+
+	<target name="ensure-atlas-stopped" depends="print-info" unless="use.running.atlas">
+		<echo message="Ensure Atlas is stopped..."/>
+		<antcall target="stop-atlas"/>
+		<delete file="${atlas-unpack-dir}/${atlas-dir}/logs/atlas.pid"/>
+		<echo message="Atlas is stopped."/>
+	</target>
+
+	<target name="remove-atlas-dir" depends="ensure-atlas-stopped" if="running-build-process">
+    	<echo message="Resetting atlas data"/>
+    	<delete dir="/tmp/${atlas-dir}" />
+    	<echo message="Atlas directory deleted"/>
+	</target>
+
+	<target name="reset-derby-data">
+    	<echo message="Resetting derby DB"/>
+    	<delete dir="/tmp/odf-derby" />
+	</target>
+
+	<target name="restart-atlas-on-windows" if="is-windows">
+		<antcall target="start-atlas"/>
+		<antcall target="stop-atlas"/>
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="start-atlas">
+		<echo message="Starting atlas server" />
+		<exec dir="${atlas-unpack-dir}/${atlas-dir}/bin" executable="python">
+			<env key="JAVA_HOME" value="${java.home}/.." />
+			<arg value="atlas_start.py" />
+		</exec>
+		<echo message="Waiting for Atlas Server to start..." />
+		<waitfor maxwait="60" maxwaitunit="second">
+			<socket server="localhost" port="21443" />
+		</waitfor>
+	</target>
+
+	<target name="check-atlas-url">
+		<fail>
+			<condition>
+				<not>
+					<socket server="localhost" port="21443" />
+				</not>
+			</condition>
+		</fail>
+	</target>
+
+	<target name="prepare-atlas" unless="atlas-running">
+		<antcall target="unzip-atlas"/>
+		<antcall target="enable-atlas-ssl"/>
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="import-atlas-sampledata-win" if="is-windows">
+		<echo message="Importing sample data" />
+		<exec executable="cmd">
+			<env key="JAVA_HOME" value="${java.home}" />
+			<arg value="/c" />
+			<arg value="${atlas-unpack-dir}/${atlas-dir}/bin/quick_start.py" />
+		</exec>
+
+		<echo message="Atlas test instance brought up" />
+	</target>
+
+	<target name="import-atlas-sampledata-unix" if="is-unix">
+		<echo message="Importing sample data" />
+		<exec dir="${atlas-unpack-dir}/${atlas-dir}/bin" executable="python">
+			<env key="JAVA_HOME" value="${java.home}" />
+			<arg value="quick_start.py" />
+		</exec>
+
+		<echo message="Atlas test instance brought up" />
+	</target>
+
+	<target name="import-atlas-sampledata" depends="import-atlas-sampledata-win,import-atlas-sampledata-unix">
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="select-atlas-config-file-windows" if="is-windows">
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_windows" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" overwrite="true"/>
+		<echo message="Using atlas SSL configuration for Windows." />
+	</target>
+
+	<target name="select-atlas-config-file-mac" if="is-mac">
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_mac" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" overwrite="true"/>
+		<echo message="Using atlas SSL configuration for Mac OS." />
+	</target>
+
+	<target name="select-atlas-config-file-unix" if="is-unix">
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_linux" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" overwrite="true"/>
+		<echo message="Using atlas SSL configuration for Unix." />
+	</target>
+
+	<target name="select-atlas-config-file" depends="select-atlas-config-file-unix,select-atlas-config-file-windows,select-atlas-config-file-mac">
+	</target>
+
+	<target name="unquote-colons-in-atlas-config-file">
+		<!-- The following replacement is needed because the ant propertyfile task quotes colons and backslashed-->
+		<replace file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties">
+			<replacetoken>\:</replacetoken>
+			<replacevalue>:</replacevalue>
+		</replace>
+		<replace file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties">
+			<replacetoken>\\</replacetoken>
+			<replacevalue>\</replacevalue>
+		</replace>
+	</target>
+
+	<target name="enable-atlas-ssl">
+		<!-- For Atlas security features see: http://atlas.incubator.apache.org/Security.html -->
+		<echo message="Updating atlas-application.properties file..." />
+		<propertyfile file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties">
+			<entry  key="cert.stores.credential.provider.path" value="jceks://file/${sys:atlas.home}/conf/keystore_openjdk.jceks"/>
+			<entry  key="atlas.enableTLS" value="true"/>
+			<entry  key="truststore.file" value="${sys:atlas.home}/conf/keystore_openjdk.jks"/>
+			<entry  key="keystore.file" value="${sys:atlas.home}/conf/keystore_openjdk.jks"/>
+			<entry  key="atlas.server.https.port" value="21443"/>
+			<entry  key="atlas.DeleteHandler.impl" value="org.apache.atlas.repository.graph.HardDeleteHandler"/>
+			<entry  key="atlas.TypeCache.impl" value="org.apache.atlas.repository.typestore.StoreBackedTypeCache"/>
+		</propertyfile>
+		<antcall target="unquote-colons-in-atlas-config-file"/>
+		<!-- Keep this version of the config file for Mac (using oracle/open jdk) -->
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_mac" overwrite="true"/>
+
+		<!-- Create separate version of config file for Linux (using ibm jdk) -->
+		<propertyfile file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties">
+			<entry  key="cert.stores.credential.provider.path" value="jceks://file/${sys:atlas.home}/conf/keystore_ibmjdk.jceks"/>
+			<entry  key="truststore.file" value="${sys:atlas.home}/conf/keystore_ibmjdk.jks"/>
+			<entry  key="keystore.file" value="${sys:atlas.home}/conf/keystore_ibmjdk.jks"/>
+		</propertyfile>
+		<antcall target="unquote-colons-in-atlas-config-file"/>
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_linux" overwrite="true"/>
+
+		<!-- Create separate version of config file for Windows (using ibm jdk and hardcoded credential provider file (issue #94)) -->
+		<propertyfile file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties">
+			<entry  key="cert.stores.credential.provider.path" value="jceks://file/C\:/tmp/${atlas-dir}/conf/keystore_ibmjdk.jceks"/>
+		</propertyfile>
+		<antcall target="unquote-colons-in-atlas-config-file"/>
+		<copy file="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties" tofile="${atlas-unpack-dir}/${atlas-dir}/conf/atlas-application.properties_windows" overwrite="true"/>
+
+		<!-- keystore.jceks file is stored in Box@IBM - Re-generate the file using Atlas command bin/cputil.sh -->
+		<!-- Note that ibm jdk uses different format than oracle/open jdk, therefore a separate version has to be generated for each jdk -->
+		<get verbose="true" src="https://ibm.box.com/shared/static/uyzqeayk5ut5f5fqnlvm8nhn9ixb642d.jceks" dest="${atlas-unpack-dir}/${atlas-dir}/conf/keystore_openjdk.jceks" />
+		<get verbose="true" src="https://ibm.box.com/shared/static/ibopoyukw7uhbt83a1zu33nwvnamht3j.jceks" dest="${atlas-unpack-dir}/${atlas-dir}/conf/keystore_ibmjdk.jceks" />
+		<!-- keystore.jks file is stored in Box@IBM - Re-generate the file using the Java keytool -->
+		<!-- command: keytool -genkey -alias myatlas -keyalg RSA -keystore /tmp/atlas-security/keystore.jks -keysize 2048 -->
+		<!-- Note that ibm jdk uses different format than oracle/open jdk, therefore a separate version has to be generated for each jdk -->
+		<get verbose="true" src="https://ibm.box.com/shared/static/odnmhqua5sdue03z43vqsv0lp509ov70.jks" dest="${atlas-unpack-dir}/${atlas-dir}/conf/keystore_openjdk.jks" />
+		<get verbose="true" src="https://ibm.box.com/shared/static/k0qgh31ynbgnjsrbg5s97hsqbssh6pd4.jks" dest="${atlas-unpack-dir}/${atlas-dir}/conf/keystore_ibmjdk.jks" />
+
+		<antcall target="select-atlas-config-file"/>
+		<echo message="Atlas SSL has been enabled." />
+		<!-- On windows, Atlas needs to be re-started again in order for the kafka queues to come up properly -->
+		<antcall target="restart-atlas-on-windows" />
+	</target>
+
+	<!-- ****************************************************************************************** -->
+	<target name="print-info" if="use.running.atlas">
+		<echo message="Don't start/stop Atlas because use.running.atlas is set" />
+	</target>
+
+	<target name="clean-atlas" depends="print-info" unless="use.running.atlas">
+		<echo message="Cleaning Atlas" />
+		<antcall target="remove-atlas-dir"/>
+		<antcall target="reset-derby-data"/>
+	</target>
+
+	<target name="ensure-atlas-running" depends="print-info" unless="use.running.atlas">
+		<echo message="Ensure that Atlas is running" />
+		<antcall target="prepare-atlas" />
+		<antcall target="start-atlas"/>
+		<antcall target="check-atlas-url"/>
+		<echo message="Atlas is running" />
+	</target>
+
+</project>

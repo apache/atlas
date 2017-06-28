@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project name="prepare_components">
+
+	<!-- Property is provided by pom.xml -->
+	<!-- <property name="jetty.version" value="" /> -->
+	<!-- <property name="kafka.version" value="" /> -->
+	<!-- <property name="scala.version" value="" /> -->
+
+	<dirname property="script.basedir" file="${ant.file.prepare_components}" />
+
+	<property name="jetty-dir" value="jetty-distribution-${jetty.version}" />
+	<property name="kafka-dir" value="kafka_${scala.version}-${kafka.version}" />
+	<property name="spark-dir" value="spark_${spark.version}" />
+
+	<property name="jetty-archive" value="/tmp/${jetty-dir}.zip" />
+	<property name="kafka-archive" value="/tmp/${kafka-dir}.tar.gz" />
+	<property name="spark-archive" value="/tmp/${spark-dir}.tar.gz" />
+
+	<condition property="jetty-zip-not-found">
+		<not>
+			<available file="${jetty-archive}">
+			</available>
+		</not>
+	</condition>
+
+	<condition property="kafka-zip-not-found">
+		<not>
+			<available file="${kafka-archive}">
+			</available>
+		</not>
+	</condition>
+
+	<condition property="spark-zip-not-found">
+		<not>
+			<available file="${spark-archive}">
+			</available>
+		</not>
+	</condition>
+
+	<condition property="jetty-unpacked">
+	   <available file="${unpack-dir}/${jetty-dir}/bin/jetty.sh"/>
+    </condition>
+
+	<condition property="kafka-unpacked">
+	   <available file="${unpack-dir}/${kafka-dir}/bin/kafka-server-start.sh"/>
+    </condition>
+
+	<condition property="spark-unpacked">
+	   <available file="${unpack-dir}/${spark-dir}/sbin/start-master.sh"/>
+    </condition>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="download-jetty" if="jetty-zip-not-found">
+		<echo message="Downloading Jetty. Depending on your network this can last up to 20 (yes, twenty) minutes." />
+		<get verbose="true" src="https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/${jetty.version}/jetty-distribution-${jetty.version}.zip" dest="${jetty-archive}" />
+		<echo message="Jetty downloaded" />
+	</target>
+
+	<target name="download-kafka" if="kafka-zip-not-found">
+		<echo message="Downloading Kafka. Depending on your network this can last up to 20 (yes, twenty) minutes." />
+		<get verbose="true" src="http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/${kafka.version}/kafka_${scala.version}-${kafka.version}.tgz" dest="${kafka-archive}" />
+		<echo message="Kafka downloaded" />
+	</target>
+
+	<target name="download-spark" if="spark-zip-not-found">
+		<echo message="Downloading Spark. Depending on your network this can last up to 20 (yes, twenty) minutes." />
+		<get verbose="true" src="http://d3kbcqa49mib13.cloudfront.net/spark-${spark.version}-bin-hadoop2.7.tgz" dest="${spark-archive}" />
+		<echo message="Spark downloaded" />
+	</target>
+
+	<target name="unzip-jetty" unless="jetty-unpacked">
+		<antcall target="download-jetty"/>
+		<echo message="Installing Jetty test instance" />
+		<echo message="Deleting ${unpack-dir}/${jetty-dir}" />
+		<delete dir="${unpack-dir}/${jetty-dir}" />
+		<echo message="deleted" />
+		<unzip src="${jetty-archive}" dest="${unpack-dir}" />
+		<!-- Create Jetty base folder -->
+		<mkdir dir="${unpack-dir}/odfjettybase"/>
+		<!-- Generate Jetty base configuration files -->
+		<java dir="${unpack-dir}/odfjettybase" classname="org.eclipse.jetty.start.Main" fork="true">
+			<arg value="--add-to-startd=https,ssl,deploy,plus"/>
+			<classpath>
+				<pathelement location="${unpack-dir}/${jetty-dir}/start.jar"/>
+				<pathelement path="${unpack-dir}/${jetty-dir}"/>
+				<pathelement path="${java.class.path}"/>
+			</classpath>
+			<jvmarg value="-Djetty.home=${unpack-dir}/${jetty-dir}"/>
+			<jvmarg value="-Djetty.base=${unpack-dir}/odfjettybase"/>
+		</java>
+		<!-- Update Jetty port number -->
+		<replace file="${unpack-dir}/odfjettybase/start.d/https.ini" token="https.port=8443" value="https.port=${jetty.port}"/>
+	</target>
+
+	<target name="unzip-kafka" unless="kafka-unpacked">
+		<antcall target="download-kafka"/>
+		<echo message="Installing Kafka test instance" />
+		<echo message="Deleting ${unpack-dir}/${kafka-dir}" />
+		<delete dir="${unpack-dir}/${kafka-dir}" />
+		<echo message="deleted" />
+	    <untar src="${kafka-archive}" dest="${unpack-dir}" compression="gzip" />
+
+		<!-- remove -loggc command line argument in scripts because they don't exist in the IBM JVM -->
+		<replace file="${unpack-dir}/kafka_${scala.version}-${kafka.version}/bin/kafka-server-start.sh" token="-loggc" value=""/>
+		<replace file="${unpack-dir}/kafka_${scala.version}-${kafka.version}/bin/zookeeper-server-start.sh" token="-loggc" value=""/>
+	</target>
+
+	<target name="unzip-spark" unless="spark-unpacked">
+		<antcall target="download-spark"/>
+		<echo message="Installing Spark test instance" />
+		<echo message="Deleting ${unpack-dir}/${spark-dir}" />
+		<delete dir="${unpack-dir}/${spark-dir}" />
+		<echo message="deleted" />
+	    <untar src="${spark-archive}" dest="${unpack-dir}" compression="gzip" />
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="enable-jetty-basic-authentication">
+		<echo message="Enabling jetty basic authentication..." />
+		<echo message="Updating jetty.xml file..." />
+		<replace file="${unpack-dir}/${jetty-dir}/etc/jetty.xml">
+			<!-- See corresponding config in web.xml file of SDP webapp -->
+			<replacetoken><![CDATA[</Configure>]]></replacetoken>
+			<replacevalue>
+				<![CDATA[
+	<Call name="addBean">
+		<Arg>
+			<New class="org.eclipse.jetty.security.HashLoginService">
+				<Set name="name">ODF Realm</Set>
+				<Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
+			</New>
+		</Arg>
+	</Call>
+</Configure>
+				]]>
+			</replacevalue>
+		</replace>
+		<echo message="Copying credentials file..." />
+		<copy file="${script.basedir}/../jettyconfig/realm.properties" tofile="${unpack-dir}/${jetty-dir}/etc/realm.properties" overwrite="true"/>
+		<echo message="Jetty basic authentication has been enabled." />
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="default">
+		<mkdir dir="${unpack-dir}"/>
+		<antcall target="unzip-jetty"/>
+		<antcall target="enable-jetty-basic-authentication"/>
+		<antcall target="unzip-kafka"/>
+		<antcall target="unzip-spark"/>
+	</target>
+
+</project>

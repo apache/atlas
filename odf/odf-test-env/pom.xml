@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.apache.atlas.odf</groupId>
+		<artifactId>odf</artifactId>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>odf-test-env</artifactId>
+	<name>odf-test-env</name>
+	<url>http://maven.apache.org</url>
+	<properties>
+		<!-- specify versions of components to be downloaded -->
+		<jetty.version>9.2.10.v20150310</jetty.version>
+		<kafka.version>0.10.0.0</kafka.version>
+		<scala.version>2.11</scala.version>
+		<spark.version>2.1.0</spark.version>
+		<jetty.port>58081</jetty.port>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-web</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>war</type>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<skipMain>true</skipMain>
+							<!-- do not compile anything -->
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+					<skipTests>true</skipTests>
+					<!-- do not run tests -->
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<id>prepare-atlas</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<property name="atlas-unpack-dir" value="${project.build.directory}/downloads" />
+								<property name="atlas.version" value="${atlas.version}" />
+								<ant antfile="../odf-atlas/build_atlas.xml" target="prepare-atlas"></ant>
+							</target>
+						</configuration>
+					</execution>
+					<execution>
+						<id>prepare-components</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<property name="unpack-dir" value="${project.build.directory}/downloads" />
+								<property name="jetty.version" value="${jetty.version}" />
+								<property name="jetty.port" value="${jetty.port}" />
+								<property name="kafka.version" value="${kafka.version}" />
+								<property name="scala.version" value="${scala.version}" />
+								<property name="project.basedir" value="${project.basedir}"/>
+								<ant antfile="prepare_components.xml" target="default"></ant>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptor>src/assembly/bin.xml</descriptor>
+					<finalName>odf-test-env-${project.version}</finalName>
+				</configuration>
+				<executions>
+					<execution>
+						<id>create-distribution</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.1</version>
+				<executions>
+					<execution>
+						<id>default-jar</id>
+						<!-- do not create default-jar -->
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

@@ -2009,6 +2009,11 @@
                         <exclude>**/policy-store.txt</exclude>
                         <exclude>**/*rebel*.xml</exclude>
                         <exclude>**/*rebel*.xml.bak</exclude>
+
+                        <!-- execute following files in ODF directory -->
+                        <exclude>**/.gitignore</exclude>
+                        <exclude>odf/**/*.csv</exclude>
+                        <exclude>odf/**/*.txt</exclude>
                     </excludes>
                 </configuration>
                 <executions>

@@ -1,0 +1,31 @@
+{
+	"user": "isadmin",
+	"lastModified": "1443795291000",
+	"discoveryServiceRequests": [{
+		"dataSetContainer": {
+			"dataSet": {
+				"javaClass": "com.ibm.iis.odf.core.metadata.models.Document",
+				"name": "someDocument",
+				"reference": {
+					"id": "testdataset"
+				}
+			}
+		},
+		"discoveryServiceId": "testservice"
+	}],
+	"nextDiscoveryServiceRequest": 1,
+	"request": {
+		"dataSets": [{
+			"id": "testdataset"
+		}],
+		"id": "testid"
+	},
+	"status": "FINISHED",
+	"statusDetails": "All discovery services run successfully",
+	"discoveryServiceResponses": [{
+		"type": "async",
+		"runId": "IARUNID6f49fdfd-89ce-4d46-9067-b3a4db4698ba",
+		"details": "IA has run successfully",
+		"code": "OK"
+	}]
+}

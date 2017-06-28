@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns:if="ant:if">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.apache.atlas.odf</groupId>
+		<artifactId>odf</artifactId>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>odf-atlas</artifactId>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-api</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-core</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-messaging</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-messaging</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-store</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-spark</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-core</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.atlas.odf</groupId>
+			<artifactId>odf-spark</artifactId>
+			<version>1.2.0-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.derby</groupId>
+			<artifactId>derby</artifactId>
+			<version>10.12.1.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+					<systemPropertyVariables>
+						<odf.zookeeper.connect>${testZookeepeConnectionString}</odf.zookeeper.connect>
+						<odf.logspec>${odf.integrationtest.logspec}</odf.logspec>
+						<atlas.url>${atlas.url}</atlas.url>
+						<atlas.user>${atlas.user}</atlas.user>
+						<atlas.password>${atlas.password}</atlas.password>
+					</systemPropertyVariables>
+					<dependenciesToScan>
+						<dependency>org.apache.atlas.odf:odf-core</dependency>
+					</dependenciesToScan>
+					<includes>
+						<include>**/integrationtest/**/**.java</include>
+					</includes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>integration-test</id>
+						<goals>
+							<goal>integration-test</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>verify</id>
+						<goals>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+					<systemPropertyVariables>
+						<odf.zookeeper.connect>${testZookeepeConnectionString}</odf.zookeeper.connect>
+						<odf.logspec>${odf.unittest.logspec}</odf.logspec>
+						<odf.build.project.name>${project.name}</odf.build.project.name>
+						<atlas.url>${atlas.url}</atlas.url>
+						<atlas.user>${atlas.user}</atlas.user>
+						<atlas.password>${atlas.password}</atlas.password>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<inherited>false</inherited>
+						<id>clean-atlas</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<property name="atlas-unpack-dir" value="/tmp"/>
+								<property name="atlas.version" value="${atlas.version}"/>
+								<ant antfile="build_atlas.xml" target="clean-atlas"/>
+							</target>
+						</configuration>
+					</execution>
+					<execution>
+						<id>ensure-atlas-running</id>
+						<phase>process-test-classes</phase>
+						<!-- <phase>pre-integration-test</phase> -->
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target unless="skipTests">
+								<property name="atlas-unpack-dir" value="/tmp" />
+								<property name="atlas.version" value="${atlas.version}" />
+								<ant antfile="build_atlas.xml" target="ensure-atlas-running"></ant>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>atlas</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<!-- Start Atlas even in order to have it available for the test-env when skipping the tests  -->
+							<execution>
+								<id>ensure-atlas-running</id>
+								<phase>process-test-classes</phase>
+								<!-- <phase>pre-integration-test</phase> -->
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target unless="skipTests">
+										<property name="atlas-unpack-dir" value="/tmp" />
+										<property name="atlas.version" value="${atlas.version}" />
+										<ant antfile="build_atlas.xml" target="ensure-atlas-running"></ant>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>

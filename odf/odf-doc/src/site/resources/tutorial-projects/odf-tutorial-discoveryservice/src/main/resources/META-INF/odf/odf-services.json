@@ -1,0 +1,13 @@
+[
+  {
+	"id": "odftutorial.discoveryservicetutorial.ODFTutorialDiscoveryService",
+	"name": "First tutorial service",
+	"description": "The first tutorial service that is synchronous and creates just a single annotation for a data set.",
+	"deletable": true,
+	"endpoint": {
+	  "runtimeName": "Java",
+	  "className": "odftutorial.discoveryservicetutorial.ODFTutorialDiscoveryService"
+	},
+	"iconUrl": "https://www-03.ibm.com/ibm/history/exhibits/logo/images/920911.jpg"
+  }
+]

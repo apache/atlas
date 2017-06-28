@@ -1,0 +1,444 @@
+{
+	"enumTypes": [],
+	"structTypes": [],
+	"traitTypes": [],
+	"classTypes": [
+		{
+			"superTypes": [],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "MetaDataObject",
+			"typeDescription": "The base open metadata object.",
+			"attributeDefinitions": [
+				{
+					"name": "name",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "javaClass",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "description",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "annotations",
+					"dataTypeName": "array<Annotation>",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "originRef",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "replicaRefs",
+					"dataTypeName": "array<string>",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "DataStore",
+			"typeDescription": "The base for all kinds of data stores.",
+			"attributeDefinitions": [
+				{
+					"name": "connections",
+					"dataTypeName": "array<Connection>",
+					"multiplicity": "optional",
+					"isComposite": true,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Connection",
+			"typeDescription": "The base for all kinds of connections.",
+			"attributeDefinitions": []
+		},
+		{
+			"superTypes": ["DataStore"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Database",
+			"typeDescription": "A relational database.",
+			"attributeDefinitions":
+			[
+				{
+					"name": "dbType",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "schemas",
+					"dataTypeName": "array<Schema>",
+					"multiplicity": "optional",
+					"isComposite": true,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		{
+			"superTypes": ["Connection"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "JDBCConnection",
+			"typeDescription": "A JDBC connection.",
+			"attributeDefinitions": [
+				{
+					"name": "jdbcConnectionString",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "user",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "password",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+
+			]
+		},
+		
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "DataFileFolder",
+			"typeDescription": "A folder containg data files or other folders.",
+			"attributeDefinitions": [
+				{
+					"name": "dataFileFolders",
+					"dataTypeName": "array<DataFileFolder>",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "dataFiles",
+					"dataTypeName": "array<DataFile>",
+					"multiplicity": "optional",
+					"isComposite": true,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "DataSet",
+			"typeDescription": "The base for all kinds of data sets (tables, files, etc.).",
+			"attributeDefinitions": [
+			]
+		},
+
+		{
+			"superTypes": ["DataSet"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "RelationalDataSet",
+			"typeDescription": "The base of a relational data set.",
+			"attributeDefinitions": [
+				{
+					"name": "columns",
+					"dataTypeName": "array<Column>",
+					"multiplicity": "optional",
+					"isComposite": true,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Column",
+			"typeDescription": "A relational column.",
+			"attributeDefinitions": [
+				{
+					"name": "dataType",
+					"dataTypeName": "string",
+					"multiplicity": "required",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+
+        {
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Schema",
+			"typeDescription": "The schema of a relational database",
+			"attributeDefinitions": [
+				{
+					"name": "tables",
+					"dataTypeName": "array<Table>",
+					"multiplicity": "optional",
+					"isComposite": true,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+				
+		{
+			"superTypes": ["RelationalDataSet"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Table",
+			"typeDescription": "A relational table.",
+			"attributeDefinitions": [
+			]
+		},
+
+		{
+			"superTypes": ["RelationalDataSet"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "DataFile",
+			"typeDescription": "A file containing relational data.",
+			"attributeDefinitions": [
+				{
+					"name": "urlString",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		{
+			"superTypes": ["DataSet"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Document",
+			"typeDescription": "An unstructured document",
+			"attributeDefinitions": [
+				{
+					"name": "urlString",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "encoding",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "Annotation",
+			"typeDescription": "The base for all annotations created through the Open Discovery Framework.",
+			"attributeDefinitions": [
+				{
+					"name": "annotationType",
+					"dataTypeName": "string",
+					"multiplicity": "required",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "analysisRun",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "jsonProperties",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "summary",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		
+		{
+			"superTypes": ["Annotation"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "ProfilingAnnotation",
+			"typeDescription": "The base for all annotations carrying profile attributes of an object.",
+			"attributeDefinitions": [
+				{
+					"name": "profiledObject",
+					"dataTypeName": "MetaDataObject",
+					"multiplicity": "required",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		
+		{
+			"superTypes": ["Annotation"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "ClassificationAnnotation",
+			"typeDescription": "The base for all annotations assigning a object to another object.",
+			"attributeDefinitions": [
+				{
+					"name": "classifiedObject",
+					"dataTypeName": "MetaDataObject",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "classifyingObjects",
+					"dataTypeName": "array<MetaDataObject>",
+					"multiplicity": "collection",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+		
+		{
+			"superTypes": ["Annotation"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "RelationshipAnnotation",
+			"typeDescription": "The base for all annotations expressing a relationship between objects.",
+			"attributeDefinitions": [
+				{
+					"name": "relatedObjects",
+					"dataTypeName": "array<MetaDataObject>",
+					"multiplicity": "collection",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		},
+
+		{
+			"superTypes": ["MetaDataObject"],
+			"hierarchicalMetaTypeName": "org.apache.atlas.typesystem.types.ClassType",
+			"typeName": "BusinessTerm",
+			"typeDescription": "A business term of the glossary.",
+			"attributeDefinitions": [
+				{
+					"name": "abbreviations",
+					"dataTypeName": "array<string>",
+					"multiplicity": "collection",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "example",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				},
+				{
+					"name": "usage",
+					"dataTypeName": "string",
+					"multiplicity": "optional",
+					"isComposite": false,
+					"isUnique": false,
+					"isIndexable": true,
+					"reverseAttributeName": null
+				}
+			]
+		}
+
+	]
+}

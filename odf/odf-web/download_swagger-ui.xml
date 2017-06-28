@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project name="odf-download-swagger-ui">
+
+	<property name="swagger-dir" value="swagger-ui-${swagger.version}" />
+	<!-- download swagger ui directly from the web:
+	<property name="swagger-download" value="https://github.com/swagger-api/swagger-ui/archive/v${swagger.version}.tar.gz" />
+	<property name="swagger-archive" value="${unpack-dir}/${swagger-dir}.tar.gz" />
+	-->
+	<!-- download swagger ui from box: -->
+	<property name="swagger-download" value="https://ibm.box.com/shared/static/13cb0nobufykaxvrnezjf2fbtf0hpfn7.gz" />
+	<property name="swagger-archive" value="${unpack-dir}/swagger-ui-2.1.4.tar.gz" />
+
+	<condition property="swagger-zip-not-found">
+		<not>
+			<available file="${swagger-archive}">
+			</available>
+		</not>
+	</condition>
+
+	<condition property="swagger-unpacked">
+	   <available file="${unpack-dir}/${swagger-dir}/dist" type="dir" />
+    </condition>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="download-swagger-ui" if="swagger-zip-not-found">
+		<echo message="Downloading Swagger..." />
+		<get verbose="true" src="${swagger-download}" dest="${swagger-archive}" />
+		<echo message="Swagger downloaded" />
+	</target>
+
+	<target name="unzip-swagger" unless="swagger-unpacked">
+		<antcall target="download-swagger-ui"/>
+		<echo message="Installing Swagger" />
+		<echo message="Deleting ${unpack-dir}/${swagger-dir}" />
+		<delete dir="${unpack-dir}/${swagger-dir}" />
+		<echo message="Deleted" />
+	    <untar src="${swagger-archive}" dest="${unpack-dir}" compression="gzip" />
+	    <!-- <unzip src="${swagger-archive}" dest="${unpack-dir}" /> -->
+	</target>
+
+	<!-- ****************************************************************************************** -->
+
+	<target name="default">
+		<mkdir dir="${unpack-dir}"/>
+		<antcall target="unzip-swagger"/>
+	</target>
+
+</project>

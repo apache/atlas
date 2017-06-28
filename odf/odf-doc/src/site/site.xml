@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+~
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~
+~   http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project name="Open Discovery Framework">
+	<skin>
+		<groupId>org.apache.maven.skins</groupId>
+		<artifactId>maven-fluido-skin</artifactId>
+		<version>1.4</version>
+	</skin>
+	<bannerLeft>
+		<name>Open Discovery Framework</name>
+	</bannerLeft>
+	<custom>
+		<fluidoSkin>
+			<topBarEnabled>false</topBarEnabled>
+			<sideBarEnabled>true</sideBarEnabled>
+		</fluidoSkin>
+	</custom>
+	<body>
+		<links>
+			<item name="Apache Atlas" href="http://atlas.incubator.apache.org" />
+			<item name="Apache Kafka" href="http://kafka.apache.org" />
+		</links>
+		<menu name="Getting Started">
+			<item name="Overview" href="index.html" />
+			<item name="First Steps" href="first-steps.html" />
+			<item name="Build" href="build.html" />
+			<item name="Test Environment" href="test-env.html" />
+		</menu>
+		<menu name="Tutorials">
+			<item name="Install ODF and its prerequisites manually" href="install.html"/>
+			<item name="Run your first ODF analysis" href="first-analysis-tutorial.html"/>
+			<item name="Build and run your first Discovery Service" href="discovery-service-tutorial.html"/>
+			<item name="Creating Spark discovery services" href="spark-discovery-service-tutorial.html"/>
+		</menu>
+		<menu name="Reference">
+			<item name="ODF Metadata API" href="odf-metadata-api.html" />
+			<item name="API reference" href="api-reference.html" />
+			<item name="Troubleshooting" href="troubleshooting.html" />
+		</menu>
+		<menu name="Customization">
+			<item name="Discovery Services" href="discovery-services.html" />
+			<item name="Data Model" href="data-model.html" />
+		</menu>
+		<menu name="Internal">
+			<item name="Jenkins build" href="jenkins-build.html" />
+		</menu>
+		<footer>All rights reserved.</footer>
+	</body>
+</project>
