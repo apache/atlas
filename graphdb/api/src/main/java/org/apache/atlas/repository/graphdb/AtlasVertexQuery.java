@@ -42,15 +42,29 @@ public interface AtlasVertexQuery<V, E> {
     Iterable<AtlasVertex<V, E>> vertices();
 
     /**
+     * Returns the vertices that satisfy the query condition.
+     *
+     * @param limit Max number of vertices
+     * @return
+     */
+    Iterable<AtlasVertex<V, E>> vertices(int limit);
+
+    /**
      * Returns the incident edges that satisfy the query condition.
      * @return
      */
     Iterable<AtlasEdge<V, E>> edges();
 
     /**
+     * Returns the incident edges that satisfy the query condition.
+     * @param limit Max number of edges
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int limit);
+
+    /**
      * Returns the number of elements that match the query.
      * @return
      */
     long count();
-
 }

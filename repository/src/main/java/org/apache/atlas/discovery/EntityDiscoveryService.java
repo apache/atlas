@@ -20,12 +20,14 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -86,23 +88,28 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final EntityGraphRetriever            entityRetriever;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
+    private final SearchPipeline                  searchPipeline;
     private final int                             maxResultSetSize;
     private final int                             maxTypesCountInIdxQuery;
     private final int                             maxTagsCountInIdxQuery;
 
     @Inject
-    EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry, AtlasGraph graph) throws AtlasException {
+    EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry,
+                           AtlasGraph graph, SearchPipeline searchPipeline) throws AtlasException {
         this.graph                    = graph;
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.entityRetriever          = new EntityGraphRetriever(typeRegistry);
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
         this.typeRegistry             = typeRegistry;
-        this.maxResultSetSize         = ApplicationProperties.get().getInt("atlas.graph.index.search.max-result-set-size", 150);
-        this.maxTypesCountInIdxQuery  = ApplicationProperties.get().getInt("atlas.graph.index.search.max-types-count", 10);
-        this.maxTagsCountInIdxQuery   = ApplicationProperties.get().getInt("atlas.graph.index.search.max-tags-count", 10);
+        this.searchPipeline           = searchPipeline;
+
+        this.maxResultSetSize         = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
+        this.maxTypesCountInIdxQuery  = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_TYPES_COUNT, 10);
+        this.maxTagsCountInIdxQuery   = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_TAGS_COUNT, 10);
     }
 
     @Override
+    @GraphTransaction
     public AtlasSearchResult searchUsingDslQuery(String dslQuery, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(dslQuery, AtlasQueryType.DSL);
         GremlinQuery gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
@@ -155,6 +162,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
+    @GraphTransaction
     public AtlasSearchResult searchUsingFullTextQuery(String fullTextQuery, boolean excludeDeletedEntities, int limit, int offset)
                                                       throws AtlasBaseException {
         AtlasSearchResult ret      = new AtlasSearchResult(fullTextQuery, AtlasQueryType.FULL_TEXT);
@@ -170,6 +178,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
+    @GraphTransaction
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName,
                                                    String attrValuePrefix, boolean excludeDeletedEntities, int limit,
                                                    int offset) throws AtlasBaseException {
@@ -393,6 +402,22 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
+    @Override
+    @GraphTransaction
+    public AtlasSearchResult searchUsingBasicQuery(SearchParameters searchParameters) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult(searchParameters);
+
+        List<AtlasVertex> resultList = searchPipeline.run(searchParameters);
+
+        for (AtlasVertex atlasVertex : resultList) {
+            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, searchParameters.getAttributes());
+
+            ret.addEntity(entity);
+        }
+
+        return ret;
+    }
+
     private String getQueryForFullTextSearch(String userKeyedString, String typeName, String classification) {
         String typeFilter          = getTypeFilter(typeRegistry, typeName, maxTypesCountInIdxQuery);
         String classficationFilter = getClassificationFilter(typeRegistry, classification, maxTagsCountInIdxQuery);
@@ -548,4 +573,5 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     public int getMaxResultSetSize() {
         return maxResultSetSize;
     }
+
 }

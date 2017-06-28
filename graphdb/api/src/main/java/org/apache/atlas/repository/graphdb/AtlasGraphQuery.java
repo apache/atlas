@@ -47,7 +47,7 @@ public interface AtlasGraphQuery<V, E> {
      * the specified list of values.
      *
      * @param propertyKey
-     * @param value
+     * @param values
      * @return
      */
     AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values);
@@ -56,7 +56,6 @@ public interface AtlasGraphQuery<V, E> {
     /**
      * Executes the query and returns the matching vertices.
      * @return
-     * @throws AtlasException
      */
     Iterable<AtlasVertex<V, E>> vertices();
 
@@ -66,16 +65,32 @@ public interface AtlasGraphQuery<V, E> {
      */
     Iterable<AtlasEdge<V, E>> edges();
 
+    /**
+     * Executes the query and returns the matching vertices from given offset till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasVertex<V, E>> vertices(int limit);
+
+    /**
+     * Executes the query and returns the matching vertices from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
+
 
     /**
      * Adds a predicate that the returned vertices must have the specified
      * property and that its value matches the criterion specified.
      *
      * @param propertyKey
-     * @param value
+     * @param op
+     * @param values
      * @return
      */
-    AtlasGraphQuery<V, E> has(String propertyKey, ComparisionOperator compMethod, Object values);
+    AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator op, Object values);
 
     /**
      * Adds a predicate that the vertices returned must satisfy the
@@ -94,14 +109,28 @@ public interface AtlasGraphQuery<V, E> {
     AtlasGraphQuery<V, E> createChildQuery();
 
 
+    interface QueryOperator {}
+
     /**
      * Comparison operators that can be used in an AtlasGraphQuery.
      */
-    enum ComparisionOperator {
+    enum ComparisionOperator implements QueryOperator {
+        GREATER_THAN,
         GREATER_THAN_EQUAL,
         EQUAL,
+        LESS_THAN,
         LESS_THAN_EQUAL,
         NOT_EQUAL
+    }
+
+    /**
+     * String/text matching that can be used in AtlasGraphQuery
+     */
+    enum MatchingOperator implements QueryOperator {
+        CONTAINS,
+        PREFIX,
+        SUFFIX,
+        REGEX
     }
 
     /**

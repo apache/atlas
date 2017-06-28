@@ -30,12 +30,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-
+@Component
 public class ImportService {
     private static final Logger LOG = LoggerFactory.getLogger(ImportService.class);
 
@@ -46,6 +48,7 @@ public class ImportService {
     private long startTimestamp;
     private long endTimestamp;
 
+    @Inject
     public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
         this.entityStore = entityStore;

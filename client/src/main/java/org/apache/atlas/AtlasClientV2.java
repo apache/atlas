@@ -22,6 +22,7 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -100,9 +101,13 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String DISCOVERY_URI = BASE_URI + "v2/search";
     private static final String DSL_URI       = DISCOVERY_URI + "/dsl";
     private static final String FULL_TEXT_URI = DISCOVERY_URI + "/fulltext";
+    private static final String BASIC_SEARCH_URI = DISCOVERY_URI + "/basic";
+    private static final String FACETED_SEARCH_URI = BASIC_SEARCH_URI;
 
     private static final APIInfo DSL_SEARCH       = new APIInfo(DSL_URI, HttpMethod.GET, Response.Status.OK);
     private static final APIInfo FULL_TEXT_SEARCH = new APIInfo(FULL_TEXT_URI, HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo BASIC_SEARCH = new APIInfo(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+    private static final APIInfo FACETED_SEARCH = new APIInfo(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
 
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
@@ -396,6 +401,23 @@ public class AtlasClientV2 extends AtlasBaseClient {
         queryParams.add(OFFSET, String.valueOf(offset));
 
         return callAPI(FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult basicSearch(final String typeName, final String classification, final String query,
+                                         final boolean excludeDeletedEntities, final int limit, final int offset) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("typeName", typeName);
+        queryParams.add("classification", classification);
+        queryParams.add(QUERY, query);
+        queryParams.add("excludeDeletedEntities", String.valueOf(excludeDeletedEntities));
+        queryParams.add(LIMIT, String.valueOf(limit));
+        queryParams.add(OFFSET, String.valueOf(offset));
+
+        return callAPI(BASIC_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult facetedSearch(SearchParameters searchParameters) throws AtlasServiceException {
+        return callAPI(FACETED_SEARCH, AtlasSearchResult.class, searchParameters);
     }
 
     private <T> T getTypeDefByName(final String name, Class<T> typeDefClass) throws AtlasServiceException {

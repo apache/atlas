@@ -21,6 +21,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
@@ -62,6 +63,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     @Override
+    @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
         AtlasLineageInfo lineageInfo;
 

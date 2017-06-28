@@ -285,7 +285,33 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 }
 
                 if (index.isCompositeIndex()) {
-                    subcondition = indexCover((CompositeIndexType) index, conditions, subcover);
+                    CompositeIndexType compositeIndex = (CompositeIndexType)index;
+
+                    subcondition = indexCover(compositeIndex, conditions, subcover);
+
+                    // if this is unique index, use it!!
+                    if (compositeIndex.getCardinality() == Cardinality.SINGLE && subcondition != null) {
+                        bestCandidate         = null; // will cause the outer while() to bail out
+                        candidateSubcover     = subcover;
+                        candidateSubcondition = subcondition;
+                        candidateSupportsSort = supportsSort;
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("selected unique index {}", compositeIndex.getName());
+                        }
+
+                        if (coveredClauses.isEmpty()) {
+                            isSorted = candidateSupportsSort;
+                        }
+
+                        coveredClauses.clear();;
+                        coveredClauses.addAll(candidateSubcover);
+
+                        jointQuery = new JointIndexQuery();
+                        jointQuery.add(compositeIndex, serializer.getQuery(compositeIndex, (List<Object[]>)candidateSubcondition));
+
+                        break;
+                    }
                 } else {
                     subcondition = indexCover((MixedIndexType) index, conditions, serializer, subcover);
                     if (coveredClauses.isEmpty() && !supportsSort
