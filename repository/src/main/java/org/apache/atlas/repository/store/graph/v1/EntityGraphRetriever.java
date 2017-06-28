@@ -45,10 +45,12 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
@@ -122,7 +124,7 @@ public final class EntityGraphRetriever {
     }
 
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
-        return entityVertex != null ? mapVertexToAtlasEntityHeader(entityVertex) : null;
+        return toAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
     private AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
@@ -184,6 +186,10 @@ public final class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
+        return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
+    }
+
+    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasEntityHeader ret = new AtlasEntityHeader();
 
         String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
@@ -216,6 +222,20 @@ public final class EntityGraphRetriever {
 
             if (displayText != null) {
                 ret.setDisplayText(displayText.toString());
+            }
+
+            if (CollectionUtils.isNotEmpty(attributes)) {
+                for (String attrName : attributes) {
+                    if (ret.hasAttribute(attrName)) {
+                        continue;
+                    }
+
+                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(attrName));
+
+                    if (attrValue != null) {
+                        ret.setAttribute(attrName, attrValue);
+                    }
+                }
             }
         }
 
@@ -554,5 +574,9 @@ public final class EntityGraphRetriever {
 
     private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null) : null;
+    }
+
+    public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes) throws AtlasBaseException {
+        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
     }
 }

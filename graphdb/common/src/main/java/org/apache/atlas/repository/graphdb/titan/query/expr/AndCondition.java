@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.repository.graphdb.titan.query.expr;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanQueryFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents an AndCondition in a graph query.  Only vertices that
@@ -78,7 +78,7 @@ public class AndCondition {
     /**
      * Creates a NativeTitanGraphQuery that can be used to evaluate this condition.
      *
-     * @param graph
+     * @param factory
      * @return
      */
     public <V, E> NativeTitanGraphQuery<V, E> create(NativeTitanQueryFactory<V, E> factory) {

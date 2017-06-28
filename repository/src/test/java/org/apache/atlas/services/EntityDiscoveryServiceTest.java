@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.services;
 
-import org.apache.atlas.TestModules.TestOnlyModule;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -25,12 +25,16 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.powermock.reflect.Whitebox;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
+import javax.inject.Inject;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class EntityDiscoveryServiceTest {
 
     private final String TEST_TYPE                = "test";
@@ -47,6 +51,9 @@ public class EntityDiscoveryServiceTest {
     AtlasEntityDef typeWithSubTypes = null;
 
     private final int maxTypesCountInIdxQuery = 10;
+
+    @Inject
+    EntityDiscoveryService discoveryService;
 
 
     @BeforeClass

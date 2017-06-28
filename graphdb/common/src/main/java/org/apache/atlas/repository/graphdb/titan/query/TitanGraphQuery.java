@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.repository.graphdb.titan.query;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -31,6 +29,13 @@ import org.apache.atlas.repository.graphdb.titan.query.expr.InPredicate;
 import org.apache.atlas.repository.graphdb.titan.query.expr.OrCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Abstract implementation of AtlasGraphQuery that is used by both Titan 0.5.4
@@ -121,10 +126,11 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
 
     @Override
     public Iterable<AtlasVertex<V, E>> vertices() {
-        LOG.debug("Executing: ");
-        LOG.debug(queryCondition.toString());
-        //compute the overall result by unioning the results from all of the
-        //AndConditions together.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
         Set<AtlasVertex<V, E>> result = new HashSet<>();
         for(AndCondition andExpr : queryCondition.getAndTerms()) {
             NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
@@ -136,7 +142,63 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
     }
 
     @Override
-    public AtlasGraphQuery<V, E> has(String propertyKey, ComparisionOperator operator,
+    public Iterable<AtlasEdge<V, E>> edges() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<AtlasEdge<V, E>> result = new HashSet<>();
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(AtlasEdge<V, E> edge : andQuery.edges()) {
+                result.add(edge);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Iterable<AtlasVertex<V, E>> vertices(int limit) {
+        return vertices(0, limit);
+    }
+
+    @Override
+    public Iterable<AtlasVertex<V, E>> vertices(int offset, int limit) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
+        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<AtlasVertex<V, E>> result = new HashSet<>();
+        long resultIdx = 0;
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            if (result.size() == limit) {
+                break;
+            }
+
+            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(AtlasVertex<V, E> vertex : andQuery.vertices(offset + limit)) {
+                if (resultIdx >= offset) {
+                    result.add(vertex);
+
+                    if (result.size() == limit) {
+                        break;
+                    }
+                }
+
+                resultIdx++;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator operator,
             Object value) {
         queryCondition.andWith(new HasPredicate(propertyKey, operator, value));
         return this;

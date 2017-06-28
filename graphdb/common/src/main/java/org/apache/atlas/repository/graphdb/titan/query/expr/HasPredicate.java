@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.titan.query.expr;
 
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
 
 /**
@@ -27,11 +27,10 @@ import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
 public class HasPredicate implements QueryPredicate {
 
     private String propertyName;
-    private ComparisionOperator op;
+    private QueryOperator op;
     private Object value;
 
-    public HasPredicate(String propertyName, ComparisionOperator op, Object value) {
-        super();
+    public HasPredicate(String propertyName, QueryOperator op, Object value) {
         this.propertyName = propertyName;
         this.op = op;
         this.value = value;

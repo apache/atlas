@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.titan0;
 
+import com.google.common.base.Preconditions;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -53,8 +54,22 @@ public class Titan0VertexQuery implements AtlasVertexQuery<Titan0Vertex, Titan0E
     }
 
     @Override
+    public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> vertices(int limit) {
+        Preconditions.checkArgument(limit >=0, "Limit should be greater than or equals to 0");
+        Iterable<Vertex> vertices = vertexQuery.limit(limit).vertices();
+        return graph.wrapVertices(vertices);
+    }
+
+    @Override
     public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> edges() {
         Iterable<Edge> edges = vertexQuery.edges();
+        return graph.wrapEdges(edges);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> edges(int limit) {
+        Preconditions.checkArgument(limit >=0, "Limit should be greater than or equals to 0");
+        Iterable<Edge> edges = vertexQuery.limit(limit).edges();
         return graph.wrapEdges(edges);
     }
 

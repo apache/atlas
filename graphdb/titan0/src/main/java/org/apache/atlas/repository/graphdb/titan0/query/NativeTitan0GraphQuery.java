@@ -17,20 +17,25 @@
  */
 package org.apache.atlas.repository.graphdb.titan0.query;
 
-import java.util.Collection;
-
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
-import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
-import org.apache.atlas.repository.graphdb.titan0.Titan0Edge;
-import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
-import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
-
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.attribute.Contain;
+import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.MatchingOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
+import org.apache.atlas.repository.graphdb.titan0.Titan0Edge;
+import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
+import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
+import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
+
+import java.util.*;
 
 /**
  * Titan 0.5.4 implementation of NativeTitanGraphQuery.
@@ -54,6 +59,32 @@ public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Verte
         return graph.wrapVertices(it);
     }
 
+    @Override
+    public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> edges() {
+        Iterable it = query.edges();
+        return graph.wrapEdges(it);
+    }
+    @Override
+    public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> vertices(int limit) {
+        Iterable it = query.limit(limit).vertices();
+        return graph.wrapVertices(it);
+    }
+
+    @Override
+    public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> vertices(int offset, int limit) {
+        List<Vertex>     result = new ArrayList<>(limit);
+        Iterator<Vertex> iter   = query.limit(offset + limit).vertices().iterator();
+
+        for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            if (resultIdx < offset) {
+                continue;
+            }
+
+            result.add(iter.next());
+        }
+
+        return graph.wrapVertices(result);
+    }
 
     @Override
     public void in(String propertyName, Collection<?> values) {
@@ -62,26 +93,48 @@ public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Verte
     }
 
     @Override
-    public void has(String propertyName, ComparisionOperator op, Object value) {
-
-        Compare c = getGremlinPredicate(op);
-        TitanPredicate pred = TitanPredicate.Converter.convert(c);
+    public void has(String propertyName, QueryOperator op, Object value) {
+        TitanPredicate pred;
+        if (op instanceof ComparisionOperator) {
+            Compare c = getGremlinPredicate((ComparisionOperator) op);
+            pred = TitanPredicate.Converter.convert(c);
+        } else {
+            pred = getGremlinPredicate((MatchingOperator) op);
+        }
         query.has(propertyName, pred, value);
+    }
+
+    private Text getGremlinPredicate(MatchingOperator op) {
+        switch (op) {
+            case CONTAINS:
+                return Text.CONTAINS;
+            case PREFIX:
+                return Text.PREFIX;
+            case SUFFIX:
+                return Text.CONTAINS_REGEX;
+            case REGEX:
+                return Text.REGEX;
+            default:
+                throw new RuntimeException("Unsupported matching operator:" + op);
+        }
     }
 
     private Compare getGremlinPredicate(ComparisionOperator op) {
         switch (op) {
-        case EQUAL:
-            return Compare.EQUAL;
-        case GREATER_THAN_EQUAL:
-            return Compare.GREATER_THAN_EQUAL;
-        case LESS_THAN_EQUAL:
-            return Compare.LESS_THAN_EQUAL;
-        case NOT_EQUAL:
-            return Compare.NOT_EQUAL;
-
-        default:
-            throw new RuntimeException("Unsupported comparison operator:" + op);
+            case EQUAL:
+                return Compare.EQUAL;
+            case GREATER_THAN:
+                return Compare.GREATER_THAN;
+            case GREATER_THAN_EQUAL:
+                return Compare.GREATER_THAN_EQUAL;
+            case LESS_THAN:
+                return Compare.LESS_THAN;
+            case LESS_THAN_EQUAL:
+                return Compare.LESS_THAN_EQUAL;
+            case NOT_EQUAL:
+                return Compare.NOT_EQUAL;
+            default:
+                throw new RuntimeException("Unsupported comparison operator:" + op);
         }
     }
 

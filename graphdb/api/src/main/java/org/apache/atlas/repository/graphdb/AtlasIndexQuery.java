@@ -36,6 +36,14 @@ public interface AtlasIndexQuery<V, E> {
     Iterator<Result<V, E>> vertices();
 
     /**
+     * Gets the query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @return
+     */
+    Iterator<Result<V, E>> vertices(int offset, int limit);
+
+    /**
      * Query result from an index query.
      *
      * @param <V>

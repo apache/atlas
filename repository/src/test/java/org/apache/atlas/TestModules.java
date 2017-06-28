@@ -17,19 +17,14 @@
  */
 package org.apache.atlas;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.discovery.AtlasDiscoveryService;
-import org.apache.atlas.discovery.AtlasLineageService;
-import org.apache.atlas.discovery.DataSetLineageService;
-import org.apache.atlas.discovery.DiscoveryService;
-import org.apache.atlas.discovery.EntityDiscoveryService;
-import org.apache.atlas.discovery.EntityLineageService;
-import org.apache.atlas.discovery.LineageService;
+import org.apache.atlas.discovery.*;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.listener.EntityChangeListener;
@@ -66,6 +61,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -81,7 +77,7 @@ public class TestModules {
     }
 
     // Test only DI modules
-    public static class TestOnlyModule extends com.google.inject.AbstractModule {
+    public static class TestOnlyModule extends AbstractModule {
 
         private static final Logger LOG = LoggerFactory.getLogger(TestOnlyModule.class);
 
@@ -150,6 +146,11 @@ public class TestModules {
                     Multibinder.newSetBinder(binder(), TypeDefChangeListener.class);
             typeDefChangeListenerMultibinder.addBinding().to(DefaultMetadataService.class);
             typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
+
+            bind(SearchPipeline.class).asEagerSingleton();
+            bind(SearchTracker.class).asEagerSingleton();
+            bind(SolrStep.class).asEagerSingleton();
+            bind(GremlinStep.class).asEagerSingleton();
 
             bind(AtlasEntityStore.class).to(AtlasEntityStoreV1.class);
 
