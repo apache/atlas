@@ -1,0 +1,121 @@
+---+ Import API Options
+
+Import API options are specified as _options_ JSON. Since the API accepts multi-part form data, it is possible to sepecify multipls input streams within the CURL call.
+
+---+++ Examples Using CURL Calls
+<verbatim>
+curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
+            -H "Cache-Control: no-cache"
+            -F request=@importOptions.json
+            -F data=@quickStartDB.zip
+            "http://localhost:21000/api/atlas/admin/import"
+</verbatim>
+
+To use the defaults, set the contents of _importOptions.json_ to:
+<verbatim>
+{
+  "options": {
+  }
+}
+</verbatim>
+
+
+---+++ Options
+Following options are supported for Import process:
+
+   * Specify transforms during import operation.
+   * Resume import by specifying starting entity guid.
+   * Optionally import type definition.
+
+---++++ Transforms
+
+During the import process, the attribute value of the incoming entity can be changed.
+
+This is possible by specifying entity type and at attribute to be modified and then the manner in which it needs to be modified.
+
+Right now these are the transforms that can be applied:
+   * _lowercase_ Converts the attribute value to lower case.
+   * _replace_ This performs a string find and replace operation. It takes two parameters, the first is the string to search for and the next one is the string to replace it with.
+
+Example:
+
+The example below applies couple of transforms to the the _qualifiedName_ attribute of hive_table. It converts the value to lower case, then searches for 'cl1', if found, replaces it with 'cl2'.
+
+To use the option, set the contents of _importOptions.json_ to:
+<verbatim>
+{
+  "options": {
+
+   "transforms": {
+        "hive_table": {
+          "qualifiedName": [
+              "lowercase",
+              "replace:@cl1:@cl2"
+            ]
+          }
+        }
+  }
+}
+</verbatim>
+
+Please refer to [[https://issues.apache.org/jira/browse/ATLAS-1825][ATLAS-1825]] for details scenarios when this option could be used.
+
+---++++ Start Guid or Start Index
+
+When an import operation is in progress and the server goes down, it would be possible to resume import from the last successfully imported entity. This would allow the import to resume from where it left off.
+
+Server-side logging is improved to display the detail of the last successfully imported entity, this includes the index within the import list and the entity's guid. Either can be used specify the point to resume import.
+
+To use the option, set the contents of _importOptions.json_ to:
+<verbatim>
+{
+
+  "options": {
+    "startGuid": "bd97c78e-3fa5-4f9c-9f48-3683ca3d1fb1"
+  }
+}
+</verbatim>
+
+To use _startIndex_, use the following in the _importOptions.json_:
+<verbatim>
+{
+
+  "options": {
+    "startIndex": "332"
+  }
+}
+</verbatim>
+
+Steps to use the behavior:
+   * Start an import (using the CURL) that is fairly long, say about 1000+ entities.
+   * While the import is in progress, stop atlas server (using atlas_stop.py).
+   * From the log file located at _/var/log/atlas/application.log_ get the last successfully imported entity GUID or index position.
+   * Update the _importOptions.json_ with the guid.
+   * Restart import.
+
+---++++ Optional Importing Type Definition
+
+The output of Export has _atlas-typedef.json_ that contains the type definitions for the entities exported.
+
+By default (that is if no options is specified), the type definitions are imported and applied to the system. The entity import is then performed.
+
+In some cases, you would not want to modify the type definitions. Import may be better off failing than the types be modified.
+
+This option allows for optionally importing of type definition. The option is set to _true_ by default, which means that type definition is imported. With this option set to _false_, type definitions preseneraent in the source will not be imported. In case of mismatch between the entities being imported the types present in the system where the import is being performed, the operation will fail.
+
+Table below enumerates the conditions that get addressed as part of type definition import:
+
+|*Condition*|*Action*|
+| Incoming type does not exist in target system | Type is created. |
+|Type to be imported and type in target system are same | No change |
+|Type to be imported and type in target system differ by some attributes| Target system type is updated to the attributes present in the source. It is possible that the target system will have attributes in addition to the one present in the source. In that case, the target system's type attributes will be an union of the attributes. (Attributes in target system will not be deleted to match the source.)|
+
+To use the option, set the contents of _importOptions.json_ to:
+<verbatim>
+{
+
+  "options": {
+    "updateTypeDefinition": true
+  }
+}
+</verbatim>

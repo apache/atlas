@@ -138,7 +138,7 @@ The _metrics_ contains the number of types and entities exported as part of the 
 Below are sample CURL calls that demonstrate Export of _!QuickStart_ database.
 
 <verbatim>
-curl -X POST -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
     "itemsToExport": [
             { "typeName": "DB", "uniqueAttributes": { "name": "Sales" }
             { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" }
