@@ -35,7 +35,7 @@ __Method Signature for Import__
 @POST
 @Path("/import")
 @Produces("application/json; charset=UTF-8")
-@Consumes("application/octet-stream")
+@Consumes("multipart/form-data")
 </verbatim>
 
 __Method Signature for Import File__
@@ -45,6 +45,9 @@ __Method Signature for Import File__
 @Produces("application/json; charset=UTF-8")
 @Consumes("application/json")
 </verbatim>
+
+__Import Options__
+Please see __[[Import-API-Options][here]]__ for the available options during import process.
 
 __!AtlasImportResult Response__
 The API will return the results of the import operation in the format defined by the _!AtlasImportResult_:
@@ -56,14 +59,16 @@ The API will return the results of the import operation in the format defined by
 ---+++ Examples Using CURL Calls
 The call below performs Import of _!QuickStart_ database using POST.
 <verbatim>
-curl -X POST -u admin:admin -H "Content-Type: application/octet-stream" -H "Cache-Control: no-cache"
-    --data-binary @quickStartDB.zip
-    "http://localhost:21000/api/atlas/admin/import" > quickStartDB-import-result.json
+curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
+            -H "Cache-Control: no-cache"
+            -F request=@importOptions.json
+            -F data=@quickStartDB.zip
+            "http://localhost:21000/api/atlas/admin/import"
 </verbatim>
 
 The call below performs Import of _!QuickStart_ database using a ZIP file available on server.
 <verbatim>
-curl -X POST -u admin:admin -H "Cache-Control: no-cache"
+curl -X POST -u adminuser:password -H "Cache-Control: no-cache"
 "http://localhost:21000/api/atlas/admin/importFile?FILENAME=/root/quickStartDB.zip" > quickStartDB-import-result.json
 </verbatim>
 

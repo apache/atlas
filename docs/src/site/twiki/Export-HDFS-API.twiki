@@ -66,7 +66,7 @@ To export entities that represent HDFS path, use the Export API using the _match
 Below are sample CURL calls that performs export operation on the _Sample HDFS Setup_ shown above.
 
 <verbatim>
-curl -X POST -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
     "itemsToExport": [
             { "typeName": "hdfs_path", "uniqueAttributes": { "name": "FinanceAll" }
         }
