@@ -84,7 +84,6 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
         final String type2 = endDef2.getType();
         final String name1 = endDef1.getName();
         final String name2 = endDef2.getName();
-
         AtlasVertex end1TypeVertex = typeDefStore.findTypeVertexByName(type1);
 
         AtlasVertex end2TypeVertex = typeDefStore.findTypeVertexByName(type2);
@@ -96,22 +95,23 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
         We are not invoking the equals method on the AtlasRelationshipedDef, as we only want 1 edge even if propagateTags or other properties are different.
         */
 
-        if (!type1.equals(type2) && name1.equals(name2)) {
-            AtlasEdge edge2 = typeDefStore.getOrCreateEdge(relationshipDefVertex, end2TypeVertex, AtlasGraphUtilsV1.RELATIONSHIPTYPE_EDGE_LABEL);
-
+        if (type1.equals(type2) && name1.equals(name2)) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasRelationshipDefStoreV1.preCreate({}): created relationshipDef vertex {}," +
-                          " edge1 as {}, edge2 as {} ", relationshipDef, relationshipDefVertex, edge1, edge2);
+                        " and one edge as {}, because end1 and end2 have the same type and name", relationshipDef, relationshipDefVertex, edge1);
             }
+
         } else {
+            AtlasEdge edge2 = typeDefStore.getOrCreateEdge(relationshipDefVertex, end2TypeVertex, AtlasGraphUtilsV1.RELATIONSHIPTYPE_EDGE_LABEL);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasRelationshipDefStoreV1.preCreate({}): created relationshipDef vertex {}," +
-                          " and one edge as {} , because end1 and and end2 has same type and name", relationshipDef, relationshipDefVertex, edge1);
+                        " edge1 as {}, edge2 as {} ", relationshipDef, relationshipDefVertex, edge1, edge2);
             }
+
         }
-
-        LOG.debug("<== AtlasRelationshipDefStoreV1.preCreate({}): {}", relationshipDef, relationshipDefVertex);
-
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasRelationshipDefStoreV1.preCreate({}): {}", relationshipDef, relationshipDefVertex);
+        }
         return relationshipDefVertex;
     }
 
