@@ -11,16 +11,17 @@
     "react-bootstrap": "^0.28.2",
     "react-dom": "^0.14.6",
     "react-d3-components": "^0.6.1",
-    "bootstrap-material-design" : "^0.5.7",
+    "bootstrap-material-design": "^0.5.7",
     "roboto-font": "^0.1.0"
   },
-  "devDependencies": {    
-  	"webpack": "^1.12.11",
-  	"imports-loader": "^0.6.5",
+  "devDependencies": {
+    "webpack": "^1.12.11",
+    "imports-loader": "^0.6.5",
     "babel-core": "^6.4.0",
     "babel-preset-es2015": "^6.3.13",
     "babel-loader": "^6.2.1",
     "babel-preset-react": "^6.3.13",
+    "file-loader": "^0.11.2",
     "url-loader": "^0.5.7",
     "css-loader": "^0.23.1",
     "style-loader": "^0.13.0"

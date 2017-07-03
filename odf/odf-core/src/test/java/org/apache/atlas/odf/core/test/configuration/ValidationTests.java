@@ -62,7 +62,7 @@ public class ValidationTests extends TimerTestBase {
 				"			\"description\": \"The async test service\",\r\n" + 
 				"			\"endpoint\": {\r\n" + 
 				"				\"runtimeName\": \"Java\",\r\n" + 
-				"				\"className\": \"TestAsyncDiscoveryService1\"\r\n" +
+				"				\"className\": \"org.apache.atlas.odf.core.test.discoveryservice.TestAsyncDiscoveryService1\"\r\n" +
 				"			}\r\n" + 
 				"		}";
 		

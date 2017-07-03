@@ -10,7 +10,7 @@
 		"discoveryServiceWatcherWaitMs": 2000,
 		"enableAnnotationPropagation": true,
 		"messagingConfiguration": {
-			"type": "com.ibm.iis.odf.api.settings.KafkaMessagingConfiguration",
+			"type": "org.apache.atlas.odf.api.settings.KafkaMessagingConfiguration",
 			"analysisRequestRetentionMs": 86400000,
 			"queueConsumerWaitMs": 2000,
 			"kafkaBrokerTopicReplication": 1,
@@ -32,7 +32,7 @@
 			],
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestAsyncDiscoveryService1"
+				"className": "org.apache.atlas.odf.core.test.discoveryservice.TestAsyncDiscoveryService1"
 			},
 			"parallelismCount" : 2
 		},
@@ -42,7 +42,7 @@
 			"description": "The async test service writing annotations",
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestAsyncDiscoveryServiceWritingAnnotations1"
+				"className": "org.apache.atlas.odf.core.test.discoveryservice.TestAsyncDiscoveryServiceWritingAnnotations1"
 			},
 			"parallelismCount" : 2
 		},
@@ -55,7 +55,7 @@
 			],
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestSyncDiscoveryService1"
+				"className": "org.apache.atlas.odf.core.test.discoveryservice.TestSyncDiscoveryService1"
 			},
 			"parallelismCount" : 2
 		},
@@ -65,7 +65,7 @@
 			"description": "The Sync test service writing annotations",
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.discoveryservice.TestSyncDiscoveryServiceWritingAnnotations1"
+				"className": "org.apache.atlas.odf.core.test.discoveryservice.TestSyncDiscoveryServiceWritingAnnotations1"
 			},
 			"parallelismCount" : 2
 		},
@@ -75,7 +75,7 @@
 			"description": "The Sync test service writing annotations with extension mechanism",
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.annotation.TestSyncDiscoveryServiceWritingExtendedAnnotations"
+				"className": "org.apache.atlas.odf.core.test.annotation.TestSyncDiscoveryServiceWritingExtendedAnnotations"
 			},
 			"parallelismCount" : 2
 		},
@@ -85,7 +85,7 @@
 			"description": "The Sync test service writing annotations returned from a json file",
 			"endpoint": {
 				"runtimeName": "Java",
-				"className": "com.ibm.iis.odf.core.test.annotation.TestSyncDiscoveryServiceWritingJsonAnnotations"
+				"className": "org.apache.atlas.odf.core.test.annotation.TestSyncDiscoveryServiceWritingJsonAnnotations"
 			},
 			"parallelismCount" : 2
 		},

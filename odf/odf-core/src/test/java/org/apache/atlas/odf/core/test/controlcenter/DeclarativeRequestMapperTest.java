@@ -38,7 +38,7 @@ import org.apache.atlas.odf.api.discoveryservice.DiscoveryServiceProperties;
 import org.apache.atlas.odf.api.discoveryservice.ServiceNotFoundException;
 
 public class DeclarativeRequestMapperTest extends ODFTestBase {
-	final private static String SERVICE_CLASSNAME = "TestAsyncDiscoveryService1";
+	final private static String SERVICE_CLASSNAME = "org.apache.atlas.odf.core.test.discoveryservice.TestAsyncDiscoveryService1";
 	final private static String[] EXPECTED_SERVICE_SEQUENCES = new String[] { "pre3,ser1", "alt1,ser1", "pre4,pre1,ser1", 
 			"pre3,ser1,ser3", "pre3,ser1,ser5", "alt1,ser1,ser3", "alt1,ser1,ser5", "pre3,pre2,ser4", "alt1,pre2,ser4", 
 			"pre4,pre1,ser1,ser3", "pre4,pre1,ser1,ser5", "pre3,ser1,alt1,ser3", "pre3,ser1,pre2,ser4", "pre3,ser1,alt1,ser5" };

@@ -4,7 +4,7 @@
 	"discoveryServiceRequests": [{
 		"dataSetContainer": {
 			"dataSet": {
-				"javaClass": "com.ibm.iis.odf.core.metadata.models.Document",
+				"javaClass": "org.apache.atlas.odf.core.metadata.models.Document",
 				"name": "someDocument",
 				"reference": {
 					"id": "testdataset"

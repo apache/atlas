@@ -34,7 +34,7 @@ public class ODFInternalFactory {
 
 		Logger logger = Logger.getLogger(ODFInternalFactory.class.getName());
 		ClassLoader cl = ODFInternalFactory.class.getClassLoader();
-		String overwriteConfig = "org/apahe/atlas/odf/odf-implementation.properties";
+		String overwriteConfig = "org/apache/atlas/odf/odf-implementation.properties";
 		overwrittenImplementations = new ODFImplementations(overwriteConfig, cl);
 		if (overwrittenImplementations.getImplementations().isEmpty()) {
 			overwrittenImplementations = null;

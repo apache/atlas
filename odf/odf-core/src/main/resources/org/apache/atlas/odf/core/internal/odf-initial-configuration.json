@@ -11,7 +11,7 @@
 		"runNewServicesOnRegistration": false,
 		"enableAnnotationPropagation": true,
 		"messagingConfiguration": {
-			"type": "com.ibm.iis.odf.api.settings.KafkaMessagingConfiguration",
+			"type": "org.apache.atlas.odf.api.settings.KafkaMessagingConfiguration",
 			"analysisRequestRetentionMs": 86400000,
 			"kafkaBrokerTopicReplication": 1,
 			"queueConsumerWaitMs": 5000,

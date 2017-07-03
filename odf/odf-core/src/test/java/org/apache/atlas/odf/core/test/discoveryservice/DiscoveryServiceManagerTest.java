@@ -38,10 +38,10 @@ public class DiscoveryServiceManagerTest {
 	final private static String NEW_SERVICE_ID = "New_Service";
 	final private static String NEW_SERVICE_NAME = "Name of New Service";
 	final private static String NEW_SERVICE_DESCRIPTION = "Description of the New Service";
-	final private static String NEW_SERVICE_CLASSNAME = "TestAsyncDiscoveryService1";
+	final private static String NEW_SERVICE_CLASSNAME = "org.apache.atlas.odf.core.test.discoveryservice.TestAsyncDiscoveryService1";
 	
 	final private static String UPDATED_SERVICE_DESCRIPTION = "Updated description of the New Service";
-	final private static String UPDATED_SERVICE_CLASSNAME = "TestSyncDiscoveryService1";
+	final private static String UPDATED_SERVICE_CLASSNAME = "org.apache.atlas.odf.core.test.discoveryservice.TestSyncDiscoveryService1";
 	
 	private void registerDiscoveryService(DiscoveryServiceProperties dsProperties) throws ValidationException {
 		DiscoveryServiceManager discoveryServicesManager = new ODFFactory().create().getDiscoveryServiceManager();

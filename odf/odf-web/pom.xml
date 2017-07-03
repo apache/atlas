@@ -294,8 +294,8 @@
 							<goal>install-node-and-npm</goal>
 						</goals>
 						<configuration>
-							<nodeVersion>v0.12.2</nodeVersion>
-							<npmVersion>2.7.6</npmVersion>
+							<nodeVersion>v8.1.2</nodeVersion>
+							<npmVersion>5.0.3</npmVersion>
 						</configuration>
 					</execution>
 					<execution>

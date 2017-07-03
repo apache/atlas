@@ -17,6 +17,7 @@ target
 .project
 .factorypath
 .externalToolBuilders
+package-lock.json
 build
 build/**
 node_modules
