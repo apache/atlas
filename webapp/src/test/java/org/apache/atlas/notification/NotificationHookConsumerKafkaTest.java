@@ -155,7 +155,7 @@ public class NotificationHookConsumerKafkaTest {
         try {
             long startTime = System.currentTimeMillis(); //fetch starting time
             while ((System.currentTimeMillis() - startTime) < 10000) {
-                List<AtlasKafkaMessage<HookNotificationMessage>> messages = consumer.receive(1000L);
+                List<AtlasKafkaMessage<HookNotificationMessage>> messages = consumer.receive();
 
                 for (AtlasKafkaMessage<HookNotificationMessage> msg : messages) {
                     hookConsumer.handleMessage(msg);

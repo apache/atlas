@@ -95,12 +95,12 @@ public class KafkaConsumerTest {
         ConsumerRecords records = new ConsumerRecords(mp);
 
 
-        when(kafkaConsumer.poll(1000)).thenReturn(records);
+        when(kafkaConsumer.poll(100)).thenReturn(records);
         when(messageAndMetadata.message()).thenReturn(json);
 
 
-        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer,false);
-        List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive(1000);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
+        List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
         assertTrue(messageList.size() > 0);
 
         HookNotification.HookNotificationMessage consumedMessage  = messageList.get(0).getMessage();
@@ -131,12 +131,12 @@ public class KafkaConsumerTest {
         mp.put(tp,klist);
         ConsumerRecords records = new ConsumerRecords(mp);
 
-        when(kafkaConsumer.poll(1000)).thenReturn(records);
+        when(kafkaConsumer.poll(100L)).thenReturn(records);
         when(messageAndMetadata.message()).thenReturn(json);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer ,false);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer ,false, 100L);
         try {
-            List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive(1000);
+            List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
             assertTrue(messageList.size() > 0);
 
             HookNotification.HookNotificationMessage consumedMessage  = messageList.get(0).getMessage();
@@ -154,7 +154,7 @@ public class KafkaConsumerTest {
 
         TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
 
         consumer.commit(tp, 1);
 
@@ -166,7 +166,7 @@ public class KafkaConsumerTest {
 
         TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, true);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, true , 100L);
 
         consumer.commit(tp, 1);
 
