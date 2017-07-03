@@ -54,9 +54,6 @@
 			<item name="Discovery Services" href="discovery-services.html" />
 			<item name="Data Model" href="data-model.html" />
 		</menu>
-		<menu name="Internal">
-			<item name="Jenkins build" href="jenkins-build.html" />
-		</menu>
 		<footer>All rights reserved.</footer>
 	</body>
 </project>
