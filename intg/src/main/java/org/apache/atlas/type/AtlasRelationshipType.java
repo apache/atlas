@@ -161,6 +161,10 @@ public class AtlasRelationshipType extends AtlasStructType {
         boolean                 isContainer1         = endDef1.getIsContainer();
         boolean                 isContainer2         = endDef2.getIsContainer();
 
+        if ((endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) ||
+                (endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
+        }
         if (isContainer1 && isContainer2) {
             // we support 0 or 1 of these flags.
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_DOUBLE_CONTAINERS, name);
@@ -168,11 +172,11 @@ public class AtlasRelationshipType extends AtlasStructType {
         if ((isContainer1 || isContainer2)) {
             // we have an isContainer defined in an end
             if (relationshipCategory == RelationshipCategory.ASSOCIATION) {
-                // associations are not containment relaitonships - so do not allow an endpoiint with isContainer
+                // associations are not containment relationships - so do not allow an endpoint with isContainer
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_ASSOCIATION_AND_CONTAINER, name);
             }
         } else {
-            // we do not have an isContainer defined in an end
+            // we do not have an isContainer defined on an end
             if (relationshipCategory == RelationshipCategory.COMPOSITION) {
                 // COMPOSITION needs one end to be the container.
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_NO_CONTAINER, name);
@@ -182,18 +186,14 @@ public class AtlasRelationshipType extends AtlasStructType {
             }
         }
         if (relationshipCategory == RelationshipCategory.COMPOSITION) {
-            // composition containers should not be multiple cardinality
+            // composition children should not be multiple cardinality
             if (endDef1.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
-                    endDef1.getIsContainer()) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER, name);
+                    !endDef1.getIsContainer()) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
             }
             if ((endDef2.getCardinality() == AtlasAttributeDef.Cardinality.SET) &&
-                    endDef2.getIsContainer()) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER, name);
-            }
-            if ((endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) ||
-                    (endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
+                    !endDef2.getIsContainer()) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
             }
         }
     }
