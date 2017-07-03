@@ -363,6 +363,7 @@ public class GremlinStep implements PipelineStep {
                             break;
                         case ENDS_WITH:
                             query.has(qualifiedAttributeName, MatchingOperator.REGEX, getSuffixRegex(attrValue));
+                            break;
                         case IN:
                             LOG.warn("{}: unsupported operator. Ignored", operator);
                             break;
