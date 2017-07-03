@@ -67,7 +67,7 @@ public class AbstractNotificationConsumerTest {
         NotificationConsumer<TestMessage> consumer =
                 new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
 
-        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
+        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
         assertFalse(messageList.isEmpty());
 
@@ -106,7 +106,7 @@ public class AbstractNotificationConsumerTest {
         NotificationConsumer<TestMessage> consumer =
             new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
 
-        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
+        List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
         assertEquals(new TestMessage("sValue1", 99), messageList.get(0).getMessage());
 
@@ -138,7 +138,7 @@ public class AbstractNotificationConsumerTest {
         NotificationConsumer<TestMessage> consumer =
             new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
         try {
-            List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive(1000L);
+            List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
             messageList.get(1).getMessage();
 
@@ -203,7 +203,7 @@ public class AbstractNotificationConsumerTest {
         }
 
         @Override
-        public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
+        public List<AtlasKafkaMessage<T>> receive() {
             List<AtlasKafkaMessage<T>> tempMessageList = new ArrayList();
             for(Object json :  messageList) {
                 tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String)json), -1, -1));
