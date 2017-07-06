@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -113,9 +114,33 @@ public class AtlasClient extends AtlasBaseClient {
 
     public static final String UNKNOWN_STATUS = "Unknown status";
 
-    // New constuctor for Basic auth
-    public AtlasClient(String[] baseUrl, String[] basicAuthUserNamepassword) {
-        super(baseUrl, basicAuthUserNamepassword);
+    /**
+     * Constructor for AtlasClient with cookie params as header
+     * @param baseUrl
+     * @param cookieName
+     * @param value
+     * @param path
+     * @param domain
+     */
+
+    public AtlasClient(String[] baseUrl, String cookieName, String value, String path, String domain) {
+        super(baseUrl, new Cookie( cookieName, value, path, domain));
+    }
+
+    /**
+     * Constructor for AtlasClient with cookie as header
+     * @param baseUrl
+     * @param cookie
+     */
+
+    public AtlasClient(String[] baseUrl, Cookie cookie) {
+        super(baseUrl, cookie);
+    }
+
+
+    // New constructor for Basic auth
+    public AtlasClient(String[] baseUrl, String[] basicAuthUserNamePassword) {
+        super(baseUrl, basicAuthUserNamePassword);
     }
 
     /**
@@ -152,8 +177,8 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     @VisibleForTesting
-    public AtlasClient(Configuration configuration, String[] baseUrl, String[] basicAuthUserNamepassword) {
-        super(configuration, baseUrl, basicAuthUserNamepassword);
+    public AtlasClient(Configuration configuration, String[] baseUrl, String[] basicAuthUserNamePassword) {
+        super(configuration, baseUrl, basicAuthUserNamePassword);
     }
 
     @VisibleForTesting
