@@ -41,6 +41,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -122,8 +123,25 @@ public class AtlasClientV2 extends AtlasBaseClient {
         super(ugi, doAsUser, baseUrls);
     }
 
-    protected AtlasClientV2() {
-        super();
+    /**
+     * Constructor for AtlasClient with cookie params as header
+     * @param baseUrl
+     * @param cookieName
+     * @param value
+     * @param path
+     * @param domain
+     */
+    public AtlasClientV2(String[] baseUrl, String cookieName, String value, String path, String domain) {
+        super(baseUrl, new Cookie(cookieName, value, path, domain));
+    }
+
+    /**
+     * Constructor for AtlasClient with cookie as header
+     * @param baseUrl
+     * @param cookie
+     */
+    public AtlasClientV2(String[] baseUrl, Cookie cookie) {
+        super(baseUrl, cookie);
     }
 
     @VisibleForTesting

@@ -77,7 +77,7 @@ public class AtlasAdminClient {
             String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
             atlasClient = new AtlasClient(atlasServerUri, basicAuthUsernamePassword);
         } else {
-            atlasClient = new AtlasClient(atlasServerUri, null);
+            atlasClient = new AtlasClient(atlasServerUri);
         }
         return handleCommand(commandLine, atlasServerUri, atlasClient);
     }

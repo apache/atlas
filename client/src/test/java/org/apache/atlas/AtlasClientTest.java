@@ -52,6 +52,8 @@ public class AtlasClientTest {
 
     @Mock
     private WebResource service;
+    @Mock
+    private WebResource.Builder resourceBuilderMock;
 
     @Mock
     private Configuration configuration;
@@ -426,11 +428,11 @@ public class AtlasClientTest {
     }
 
     private WebResource.Builder getBuilder(WebResource resourceObject) {
-        WebResource.Builder builder = mock(WebResource.Builder.class);
+        when(resourceObject.getRequestBuilder()).thenReturn(resourceBuilderMock);
         when(resourceObject.path(anyString())).thenReturn(resourceObject);
-        when(resourceObject.accept(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(builder);
-        when(builder.type(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(builder);
-        return builder;
+        when(resourceBuilderMock.accept(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(resourceBuilderMock);
+        when(resourceBuilderMock.type(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(resourceBuilderMock);
+        return resourceBuilderMock;
     }
 
     private void setupRetryParams() {

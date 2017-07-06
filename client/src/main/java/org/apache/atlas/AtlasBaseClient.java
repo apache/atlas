@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -77,6 +78,7 @@ public abstract class AtlasBaseClient {
     private String basicAuthPassword;
     private AtlasClientContext atlasClientContext;
     private boolean retryEnabled = false;
+    private Cookie cookie = null;
 
     protected AtlasBaseClient() {
     }
@@ -106,6 +108,11 @@ public abstract class AtlasBaseClient {
         initializeState(baseUrls, ugi, doAsUser);
     }
 
+    protected AtlasBaseClient(String[] baseUrls, Cookie cookie) {
+        this.cookie = cookie;
+        initializeState(baseUrls, null, null);
+    }
+
     @VisibleForTesting
     protected AtlasBaseClient(WebResource service, Configuration configuration) {
         this.service = service;
@@ -124,6 +131,10 @@ public abstract class AtlasBaseClient {
         }
 
         initializeState(configuration, baseUrl, null, null);
+    }
+
+    public void setCookie(Cookie cookie) {
+        this.cookie = cookie;
     }
 
     protected static UserGroupInformation getCurrentUGI() throws AtlasException {
@@ -172,14 +183,14 @@ public abstract class AtlasBaseClient {
 
         final URLConnectionClientHandler handler;
 
-        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
+        if ((AuthenticationUtil.isKerberosAuthenticationEnabled())) {
+            handler = SecureClientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
+        } else {
             if (configuration.getBoolean(TLS_ENABLED, false)) {
                 handler = SecureClientUtils.getUrlConnectionClientHandler();
             } else {
                 handler = new URLConnectionClientHandler();
             }
-        } else {
-            handler = SecureClientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
         }
         Client client = new Client(handler, config);
         client.setReadTimeout(readTimeout);
@@ -292,10 +303,20 @@ public abstract class AtlasBaseClient {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Calling API [ {} : {} ] {}", api.getMethod(), api.getPath(), requestObject != null ? "<== " + requestObject : "");
             }
-            clientResponse = resource
+
+            WebResource.Builder requestBuilder = resource.getRequestBuilder();
+
+            // Set content headers
+            requestBuilder
                     .accept(JSON_MEDIA_TYPE)
-                    .type(JSON_MEDIA_TYPE)
-                    .method(api.getMethod(), ClientResponse.class, requestObject);
+                    .type(JSON_MEDIA_TYPE);
+
+            // Set cookie if present
+            if (cookie != null) {
+                requestBuilder.cookie(cookie);
+            }
+
+            clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("API {} returned status {}", resource.getURI(), clientResponse.getStatus());
