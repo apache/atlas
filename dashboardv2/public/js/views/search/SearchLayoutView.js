@@ -235,7 +235,9 @@ define(['require',
             },
             onRefreshButton: function() {
                 this.fetchCollection();
-                if (this.searchVent) {
+                //to check url query param contain type or not 
+                var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
+                if (this.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
                     this.searchVent.trigger('search:refresh');
                 }
             },
