@@ -45,15 +45,7 @@ To use the option, set the contents of _importOptions.json_ to:
 <verbatim>
 {
   "options": {
-
-   "transforms": {
-        "hive_table": {
-          "qualifiedName": [
-              "lowercase",
-              "replace:@cl1:@cl2"
-            ]
-          }
-        }
+    "transforms": "{ \"hive_table\": { \"qualifiedName\": [ \"replace:@cl1:@cl2\" ] }, \"hive_db\": { \"qualifiedName\": [ \"replace:@cl1:@cl2\" ] } }"
   }
 }
 </verbatim>
