@@ -78,15 +78,23 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
 
         updateVertexPreCreate(relationshipDef, (AtlasRelationshipType) type, relationshipDefVertex);
 
-        final AtlasRelationshipEndDef endDef1 = relationshipDef.getEndDef1();
-        final String type1 = endDef1.getType();
-        final AtlasRelationshipEndDef endDef2 = relationshipDef.getEndDef2();
-        final String type2 = endDef2.getType();
-        final String name1 = endDef1.getName();
-        final String name2 = endDef2.getName();
-        AtlasVertex end1TypeVertex = typeDefStore.findTypeVertexByName(type1);
+        final AtlasRelationshipEndDef endDef1        = relationshipDef.getEndDef1();
+        final AtlasRelationshipEndDef endDef2        = relationshipDef.getEndDef2();
+        final String                  type1          = endDef1.getType();
+        final String                  type2          = endDef2.getType();
+        final String                  name1          = endDef1.getName();
+        final String                  name2          = endDef2.getName();
+        final AtlasVertex             end1TypeVertex = typeDefStore.findTypeVertexByName(type1);
+        final AtlasVertex             end2TypeVertex = typeDefStore.findTypeVertexByName(type2);
 
-        AtlasVertex end2TypeVertex = typeDefStore.findTypeVertexByName(type2);
+        if (end1TypeVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END_TYPE_NAME_NOT_FOUND, relationshipDef.getName(), type1);
+        }
+
+        if (end2TypeVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END_TYPE_NAME_NOT_FOUND, relationshipDef.getName(), type2);
+        }
+
         // create an edge between the relationshipDef and each of the entityDef vertices.
         AtlasEdge edge1 = typeDefStore.getOrCreateEdge(relationshipDefVertex, end1TypeVertex, AtlasGraphUtilsV1.RELATIONSHIPTYPE_EDGE_LABEL);
 
