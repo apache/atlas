@@ -21,6 +21,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 
 public interface AtlasDiscoveryService {
     /**
@@ -56,4 +57,12 @@ public interface AtlasDiscoveryService {
      */
     AtlasSearchResult searchUsingBasicQuery(String query, String type, String classification, String attrName,
                                             String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
+
+    /**
+     * Search for entities matching the search criteria
+     * @param searchParameters Search criteria
+     * @return Matching entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult searchUsingBasicQuery(SearchParameters searchParameters) throws AtlasBaseException;
 }

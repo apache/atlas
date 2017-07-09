@@ -39,10 +39,9 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasSearchResult implements Serializable {
     private AtlasQueryType            queryType;
+    private SearchParameters          searchParameters;
     private String                    queryText;
     private String                    type;
     private String                    classification;
@@ -59,9 +58,22 @@ public class AtlasSearchResult implements Serializable {
     public AtlasSearchResult(String queryText, AtlasQueryType queryType) {
         setQueryText(queryText);
         setQueryType(queryType);
+        setSearchParameters(null);
         setEntities(null);
         setAttributes(null);
         setFullTextResult(null);
+    }
+
+    public AtlasSearchResult(SearchParameters searchParameters) {
+        setQueryType(AtlasQueryType.BASIC);
+
+        if (searchParameters != null) {
+            setQueryText(searchParameters.getQuery());
+            setSearchParameters(searchParameters);
+            setEntities(null);
+            setAttributes(null);
+            setFullTextResult(null);
+        }
     }
 
     public AtlasQueryType getQueryType() { return queryType; }
@@ -98,6 +110,7 @@ public class AtlasSearchResult implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         AtlasSearchResult that = (AtlasSearchResult) o;
         return Objects.equals(queryType, that.queryType) &&
+               Objects.equals(searchParameters, that.searchParameters) &&
                Objects.equals(queryText, that.queryText) &&
                Objects.equals(type, that.type) &&
                Objects.equals(classification, that.classification) &&
@@ -107,12 +120,13 @@ public class AtlasSearchResult implements Serializable {
     }
 
     @Override
-    public int hashCode() { return Objects.hash(queryText, queryType, entities, attributes, fullTextResult, type, classification); }
+    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult); }
 
     @Override
     public String toString() {
         return "AtlasSearchResult{" +
                 "queryType=" + queryType +
+                ", searchParameters='" + searchParameters + '\'' +
                 ", queryText='" + queryText + '\'' +
                 ", type=" + type +
                 ", classification=" + classification +
@@ -147,6 +161,14 @@ public class AtlasSearchResult implements Serializable {
                 }
             }
         }
+    }
+
+    public void setSearchParameters(SearchParameters searchParameters) {
+        this.searchParameters = searchParameters;
+    }
+
+    public SearchParameters getSearchParameters() {
+        return searchParameters;
     }
 
     public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE }

@@ -64,7 +64,7 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, "reset add remove", function() {
-                    this.tagsAndTypeGenerator('collection');
+                    this.tagsGenerator();
                 }, this);
                 this.ui.tagsParent.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
@@ -147,7 +147,7 @@ define(['require',
                     }
                 }
             },
-            tagsAndTypeGenerator: function(collection, searchString) {
+            tagsGenerator: function(searchString) {
                 var that = this,
                     str = '';
                 that.collection.fullCollection.comparator = function(model) {
@@ -340,7 +340,7 @@ define(['require',
             },
             offlineSearchTag: function(e) {
                 var type = $(e.currentTarget).data('type');
-                this.tagsAndTypeGenerator('collection', $(e.currentTarget).val());
+                this.tagsGenerator($(e.currentTarget).val());
             },
             createTagAction: function() {
                 var that = this;

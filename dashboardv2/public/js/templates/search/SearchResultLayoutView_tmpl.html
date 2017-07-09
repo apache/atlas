@@ -20,6 +20,21 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
+    <div>
+        <div id="r_searchQuery">
+            <div class="panel panel-default" id="filterPanel">
+                <div class="panel-heading clearfix">
+                    <h4 class="panel-title pull-left">Type,Tag filter/s</h4>
+                    <div class="btn-group pull-right">
+                        <button type="button" id="expand_collapse_panel" class="expand_collapse_panel" title="Collapse"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+                <div id="panel_body" class="panel-body collapse in" align="center">
+                    <p class="filterQuery" id="filterQuery"></p>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
         <a href="javascript:void(0)" class="inputAssignTag multiSelectTerm btnAssign" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i> Assign Term</a>
         <a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag btnAssign" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>

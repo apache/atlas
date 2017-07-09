@@ -23,7 +23,7 @@ define(['require',
 ], function(require, Globals, vBaseModel, UrlLinks) {
     'use strict';
     var VTag = vBaseModel.extend({
-        urlRoot: UrlLinks.typesClassicationApiUrl(),
+        urlRoot: UrlLinks.classificationDefApiUrl(),
 
         defaults: {},
 
@@ -49,7 +49,7 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         deleteTag: function(options) {
-            var url = UrlLinks.typesClassicationApiUrl();
+            var url = UrlLinks.classificationDefApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'
@@ -57,7 +57,7 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         saveTagAttribute: function(options) {
-            var url = UrlLinks.typesClassicationApiUrl();
+            var url = UrlLinks.classificationDefApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

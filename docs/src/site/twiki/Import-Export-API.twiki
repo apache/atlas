@@ -28,6 +28,7 @@ If an import or export operation is initiated while another is in progress, the 
 Unhandled errors will be returned as Internal error code 500.
 
 ---++ REST API Reference
-   * __[[Export-API][Export API]]__
-   * __[[Export-HDFS-API][Export HDFS API]]__
-   * __[[Import-API][Import API]]__
+   * __[[Export-API][Export]]__
+   * __[[Export-HDFS-API][Export HDFS]]__
+   * __[[Import-API][Import]]__
+   * __[[Import-API-Options][Import Options]]__

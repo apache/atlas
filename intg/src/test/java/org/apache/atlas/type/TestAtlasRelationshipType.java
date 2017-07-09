@@ -61,22 +61,26 @@ public class TestAtlasRelationshipType {
 
     @Test
     public void testvalidateAtlasRelationshipDef() throws AtlasBaseException {
-        AtlasRelationshipEndDef ep1 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
-        AtlasRelationshipEndDef ep2 = new AtlasRelationshipEndDef("typeB", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
-        AtlasRelationshipEndDef ep3 = new AtlasRelationshipEndDef("typeC", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
-        AtlasRelationshipEndDef ep4 = new AtlasRelationshipEndDef("typeD", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
-        AtlasRelationshipEndDef ep5 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SET,true);
-        AtlasRelationshipEndDef ep6 = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.LIST,true);
+        AtlasRelationshipEndDef ep_single = new AtlasRelationshipEndDef("typeA", "attr1", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep_single_container = new AtlasRelationshipEndDef("typeB", "attr2", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        AtlasRelationshipEndDef ep_single_container_2 = new AtlasRelationshipEndDef("typeC", "attr3", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
+        AtlasRelationshipEndDef ep_single_container_3 = new AtlasRelationshipEndDef("typeD", "attr4", AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, true);
+        AtlasRelationshipEndDef ep_SET = new AtlasRelationshipEndDef("typeD", "attr4", AtlasStructDef.AtlasAttributeDef.Cardinality.SET,false);
+        AtlasRelationshipEndDef ep_LIST = new AtlasRelationshipEndDef("typeE", "attr5", AtlasStructDef.AtlasAttributeDef.Cardinality.LIST,true);
+        AtlasRelationshipEndDef ep_SET_container = new AtlasRelationshipEndDef("typeF", "attr6", AtlasStructDef.AtlasAttributeDef.Cardinality.SET,true);
         AtlasRelationshipDef relationshipDef1 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                AtlasRelationshipDef.RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
+                AtlasRelationshipDef.RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_single, ep_SET);
+        AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef1);
         AtlasRelationshipDef relationshipDef2 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep3);
+                AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_SET_container, ep_single);
+        AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef2);
         AtlasRelationshipDef relationshipDef3 = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                AtlasRelationshipDef.RelationshipCategory.AGGREGATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep3);
+                AtlasRelationshipDef.RelationshipCategory.AGGREGATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_SET_container, ep_single);
+        AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef3);
 
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep3, ep2);
+                    AtlasRelationshipDef.RelationshipCategory.ASSOCIATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_single_container_2, ep_single_container);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
@@ -86,7 +90,7 @@ public class TestAtlasRelationshipType {
         }
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
+                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_single, ep_single_container);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
@@ -96,7 +100,7 @@ public class TestAtlasRelationshipType {
         }
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.AGGREGATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep2);
+                    AtlasRelationshipDef.RelationshipCategory.AGGREGATION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_single, ep_single_container);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
@@ -107,17 +111,17 @@ public class TestAtlasRelationshipType {
 
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep5);
+                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_SET_container, ep_SET);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
-            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_SET_CONTAINER)) {
+            if (!abe.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS)) {
                 fail("This call expected a different error");
             }
         }
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep1, ep6);
+                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_single, ep_LIST);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {
@@ -127,7 +131,7 @@ public class TestAtlasRelationshipType {
         }
         try {
             AtlasRelationshipDef relationshipDef = new AtlasRelationshipDef("emptyRelationshipDef", "desc 1", "version1",
-                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep6, ep1);
+                    AtlasRelationshipDef.RelationshipCategory.COMPOSITION, AtlasRelationshipDef.PropagateTags.ONE_TO_TWO, ep_LIST, ep_single);
             AtlasRelationshipType.validateAtlasRelationshipDef(relationshipDef);
             fail("This call is expected to fail");
         } catch (AtlasBaseException abe) {

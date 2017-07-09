@@ -28,6 +28,23 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 def: this.baseUrlV2 + '/types/typedef'
             };
         },
+        entitiesDefApiUrl: function(name) {
+            return this.getDefApiUrl('entity', name);
+        },
+        classificationDefApiUrl: function(name) {
+            return this.getDefApiUrl('classification', name);
+        },
+        enumDefApiUrl: function(name) {
+            return this.getDefApiUrl('enum', name);
+        },
+        getDefApiUrl: function(type, name) {
+            var defApiUrl = this.typedefsUrl();
+            if (name) {
+                return defApiUrl.def + '/name/' + name + '?type=' + type;
+            } else {
+                return defApiUrl.defs + '?type=' + type;
+            }
+        },
         taxonomiesApiUrl: function() {
             return this.baseUrl + '/v1/taxonomies';
         },
@@ -44,22 +61,6 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return entitiesUrl;
             }
         },
-        entitiesDefApiUrl: function(name) {
-            var entitieDefUrl = this.typedefsUrl();
-            if (name) {
-                return entitieDefUrl.def + '/name/' + name + '?type=entity';
-            } else {
-                return entitieDefUrl.defs + '?type=entity';
-            }
-        },
-        enumDefApiUrl: function(name) {
-            var enumDefApiUrl = this.typedefsUrl();
-            if (name) {
-                return enumDefApiUrl.def + '/name/' + name + '?type=enum';
-            } else {
-                return enumDefApiUrl.defs + '?type=enum';
-            }
-        },
         entitiesTraitsApiUrl: function(token) {
             if (token) {
                 return this.baseUrlV2 + '/entity/guid/' + token + '/classifications';
@@ -67,19 +68,16 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 // For Multiple Assignment
                 return this.baseUrlV2 + '/entity/bulk/classification';
             }
-
         },
         entityCollectionaudit: function(guid) {
             return this.baseUrl + '/entities/' + guid + '/audit';
         },
-        typesClassicationApiUrl: function(name, guid) {
+        classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();
             if (name) {
                 return typeUrl.def + '/name/' + name + '?type=classification';
             } else if (guid) {
                 return typeUrl.def + '/guid/' + guid + '?type=classification';
-            } else {
-                return typeUrl.defs + '?type=classification';
             }
         },
         typesApiUrl: function() {

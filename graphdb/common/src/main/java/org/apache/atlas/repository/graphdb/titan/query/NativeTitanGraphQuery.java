@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.repository.graphdb.titan.query;
 
-import java.util.Collection;
-
 import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+
+import java.util.Collection;
 
 /**
  * Interfaces that provides a thin wrapper around GraphQuery (used by Titan0) and
@@ -47,6 +47,22 @@ public interface NativeTitanGraphQuery<V, E> {
     Iterable<AtlasEdge<V, E>> edges();
 
     /**
+     * Executes graph query
+     * @param limit Max vertices to return
+     * @return
+     */
+    Iterable<AtlasVertex<V, E>> vertices(int limit);
+
+    /**
+     * Executes graph query
+     * @param offset Starting offset
+     * @param limit Max vertices to return
+     * @return
+     */
+    Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
+
+
+    /**
      * Adds an in condition to the query.
      *
      * @param propertyName
@@ -61,6 +77,5 @@ public interface NativeTitanGraphQuery<V, E> {
      * @param op
      * @param value
      */
-    void has(String propertyName, ComparisionOperator op, Object value);
-
+    void has(String propertyName, QueryOperator op, Object value);
 }

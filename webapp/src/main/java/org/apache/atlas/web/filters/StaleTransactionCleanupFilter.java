@@ -50,7 +50,7 @@ public class StaleTransactionCleanupFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
-        LOG.info("Cleaning stale transactions");
+        LOG.debug("Cleaning stale transactions");
         AtlasGraphProvider.getGraphInstance().rollback();
         filterChain.doFilter(request, response);
     }

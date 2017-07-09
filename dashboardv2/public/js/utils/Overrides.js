@@ -49,7 +49,6 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             }
         }
     });
-
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
         var originalRender = Backbone.Marionette.LayoutView.prototype.render;
@@ -141,4 +140,8 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return this;
         }
     });
+
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    }
 });

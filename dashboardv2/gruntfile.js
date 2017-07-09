@@ -32,9 +32,6 @@ module.exports = function(grunt) {
         modulesPath = '../public/'
     }
 
-    var proxySnippet = require('grunt-connect-proxy/lib/utils').proxyRequest;
-
-
     grunt.initConfig({
         watch: {
             js: {
@@ -130,7 +127,9 @@ module.exports = function(grunt) {
                     'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js',
                     'moment/js': 'moment/min/moment.min.js',
                     'jquery-placeholder/js': 'jquery-placeholder/jquery.placeholder.js',
-                    'platform': 'platform/platform.js'
+                    'platform': 'platform/platform.js',
+                    'jQueryQueryBuilder/js': 'jQuery-QueryBuilder/dist/js/query-builder.standalone.min.js',
+                    'bootstrap-daterangepicker/js': 'bootstrap-daterangepicker/daterangepicker.js'
                 }
             },
             css: {
@@ -149,7 +148,9 @@ module.exports = function(grunt) {
                     'select2/css': 'select2/dist/css/select2.min.css',
                     'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.css',
                     'font-awesome/css': 'font-awesome/css/font-awesome.min.css',
-                    'font-awesome/fonts': 'font-awesome/fonts'
+                    'font-awesome/fonts': 'font-awesome/fonts',
+                    'jQueryQueryBuilder/css': 'jQuery-QueryBuilder/dist/css/query-builder.default.min.css',
+                    'bootstrap-daterangepicker/css': 'bootstrap-daterangepicker/daterangepicker.css'
                 }
 
             },
@@ -177,12 +178,18 @@ module.exports = function(grunt) {
                     'dagre-d3': 'dagre-d3/LICENSE',
                     'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT',
                     'jquery-placeholder': 'jquery-placeholder/LICENSE.txt',
-                    'platform/': 'platform/LICENSE'
+                    'platform/': 'platform/LICENSE',
+                    'jQueryQueryBuilder/': 'jQuery-QueryBuilder/LICENSE'
                 }
             }
         },
         sass: {
             dist: {
+                files: {
+                    'dist/css/style.css': 'public/css/scss/style.scss'
+                }
+            },
+            build: {
                 files: {
                     'dist/css/style.css': 'dist/css/scss/style.scss'
                 }
@@ -192,7 +199,13 @@ module.exports = function(grunt) {
             dist: {
                 expand: true,
                 cwd: modulesPath,
-                src: ['**', '!**/*.sass'],
+                src: ['**', '!**/scss/**'],
+                dest: distPath
+            },
+            build: {
+                expand: true,
+                cwd: modulesPath,
+                src: ['**'],
                 dest: distPath
             }
         },
@@ -201,6 +214,41 @@ module.exports = function(grunt) {
             options: {
                 force: true
             }
+        },
+        uglify: {
+            build: {
+                files: [{
+                    expand: true,
+                    cwd: 'dist/js',
+                    src: '**/*.js',
+                    dest: 'dist/js'
+                }]
+            }
+        },
+        cssmin: {
+            build: {
+                files: [{
+                    expand: true,
+                    cwd: 'dist/css',
+                    src: '*.css',
+                    dest: 'dist/css'
+                }]
+            }
+
+        },
+        htmlmin: {
+            build: {
+                options: {
+                    removeComments: true,
+                    collapseWhitespace: true
+                },
+                files: [{
+                    expand: true,
+                    cwd: 'dist/js/templates',
+                    src: '**/*.html',
+                    dest: 'dist/js/templates'
+                }]
+            }
         }
     });
 
@@ -208,7 +256,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-npmcopy');
-
+    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-cssmin');
+    grunt.loadNpmTasks('grunt-contrib-htmlmin');
 
     require('load-grunt-tasks')(grunt);
 
@@ -226,33 +276,45 @@ module.exports = function(grunt) {
         'npmcopy:css',
         'npmcopy:license',
         'copy:dist',
-        'sass',
+        'sass:dist',
         'configureProxies:server',
         'connect:server',
-        /* 'concurrent',*/
-        'watch',
-        /*'connect:livereload'*/
+        'watch'
     ]);
 
     grunt.registerTask('build', [
+        'clean',
+        'npmcopy:js',
+        'npmcopy:css',
+        'npmcopy:license',
+        'copy:build',
+        'sass:build'
+    ]);
+
+    grunt.registerTask('dev-minify', [
+        'clean',
         'npmcopy:js',
         'npmcopy:css',
         'npmcopy:license',
         'copy:dist',
-        'sass'
+        'sass:dist',
+        'uglify:build',
+        'cssmin:build',
+        'htmlmin:build',
+        'configureProxies:server',
+        'connect:server',
+        'watch'
     ]);
 
-    grunt.registerTask('minify', 'Minify the all js', function() {
-        var done = this.async();
-        grunt.task.run(['shell:min']);
-        done();
-    });
-    grunt.registerTask('release', 'Create release package', function() {
-        var done = this.async();
-        git.short(function(str) {
-            gitHash = str;
-            grunt.task.run(['minify', 'compress:release']);
-            done();
-        });
-    });
+    grunt.registerTask('build-minify', [
+        'clean',
+        'npmcopy:js',
+        'npmcopy:css',
+        'npmcopy:license',
+        'copy:build',
+        'sass:build',
+        'uglify:build',
+        'cssmin:build',
+        'htmlmin:build'
+    ]);
 };

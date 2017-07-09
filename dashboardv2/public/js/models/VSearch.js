@@ -49,7 +49,7 @@ define(['require',
             }, options);
 
             return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
-        },
+        }
     }, {});
     return VSearch;
 });

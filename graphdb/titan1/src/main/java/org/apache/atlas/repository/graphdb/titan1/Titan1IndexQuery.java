@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.titan1;
 
 import java.util.Iterator;
 
+import com.google.common.base.Preconditions;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
@@ -52,6 +53,27 @@ public class Titan1IndexQuery implements AtlasIndexQuery<Titan1Vertex, Titan1Edg
                     return new ResultImpl(source);
                 }
             };
+
+        return Iterators.transform(results, function);
+    }
+
+    @Override
+    public Iterator<Result<Titan1Vertex, Titan1Edge>> vertices(int offset, int limit) {
+        Preconditions.checkArgument(offset >=0, "Index offset should be greater than or equals to 0");
+        Preconditions.checkArgument(limit >=0, "Index limit should be greater than or equals to 0");
+        Iterator<TitanIndexQuery.Result<TitanVertex>> results = query
+                .offset(offset)
+                .limit(limit)
+                .vertices().iterator();
+
+        Function<TitanIndexQuery.Result<TitanVertex>, Result<Titan1Vertex, Titan1Edge>> function =
+                new Function<TitanIndexQuery.Result<TitanVertex>, Result<Titan1Vertex, Titan1Edge>>() {
+
+                    @Override
+                    public Result<Titan1Vertex, Titan1Edge> apply(TitanIndexQuery.Result<TitanVertex> source) {
+                        return new ResultImpl(source);
+                    }
+                };
 
         return Iterators.transform(results, function);
     }
