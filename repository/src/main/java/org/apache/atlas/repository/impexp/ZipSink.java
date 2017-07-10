@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,6 +37,8 @@ public class ZipSink {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSink.class);
 
     private ZipOutputStream zipOutputStream;
+    final Set<String>       guids = new HashSet<>();
+
 
     public ZipSink(OutputStream outputStream) {
         zipOutputStream = new ZipOutputStream(outputStream);
@@ -43,11 +47,13 @@ public class ZipSink {
     public void add(AtlasEntity entity) throws AtlasBaseException {
         String jsonData = convertToJSON(entity);
         saveToZip(entity.getGuid(), jsonData);
+        recordAddedEntityGuids(entity);
     }
 
     public void add(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         String jsonData = convertToJSON(entityWithExtInfo);
         saveToZip(entityWithExtInfo.getEntity().getGuid(), jsonData);
+        recordAddedEntityGuids(entityWithExtInfo);
     }
 
     public void setResult(AtlasExportResult result) throws AtlasBaseException {
@@ -99,5 +105,20 @@ public class ZipSink {
 
         zipOutputStream.write(payload.getBytes());
         zipOutputStream.closeEntry();
+    }
+
+    public boolean hasEntity(String guid) {
+        return guids.contains(guid);
+    }
+
+    private void recordAddedEntityGuids(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        guids.add(entityWithExtInfo.getEntity().getGuid());
+        if(entityWithExtInfo.getReferredEntities() != null) {
+            guids.addAll(entityWithExtInfo.getReferredEntities().keySet());
+        }
+    }
+
+    private void recordAddedEntityGuids(AtlasEntity entity) {
+        guids.add(entity.getGuid());
     }
 }
