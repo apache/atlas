@@ -433,6 +433,10 @@ public class ExportService {
     }
 
     private void addEntity(AtlasEntityWithExtInfo entity, ExportContext context) throws AtlasBaseException {
+        if(context.sink.hasEntity(entity.getEntity().getGuid())) {
+            return;
+        }
+
         context.sink.add(entity);
 
         context.result.incrementMeticsCounter(String.format("entity:%s", entity.getEntity().getTypeName()));
