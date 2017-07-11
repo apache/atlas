@@ -117,6 +117,31 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
+    public AtlasRelationship getOrCreate(AtlasRelationship relationship) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getOrCreate({})", relationship);
+        }
+
+        validateRelationship(relationship);
+
+        AtlasVertex       end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
+        AtlasVertex       end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+        AtlasRelationship ret;
+
+        // check if relationship exists
+        AtlasEdge relationshipEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationship);
+
+        ret = (relationshipEdge != null) ? mapEdgeToAtlasRelationship(relationshipEdge) : create(relationship);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getOrCreate({}): {}", relationship, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> update({})", relationship);

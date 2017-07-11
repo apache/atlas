@@ -422,7 +422,9 @@ public class EntityGraphMapper {
             AtlasEntityType entityType = (AtlasEntityType) inverseAttributeType;
 
             if (entityType.hasRelationshipAttribute(inverseAttributeName)) {
-                ret = createRelationship(inverseVertex, vertex, inverseAttribute.getRelationshipEdgeLabel());
+                String relationshipName = graphHelper.getRelationshipDefName(inverseVertex, entityType, inverseAttributeName);
+
+                ret = getOrCreateRelationship(inverseVertex, vertex, relationshipName);
 
             } else {
                 if (LOG.isDebugEnabled()) {
@@ -584,7 +586,7 @@ public class EntityGraphMapper {
 
                 } else {
                     String relationshipName = graphHelper.getRelationshipDefName(entityVertex, entityType, attributeName);
-                    ret = createRelationship(entityVertex, attributeVertex, relationshipName);
+                    ret = getOrCreateRelationship(entityVertex, attributeVertex, relationshipName);
                 }
 
             } else {
@@ -951,7 +953,7 @@ public class EntityGraphMapper {
                 relationshipName = currentEdge.getLabel();
             }
 
-            ret = createRelationship(currentEdge.getOutVertex(), entityVertex, relationshipName);
+            ret = getOrCreateRelationship(currentEdge.getOutVertex(), entityVertex, relationshipName);
         }
 
         return ret;
@@ -1180,11 +1182,11 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName) throws AtlasBaseException {
+    private AtlasEdge getOrCreateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName) throws AtlasBaseException {
         AtlasEdge         ret          = null;
         AtlasObjectId     end1         = new AtlasObjectId(AtlasGraphUtilsV1.getIdFromVertex(end1Vertex), AtlasGraphUtilsV1.getTypeName(end1Vertex));
         AtlasObjectId     end2         = new AtlasObjectId(AtlasGraphUtilsV1.getIdFromVertex(end2Vertex), AtlasGraphUtilsV1.getTypeName(end2Vertex));
-        AtlasRelationship relationship = relationshipStore.create(new AtlasRelationship(relationshipName, end1, end2));
+        AtlasRelationship relationship = relationshipStore.getOrCreate(new AtlasRelationship(relationshipName, end1, end2));
 
         // return newly created AtlasEdge
         // if multiple edges are returned, compare using id to pick the right one
