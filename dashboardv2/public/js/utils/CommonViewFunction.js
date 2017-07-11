@@ -92,7 +92,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var scope = options.scope,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
-            entityDef = options.entityDef;
+            isTable = _.isUndefined(options.isTable) ? true : options.isTable,
+            attributeDefs = options.attributeDefs;
 
         var table = "",
             fetchInputOutputValue = function(id) {
@@ -212,7 +213,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         _.sortBy(_.keys(valueObject)).map(function(key) {
             key = _.escape(key);
             var keyValue = valueObject[key];
-            var defEntity = _.find(entityDef, { name: key });
+            var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date' || defEntityType === 'time') {
@@ -225,7 +226,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     keyValue = extractObject(keyValue)
                 }
             }
-            table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
+            if (isTable) {
+                table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
+            } else {
+                table += '<div>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div>';
+            }
+
         });
         return table;
     }

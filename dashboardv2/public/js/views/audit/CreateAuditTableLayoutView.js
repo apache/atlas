@@ -55,7 +55,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName', 'entityDef'));
+                _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName', 'attributeDefs'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -84,7 +84,7 @@ define(['require',
                         var tagHeader = ((name ? name : this.entityName));
                         this.ui.tagHeader.append(tagHeader);
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, entityDef: this.entityDef, extractJSON: { extractKey: 'value' } });
+                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();

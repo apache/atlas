@@ -403,16 +403,28 @@ define(['require',
             },
             triggerSearch: function(value) {
                 this.query[this.type].query = value || null;
+                var params = {
+                    searchType: this.type,
+                    dslChecked: this.ui.searchType.is(':checked')
+                }
                 this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
                     this.query[this.type].tag = this.ui.tagLov.select2('val') || null;
                 }
+                if (this.dsl) {
+                    params['attributes'] = null;
+                } else {
+                    var columnList = JSON.parse(Utils.localStorage.getValue('columnList'));
+                    if (columnList) {
+                        params['attributes'] = columnList[this.query[this.type].type];
+                    } else {
+                        params['attributes'] = null;
+                    }
+                }
+
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: _.extend(this.query[this.type], {
-                        searchType: this.type,
-                        dslChecked: this.ui.searchType.is(':checked')
-                    }),
+                    urlParams: _.extend(this.query[this.type], params),
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
                     },
