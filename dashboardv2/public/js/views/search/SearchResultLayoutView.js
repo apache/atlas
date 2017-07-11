@@ -136,13 +136,22 @@ define(['require',
                 this.limit = 25;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
+                this.columnToShow = this.value && this.value.attributes ? this.value.attributes.split(',') : [];
                 this.commonTableOptions = {
                     collection: this.searchCollection,
-                    includeFilter: false,
                     includePagination: false,
-                    includePageSize: false,
                     includeFooterRecords: false,
-                    includeSizeAbleColumns: false,
+                    includeColumnManager: (this.value && this.value.searchType === "basic" ? true : false),
+                    includeOrderAbleColumns: false,
+                    columnOpts: {
+                        opts: {
+                            initialColumnsVisible: null,
+                            saveState: false
+                        },
+                        visibilityControlOpts: {
+                            buttonTemplate: _.template("<button class='btn btn-atlasAction btn-atlas'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
+                        }
+                    },
                     gridOpts: {
                         emptyText: 'No Record found!',
                         className: 'table table-hover backgrid table-quickMenu'
@@ -206,6 +215,25 @@ define(['require',
                         }
                     }
                 }, this);
+                this.listenTo(this.searchCollection, "state-changed", function(state) {
+                    if (Utils.getUrlState.isSearchTab()) {
+                        this.updateColumnList(state);
+                        var columnList = JSON.parse(Utils.localStorage.getValue('columnList'));
+                        if (!columnList && this.value.type) {
+                            columnList = {};
+                            columnList[this.value.type] = this.value.attributes;
+                        } else {
+                            columnList[this.value.type] = this.value.attributes;
+                        }
+                        Utils.localStorage.setValue('columnList', JSON.stringify(columnList));
+                        Utils.setUrl({
+                            url: '#!/search/searchResult',
+                            urlParams: this.value,
+                            mergeBrowserUrl: false,
+                            trigger: true
+                        });
+                    }
+                }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
                     this.fetchCollection();
                 }, this);
@@ -225,6 +253,7 @@ define(['require',
                             'searchType': 'basic'
                         };
                     }
+                    this.updateColumnList();
                     this.fetchCollection(value);
                     $('body').click(function(e) {
                         var iconEvnt = e.target.nodeName;
@@ -241,6 +270,22 @@ define(['require',
                     }
                 }
                 this.showHideFilter();
+            },
+            updateColumnList: function(updatedList) {
+                if (updatedList) {
+                    var listOfColumns = []
+                    _.map(updatedList, function(obj) {
+                        var key = obj.name;
+                        if (key == "selected" || key == "displayText" || key == "description" || key == "typeName" || key == "owner" || key == "tag" || key == "terms") {
+                            return;
+                        }
+                        if (obj.renderable) {
+                            listOfColumns.push(obj.name);
+                        }
+                    });
+                    this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
+                }
+                this.columnToShow = this.value && this.value.attributes ? this.value.attributes.split(',') : [];
             },
             generateQueryOfFilter: function() {
                 var value = this.value,
@@ -292,7 +337,8 @@ define(['require',
                     entityFilters = this.filterObj && this.filterObj.entityFilters ? this.filterObj.entityFilters[this.value.type] : null,
                     filterObj = {
                         'entityFilters': entityFilters ? entityFilters.result : null,
-                        'tagFilters': tagFilters ? tagFilters.result : null
+                        'tagFilters': tagFilters ? tagFilters.result : null,
+                        'attributes': this.columnToShow.length ? this.columnToShow : null
                     }
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
@@ -393,7 +439,21 @@ define(['require',
                 var that = this,
                     count = 5;
                 require(['utils/TableLayout'], function(TableLayout) {
-                    var columns = new Backgrid.Columns(that.getFixedDslColumn());
+                    var columnCollection = Backgrid.Columns.extend({
+                        sortKey: "position",
+                        comparator: function(item) {
+                            return item.get(this.sortKey) || 999;
+                        },
+                        setPositions: function() {
+                            _.each(this.models, function(model, index) {
+                                model.set("position", index + 1, { silent: true });
+                            });
+                            return this;
+                        }
+                    });
+                    var columns = new columnCollection(that.getFixedDslColumn());
+                    columns.setPositions().sort();
+                    //var columns = new Backgrid.Columns(that.getFixedDslColumn());
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     })));
@@ -438,6 +498,9 @@ define(['require',
                     cell: "html",
                     editable: false,
                     sortable: false,
+                    resizeable: true,
+                    orderable: true,
+                    renderable: true,
                     className: "searchTableName",
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -473,6 +536,9 @@ define(['require',
                     cell: "String",
                     editable: false,
                     sortable: false,
+                    resizeable: true,
+                    orderable: true,
+                    renderable: true,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -487,6 +553,9 @@ define(['require',
                     cell: "Html",
                     editable: false,
                     sortable: false,
+                    resizeable: true,
+                    orderable: true,
+                    renderable: true,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -501,6 +570,9 @@ define(['require',
                     cell: "String",
                     editable: false,
                     sortable: false,
+                    resizeable: true,
+                    orderable: true,
+                    renderable: true,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -515,7 +587,9 @@ define(['require',
                     cell: "Html",
                     editable: false,
                     sortable: false,
+                    resizeable: true,
                     orderable: true,
+                    renderable: true,
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -535,7 +609,9 @@ define(['require',
                         cell: "Html",
                         editable: false,
                         sortable: false,
+                        resizeable: true,
                         orderable: true,
+                        renderable: true,
                         className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -552,6 +628,44 @@ define(['require',
                             }
                         })
                     };
+                }
+                if (this.value && this.value.searchType === "basic") {
+                    var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
+                    if (def) {
+                        var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                        _.each(attrObj, function(obj, key) {
+                            var key = obj.name,
+                                isEenderable = that.columnToShow.length ? _.contains(that.columnToShow, key) : false;
+                            if (key == "name" || key == "description" || key == "owner") {
+                                return;
+                            }
+                            col[obj.name] = {
+                                label: obj.name.capitalize(),
+                                cell: "Html",
+                                editable: false,
+                                sortable: false,
+                                resizeable: true,
+                                orderable: true,
+                                renderable: isEenderable,
+                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                    fromRaw: function(rawValue, model) {
+                                        var modelObj = model.toJSON();
+
+                                        if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
+                                            var tempObj = {
+                                                'scope': that,
+                                                'attributeDefs': [obj],
+                                                'valueObject': {},
+                                                'isTable': false
+                                            }
+                                            tempObj.valueObject[key] = modelObj.attributes[key]
+                                            return CommonViewFunction.propertyTable(tempObj);
+                                        }
+                                    }
+                                })
+                            };
+                        });
+                    }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
             },

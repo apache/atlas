@@ -48,7 +48,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'entityDef'));
+                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'attributeDefs'));
                 this.entityModel = new VEntity({});
             },
             bindEvents: function() {},
@@ -65,7 +65,7 @@ define(['require',
                     });
                     attributeObject.columns = valueSorted;
                 }
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, entityDef: this.entityDef });
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, attributeDefs: this.attributeDefs });
                 that.ui.detailValue.append(table);
             }
         });

@@ -242,12 +242,12 @@ define(['require',
             },
             getEntityDef: function(obj) {
                 var data = this.entityDefCollection.fullCollection.findWhere({ name: obj.entity.typeName }).toJSON();
-                var entityDef = Utils.getNestedSuperTypeObj({
+                var attributeDefs = Utils.getNestedSuperTypeObj({
                     data: data,
                     attrMerge: true,
                     collection: this.entityDefCollection
                 });
-                obj['entityDef'] = entityDef;
+                obj['attributeDefs'] = attributeDefs;
                 this.renderEntityDetailTableLayoutView(obj);
                 this.renderAuditTableLayoutView(obj);
             },

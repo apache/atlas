@@ -21,6 +21,7 @@
     "backbone.paginator": "2.0.5",
     "backbone.wreqr": "1.4.0",
     "backgrid": "0.3.8",
+    "backgrid-columnmanager": "0.2.4",
     "backgrid-filter": "0.3.7",
     "backgrid-orderable-columns": "0.1.2",
     "backgrid-paginator": "0.3.9",
