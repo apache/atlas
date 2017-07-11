@@ -521,5 +521,105 @@
                 }
             ]
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "hive_db_tables",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_db",
+                "name": "tables",
+                "isContainer": "true",
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_table",
+                "name": "db",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_table.db"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        },
+        {
+            "name": "hive_table_columns",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_table",
+                "name": "columns",
+                "isContainer": "true",
+                "cardinality": "SET",
+                "legacyLabel": "__hive_table.columns"
+            },
+            "endDef2": {
+                "type": "hive_column",
+                "name": "table",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_column.table"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        },
+        {
+            "name": "hive_table_partitionkeys",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_table",
+                "name": "partitionKeys",
+                "isContainer": "true",
+                "cardinality": "SET",
+                "legacyLabel": "__hive_table.partitionKeys"
+            },
+            "endDef2": {
+                "type": "hive_column",
+                "name": "table",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_column.table"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        },
+        {
+            "name": "hive_table_storagedesc",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_table",
+                "name": "sd",
+                "isContainer": "true",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_table.sd"
+            },
+            "endDef2": {
+                "type": "hive_storagedesc",
+                "name": "table",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_storagedesc.table"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        },
+        {
+            "name": "hive_process_column_lineage",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_process",
+                "name": "columnLineages",
+                "isContainer": "true",
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_column_lineage",
+                "name": "query",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hive_column_lineage.query"
+            },
+            "propagateTags": "NONE"
+        }
     ]
 }

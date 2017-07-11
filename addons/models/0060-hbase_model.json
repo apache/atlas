@@ -96,5 +96,47 @@
             ],
             "typeVersion": "1.0"
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "hbase_table_column_families",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hbase_table",
+                "name": "column_families",
+                "isContainer": "true",
+                "cardinality": "SET",
+                "legacyLabel": "__hbase_table.column_families"
+            },
+            "endDef2": {
+                "type": "hbase_column_family",
+                "name": "table",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hbase_column_family.table"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        },
+        {
+            "name": "hbase_column_family_columns",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hbase_column_family",
+                "name": "columns",
+                "isContainer": "true",
+                "cardinality": "SET",
+                "legacyLabel": "__hbase_column_family.columns"
+            },
+            "endDef2": {
+                "type": "hbase_column",
+                "name": "column_family",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__hbase_column.column_family"
+            },
+            "propagateTags": "ONE_TO_TWO"
+        }
     ]
 }

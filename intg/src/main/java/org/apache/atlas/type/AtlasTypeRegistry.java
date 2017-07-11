@@ -364,6 +364,10 @@ public class AtlasTypeRegistry {
             for (AtlasType type : registryData.allTypes.getAllTypes()) {
                 type.resolveReferencesPhase2(this);
             }
+
+            for (AtlasEntityType entityType : registryData.entityDefs.getAllTypes()) {
+                entityType.resolveReferencesPhase3(this);
+            }
         }
 
         public void clear() {

@@ -50,6 +50,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private String        guid       = null;
     private AtlasObjectId end1       = null;
     private AtlasObjectId end2       = null;
+    private String        label      = null;
     private Status        status     = Status.ACTIVE;
     private String        createdBy  = null;
     private String        updatedBy  = null;
@@ -81,7 +82,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2) {
         super(typeName);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, 0L);
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, 0L);
     }
 
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
@@ -98,7 +99,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         super(other);
 
         if (other != null) {
-            init(other.guid, other.end1, other.end2, other.status, other.createdBy, other.updatedBy,
+            init(other.guid, other.end1, other.end2, other.label, other.status, other.createdBy, other.updatedBy,
                  other.createTime, other.updateTime, other.version);
         }
     }
@@ -167,6 +168,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public void setEnd2(AtlasObjectId end2) { this.end2 = end2; }
 
+    public String getLabel() { return label; }
+
+    public void setLabel(String label) { this.label = label; }
+
     private static String nextInternalId() {
         return "-" + Long.toString(s_nextId.getAndIncrement());
     }
@@ -174,15 +179,16 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public String getRelationshipLabel() { return "r:" + super.getTypeName(); }
 
     private void init() {
-        init(nextInternalId(), null, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), null, null, null, null, null, null, null, null, 0L);
     }
 
-    private void init(String guid, AtlasObjectId end1, AtlasObjectId end2,
+    private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label,
                       Status status, String createdBy, String updatedBy,
                       Date createTime, Date updateTime, Long version) {
         setGuid(guid);
         setEnd1(end1);
         setEnd2(end2);
+        setLabel(label);
         setStatus(status);
         setCreatedBy(createdBy);
         setUpdatedBy(updatedBy);
@@ -202,6 +208,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append("guid='").append(guid).append('\'');
         sb.append(", end1=").append(end1);
         sb.append(", end2=").append(end2);
+        sb.append(", label='").append(label).append('\'');
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');
@@ -223,6 +230,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         return Objects.equals(guid, that.guid)             &&
                Objects.equals(end1, that.end1)             &&
                Objects.equals(end2, that.end2)             &&
+               Objects.equals(label, that.label)           &&
                status == that.status                       &&
                Objects.equals(createdBy, that.createdBy)   &&
                Objects.equals(updatedBy, that.updatedBy)   &&
@@ -233,7 +241,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, end1, end2, status, createdBy, updatedBy, createTime, updateTime, version);
+        return Objects.hash(super.hashCode(), guid, end1, end2, label, status, createdBy,
+                            updatedBy, createTime, updateTime, version);
     }
 
     @Override

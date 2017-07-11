@@ -29,6 +29,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -49,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 
 
 public final class EntityGraphRetriever {
@@ -180,6 +184,8 @@ public final class EntityGraphRetriever {
 
             mapAttributes(entityVertex, entity, entityExtInfo);
 
+            mapRelationshipAttributes(entityVertex, entity, entityExtInfo);
+
             mapClassifications(entityVertex, entity, entityExtInfo);
         }
 
@@ -275,6 +281,23 @@ public final class EntityGraphRetriever {
             Object attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo);
 
             struct.setAttribute(attribute.getName(), attrValue);
+        }
+    }
+
+    private void mapRelationshipAttributes(AtlasVertex entityVertex, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
+        AtlasType objType = typeRegistry.getType(entity.getTypeName());
+
+        if (!(objType instanceof AtlasEntityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, entity.getTypeName());
+        }
+
+        AtlasEntityType entityType = (AtlasEntityType) objType;
+
+        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+
+            Object attrValue = mapVertexToRelationshipAttribute(entityVertex, entityType, attribute, entityExtInfo);
+
+            entity.addRelationshipAttribute(attribute.getName(), attrValue);
         }
     }
 
@@ -394,6 +417,40 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
+    private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, AtlasAttribute attribute,
+                                                    AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
+        Object                  ret                = null;
+        AtlasRelationshipDef    relationshipDef    = graphHelper.getRelationshipDef(entityVertex, entityType, attribute.getName());
+        AtlasRelationshipEndDef endDef1            = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2            = relationshipDef.getEndDef2();
+        AtlasEntityType         endDef1Type        = typeRegistry.getEntityTypeByName(endDef1.getType());
+        AtlasEntityType         endDef2Type        = typeRegistry.getEntityTypeByName(endDef2.getType());
+        AtlasRelationshipEndDef attributeEndDef    = null;
+
+        if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attribute.getName())) {
+            attributeEndDef = endDef1;
+
+        } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attribute.getName())) {
+            attributeEndDef = endDef2;
+        }
+
+        String relationshipLabel = attribute.getRelationshipEdgeLabel();
+
+        switch (attributeEndDef.getCardinality()) {
+            case SINGLE:
+                ret = mapVertexToObjectId(entityVertex, relationshipLabel, null, entityExtInfo, attributeEndDef.getIsContainer());
+                break;
+
+            case LIST:
+            case SET:
+                ret = mapVertexToRelationshipArrayAttribute(entityVertex, (AtlasArrayType) attribute.getAttributeType(), relationshipLabel,
+                                                            entityExtInfo, attributeEndDef.getIsContainer());
+                break;
+        }
+
+        return ret;
+    }
+
     private Map<String, Object> mapVertexToMap(AtlasVertex entityVertex, AtlasMapType atlasMapType, final String propertyName,
                                                AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute) throws AtlasBaseException {
         List<String> mapKeys = GraphHelper.getListProperty(entityVertex, propertyName);
@@ -442,6 +499,40 @@ public final class EntityGraphRetriever {
         for (Object element : arrayElements) {
             Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element,
                                                          edgeLabel, entityExtInfo, isOwnedAttribute);
+
+            if (arrValue != null) {
+                arrValues.add(arrValue);
+            }
+        }
+
+        return arrValues;
+    }
+
+    private List<Object> mapVertexToRelationshipArrayAttribute(AtlasVertex entityVertex, AtlasArrayType arrayType,
+                                                               String relationshipName, AtlasEntityExtInfo entityExtInfo,
+                                                               boolean isContainer) throws AtlasBaseException {
+
+        Iterator<AtlasEdge> relationshipEdges = graphHelper.getBothEdgesByLabel(entityVertex, relationshipName);
+        AtlasType           arrayElementType  = arrayType.getElementType();
+        List<AtlasEdge>     arrayElements     = new ArrayList<>();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapping array attribute {} for vertex {}", arrayElementType.getTypeName(), entityVertex);
+        }
+
+        while (relationshipEdges.hasNext()) {
+            arrayElements.add(relationshipEdges.next());
+        }
+
+        if (CollectionUtils.isEmpty(arrayElements)) {
+            return null;
+        }
+
+        List arrValues = new ArrayList(arrayElements.size());
+
+        for (Object element : arrayElements) {
+            Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element, relationshipName,
+                                                         entityExtInfo, isContainer);
 
             if (arrValue != null) {
                 arrValues.add(arrValue);
@@ -538,7 +629,11 @@ public final class EntityGraphRetriever {
         }
 
         if (GraphHelper.elementExists(edge)) {
-            final AtlasVertex referenceVertex = edge.getInVertex();
+            AtlasVertex referenceVertex = edge.getInVertex();
+
+            if (StringUtils.equals(getIdFromVertex(referenceVertex), getIdFromVertex(entityVertex))) {
+                referenceVertex = edge.getOutVertex();
+            }
 
             if (referenceVertex != null) {
                 if (entityExtInfo != null && isOwnedAttribute) {

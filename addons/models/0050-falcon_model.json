@@ -143,5 +143,64 @@
                 }
             ]
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "falcon_feed_cluster",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "falcon_feed",
+                "name": "stored-in",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__falcon_feed.stored-in"
+            },
+            "endDef2": {
+                "type": "falcon_cluster",
+                "name": "feeds",
+                "isContainer": "true",
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "falcon_cluster_process",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "falcon_cluster",
+                "name": "processes",
+                "isContainer": "true",
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "falcon_process",
+                "name": "runs-on",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__falcon_process.runs-on"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "falcon_cluster_feed_creation",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "falcon_cluster",
+                "name": "feedCreations",
+                "isContainer": "true",
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "falcon_feed_creation",
+                "name": "stored-in",
+                "isContainer": "false",
+                "cardinality": "SINGLE",
+                "legacyLabel": "__falcon_feed_creation.stored-in"
+            },
+            "propagateTags": "NONE"
+        }
     ]
 }

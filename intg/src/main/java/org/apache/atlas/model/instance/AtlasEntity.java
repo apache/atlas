@@ -70,6 +70,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date   updateTime = null;
     private Long   version    = 0L;
 
+    private Map<String, Object>       relationshipAttributes;
     private List<AtlasClassification> classifications;
 
     @JsonIgnore
@@ -170,6 +171,25 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.version = version;
     }
 
+    public Map<String, Object> getRelationshipAttributes() { return relationshipAttributes; }
+
+    public void setRelationshipAttributes(Map<String, Object> relationshipAttributes) {
+        this.relationshipAttributes = relationshipAttributes;
+    }
+
+    public void addRelationshipAttribute(String name, Object value) {
+        Map<String, Object> r = this.relationshipAttributes;
+
+        if (r != null) {
+            r.put(name, value);
+        } else {
+            r = new HashMap<>();
+            r.put(name, value);
+
+            this.relationshipAttributes = r;
+        }
+    }
+
     public List<AtlasClassification> getClassifications() { return classifications; }
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
@@ -204,6 +224,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         dumpDateField(", createTime=", createTime, sb);
         dumpDateField(", updateTime=", updateTime, sb);
         sb.append(", version=").append(version);
+        sb.append(", relationshipAttributes=[");
+        dumpObjects(relationshipAttributes, sb);
+        sb.append("]");
         sb.append(", classifications=[");
         AtlasBaseTypeDef.dumpObjects(classifications, sb);
         sb.append(']');
@@ -227,13 +250,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(createTime, that.createTime) &&
                 Objects.equals(updateTime, that.updateTime) &&
                 Objects.equals(version, that.version) &&
+                Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
                 Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version,
-                            classifications);
+                            relationshipAttributes, classifications);
     }
 
     @Override

@@ -76,8 +76,8 @@ public class AtlasGraphUtilsV1 {
         return vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
-    public static String getTypeName(AtlasVertex instanceVertex) {
-        return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+    public static String getTypeName(AtlasElement element) {
+        return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
 
     public static String getEdgeLabel(String fromNode, String toNode) {

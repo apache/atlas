@@ -90,9 +90,26 @@ public class AtlasRelationshipType extends AtlasStructType {
     public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
-        addRelationshipAttributeToEndType(relationshipDef.getEndDef1(), end1Type, end2Type.getTypeName(), typeRegistry);
+        AtlasRelationshipEndDef endDef1           = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2           = relationshipDef.getEndDef2();
+        String                  relationshipLabel = null;
 
-        addRelationshipAttributeToEndType(relationshipDef.getEndDef2(), end2Type, end1Type.getTypeName(), typeRegistry);
+        // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
+        // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
+        // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
+        if (!endDef1.hasLegacyRelation() && !endDef2.hasLegacyRelation()) {
+            relationshipLabel = relationshipDef.getName();
+
+        } else if (endDef1.hasLegacyRelation() && !endDef2.hasLegacyRelation()) {
+            relationshipLabel = endDef1.getLegacyLabel();
+
+        } else if (!endDef1.hasLegacyRelation() && endDef2.hasLegacyRelation()) {
+            relationshipLabel = endDef2.getLegacyLabel();
+        }
+
+        addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
+
+        addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel);
     }
 
     @Override
@@ -198,10 +215,8 @@ public class AtlasRelationshipType extends AtlasStructType {
         }
     }
 
-    private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef,
-                                                   AtlasEntityType entityType,
-                                                   String attrTypeName,
-                                                   AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef, AtlasEntityType entityType, String attrTypeName,
+                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel) throws AtlasBaseException {
 
         String attrName = (endDef != null) ? endDef.getName() : null;
 
@@ -211,15 +226,29 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         AtlasAttribute attribute = entityType.getAttribute(attrName);
 
+        // if relationshipLabel is null, then legacyLabel is mentioned at both ends,
+        // use the respective end's legacyLabel as relationshipLabel
+        if (relationshipLabel == null) {
+            relationshipLabel = endDef.getLegacyLabel();
+        }
+
         if (attribute == null) { //attr doesn't exist in type - is a new relationship attribute
 
             if (endDef.getCardinality() == Cardinality.SET) {
                 attrTypeName = AtlasBaseTypeDef.getArrayTypeName(attrTypeName);
             }
 
-            attribute = new AtlasAttribute(entityType, new AtlasAttributeDef(attrName, attrTypeName), typeRegistry.getType(attrTypeName));
+            attribute = new AtlasAttribute(entityType, new AtlasAttributeDef(attrName, attrTypeName),
+                                           typeRegistry.getType(attrTypeName), relationshipLabel);
+
+        } else {
+            // attribute already exists (legacy attribute which is also a relationship attribute)
+            // add relationshipLabel information to existing attribute
+            attribute.setRelationshipEdgeLabel(relationshipLabel);
         }
 
         entityType.addRelationshipAttribute(attrName, attribute);
+
+        entityType.addRelationshipAttributeType(attrName, this);
     }
 }
