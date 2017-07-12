@@ -32,7 +32,7 @@ import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
-import org.apache.atlas.utils.MD5Utils;
+import org.apache.atlas.utils.SHA256Utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -774,7 +774,7 @@ public class StructInstance implements ITypedStruct {
         StructType structType = TypeSystem.getInstance().getDataType(StructType.class, getTypeName());
         structType.updateSignatureHash(digester, this);
         byte[] digest = digester.digest();
-        return MD5Utils.toString(digest);
+        return SHA256Utils.toString(digest);
     }
 
     @Override
