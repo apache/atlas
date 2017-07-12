@@ -29,7 +29,7 @@ import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.utils.MD5Utils;
+import org.apache.atlas.utils.SHA256Utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -130,6 +130,6 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
         ClassType classType = TypeSystem.getInstance().getDataType(ClassType.class, getTypeName());
         classType.updateSignatureHash(digester, this);
         byte[] digest = digester.digest();
-        return MD5Utils.toString(digest);
+        return SHA256Utils.toString(digest);
     }
 }
