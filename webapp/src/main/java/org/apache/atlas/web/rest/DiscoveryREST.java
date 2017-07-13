@@ -249,7 +249,7 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(parameters);
+            return atlasDiscoveryService.searchWithParameters(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
         }

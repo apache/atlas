@@ -128,6 +128,10 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasEntityHeader toAtlasEntityHeader(String guid) throws AtlasBaseException {
+        return toAtlasEntityHeader(getEntityVertex(guid));
+    }
+
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
         return toAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
@@ -233,19 +237,31 @@ public final class EntityGraphRetriever {
 
             if (CollectionUtils.isNotEmpty(attributes)) {
                 for (String attrName : attributes) {
+                    String nonQualifiedAttrName = toNonQualifiedName(attrName);
                     if (ret.hasAttribute(attrName)) {
                         continue;
                     }
 
-                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(attrName));
+                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(nonQualifiedAttrName));
 
                     if (attrValue != null) {
-                        ret.setAttribute(attrName, attrValue);
+                        ret.setAttribute(nonQualifiedAttrName, attrValue);
                     }
                 }
             }
         }
 
+        return ret;
+    }
+
+    private String toNonQualifiedName(String attrName) {
+        String ret;
+        if (attrName.contains(".")) {
+            String[] attributeParts = attrName.split("\\.");
+            ret = attributeParts[attributeParts.length - 1];
+        } else {
+            ret = attrName;
+        }
         return ret;
     }
 
