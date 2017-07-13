@@ -26,7 +26,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
-import org.apache.atlas.discovery.SearchPipeline;
+import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -435,7 +435,7 @@ public class AdminResource {
     @Path("activeSearches/{id}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public boolean terminateActiveSearch(@PathParam("id") String searchId) {
-        SearchPipeline.PipelineContext terminate = activeSearches.terminate(searchId);
+        SearchContext terminate = activeSearches.terminate(searchId);
         return null != terminate;
     }
 

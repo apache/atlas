@@ -207,9 +207,12 @@ public class SearchParameters {
         return Objects.hash(query, typeName, classification, excludeDeletedEntities, limit, offset, entityFilters, tagFilters, attributes);
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("SearchParameters{");
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append('{');
         sb.append("query='").append(query).append('\'');
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
@@ -220,7 +223,13 @@ public class SearchParameters {
         sb.append(", tagFilters=").append(tagFilters);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
-        return sb.toString();
+
+        return sb;
+    }
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 
 
@@ -297,16 +306,25 @@ public class SearchParameters {
             return Objects.hash(attributeName, operator, attributeValue, condition, criterion);
         }
 
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("FilterCriteria{");
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append('{');
             sb.append("attributeName='").append(attributeName).append('\'');
             sb.append(", operator=").append(operator);
             sb.append(", attributeValue='").append(attributeValue).append('\'');
             sb.append(", condition=").append(condition);
             sb.append(", criterion=").append(criterion);
             sb.append('}');
-            return sb.toString();
+
+            return sb;
+        }
+
+        @Override
+        public String toString() {
+            return toString(new StringBuilder()).toString();
         }
     }
 

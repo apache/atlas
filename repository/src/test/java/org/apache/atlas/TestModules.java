@@ -147,10 +147,7 @@ public class TestModules {
             typeDefChangeListenerMultibinder.addBinding().to(DefaultMetadataService.class);
             typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
 
-            bind(SearchPipeline.class).asEagerSingleton();
             bind(SearchTracker.class).asEagerSingleton();
-            bind(SolrStep.class).asEagerSingleton();
-            bind(GremlinStep.class).asEagerSingleton();
 
             bind(AtlasEntityStore.class).to(AtlasEntityStoreV1.class);
 

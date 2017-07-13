@@ -64,5 +64,5 @@ public interface AtlasDiscoveryService {
      * @return Matching entities
      * @throws AtlasBaseException
      */
-    AtlasSearchResult searchUsingBasicQuery(SearchParameters searchParameters) throws AtlasBaseException;
+    AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
 }
