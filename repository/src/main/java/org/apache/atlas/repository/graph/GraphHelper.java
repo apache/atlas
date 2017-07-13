@@ -1269,6 +1269,10 @@ public final class GraphHelper {
                 }
             }
 
+            if (ret == null) {
+                ret = relationshipTypes.get(0).getRelationshipDef();
+            }
+
         } else {
             //relationshipTypes will have at least one relationshipDef
             ret = relationshipTypes.get(0).getRelationshipDef();

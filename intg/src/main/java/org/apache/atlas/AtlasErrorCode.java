@@ -88,6 +88,7 @@ public enum AtlasErrorCode {
     RELATIONSHIPDEF_END1_NAME_INVALID(400, "ATLAS-400-00-041", "{0}: invalid end1 name. Name must not contain query keywords"),
     RELATIONSHIPDEF_END2_NAME_INVALID(400, "ATLAS-400-00-042", "{0}: invalid end2 name. Name must not contain query keywords"),
     RELATIONSHIPDEF_NOT_DEFINED(400, "ATLAS-400-00-043", "No relationshipDef defined between {0} and {1} on attribute: {2}"),
+    RELATIONSHIPDEF_INVALID(400, "ATLAS-400-00-044", "Invalid relationshipDef: {0}"),
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),

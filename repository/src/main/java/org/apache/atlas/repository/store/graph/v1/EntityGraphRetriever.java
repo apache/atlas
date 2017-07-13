@@ -419,19 +419,28 @@ public final class EntityGraphRetriever {
 
     private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, AtlasAttribute attribute,
                                                     AtlasEntityExtInfo entityExtInfo) throws AtlasBaseException {
-        Object                  ret                = null;
-        AtlasRelationshipDef    relationshipDef    = graphHelper.getRelationshipDef(entityVertex, entityType, attribute.getName());
-        AtlasRelationshipEndDef endDef1            = relationshipDef.getEndDef1();
-        AtlasRelationshipEndDef endDef2            = relationshipDef.getEndDef2();
-        AtlasEntityType         endDef1Type        = typeRegistry.getEntityTypeByName(endDef1.getType());
-        AtlasEntityType         endDef2Type        = typeRegistry.getEntityTypeByName(endDef2.getType());
-        AtlasRelationshipEndDef attributeEndDef    = null;
+        Object               ret             = null;
+        AtlasRelationshipDef relationshipDef = graphHelper.getRelationshipDef(entityVertex, entityType, attribute.getName());
+
+        if (relationshipDef == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, "relationshipDef is null");
+        }
+
+        AtlasRelationshipEndDef endDef1         = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2         = relationshipDef.getEndDef2();
+        AtlasEntityType         endDef1Type     = typeRegistry.getEntityTypeByName(endDef1.getType());
+        AtlasEntityType         endDef2Type     = typeRegistry.getEntityTypeByName(endDef2.getType());
+        AtlasRelationshipEndDef attributeEndDef = null;
 
         if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attribute.getName())) {
             attributeEndDef = endDef1;
 
         } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attribute.getName())) {
             attributeEndDef = endDef2;
+        }
+
+        if (attributeEndDef == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, relationshipDef.toString());
         }
 
         String relationshipLabel = attribute.getRelationshipEdgeLabel();

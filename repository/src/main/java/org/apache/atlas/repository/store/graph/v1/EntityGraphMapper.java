@@ -328,7 +328,7 @@ public class EntityGraphMapper {
 
                     newEdge = mapObjectIdValueUsingRelationship(ctx, context);
 
-                    if (ctx.getAttribute().getInverseRefAttribute() != null) {
+                    if (newEdge != null && ctx.getAttribute().getInverseRefAttribute() != null) {
                         // Update the inverse reference using relationship on the target entity
                         addInverseReference(ctx.getAttribute().getInverseRefAttribute(), newEdge);
                     }
@@ -380,13 +380,13 @@ public class EntityGraphMapper {
         case ARRAY:
             // Add edge ID to property value
             List<String> elements = inverseVertex.getProperty(propertyName, List.class);
-            if (elements == null) {
+            if (newEdge != null && elements == null) {
                 elements = new ArrayList<>();
                 elements.add(newEdge.getId().toString());
                 inverseVertex.setProperty(propertyName, elements);
             }
             else {
-               if (!elements.contains(newEdge.getId().toString())) {
+               if (newEdge != null && !elements.contains(newEdge.getId().toString())) {
                     elements.add(newEdge.getId().toString());
                     inverseVertex.setProperty(propertyName, elements);
                }
@@ -945,7 +945,7 @@ public class EntityGraphMapper {
         String    newEntityId     = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
         AtlasEdge ret             = currentEdge;
 
-        if (!currentEntityId.equals(newEntityId) && entityVertex != null) {
+        if (!currentEntityId.equals(newEntityId)) {
             // create a new relationship edge to the new attribute vertex from the instance
             String relationshipName = AtlasGraphUtilsV1.getTypeName(currentEdge);
 
