@@ -352,6 +352,7 @@ define(['require',
                             return;
                         }
                         if (isPostMethod) {
+                            that.searchCollection.referredEntities = model.referredEntities;
                             that.searchCollection.reset(model.entities);
                         }
                         if (that.searchCollection.models.length === 0 && that.offset > that.limit) {
@@ -658,7 +659,9 @@ define(['require',
                                                 'valueObject': {},
                                                 'isTable': false
                                             }
+
                                             tempObj.valueObject[key] = modelObj.attributes[key]
+                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
                                             return CommonViewFunction.propertyTable(tempObj);
                                         }
                                     }
