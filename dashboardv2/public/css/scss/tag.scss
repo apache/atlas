@@ -18,8 +18,7 @@
 
 //tag.scss
 .tag-tree {
-    padding: 0;
-    // overflow: auto;
+    padding: 0; // overflow: auto;
     li {
         list-style: none;
         cursor: pointer;
@@ -38,7 +37,7 @@
                     display: block
                 }
             }
-            > ul > li {
+            >ul>li {
                 line-height: 30px;
                 margin-left: -20px;
                 text-indent: 20px;
@@ -93,7 +92,7 @@
     cursor: pointer;
 }
 
-.input-group.attributes .form-control:focus + .input-group-addon {
+.input-group.attributes .form-control:focus+.input-group-addon {
     border-color: $color_bali_hai_approx;
 }
 
@@ -131,7 +130,7 @@
             background-color: $tag_color;
         }
     }
-    > .inputValue {
+    >.inputValue {
         padding: 5px;
         &:hover {
             color: $white;
@@ -345,7 +344,7 @@ form-control .tagInpput {
     margin-top: 10px;
 }
 
-.popoverContainer .inputTag > .inputValue {
+.popoverContainer .inputTag>.inputValue {
     padding: 2px 5px;
     display: inline-block;
     width: 100px;
@@ -409,4 +408,33 @@ legend.scheduler-border {
 
 .entityLink {
     font-size: 16px;
+}
+
+.mainAttrTable {
+    max-height: 180px;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+table.attriTable {
+    width: 100%;
+    td {
+        border: 1px solid #ddd;
+        padding: 5px 7px;
+        width: 50%;
+        &[data-type="int"],
+        &[data-type="long"],
+        &[data-type="float"],
+        &[data-type="byte"],
+        &[data-type="double"],
+        &[data-type="short"] {
+            text-align: right;
+        }
+    }
+    th {
+        text-align: center !important;
+        border: 1px solid #ddd;
+        padding: 5px 7px;
+        width: 50%;
+    }
 }
