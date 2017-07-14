@@ -371,6 +371,10 @@ public class AdminResource {
         AtlasImportResult result;
 
         try {
+            if (StringUtils.isEmpty(jsonData)) {
+                jsonData = "{}";
+            }
+
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
             ZipSource zipSource = new ZipSource(inputStream);
 
