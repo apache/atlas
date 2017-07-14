@@ -613,20 +613,36 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
                 rectifyAttributesIfNeeded(entityNames, structDef);
             }
+            removeDuplicateTypeIfAny(typesDef.getStructDefs());
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
             for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
                 rectifyAttributesIfNeeded(entityNames, classificationDef);
             }
+            removeDuplicateTypeIfAny(typesDef.getClassificationDefs());
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
                 rectifyAttributesIfNeeded(entityNames, entityDef);
             }
+            removeDuplicateTypeIfAny(typesDef.getEntityDefs());
         }
     }
+
+    private <T extends AtlasBaseTypeDef> void removeDuplicateTypeIfAny(List<T> defList) {
+        final Set<String> entityDefNames = new HashSet<>();
+
+        for (int i = 0; i < defList.size(); i++) {
+            if (!entityDefNames.add((defList.get(i)).getName())) {
+                LOG.warn(" Found Duplicate Type => " + defList.get(i).getName());
+                defList.remove(i);
+                i--;
+            }
+        }
+    }
+
 
     private void rectifyAttributesIfNeeded(final Set<String> entityNames, AtlasStructDef structDef) {
         List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
