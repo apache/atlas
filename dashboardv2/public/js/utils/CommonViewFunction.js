@@ -75,19 +75,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         });
     };
-    CommonViewFunction.findAndmergeRefEntity = function(attributeObject, referredEntities) {
-        _.each(attributeObject, function(obj, key) {
-            if (_.isObject(obj)) {
-                if (_.isArray(obj)) {
-                    _.each(obj, function(value) {
-                        _.extend(value, referredEntities[value.guid]);
-                    });
-                } else {
-                    _.extend(obj, referredEntities[obj.guid]);
-                }
-            }
-        });
-    }
     CommonViewFunction.propertyTable = function(options) {
         var scope = options.scope,
             valueObject = options.valueObject,
@@ -179,7 +166,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                     if (id && inputOutputField) {
                         var name = Utils.getName(inputOutputField);
-                        if (name === "-" || name === id) {
+                        if ((name === "-" || name === id) && !inputOutputField.attributes) {
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
                             fetchInputOutputValue(fetchId);
