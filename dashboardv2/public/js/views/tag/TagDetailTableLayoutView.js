@@ -64,7 +64,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection', 'enumDefCollection', 'classificationDefCollection'));
                 this.collectionObject = this.entity;
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject.classifications),
@@ -133,16 +133,25 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var values = model.get('attributes'),
-                                        tagValue = 'NA';
-                                    if (!_.isEmpty(values)) {
-                                        var stringArr = [];
-                                        tagValue = "";
-                                        _.each(values, function(val, key) {
-                                            var attrName = "<span>" + _.escape(key) + ":" + _.escape(val) + "</span>";
-                                            stringArr.push(attrName);
+                                    var values = model.get('attributes');
+                                    var data = that.classificationDefCollection.findWhere({ 'name': model.get('typeName') });
+                                    var attributeDefs = Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true });
+                                    var tagValue = 'NA',
+                                        dataType;
+                                    if (!_.isEmpty(attributeDefs)) {
+                                        var stringValue = "";
+                                        _.each(_.sortBy(_.map(attributeDefs, function(obj) {
+                                            obj['sortKey'] = obj.name && _.isString(obj.name) ? obj.name.toLowerCase() : "-";
+                                            return obj;
+                                        }), 'sortKey'), function(sortedObj) {
+                                            var val = _.isNull(values[sortedObj.name]) ? "-" : values[sortedObj.name],
+                                                key = sortedObj.name;
+                                            if (sortedObj.typeName === "date") {
+                                                val = new Date(val)
+                                            }
+                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type=" + sortedObj.typeName + ">" + _.escape(val) + "</td>";
                                         });
-                                        tagValue += stringArr.join(", ");
+                                        tagValue = "<div class='mainAttrTable'><table class='attriTable'><tr><th class='html-cell string-cell renderable'>Name</th><th class='html-cell string-cell renderable'>Value</th>" + stringValue + "</table></div>";
                                     }
                                     return tagValue;
                                 }

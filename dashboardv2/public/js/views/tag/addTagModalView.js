@@ -272,10 +272,10 @@ define(['require',
                     var typeName = Utils.getName(obj, 'typeName');
                     var typeNameValue = that.enumDefCollection.fullCollection.findWhere({ 'name': typeName });
                     if (typeNameValue) {
-                        var str = "<option disabled='disabled'" + (!that.tagModel ? 'selected' : '') + ">-- Select " + typeName + " --</option>";
+                        var str = '<option value=""' + (!that.tagModel ? 'selected' : '') + '>-- Select ' + typeName + " --</option>";
                         var enumValue = typeNameValue.get('elementDefs');
                         _.each(enumValue, function(key, value) {
-                            str += '<option ' + (that.tagModel && key.value === that.tagModel.attributes[name] ? 'selected' : '') + '>' + key.value + '</option>';
+                            str += '<option ' + ((that.tagModel && key.value === that.tagModel.attributes[name]) ? 'selected' : '') + '>' + key.value + '</option>';
                         })
                         that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' +
                             '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
@@ -286,7 +286,14 @@ define(['require',
                 });
                 that.$('input[data-type="date"]').each(function() {
                     if (!$(this).data('daterangepicker')) {
-                        var dateObj = { "singleDatePicker": true, "showDropdowns": true };
+                        var dateObj = {
+                            "singleDatePicker": true,
+                            "showDropdowns": true,
+                            "timePicker": true,
+                            locale: {
+                                format: 'MM/DD/YYYY h:mm A'
+                            }
+                        };
                         if (that.tagModel) {
                             var formatDate = Number(this.value);
                             dateObj["startDate"] = new Date(formatDate);
