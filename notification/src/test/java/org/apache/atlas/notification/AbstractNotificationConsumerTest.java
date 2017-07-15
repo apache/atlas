@@ -204,6 +204,11 @@ public class AbstractNotificationConsumerTest {
 
         @Override
         public List<AtlasKafkaMessage<T>> receive() {
+            return receive(1000L);
+        }
+
+        @Override
+        public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
             List<AtlasKafkaMessage<T>> tempMessageList = new ArrayList();
             for(Object json :  messageList) {
                 tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String)json), -1, -1));

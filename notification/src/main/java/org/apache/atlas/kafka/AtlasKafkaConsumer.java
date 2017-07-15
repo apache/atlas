@@ -52,9 +52,15 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     }
 
     public List<AtlasKafkaMessage<T>> receive() {
+        return this.receive(this.pollTimeoutMilliSeconds);
+    }
+
+    @Override
+    public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
+
         List<AtlasKafkaMessage<T>> messages = new ArrayList();
 
-        ConsumerRecords<?, ?> records = kafkaConsumer.poll(pollTimeoutMilliSeconds);
+        ConsumerRecords<?, ?> records = kafkaConsumer.poll(timeoutMilliSeconds);
 
         if (records != null) {
             for (ConsumerRecord<?, ?> record : records) {
@@ -70,6 +76,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         }
 
         return messages;
+
     }
 
 
