@@ -55,6 +55,7 @@ import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
+import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -84,17 +85,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
     private final GraphBackedSearchIndexer        indexer;
+    private final SearchTracker                   searchTracker;
     private final int                             maxResultSetSize;
     private final int                             maxTypesCountInIdxQuery;
     private final int                             maxTagsCountInIdxQuery;
 
     @Inject
     EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry,
-                           AtlasGraph graph, GraphBackedSearchIndexer indexer) throws AtlasException {
+                           AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker) throws AtlasException {
         this.graph                    = graph;
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.entityRetriever          = new EntityGraphRetriever(typeRegistry);
         this.indexer                  = indexer;
+        this.searchTracker            = searchTracker;
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
         this.typeRegistry             = typeRegistry;
         this.maxResultSetSize         = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
@@ -401,73 +404,78 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(searchParameters);
 
-        SearchContext context = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
+        SearchContext context  = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
+        String        searchID = searchTracker.add(context); // For future cancellations
 
-        List<AtlasVertex> resultList = context.getSearchProcessor().execute();
+        try {
+            List<AtlasVertex> resultList = context.getSearchProcessor().execute();
 
-        // By default any attribute that shows up in the search parameter should be sent back in the response
-        // If additional values are requested then the entityAttributes will be a superset of the all search attributes
-        // and the explicitly requested attribute(s)
-        Set<String> resultAttributes = new HashSet<>();
-        Set<String> entityAttributes = new HashSet<>();
+            // By default any attribute that shows up in the search parameter should be sent back in the response
+            // If additional values are requested then the entityAttributes will be a superset of the all search attributes
+            // and the explicitly requested attribute(s)
+            Set<String> resultAttributes = new HashSet<>();
+            Set<String> entityAttributes = new HashSet<>();
 
-        if (CollectionUtils.isNotEmpty(searchParameters.getAttributes())) {
-            resultAttributes.addAll(searchParameters.getAttributes());
-        }
+            if (CollectionUtils.isNotEmpty(searchParameters.getAttributes())) {
+                resultAttributes.addAll(searchParameters.getAttributes());
+            }
 
-        for (String resultAttribute : resultAttributes) {
-            AtlasAttribute attribute = context.getEntityType().getAttribute(resultAttribute);
+            for (String resultAttribute : resultAttributes) {
+                AtlasAttribute attribute = context.getEntityType().getAttribute(resultAttribute);
 
-            if (attribute != null) {
-                AtlasType attributeType = attribute.getAttributeType();
+                if (attribute != null) {
+                    AtlasType attributeType = attribute.getAttributeType();
 
-                if (attributeType instanceof AtlasArrayType) {
-                    attributeType = ((AtlasArrayType) attributeType).getElementType();
-                }
+                    if (attributeType instanceof AtlasArrayType) {
+                        attributeType = ((AtlasArrayType) attributeType).getElementType();
+                    }
 
-                if (attributeType instanceof AtlasEntityType || attributeType instanceof AtlasObjectIdType) {
-                    entityAttributes.add(resultAttribute);
+                    if (attributeType instanceof AtlasEntityType || attributeType instanceof AtlasObjectIdType) {
+                        entityAttributes.add(resultAttribute);
+                    }
                 }
             }
-        }
 
-        for (AtlasVertex atlasVertex : resultList) {
-            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
+            for (AtlasVertex atlasVertex : resultList) {
+                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
-            ret.addEntity(entity);
+                ret.addEntity(entity);
 
-            // populate ret.referredEntities
-            for (String entityAttribute : entityAttributes) {
-                Object attrValue = entity.getAttribute(entityAttribute);
+                // populate ret.referredEntities
+                for (String entityAttribute : entityAttributes) {
+                    Object attrValue = entity.getAttribute(entityAttribute);
 
-                if (attrValue instanceof AtlasObjectId) {
-                    AtlasObjectId objId = (AtlasObjectId)attrValue;
+                    if (attrValue instanceof AtlasObjectId) {
+                        AtlasObjectId objId = (AtlasObjectId) attrValue;
 
-                    if (ret.getReferredEntities() == null) {
-                        ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
-                    }
+                        if (ret.getReferredEntities() == null) {
+                            ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
+                        }
 
-                    if (!ret.getReferredEntities().containsKey(objId.getGuid())) {
-                        ret.getReferredEntities().put(objId.getGuid(), entityRetriever.toAtlasEntityHeader(objId.getGuid()));
-                    }
-                } else if (attrValue instanceof Collection) {
-                    Collection objIds = (Collection)attrValue;
+                        if (!ret.getReferredEntities().containsKey(objId.getGuid())) {
+                            ret.getReferredEntities().put(objId.getGuid(), entityRetriever.toAtlasEntityHeader(objId.getGuid()));
+                        }
+                    } else if (attrValue instanceof Collection) {
+                        Collection objIds = (Collection) attrValue;
 
-                    for (Object obj : objIds) {
-                        if (obj instanceof AtlasObjectId) {
-                            AtlasObjectId objId = (AtlasObjectId)obj;
+                        for (Object obj : objIds) {
+                            if (obj instanceof AtlasObjectId) {
+                                AtlasObjectId objId = (AtlasObjectId) obj;
 
-                            if (ret.getReferredEntities() == null) {
-                                ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
-                            }
+                                if (ret.getReferredEntities() == null) {
+                                    ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
+                                }
 
-                            if (!ret.getReferredEntities().containsKey(objId.getGuid())) {
-                                ret.getReferredEntities().put(objId.getGuid(), entityRetriever.toAtlasEntityHeader(objId.getGuid()));
+                                if (!ret.getReferredEntities().containsKey(objId.getGuid())) {
+                                    ret.getReferredEntities().put(objId.getGuid(), entityRetriever.toAtlasEntityHeader(objId.getGuid()));
+                                }
                             }
                         }
                     }
                 }
             }
+        } finally {
+            searchTracker.remove(searchID);
         }
 
         return ret;
@@ -478,8 +486,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private String getQueryForFullTextSearch(String userKeyedString, String typeName, String classification) {
-        String typeFilter          = getTypeFilter(typeRegistry, typeName, maxTypesCountInIdxQuery);
-        String classficationFilter = getClassificationFilter(typeRegistry, classification, maxTagsCountInIdxQuery);
+        String typeFilter              = getTypeFilter(typeRegistry, typeName, maxTypesCountInIdxQuery);
+        String classificationFilter = getClassificationFilter(typeRegistry, classification, maxTagsCountInIdxQuery);
 
         StringBuilder queryText = new StringBuilder();
 
@@ -495,12 +503,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             queryText.append(typeFilter);
         }
 
-        if (! StringUtils.isEmpty(classficationFilter)) {
+        if (! StringUtils.isEmpty(classificationFilter)) {
             if (queryText.length() > 0) {
                 queryText.append(" AND ");
             }
 
-            queryText.append(classficationFilter);
+            queryText.append(classificationFilter);
         }
 
         return String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, queryText.toString());
