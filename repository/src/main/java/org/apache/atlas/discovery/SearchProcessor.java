@@ -52,6 +52,7 @@ public abstract class SearchProcessor {
     public static final String  BRACE_CLOSE_STR = " )";
 
     private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
+    private static final char[] OFFENDING_CHARS = {'@', '/', ' '}; // This can grow as we discover corner cases
 
     static
     {
@@ -60,9 +61,9 @@ public abstract class SearchProcessor {
         OPERATOR_MAP.put(SearchParameters.Operator.LTE,"v.\"%s\": [* TO %s]");
         OPERATOR_MAP.put(SearchParameters.Operator.GTE,"v.\"%s\": [%s TO *]");
         OPERATOR_MAP.put(SearchParameters.Operator.EQ,"v.\"%s\": %s");
-        OPERATOR_MAP.put(SearchParameters.Operator.NEQ,"v.\"%s\": (NOT %s)");
-        OPERATOR_MAP.put(SearchParameters.Operator.IN, "v.\"%s\": (%s)");
-        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, "v.\"%s\": (%s)");
+        OPERATOR_MAP.put(SearchParameters.Operator.NEQ,"-" + "v.\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.IN, "v.\"%s\": (%s)"); // this should be a list of quoted strings
+        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, "v.\"%s\": (%s)"); // this should be regex pattern
         OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, "v.\"%s\": (%s*)");
         OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, "v.\"%s\": (*%s)");
         OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, "v.\"%s\": (*%s*)");
@@ -184,7 +185,7 @@ public abstract class SearchProcessor {
         if (filterCriteria != null) {
             LOG.debug("Processing Filters");
 
-            String filterQuery = toSolrQuery(type, filterCriteria, solrAttributes);
+            String filterQuery = toSolrQuery(type, filterCriteria, solrAttributes, 0);
 
             if (StringUtils.isNotEmpty(filterQuery)) {
                 solrQuery.append(AND_STR).append(filterQuery);
@@ -196,27 +197,31 @@ public abstract class SearchProcessor {
         }
     }
 
-    private String toSolrQuery(AtlasStructType type, FilterCriteria criteria, Set<String> solrAttributes) {
-        return toSolrQuery(type, criteria, solrAttributes, new StringBuilder());
+    private String toSolrQuery(AtlasStructType type, FilterCriteria criteria, Set<String> solrAttributes, int level) {
+        return toSolrQuery(type, criteria, solrAttributes, new StringBuilder(), level);
     }
 
-    private String toSolrQuery(AtlasStructType type, FilterCriteria criteria, Set<String> solrAttributes, StringBuilder sb) {
+    private String toSolrQuery(AtlasStructType type, FilterCriteria criteria, Set<String> solrAttributes, StringBuilder sb, int level) {
         if (criteria.getCondition() != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
             StringBuilder nestedExpression = new StringBuilder();
 
             for (FilterCriteria filterCriteria : criteria.getCriterion()) {
-                String nestedQuery = toSolrQuery(type, filterCriteria, solrAttributes);
+                String nestedQuery = toSolrQuery(type, filterCriteria, solrAttributes, level + 1);
 
                 if (StringUtils.isNotEmpty(nestedQuery)) {
                     if (nestedExpression.length() > 0) {
                         nestedExpression.append(SPACE_STRING).append(criteria.getCondition()).append(SPACE_STRING);
                     }
-
+                    // todo: when a neq operation is nested and occurs in the beginning of the query, solr has issues
                     nestedExpression.append(nestedQuery);
                 }
             }
 
-            return nestedExpression.length() > 0 ? sb.append(BRACE_OPEN_STR).append(nestedExpression.toString()).append(BRACE_CLOSE_STR).toString() : EMPTY_STRING;
+            if (level == 0) {
+                return nestedExpression.length() > 0 ? sb.append(nestedExpression).toString() : EMPTY_STRING;
+            } else {
+                return nestedExpression.length() > 0 ? sb.append(BRACE_OPEN_STR).append(nestedExpression).append(BRACE_CLOSE_STR).toString() : EMPTY_STRING;
+            }
         } else if (solrAttributes.contains(criteria.getAttributeName())){
             return toSolrExpression(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
         } else {
@@ -231,7 +236,12 @@ public abstract class SearchProcessor {
             String qualifiedName = type.getQualifiedAttributeName(attrName);
 
             if (OPERATOR_MAP.get(op) != null) {
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, attrVal);
+                if (hasOffendingChars(attrVal)) {
+                    // FIXME: if attrVal has offending chars & op is contains, endsWith, startsWith, solr doesn't like it and results are skewed
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, "\"" + attrVal + "\"");
+                } else {
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, attrVal);
+                }
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
@@ -377,5 +387,9 @@ public abstract class SearchProcessor {
         }
 
         return defaultValue;
+    }
+
+    private boolean hasOffendingChars(String str) {
+        return StringUtils.containsAny(str, OFFENDING_CHARS);
     }
 }
