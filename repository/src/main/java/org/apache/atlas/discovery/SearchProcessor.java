@@ -181,7 +181,7 @@ public abstract class SearchProcessor {
     protected void constructTypeTestQuery(StringBuilder solrQuery, Set<String> typeAndAllSubTypes) {
         String typeAndSubtypesString = StringUtils.join(typeAndAllSubTypes, SPACE_STRING);
 
-        solrQuery.append("v.\"__typeName\": (")
+        solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\": (")
                 .append(typeAndSubtypesString)
                 .append(")");
     }
@@ -206,7 +206,7 @@ public abstract class SearchProcessor {
                 solrQuery.append(AND_STR);
             }
 
-            solrQuery.append("v.\"__state\":").append("ACTIVE");
+            solrQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
         }
     }
 

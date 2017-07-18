@@ -61,7 +61,6 @@ public class SearchContext {
 
         if (needEntityProcessor()) {
             addProcessor(new EntitySearchProcessor(this));
-
         }
     }
 
@@ -104,15 +103,15 @@ public class SearchContext {
         return toString(new StringBuilder()).toString();
     }
 
-    public boolean needFullTextrocessor() {
+    boolean needFullTextrocessor() {
         return StringUtils.isNotEmpty(searchParameters.getQuery());
     }
 
-    public boolean needClassificationProcessor() {
-        return classificationType != null;
+    boolean needClassificationProcessor() {
+        return classificationType != null && (entityType == null || hasAttributeFilter(searchParameters.getTagFilters()));
     }
 
-    public boolean needEntityProcessor() {
+    boolean needEntityProcessor() {
         return entityType != null;
     }
 

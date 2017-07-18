@@ -20,6 +20,7 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -39,18 +40,21 @@ public class EntitySearchProcessor extends SearchProcessor {
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasEntityType entityType         = context.getEntityType();
-        final FilterCriteria  filterCriteria     = context.getSearchParameters().getEntityFilters();
-        final Set<String>     typeAndSubTypes    = entityType.getTypeAndAllSubTypes();
-        final Set<String>     solrAttributes     = new HashSet<>();
-        final Set<String>     gremlinAttributes  = new HashSet<>();
-        final Set<String>     allAttributes      = new HashSet<>();
+        final AtlasEntityType entityType        = context.getEntityType();
+        final FilterCriteria  filterCriteria    = context.getSearchParameters().getEntityFilters();
+        final Set<String>     typeAndSubTypes   = entityType.getTypeAndAllSubTypes();
+        final Set<String>     solrAttributes    = new HashSet<>();
+        final Set<String>     gremlinAttributes = new HashSet<>();
+        final Set<String>     allAttributes     = new HashSet<>();
+
+        final AtlasClassificationType classificationType   = context.getClassificationType();
+        final boolean                 filterClassification = classificationType != null && !context.needClassificationProcessor();
 
 
         processSearchAttributes(entityType, filterCriteria, solrAttributes, gremlinAttributes, allAttributes);
 
-        final boolean typeSearchBySolr = typeAndSubTypes.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY;
-        final boolean attrSearchBySolr = canApplySolrFilter(entityType, filterCriteria, false);
+        final boolean typeSearchBySolr = !filterClassification && typeAndSubTypes.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY;
+        final boolean attrSearchBySolr = !filterClassification && CollectionUtils.isNotEmpty(solrAttributes) && canApplySolrFilter(entityType, filterCriteria, false);
 
         StringBuilder solrQuery = new StringBuilder();
 
@@ -82,6 +86,10 @@ public class EntitySearchProcessor extends SearchProcessor {
                 query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
             }
 
+            if (filterClassification) {
+                query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
+            }
+
             graphQuery = toGremlinFilterQuery(entityType, filterCriteria, gremlinAttributes, query);
 
             if (context.getSearchParameters().getExcludeDeletedEntities() && indexQuery == null) {
@@ -92,6 +100,10 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         AtlasGraphQuery query = context.getGraph().query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
+
+        if (filterClassification) {
+            query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
+        }
 
         filterGraphQuery = toGremlinFilterQuery(entityType, filterCriteria, allAttributes, query);
 
@@ -115,7 +127,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         try {
-            int qryOffset = (nextProcessor == null) ? context.getSearchParameters().getOffset() : 0;
+            int qryOffset = (nextProcessor == null && (graphQuery == null || indexQuery == null)) ? context.getSearchParameters().getOffset() : 0;
             int limit     = context.getSearchParameters().getLimit();
             int resultIdx = qryOffset;
 
