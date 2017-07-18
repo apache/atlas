@@ -118,6 +118,11 @@ public abstract class SearchProcessor {
                     gremlinFiltered.add(attributeName);
                 }
 
+                if (structType instanceof AtlasEntityType) {
+                    // Capture the entity attributes
+                    context.getEntityAttributes().add(attributeName);
+                }
+
                 allAttributes.add(attributeName);
             } catch (AtlasBaseException e) {
                 LOG.warn(e.getMessage());

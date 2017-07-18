@@ -420,6 +420,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 resultAttributes.addAll(searchParameters.getAttributes());
             }
 
+            if (CollectionUtils.isNotEmpty(context.getEntityAttributes())) {
+                resultAttributes.addAll(context.getEntityAttributes());
+            }
+
             for (String resultAttribute : resultAttributes) {
                 AtlasAttribute attribute = context.getEntityType().getAttribute(resultAttribute);
 
