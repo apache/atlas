@@ -22,12 +22,14 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 
 public class FullTextSearchProcessor extends SearchProcessor {
@@ -40,9 +42,39 @@ public class FullTextSearchProcessor extends SearchProcessor {
         super(context);
 
         SearchParameters searchParameters = context.getSearchParameters();
-        String           queryString      = String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, searchParameters.getQuery());
+        StringBuilder    queryString      = new StringBuilder();
 
-        indexQuery = context.getGraph().indexQuery(Constants.FULLTEXT_INDEX, queryString);
+        queryString.append("v.\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
+
+        // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
+        // processing (and rejection) by subsequent EntitySearchProcessor
+        if (context.getEntityType() != null) {
+            Set<String> typeAndSubTypeNames = context.getEntityType().getTypeAndAllSubTypes();
+
+            if (typeAndSubTypeNames.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY) {
+                queryString.append(AND_STR).append("(").append(StringUtils.join(typeAndSubTypeNames, SPACE_STRING)).append(")");
+            } else {
+                LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
+                         context.getEntityType().getTypeName(), typeAndSubTypeNames.size());
+            }
+        }
+
+        // if search includes classification criteria, adding a filter here can help avoid unnecessary
+        // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
+        if (context.getClassificationType() != null) {
+            Set<String> typeAndSubTypeNames = context.getClassificationType().getTypeAndAllSubTypes();
+
+            if (typeAndSubTypeNames.size() <= MAX_CLASSIFICATION_TYPES_IN_INDEX_QUERY) {
+                queryString.append(AND_STR).append("(").append(StringUtils.join(typeAndSubTypeNames, SPACE_STRING)).append(")");
+            } else {
+                LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
+                        context.getEntityType().getTypeName(), typeAndSubTypeNames.size());
+            }
+        }
+
+        queryString.append(")");
+
+        indexQuery = context.getGraph().indexQuery(Constants.FULLTEXT_INDEX, queryString.toString());
     }
 
     @Override
