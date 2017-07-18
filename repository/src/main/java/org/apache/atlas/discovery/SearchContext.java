@@ -109,7 +109,7 @@ public class SearchContext {
     }
 
     public boolean needClassificationProcessor() {
-        return classificationType != null && (hasAttributeFilter(searchParameters.getTagFilters()) || entityType == null);
+        return classificationType != null;
     }
 
     public boolean needEntityProcessor() {

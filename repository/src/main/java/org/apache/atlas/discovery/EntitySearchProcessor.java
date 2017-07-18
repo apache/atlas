@@ -20,7 +20,6 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.*;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -34,60 +33,70 @@ public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
 
     private final AtlasIndexQuery indexQuery;
-    private final AtlasGraphQuery partialGraphQuery;
-    private final AtlasGraphQuery allGraphQuery;
+    private final AtlasGraphQuery graphQuery;
+    private final AtlasGraphQuery filterGraphQuery;
 
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        AtlasEntityType         entityType         = context.getEntityType();
-        AtlasClassificationType classificationType = context.getClassificationType();
-        FilterCriteria          filterCriteria     = context.getSearchParameters().getEntityFilters();
-        Set<String>             typeAndSubTypes    = entityType.getTypeAndAllSubTypes();
-        Set<String>             solrAttributes     = new HashSet<>();
-        Set<String>             gremlinAttributes  = new HashSet<>();
-        Set<String>             allAttributes      = new HashSet<>();
+        final AtlasEntityType entityType         = context.getEntityType();
+        final FilterCriteria  filterCriteria     = context.getSearchParameters().getEntityFilters();
+        final Set<String>     typeAndSubTypes    = entityType.getTypeAndAllSubTypes();
+        final Set<String>     solrAttributes     = new HashSet<>();
+        final Set<String>     gremlinAttributes  = new HashSet<>();
+        final Set<String>     allAttributes      = new HashSet<>();
 
 
         processSearchAttributes(entityType, filterCriteria, solrAttributes, gremlinAttributes, allAttributes);
 
-        boolean useSolrSearch = typeAndSubTypes.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY && canApplySolrFilter(entityType, filterCriteria, false);
+        final boolean typeSearchBySolr = typeAndSubTypes.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY;
+        final boolean attrSearchBySolr = canApplySolrFilter(entityType, filterCriteria, false);
 
-        if (useSolrSearch) {
-            StringBuilder solrQuery = new StringBuilder();
+        StringBuilder solrQuery = new StringBuilder();
 
+        if (typeSearchBySolr) {
             constructTypeTestQuery(solrQuery, typeAndSubTypes);
-            constructFilterQuery(solrQuery, entityType, filterCriteria, solrAttributes);
+        }
 
+        if (attrSearchBySolr) {
+            constructFilterQuery(solrQuery, entityType, filterCriteria, solrAttributes);
+        } else {
+            gremlinAttributes.addAll(solrAttributes);
+        }
+
+        if (solrQuery.length() > 0) {
             String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");
 
             solrQueryString = STRAY_OR_PATTERN.matcher(solrQueryString).replaceAll(")");
             solrQueryString = STRAY_ELIPSIS_PATTERN.matcher(solrQueryString).replaceAll("");
 
             indexQuery = context.getGraph().indexQuery(Constants.VERTEX_INDEX, solrQueryString);
+        } else {
+            indexQuery = null;
+        }
 
-            if (CollectionUtils.isNotEmpty(gremlinAttributes) || classificationType != null) {
-                AtlasGraphQuery query = context.getGraph().query();
+        if (CollectionUtils.isNotEmpty(gremlinAttributes) || !typeSearchBySolr) {
+            AtlasGraphQuery query = context.getGraph().query();
 
-                addClassificationNameConditionIfNecessary(query);
+            if (!typeSearchBySolr) {
+                query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
+            }
 
-                partialGraphQuery = toGremlinFilterQuery(entityType, filterCriteria, gremlinAttributes, query);
-            } else {
-                partialGraphQuery = null;
+            graphQuery = toGremlinFilterQuery(entityType, filterCriteria, gremlinAttributes, query);
+
+            if (context.getSearchParameters().getExcludeDeletedEntities() && indexQuery == null) {
+                graphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
             }
         } else {
-            indexQuery      = null;
-            partialGraphQuery = null;
+            graphQuery = null;
         }
 
         AtlasGraphQuery query = context.getGraph().query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
 
-        addClassificationNameConditionIfNecessary(query);
-
-        allGraphQuery = toGremlinFilterQuery(entityType, filterCriteria, allAttributes, query);
+        filterGraphQuery = toGremlinFilterQuery(entityType, filterCriteria, allAttributes, query);
 
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
-            allGraphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
+            filterGraphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
         }
     }
 
@@ -128,15 +137,15 @@ public class EntitySearchProcessor extends SearchProcessor {
 
                     vertices = getVerticesFromIndexQueryResult(queryResult);
 
-                    if (partialGraphQuery != null) {
+                    if (graphQuery != null) {
                         AtlasGraphQuery guidQuery = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, getGuids(vertices));
 
-                        guidQuery.addConditionsFrom(partialGraphQuery);
+                        guidQuery.addConditionsFrom(graphQuery);
 
                         vertices = getVertices(guidQuery.vertices().iterator());
                     }
                 } else {
-                    Iterator<AtlasVertex> queryResult = allGraphQuery.vertices(qryOffset, limit).iterator();
+                    Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
 
                     if (!queryResult.hasNext()) { // no more results from query - end of search
                         break;
@@ -182,7 +191,7 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         AtlasGraphQuery query = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, getGuids(entityVertices));
 
-        query.addConditionsFrom(allGraphQuery);
+        query.addConditionsFrom(filterGraphQuery);
 
         List<AtlasVertex> ret = getVertices(query.vertices().iterator());
 
@@ -193,11 +202,5 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         return ret;
-    }
-
-    private void addClassificationNameConditionIfNecessary(AtlasGraphQuery query) {
-        if (context.getClassificationType() != null && !context.needClassificationProcessor()) {
-            query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, context.getClassificationType().getTypeAndAllSubTypes());
-        }
     }
 }
