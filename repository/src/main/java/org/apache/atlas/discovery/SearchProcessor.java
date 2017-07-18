@@ -88,7 +88,7 @@ public abstract class SearchProcessor {
     public abstract List<AtlasVertex> execute();
 
     public List<AtlasVertex> filter(List<AtlasVertex> entityVertices) {
-        return nextProcessor == null ? entityVertices : nextProcessor.filter(entityVertices);
+        return nextProcessor == null || CollectionUtils.isEmpty(entityVertices) ? entityVertices : nextProcessor.filter(entityVertices);
     }
 
 
@@ -193,12 +193,20 @@ public abstract class SearchProcessor {
             String filterQuery = toSolrQuery(type, filterCriteria, solrAttributes, 0);
 
             if (StringUtils.isNotEmpty(filterQuery)) {
-                solrQuery.append(AND_STR).append(filterQuery);
+                if (solrQuery.length() > 0) {
+                    solrQuery.append(AND_STR);
+                }
+
+                solrQuery.append(filterQuery);
             }
         }
 
         if (type instanceof AtlasEntityType && context.getSearchParameters().getExcludeDeletedEntities()) {
-            solrQuery.append(AND_STR).append("v.\"__state\":").append("ACTIVE");
+            if (solrQuery.length() > 0) {
+                solrQuery.append(AND_STR);
+            }
+
+            solrQuery.append("v.\"__state\":").append("ACTIVE");
         }
     }
 
