@@ -53,6 +53,10 @@ define([
                 'enumDefCollection': this.enumDefCollection,
                 'classificationDefCollection': this.classificationDefCollection
             }
+            this.filterObj = {
+                'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
+                'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
+            }
         },
         bindCommonEvents: function() {
             var that = this;
@@ -125,6 +129,7 @@ define([
                         App.rSideNav.show(new SideNavLayoutView(
                             _.extend({
                                 'url': url,
+                                'filterObj': that.filterObj
                             }, that.preFetchedCollectionLists)
                         ));
                     } else {
@@ -156,7 +161,7 @@ define([
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
                         App.rSideNav.show(new SideNavLayoutView(
-                            _.extend({}, that.preFetchedCollectionLists)
+                            _.extend({ 'filterObj': that.filterObj }, that.preFetchedCollectionLists)
                         ));
                     } else {
                         App.rSideNav.currentView.selectTab();
@@ -193,7 +198,8 @@ define([
                     }
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
-                            'tag': tagName
+                            'tag': tagName,
+                            'filterObj': that.filterObj
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -231,17 +237,13 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams(),
-                    filterObj = {
-                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
-                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
-                    }
+                var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'searchVent': that.searchVent,
-                            'filterObj': filterObj
+                            'filterObj': that.filterObj
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -257,7 +259,7 @@ define([
                         _.extend({
                             'value': paramObj,
                             'initialView': true,
-                            'filterObj': filterObj,
+                            'filterObj': that.filterObj,
                             'searchVent': that.searchVent
                         }, that.preFetchedCollectionLists)
                     ));
@@ -276,10 +278,7 @@ define([
                 'views/search/SearchDetailLayoutView'
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams(),
-                    filterObj = {
-                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
-                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
-                    }
+                    filterObj = that.filterObj
                 if (paramObj && paramObj.searchType === "basic") {
                     if (paramObj.type) {
                         if (_.has(filterObj.entityFilters, paramObj.type)) {
@@ -310,7 +309,7 @@ define([
                         _.extend({
                             'value': paramObj,
                             'searchVent': that.searchVent,
-                            'filterObj': filterObj
+                            'filterObj': that.filterObj
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -321,7 +320,7 @@ define([
                     _.extend({
                         'value': paramObj,
                         'searchVent': that.searchVent,
-                        'filterObj': filterObj,
+                        'filterObj': that.filterObj,
                         'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
                     }, that.preFetchedCollectionLists)
                 ));
