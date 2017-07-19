@@ -21,6 +21,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -67,6 +68,7 @@ import scala.util.Either;
 import scala.util.parsing.combinator.Parsers.NoSuccess;
 
 import javax.inject.Inject;
+import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
@@ -74,10 +76,19 @@ import java.util.*;
 import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
 import static org.apache.atlas.AtlasErrorCode.UNKNOWN_TYPENAME;
+import static org.apache.atlas.SortOrder.DESCENDING;
+import static org.apache.atlas.model.TypeCategory.ARRAY;
+import static org.apache.atlas.model.TypeCategory.MAP;
+import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
+import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.RELATIONSHIP_SEARCH;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.RELATIONSHIP_SEARCH_DESCENDING_SORT;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.RELATIONSHIP_SEARCH_ASCENDING_SORT;
 
 @Component
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
+    private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
 
     private final AtlasGraph                      graph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
@@ -485,6 +496,98 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
+    @Override
+    @GraphTransaction
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortByAttributeName,
+                                                   SortOrder sortOrder, int limit, int offset) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
+
+        if (StringUtils.isEmpty(guid) || StringUtils.isEmpty(relation)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid: '" + guid + "', relation: '" + relation + "'");
+        }
+
+        AtlasVertex     entityVertex   = entityRetriever.getEntityVertex(guid);
+        String          entityTypeName = GraphHelper.getTypeName(entityVertex);
+        AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_TYPE, entityTypeName, guid);
+        }
+
+        AtlasAttribute attribute = entityType.getAttribute(relation);
+
+        if (attribute != null) {
+            if (isRelationshipAttribute(attribute)) {
+                relation = EDGE_LABEL_PREFIX + attribute.getQualifiedName();
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
+            }
+        }
+
+        if (StringUtils.isEmpty(sortByAttributeName)) {
+            sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+        }
+
+        AtlasAttribute sortByAttribute = entityType.getAttribute(sortByAttributeName);
+
+        if (sortByAttribute == null) {
+            sortByAttributeName = null;
+            sortOrder           = null;
+        } else {
+            sortByAttributeName = sortByAttribute.getQualifiedName();
+
+            if (sortOrder == null) {
+                sortOrder = SortOrder.ASCENDING;
+            }
+        }
+
+        String       relatedEntitiesQuery = getRelatedEntitiesQuery(sortOrder);
+        ScriptEngine scriptEngine         = graph.getGremlinScriptEngine();
+        Bindings     bindings             = scriptEngine.createBindings();
+        QueryParams  params               = validateSearchParams(limit, offset);
+
+        bindings.put("g", graph);
+        bindings.put("guid", guid);
+        bindings.put("relation", relation);
+        bindings.put("sortAttributeName", sortByAttributeName);
+        bindings.put("offset", params.offset());
+        bindings.put("limit", params.offset() + params.limit());
+
+        try {
+            Object result = graph.executeGremlinScript(scriptEngine, bindings, relatedEntitiesQuery, false);
+
+            if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
+                List<?> queryResult  = (List) result;
+                Object  firstElement = queryResult.get(0);
+
+                if (firstElement instanceof AtlasVertex) {
+                    List<AtlasVertex>       vertices   = (List<AtlasVertex>) queryResult;
+                    List<AtlasEntityHeader> resultList = new ArrayList<>(vertices.size());
+
+                    for (AtlasVertex vertex : vertices) {
+                        resultList.add(entityRetriever.toAtlasEntityHeader(vertex));
+                    }
+
+                    ret.setEntities(resultList);
+                }
+            }
+
+            if (ret.getEntities() == null) {
+                ret.setEntities(new ArrayList<AtlasEntityHeader>());
+            }
+        } catch (ScriptException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Gremlin script execution failed for relationship search query: " + e);
+            }
+
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Relationship search query failed");
+        } finally {
+            graph.releaseGremlinScriptEngine(scriptEngine);
+        }
+
+        return ret;
+    }
+
     public int getMaxResultSetSize() {
         return maxResultSetSize;
     }
@@ -639,5 +742,36 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return "";
+    }
+
+    private boolean isRelationshipAttribute(AtlasAttribute attribute) throws AtlasBaseException {
+        boolean   ret      = true;
+        AtlasType attrType = attribute.getAttributeType();
+
+        if (attrType.getTypeCategory() == ARRAY) {
+            attrType = ((AtlasArrayType) attrType).getElementType();
+        } else if (attrType.getTypeCategory() == MAP) {
+            attrType = ((AtlasMapType) attrType).getValueType();
+        }
+
+        if (attrType.getTypeCategory() != OBJECT_ID_TYPE) {
+            ret = false;
+        }
+
+        return ret;
+    }
+
+    private String getRelatedEntitiesQuery(SortOrder sortOrder) {
+        final String ret;
+
+        if (sortOrder == null) {
+            ret = gremlinQueryProvider.getQuery(RELATIONSHIP_SEARCH);
+        } else if (sortOrder == DESCENDING) {
+            ret = gremlinQueryProvider.getQuery(RELATIONSHIP_SEARCH_DESCENDING_SORT);
+        } else {
+            ret = gremlinQueryProvider.getQuery(RELATIONSHIP_SEARCH_ASCENDING_SORT);
+        }
+
+        return ret;
     }
 }

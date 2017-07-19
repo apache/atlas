@@ -71,6 +71,8 @@ public enum AtlasErrorCode {
     BAD_REQUEST(400, "ATLAS-400-00-029", "{0}"),
     PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
     MISSING_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value"),
+    INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
+    INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),

@@ -19,6 +19,7 @@
 package org.apache.atlas.discovery;
 
 
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
@@ -65,4 +66,16 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     *
+     * @param guid unique ID of the entity.
+     * @param relation relation name.
+     * @param sortByAttribute sort the result using this attribute name, default value is 'name'
+     * @param sortOrder sorting order
+     * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
+     * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
+     * @return AtlasSearchResult
+     */
+    AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortByAttribute, SortOrder sortOrder, int limit, int offset) throws AtlasBaseException;
 }
