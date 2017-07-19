@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -132,5 +132,23 @@ public class ImportServiceTest {
         runImportWithParameters(new ImportService(typeDefStore, entityStore, typeRegistry), request, zipSource);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 8);
+    }
+
+    @DataProvider(name = "ctas")
+    public static Object[][] getDataFromCtas(ITestContext context) throws IOException {
+        return getZipSource("ctas.zip");
+    }
+
+    @Test(dataProvider = "ctas")
+    public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+
+        AtlasImportRequest request = getDefaultImportRequest();
+        runImportWithParameters(getImportService(), getDefaultImportRequest(), zipSource);
+    }
+
+    private ImportService getImportService() {
+        return new ImportService(typeDefStore, entityStore, typeRegistry);
     }
 }

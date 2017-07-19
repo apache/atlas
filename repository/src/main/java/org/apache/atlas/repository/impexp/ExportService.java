@@ -98,7 +98,6 @@ public class ExportService {
             AtlasExportResult.OperationStatus[] statuses = processItems(request, context);
 
             processTypesDef(context);
-
             updateSinkWithOperationMetrics(context, statuses, getOperationDuration(startTime));
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
@@ -113,6 +112,7 @@ public class ExportService {
     }
 
     private void updateSinkWithOperationMetrics(ExportContext context, AtlasExportResult.OperationStatus[] statuses, int duration) throws AtlasBaseException {
+        context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
         context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
         clearContextData(context);
@@ -201,9 +201,10 @@ public class ExportService {
                     processEntity(guid, context);
                 }
 
-                if (!context.guidsLineageToProcess.isEmpty()) {
-                    context.guidsToProcess.addAll(context.guidsLineageToProcess);
-                    context.guidsLineageToProcess.clear();
+                if (!context.lineageToProcess.isEmpty()) {
+                    context.guidsToProcess.addAll(context.lineageToProcess);
+                    context.lineageProcessed.addAll(context.lineageToProcess.getList());
+                    context.lineageToProcess.clear();
                 }
             }
         } catch (AtlasBaseException excp) {
@@ -295,7 +296,9 @@ public class ExportService {
             TraversalDirection      direction         = context.guidDirection.get(guid);
             AtlasEntityWithExtInfo  entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
 
-            context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
+            if(!context.lineageProcessed.contains(guid)) {
+                context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
+            }
 
             addEntity(entityWithExtInfo, context);
             addTypes(entityWithExtInfo.getEntity(), context);
@@ -651,13 +654,18 @@ public class ExportService {
             list.clear();
             set.clear();
         }
+
+        public List<T> getList() {
+            return list;
+        }
     }
 
 
     private class ExportContext {
         final Set<String>                     guidsProcessed = new HashSet<>();
         final UniqueList<String>              guidsToProcess = new UniqueList<>();
-        final UniqueList<String>              guidsLineageToProcess = new UniqueList<>();
+        final UniqueList<String>              lineageToProcess = new UniqueList<>();
+        final Set<String>                     lineageProcessed = new HashSet<>();
         final Map<String, TraversalDirection> guidDirection  = new HashMap<>();
         final Set<String>                     entityTypes         = new HashSet<>();
         final Set<String>                     classificationTypes = new HashSet<>();
@@ -719,7 +727,7 @@ public class ExportService {
             }
 
             if(isSuperTypeProcess) {
-                guidsLineageToProcess.add(guid);
+                lineageToProcess.add(guid);
             }
 
             guidDirection.put(guid, direction);
