@@ -95,6 +95,12 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".filter({it.getProperty('%s').endsWith(%s)})";
             case COMPARE_CONTAINS:
                 return ".filter({it.getProperty('%s').contains(%s)})";
+            case RELATIONSHIP_SEARCH:
+                return "g.V('__guid', guid).both(relation)[offset..<limit].toList()";
+            case RELATIONSHIP_SEARCH_DESCENDING_SORT:
+                return "g.V('__guid', guid).both(relation)[offset..<limit].order{it.b.getProperty(sortAttributeName) <=> it.a.getProperty(sortAttributeName)}.toList()";
+            case RELATIONSHIP_SEARCH_ASCENDING_SORT:
+                return "g.V('__guid', guid).both(relation)[offset..<limit].order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}.toList()";
         }
         // Should never reach this point
         return null;
