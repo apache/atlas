@@ -19,8 +19,10 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -68,7 +70,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
                 queryString.append(AND_STR).append("(").append(StringUtils.join(typeAndSubTypeNames, SPACE_STRING)).append(")");
             } else {
                 LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
-                        context.getEntityType().getTypeName(), typeAndSubTypeNames.size());
+                        context.getClassificationType().getTypeName(), typeAndSubTypeNames.size());
             }
         }
 
@@ -92,11 +94,16 @@ public class FullTextSearchProcessor extends SearchProcessor {
         }
 
         try {
-            int qryOffset = nextProcessor == null ? context.getSearchParameters().getOffset() : 0;
-            int limit     = context.getSearchParameters().getLimit();
-            int resultIdx = qryOffset;
+            final int startIdx  = context.getSearchParameters().getOffset();
+            final int limit     = context.getSearchParameters().getLimit();
+            int       qryOffset = nextProcessor == null ? startIdx : 0;
+            int       resultIdx = qryOffset;
 
-            while (ret.size() < limit) {
+            final List<AtlasVertex> entityVertices = new ArrayList<>();
+
+            for (; ret.size() < limit; qryOffset += limit) {
+                entityVertices.clear();
+
                 if (context.terminateSearch()) {
                     LOG.warn("query terminated: {}", context.getSearchParameters());
 
@@ -109,20 +116,29 @@ public class FullTextSearchProcessor extends SearchProcessor {
                     break;
                 }
 
-                qryOffset += limit;
+                while (idxQueryResult.hasNext()) {
+                    AtlasVertex vertex = idxQueryResult.next().getVertex();
 
-                List<AtlasVertex> vertices = getVerticesFromIndexQueryResult(idxQueryResult);
+                    // skip non-entity vertices
+                    if (!AtlasGraphUtilsV1.isEntityVertex(vertex)) {
+                        LOG.warn("FullTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId()); // might cause duplicate entries in result
 
-                vertices = super.filter(vertices);
-
-                for (AtlasVertex vertex : vertices) {
-                    resultIdx++;
-
-                    if (resultIdx < context.getSearchParameters().getOffset()) {
                         continue;
                     }
 
-                    ret.add(vertex);
+                    entityVertices.add(vertex);
+                }
+
+                super.filter(entityVertices);
+
+                for (AtlasVertex entityVertex : entityVertices) {
+                    resultIdx++;
+
+                    if (resultIdx <= startIdx) {
+                        continue;
+                    }
+
+                    ret.add(entityVertex);
 
                     if (ret.size() == limit) {
                         break;

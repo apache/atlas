@@ -58,7 +58,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         if (useSolrSearch) {
             StringBuilder solrQuery = new StringBuilder();
 
-            constructTypeTestQuery(solrQuery, typeAndSubTypes);
+            constructTypeTestQuery(solrQuery, classificationType, typeAndSubTypes);
             constructFilterQuery(solrQuery, classificationType, filterCriteria, solrAttributes);
 
             String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");
@@ -95,19 +95,25 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         }
 
         try {
-            int         qryOffset      = (nextProcessor == null) ? context.getSearchParameters().getOffset() : 0;
-            int         limit          = context.getSearchParameters().getLimit();
-            int         resultIdx      = qryOffset;
-            Set<String> processedGuids = new HashSet<>();
+            final int startIdx  = context.getSearchParameters().getOffset();
+            final int limit     = context.getSearchParameters().getLimit();
+            int       qryOffset = nextProcessor == null ? startIdx : 0;
+            int       resultIdx = qryOffset;
 
-            while (ret.size() < limit) {
+            final Set<String>       processedGuids         = new HashSet<>();
+            final List<AtlasVertex> entityVertices         = new ArrayList<>();
+            final List<AtlasVertex> classificationVertices = new ArrayList<>();
+
+
+            for (; ret.size() < limit; qryOffset += limit) {
+                entityVertices.clear();
+                classificationVertices.clear();
+
                 if (context.terminateSearch()) {
                     LOG.warn("query terminated: {}", context.getSearchParameters());
 
                     break;
                 }
-
-                List<AtlasVertex> classificationVertices;
 
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> queryResult = indexQuery.vertices(qryOffset, limit);
@@ -116,7 +122,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         break;
                     }
 
-                    classificationVertices = getVerticesFromIndexQueryResult(queryResult);
+                    getVerticesFromIndexQueryResult(queryResult, classificationVertices);
                 } else {
                     Iterator<AtlasVertex> queryResult = allGraphQuery.vertices(qryOffset, limit).iterator();
 
@@ -124,12 +130,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         break;
                     }
 
-                    classificationVertices = getVertices(queryResult);
+                    getVertices(queryResult, classificationVertices);
                 }
-
-                qryOffset += limit;
-
-                List<AtlasVertex> entityVertices = new ArrayList<>();
 
                 for (AtlasVertex classificationVertex : classificationVertices) {
                     Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
@@ -148,12 +150,12 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     }
                 }
 
-                entityVertices = super.filter(entityVertices);
+                super.filter(entityVertices);
 
                 for (AtlasVertex entityVertex : entityVertices) {
                     resultIdx++;
 
-                    if (resultIdx < context.getSearchParameters().getOffset()) {
+                    if (resultIdx <= startIdx) {
                         continue;
                     }
 
@@ -176,7 +178,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     }
 
     @Override
-    public List<AtlasVertex> filter(List<AtlasVertex> entityVertices) {
+    public void filter(List<AtlasVertex> entityVertices) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> ClassificationSearchProcessor.filter({})", entityVertices.size());
         }
@@ -185,14 +187,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
         query.addConditionsFrom(filterGraphQuery);
 
-        List<AtlasVertex> ret = getVertices(query.vertices().iterator());
+        entityVertices.clear();
+        getVertices(query.vertices().iterator(), entityVertices);
 
-        ret = super.filter(ret);
+        super.filter(entityVertices);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== ClassificationSearchProcessor.filter({}): ret.size()={}", entityVertices.size(), ret.size());
+            LOG.debug("<== ClassificationSearchProcessor.filter(): ret.size()={}", entityVertices.size());
         }
-
-        return ret;
     }
 }

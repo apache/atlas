@@ -50,6 +50,7 @@ public abstract class SearchProcessor {
     public static final String  SPACE_STRING    = " ";
     public static final String  BRACE_OPEN_STR  = "( ";
     public static final String  BRACE_CLOSE_STR = " )";
+    public static final char    DOUBLE_QUOTE    = '"';
 
     private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
     private static final char[] OFFENDING_CHARS = {'@', '/', ' '}; // This can grow as we discover corner cases
@@ -87,8 +88,10 @@ public abstract class SearchProcessor {
 
     public abstract List<AtlasVertex> execute();
 
-    public List<AtlasVertex> filter(List<AtlasVertex> entityVertices) {
-        return nextProcessor == null || CollectionUtils.isEmpty(entityVertices) ? entityVertices : nextProcessor.filter(entityVertices);
+    public void filter(List<AtlasVertex> entityVertices) {
+        if (nextProcessor != null && CollectionUtils.isNotEmpty(entityVertices)) {
+            nextProcessor.filter(entityVertices);
+        }
     }
 
 
@@ -178,12 +181,26 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected void constructTypeTestQuery(StringBuilder solrQuery, Set<String> typeAndAllSubTypes) {
+    protected void constructTypeTestQuery(StringBuilder solrQuery, AtlasStructType type, Set<String> typeAndAllSubTypes) {
         String typeAndSubtypesString = StringUtils.join(typeAndAllSubTypes, SPACE_STRING);
 
-        solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\": (")
-                .append(typeAndSubtypesString)
-                .append(")");
+        if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
+            if (solrQuery.length() > 0) {
+                solrQuery.append(AND_STR);
+            }
+
+            solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\": (")
+                    .append(typeAndSubtypesString)
+                    .append(")");
+        }
+
+        if (type instanceof AtlasEntityType && context.getSearchParameters().getExcludeDeletedEntities()) {
+            if (solrQuery.length() > 0) {
+                solrQuery.append(AND_STR);
+            }
+
+            solrQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+        }
     }
 
     protected void constructFilterQuery(StringBuilder solrQuery, AtlasStructType type, FilterCriteria filterCriteria, Set<String> solrAttributes) {
@@ -199,14 +216,6 @@ public abstract class SearchProcessor {
 
                 solrQuery.append(filterQuery);
             }
-        }
-
-        if (type instanceof AtlasEntityType && context.getSearchParameters().getExcludeDeletedEntities()) {
-            if (solrQuery.length() > 0) {
-                solrQuery.append(AND_STR);
-            }
-
-            solrQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
         }
     }
 
@@ -246,15 +255,10 @@ public abstract class SearchProcessor {
         String ret = EMPTY_STRING;
 
         try {
-            String qualifiedName = type.getQualifiedAttributeName(attrName);
-
             if (OPERATOR_MAP.get(op) != null) {
-                if (hasOffendingChars(attrVal)) {
-                    // FIXME: if attrVal has offending chars & op is contains, endsWith, startsWith, solr doesn't like it and results are skewed
-                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, "\"" + attrVal + "\"");
-                } else {
-                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, attrVal);
-                }
+                String qualifiedName = type.getQualifiedAttributeName(attrName);
+
+                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue(attrVal));
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
@@ -348,32 +352,28 @@ public abstract class SearchProcessor {
 
     private String getLikeRegex(String attributeValue) { return ".*" + attributeValue + ".*"; }
 
-    protected List<AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult) {
-        List<AtlasVertex> ret = new ArrayList<>();
-
+    protected List<AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, List<AtlasVertex> vertices) {
         if (idxQueryResult != null) {
             while (idxQueryResult.hasNext()) {
                 AtlasVertex vertex = idxQueryResult.next().getVertex();
 
-                ret.add(vertex);
+                vertices.add(vertex);
             }
         }
 
-        return ret;
+        return vertices;
     }
 
-    protected List<AtlasVertex> getVertices(Iterator<AtlasVertex> vertices) {
-        List<AtlasVertex> ret = new ArrayList<>();
+    protected List<AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, List<AtlasVertex> vertices) {
+        if (iterator != null) {
+            while (iterator.hasNext()) {
+                AtlasVertex vertex = iterator.next();
 
-        if (vertices != null) {
-            while (vertices.hasNext()) {
-                AtlasVertex vertex = vertices.next();
-
-                ret.add(vertex);
+                vertices.add(vertex);
             }
         }
 
-        return ret;
+        return vertices;
     }
 
     protected Set<String> getGuids(List<AtlasVertex> vertices) {
@@ -402,7 +402,24 @@ public abstract class SearchProcessor {
         return defaultValue;
     }
 
-    private boolean hasOffendingChars(String str) {
-        return StringUtils.containsAny(str, OFFENDING_CHARS);
+    private String escapeIndexQueryValue(String value) {
+        String ret = value;
+
+        if (StringUtils.containsAny(value, OFFENDING_CHARS)) {
+            boolean isQuoteAtStart = value.charAt(0) == DOUBLE_QUOTE;
+            boolean isQuoteAtEnd   = value.charAt(value.length() - 1) == DOUBLE_QUOTE;
+
+            if (!isQuoteAtStart) {
+                if (!isQuoteAtEnd) {
+                    ret = DOUBLE_QUOTE + value + DOUBLE_QUOTE;
+                } else {
+                    ret = DOUBLE_QUOTE + value;
+                }
+            } else if (!isQuoteAtEnd) {
+                ret = value + DOUBLE_QUOTE;
+            }
+        }
+
+        return ret;
     }
 }
