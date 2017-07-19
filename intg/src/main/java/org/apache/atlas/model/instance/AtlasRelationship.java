@@ -176,8 +176,6 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 
-    public String getRelationshipLabel() { return "r:" + super.getTypeName(); }
-
     private void init() {
         init(nextInternalId(), null, null, null, null, null, null, null, null, 0L);
     }

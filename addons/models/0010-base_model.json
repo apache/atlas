@@ -102,15 +102,15 @@
             "endDef1": {
                 "type": "DataSet",
                 "name": "sourceToProcesses",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SET"
             },
             "endDef2": {
                 "type": "Process",
                 "name": "inputs",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__Process.inputs"
+                "isLegacyAttribute": true
             },
             "propagateTags": "NONE"
         },
@@ -121,14 +121,14 @@
           "endDef1": {
                 "type": "Process",
                 "name": "outputs",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__Process.outputs"
+                "isLegacyAttribute": true
           },
           "endDef2": {
                 "type": "DataSet",
                 "name": "sinkFromProcesses",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SET"
           },
           "propagateTags": "NONE"

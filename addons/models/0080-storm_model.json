@@ -151,14 +151,14 @@
             "endDef1": {
                 "type": "storm_topology",
                 "name": "nodes",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SET",
-                "legacyLabel": "__storm_topology.nodes"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "storm_node",
                 "name": "topolgies",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SET"
             },
             "propagateTags": "NONE"

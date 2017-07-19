@@ -191,6 +191,8 @@ public class AtlasEntityType extends AtlasStructType {
 
     public Map<String, AtlasAttribute> getRelationshipAttributes() { return relationshipAttributes; }
 
+    public AtlasAttribute getRelationshipAttribute(String attributeName) { return relationshipAttributes.get(attributeName); }
+
     // this method should be called from AtlasRelationshipType.resolveReferencesPhase2()
     void addRelationshipAttribute(String attributeName, AtlasAttribute attribute) {
         relationshipAttributes.put(attributeName, attribute);
@@ -218,6 +220,16 @@ public class AtlasEntityType extends AtlasStructType {
 
     public boolean hasRelationshipAttribute(String attributeName) {
         return relationshipAttributes.containsKey(attributeName);
+    }
+
+    public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
+        if (allAttributes.containsKey(attrName)) {
+            return allAttributes.get(attrName).getQualifiedName();
+        } else if (relationshipAttributes.containsKey(attrName)) {
+            return relationshipAttributes.get(attrName).getQualifiedName();
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entityDef.getName());
     }
 
     @Override

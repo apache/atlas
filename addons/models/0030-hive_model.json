@@ -530,15 +530,15 @@
             "endDef1": {
                 "type": "hive_db",
                 "name": "tables",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET"
             },
             "endDef2": {
                 "type": "hive_table",
                 "name": "db",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_table.db"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         },
@@ -549,16 +549,16 @@
             "endDef1": {
                 "type": "hive_table",
                 "name": "columns",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__hive_table.columns"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "hive_column",
                 "name": "table",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_column.table"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         },
@@ -569,16 +569,16 @@
             "endDef1": {
                 "type": "hive_table",
                 "name": "partitionKeys",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__hive_table.partitionKeys"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "hive_column",
                 "name": "table",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_column.table"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         },
@@ -589,16 +589,16 @@
             "endDef1": {
                 "type": "hive_table",
                 "name": "sd",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_table.sd"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "hive_storagedesc",
                 "name": "table",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_storagedesc.table"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         },
@@ -609,15 +609,15 @@
             "endDef1": {
                 "type": "hive_process",
                 "name": "columnLineages",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET"
             },
             "endDef2": {
                 "type": "hive_column_lineage",
                 "name": "query",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hive_column_lineage.query"
+                "isLegacyAttribute": true
             },
             "propagateTags": "NONE"
         }

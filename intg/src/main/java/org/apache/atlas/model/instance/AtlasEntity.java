@@ -177,7 +177,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.relationshipAttributes = relationshipAttributes;
     }
 
-    public void addRelationshipAttribute(String name, Object value) {
+    public void setRelationshipAttribute(String name, Object value) {
         Map<String, Object> r = this.relationshipAttributes;
 
         if (r != null) {
@@ -188,6 +188,18 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             this.relationshipAttributes = r;
         }
+    }
+
+    public Object getRelationshipAttribute(String name) {
+        Map<String, Object> a = this.relationshipAttributes;
+
+        return a != null ? a.get(name) : null;
+    }
+
+    public boolean hasRelationshipAttribute(String name) {
+        Map<String, Object> r = this.relationshipAttributes;
+
+        return r != null ? r.containsKey(name) : false;
     }
 
     public List<AtlasClassification> getClassifications() { return classifications; }

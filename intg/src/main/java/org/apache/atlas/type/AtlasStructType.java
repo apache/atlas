@@ -601,15 +601,16 @@ public class AtlasStructType extends AtlasType {
     }
 
     public static class AtlasAttribute {
-        private final AtlasStructType   definedInType;
-        private final AtlasType         attributeType;
-        private final AtlasAttributeDef attributeDef;
-        private final String            qualifiedName;
-        private final String            vertexPropertyName;
-        private final boolean           isOwnedRef;
-        private final String            inverseRefAttributeName;
-        private AtlasAttribute          inverseRefAttribute;
-        private String                  relationshipEdgeLabel;
+        private final AtlasStructType          definedInType;
+        private final AtlasType                attributeType;
+        private final AtlasAttributeDef        attributeDef;
+        private final String                   qualifiedName;
+        private final String                   vertexPropertyName;
+        private final boolean                  isOwnedRef;
+        private final String                   inverseRefAttributeName;
+        private AtlasAttribute                 inverseRefAttribute;
+        private String                         relationshipEdgeLabel;
+        private AtlasRelationshipEdgeDirection relationshipEdgeDirection;
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipLabel) {
             this.definedInType            = definedInType;
@@ -637,8 +638,9 @@ public class AtlasStructType extends AtlasType {
                 }
             }
 
-            this.isOwnedRef              = isOwnedRef;
-            this.inverseRefAttributeName = inverseRefAttribute;
+            this.isOwnedRef                = isOwnedRef;
+            this.inverseRefAttributeName   = inverseRefAttribute;
+            this.relationshipEdgeDirection = AtlasRelationshipEdgeDirection.OUT;
         }
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
@@ -676,6 +678,12 @@ public class AtlasStructType extends AtlasType {
         public String getRelationshipEdgeLabel() { return relationshipEdgeLabel; }
 
         public void setRelationshipEdgeLabel(String relationshipEdgeLabel) { this.relationshipEdgeLabel = relationshipEdgeLabel; }
+
+        public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection() { return relationshipEdgeDirection; }
+
+        public void setRelationshipEdgeDirection(AtlasRelationshipEdgeDirection relationshipEdgeDirection) {
+            this.relationshipEdgeDirection = relationshipEdgeDirection;
+        }
 
         public static String getEdgeLabel(String property) {
             return "__" + property;
@@ -721,5 +729,7 @@ public class AtlasStructType extends AtlasType {
                 new String[] { "$",  "_d" },
                 new String[] { "%", "_p"  },
         };
+
+        public enum AtlasRelationshipEdgeDirection { IN, OUT }
     }
 }

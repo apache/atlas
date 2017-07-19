@@ -30,6 +30,10 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+
 /**
  * class that implements behaviour of an relationship-type.
  */
@@ -97,19 +101,41 @@ public class AtlasRelationshipType extends AtlasStructType {
         // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
         // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
         // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
-        if (!endDef1.hasLegacyRelation() && !endDef2.hasLegacyRelation()) {
-            relationshipLabel = relationshipDef.getName();
-
-        } else if (endDef1.hasLegacyRelation() && !endDef2.hasLegacyRelation()) {
-            relationshipLabel = endDef1.getLegacyLabel();
-
-        } else if (!endDef1.hasLegacyRelation() && endDef2.hasLegacyRelation()) {
-            relationshipLabel = endDef2.getLegacyLabel();
+        if (!endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+            relationshipLabel = relationshipDef.getRelationshipLabel();
+        } else if (endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+            relationshipLabel = getLegacyEdgeLabel(end1Type, endDef1.getName());
+        } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+            relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
         }
 
         addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
 
         addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel);
+
+        // add relationship edge direction information
+        addRelationshipEdgeDirection();
+    }
+
+    private void addRelationshipEdgeDirection() {
+        AtlasRelationshipEndDef endDef1       = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2       = relationshipDef.getEndDef2();
+        AtlasAttribute          end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName());
+        AtlasAttribute          end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName());
+
+        //default relationship edge direction is end1 (out) -> end2 (in)
+        AtlasRelationshipEdgeDirection end1Direction = OUT;
+        AtlasRelationshipEdgeDirection end2Direction = IN;
+
+        if (endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+            end2Direction = OUT;
+        } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+            end1Direction = IN;
+            end2Direction = OUT;
+        }
+
+        end1Attribute.setRelationshipEdgeDirection(end1Direction);
+        end2Attribute.setRelationshipEdgeDirection(end2Direction);
     }
 
     @Override
@@ -229,7 +255,7 @@ public class AtlasRelationshipType extends AtlasStructType {
         // if relationshipLabel is null, then legacyLabel is mentioned at both ends,
         // use the respective end's legacyLabel as relationshipLabel
         if (relationshipLabel == null) {
-            relationshipLabel = endDef.getLegacyLabel();
+            relationshipLabel = getLegacyEdgeLabel(entityType, attrName);
         }
 
         if (attribute == null) { //attr doesn't exist in type - is a new relationship attribute
@@ -250,5 +276,16 @@ public class AtlasRelationshipType extends AtlasStructType {
         entityType.addRelationshipAttribute(attrName, attribute);
 
         entityType.addRelationshipAttributeType(attrName, this);
+    }
+
+    private String getLegacyEdgeLabel(AtlasEntityType entityType, String attributeName) {
+        String         ret       = null;
+        AtlasAttribute attribute = entityType.getAttribute(attributeName);
+
+        if (attribute != null) {
+            ret = "__" + attribute.getQualifiedName();
+        }
+
+        return ret;
     }
 }

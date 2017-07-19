@@ -152,14 +152,14 @@
             "endDef1": {
                 "type": "falcon_feed",
                 "name": "stored-in",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__falcon_feed.stored-in"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "falcon_cluster",
                 "name": "feeds",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET"
             },
             "propagateTags": "NONE"
@@ -171,15 +171,15 @@
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "processes",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET"
             },
             "endDef2": {
                 "type": "falcon_process",
                 "name": "runs-on",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__falcon_process.runs-on"
+                "isLegacyAttribute": true
             },
             "propagateTags": "NONE"
         },
@@ -190,15 +190,15 @@
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "feedCreations",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET"
             },
             "endDef2": {
                 "type": "falcon_feed_creation",
                 "name": "stored-in",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__falcon_feed_creation.stored-in"
+                "isLegacyAttribute": true
             },
             "propagateTags": "NONE"
         }

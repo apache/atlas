@@ -94,8 +94,8 @@ public class AtlasGraphUtilsV1 {
 
     public static String getQualifiedAttributePropertyKey(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
         switch (fromType.getTypeCategory()) {
-         case STRUCT:
          case ENTITY:
+         case STRUCT:
          case CLASSIFICATION:
              return fromType.getQualifiedAttributeName(attributeName);
         default:

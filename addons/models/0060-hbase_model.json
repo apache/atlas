@@ -105,16 +105,16 @@
             "endDef1": {
                 "type": "hbase_table",
                 "name": "column_families",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__hbase_table.column_families"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "hbase_column_family",
                 "name": "table",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hbase_column_family.table"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         },
@@ -125,16 +125,16 @@
             "endDef1": {
                 "type": "hbase_column_family",
                 "name": "columns",
-                "isContainer": "true",
+                "isContainer": true,
                 "cardinality": "SET",
-                "legacyLabel": "__hbase_column_family.columns"
+                "isLegacyAttribute": true
             },
             "endDef2": {
                 "type": "hbase_column",
                 "name": "column_family",
-                "isContainer": "false",
+                "isContainer": false,
                 "cardinality": "SINGLE",
-                "legacyLabel": "__hbase_column.column_family"
+                "isLegacyAttribute": true
             },
             "propagateTags": "ONE_TO_TWO"
         }

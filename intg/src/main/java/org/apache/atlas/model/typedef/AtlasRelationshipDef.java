@@ -219,6 +219,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         return this.endDef2;
     }
 
+    public String getRelationshipLabel() { return "r:" + super.getName(); }
+
     public AtlasRelationshipDef(AtlasRelationshipDef other) throws AtlasBaseException {
         super(other);
 
