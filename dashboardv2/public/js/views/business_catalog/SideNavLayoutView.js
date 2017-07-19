@@ -96,6 +96,8 @@ define(['require',
                 that.RTagLayoutView.show(new TagLayoutView({
                     collection: that.classificationDefCollection,
                     tag: that.tag,
+                    value: that.value,
+                    filterObj: that.filterObj,
                     typeHeaders: that.typeHeaders
                 }));
             });

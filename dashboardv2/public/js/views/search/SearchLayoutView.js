@@ -282,32 +282,36 @@ define(['require',
                 var filtertype = this.attrModal.tag ? 'tagFilters' : 'entityFilters',
                     rule = this.attrModal.RQueryBuilder.currentView.ui.builder.queryBuilder('getRules'),
                     result = this.getQueryBuilderParsData(rule);
-                if (result && !_.isEmpty(result.criterion)) {
-                    this.query[this.type][filtertype] = +new Date();
-                    if (result) {
-                        var filterObj = this.filterObj ? this.filterObj[filtertype] : null;
-                        if (!filterObj) {
-                            filterObj = {};
+
+                if (result) {
+                    if (!_.isEmpty(result.criterion)) {
+                        this.query[this.type][filtertype] = +new Date();
+                        if (result) {
+                            var filterObj = this.filterObj ? this.filterObj[filtertype] : null;
+                            if (!filterObj) {
+                                filterObj = {};
+                            }
+                            var temp = {}; // IE fix
+                            temp[(this.attrModal.tag ? this.value.tag : this.value.type)] = { 'result': result, 'rule': rule };
+                            _.extend(filterObj, temp);
+                            this.filterObj[filtertype] = filterObj;
+                            this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
+                            Utils.localStorage.setValue((filtertype), JSON.stringify(filterObj));
+                        } else {
+                            this.filterObj[filtertype] = null;
+                            this.query[this.type][filtertype] = null;
+                            this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
+                            Utils.localStorage.removeValue(filtertype);
                         }
-                        var temp = {}; // IE fix
-                        temp[(this.attrModal.tag ? this.value.tag : this.value.type)] = { 'result': result, 'rule': rule };
-                        _.extend(filterObj, temp);
-                        this.filterObj[filtertype] = filterObj;
-                        this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
-                        Utils.localStorage.setValue((filtertype), JSON.stringify(filterObj));
-                    } else {
-                        this.filterObj[filtertype] = null;
-                        this.query[this.type][filtertype] = null;
-                        this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
-                        Utils.localStorage.removeValue(filtertype);
+
                     }
+                    this.attrModal.modal.close();
                 } else {
                     this.filterObj[filtertype] = null;
                     this.query[this.type][filtertype] = null;
                     this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
                     Utils.localStorage.removeValue(filtertype);
                 }
-                this.attrModal.modal.close();
             },
             getQueryBuilderParsData: function(obj) {
                 if (obj) {
@@ -378,17 +382,26 @@ define(['require',
                     } else if (this.value.dslChecked == "false" && this.dsl == true) {
                         this.ui.searchType.prop("checked", false).trigger("change");
                     }
+                    this.ui.typeLov.val(this.value.type);
                     if (this.ui.typeLov.data('select2')) {
-                        this.ui.typeLov.val(this.value.type).trigger('change');
-                    } else {
-                        this.ui.typeLov.val(this.value.type);
+                        if (this.ui.typeLov.val() !== this.value.type) {
+                            this.value.type = null;
+                            this.ui.typeLov.val("").trigger("change");
+                        } else {
+                            this.ui.typeLov.trigger("change");
+                        }
                     }
 
                     if (!this.dsl) {
+                        this.ui.tagLov.val(this.value.tag);
                         if (this.ui.tagLov.data('select2')) {
-                            this.ui.tagLov.val(this.value.tag).trigger('change');
-                        } else {
-                            this.ui.typeLov.val(this.value.tag);
+                            // To handle delete scenario.
+                            if (this.ui.tagLov.val() !== this.value.tag) {
+                                this.value.tag = null;
+                                this.ui.tagLov.val("").trigger("change");
+                            } else {
+                                this.ui.tagLov.trigger("change");
+                            }
                         }
                     }
                     this.ui.searchInput.val(this.value.query || "");
@@ -468,7 +481,11 @@ define(['require',
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
-                this.checkForButtonVisiblity()
+                this.checkForButtonVisiblity();
+                Utils.localStorage.removeValue('tagFilters');
+                Utils.localStorage.removeValue('entityFilters');
+                this.filterObj.tagFilters = null;
+                this.filterObj.entityFilters = null;
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {

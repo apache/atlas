@@ -138,13 +138,27 @@ define(['require',
                         }
                     }
                 }
-
                 _.each(this.attrObj, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets);
                     if (returnObj) {
                         filters.push(returnObj);
                     }
                 });
+                filters = _.uniq(filters, 'id');
+                if (rules_widgets) {
+                    for (var i = 0; i < rules_widgets.rules.length; i++) {
+                        if (!_.find(filters, { id: rules_widgets.rules[i].id })) {
+                            var type = (this.tag ? 'tagFilters' : 'entityFilters');
+                            var list = JSON.parse(Utils.localStorage.getValue(type));
+                            delete list[this.value.tag];
+                            list = _.isEmpty(list) ? null : list;
+                            Utils.localStorage.setValue(type, JSON.stringify(list));
+                            this.filterObj[type] = list;
+                            rules_widgets = null;
+                            break;
+                        }
+                    }
+                }
                 if (filters && !_.isEmpty(filters)) {
                     this.ui.builder.queryBuilder({
                         plugins: ['bt-tooltip-errors'],

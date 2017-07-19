@@ -59,7 +59,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'filterObj', 'value'));
             },
             bindEvents: function() {
                 var that = this;
@@ -417,6 +417,15 @@ define(['require',
                         }
                         that.collection.remove(deleteTagData);
                         // to update tag list of search tab fetch typeHeaders.
+                        var tagList = JSON.parse(Utils.localStorage.getValue('tagFilters'));
+                        if (tagList) {
+                            delete tagList[that.tagName];
+                        }
+                        tagList = _.isEmpty(tagList) ? null : tagList;
+                        if (that.filterObj['tagFilters'] && that.filterObj['tagFilters'][that.tagName]) {
+                            delete that.filterObj['tagFilters'][that.tagName];
+                        }
+                        Utils.localStorage.setValue('tagFilters', JSON.stringify(tagList));
                         that.typeHeaders.fetch({ reset: true });
                     }
                 });
