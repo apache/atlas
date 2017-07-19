@@ -101,6 +101,10 @@ public class AtlasGraphUtilsV1 {
         }
     }
 
+    public static boolean isEntityVertex(AtlasVertex vertex) {
+        return StringUtils.isNotEmpty(getIdFromVertex(vertex)) && StringUtils.isNotEmpty(getTypeName(vertex));
+    }
+
     public static boolean isReference(AtlasType type) {
         return isReference(type.getTypeCategory());
     }
