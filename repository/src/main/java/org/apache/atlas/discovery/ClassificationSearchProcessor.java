@@ -58,7 +58,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         if (useSolrSearch) {
             StringBuilder solrQuery = new StringBuilder();
 
-            constructTypeTestQuery(solrQuery, classificationType, typeAndSubTypes);
+            constructTypeTestQuery(solrQuery, typeAndSubTypes);
             constructFilterQuery(solrQuery, classificationType, filterCriteria, solrAttributes);
 
             String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");
@@ -95,15 +95,21 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int startIdx  = context.getSearchParameters().getOffset();
-            final int limit     = context.getSearchParameters().getLimit();
-            int       qryOffset = nextProcessor == null ? startIdx : 0;
-            int       resultIdx = qryOffset;
+            final int     startIdx   = context.getSearchParameters().getOffset();
+            final int     limit      = context.getSearchParameters().getLimit();
+            final boolean activeOnly = context.getSearchParameters().getExcludeDeletedEntities();
+
+            // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
+            // have been dropped: like non-active-entities or duplicate-entities (same entity pointed to by multiple
+            // classifications in the result)
+            //
+            // first 'startIdx' number of entries will be ignored
+            int qryOffset = 0;
+            int resultIdx = qryOffset;
 
             final Set<String>       processedGuids         = new HashSet<>();
             final List<AtlasVertex> entityVertices         = new ArrayList<>();
             final List<AtlasVertex> classificationVertices = new ArrayList<>();
-
 
             for (; ret.size() < limit; qryOffset += limit) {
                 entityVertices.clear();
@@ -138,15 +144,20 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
                     for (AtlasEdge edge : edges) {
                         AtlasVertex entityVertex = edge.getOutVertex();
-                        String      guid         = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
 
-                        if (!processedGuids.contains(guid)) {
-                            if (!context.getSearchParameters().getExcludeDeletedEntities() || AtlasGraphUtilsV1.getState(entityVertex) == AtlasEntity.Status.ACTIVE) {
-                                entityVertices.add(entityVertex);
-                            }
-
-                            processedGuids.add(guid);
+                        if (activeOnly && AtlasGraphUtilsV1.getState(entityVertex) != AtlasEntity.Status.ACTIVE) {
+                            continue;
                         }
+
+                        String guid = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
+
+                        if (processedGuids.contains(guid)) {
+                            continue;
+                        }
+
+                        entityVertices.add(entityVertex);
+
+                        processedGuids.add(guid);
                     }
                 }
 

@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
@@ -60,7 +61,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         StringBuilder solrQuery = new StringBuilder();
 
         if (typeSearchBySolr) {
-            constructTypeTestQuery(solrQuery, entityType, typeAndSubTypes);
+            constructTypeTestQuery(solrQuery, typeAndSubTypes);
         }
 
         if (attrSearchBySolr) {
@@ -70,6 +71,10 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         if (solrQuery.length() > 0) {
+            if (context.getSearchParameters().getExcludeDeletedEntities()) {
+                constructStateTestQuery(solrQuery);
+            }
+
             String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");
 
             solrQueryString = STRAY_OR_PATTERN.matcher(solrQueryString).replaceAll(")");
@@ -128,10 +133,14 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int startIdx  = context.getSearchParameters().getOffset();
-            final int limit     = context.getSearchParameters().getLimit();
-            int       qryOffset = (nextProcessor == null && (graphQuery == null || indexQuery == null)) ? startIdx : 0;
-            int       resultIdx = qryOffset;
+            final int startIdx = context.getSearchParameters().getOffset();
+            final int limit    = context.getSearchParameters().getLimit();
+
+            // when subsequent filtering stages are involved, query should start at 0 even though startIdx can be higher
+            //
+            // first 'startIdx' number of entries will be ignored
+            int qryOffset = (nextProcessor != null || (graphQuery != null && indexQuery != null)) ? 0 : startIdx;
+            int resultIdx = qryOffset;
 
             final List<AtlasVertex> entityVertices = new ArrayList<>();
 
@@ -153,13 +162,6 @@ public class EntitySearchProcessor extends SearchProcessor {
 
                     while (idxQueryResult.hasNext()) {
                         AtlasVertex vertex = idxQueryResult.next().getVertex();
-
-                        // skip non-entity vertices
-                        if (!AtlasGraphUtilsV1.isEntityVertex(vertex)) {
-                            LOG.warn("EntitySearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId()); // might cause duplicate entries in result
-
-                            continue;
-                        }
 
                         entityVertices.add(vertex);
                     }
