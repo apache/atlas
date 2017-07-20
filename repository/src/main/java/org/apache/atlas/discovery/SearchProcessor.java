@@ -48,12 +48,12 @@ public abstract class SearchProcessor {
     public static final String  AND_STR         = " AND ";
     public static final String  EMPTY_STRING    = "";
     public static final String  SPACE_STRING    = " ";
-    public static final String  BRACE_OPEN_STR  = "( ";
-    public static final String  BRACE_CLOSE_STR = " )";
+    public static final String  BRACE_OPEN_STR  = "(";
+    public static final String  BRACE_CLOSE_STR = ")";
     public static final char    DOUBLE_QUOTE    = '"';
 
     private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
-    private static final char[] OFFENDING_CHARS = {'@', '/', ' '}; // This can grow as we discover corner cases
+    private static final char[] OFFENDING_CHARS = { '@', '/', ' ' }; // This can grow as we discover corner cases
 
     static
     {
@@ -182,16 +182,13 @@ public abstract class SearchProcessor {
     }
 
     protected void constructTypeTestQuery(StringBuilder solrQuery, Set<String> typeAndAllSubTypes) {
-        String typeAndSubtypesString = StringUtils.join(typeAndAllSubTypes, SPACE_STRING);
-
         if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
             if (solrQuery.length() > 0) {
                 solrQuery.append(AND_STR);
             }
 
-            solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\": (")
-                    .append(typeAndSubtypesString)
-                    .append(")");
+            solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":");
+            appendIndexQueryValue(typeAndAllSubTypes, solrQuery);
         }
     }
 
@@ -390,6 +387,16 @@ public abstract class SearchProcessor {
         }
 
         return ret;
+    }
+
+    protected String appendIndexQueryValue(Set<String> values, StringBuilder sb) {
+        sb.append(BRACE_OPEN_STR);
+        for (String value : values) {
+            sb.append(escapeIndexQueryValue(value)).append(SPACE_STRING);
+        }
+        sb.append(BRACE_CLOSE_STR);
+
+        return sb.toString();
     }
 
     private static int getApplicationProperty(String propertyName, int defaultValue) {

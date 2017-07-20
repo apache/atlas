@@ -20,12 +20,10 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,8 @@ public class FullTextSearchProcessor extends SearchProcessor {
             Set<String> typeAndSubTypeNames = context.getEntityType().getTypeAndAllSubTypes();
 
             if (typeAndSubTypeNames.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY) {
-                queryString.append(AND_STR).append("(").append(StringUtils.join(typeAndSubTypeNames, SPACE_STRING)).append(")");
+                queryString.append(AND_STR);
+                appendIndexQueryValue(typeAndSubTypeNames, queryString);
             } else {
                 LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
                          context.getEntityType().getTypeName(), typeAndSubTypeNames.size());
@@ -68,15 +67,12 @@ public class FullTextSearchProcessor extends SearchProcessor {
             Set<String> typeAndSubTypeNames = context.getClassificationType().getTypeAndAllSubTypes();
 
             if (typeAndSubTypeNames.size() <= MAX_CLASSIFICATION_TYPES_IN_INDEX_QUERY) {
-                queryString.append(AND_STR).append("(").append(StringUtils.join(typeAndSubTypeNames, SPACE_STRING)).append(")");
+                queryString.append(AND_STR);
+                appendIndexQueryValue(typeAndSubTypeNames, queryString);
             } else {
                 LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
                         context.getClassificationType().getTypeName(), typeAndSubTypeNames.size());
             }
-        }
-
-        if (context.getSearchParameters().getExcludeDeletedEntities()) {
-            queryString.append(AND_STR).append("(ACTIVE)");
         }
 
         queryString.append(")");
