@@ -19,11 +19,9 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
