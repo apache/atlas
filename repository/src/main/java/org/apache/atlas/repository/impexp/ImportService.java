@@ -99,7 +99,7 @@ public class ImportService {
 
     public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP)
             throws AtlasBaseException {
-        String fileName = (String) request.getOptions().get("FILENAME");
+        String fileName = (String) request.getFileName();
 
         if (StringUtils.isBlank(fileName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME parameter not found");

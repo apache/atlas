@@ -111,3 +111,25 @@ To use the option, set the contents of _importOptions.json_ to:
   }
 }
 </verbatim>
+
+---++++ Specifying File to be Imported From Server Location
+
+In scenario where the file to be imported is present at a location on the server, the _importfile_ API can be used. It behaves like the Import API.
+
+To use the option, set the contents of _importOptions.json_ to:
+<verbatim>
+{
+
+  "options": {
+    "fileName": "/root/fileToBeImported.zip"
+  }
+}
+</verbatim>
+
+_CURL_
+<verbatim>
+curl -g -X POST -u adminuser:password -H "Content-Type: application/json"
+            -H "Cache-Control: no-cache"
+            -d r@importOptions.json
+            "http://localhost:21000/api/atlas/admin/importfile"
+</verbatim>
