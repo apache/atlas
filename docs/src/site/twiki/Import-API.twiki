@@ -24,7 +24,7 @@ The general approach is:
 | _Description_|Provide the path of the file to be imported.|
 | _URL_ |_api/atlas/admin/importfile_ |
 | _Method_ |_POST_ |
-| _URL Parameters_ |_?FILENAME=<path of file>_  Specify the options as name-value pairs. Use _FILENAME_ to specify the file path. |
+| _URL Parameters_ |_None_ |
 | _Data Parameters_|_None_|
 | _Success Response_ | _!AtlasImporResult_ is returned as JSON. See details below.|
 |_Error Response_|Errors that are handled within the system will be returned as _!AtlasBaseException_. |
@@ -68,8 +68,8 @@ curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
 
 The call below performs Import of _!QuickStart_ database using a ZIP file available on server.
 <verbatim>
-curl -X POST -u adminuser:password -H "Cache-Control: no-cache"
-"http://localhost:21000/api/atlas/admin/importFile?FILENAME=/root/quickStartDB.zip" > quickStartDB-import-result.json
+curl -X POST -u adminuser:password -H "Cache-Control: no-cache" -d ./importOptions.json
+"http://localhost:21000/api/atlas/admin/importFile" > quickStartDB-import-result.json
 </verbatim>
 
 Below is the _!AtlasImportResult_ JSON for an import that contains _hive_db_.
