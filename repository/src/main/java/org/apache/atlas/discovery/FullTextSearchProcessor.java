@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
@@ -74,6 +75,10 @@ public class FullTextSearchProcessor extends SearchProcessor {
             }
         }
 
+        if (context.getSearchParameters().getExcludeDeletedEntities()) {
+            queryString.append(AND_STR).append("(ACTIVE)");
+        }
+
         queryString.append(")");
 
         indexQuery = context.getGraph().indexQuery(Constants.FULLTEXT_INDEX, queryString.toString());
@@ -94,10 +99,16 @@ public class FullTextSearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int startIdx  = context.getSearchParameters().getOffset();
-            final int limit     = context.getSearchParameters().getLimit();
-            int       qryOffset = nextProcessor == null ? startIdx : 0;
-            int       resultIdx = qryOffset;
+            final int     startIdx   = context.getSearchParameters().getOffset();
+            final int     limit      = context.getSearchParameters().getLimit();
+            final boolean activeOnly = context.getSearchParameters().getExcludeDeletedEntities();
+
+            // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
+            // have been dropped: like vertices of non-entity or non-active-entity
+            //
+            // first 'startIdx' number of entries will be ignored
+            int qryOffset = 0;
+            int resultIdx = qryOffset;
 
             final List<AtlasVertex> entityVertices = new ArrayList<>();
 
@@ -121,8 +132,14 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
                     // skip non-entity vertices
                     if (!AtlasGraphUtilsV1.isEntityVertex(vertex)) {
-                        LOG.warn("FullTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId()); // might cause duplicate entries in result
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("FullTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
+                        }
 
+                        continue;
+                    }
+
+                    if (activeOnly && AtlasGraphUtilsV1.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                         continue;
                     }
 

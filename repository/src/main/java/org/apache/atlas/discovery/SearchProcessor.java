@@ -181,7 +181,7 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected void constructTypeTestQuery(StringBuilder solrQuery, AtlasStructType type, Set<String> typeAndAllSubTypes) {
+    protected void constructTypeTestQuery(StringBuilder solrQuery, Set<String> typeAndAllSubTypes) {
         String typeAndSubtypesString = StringUtils.join(typeAndAllSubTypes, SPACE_STRING);
 
         if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
@@ -192,14 +192,6 @@ public abstract class SearchProcessor {
             solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\": (")
                     .append(typeAndSubtypesString)
                     .append(")");
-        }
-
-        if (type instanceof AtlasEntityType && context.getSearchParameters().getExcludeDeletedEntities()) {
-            if (solrQuery.length() > 0) {
-                solrQuery.append(AND_STR);
-            }
-
-            solrQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
         }
     }
 
@@ -217,6 +209,14 @@ public abstract class SearchProcessor {
                 solrQuery.append(filterQuery);
             }
         }
+    }
+
+    protected void constructStateTestQuery(StringBuilder solrQuery) {
+        if (solrQuery.length() > 0) {
+            solrQuery.append(AND_STR);
+        }
+
+        solrQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
     }
 
     private String toSolrQuery(AtlasStructType type, FilterCriteria criteria, Set<String> solrAttributes, int level) {
