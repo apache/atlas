@@ -1075,7 +1075,7 @@ public class EntityGraphMapper {
         String    newEntityId = getIdFromVertex(newEntityVertex);
         AtlasEdge ret         = currentEdge;
 
-        if (!currentEntityId.equals(newEntityId) && newEntityVertex != null) {
+        if (!currentEntityId.equals(newEntityId)) {
             // create a new relationship edge to the new attribute vertex from the instance
             String relationshipName = AtlasGraphUtilsV1.getTypeName(currentEdge);
 
@@ -1230,6 +1230,11 @@ public class EntityGraphMapper {
         // get the classification vertex from entity
         String      relationshipLabel    = GraphHelper.getTraitLabel(entityTypeName, classification.getTypeName());
         AtlasEdge   classificationEdge   = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+
+        if (classificationEdge == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "classificationEdge is null for label: " + relationshipLabel);
+        }
+
         AtlasVertex classificationVertex = classificationEdge.getInVertex();
 
         if (LOG.isDebugEnabled()) {
@@ -1363,7 +1368,7 @@ public class EntityGraphMapper {
     private boolean objectIdsContain(Collection<AtlasObjectId> objectIds, AtlasObjectId objectId) {
         boolean ret = false;
 
-        if (objectIds != null && objectIds.isEmpty()) {
+        if (CollectionUtils.isEmpty(objectIds)) {
             ret = false;
 
         } else {

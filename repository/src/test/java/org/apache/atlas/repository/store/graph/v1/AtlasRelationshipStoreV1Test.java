@@ -169,7 +169,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertObjectIdEquals(johnMentorId, maxId);
 
         List<AtlasObjectId> johnMenteesId = toAtlasObjectIds(john.getRelationshipAttribute("mentees"));
-        assertNull(johnMenteesId);
+        assertEmpty(johnMenteesId);
 
         // Jane Manager validation
         AtlasObjectId janeDepartmentId = toAtlasObjectId(jane.getRelationshipAttribute("department"));
@@ -183,7 +183,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertNull(janeMentorId);
 
         List<AtlasObjectId> janeMenteesId = toAtlasObjectIds(jane.getRelationshipAttribute("mentees"));
-        assertNull(janeMenteesId);
+        assertEmpty(janeMenteesId);
 
         List<AtlasObjectId> janeSubordinateIds = toAtlasObjectIds(jane.getRelationshipAttribute("subordinates"));
         assertNotNull(janeSubordinateIds);
@@ -208,7 +208,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertObjectIdsContains(juliusMenteesId, maxId);
 
         List<AtlasObjectId> juliusSubordinateIds = toAtlasObjectIds(julius.getRelationshipAttribute("subordinates"));
-        assertNull(juliusSubordinateIds);
+        assertEmpty(juliusSubordinateIds);
     }
 
     @Test
@@ -442,6 +442,10 @@ public abstract class AtlasRelationshipStoreV1Test {
 
     private static void assertObjectIdEquals(AtlasObjectId objId1, AtlasObjectId objId2) {
         assertTrue(objId1.equals(objId2));
+    }
+
+    private static void assertEmpty(List collection) {
+        assertTrue(collection != null && collection.isEmpty());
     }
 
     private static List<AtlasObjectId> toAtlasObjectIds(Object objectIds) {
