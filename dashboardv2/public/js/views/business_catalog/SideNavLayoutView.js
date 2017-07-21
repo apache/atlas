@@ -66,7 +66,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'filterObj'));
+            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -97,7 +97,6 @@ define(['require',
                     collection: that.classificationDefCollection,
                     tag: that.tag,
                     value: that.value,
-                    filterObj: that.filterObj,
                     typeHeaders: that.typeHeaders
                 }));
             });
@@ -107,7 +106,6 @@ define(['require',
             require(['views/search/SearchLayoutView'], function(SearchLayoutView) {
                 that.RSearchLayoutView.show(new SearchLayoutView({
                     value: that.value,
-                    filterObj: that.filterObj,
                     searchVent: that.searchVent,
                     typeHeaders: that.typeHeaders,
                     entityDefCollection: that.entityDefCollection,

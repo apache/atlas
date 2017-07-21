@@ -31,10 +31,13 @@
         <div class="modal-body">{{content}}</div>
         {{#if showFooter}}
         <div class="modal-footer">
-            {{#if allowCancel}} {{#if cancelText}}
+            {{#if buttons}} {{#each buttons}}
+             <button type="button" class="btn btn-atlas {{this.btnClass}}">{{this.text}}</button>
+            {{/each}} {{else}} {{#if allowCancel}} {{#if cancelText}}
             <button type="button" class="btn btn-atlas cancel">{{tt cancelText}}</button>
             {{/if}} {{/if}}
             <button type="button" class="btn btn-atlas ok">{{tt okText}}</button>
+            {{/if}}
         </div>
         {{/if}} {{/if}}
     </div>

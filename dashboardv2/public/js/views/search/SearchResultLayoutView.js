@@ -62,9 +62,7 @@ define(['require',
                 editEntityButton: "[data-id='editEntityButton']",
                 createEntity: "[data-id='createEntity']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
-                containerCheckBox: "[data-id='containerCheckBox']",
-                filterPanel: "#filterPanel",
-                filterQuery: "#filterQuery"
+                containerCheckBox: "[data-id='containerCheckBox']"
             },
             templateHelpers: function() {
                 return {
@@ -129,8 +127,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'filterObj'));
-                var pagination = "";
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -142,7 +139,8 @@ define(['require',
                     includePagination: false,
                     includeFooterRecords: false,
                     includeColumnManager: (this.value && this.value.searchType === "basic" ? true : false),
-                    includeOrderAbleColumns: false,
+                    includeOrderAbleColumns: true,
+                    includeSizeAbleColumns: true,
                     columnOpts: {
                         opts: {
                             initialColumnsVisible: null,
@@ -237,9 +235,6 @@ define(['require',
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
                     this.fetchCollection();
                 }, this);
-                this.listenTo(this.searchVent, "searchAttribute", function(obj) {
-                    this.showHideFilter(obj);
-                }, this);
             },
             onRender: function() {
                 if (!this.initialView) {
@@ -269,76 +264,66 @@ define(['require',
                         this.$(".entityLink").show();
                     }
                 }
-                this.showHideFilter();
             },
             updateColumnList: function(updatedList) {
                 if (updatedList) {
                     var listOfColumns = []
                     _.map(updatedList, function(obj) {
                         var key = obj.name;
-                        if (key == "selected" || key == "displayText" || key == "description" || key == "typeName" || key == "owner" || key == "tag" || key == "terms") {
-                            return;
-                        }
                         if (obj.renderable) {
                             listOfColumns.push(obj.name);
                         }
                     });
+                    listOfColumns = _.sortBy(listOfColumns);
                     this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
                 }
                 this.columnToShow = this.value && this.value.attributes ? this.value.attributes.split(',') : [];
             },
             generateQueryOfFilter: function() {
                 var value = this.value,
-                    entityFilters = this.filterObj && this.filterObj.entityFilters ? this.filterObj.entityFilters[value.type] : null,
-                    tagFilters = this.filterObj && this.filterObj.tagFilters ? this.filterObj.tagFilters[value.tag] : null,
+                    entityFilters = CommonViewFunction.attributeFilter.extractUrl(value.entityFilters),
+                    tagFilters = CommonViewFunction.attributeFilter.extractUrl(value.tagFilters),
                     queryArray = [],
                     objToString = function(filterObj) {
                         var tempObj = [];
-                        _.each(filterObj.rules, function(obj) {
-                            tempObj.push('<span class="key">' + obj.field + '</span>&nbsp<span class="operator">' + obj.operator + '</span>&nbsp<span class="value">' + obj.value + "</span>")
+                        _.each(filterObj, function(obj) {
+                            tempObj.push('<span class="key">' + obj.id + '</span>&nbsp<span class="operator">' + obj.operator + '</span>&nbsp<span class="value">' + obj.value + "</span>")
                         });
                         return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
                     }
-                if (entityFilters) {
-                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + value.type + '</span>&nbsp<span class="operator">AND</span>&nbsp';
-                    queryArray = queryArray.concat(typeKeyValue + objToString(entityFilters.rule));
-                }
-                if (tagFilters) {
-                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + value.tag + '</span>&nbsp<span class="operator">AND</span>&nbsp';
-                    queryArray = queryArray.concat(tagKeyValue + objToString(tagFilters.rule));
-
-                }
-                if (queryArray.length == 2) {
-                    return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
-                } else {
-                    return queryArray.join();
-                }
-            },
-            showHideFilter: function() {
-                if (this.value) {
-                    if (Utils.getUrlState.isSearchTab() && this.value.searchType == "basic") {
-                        var query = this.generateQueryOfFilter();
-                        if (query) {
-                            this.ui.filterQuery.html(query);
-                            this.ui.filterPanel.show();
-                        } else
-                            this.ui.filterPanel.hide();
-                    } else {
-                        this.ui.filterPanel.hide();
+                if (value.type) {
+                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + value.type + '</span>';
+                    if (entityFilters) {
+                        typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(entityFilters);
                     }
+                    queryArray.push(typeKeyValue)
+                }
+                if (value.tag) {
+                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + value.tag + '</span>';
+                    if (tagFilters) {
+                        tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(tagFilters);
+                    }
+                    queryArray.push(tagKeyValue);
+                }
+                if (value.query) {
+                    queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + value.query + '</span>&nbsp');
+                }
+                if (queryArray.length == 1) {
+                    return queryArray.join();
                 } else {
-                    this.ui.filterPanel.hide();
+                    return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
+
                 }
             },
             fetchCollection: function(value, clickObj) {
                 var that = this,
                     isPostMethod = this.value.searchType === "basic" && Utils.getUrlState.isSearchTab(),
-                    tagFilters = this.filterObj && this.filterObj.tagFilters ? this.filterObj.tagFilters[this.value.tag] : null,
-                    entityFilters = this.filterObj && this.filterObj.entityFilters ? this.filterObj.entityFilters[this.value.type] : null,
+                    tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters),
+                    entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters),
                     filterObj = {
-                        'entityFilters': entityFilters ? entityFilters.result : null,
-                        'tagFilters': tagFilters ? tagFilters.result : null,
-                        'attributes': this.columnToShow.length ? this.columnToShow : null
+                        'entityFilters': entityFilters,
+                        'tagFilters': tagFilters,
+                        'attributes': this.columnToShow.length ? _.without(this.columnToShow, "selected", "name", "description", "typeName", "owner", "tag", "terms") : null
                     }
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
@@ -393,7 +378,7 @@ define(['require',
                         if (that.searchCollection.queryParams.query) {
                             resultArr.push(that.searchCollection.queryParams.query)
                         }
-                        var searchString = 'Results for <b>' + _.escape(resultArr.join(that.searchType == 'Advanced Search' ? " " : " & ")) + '</b>';
+                        var searchString = 'Results for: <span class="filterQuery">' + that.generateQueryOfFilter() + "</span>";
                         if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                             searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
@@ -412,7 +397,6 @@ define(['require',
                     if (isPostMethod) {
                         apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
-                        this.showHideFilter();
                     } else {
                         apiObj.data = null;
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
@@ -441,13 +425,13 @@ define(['require',
                     count = 5;
                 require(['utils/TableLayout'], function(TableLayout) {
                     var columnCollection = Backgrid.Columns.extend({
-                        sortKey: "position",
+                        sortKey: "displayOrder",
                         comparator: function(item) {
                             return item.get(this.sortKey) || 999;
                         },
                         setPositions: function() {
                             _.each(this.models, function(model, index) {
-                                model.set("position", index + 1, { silent: true });
+                                model.set("displayOrder", index + 1, { silent: true });
                             });
                             return this;
                         }
@@ -491,10 +475,13 @@ define(['require',
                     name: "selected",
                     label: "Select",
                     cell: "select-row",
+                    resizeable: false,
+                    orderable: false,
+                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'selected') : true),
                     headerCell: "select-all"
                 };
 
-                col['displayText'] = {
+                col['name'] = {
                     label: "Name",
                     cell: "html",
                     editable: false,
@@ -556,7 +543,7 @@ define(['require',
                     sortable: false,
                     resizeable: true,
                     orderable: true,
-                    renderable: true,
+                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'typeName') : true),
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -590,7 +577,7 @@ define(['require',
                     sortable: false,
                     resizeable: true,
                     orderable: true,
-                    renderable: true,
+                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'tag') : true),
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -612,7 +599,7 @@ define(['require',
                         sortable: false,
                         resizeable: true,
                         orderable: true,
-                        renderable: true,
+                        renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'terms') : true),
                         className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -636,8 +623,11 @@ define(['require',
                         var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
                         _.each(attrObj, function(obj, key) {
                             var key = obj.name,
-                                isEenderable = that.columnToShow.length ? _.contains(that.columnToShow, key) : false;
+                                isRenderable = _.contains(that.columnToShow, key)
                             if (key == "name" || key == "description" || key == "owner") {
+                                if (that.columnToShow && that.columnToShow.length) {
+                                    col[key].renderable = isRenderable;
+                                }
                                 return;
                             }
                             col[obj.name] = {
@@ -647,7 +637,7 @@ define(['require',
                                 sortable: false,
                                 resizeable: true,
                                 orderable: true,
-                                renderable: isEenderable,
+                                renderable: isRenderable,
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
                                         var modelObj = model.toJSON();

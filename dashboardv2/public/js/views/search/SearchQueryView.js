@@ -50,17 +50,27 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag', 'filterObj'));
+                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag'));
                 this.bindEvents();
                 var that = this;
                 this.modal = new Modal({
                     title: 'Attribute Filter',
                     content: this,
-                    okText: 'Apply',
-                    cancelText: "Cancel",
                     allowCancel: true,
                     okCloses: false,
-                    width: '50%'
+                    width: '50%',
+                    buttons: [{
+                            text: 'Apply',
+                            btnClass: "ok"
+                        },
+                        {
+                            text: 'Apply & Search',
+                            btnClass: "ok search"
+                        }, {
+                            text: 'Cancel',
+                            btnClass: "cancel"
+                        }
+                    ]
                 }).open();
                 this.modal.on('closeModal', function() {
                     that.modal.trigger('cancel');
@@ -73,7 +83,6 @@ define(['require',
                     searchVent: this.searchVent,
                     entityDefCollection: this.entityDefCollection,
                     enumDefCollection: this.enumDefCollection,
-                    filterObj: this.filterObj,
                     classificationDefCollection: this.classificationDefCollection
                 }
 
