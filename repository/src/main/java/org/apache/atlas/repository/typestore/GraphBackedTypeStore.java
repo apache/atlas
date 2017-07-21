@@ -107,6 +107,10 @@ public class GraphBackedTypeStore implements ITypeStore {
                         type.superTypes, visitor);
                 break;
 
+            case RELATIONSHIP:
+                // ignore
+                break;
+
             default:    //Ignore primitive/collection types as they are covered under references
                 break;
             }
@@ -271,6 +275,10 @@ public class GraphBackedTypeStore implements ITypeStore {
                 superTypes = getSuperTypes(vertex);
                 attributes = getAttributes(vertex, typeName);
                 traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, typeDescription, superTypes, attributes));
+                break;
+
+            case RELATIONSHIP:
+                // v1 typesystem is not notified on new relation type
                 break;
 
             default:

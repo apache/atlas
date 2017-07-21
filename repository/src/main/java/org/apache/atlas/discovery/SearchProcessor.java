@@ -39,21 +39,19 @@ import java.util.regex.Pattern;
 public abstract class SearchProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(SearchProcessor.class);
 
-    public static final Pattern STRAY_AND_PATTERN                       = Pattern.compile("(AND\\s+)+\\)");
-    public static final Pattern STRAY_OR_PATTERN                        = Pattern.compile("(OR\\s+)+\\)");
-    public static final Pattern STRAY_ELIPSIS_PATTERN                   = Pattern.compile("(\\(\\s*)\\)");
-    public static final int     MAX_RESULT_SIZE                         = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
-    public static final int     MAX_ENTITY_TYPES_IN_INDEX_QUERY         = getApplicationProperty(Constants.INDEX_SEARCH_MAX_TYPES_COUNT, 10);
-    public static final int     MAX_CLASSIFICATION_TYPES_IN_INDEX_QUERY = getApplicationProperty(Constants.INDEX_SEARCH_MAX_TAGS_COUNT, 10);
+    public static final Pattern STRAY_AND_PATTERN          = Pattern.compile("(AND\\s+)+\\)");
+    public static final Pattern STRAY_OR_PATTERN           = Pattern.compile("(OR\\s+)+\\)");
+    public static final Pattern STRAY_ELIPSIS_PATTERN      = Pattern.compile("(\\(\\s*)\\)");
+    public static final int     MAX_RESULT_SIZE            = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
+    public static final int     MAX_QUERY_STR_LENGTH_TYPES = getApplicationProperty(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
+    public static final int     MAX_QUERY_STR_LENGTH_TAGS  = getApplicationProperty(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
     public static final String  AND_STR         = " AND ";
     public static final String  EMPTY_STRING    = "";
     public static final String  SPACE_STRING    = " ";
     public static final String  BRACE_OPEN_STR  = "(";
     public static final String  BRACE_CLOSE_STR = ")";
-    public static final char    DOUBLE_QUOTE    = '"';
 
     private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
-    private static final char[] OFFENDING_CHARS = { '@', '/', ' ' }; // This can grow as we discover corner cases
 
     static
     {
@@ -181,14 +179,13 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected void constructTypeTestQuery(StringBuilder solrQuery, Set<String> typeAndAllSubTypes) {
-        if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
+    protected void constructTypeTestQuery(StringBuilder solrQuery, String typeAndAllSubTypesQryStr) {
+        if (StringUtils.isNotEmpty(typeAndAllSubTypesQryStr)) {
             if (solrQuery.length() > 0) {
                 solrQuery.append(AND_STR);
             }
 
-            solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":");
-            appendIndexQueryValue(typeAndAllSubTypes, solrQuery);
+            solrQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
         }
     }
 
@@ -255,7 +252,7 @@ public abstract class SearchProcessor {
             if (OPERATOR_MAP.get(op) != null) {
                 String qualifiedName = type.getQualifiedAttributeName(attrName);
 
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue(attrVal));
+                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, AtlasStructType.AtlasAttribute.escapeIndexQueryValue(attrVal));
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
@@ -389,16 +386,6 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected String appendIndexQueryValue(Set<String> values, StringBuilder sb) {
-        sb.append(BRACE_OPEN_STR);
-        for (String value : values) {
-            sb.append(escapeIndexQueryValue(value)).append(SPACE_STRING);
-        }
-        sb.append(BRACE_CLOSE_STR);
-
-        return sb.toString();
-    }
-
     private static int getApplicationProperty(String propertyName, int defaultValue) {
         try {
             return ApplicationProperties.get().getInt(propertyName, defaultValue);
@@ -407,26 +394,5 @@ public abstract class SearchProcessor {
         }
 
         return defaultValue;
-    }
-
-    private String escapeIndexQueryValue(String value) {
-        String ret = value;
-
-        if (StringUtils.containsAny(value, OFFENDING_CHARS)) {
-            boolean isQuoteAtStart = value.charAt(0) == DOUBLE_QUOTE;
-            boolean isQuoteAtEnd   = value.charAt(value.length() - 1) == DOUBLE_QUOTE;
-
-            if (!isQuoteAtStart) {
-                if (!isQuoteAtEnd) {
-                    ret = DOUBLE_QUOTE + value + DOUBLE_QUOTE;
-                } else {
-                    ret = DOUBLE_QUOTE + value;
-                }
-            } else if (!isQuoteAtEnd) {
-                ret = value + DOUBLE_QUOTE;
-            }
-        }
-
-        return ret;
     }
 }

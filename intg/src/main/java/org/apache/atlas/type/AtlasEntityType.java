@@ -47,10 +47,11 @@ public class AtlasEntityType extends AtlasStructType {
 
     private final AtlasEntityDef entityDef;
 
-    private List<AtlasEntityType> superTypes         = Collections.emptyList();
-    private Set<String>           allSuperTypes      = Collections.emptySet();
-    private Set<String>           allSubTypes        = Collections.emptySet();
-    private Set<String>           typeAndAllSubTypes = Collections.emptySet();
+    private List<AtlasEntityType> superTypes               = Collections.emptyList();
+    private Set<String>           allSuperTypes            = Collections.emptySet();
+    private Set<String>           allSubTypes              = Collections.emptySet();
+    private Set<String>           typeAndAllSubTypes       = Collections.emptySet();
+    private String                typeAndAllSubTypesQryStr = "";
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -108,6 +109,13 @@ public class AtlasEntityType extends AtlasStructType {
         }
     }
 
+    @Override
+    public void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        allSubTypes              = Collections.unmodifiableSet(allSubTypes);
+        typeAndAllSubTypes       = Collections.unmodifiableSet(typeAndAllSubTypes);
+        typeAndAllSubTypesQryStr = ""; // will be computed on next access
+    }
+
     public Set<String> getSuperTypes() {
         return entityDef.getSuperTypes();
     }
@@ -116,9 +124,9 @@ public class AtlasEntityType extends AtlasStructType {
         return allSuperTypes;
     }
 
-    public Set<String> getAllSubTypes() { return Collections.unmodifiableSet(allSubTypes); }
+    public Set<String> getAllSubTypes() { return allSubTypes; }
 
-    public Set<String> getTypeAndAllSubTypes() { return Collections.unmodifiableSet(typeAndAllSubTypes); }
+    public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
 
     public boolean isSuperTypeOf(AtlasEntityType entityType) {
         return entityType != null && allSubTypes.contains(entityType.getTypeName());
@@ -134,6 +142,14 @@ public class AtlasEntityType extends AtlasStructType {
 
     public boolean isSubTypeOf(String entityTypeName) {
         return StringUtils.isNotEmpty(entityTypeName) && allSuperTypes.contains(entityTypeName);
+    }
+
+    public String getTypeAndAllSubTypesQryStr() {
+        if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+        }
+
+        return typeAndAllSubTypesQryStr;
     }
 
     @Override

@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * class that implements behaviour of a struct-type.
@@ -683,6 +684,39 @@ public class AtlasStructType extends AtlasType {
             return key;
         }
 
+        public static String escapeIndexQueryValue(Set<String> values) {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(BRACE_OPEN_CHAR);
+            for (String value : values) {
+                sb.append(escapeIndexQueryValue(value)).append(SPACE_CHAR);
+            }
+            sb.append(BRACE_CLOSE_CHAR);
+
+            return sb.toString();
+        }
+
+        public static String escapeIndexQueryValue(String value) {
+            String ret = value;
+
+            if (StringUtils.containsAny(value, IDX_QRY_OFFENDING_CHARS)) {
+                boolean isQuoteAtStart = value.charAt(0) == DOUBLE_QUOTE_CHAR;
+                boolean isQuoteAtEnd   = value.charAt(value.length() - 1) == DOUBLE_QUOTE_CHAR;
+
+                if (!isQuoteAtStart) {
+                    if (!isQuoteAtEnd) {
+                        ret = DOUBLE_QUOTE_CHAR + value + DOUBLE_QUOTE_CHAR;
+                    } else {
+                        ret = DOUBLE_QUOTE_CHAR + value;
+                    }
+                } else if (!isQuoteAtEnd) {
+                    ret = value + DOUBLE_QUOTE_CHAR;
+                }
+            }
+
+            return ret;
+        }
+
         private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
             final String typeName = structDef.getName();
             return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
@@ -695,5 +729,11 @@ public class AtlasStructType extends AtlasType {
                 new String[] { "$",  "_d" },
                 new String[] { "%", "_p"  },
         };
+
+        private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ' };
+        private static final char   BRACE_OPEN_CHAR         = '(';
+        private static final char   BRACE_CLOSE_CHAR        = ')';
+        private static final char   DOUBLE_QUOTE_CHAR       = '"';
+        private static final char   SPACE_CHAR              = ' ';
     }
 }

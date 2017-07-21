@@ -42,23 +42,24 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
 
-        AtlasClassificationType classificationType = context.getClassificationType();
-        FilterCriteria          filterCriteria     = context.getSearchParameters().getTagFilters();
-        Set<String>             typeAndSubTypes    = classificationType.getTypeAndAllSubTypes();
-        Set<String>             solrAttributes     = new HashSet<>();
-        Set<String>             gremlinAttributes  = new HashSet<>();
-        Set<String>             allAttributes      = new HashSet<>();
+        final AtlasClassificationType classificationType    = context.getClassificationType();
+        final FilterCriteria          filterCriteria        = context.getSearchParameters().getTagFilters();
+        final Set<String>             typeAndSubTypes       = classificationType.getTypeAndAllSubTypes();
+        final String                  typeAndSubTypesQryStr = classificationType.getTypeAndAllSubTypesQryStr();
+        final Set<String>             solrAttributes        = new HashSet<>();
+        final Set<String>             gremlinAttributes     = new HashSet<>();
+        final Set<String>             allAttributes         = new HashSet<>();
 
 
         processSearchAttributes(classificationType, filterCriteria, solrAttributes, gremlinAttributes, allAttributes);
 
         // for classification search, if any attribute can't be handled by Solr - switch to all Gremlin
-        boolean useSolrSearch = typeAndSubTypes.size() <= MAX_CLASSIFICATION_TYPES_IN_INDEX_QUERY && CollectionUtils.isEmpty(gremlinAttributes) && canApplySolrFilter(classificationType, filterCriteria, false);
+        boolean useSolrSearch = typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS && CollectionUtils.isEmpty(gremlinAttributes) && canApplySolrFilter(classificationType, filterCriteria, false);
 
         if (useSolrSearch) {
             StringBuilder solrQuery = new StringBuilder();
 
-            constructTypeTestQuery(solrQuery, typeAndSubTypes);
+            constructTypeTestQuery(solrQuery, typeAndSubTypesQryStr);
             constructFilterQuery(solrQuery, classificationType, filterCriteria, solrAttributes);
 
             String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");

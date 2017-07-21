@@ -385,6 +385,9 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
             case ENUM:
                 return TypeCategory.ENUM;
+
+            case RELATIONSHIP:
+                return TypeCategory.RELATIONSHIP;
         }
 
         return null;

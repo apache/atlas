@@ -45,10 +45,11 @@ public class AtlasClassificationType extends AtlasStructType {
 
     private final AtlasClassificationDef classificationDef;
 
-    private List<AtlasClassificationType> superTypes         = Collections.emptyList();
-    private Set<String>                   allSuperTypes      = Collections.emptySet();
-    private Set<String>                   allSubTypes        = Collections.emptySet();
-    private Set<String>                   typeAndAllSubTypes = Collections.emptySet();
+    private List<AtlasClassificationType> superTypes               = Collections.emptyList();
+    private Set<String>                   allSuperTypes            = Collections.emptySet();
+    private Set<String>                   allSubTypes              = Collections.emptySet();
+    private Set<String>                   typeAndAllSubTypes       = Collections.emptySet();
+    private String                        typeAndAllSubTypesQryStr = "";
 
     public AtlasClassificationType(AtlasClassificationDef classificationDef) {
         super(classificationDef);
@@ -108,6 +109,13 @@ public class AtlasClassificationType extends AtlasStructType {
         }
     }
 
+    @Override
+    public void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        allSubTypes              = Collections.unmodifiableSet(allSubTypes);
+        typeAndAllSubTypes       = Collections.unmodifiableSet(typeAndAllSubTypes);
+        typeAndAllSubTypesQryStr = ""; // will be computed on next access
+    }
+
     private void addSubType(AtlasClassificationType subType) {
         allSubTypes.add(subType.getTypeName());
         typeAndAllSubTypes.add(subType.getTypeName());
@@ -119,11 +127,17 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public Set<String> getAllSuperTypes() { return allSuperTypes; }
 
-    public Set<String> getAllSubTypes() {
-        return Collections.unmodifiableSet(allSubTypes);
-    }
+    public Set<String> getAllSubTypes() { return allSubTypes; }
 
-        public Set<String> getTypeAndAllSubTypes() { return Collections.unmodifiableSet(typeAndAllSubTypes); }
+    public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
+
+    public String getTypeAndAllSubTypesQryStr() {
+        if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+        }
+
+        return typeAndAllSubTypesQryStr;
+    }
 
     public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
         return classificationType != null && allSubTypes.contains(classificationType.getTypeName());
