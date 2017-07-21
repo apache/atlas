@@ -87,8 +87,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final GraphBackedSearchIndexer        indexer;
     private final SearchTracker                   searchTracker;
     private final int                             maxResultSetSize;
-    private final int                             maxTypesCountInIdxQuery;
-    private final int                             maxTagsCountInIdxQuery;
+    private final int                             maxTypesLengthInIdxQuery;
+    private final int                             maxTagsLengthInIdxQuery;
 
     @Inject
     EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry,
@@ -101,8 +101,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
         this.typeRegistry             = typeRegistry;
         this.maxResultSetSize         = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
-        this.maxTypesCountInIdxQuery  = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_TYPES_COUNT, 10);
-        this.maxTagsCountInIdxQuery   = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_TAGS_COUNT, 10);
+        this.maxTypesLengthInIdxQuery = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
+        this.maxTagsLengthInIdxQuery  = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
     }
 
     @Override
@@ -490,8 +490,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private String getQueryForFullTextSearch(String userKeyedString, String typeName, String classification) {
-        String typeFilter              = getTypeFilter(typeRegistry, typeName, maxTypesCountInIdxQuery);
-        String classificationFilter = getClassificationFilter(typeRegistry, classification, maxTagsCountInIdxQuery);
+        String typeFilter           = getTypeFilter(typeRegistry, typeName, maxTypesLengthInIdxQuery);
+        String classificationFilter = getClassificationFilter(typeRegistry, classification, maxTagsLengthInIdxQuery);
 
         StringBuilder queryText = new StringBuilder();
 
@@ -619,23 +619,23 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return excludeDeletedEntities && GraphHelper.getStatus(vertex) == Status.DELETED;
     }
 
-    private static String getClassificationFilter(AtlasTypeRegistry typeRegistry, String classificationName, int maxTypesCountInIdxQuery) {
-        AtlasClassificationType classification  = typeRegistry.getClassificationTypeByName(classificationName);
-        Set<String>             typeAndSubTypes = classification != null ? classification.getTypeAndAllSubTypes() : null;
+    private static String getClassificationFilter(AtlasTypeRegistry typeRegistry, String classificationName, int maxTypesLengthInIdxQuery) {
+        AtlasClassificationType type                  = typeRegistry.getClassificationTypeByName(classificationName);
+        String                  typeAndSubTypesQryStr = type != null ? type.getTypeAndAllSubTypesQryStr() : null;
 
-        if(CollectionUtils.isNotEmpty(typeAndSubTypes) && typeAndSubTypes.size() <= maxTypesCountInIdxQuery) {
-            return String.format("(%s)", StringUtils.join(typeAndSubTypes, " "));
+        if(StringUtils.isNotEmpty(typeAndSubTypesQryStr) && typeAndSubTypesQryStr.length() <= maxTypesLengthInIdxQuery) {
+            return typeAndSubTypesQryStr;
         }
 
         return "";
     }
 
-    private static String getTypeFilter(AtlasTypeRegistry typeRegistry, String typeName, int maxTypesCountInIdxQuery) {
-        AtlasEntityType type            = typeRegistry.getEntityTypeByName(typeName);
-        Set<String>     typeAndSubTypes = type != null ? type.getTypeAndAllSubTypes() : null;
+    private static String getTypeFilter(AtlasTypeRegistry typeRegistry, String typeName, int maxTypesLengthInIdxQuery) {
+        AtlasEntityType type                  = typeRegistry.getEntityTypeByName(typeName);
+        String          typeAndSubTypesQryStr = type != null ? type.getTypeAndAllSubTypesQryStr() : null;
 
-        if(CollectionUtils.isNotEmpty(typeAndSubTypes) && typeAndSubTypes.size() <= maxTypesCountInIdxQuery) {
-            return String.format("(%s)", StringUtils.join(typeAndSubTypes, " "));
+        if(StringUtils.isNotEmpty(typeAndSubTypesQryStr) && typeAndSubTypesQryStr.length() <= maxTypesLengthInIdxQuery) {
+            return typeAndSubTypesQryStr;
         }
 
         return "";

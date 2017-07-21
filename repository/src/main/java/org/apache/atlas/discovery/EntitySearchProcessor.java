@@ -40,12 +40,13 @@ public class EntitySearchProcessor extends SearchProcessor {
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasEntityType entityType        = context.getEntityType();
-        final FilterCriteria  filterCriteria    = context.getSearchParameters().getEntityFilters();
-        final Set<String>     typeAndSubTypes   = entityType.getTypeAndAllSubTypes();
-        final Set<String>     solrAttributes    = new HashSet<>();
-        final Set<String>     gremlinAttributes = new HashSet<>();
-        final Set<String>     allAttributes     = new HashSet<>();
+        final AtlasEntityType entityType            = context.getEntityType();
+        final FilterCriteria  filterCriteria        = context.getSearchParameters().getEntityFilters();
+        final Set<String>     typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
+        final String          typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
+        final Set<String>     solrAttributes        = new HashSet<>();
+        final Set<String>     gremlinAttributes     = new HashSet<>();
+        final Set<String>     allAttributes         = new HashSet<>();
 
         final AtlasClassificationType classificationType   = context.getClassificationType();
         final boolean                 filterClassification = classificationType != null && !context.needClassificationProcessor();
@@ -53,13 +54,13 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         processSearchAttributes(entityType, filterCriteria, solrAttributes, gremlinAttributes, allAttributes);
 
-        final boolean typeSearchBySolr = !filterClassification && typeAndSubTypes.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY;
+        final boolean typeSearchBySolr = !filterClassification && typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES;
         final boolean attrSearchBySolr = !filterClassification && CollectionUtils.isNotEmpty(solrAttributes) && canApplySolrFilter(entityType, filterCriteria, false);
 
         StringBuilder solrQuery = new StringBuilder();
 
         if (typeSearchBySolr) {
-            constructTypeTestQuery(solrQuery, typeAndSubTypes);
+            constructTypeTestQuery(solrQuery, typeAndSubTypesQryStr);
         }
 
         if (attrSearchBySolr) {
@@ -169,6 +170,7 @@ public class EntitySearchProcessor extends SearchProcessor {
 
                         guidQuery.addConditionsFrom(graphQuery);
 
+                        entityVertices.clear();
                         getVertices(guidQuery.vertices().iterator(), entityVertices);
                     }
                 } else {

@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 
 public class FullTextSearchProcessor extends SearchProcessor {
@@ -50,28 +49,26 @@ public class FullTextSearchProcessor extends SearchProcessor {
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor
         if (context.getEntityType() != null) {
-            Set<String> typeAndSubTypeNames = context.getEntityType().getTypeAndAllSubTypes();
+            String typeAndSubTypeNamesQryStr = context.getEntityType().getTypeAndAllSubTypesQryStr();
 
-            if (typeAndSubTypeNames.size() <= MAX_ENTITY_TYPES_IN_INDEX_QUERY) {
-                queryString.append(AND_STR);
-                appendIndexQueryValue(typeAndSubTypeNames, queryString);
+            if (typeAndSubTypeNamesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+                queryString.append(AND_STR).append(typeAndSubTypeNamesQryStr);
             } else {
-                LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
-                         context.getEntityType().getTypeName(), typeAndSubTypeNames.size());
+                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
+                         context.getEntityType().getTypeName(), typeAndSubTypeNamesQryStr.length());
             }
         }
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
         if (context.getClassificationType() != null) {
-            Set<String> typeAndSubTypeNames = context.getClassificationType().getTypeAndAllSubTypes();
+            String typeAndSubTypeNamesStr = context.getClassificationType().getTypeAndAllSubTypesQryStr();
 
-            if (typeAndSubTypeNames.size() <= MAX_CLASSIFICATION_TYPES_IN_INDEX_QUERY) {
-                queryString.append(AND_STR);
-                appendIndexQueryValue(typeAndSubTypeNames, queryString);
+            if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {
+                queryString.append(AND_STR).append(typeAndSubTypeNamesStr);
             } else {
-                LOG.warn("'{}' has too many subtypes ({}) to include in index-query; might cause poor performance",
-                        context.getClassificationType().getTypeName(), typeAndSubTypeNames.size());
+                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
+                        context.getClassificationType().getTypeName(), typeAndSubTypeNamesStr.length());
             }
         }
 

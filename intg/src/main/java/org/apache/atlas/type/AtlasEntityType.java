@@ -55,6 +55,7 @@ public class AtlasEntityType extends AtlasStructType {
     private Set<String>                              typeAndAllSuperTypes       = Collections.emptySet();
     private Map<String, AtlasAttribute>              relationshipAttributes     = Collections.emptyMap();
     private Map<String, List<AtlasRelationshipType>> relationshipAttributesType = Collections.emptyMap();
+    private String                                   typeAndAllSubTypesQryStr   = "";
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -150,7 +151,7 @@ public class AtlasEntityType extends AtlasStructType {
 
         allSubTypes                = Collections.unmodifiableSet(allSubTypes);
         typeAndAllSubTypes         = Collections.unmodifiableSet(typeAndAllSubTypes);
-        typeAndAllSuperTypes       = Collections.unmodifiableSet(typeAndAllSuperTypes);
+        typeAndAllSubTypesQryStr   = ""; // will be computed on next access
         relationshipAttributes     = Collections.unmodifiableMap(relationshipAttributes);
         relationshipAttributesType = Collections.unmodifiableMap(relationshipAttributesType);
     }
@@ -216,6 +217,14 @@ public class AtlasEntityType extends AtlasStructType {
 
     public Map<String, List<AtlasRelationshipType>> getRelationshipAttributesType() {
         return relationshipAttributesType;
+    }
+
+    public String getTypeAndAllSubTypesQryStr() {
+        if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+        }
+
+        return typeAndAllSubTypesQryStr;
     }
 
     public boolean hasRelationshipAttribute(String attributeName) {
