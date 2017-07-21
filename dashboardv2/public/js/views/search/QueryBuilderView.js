@@ -20,9 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/search/QueryBuilder_tmpl',
     'utils/Utils',
+    'utils/CommonViewFunction',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilder_Tmpl, Utils) {
+], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
@@ -51,8 +52,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'filterObj', 'entityDefCollection', 'enumDefCollection', 'tag'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
+                this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
             bindEvents: function() {},
             getOperator: function(type) {
@@ -89,8 +91,8 @@ define(['require',
                             format: 'MM/DD/YYYY h:mm A'
                         }
                     };
-                    if (rules && rules.rules) {
-                        var valueObj = _.find(rules.rules, { id: obj.id });
+                    if (rules) {
+                        var valueObj = _.find(rules, { id: obj.id });
                         if (valueObj) {
                             obj.plugin_config["startDate"] = valueObj.value;
                         }
@@ -128,15 +130,8 @@ define(['require',
             onRender: function() {
                 var that = this,
                     filters = [];
-                if (this.filterObj) {
-                    var filter = this.filterObj[(this.tag ? 'tagFilters' : 'entityFilters')],
-                        tagTermName = this.tag ? this.value.tag : this.value.type;
-                    if (filter) {
-                        ruleObj = filter[tagTermName];
-                        if (ruleObj) {
-                            var rules_widgets = ruleObj.rule;
-                        }
-                    }
+                if (this.value) {
+                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl(this.value[this.filterType]);
                 }
                 _.each(this.attrObj, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets);
@@ -145,20 +140,6 @@ define(['require',
                     }
                 });
                 filters = _.uniq(filters, 'id');
-                if (rules_widgets) {
-                    for (var i = 0; i < rules_widgets.rules.length; i++) {
-                        if (!_.find(filters, { id: rules_widgets.rules[i].id })) {
-                            var type = (this.tag ? 'tagFilters' : 'entityFilters');
-                            var list = JSON.parse(Utils.localStorage.getValue(type));
-                            delete list[this.value.tag];
-                            list = _.isEmpty(list) ? null : list;
-                            Utils.localStorage.setValue(type, JSON.stringify(list));
-                            this.filterObj[type] = list;
-                            rules_widgets = null;
-                            break;
-                        }
-                    }
-                }
                 if (filters && !_.isEmpty(filters)) {
                     this.ui.builder.queryBuilder({
                         plugins: ['bt-tooltip-errors'],

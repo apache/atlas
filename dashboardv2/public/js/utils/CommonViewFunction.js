@@ -398,6 +398,64 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             });
         })
     }
+    CommonViewFunction.attributeFilter = {
+        generateUrl: function(attrObj) {
+            var attrQuery = [];
+            if (attrObj) {
+                _.each(attrObj, function(obj) {
+                    attrQuery.push(obj.id + "::" + obj.operator + "::" + obj.value + "::" + obj.type);
+                });
+                return attrQuery.join();
+            } else {
+                return null;
+            }
+        },
+        extractUrl: function(urlObj) {
+            var attrObj = [];
+            if (urlObj && urlObj.length) {
+                _.each(urlObj.split(","), function(obj) {
+                    var temp = obj.split("::");
+                    attrObj.push({ id: temp[0], operator: temp[1], value: temp[2], type: temp[3] });
+                });
+                return attrObj;
+            } else {
+                return null;
+            }
+        },
+        generateAPIObj: function(url) {
+            if (url && url.length) {
+                var parsObj = {
+                    "condition": 'AND',
+                    "criterion": convertKeyAndExtractObj(this.extractUrl(url))
+                }
+                return parsObj;
+            } else {
+                return null;
+            }
+
+            function convertKeyAndExtractObj(rules) {
+                var convertObj = [];
+                _.each(rules, function(rulObj) {
+                    var tempObj = {};
+                    // For nested 
+                    // if (rulObj.rules) {
+                    //     tempObj = {
+                    //         "condition": "AND",
+                    //         "criterion": convertKeyAndExtractObj(rulObj.rules)
+                    //     }
+                    // } else {
+                    // }
+                    tempObj = {
+                        "attributeName": rulObj.id,
+                        "operator": rulObj.operator,
+                        "attributeValue": (rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
+                    }
+                    convertObj.push(tempObj);
+                });
+                return convertObj;
+            }
+        }
+    }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {
         //    if (settings.url == null || !settings.url.startsWith('/webhdfs/')) {
         if (settings.url == null) {

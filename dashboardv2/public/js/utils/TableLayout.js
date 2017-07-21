@@ -238,7 +238,9 @@ define(['require',
              */
             renderTable: function() {
                 var that = this;
-                this.rTableList.show(new Backgrid.Grid(this.gridOpts));
+                this.rTableList.show(new Backgrid.Grid(this.gridOpts).on('backgrid:rendered', function() {
+                    that.trigger('backgrid:rendered', this)
+                }));
             },
 
             /**
