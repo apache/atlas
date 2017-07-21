@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -99,7 +99,28 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS+"types");
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types");
+    }
+
+
+    @Test
+    public void adminImportRequestsToPassiveServerShouldToActiveServerAddress() throws IOException, ServletException {
+        String importExportUrls[] = {"api/admin/export", "api/admin/import", "api/admin/importfile"};
+
+        for (String partialUrl : importExportUrls) {
+            when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+            when(servletRequest.getRequestURI()).thenReturn(partialUrl);
+
+            ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
+
+            when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
+            when(servletRequest.getRequestURI()).thenReturn(partialUrl);
+            when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+
+            activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+
+            verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + partialUrl);
+        }
     }
 
     @Test
@@ -116,7 +137,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS+"types?query=TRAIT");
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types?query=TRAIT");
 
     }
 
@@ -133,7 +154,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS+"types");
+        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "types");
         verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
     }
 
@@ -150,7 +171,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS+"types");
+        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "types");
         verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
     }
 
