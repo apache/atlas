@@ -28,11 +28,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.atlas</groupId>
     <artifactId>apache-atlas</artifactId>
-    <version>0.8-incubating</version>
+    <version>0.8.1-SNAPSHOT</version>
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
     <name>apache-atlas</name>
     <packaging>pom</packaging>
-    <url>http://atlas.incubator.apache.org</url>
+    <url>http://atlas.apache.org</url>
 
     <prerequisites>
         <maven>3.0.4</maven>
@@ -65,123 +65,105 @@
     <mailingLists>
         <mailingList>
             <name>atlas-dev</name>
-            <subscribe>dev-subscribe@atlas.incubator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@atlas.incubator.apache.org</unsubscribe>
-            <post>dev@atlas.incubator.apache.org</post>
+            <subscribe>dev-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>dev@atlas.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
         </mailingList>
         <mailingList>
+            <name>atlas-user</name>
+            <subscribe>user-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>user-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>user@atlas.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/atlas-user/</archive>
+        </mailingList>
+        <mailingList>
             <name>atlas-commits</name>
-            <subscribe>commits-subscribe@atlas.incubator.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@atlas.incubator.apache.org</unsubscribe>
-            <post>commits@atlas.incubator.apache.org</post>
+            <subscribe>commits-subscribe@atlas.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@atlas.apache.org</unsubscribe>
+            <post>commits@atlas.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
         </mailingList>
     </mailingLists>
 
     <scm>
-        <connection>scm:git:git://git.apache.org/incubator-atlas.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
+        <connection>scm:git:git://git.apache.org/atlas.git</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/atlas.git</developerConnection>
         <tag>HEAD</tag>
-        <url>https://github.com/apache/incubator-atlas.git</url>
+        <url>https://github.com/apache/atlas.git</url>
     </scm>
 
     <developers>
         <developer>
-            <id>venkatesh</id>
-            <name>Venkatesh Seetharam</name>
-            <email>venkatesh@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
+            <id>adossett</id>
+            <name>Aaron Dossett</name>
+            <email>adossett@target.com</email>
+            <timezone>America/Denver</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>rhbutani</id>
-            <name>Harish Butani</name>
-            <email>rhbutani@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization />
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>shwethags</id>
-            <name>Shwetha GS</name>
-            <email>shwethags@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>jmaron</id>
-            <name>Jon Maron</name>
-            <email>jmaron@hortonworks.com</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <organization>Target Inc.</organization>
+            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
         </developer>
         <developer>
             <id>AAhn</id>
             <name>Andrew Ahn</name>
-            <email>aahn@hortonworks.com</email>
+            <email>aa@apache.org</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
+            </roles>
+            <organization></organization>
+        </developer>
+        <developer>
+            <id>apoorvnaik</id>
+            <name>Apoorv Naik</name>
+            <email>apoorvnaik@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>dkaspar</id>
-            <name>David Kaspar</name>
-            <email>dkaspar@merck.com</email>
-            <timezone>Europe/Berlin</timezone>
+            <id>acmurthy</id>
+            <name>Arun C.Murthy</name>
+            <email>acmurthy@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
-            <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>ilasek</id>
-            <name>Ivo Lasek</name>
-            <email>ilasek@merck.com</email>
-            <timezone>Europe/Berlin</timezone>
+            <id>ayubpathan</id>
+            <name>Ayub Pathan</name>
+            <email>ayubpathan@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
-            <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>dfusaro</id>
-            <name>Dennis Fusaro</name>
-            <email>dfusaro@aetna.com</email>
-            <timezone>America/New_York</timezone>
+            <id>bstortz</id>
+            <name>Barbara Stortz</name>
+            <email>bstortz@sap.com</email>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+            <organization>SAP Inc.</organization>
+            <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
@@ -190,7 +172,7 @@
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -202,7 +184,54 @@
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Aetna Inc.</organization>
+            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>darshankumar</id>
+            <name>Darshan Kumar</name>
+            <email>darshankumar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>MPR</organization>
+        </developer>
+        <developer>
+            <id>dkantor</id>
+            <name>Dave Kantor</name>
+            <email>dkantor@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>IBM Corporation</organization>
+            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dkaspar</id>
+            <name>David Kaspar</name>
+            <email>dkaspar@merck.com</email>
+            <timezone>Europe/Berlin</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Merck &amp; Co Inc.</organization>
+            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dfusaro</id>
+            <name>Dennis Fusaro</name>
+            <email>dfusaro@aetna.com</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -214,129 +243,21 @@
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>james</id>
-            <name>James Vollmer</name>
-            <email>james@target.com</email>
-            <timezone>America/Denver</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Target Inc.</organization>
-            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>adossett</id>
-            <name>Aaron Dossett</name>
-            <email>adossett@target.com</email>
-            <timezone>America/Denver</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Target Inc.</organization>
-            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>mschussler</id>
-            <name>Mitch Schussler</name>
-            <email>mschussler@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>JPMC</organization>
-            <!--<organizationUrl>http://</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>vavasarala</id>
-            <name>Viswanath Avasarala</name>
-            <email>vavasarala@slb.com</email>
-            <timezone>America/Denver</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Schlumberger Inc.</organization>
-            <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>avarma</id>
-            <name>Anil Varma</name>
-            <email>avarma@slb.com</email>
-            <timezone>America/Denver</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Schlumberger Inc.</organization>
-            <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>bstortz</id>
-            <name>Barbara Stortz</name>
-            <email>bstortz@sap.com</email>
+            <id>rhbutani</id>
+            <name>Harish Butani</name>
+            <email>rhbutani@apache.org</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
-            <organization>SAP Inc.</organization>
-            <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>sriksun</id>
-            <name>Srikanth Sundarrajan</name>
-            <email>sriksun@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>InMobi</organization>
-            <!--<organizationUrl>http://www.inmobi.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>ssuresh</id>
-            <name>Suresh Srinivas</name>
-            <email>ssuresh@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>vranganathan</id>
-            <name>Venkat Ranganathan</name>
-            <email>venkatrangan@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>sumasai</id>
-            <name>Suma Shivaprasad</name>
-            <email>sumasai@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
+            <organization />
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
@@ -346,72 +267,22 @@
             <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+                <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>kbhatt</id>
-            <name>Keval Bhatt</name>
-            <email>kbhatt@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
+            <id>ilasek</id>
+            <name>Ivo Lasek</name>
+            <email>ilasek@merck.com</email>
+            <timezone>Europe/Berlin</timezone>
             <roles>
                 <role>committer</role>
+                <role>PMC</role>
             </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>dkantor</id>
-            <name>Dave Kantor</name>
-            <email>dkantor@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
-        </developer>
-        <developer>
-            <id>darshankumar</id>
-            <name>Darshan Kumar</name>
-            <email>darshankumar@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>MPR</organization>
-        </developer>
-        <developer>
-            <id>tbeerbower</id>
-            <name>Tom Beerbower</name>
-            <email>tbeerbower@apache.org</email>
-            <timezone>America/New_York</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization></organization>
-        </developer>
-        <developer>
-            <id>madhan</id>
-            <name>Madhan Neethiraj</name>
-            <email>madhan@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-                <role>PPMC</role>
-            </roles>
-            <organization>Hortonworks Inc.</organization>
-        </developer>
-        <developer>
-            <id>svimal2106</id>
-            <name>Vimal Sharma</name>
-            <email>svimal2106@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization></organization>
+            <organization>Merck &amp; Co Inc.</organization>
+            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jnhagelberg</id>
@@ -420,19 +291,208 @@
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
+                <role>PMC</role>
             </roles>
             <organization>IBM Corporation</organization>
             <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>apoorvnaik</id>
-            <name>Apoorv Naik</name>
-            <email>apoorvnaik@apache.org</email>
+            <id>jitendra</id>
+            <name>Jitendra Pandey</name>
+            <email>jitendra@apache.org</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
+                <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>jmaron</id>
+            <name>Jon Maron</name>
+            <email>jmaron@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization></organization>
+        </developer>
+        <developer>
+            <id>kalyanikashikar</id>
+            <name>Kalyani Kashikar</name>
+            <email>kalyanikashikar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>kbhatt</id>
+            <name>Keval Bhatt</name>
+            <email>kbhatt@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>madhan</id>
+            <name>Madhan Neethiraj</name>
+            <email>madhan@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>mschussler</id>
+            <name>Mitch Schussler</name>
+            <email>mschussler@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>JPMC</organization>
+            <!--<organizationUrl>http://</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>guptaneeru</id>
+            <name>Neeru Gupta</name>
+            <email>guptaneeru@us.ibm.com</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>IBM Corporation</organization>
+            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>nixon</id>
+            <name>Nixon Rodrigues</name>
+            <email>nixon@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>sarath</id>
+            <name>Sarath Subramanian</name>
+            <email>sarath@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>shwethags</id>
+            <name>Shwetha GS</name>
+            <email>shwethags@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sriksun</id>
+            <name>Srikanth Sundarrajan</name>
+            <email>sriksun@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>InMobi</organization>
+            <!--<organizationUrl>http://www.inmobi.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sumasai</id>
+            <name>Suma Shivaprasad</name>
+            <email>sumasai@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ssuresh</id>
+            <name>Suresh Srinivas</name>
+            <email>ssuresh@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>tbeerbower</id>
+            <name>Tom Beerbower</name>
+            <email>tbeerbower@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization></organization>
+        </developer>
+        <developer>
+            <id>vranganathan</id>
+            <name>Venkat Ranganathan</name>
+            <email>venkatrangan@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>venkatesh</id>
+            <name>Venkatesh Seetharam</name>
+            <email>venkatesh@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization></organization>
+        </developer>
+        <developer>
+            <id>svimal2106</id>
+            <name>Vimal Sharma</name>
+            <email>svimal2106@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
     </developers>
 

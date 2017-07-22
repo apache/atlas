@@ -23,7 +23,7 @@
     <parent>
         <artifactId>atlas-graphdb</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.8-incubating</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-graphdb-titan1</artifactId>
     <description>Apache Atlas Titan 1.0.0 Graph DB Impl</description>

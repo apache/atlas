@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-        <version>0.8-incubating</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-webapp</artifactId>
     <description>Apache Atlas Web Application</description>
@@ -540,7 +540,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <dname>cn=atlas.incubator.apache.org</dname>
+                    <dname>cn=atlas.apache.org</dname>
                     <keystore>${project.build.directory}/atlas.keystore</keystore>
                     <keypass>keypass</keypass>
                     <storepass>keypass</storepass>

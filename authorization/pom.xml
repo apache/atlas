@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.atlas</groupId>
     <artifactId>apache-atlas</artifactId>
-    <version>0.8-incubating</version>
+    <version>0.8.1-SNAPSHOT</version>
   </parent>
   <artifactId>atlas-authorization</artifactId>
   <name>Apache Atlas Authorization</name>

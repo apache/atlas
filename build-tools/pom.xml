@@ -24,6 +24,6 @@
     <artifactId>atlas-buildtools</artifactId>
     <name>Apache Atlas Server Build Tools</name>
     <description>Apache Atlas Build Tools like Checkstyle</description>
-    <version>0.8-incubating</version>
+    <version>0.8.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 </project>

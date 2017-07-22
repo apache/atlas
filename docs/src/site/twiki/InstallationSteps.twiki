@@ -3,7 +3,7 @@
 ---+++ Building Atlas
 
 <verbatim>
-git clone https://git-wip-us.apache.org/repos/asf/incubator-atlas.git atlas
+git clone https://git-wip-us.apache.org/repos/asf/atlas.git atlas
 
 cd atlas
 

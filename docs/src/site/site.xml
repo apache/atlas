@@ -36,7 +36,7 @@
             <leftColumnClass>span2</leftColumnClass>
             <bodyColumnClass>span10</bodyColumnClass>
             <googleSearch>
-                <sitesearch>http://atlas.incubator.apache.org</sitesearch>
+                <sitesearch>http://atlas.apache.org</sitesearch>
             </googleSearch>
             <facebookLike/>
             <googlePlusOne/>
@@ -46,16 +46,10 @@
     <bannerLeft>
         <name>Apache Atlas</name>
         <src>./images/atlas-logo.png</src>
-        <href>http://atlas.incubator.apache.org</href>
+        <href>http://atlas.apache.org</href>
         <width>200px</width>
         <height>45px</height>
     </bannerLeft>
-
-    <bannerRight>
-        <name>Apache Incubator</name>
-        <src>./images/apache-incubator-logo.png</src>
-        <href>http://incubator.apache.org</href>
-    </bannerRight>
 
     <publishDate position="right"/>
     <version position="right"/>
@@ -76,7 +70,7 @@
             <item name="About" href="index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/incubator-atlas.git" />
+            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
             <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
             <item name="Blog" href="http://blogs.apache.org/atlas/" />
@@ -94,7 +88,7 @@
 
         <menu name="Releases">
             <item name="0.8-incubating"
-                  href="http://www.apache.org/dyn/closer.cgi/incubator/atlas/0.8.0-incubating/"/>
+                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.0-incubating/"/>
             <item name="0.7.1-incubating"
                   href="http://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/"/>
             <item name="0.7-incubating"
