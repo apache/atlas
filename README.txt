@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Apache Atlas (incubating) Overview
+Apache Atlas Overview
 
 Apache Atlas framework is an extensible set of core
 foundational governance services – enabling enterprises to effectively and
@@ -31,21 +31,13 @@ The metadata veracity is maintained by leveraging Apache Ranger to prevent
 non-authorized access paths to data at runtime.
 Security is both role based (RBAC) and attribute based (ABAC).
 
-
-Apache Atlas is an effort undergoing incubation at the Apache
-Software Foundation (ASF), sponsored by the Apache Incubator PMC.
-
-For more information about the incubation status of the Apache Atlas
-project you can go to the following page:
-http://incubator.apache.org/projects/atlas.html
-
 Build Process
 =============
 
 1. Get Atlas sources to your local directory, for example with following commands
    $ cd <your-local-directory>
-   $ git clone https://github.com/apache/incubator-atlas.git
-   $ cd incubator-atlas
+   $ git clone https://github.com/apache/atlas.git
+   $ cd atlas
 
    # Checkout the branch or tag you would like to build
    #

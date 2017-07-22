@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>atlas-graphdb</artifactId>
-        <version>0.9-incubating-SNAPSHOT</version>
+        <version>0.9-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-graphdb-impls</artifactId>
