@@ -20,7 +20,6 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
-import org.apache.hadoop.http.HtmlQuoting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -37,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.net.URLEncoder;
 
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
@@ -127,14 +127,19 @@ public class ActiveServerFilter implements Filter {
                                 String activeServerAddress) throws IOException {
         String requestURI = servletRequest.getRequestURI();
         String queryString = servletRequest.getQueryString();
+
+        if (queryString != null && (!queryString.isEmpty())) {
+            queryString = URLEncoder.encode(queryString, "UTF-8");
+        }
+
         if ((queryString != null) && (!queryString.isEmpty())) {
             requestURI += "?" + queryString;
         }
-        String quotedUri = HtmlQuoting.quoteHtmlChars(requestURI);
-        if (quotedUri == null) {
-            quotedUri = "/";
+
+        if (requestURI == null) {
+            requestURI = "/";
         }
-        String redirectLocation = activeServerAddress + quotedUri;
+        String redirectLocation = activeServerAddress + requestURI;
         LOG.info("Not active. Redirecting to {}", redirectLocation);
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
