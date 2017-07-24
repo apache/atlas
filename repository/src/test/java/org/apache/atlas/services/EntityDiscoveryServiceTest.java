@@ -50,7 +50,7 @@ public class EntityDiscoveryServiceTest {
     AtlasEntityDef typeTest3        = null;
     AtlasEntityDef typeWithSubTypes = null;
 
-    private final int maxTypesCountInIdxQuery = 10;
+    private final int maxTypesStrLengthInIdxQuery = 55;
 
     @Inject
     EntityDiscoveryService discoveryService;
@@ -81,17 +81,17 @@ public class EntityDiscoveryServiceTest {
 
     @Test
     public void getSubTypesForType_NullStringReturnsEmptyString() throws Exception {
-        invokeGetSubTypesForType(null, maxTypesCountInIdxQuery);
+        invokeGetSubTypesForType(null, maxTypesStrLengthInIdxQuery);
     }
 
     @Test
     public void getSubTypesForType_BlankStringReturnsEmptyString() throws Exception {
-        invokeGetSubTypesForType(" ", maxTypesCountInIdxQuery);
+        invokeGetSubTypesForType(" ", maxTypesStrLengthInIdxQuery);
     }
 
     @Test
     public void getSubTypesForType_EmptyStringReturnsEmptyString() throws Exception {
-        invokeGetSubTypesForType("", maxTypesCountInIdxQuery);
+        invokeGetSubTypesForType("", maxTypesStrLengthInIdxQuery);
     }
 
     @Test
@@ -103,7 +103,7 @@ public class EntityDiscoveryServiceTest {
 
     @Test
     public void getSubTypeForTypeWithSubTypes_ReturnsOrClause() throws Exception {
-        String s = invokeGetSubTypesForType(TEST_TYPE_WITH_SUB_TYPES, maxTypesCountInIdxQuery);
+        String s = invokeGetSubTypesForType(TEST_TYPE_WITH_SUB_TYPES, maxTypesStrLengthInIdxQuery);
 
         assertTrue(s.startsWith("(" + TEST_TYPE_WITH_SUB_TYPES));
         assertTrue(s.contains(" " + TEST_TYPE1));
@@ -114,7 +114,7 @@ public class EntityDiscoveryServiceTest {
 
     @Test
     public void getSubTypeForTypeWithSubTypes_ReturnsEmptyString() throws Exception {
-        String s = invokeGetSubTypesForType(TEST_TYPE_WITH_SUB_TYPES, 2);
+        String s = invokeGetSubTypesForType(TEST_TYPE_WITH_SUB_TYPES, 20);
 
         assertTrue(StringUtils.isBlank(s));
     }

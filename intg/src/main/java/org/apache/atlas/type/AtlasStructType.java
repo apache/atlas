@@ -35,11 +35,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * class that implements behaviour of a struct-type.
@@ -684,13 +685,21 @@ public class AtlasStructType extends AtlasType {
             return key;
         }
 
-        public static String escapeIndexQueryValue(Set<String> values) {
+        public static String escapeIndexQueryValue(Collection<String> values) {
             StringBuilder sb = new StringBuilder();
 
             sb.append(BRACE_OPEN_CHAR);
-            for (String value : values) {
-                sb.append(escapeIndexQueryValue(value)).append(SPACE_CHAR);
+
+            if (CollectionUtils.isNotEmpty(values)) {
+                Iterator<String> iter = values.iterator();
+
+                sb.append(escapeIndexQueryValue(iter.next()));
+
+                while (iter.hasNext()) {
+                    sb.append(SPACE_CHAR).append(escapeIndexQueryValue(iter.next()));
+                }
             }
+
             sb.append(BRACE_CLOSE_CHAR);
 
             return sb.toString();
