@@ -41,16 +41,23 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasKafkaConsumer.class);
 
     private final KafkaConsumer kafkaConsumer;
-    private final boolean       autoCommitEnabled;
+    private final boolean autoCommitEnabled;
+    private long pollTimeoutMilliSeconds = 1000L;
 
-    public AtlasKafkaConsumer(MessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled) {
+    public AtlasKafkaConsumer(MessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
         super(deserializer);
-
-        this.kafkaConsumer     = kafkaConsumer;
+        this.kafkaConsumer = kafkaConsumer;
         this.autoCommitEnabled = autoCommitEnabled;
+        this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
     }
 
+    public List<AtlasKafkaMessage<T>> receive() {
+        return this.receive(this.pollTimeoutMilliSeconds);
+    }
+
+    @Override
     public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
+
         List<AtlasKafkaMessage<T>> messages = new ArrayList();
 
         ConsumerRecords<?, ?> records = kafkaConsumer.poll(timeoutMilliSeconds);
@@ -69,6 +76,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         }
 
         return messages;
+
     }
 
 

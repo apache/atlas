@@ -29,6 +29,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -49,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,8 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 
 
 public final class EntityGraphRetriever {
@@ -124,8 +129,16 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasEntityHeader toAtlasEntityHeader(String guid) throws AtlasBaseException {
+        return toAtlasEntityHeader(getEntityVertex(guid));
+    }
+
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
         return toAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
+    }
+
+    public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes) throws AtlasBaseException {
+        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
     }
 
     private AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
@@ -180,6 +193,8 @@ public final class EntityGraphRetriever {
 
             mapAttributes(entityVertex, entity, entityExtInfo);
 
+            mapRelationshipAttributes(entityVertex, entity);
+
             mapClassifications(entityVertex, entity, entityExtInfo);
         }
 
@@ -227,19 +242,31 @@ public final class EntityGraphRetriever {
 
             if (CollectionUtils.isNotEmpty(attributes)) {
                 for (String attrName : attributes) {
+                    String nonQualifiedAttrName = toNonQualifiedName(attrName);
                     if (ret.hasAttribute(attrName)) {
                         continue;
                     }
 
-                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(attrName));
+                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(nonQualifiedAttrName));
 
                     if (attrValue != null) {
-                        ret.setAttribute(attrName, attrValue);
+                        ret.setAttribute(nonQualifiedAttrName, attrValue);
                     }
                 }
             }
         }
 
+        return ret;
+    }
+
+    private String toNonQualifiedName(String attrName) {
+        String ret;
+        if (attrName.contains(".")) {
+            String[] attributeParts = attrName.split("\\.");
+            ret = attributeParts[attributeParts.length - 1];
+        } else {
+            ret = attrName;
+        }
         return ret;
     }
 
@@ -362,6 +389,7 @@ public final class EntityGraphRetriever {
         String    vertexPropertyName = attribute.getQualifiedName();
         String    edgeLabel          = EDGE_LABEL_PREFIX + vertexPropertyName;
         boolean   isOwnedAttribute   = attribute.isOwnedRef();
+        AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping vertex {} to atlas entity {}.{}", entityVertex, attribute.getDefinedInDef().getName(), attribute.getName());
@@ -378,13 +406,13 @@ public final class EntityGraphRetriever {
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo);
                 break;
             case OBJECT_ID_TYPE:
-                ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute);
+                ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection);
                 break;
             case ARRAY:
-                ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, vertexPropertyName, entityExtInfo, isOwnedAttribute);
+                ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, vertexPropertyName, entityExtInfo, isOwnedAttribute, edgeDirection);
                 break;
             case MAP:
-                ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, vertexPropertyName, entityExtInfo, isOwnedAttribute);
+                ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, vertexPropertyName, entityExtInfo, isOwnedAttribute, edgeDirection);
                 break;
             case CLASSIFICATION:
                 // do nothing
@@ -395,7 +423,9 @@ public final class EntityGraphRetriever {
     }
 
     private Map<String, Object> mapVertexToMap(AtlasVertex entityVertex, AtlasMapType atlasMapType, final String propertyName,
-                                               AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute) throws AtlasBaseException {
+                                               AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute,
+                                               AtlasRelationshipEdgeDirection edgeDirection) throws AtlasBaseException {
+
         List<String> mapKeys = GraphHelper.getListProperty(entityVertex, propertyName);
 
         if (CollectionUtils.isEmpty(mapKeys)) {
@@ -414,7 +444,9 @@ public final class EntityGraphRetriever {
             final String edgeLabel       = EDGE_LABEL_PREFIX + keyPropertyName;
             final Object keyValue        = GraphHelper.getMapValueProperty(mapValueType, entityVertex, keyPropertyName);
 
-            Object mapValue = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, edgeLabel, entityExtInfo, isOwnedAttribute);
+            Object mapValue = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, edgeLabel,
+                                                         entityExtInfo, isOwnedAttribute, edgeDirection);
+
             if (mapValue != null) {
                 ret.put(mapKey, mapValue);
             }
@@ -424,7 +456,9 @@ public final class EntityGraphRetriever {
     }
 
     private List<Object> mapVertexToArray(AtlasVertex entityVertex, AtlasArrayType arrayType, String propertyName,
-                                          AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute) throws AtlasBaseException {
+                                          AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute,
+                                          AtlasRelationshipEdgeDirection edgeDirection)  throws AtlasBaseException {
+
         AtlasType    arrayElementType = arrayType.getElementType();
         List<Object> arrayElements    = GraphHelper.getArrayElementsProperty(arrayElementType, entityVertex, propertyName);
 
@@ -440,8 +474,8 @@ public final class EntityGraphRetriever {
         String edgeLabel = EDGE_LABEL_PREFIX + propertyName;
 
         for (Object element : arrayElements) {
-            Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element,
-                                                         edgeLabel, entityExtInfo, isOwnedAttribute);
+            Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element, edgeLabel,
+                                                         entityExtInfo, isOwnedAttribute, edgeDirection);
 
             if (arrValue != null) {
                 arrValues.add(arrValue);
@@ -451,8 +485,9 @@ public final class EntityGraphRetriever {
         return arrValues;
     }
 
-    private Object mapVertexToCollectionEntry(AtlasVertex entityVertex, AtlasType arrayElement, Object value, String edgeLabel,
-                                              AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute) throws AtlasBaseException {
+    private Object mapVertexToCollectionEntry(AtlasVertex entityVertex, AtlasType arrayElement, Object value,
+                                              String edgeLabel, AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute,
+                                              AtlasRelationshipEdgeDirection edgeDirection) throws AtlasBaseException {
         Object ret = null;
 
         switch (arrayElement.getTypeCategory()) {
@@ -471,7 +506,7 @@ public final class EntityGraphRetriever {
                 break;
 
             case OBJECT_ID_TYPE:
-                ret = mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute);
+                ret = mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute, edgeDirection);
                 break;
 
             default:
@@ -530,15 +565,20 @@ public final class EntityGraphRetriever {
     }
 
     private AtlasObjectId mapVertexToObjectId(AtlasVertex entityVertex, String edgeLabel, AtlasEdge edge,
-                                              AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute) throws AtlasBaseException {
+                                              AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute,
+                                              AtlasRelationshipEdgeDirection edgeDirection) throws AtlasBaseException {
         AtlasObjectId ret = null;
 
         if (edge == null) {
-            edge = graphHelper.getEdgeForLabel(entityVertex, edgeLabel);
+            edge = graphHelper.getEdgeForLabel(entityVertex, edgeLabel, edgeDirection);
         }
 
         if (GraphHelper.elementExists(edge)) {
-            final AtlasVertex referenceVertex = edge.getInVertex();
+            AtlasVertex referenceVertex = edge.getInVertex();
+
+            if (StringUtils.equals(getIdFromVertex(referenceVertex), getIdFromVertex(entityVertex))) {
+                referenceVertex = edge.getOutVertex();
+            }
 
             if (referenceVertex != null) {
                 if (entityExtInfo != null && isOwnedAttribute) {
@@ -577,7 +617,102 @@ public final class EntityGraphRetriever {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null) : null;
     }
 
-    public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes) throws AtlasBaseException {
-        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
+    private void mapRelationshipAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, entity.getTypeName());
+        }
+
+        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+            Object attrValue = mapVertexToRelationshipAttribute(entityVertex, entityType, attribute);
+
+            entity.setRelationshipAttribute(attribute.getName(), attrValue);
+        }
+    }
+
+    private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, AtlasAttribute attribute) throws AtlasBaseException {
+        Object               ret             = null;
+        AtlasRelationshipDef relationshipDef = graphHelper.getRelationshipDef(entityVertex, entityType, attribute.getName());
+
+        if (relationshipDef == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, "relationshipDef is null");
+        }
+
+        AtlasRelationshipEndDef endDef1         = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2         = relationshipDef.getEndDef2();
+        AtlasEntityType         endDef1Type     = typeRegistry.getEntityTypeByName(endDef1.getType());
+        AtlasEntityType         endDef2Type     = typeRegistry.getEntityTypeByName(endDef2.getType());
+        AtlasRelationshipEndDef attributeEndDef = null;
+
+        if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attribute.getName())) {
+            attributeEndDef = endDef1;
+        } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attribute.getName())) {
+            attributeEndDef = endDef2;
+        }
+
+        if (attributeEndDef == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, relationshipDef.toString());
+        }
+
+        switch (attributeEndDef.getCardinality()) {
+            case SINGLE:
+                ret = mapRelatedVertexToObjectId(entityVertex, attribute);
+                break;
+
+            case LIST:
+            case SET:
+                ret = mapRelationshipArrayAttribute(entityVertex, attribute);
+                break;
+        }
+
+        return ret;
+    }
+
+    private AtlasObjectId mapRelatedVertexToObjectId(AtlasVertex entityVertex, AtlasAttribute attribute) throws AtlasBaseException {
+        AtlasEdge edge = graphHelper.getEdgeForLabel(entityVertex, attribute.getRelationshipEdgeLabel(), attribute.getRelationshipEdgeDirection());
+
+        return mapRelatedVertexToObjectId(entityVertex, edge);
+    }
+
+    private List<AtlasObjectId> mapRelationshipArrayAttribute(AtlasVertex entityVertex, AtlasAttribute attribute) throws AtlasBaseException {
+        List<AtlasObjectId> ret   = new ArrayList<>();
+        Iterator<AtlasEdge> edges = null;
+
+        if (attribute.getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.IN) {
+            edges = graphHelper.getIncomingEdgesByLabel(entityVertex, attribute.getRelationshipEdgeLabel());
+        } else if (attribute.getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.OUT) {
+            edges = graphHelper.getOutGoingEdgesByLabel(entityVertex, attribute.getRelationshipEdgeLabel());
+        }
+
+        if (edges != null) {
+            while (edges.hasNext()) {
+                AtlasEdge relationshipEdge = edges.next();
+
+                AtlasObjectId objectId = mapRelatedVertexToObjectId(entityVertex, relationshipEdge);
+
+                ret.add(objectId);
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasObjectId mapRelatedVertexToObjectId(AtlasVertex entityVertex, AtlasEdge edge) throws AtlasBaseException {
+        AtlasObjectId ret = null;
+
+        if (GraphHelper.elementExists(edge)) {
+            AtlasVertex referenceVertex = edge.getInVertex();
+
+            if (StringUtils.equals(getIdFromVertex(referenceVertex), getIdFromVertex(entityVertex))) {
+                referenceVertex = edge.getOutVertex();
+            }
+
+            if (referenceVertex != null) {
+                ret = new AtlasObjectId(GraphHelper.getGuid(referenceVertex), GraphHelper.getTypeName(referenceVertex));
+            }
+        }
+
+        return ret;
     }
 }

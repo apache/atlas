@@ -22,7 +22,8 @@ define(['require',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Globals',
-], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals) {
+    'utils/CommonViewFunction'
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, CommonViewFunction) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -80,7 +81,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'filterObj'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
                 this.type = "basic";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -121,52 +122,88 @@ define(['require',
                     this.checkForButtonVisiblity();
                 }, this);
             },
-            bindSelect2Events: function(argument) {
-                var that = this;
-                this.ui.typeLov.on('select2:select', function(argument) {
-                    // this function calles after checkForButtonVisiblity that is why disabled flter here
-                    that.ui.typeAttrFilter.prop('disabled', false);
-                    _.extend(that.value, { 'type': this.value });
-                    that.makeFilterButtonActive('type');
-                });
-                this.ui.tagLov.on('select2:select', function(argument) {
-                    // this function calles after checkForButtonVisiblity that is why disabled flter here
-                    that.ui.tagAttrFilter.prop('disabled', false);
-                    _.extend(that.value, { 'tag': this.value });
-                    that.makeFilterButtonActive('tag');
-                });
-                this.ui.typeLov.on('select2:unselect', function(argument) {
-                    _.extend(that.value, { 'type': null });
-                });
-                this.ui.tagLov.on('select2:unselect', function(argument) {
-                    _.extend(that.value, { 'tag': null });
+            makeFilterButtonActive: function(filtertypeParam) {
+                var filtertype = ['entityFilters', 'tagFilters'],
+                    that = this;
+                if (filtertypeParam) {
+                    if (_.isArray(filtertypeParam)) {
+                        filtertype = filtertypeParam;
+                    } else if (_.isString(filtertypeParam)) {
+                        filtertype = [filtertypeParam];
+                    }
+                }
+                var typeCheck = function(filterQueryObj, type) {
+                    var filterObj = filterQueryObj[type];
+                    if (that.value.type) {
+                        if (filterObj && filterObj.length) {
+                            that.ui.typeAttrFilter.addClass('active');
+                        } else {
+                            filterQueryObj[type] = null;
+                            that.value[type] = null;
+                            that.ui.typeAttrFilter.removeClass('active');
+                        }
+                        that.ui.typeAttrFilter.prop('disabled', false);
+                    } else {
+                        filterQueryObj[type] = null;
+                        that.value[type] = null;
+                        that.ui.typeAttrFilter.removeClass('active');
+                        that.ui.typeAttrFilter.prop('disabled', true);
+                    }
+
+                }
+                var tagCheck = function(filterQueryObj, type) {
+                    var filterObj = filterQueryObj[type];
+                    if (that.value.tag) {
+                        that.ui.tagAttrFilter.prop('disabled', false);
+                        if (filterObj && filterObj.length) {
+                            that.ui.tagAttrFilter.addClass('active');
+                        } else {
+                            filterQueryObj[type] = null;
+                            that.value[type] = null;
+                            that.ui.tagAttrFilter.removeClass('active');
+                        }
+                    } else {
+                        filterQueryObj[type] = null;
+                        that.value[type] = null;
+                        that.ui.tagAttrFilter.removeClass('active');
+                        that.ui.tagAttrFilter.prop('disabled', true);
+                    }
+                }
+                _.each(filtertype, function(type) {
+                    var filterObj = that.query[that.type][type],
+                        filterQueryObj = that.query[that.type];
+                    if (type == "entityFilters") {
+                        typeCheck(filterQueryObj, type)
+                    }
+                    if (type == "tagFilters") {
+                        tagCheck(filterQueryObj, type)
+                    }
                 });
             },
-            makeFilterButtonActive: function(type) {
-                if (this.filterObj) {
-                    var tagFilters = this.filterObj.tagFilters,
-                        entityFilters = this.filterObj.entityFilters;
-                    if (type == "type") {
-                        if (_.has(entityFilters, this.value[type])) {
-                            this.query[this.type]['entityFilters'] = +new Date();
-                            this.ui.typeAttrFilter.addClass('active');
+            checkForButtonVisiblity: function(e) {
+                if (this.type == "basic" && e && e.currentTarget) {
+                    var $el = $(e.currentTarget),
+                        isTagEl = $el.data('id') == "tagLOV" ? true : false;
+                    if (e.type == "change" && $el.select2('data')) {
+                        var value = $el.val(),
+                            key = (isTagEl ? 'tag' : 'type'),
+                            filterType = (isTagEl ? 'tagFilters' : 'entityFilters'),
+                            value = value.length ? value : null;
+                        if (this.value) {
+                            if (this.value[key] !== value || (!value && !this.value[key]) || (!this.value[filterType])) {
+                                var temp = {};
+                                temp[key] = value;
+                                _.extend(this.value, temp);
+                                this.query[this.type][filterType] = null;
+                                this.value[filterType] = null;
+                                this.makeFilterButtonActive(filterType);
+                            }
                         } else {
-                            this.query[this.type]['entityFilters'] = null;
-                            this.ui.typeAttrFilter.removeClass('active');
-                        }
-                    }
-                    if (type == "tag") {
-                        if (_.has(tagFilters, this.value[type])) {
-                            this.query[this.type]['tagFilters'] = +new Date();
-                            this.ui.tagAttrFilter.addClass('active');
-                        } else {
-                            this.query[this.type]['tagFilters'] = null;
-                            this.ui.tagAttrFilter.removeClass('active');
+                            this.ui.tagAttrFilter.prop('disabled', true);
+                            this.ui.typeAttrFilter.prop('disabled', true);
                         }
                     }
                 }
-            },
-            checkForButtonVisiblity: function() {
                 var that = this,
                     value = this.ui.searchInput.val() || this.ui.typeLov.val();
                 if (!this.dsl && !value) {
@@ -180,24 +217,6 @@ define(['require',
                 } else {
                     this.ui.searchBtn.attr("disabled", "true");
                 }
-                if (this.value) {
-                    if (this.value.tag) {
-                        this.ui.tagAttrFilter.prop('disabled', false);
-                    } else {
-                        this.ui.tagAttrFilter.prop('disabled', true);
-                    }
-                    if (this.value.type) {
-                        this.ui.typeAttrFilter.prop('disabled', false);
-                    } else {
-                        this.ui.typeAttrFilter.prop('disabled', true);
-                    }
-                    this.makeFilterButtonActive('type');
-                    this.makeFilterButtonActive('tag');
-                } else {
-                    this.ui.tagAttrFilter.prop('disabled', true);
-                    this.ui.typeAttrFilter.prop('disabled', true);
-                }
-
             },
             onRender: function() {
                 // array of tags which is coming from url
@@ -211,8 +230,6 @@ define(['require',
                     placeholder: "Select",
                     allowClear: true
                 });
-                this.bindSelect2Events();
-                this.checkForButtonVisiblity();
             },
             updateQueryObject: function(param) {
                 if (param && param.searchType) {
@@ -235,7 +252,9 @@ define(['require',
             },
             onRefreshButton: function() {
                 this.fetchCollection();
-                if (this.searchVent) {
+                //to check url query param contain type or not 
+                var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
+                if (this.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
                     this.searchVent.trigger('search:refresh');
                 }
             },
@@ -268,74 +287,24 @@ define(['require',
                         typeHeaders: that.typeHeaders,
                         entityDefCollection: that.entityDefCollection,
                         enumDefCollection: that.enumDefCollection,
-                        filterObj: that.filterObj,
                         classificationDefCollection: that.classificationDefCollection
                     });
-                    that.attrModal.on('ok', function(e) {
-                        that.okAttrFilterButton();
+                    that.attrModal.on('ok', function(scope, e) {
+                        that.okAttrFilterButton(e);
                     });
                 });
             },
-            okAttrFilterButton: function() {
+            okAttrFilterButton: function(e) {
                 var filtertype = this.attrModal.tag ? 'tagFilters' : 'entityFilters',
-                    rule = this.attrModal.RQueryBuilder.currentView.ui.builder.queryBuilder('getRules'),
-                    result = this.getQueryBuilderParsData(rule);
-                if (result && !_.isEmpty(result.criterion)) {
-                    this.query[this.type][filtertype] = +new Date();
-                    if (result) {
-                        var filterObj = this.filterObj ? this.filterObj[filtertype] : null;
-                        if (!filterObj) {
-                            filterObj = {};
-                        }
-                        var temp = {}; // IE fix
-                        temp[(this.attrModal.tag ? this.value.tag : this.value.type)] = { 'result': result, 'rule': rule };
-                        _.extend(filterObj, temp);
-                        this.filterObj[filtertype] = filterObj;
-                        this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
-                        Utils.localStorage.setValue((filtertype), JSON.stringify(filterObj));
-                    } else {
-                        this.filterObj[filtertype] = null;
-                        this.query[this.type][filtertype] = null;
-                        this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
-                        Utils.localStorage.removeValue(filtertype);
-                    }
-                } else {
-                    this.filterObj[filtertype] = null;
-                    this.query[this.type][filtertype] = null;
-                    this.makeFilterButtonActive(this.attrModal.tag ? 'tag' : 'type');
-                    Utils.localStorage.removeValue(filtertype);
-                }
-                this.attrModal.modal.close();
-            },
-            getQueryBuilderParsData: function(obj) {
-                if (obj) {
-                    var parsObj = {
-                        "condition": obj.condition,
-                        "criterion": convertKeyAndExtractObj(obj.rules)
+                    rule = this.attrModal.RQueryBuilder.currentView.ui.builder.queryBuilder('getRules');
+                if (rule) {
+                    this.query[this.type][filtertype] = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
+                    this.makeFilterButtonActive(filtertype);
+                    this.attrModal.modal.close();
+                    if ($(e.currentTarget).hasClass('search')) {
+                        this.findSearchResult();
                     }
                 }
-
-                function convertKeyAndExtractObj(rules) {
-                    var convertObj = [];
-                    _.each(rules, function(rulObj) {
-                        var tempObj = {}
-                        if (rulObj.rules) {
-                            tempObj = {
-                                "condition": rulObj.condition,
-                                "criterion": convertKeyAndExtractObj(rulObj.rules)
-                            }
-                        } else {
-                            tempObj = {
-                                "attributeName": rulObj.id,
-                                "operator": rulObj.operator,
-                                "attributeValue": (rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
-                            }
-                        }
-                        convertObj.push(tempObj);
-                    });
-                    return convertObj;
-                }
-                return parsObj;
             },
             manualRender: function(paramObj) {
                 this.updateQueryObject(paramObj);
@@ -376,24 +345,32 @@ define(['require',
                     } else if (this.value.dslChecked == "false" && this.dsl == true) {
                         this.ui.searchType.prop("checked", false).trigger("change");
                     }
+                    this.ui.typeLov.val(this.value.type);
                     if (this.ui.typeLov.data('select2')) {
-                        this.ui.typeLov.val(this.value.type).trigger('change');
-                    } else {
-                        this.ui.typeLov.val(this.value.type);
+                        if (this.ui.typeLov.val() !== this.value.type) {
+                            this.value.type = null;
+                            this.ui.typeLov.val("").trigger("change");
+                        } else {
+                            this.ui.typeLov.trigger("change");
+                        }
                     }
 
                     if (!this.dsl) {
+                        this.ui.tagLov.val(this.value.tag);
                         if (this.ui.tagLov.data('select2')) {
-                            this.ui.tagLov.val(this.value.tag).trigger('change');
-                        } else {
-                            this.ui.typeLov.val(this.value.tag);
+                            // To handle delete scenario.
+                            if (this.ui.tagLov.val() !== this.value.tag) {
+                                this.value.tag = null;
+                                this.ui.tagLov.val("").trigger("change");
+                            } else {
+                                this.ui.tagLov.trigger("change");
+                            }
                         }
                     }
                     this.ui.searchInput.val(this.value.query || "");
                     setTimeout(function() {
                         that.ui.searchInput.focus();
                     }, 0);
-                    //this.searchVent.trigger('searchAttribute', this.value);
                 }
             },
             findSearchResult: function() {
@@ -401,16 +378,28 @@ define(['require',
             },
             triggerSearch: function(value) {
                 this.query[this.type].query = value || null;
+                var params = {
+                    searchType: this.type,
+                    dslChecked: this.ui.searchType.is(':checked')
+                }
                 this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
                     this.query[this.type].tag = this.ui.tagLov.select2('val') || null;
                 }
+                if (this.dsl) {
+                    params['attributes'] = null;
+                } else {
+                    var columnList = JSON.parse(Utils.localStorage.getValue('columnList'));
+                    if (columnList) {
+                        params['attributes'] = columnList[this.query[this.type].type];
+                    } else {
+                        params['attributes'] = null;
+                    }
+                }
+
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: _.extend(this.query[this.type], {
-                        searchType: this.type,
-                        dslChecked: this.ui.searchType.is(':checked')
-                    }),
+                    urlParams: _.extend(this.query[this.type], params),
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
                     },
@@ -454,7 +443,7 @@ define(['require',
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
-                this.checkForButtonVisiblity()
+                this.checkForButtonVisiblity();
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {

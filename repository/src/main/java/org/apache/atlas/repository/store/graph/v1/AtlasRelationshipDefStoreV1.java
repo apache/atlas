@@ -480,7 +480,12 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
         vertex.setProperty(Constants.RELATIONSHIPTYPE_END2_KEY, AtlasType.toJson(relationshipDef.getEndDef2()));
         // Update RelationshipCategory
         vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipDef.getRelationshipCategory().name());
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, relationshipDef.getPropagateTags().name());
+
+        if (relationshipDef.getPropagateTags() == null) {
+            vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, AtlasRelationshipDef.PropagateTags.NONE.name());
+        } else {
+            vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, relationshipDef.getPropagateTags().name());
+        }
     }
 
     private AtlasRelationshipDef toRelationshipDef(AtlasVertex vertex) throws AtlasBaseException {

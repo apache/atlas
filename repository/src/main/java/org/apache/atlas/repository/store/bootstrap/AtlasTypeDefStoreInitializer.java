@@ -24,6 +24,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -164,6 +165,14 @@ public class AtlasTypeDefStoreInitializer {
             }
         }
 
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                if (!typeRegistry.isRegisteredType(relationshipDef.getName())) {
+                    typesToCreate.getRelationshipDefs().add(relationshipDef);
+                }
+            }
+        }
+
         return typesToCreate;
     }
 
@@ -230,6 +239,20 @@ public class AtlasTypeDefStoreInitializer {
                     }
 
                     typesToUpdate.getEnumDefs().add(newEnumDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+                AtlasRelationshipDef  oldRelationshipDef = typeRegistry.getRelationshipDefByName(relationshipDef.getName());
+
+                if (oldRelationshipDef == null) {
+                    continue;
+                }
+
+                if (updateTypeAttributes(oldRelationshipDef, relationshipDef)) {
+                    typesToUpdate.getRelationshipDefs().add(relationshipDef);
                 }
             }
         }

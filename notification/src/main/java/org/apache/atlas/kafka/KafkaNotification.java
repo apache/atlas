@@ -83,6 +83,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private Properties properties;
     private KafkaConsumer consumer = null;
     private KafkaProducer producer = null;
+    private Long pollTimeOutMs = 1000L;
 
     private static final Map<NotificationType, String> TOPIC_MAP = new HashMap<NotificationType, String>() {
         {
@@ -124,6 +125,13 @@ public class KafkaNotification extends AbstractNotification implements Service {
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        pollTimeOutMs = subsetConfiguration.getLong("poll.timeout.ms", 1000);
+        boolean oldApiCommitEnbleFlag = subsetConfiguration.getBoolean("auto.commit.enable",false);
+        //set old autocommit value if new autoCommit property is not set.
+        properties.put("enable.auto.commit", subsetConfiguration.getBoolean("enable.auto.commit", oldApiCommitEnbleFlag));
+        properties.put("session.timeout.ms", subsetConfiguration.getString("session.timeout.ms", "30000"));
+
     }
 
     @VisibleForTesting
@@ -167,7 +175,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType,
                                                              int numConsumers) {
         return createConsumers(notificationType, numConsumers,
-                Boolean.valueOf(properties.getProperty("enable.auto.commit", "true")));
+                Boolean.valueOf(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable","false"))));
     }
 
     @VisibleForTesting
@@ -177,7 +185,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         Properties consumerProperties = getConsumerProperties(notificationType);
 
         List<NotificationConsumer<T>> consumers = new ArrayList<>();
-        AtlasKafkaConsumer kafkaConsumer = new AtlasKafkaConsumer(notificationType.getDeserializer(), getKafkaConsumer(consumerProperties,notificationType, autoCommitEnabled), autoCommitEnabled);
+        AtlasKafkaConsumer kafkaConsumer = new AtlasKafkaConsumer(notificationType.getDeserializer(), getKafkaConsumer(consumerProperties,notificationType, autoCommitEnabled), autoCommitEnabled, pollTimeOutMs );
         consumers.add(kafkaConsumer);
         return consumers;
     }

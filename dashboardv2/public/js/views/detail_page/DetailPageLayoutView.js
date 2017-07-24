@@ -104,7 +104,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
                 this.bindEvents();
             },
             bindEvents: function() {
@@ -172,7 +172,8 @@ define(['require',
                         typeHeaders: this.typeHeaders,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that),
-                        enumDefCollection: this.enumDefCollection
+                        enumDefCollection: this.enumDefCollection,
+                        classificationDefCollection: this.classificationDefCollection
                     }
                     this.getEntityDef(obj);
                     this.renderTagTableLayoutView(obj);
@@ -242,12 +243,12 @@ define(['require',
             },
             getEntityDef: function(obj) {
                 var data = this.entityDefCollection.fullCollection.findWhere({ name: obj.entity.typeName }).toJSON();
-                var entityDef = Utils.getNestedSuperTypeObj({
+                var attributeDefs = Utils.getNestedSuperTypeObj({
                     data: data,
                     attrMerge: true,
                     collection: this.entityDefCollection
                 });
-                obj['entityDef'] = entityDef;
+                obj['attributeDefs'] = attributeDefs;
                 this.renderEntityDetailTableLayoutView(obj);
                 this.renderAuditTableLayoutView(obj);
             },

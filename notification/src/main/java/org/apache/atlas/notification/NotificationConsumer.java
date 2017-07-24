@@ -41,8 +41,16 @@ public interface NotificationConsumer<T> {
 
     /**
      * Fetch data for the topics from Kafka
+     * @return List containing kafka message and partionId and offset.
+     */
+    List<AtlasKafkaMessage<T>> receive();
+
+    /**
+     * Fetch data for the topics from Kafka
      * @param timeoutMilliSeconds poll timeout
      * @return List containing kafka message and partionId and offset.
      */
     List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds);
+
+
 }

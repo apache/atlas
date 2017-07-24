@@ -15,8 +15,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+# Signal handling is OS-specific because there is no SIGKILL on Windows.
+
 import os
-from signal import SIGTERM, SIGKILL
+
+if os.name == "nt":
+  # Attempting to import SIGKILL on Windows would cause script to fail.
+  from signal import SIGTERM
+else:
+  from signal import SIGTERM, SIGKILL
+
 import sys
 import traceback
 import time
@@ -63,15 +73,22 @@ def main():
     # stop hbase
     if mc.is_hbase_local(confdir):
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "stop", None, None, True)
-		
+
     if mc.exist_pid(pid):
         #after 30 seconds kill it
         time.sleep(30)
         try:
-            sys.stderr.write("did not stop gracefully after 30 seconds seconds: killing with SIGKILL\n")
-            os.kill(pid, SIGKILL)
+
+            if os.name == "nt":
+              # If running on Windows then timeout termination uses SIGTERM instead of SIGKILL.
+              sys.stderr.write("did not stop gracefully after 30 seconds: killing process using SIGTERM\n")
+              os.kill(pid, SIGTERM)
+            else:
+              sys.stderr.write("did not stop gracefully after 30 seconds: killing process using SIGKILL\n")
+              os.kill(pid, SIGKILL)
+
         except:
-            pass			
+            pass
 
 if __name__ == '__main__':
     try:

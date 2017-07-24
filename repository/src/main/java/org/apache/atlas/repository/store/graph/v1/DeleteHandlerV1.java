@@ -37,6 +37,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
@@ -53,6 +54,8 @@ import java.util.Set;
 import java.util.Stack;
 
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.graph.GraphHelper.getReferenceObjectId;
+import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 public abstract class DeleteHandlerV1 {
@@ -206,7 +209,6 @@ public abstract class DeleteHandlerV1 {
         return result;
     }
 
-
     /**
      * Force delete is used to remove struct/trait in case of entity updates
      * @param edge
@@ -217,13 +219,20 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned,
-        boolean forceDeleteStructTrait) throws AtlasBaseException {
+                                       boolean forceDeleteStructTrait) throws AtlasBaseException {
+
+        // default edge direction is outward
+        return deleteEdgeReference(edge, typeCategory, isOwned, forceDeleteStructTrait, AtlasRelationshipEdgeDirection.OUT);
+    }
+
+    public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned, boolean forceDeleteStructTrait,
+                                       AtlasRelationshipEdgeDirection relationshipDirection) throws AtlasBaseException {
         LOG.debug("Deleting {}", string(edge));
         boolean forceDelete =
-            (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
+                (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
 
         if (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION
-            || (typeCategory == TypeCategory.OBJECT_ID_TYPE && isOwned)) {
+                || (typeCategory == TypeCategory.OBJECT_ID_TYPE && isOwned)) {
             //If the vertex is of type struct/trait, delete the edge and then the reference vertex as the vertex is not shared by any other entities.
             //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
             //through this delete, hence delete the edge and the reference vertex.
@@ -236,9 +245,19 @@ public abstract class DeleteHandlerV1 {
             //If the vertex is of type class, and its not a composite attributes, the reference AtlasVertex' lifecycle is not controlled
             //through this delete. Hence just remove the reference edge. Leave the reference AtlasVertex as is
 
-            //If deleting just the edge, reverse attribute should be updated for any references
-            //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
-            deleteEdge(edge, true, false);
+            // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
+            // only delete the reference relationship edge
+            if (isRelationshipEdge(edge)) {
+                deleteEdge(edge, false);
+
+                AtlasObjectId deletedReferenceObjectId = getReferenceObjectId(edge, relationshipDirection);
+                RequestContextV1.get().recordEntityUpdate(deletedReferenceObjectId);
+            } else {
+                //legacy case - not a relationship edge
+                //If deleting just the edge, reverse attribute should be updated for any references
+                //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
+                deleteEdge(edge, true, false);
+            }
         }
         return !softDelete || forceDelete;
     }

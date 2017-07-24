@@ -93,5 +93,45 @@
                 }
             ]
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "dataset_process_inputs",
+            "typeVersion": "1.0",
+            "relationshipCategory": "AGGREGATION",
+            "endDef1": {
+                "type": "DataSet",
+                "name": "sourceToProcesses",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "Process",
+                "name": "inputs",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+          "name": "process_dataset_outputs",
+          "typeVersion": "1.0",
+          "relationshipCategory": "AGGREGATION",
+          "endDef1": {
+                "type": "Process",
+                "name": "outputs",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+          },
+          "endDef2": {
+                "type": "DataSet",
+                "name": "sinkFromProcesses",
+                "isContainer": false,
+                "cardinality": "SET"
+          },
+          "propagateTags": "NONE"
+        }
     ]
 }

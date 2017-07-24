@@ -15,25 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.atlas.utils;
+
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Utilities for MD5 hash.
- */
-public final class MD5Utils {
+public class SHA256Utils{
 
-    private MD5Utils() {
-    }
 
     private static final ThreadLocal<MessageDigest> DIGESTER_FACTORY =
             new ThreadLocal<MessageDigest>() {
                 @Override
                 protected MessageDigest initialValue() {
                     try {
-                        return MessageDigest.getInstance("MD5");
+                        return MessageDigest.getInstance("SHA-256");
                     } catch (NoSuchAlgorithmException e) {
                         throw new RuntimeException(e);
                     }
@@ -41,26 +38,31 @@ public final class MD5Utils {
             };
 
     /**
-     * Create a thread local MD5 digester.
+     * Create a thread local SHA256 digester.
      */
+
     public static MessageDigest getDigester() {
         MessageDigest digester = DIGESTER_FACTORY.get();
         digester.reset();
         return digester;
     }
 
-    private static final char[] HEX_DIGITS =
-    {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    public static String toString(byte[] hash) {
+        try{
+            StringBuffer hexString = new StringBuffer();
 
-    public static String toString(byte[] digest) {
-        StringBuilder buf = new StringBuilder(MD5_LEN * 2);
-        for (int i = 0; i < MD5_LEN; i++) {
-            int b = digest[i];
-            buf.append(HEX_DIGITS[(b >> 4) & 0xf]);
-            buf.append(HEX_DIGITS[b & 0xf]);
+            for (int i = 0; i < hash.length; i++) {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if(hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch(Exception ex){
+            throw new RuntimeException(ex);
         }
-        return buf.toString();
     }
 
-    public static final int MD5_LEN = 16;
+
+
 }

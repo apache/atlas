@@ -454,6 +454,21 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         loaderEl.hide();
         titleBoxEl.fadeIn();
     }
+    Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
+        if (attributeObject && referredEntities) {
+            _.each(attributeObject, function(obj, key) {
+                if (_.isObject(obj)) {
+                    if (_.isArray(obj)) {
+                        _.each(obj, function(value) {
+                            _.extend(value, referredEntities[value.guid]);
+                        });
+                    } else {
+                        _.extend(obj, referredEntities[obj.guid]);
+                    }
+                }
+            });
+        }
+    }
     Utils.getNestedSuperTypeObj = function(options) {
         var flag = 0,
             data = options.data,

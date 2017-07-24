@@ -18,7 +18,6 @@
 package org.apache.atlas.model.typedef;
 
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -61,9 +60,9 @@ public class AtlasRelationshipEndDef implements Serializable {
      */
     private Cardinality cardinality;
     /**
-     * legacy edge label name of the endpoint
+     * When set this indicates that this end is is a legacy attribute
      */
-    private String legacyLabel;
+    private boolean isLegacyAttribute;
 
     /**
      * Base constructor
@@ -97,15 +96,15 @@ public class AtlasRelationshipEndDef implements Serializable {
      *   - whether the end is a container or not
      */
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
-        this(typeName, name, cardinality, isContainer, null);
+        this(typeName, name, cardinality, isContainer, false);
     }
 
-    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, String legacyLabel) {
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute) {
         setType(typeName);
         setName(name);
         setCardinality(cardinality);
         setIsContainer(isContainer);
-        setLegacyLabel(legacyLabel);
+        setIsLegacyAttribute(isLegacyAttribute);
     }
 
     /**
@@ -118,7 +117,7 @@ public class AtlasRelationshipEndDef implements Serializable {
             setName(other.getName());
             setIsContainer(other.getIsContainer());
             setCardinality(other.getCardinality());
-            setLegacyLabel(other.getLegacyLabel());
+            setIsLegacyAttribute(other.isLegacyAttribute);
         }
     }
 
@@ -166,11 +165,9 @@ public class AtlasRelationshipEndDef implements Serializable {
         return this.cardinality;
     }
 
-    public String getLegacyLabel() { return legacyLabel; }
+    public boolean getIsLegacyAttribute() { return isLegacyAttribute; }
 
-    public void setLegacyLabel(String legacyLabel) {  this.legacyLabel = legacyLabel; }
-
-    public boolean hasLegacyRelation() { return StringUtils.isNotEmpty(getLegacyLabel()) ? true : false; }
+    public void setIsLegacyAttribute(boolean legacyAttribute) { isLegacyAttribute = legacyAttribute; }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -182,7 +179,7 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append(", name==>'").append(name).append('\'');
         sb.append(", isContainer==>'").append(isContainer).append('\'');
         sb.append(", cardinality==>'").append(cardinality).append('\'');
-        sb.append(", legacyLabel==>'").append(legacyLabel).append('\'');
+        sb.append(", isLegacyAttribute==>'").append(isLegacyAttribute).append('\'');
         sb.append('}');
 
         return sb;
@@ -200,12 +197,12 @@ public class AtlasRelationshipEndDef implements Serializable {
                Objects.equals(name, that.name) &&
                isContainer == that.isContainer &&
                cardinality == that.cardinality &&
-               Objects.equals(legacyLabel, that.legacyLabel);
+               isLegacyAttribute == that.isLegacyAttribute;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, getName(), isContainer, cardinality, legacyLabel);
+        return Objects.hash(type, getName(), isContainer, cardinality, isLegacyAttribute);
     }
 
     @Override

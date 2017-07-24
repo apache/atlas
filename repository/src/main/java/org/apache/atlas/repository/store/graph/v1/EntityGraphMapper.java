@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
@@ -37,12 +38,14 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -61,23 +64,29 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 
 @Component
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
 
-    private final GraphHelper       graphHelper = GraphHelper.getInstance();
-    private final AtlasGraph        graph;
-    private final DeleteHandlerV1   deleteHandler;
-    private final AtlasTypeRegistry typeRegistry;
-
+    private final GraphHelper            graphHelper = GraphHelper.getInstance();
+    private final AtlasGraph             graph;
+    private final DeleteHandlerV1        deleteHandler;
+    private final AtlasTypeRegistry      typeRegistry;
+    private final AtlasRelationshipStore relationshipStore;
 
     @Inject
-    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
-        this.deleteHandler = deleteHandler;
-        this.typeRegistry  = typeRegistry;
-        this.graph         = atlasGraph;
+    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph,
+                             AtlasRelationshipStore relationshipStore) {
+        this.deleteHandler     = deleteHandler;
+        this.typeRegistry      = typeRegistry;
+        this.graph             = atlasGraph;
+        this.relationshipStore = relationshipStore;
     }
 
     public AtlasVertex createVertex(AtlasEntity entity) {
@@ -140,6 +149,8 @@ public class EntityGraphMapper {
 
                 mapAttributes(createdEntity, vertex, CREATE, context);
 
+                mapRelationshipAttributes(createdEntity, vertex, CREATE, context);
+
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
             }
@@ -152,6 +163,8 @@ public class EntityGraphMapper {
                 AtlasEntityType entityType = context.getType(guid);
 
                 mapAttributes(updatedEntity, vertex, UPDATE, context);
+
+                mapRelationshipAttributes(updatedEntity, vertex, UPDATE, context);
 
                 if (isPartialUpdate) {
                     resp.addEntity(PARTIAL_UPDATE, constructHeader(updatedEntity, entityType, vertex));
@@ -234,6 +247,7 @@ public class EntityGraphMapper {
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
+
             } else if (op.equals(UPDATE)) {
                 for (String attrName : struct.getAttributes().keySet()) {
                     AtlasAttribute attribute = structType.getAttribute(attrName);
@@ -253,6 +267,41 @@ public class EntityGraphMapper {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapAttributes({}, {})", op, struct.getTypeName());
+        }
+    }
+
+    private void mapRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityOperation op,
+                                           EntityMutationContext context) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> mapRelationshipAttributes({}, {})", op, entity.getTypeName());
+        }
+
+        if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
+            AtlasEntityType entityType = getEntityType(entity.getTypeName());
+
+            if (op.equals(CREATE)) {
+                for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+                    Object attrValue = entity.getRelationshipAttribute(attribute.getName());
+
+                    mapAttribute(attribute, attrValue, vertex, op, context);
+                }
+
+            } else if (op.equals(UPDATE)) {
+                // relationship attributes mapping
+                for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+                    if (attribute != null && entity.hasRelationshipAttribute(attribute.getName())) {
+                        Object attrValue = entity.getRelationshipAttribute(attribute.getName());
+
+                        mapAttribute(attribute, attrValue, vertex, op, context);
+                    }
+                }
+            }
+
+            updateModificationMetadata(vertex);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== mapRelationshipAttributes({}, {})", op, entity.getTypeName());
         }
     }
 
@@ -305,9 +354,16 @@ public class EntityGraphMapper {
             }
 
             case OBJECT_ID_TYPE: {
-                String    edgeLabel    = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
-                AtlasEdge currentEdge  = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel);
-                AtlasEdge newEdge      = null;
+                String edgeLabel     = ctx.getAttribute().getRelationshipEdgeLabel();
+                AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
+
+                // legacy case - if relationship attribute doesn't exist, use legacy edge label.
+                if (StringUtils.isEmpty(edgeLabel)) {
+                    edgeLabel = AtlasGraphUtilsV1.getEdgeLabel(ctx.getVertexProperty());
+                }
+
+                AtlasEdge currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel, edgeDirection);
+                AtlasEdge newEdge     = null;
 
                 if (ctx.getValue() != null) {
                     AtlasEntityType instanceType = getInstanceType(ctx.getValue());
@@ -316,14 +372,43 @@ public class EntityGraphMapper {
                     ctx.setElementType(instanceType);
                     ctx.setExistingEdge(edge);
 
-                    newEdge = mapObjectIdValue(ctx, context);
+                    newEdge = mapObjectIdValueUsingRelationship(ctx, context);
+
+                    // legacy case update inverse attribute
                     if (ctx.getAttribute().getInverseRefAttribute() != null) {
-                        // Update the inverse reference on the target entity
-                        addInverseReference(ctx, ctx.getAttribute().getInverseRefAttribute(), newEdge);
+                        // Update the inverse reference using relationship on the target entity
+                        addInverseReference(ctx.getAttribute().getInverseRefAttribute(), newEdge);
                     }
                 }
+
+                // created new relationship,
+                // record entity update on both vertices of the new relationship
+                if (currentEdge == null && newEdge != null) {
+
+                    // based on relationship edge direction record update only on attribute vertex
+                    if (edgeDirection == IN) {
+                        recordEntityUpdate(newEdge.getOutVertex());
+
+                    } else {
+                        recordEntityUpdate(newEdge.getInVertex());
+                    }
+                }
+
+                // update references, if current and new edge don't match
+                // record entity update on new reference and delete(edge) old reference.
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
-                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(), true);
+
+                    //record entity update on new edge
+                    if (isRelationshipEdge(newEdge)) {
+                        AtlasVertex attrVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(ctx.getValue()));
+
+                        recordEntityUpdate(attrVertex);
+                        updateModificationMetadata(attrVertex);
+                    }
+
+                    //delete old reference
+                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
+                                                      true, ctx.getAttribute().getRelationshipEdgeDirection());
                 }
 
                 return newEdge;
@@ -340,21 +425,15 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addInverseReference(AttributeMutationContext ctx, AtlasAttribute inverseAttribute, AtlasEdge edge) throws AtlasBaseException {
+    private void addInverseReference(AtlasAttribute inverseAttribute, AtlasEdge edge) throws AtlasBaseException {
+        AtlasStructType inverseType      = inverseAttribute.getDefinedInType();
+        AtlasVertex     inverseVertex    = edge.getInVertex();
+        String          inverseEdgeLabel = inverseAttribute.getRelationshipEdgeLabel();
+        AtlasEdge       inverseEdge      = graphHelper.getEdgeForLabel(inverseVertex, inverseEdgeLabel);
+        String          propertyName     = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(inverseType, inverseAttribute.getName());
 
-        AtlasStructType inverseType = inverseAttribute.getDefinedInType();
-        String propertyName = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(inverseType, inverseAttribute.getName());
-        AtlasVertex vertex = edge.getOutVertex();
-        AtlasVertex inverseVertex = edge.getInVertex();
-        String inverseEdgeLabel = AtlasGraphUtilsV1.getEdgeLabel(propertyName);
-        AtlasEdge inverseEdge = graphHelper.getEdgeForLabel(inverseVertex, inverseEdgeLabel);
-
-        AtlasEdge newEdge;
-        try {
-            newEdge = graphHelper.getOrCreateEdge(inverseVertex, vertex, inverseEdgeLabel);
-        } catch (RepositoryException e) {
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
+        // create new inverse reference
+        AtlasEdge newEdge = createInverseReferenceUsingRelationship(inverseAttribute, edge);
 
         boolean inverseUpdated = true;
         switch (inverseAttribute.getAttributeType().getTypeCategory()) {
@@ -363,7 +442,7 @@ public class EntityGraphMapper {
                 if (!inverseEdge.equals(newEdge)) {
                     // Disconnect old reference
                     deleteHandler.deleteEdgeReference(inverseEdge, inverseAttribute.getAttributeType().getTypeCategory(),
-                        inverseAttribute.isOwnedRef(), true);
+                                                      inverseAttribute.isOwnedRef(), true);
                 }
                 else {
                     // Edge already exists for this attribute between these vertices.
@@ -374,13 +453,13 @@ public class EntityGraphMapper {
         case ARRAY:
             // Add edge ID to property value
             List<String> elements = inverseVertex.getProperty(propertyName, List.class);
-            if (elements == null) {
+            if (newEdge != null && elements == null) {
                 elements = new ArrayList<>();
                 elements.add(newEdge.getId().toString());
                 inverseVertex.setProperty(propertyName, elements);
             }
             else {
-               if (!elements.contains(newEdge.getId().toString())) {
+               if (newEdge != null && !elements.contains(newEdge.getId().toString())) {
                     elements.add(newEdge.getId().toString());
                     inverseVertex.setProperty(propertyName, elements);
                }
@@ -396,11 +475,67 @@ public class EntityGraphMapper {
 
         if (inverseUpdated) {
             updateModificationMetadata(inverseVertex);
-            AtlasObjectId inverseEntityId = new AtlasObjectId(AtlasGraphUtilsV1.getIdFromVertex(inverseVertex), inverseType.getTypeName());
+            AtlasObjectId inverseEntityId = new AtlasObjectId(getIdFromVertex(inverseVertex), inverseType.getTypeName());
             RequestContextV1.get().recordEntityUpdate(inverseEntityId);
         }
     }
 
+    private AtlasEdge createInverseReferenceUsingRelationship(AtlasAttribute inverseAttribute, AtlasEdge edge) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> createInverseReferenceUsingRelationship()");
+        }
+
+        String      inverseAttributeName   = inverseAttribute.getName();
+        AtlasType   inverseAttributeType   = inverseAttribute.getDefinedInType();
+        AtlasVertex inverseVertex          = edge.getInVertex();
+        AtlasVertex vertex                 = edge.getOutVertex();
+        AtlasEdge   ret;
+
+        if (inverseAttributeType instanceof AtlasEntityType) {
+            AtlasEntityType entityType = (AtlasEntityType) inverseAttributeType;
+
+            if (entityType.hasRelationshipAttribute(inverseAttributeName)) {
+                String relationshipName = graphHelper.getRelationshipDefName(inverseVertex, entityType, inverseAttributeName);
+
+                ret = getOrCreateRelationship(inverseVertex, vertex, relationshipName, inverseAttribute);
+
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("No RelationshipDef defined between {} and {} on attribute: {}", inverseAttributeType,
+                                                        AtlasGraphUtilsV1.getTypeName(vertex), inverseAttributeName);
+                }
+                // if no RelationshipDef found, use legacy way to create edges
+                ret = createInverseReference(inverseAttribute, (AtlasStructType) inverseAttributeType, inverseVertex, vertex);
+            }
+        } else {
+            // inverseAttribute not of type AtlasEntityType, use legacy way to create edges
+            ret = createInverseReference(inverseAttribute, (AtlasStructType) inverseAttributeType, inverseVertex, vertex);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== createInverseReferenceUsingRelationship()");
+        }
+
+        return ret;
+    }
+
+    // legacy method to create edges for inverse reference
+    private AtlasEdge createInverseReference(AtlasAttribute inverseAttribute, AtlasStructType inverseAttributeType,
+                                             AtlasVertex inverseVertex, AtlasVertex vertex) throws AtlasBaseException {
+
+        String propertyName     = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(inverseAttributeType, inverseAttribute.getName());
+        String inverseEdgeLabel = AtlasGraphUtilsV1.getEdgeLabel(propertyName);
+        AtlasEdge ret;
+
+        try {
+            ret = graphHelper.getOrCreateEdge(inverseVertex, vertex, inverseEdgeLabel);
+
+        } catch (RepositoryException e) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+
+        return ret;
+    }
 
     private Object mapPrimitiveValue(AttributeMutationContext ctx) {
         AtlasGraphUtilsV1.setProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), ctx.getValue());
@@ -492,6 +627,86 @@ public class EntityGraphMapper {
         return ret;
     }
 
+    private AtlasEdge mapObjectIdValueUsingRelationship(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> mapObjectIdValueUsingRelationship({})", ctx);
+        }
+
+        AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(ctx.getValue()));
+        AtlasVertex entityVertex    = ctx.getReferringVertex();
+        AtlasEdge   ret;
+
+        if (attributeVertex == null) {
+            AtlasObjectId objectId = getObjectId(ctx.getValue());
+
+            attributeVertex = (objectId != null) ? context.getDiscoveryContext().getResolvedEntityVertex(objectId) : null;
+        }
+
+        if (attributeVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, (ctx.getValue() == null ? null : ctx.getValue().toString()));
+        }
+
+        String    attributeName = ctx.getAttribute().getName();
+        AtlasType type          = typeRegistry.getType(AtlasGraphUtilsV1.getTypeName(entityVertex));
+
+        AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
+        String                         edgeLabel     = ctx.getAttribute().getRelationshipEdgeLabel();
+
+        if (type instanceof AtlasEntityType) {
+            AtlasEntityType entityType = (AtlasEntityType) type;
+
+            // use relationship to create/update edges
+            if (entityType.hasRelationshipAttribute(attributeName)) {
+                if (ctx.getCurrentEdge() != null) {
+                    ret = updateRelationship(ctx.getCurrentEdge(), attributeVertex, edgeDirection, ctx.getAttribute());
+
+                    recordEntityUpdate(attributeVertex);
+
+                } else {
+                    String      relationshipName = graphHelper.getRelationshipDefName(entityVertex, entityType, attributeName);
+                    AtlasVertex fromVertex;
+                    AtlasVertex toVertex;
+
+                    if (edgeDirection == IN) {
+                        fromVertex = attributeVertex;
+                        toVertex   = entityVertex;
+
+                    } else {
+                        fromVertex = entityVertex;
+                        toVertex   = attributeVertex;
+                    }
+                    boolean relationshipExists = isRelationshipExists(fromVertex, toVertex, edgeLabel);
+
+                    ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, ctx.getAttribute());
+
+                    // if relationship did not exist before and new relationship was created
+                    // record entity update on both relationship vertices
+                    if (!relationshipExists) {
+                        recordEntityUpdate(attributeVertex);
+                    }
+                }
+            } else {
+                // use legacy way to create/update edges
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("No RelationshipDef defined between {} and {} on attribute: {}",  getTypeName(entityVertex),
+                               getTypeName(attributeVertex), attributeName);
+                }
+
+                ret = mapObjectIdValue(ctx, context);
+            }
+
+        } else {
+            // if type is StructType having objectid as attribute
+            ret = mapObjectIdValue(ctx, context);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== mapObjectIdValueUsingRelationship({})", ctx);
+        }
+
+        return ret;
+    }
+
     private Map<String, Object> mapMapValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> mapMapValue({})", ctx);
@@ -536,7 +751,7 @@ public class EntityGraphMapper {
                     // update the inverse reference value.
                     if (isReference && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                         AtlasEdge newEdge = (AtlasEdge) newEntry;
-                        addInverseReference(mapCtx, inverseRefAttribute, newEdge);
+                        addInverseReference(inverseRefAttribute, newEdge);
                     }
                 }
             }
@@ -568,14 +783,14 @@ public class EntityGraphMapper {
             LOG.debug("==> mapArrayValue({})", ctx);
         }
 
-        AtlasAttribute attribute       = ctx.getAttribute();
-        List           newElements     = (List) ctx.getValue();
-        AtlasArrayType arrType         = (AtlasArrayType) attribute.getAttributeType();
-        AtlasType      elementType     = arrType.getElementType();
-        List<Object>   currentElements = getArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty());
-        boolean isReference = AtlasGraphUtilsV1.isReference(elementType);
+        AtlasAttribute attribute           = ctx.getAttribute();
+        List           newElements         = (List) ctx.getValue();
+        AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
+        AtlasType      elementType         = arrType.getElementType();
+        List<Object>   currentElements     = getArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty());
+        boolean        isReference         = AtlasGraphUtilsV1.isReference(elementType);
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
-        List<Object> newElementsCreated = new ArrayList<>();
+        List<Object>   newElementsCreated  = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(newElements)) {
             for (int index = 0; index < newElements.size(); index++) {
@@ -587,8 +802,9 @@ public class EntityGraphMapper {
                 if (isReference && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                     // Update the inverse reference value.
                     AtlasEdge newEdge = (AtlasEdge) newEntry;
-                    addInverseReference(arrCtx, inverseRefAttribute, newEdge);
+                    addInverseReference(inverseRefAttribute, newEdge);
                 }
+
                 newElementsCreated.add(newEntry);
             }
         }
@@ -606,6 +822,21 @@ public class EntityGraphMapper {
         }
 
         return newElementsCreated;
+    }
+
+    private boolean isRelationshipAttribute(AtlasAttribute attribute) {
+        boolean ret = false;
+
+        if (attribute != null) {
+            AtlasStructType structType    = attribute.getDefinedInType();
+            String          attributeName = attribute.getName();
+
+            if (structType instanceof AtlasEntityType) {
+                ret = ((AtlasEntityType) structType).hasRelationshipAttribute(attributeName);
+            }
+        }
+
+        return ret;
     }
 
 
@@ -647,6 +878,16 @@ public class EntityGraphMapper {
         return (AtlasStructType)objType;
     }
 
+    private AtlasEntityType getEntityType(String typeName) throws AtlasBaseException {
+        AtlasType objType = typeRegistry.getType(typeName);
+
+        if (!(objType instanceof AtlasEntityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, typeName);
+        }
+
+        return (AtlasEntityType)objType;
+    }
+
     private Object mapCollectionElementsToVertex(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
         switch(ctx.getAttrType().getTypeCategory()) {
         case PRIMITIVE:
@@ -659,7 +900,7 @@ public class EntityGraphMapper {
         case OBJECT_ID_TYPE:
             AtlasEntityType instanceType = getInstanceType(ctx.getValue());
             ctx.setElementType(instanceType);
-            return mapObjectIdValue(ctx, context);
+            return mapObjectIdValueUsingRelationship(ctx, context);
 
         case MAP:
         case ARRAY:
@@ -798,8 +1039,8 @@ public class EntityGraphMapper {
         // Update edge if it exists
 
         AtlasVertex currentVertex = currentEdge.getInVertex();
-        String currentEntityId = AtlasGraphUtilsV1.getIdFromVertex(currentVertex);
-        String newEntityId = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
+        String currentEntityId = getIdFromVertex(currentVertex);
+        String newEntityId = getIdFromVertex(entityVertex);
 
         AtlasEdge newEdge = currentEdge;
         if (!currentEntityId.equals(newEntityId)) {
@@ -814,6 +1055,39 @@ public class EntityGraphMapper {
             }
         }
         return newEdge;
+    }
+
+    private AtlasEdge updateRelationship(AtlasEdge currentEdge, final AtlasVertex newEntityVertex,
+                                         AtlasRelationshipEdgeDirection edgeDirection, AtlasAttribute attribute)
+                                         throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Updating entity reference using relationship {} for reference attribute {}", getTypeName(newEntityVertex));
+        }
+
+        // Max's manager updated from Jane to Julius (Max.manager --> Jane.subordinates)
+        // manager attribute (OUT direction), current manager vertex (Jane) (IN vertex)
+
+        // Max's mentor updated from John to Jane (John.mentee --> Max.mentor)
+        // mentor attribute (IN direction), current mentee vertex (John) (OUT vertex)
+        String currentEntityId = (edgeDirection == IN) ? getIdFromVertex(currentEdge.getOutVertex()) :
+                                                         getIdFromVertex(currentEdge.getInVertex());
+
+        String    newEntityId = getIdFromVertex(newEntityVertex);
+        AtlasEdge ret         = currentEdge;
+
+        if (!currentEntityId.equals(newEntityId)) {
+            // create a new relationship edge to the new attribute vertex from the instance
+            String relationshipName = AtlasGraphUtilsV1.getTypeName(currentEdge);
+
+            if (relationshipName == null) {
+                relationshipName = currentEdge.getLabel();
+            }
+
+            ret = (edgeDirection == IN) ? getOrCreateRelationship(newEntityVertex, currentEdge.getInVertex(), relationshipName, attribute) :
+                                          getOrCreateRelationship(currentEdge.getOutVertex(), newEntityVertex, relationshipName, attribute);
+        }
+
+        return ret;
     }
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName) {
@@ -840,8 +1114,7 @@ public class EntityGraphMapper {
     //Removes unused edges from the old collection, compared to the new collection
     private List<AtlasEdge> removeUnusedArrayEntries(AtlasAttribute attribute, List<AtlasEdge> currentEntries, List<AtlasEdge> newEntries) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(currentEntries)) {
-            AtlasStructType entityType = attribute.getDefinedInType();
-            AtlasType       entryType  = ((AtlasArrayType)attribute.getAttributeType()).getElementType();
+            AtlasType entryType = ((AtlasArrayType) attribute.getAttributeType()).getElementType();
 
             if (AtlasGraphUtilsV1.isReference(entryType)) {
                 Collection<AtlasEdge> edgesToRemove = CollectionUtils.subtract(currentEntries, newEntries);
@@ -850,7 +1123,8 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
-                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(), true);
+                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                                                             true, attribute.getRelationshipEdgeDirection());
 
                         if (!deleted) {
                             additionalElements.add(edge);
@@ -878,7 +1152,7 @@ public class EntityGraphMapper {
     private AtlasEntityHeader constructHeader(AtlasEntity entity, final AtlasEntityType type, AtlasVertex vertex) {
         AtlasEntityHeader header = new AtlasEntityHeader(entity.getTypeName());
 
-        header.setGuid(AtlasGraphUtilsV1.getIdFromVertex(vertex));
+        header.setGuid(getIdFromVertex(vertex));
 
         for (AtlasAttribute attribute : type.getUniqAttributes().values()) {
             header.setAttribute(attribute.getName(), entity.getAttribute(attribute.getName()));
@@ -956,6 +1230,11 @@ public class EntityGraphMapper {
         // get the classification vertex from entity
         String      relationshipLabel    = GraphHelper.getTraitLabel(entityTypeName, classification.getTypeName());
         AtlasEdge   classificationEdge   = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+
+        if (classificationEdge == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "classificationEdge is null for label: " + relationshipLabel);
+        }
+
         AtlasVertex classificationVertex = classificationEdge.getInVertex();
 
         if (LOG.isDebugEnabled()) {
@@ -1005,7 +1284,7 @@ public class EntityGraphMapper {
 
         for (String classificationName : classificationNames) {
             try {
-                final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
+                final String entityTypeName = getTypeName(instanceVertex);
                 String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, classificationName);
                 AtlasEdge edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
                 if (edge != null) {
@@ -1037,5 +1316,70 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
             }
         }
+    }
+
+    private AtlasEdge getOrCreateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName, AtlasAttribute attribute) throws AtlasBaseException {
+        AtlasEdge     ret  = null;
+        AtlasObjectId end1 = new AtlasObjectId(getIdFromVertex(end1Vertex), AtlasGraphUtilsV1.getTypeName(end1Vertex));
+        AtlasObjectId end2 = new AtlasObjectId(getIdFromVertex(end2Vertex), AtlasGraphUtilsV1.getTypeName(end2Vertex));
+
+        AtlasRelationship relationship = relationshipStore.getOrCreate(new AtlasRelationship(relationshipName, end1, end2));
+        // return newly created AtlasEdge
+        // if multiple edges are returned, compare using guid to pick the right one
+        Iterator<AtlasEdge> outEdges = graphHelper.getOutGoingEdgesByLabel(end1Vertex, relationship.getLabel());
+
+        while (outEdges.hasNext()) {
+            AtlasEdge edge = outEdges.next();
+
+            if (getIdFromVertex(end2Vertex).equals(getIdFromVertex(edge.getInVertex()))) {
+                ret = edge;
+                break;
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean isRelationshipExists(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
+        boolean             ret   = false;
+        Iterator<AtlasEdge> edges = graphHelper.getOutGoingEdgesByLabel(fromVertex, edgeLabel);
+
+        while (edges != null && edges.hasNext()) {
+            AtlasEdge   edge     = edges.next();
+            AtlasVertex inVertex = edge.getInVertex();
+
+            if (inVertex != null && StringUtils.equals(getIdFromVertex(inVertex), getIdFromVertex(toVertex))) {
+                ret = true;
+            }
+        }
+
+        return ret;
+    }
+
+    private void recordEntityUpdate(AtlasVertex vertex) {
+        AtlasObjectId    objectId = new AtlasObjectId(GraphHelper.getGuid(vertex), GraphHelper.getTypeName(vertex));
+        RequestContextV1 req      = RequestContextV1.get();
+
+        if (!objectIdsContain(req.getUpdatedEntityIds(), objectId)) {
+            req.recordEntityUpdate(objectId);
+        }
+    }
+
+    private boolean objectIdsContain(Collection<AtlasObjectId> objectIds, AtlasObjectId objectId) {
+        boolean ret = false;
+
+        if (CollectionUtils.isEmpty(objectIds)) {
+            ret = false;
+
+        } else {
+            for (AtlasObjectId id : objectIds) {
+                if (StringUtils.equals(id.getGuid(), objectId.getGuid())) {
+                    ret = true;
+                    break;
+                }
+            }
+        }
+
+        return ret;
     }
 }

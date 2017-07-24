@@ -142,5 +142,26 @@
                 }
             ]
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "storm_topology_nodes",
+            "typeVersion": "1.0",
+            "relationshipCategory": "AGGREGATION",
+            "endDef1": {
+                "type": "storm_topology",
+                "name": "nodes",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "storm_node",
+                "name": "topolgies",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        }
     ]
 }

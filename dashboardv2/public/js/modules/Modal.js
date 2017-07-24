@@ -29,7 +29,7 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 this.trigger('closeModal');
 
                 if (this.options.content && this.options.content.trigger) {
-                    this.options.content.trigger('closeModal', this);
+                    this.options.content.trigger('closeModal', this, event);
                 }
             },
             'click .cancel': function(event) {
@@ -38,7 +38,7 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 this.trigger('closeModal');
 
                 if (this.options.content && this.options.content.trigger) {
-                    this.options.content.trigger('closeModal', this);
+                    this.options.content.trigger('closeModal', this, event);
                 }
             },
             'click .ok': function(event) {
@@ -47,7 +47,7 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 this.trigger('ok');
 
                 if (this.options.content && this.options.content.trigger) {
-                    this.options.content.trigger('ok', this);
+                    this.options.content.trigger('ok', this, event);
                 }
 
                 if (this.options.okCloses) {
@@ -85,7 +85,8 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 animate: true,
                 contentWithFooter: false,
                 template: template,
-                width: null
+                width: null,
+                buttons: null
             }, options);
         },
 

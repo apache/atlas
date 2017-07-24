@@ -18,7 +18,7 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.annotation.AtlasService;
-import org.apache.atlas.discovery.SearchPipeline.PipelineContext;
+import org.apache.atlas.discovery.SearchContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,13 +26,13 @@ import java.util.Set;
 
 @AtlasService
 public class SearchTracker {
-    private Map<String, PipelineContext> activeSearches = new HashMap<>();
+    private Map<String, SearchContext> activeSearches = new HashMap<>();
 
     /**
      *
      * @param context
      */
-    public String add(PipelineContext context) {
+    public String add(SearchContext context) {
         String searchId = Thread.currentThread().getName();
 
         activeSearches.put(searchId, context);
@@ -45,13 +45,13 @@ public class SearchTracker {
      * @param searchId
      * @return
      */
-    public PipelineContext terminate(String searchId) {
-        PipelineContext ret = null;
+    public SearchContext terminate(String searchId) {
+        SearchContext ret = null;
 
         if (activeSearches.containsKey(searchId)) {
-            PipelineContext pipelineToTerminate = activeSearches.remove(searchId);
+            SearchContext pipelineToTerminate = activeSearches.remove(searchId);
 
-            pipelineToTerminate.setForceTerminate(true);
+            pipelineToTerminate.terminateSearch(true);
 
             ret = pipelineToTerminate;
         }
@@ -59,7 +59,7 @@ public class SearchTracker {
         return ret;
     }
 
-    public PipelineContext remove(String id) {
+    public SearchContext remove(String id) {
         return activeSearches.remove(id);
     }
 

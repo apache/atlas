@@ -75,24 +75,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         });
     };
-    CommonViewFunction.findAndmergeRefEntity = function(attributeObject, referredEntities) {
-        _.each(attributeObject, function(obj, key) {
-            if (_.isObject(obj)) {
-                if (_.isArray(obj)) {
-                    _.each(obj, function(value) {
-                        _.extend(value, referredEntities[value.guid]);
-                    });
-                } else {
-                    _.extend(obj, referredEntities[obj.guid]);
-                }
-            }
-        });
-    }
     CommonViewFunction.propertyTable = function(options) {
         var scope = options.scope,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
-            entityDef = options.entityDef;
+            isTable = _.isUndefined(options.isTable) ? true : options.isTable,
+            attributeDefs = options.attributeDefs;
 
         var table = "",
             fetchInputOutputValue = function(id) {
@@ -178,7 +166,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                     if (id && inputOutputField) {
                         var name = Utils.getName(inputOutputField);
-                        if (name === "-" || name === id) {
+                        if ((name === "-" || name === id) && !inputOutputField.attributes) {
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
                             fetchInputOutputValue(fetchId);
@@ -212,7 +200,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         _.sortBy(_.keys(valueObject)).map(function(key) {
             key = _.escape(key);
             var keyValue = valueObject[key];
-            var defEntity = _.find(entityDef, { name: key });
+            var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date' || defEntityType === 'time') {
@@ -225,7 +213,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     keyValue = extractObject(keyValue)
                 }
             }
-            table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
+            if (isTable) {
+                table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
+            } else {
+                table += '<div>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div>';
+            }
+
         });
         return table;
     }
@@ -404,6 +397,64 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             });
         })
+    }
+    CommonViewFunction.attributeFilter = {
+        generateUrl: function(attrObj) {
+            var attrQuery = [];
+            if (attrObj) {
+                _.each(attrObj, function(obj) {
+                    attrQuery.push(obj.id + "::" + obj.operator + "::" + obj.value + "::" + obj.type);
+                });
+                return attrQuery.join();
+            } else {
+                return null;
+            }
+        },
+        extractUrl: function(urlObj) {
+            var attrObj = [];
+            if (urlObj && urlObj.length) {
+                _.each(urlObj.split(","), function(obj) {
+                    var temp = obj.split("::");
+                    attrObj.push({ id: temp[0], operator: temp[1], value: temp[2], type: temp[3] });
+                });
+                return attrObj;
+            } else {
+                return null;
+            }
+        },
+        generateAPIObj: function(url) {
+            if (url && url.length) {
+                var parsObj = {
+                    "condition": 'AND',
+                    "criterion": convertKeyAndExtractObj(this.extractUrl(url))
+                }
+                return parsObj;
+            } else {
+                return null;
+            }
+
+            function convertKeyAndExtractObj(rules) {
+                var convertObj = [];
+                _.each(rules, function(rulObj) {
+                    var tempObj = {};
+                    // For nested 
+                    // if (rulObj.rules) {
+                    //     tempObj = {
+                    //         "condition": "AND",
+                    //         "criterion": convertKeyAndExtractObj(rulObj.rules)
+                    //     }
+                    // } else {
+                    // }
+                    tempObj = {
+                        "attributeName": rulObj.id,
+                        "operator": rulObj.operator,
+                        "attributeValue": (rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
+                    }
+                    convertObj.push(tempObj);
+                });
+                return convertObj;
+            }
+        }
     }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {
         //    if (settings.url == null || !settings.url.startsWith('/webhdfs/')) {

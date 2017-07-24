@@ -48,6 +48,7 @@ public class ReverseReferenceUpdateSoftDeleteTest extends ReverseReferenceUpdate
         AtlasVertex vertexForGUID = GraphHelper.getInstance().getVertexForGUID(referencingInstance.getId()._getId());
         String edgeLabel = GraphHelper.getEdgeLabel(typeB, typeB.fieldMapping.fields.get("a"));
         AtlasEdge edgeForLabel = GraphHelper.getInstance().getEdgeForLabel(vertexForGUID, edgeLabel);
+        Assert.assertNotNull(edgeForLabel);
         String edgeState = edgeForLabel.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
         Assert.assertEquals(edgeState, Id.EntityState.DELETED.name());
     }

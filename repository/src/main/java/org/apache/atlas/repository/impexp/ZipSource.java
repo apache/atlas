@@ -196,7 +196,7 @@ public class ZipSource implements EntityImportStream {
             AtlasEntity entity = getEntity(guid);
             return entity;
         } catch (AtlasBaseException e) {
-            e.printStackTrace();
+            LOG.error("getByGuid: {} failed!", guid, e);
             return null;
         }
     }

@@ -70,7 +70,7 @@ public class KafkaNotificationTest {
         List<AtlasKafkaMessage<Object>> messages = null ;
         long startTime = System.currentTimeMillis(); //fetch starting time
         while ((System.currentTimeMillis() - startTime) < 10000) {
-             messages = consumer.receive(1000L);
+             messages = consumer.receive();
             if (messages.size() > 0) {
                 break;
             }

@@ -76,8 +76,8 @@ public class AtlasGraphUtilsV1 {
         return vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
-    public static String getTypeName(AtlasVertex instanceVertex) {
-        return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+    public static String getTypeName(AtlasElement element) {
+        return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
 
     public static String getEdgeLabel(String fromNode, String toNode) {
@@ -94,13 +94,17 @@ public class AtlasGraphUtilsV1 {
 
     public static String getQualifiedAttributePropertyKey(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
         switch (fromType.getTypeCategory()) {
-         case STRUCT:
          case ENTITY:
+         case STRUCT:
          case CLASSIFICATION:
              return fromType.getQualifiedAttributeName(attributeName);
         default:
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPE, fromType.getTypeCategory().name());
         }
+    }
+
+    public static boolean isEntityVertex(AtlasVertex vertex) {
+        return StringUtils.isNotEmpty(getIdFromVertex(vertex)) && StringUtils.isNotEmpty(getTypeName(vertex));
     }
 
     public static boolean isReference(AtlasType type) {

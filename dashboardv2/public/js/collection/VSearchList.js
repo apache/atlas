@@ -37,6 +37,7 @@ define(['require',
             parseRecords: function(resp, options) {
                 this.queryType = resp.queryType;
                 this.queryText = resp.queryText;
+                this.referredEntities = resp.referredEntities;
                 return resp.entities ? resp.entities : [];
             },
             getBasicRearchResult: function(options) {

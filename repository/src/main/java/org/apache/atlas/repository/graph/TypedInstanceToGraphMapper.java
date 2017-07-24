@@ -39,7 +39,7 @@ import org.apache.atlas.typesystem.types.*;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
-import org.apache.atlas.utils.MD5Utils;
+import org.apache.atlas.utils.SHA256Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -675,7 +675,7 @@ public final class TypedInstanceToGraphMapper {
         }
 
         // Update attributes
-        final MessageDigest digester = MD5Utils.getDigester();
+        final MessageDigest digester = SHA256Utils.getDigester();
         String newSignature = newAttributeValue.getSignatureHash(digester);
         String curSignature = GraphHelper.getSingleValuedProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.class);
 

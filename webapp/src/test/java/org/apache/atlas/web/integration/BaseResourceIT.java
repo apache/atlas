@@ -637,7 +637,7 @@ public abstract class BaseResourceIT {
                 try {
 
                     while (System.currentTimeMillis() < maxCurrentTime) {
-                        List<AtlasKafkaMessage<EntityNotification>> messageList = consumer.receive(1000);
+                        List<AtlasKafkaMessage<EntityNotification>> messageList = consumer.receive();
                             if(messageList.size() > 0) {
                                 EntityNotification notification = messageList.get(0).getMessage();
                                 if (predicate.evaluate(notification)) {

@@ -26,7 +26,8 @@ define(['require',
     'backgrid-paginator',
     'backgrid-sizeable',
     'backgrid-orderable',
-    'backgrid-select-all'
+    'backgrid-select-all',
+    'backgrid-columnmanager'
 ], function(require, Backbone, FSTablelayoutTmpl) {
     'use strict';
 
@@ -103,10 +104,13 @@ define(['require',
                 }
             },
             columnOpts: {
-                initialColumnsVisible: 4,
-                // State settings
-                saveState: false,
-                loadStateOnInit: true
+                opts: {
+                    initialColumnsVisible: 4,
+                    // State settings
+                    saveState: false,
+                    loadStateOnInit: true
+                },
+                visibilityControlOpts: {}
             },
 
             includePagination: true,
@@ -234,7 +238,9 @@ define(['require',
              */
             renderTable: function() {
                 var that = this;
-                this.rTableList.show(new Backgrid.Grid(this.gridOpts));
+                this.rTableList.show(new Backgrid.Grid(this.gridOpts).on('backgrid:rendered', function() {
+                    that.trigger('backgrid:rendered', this)
+                }));
             },
 
             /**
@@ -301,14 +307,20 @@ define(['require',
              * ColumnManager for the table
              */
             renderColumnManager: function() {
-                var $el = this.$("[data-id='control']");
-                var colManager = new Backgrid.Extension.ColumnManager(this.columns, this.columnOpts);
-                // Add control
-                var colVisibilityControl = new Backgrid.Extension.ColumnManagerVisibilityControl({
-                    columnManager: colManager
-                });
-
+                var that = this,
+                    $el = this.$("[data-id='control']"),
+                    colManager = new Backgrid.Extension.ColumnManager(this.columns, this.columnOpts.opts),
+                    // Add control
+                    colVisibilityControl = new Backgrid.Extension.ColumnManagerVisibilityControl(_.extend({
+                        columnManager: colManager,
+                    }, this.columnOpts.visibilityControlOpts));
                 $el.append(colVisibilityControl.render().el);
+                colManager.on("state-changed", function(state) {
+                    that.collection.trigger("state-changed", state);
+                });
+                colManager.on("state-saved", function() {
+                    that.collection.trigger("state-changed");
+                });
             },
 
             renderSizeAbleColumns: function() {
@@ -323,7 +335,7 @@ define(['require',
                 // Add resize handlers
                 var sizeHandler = new Backgrid.Extension.SizeAbleColumnsHandlers({
                     sizeAbleColumns: sizeAbleCol,
-                    grid: this.getGridObj(),
+                    // grid: this.getGridObj(),
                     saveModelWidth: true
                 });
                 this.$('thead').before(sizeHandler.render().el);
@@ -341,6 +353,7 @@ define(['require',
                     grid: this.getGridObj(),
                     columns: this.columns
                 });
+                this.$('thead').before(sizeAbleCol.render().el);
                 var orderHandler = new Backgrid.Extension.OrderableColumns({
                     grid: this.getGridObj(),
                     sizeAbleColumns: sizeAbleCol

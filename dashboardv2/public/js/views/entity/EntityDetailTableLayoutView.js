@@ -21,7 +21,8 @@ define(['require',
     'hbs!tmpl/entity/EntityDetailTableLayoutView_tmpl',
     'utils/CommonViewFunction',
     'models/VEntity',
-], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity) {
+    'utils/Utils'
+], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity, Utils) {
     'use strict';
 
     var EntityDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -48,7 +49,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'entityDef'));
+                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'attributeDefs'));
                 this.entityModel = new VEntity({});
             },
             bindEvents: function() {},
@@ -58,14 +59,14 @@ define(['require',
             entityTableGenerate: function() {
                 var that = this,
                     attributeObject = this.entity.attributes;
-                CommonViewFunction.findAndmergeRefEntity(attributeObject, that.referredEntities);
+                Utils.findAndMergeRefEntity(attributeObject, that.referredEntities);
                 if (attributeObject && attributeObject.columns) {
                     var valueSorted = _.sortBy(attributeObject.columns, function(val) {
                         return val.attributes.position
                     });
                     attributeObject.columns = valueSorted;
                 }
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, entityDef: this.entityDef });
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, attributeDefs: this.attributeDefs });
                 that.ui.detailValue.append(table);
             }
         });

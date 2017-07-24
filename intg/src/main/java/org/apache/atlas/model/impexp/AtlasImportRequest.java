@@ -36,9 +36,11 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class AtlasImportRequest implements Serializable {
     private static final long   serialVersionUID = 1L;
-    public  static final String TRANSFORMS_KEY   = "transforms";
-    private static final String START_POSITION_KEY = "startPosition";
-    private static final String START_GUID_KEY = "startGuid";
+
+    public  static final String TRANSFORMS_KEY             = "transforms";
+    private static final String START_POSITION_KEY         = "startPosition";
+    private static final String START_GUID_KEY             = "startGuid";
+    private static final String FILE_NAME_KEY              = "fileName";
     private static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
 
     private Map<String, String> options;
@@ -73,6 +75,16 @@ public class AtlasImportRequest implements Serializable {
     @JsonIgnore
     public String getStartGuid() {
         return getOptionForKey(START_GUID_KEY);
+    }
+
+    @JsonIgnore
+    public String getFileName() {
+        return getOptionForKey(FILE_NAME_KEY);
+    }
+
+    @JsonIgnore
+    public void setFileName(String fileName) {
+        setOption(FILE_NAME_KEY, fileName);
     }
 
     @JsonIgnore

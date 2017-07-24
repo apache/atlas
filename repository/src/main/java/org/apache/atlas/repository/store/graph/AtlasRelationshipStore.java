@@ -46,6 +46,13 @@ public interface AtlasRelationshipStore {
     AtlasRelationship getById(String guid) throws AtlasBaseException;
 
     /**
+     * Retrieve a relationship if it exists or creates a new relationship instance.
+     * @param relationship relationship instance definition
+     * @return AtlasRelationship
+     */
+    AtlasRelationship getOrCreate(AtlasRelationship relationship) throws AtlasBaseException;
+
+    /**
      * Delete a relationship instance using guid.
      * @param guid relationship instance guid
      */

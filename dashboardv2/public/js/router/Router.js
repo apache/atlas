@@ -124,7 +124,7 @@ define([
                     if (!App.rSideNav.currentView) {
                         App.rSideNav.show(new SideNavLayoutView(
                             _.extend({
-                                'url': url,
+                                'url': url
                             }, that.preFetchedCollectionLists)
                         ));
                     } else {
@@ -231,17 +231,12 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView',
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams(),
-                    filterObj = {
-                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
-                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
-                    }
+                var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
-                            'searchVent': that.searchVent,
-                            'filterObj': filterObj
+                            'searchVent': that.searchVent
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -257,7 +252,6 @@ define([
                         _.extend({
                             'value': paramObj,
                             'initialView': true,
-                            'filterObj': filterObj,
                             'searchVent': that.searchVent
                         }, that.preFetchedCollectionLists)
                     ));
@@ -275,42 +269,13 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView'
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams(),
-                    filterObj = {
-                        'tagFilters': JSON.parse(Utils.localStorage.getValue('tagFilters')),
-                        'entityFilters': JSON.parse(Utils.localStorage.getValue('entityFilters'))
-                    }
-                if (paramObj && paramObj.searchType === "basic") {
-                    if (paramObj.type) {
-                        if (_.has(filterObj.entityFilters, paramObj.type)) {
-                            _.extend(paramObj, {
-                                'entityFilters': +new Date()
-                            })
-                        }
-                    }
-                    if (paramObj.tag) {
-                        if (_.has(filterObj.entityFilters, paramObj.type)) {
-                            _.extend(paramObj, {
-                                'tagFilters': +new Date()
-                            })
-                        }
-                    }
-                    Utils.setUrl({
-                        url: '#!/search/searchResult',
-                        trigger: false,
-                        urlParams: paramObj,
-                        updateTabState: function() {
-                            return { searchUrl: this.url, stateChanged: true };
-                        },
-                    });
-                }
+                var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'value': paramObj,
-                            'searchVent': that.searchVent,
-                            'filterObj': filterObj
+                            'searchVent': that.searchVent
                         }, that.preFetchedCollectionLists)
                     ));
                 } else {
@@ -321,7 +286,6 @@ define([
                     _.extend({
                         'value': paramObj,
                         'searchVent': that.searchVent,
-                        'filterObj': filterObj,
                         'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
                     }, that.preFetchedCollectionLists)
                 ));

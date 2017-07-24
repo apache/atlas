@@ -59,7 +59,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'value'));
             },
             bindEvents: function() {
                 var that = this;

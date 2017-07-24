@@ -23,7 +23,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.9-incubating-SNAPSHOT</version>
+        <version>0.9-SNAPSHOT</version>
     </parent>
 
     <artifactId>atlas-graphdb</artifactId>

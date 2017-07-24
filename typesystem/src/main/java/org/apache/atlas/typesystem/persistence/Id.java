@@ -24,7 +24,7 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.types.FieldMapping;
-import org.apache.atlas.utils.MD5Utils;
+import org.apache.atlas.utils.SHA256Utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -290,7 +290,7 @@ public class Id implements ITypedReferenceableInstance {
         digester.update(id.getBytes(Charset.forName("UTF-8")));
         digester.update(typeName.getBytes(Charset.forName("UTF-8")));
         byte[] digest = digester.digest();
-        return MD5Utils.toString(digest);
+        return SHA256Utils.toString(digest);
     }
 
     private static long nextNegativeLong() {
