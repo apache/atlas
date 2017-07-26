@@ -60,6 +60,18 @@ public abstract class AtlasGremlinQueryProvider {
         BASIC_SEARCH_CLASSIFICATION_FILTER,
         BASIC_SEARCH_STATE_FILTER,
         TO_RANGE_LIST,
-        GUID_PREFIX_FILTER
+        GUID_PREFIX_FILTER,
+
+        // Comparison clauses
+        COMPARE_LT,
+        COMPARE_LTE,
+        COMPARE_GT,
+        COMPARE_GTE,
+        COMPARE_EQ,
+        COMPARE_NEQ,
+        COMPARE_MATCHES,
+        COMPARE_STARTS_WITH,
+        COMPARE_ENDS_WITH,
+        COMPARE_CONTAINS,
     }
 }
