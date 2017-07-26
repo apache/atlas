@@ -81,6 +81,26 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V('__guid', guid).both(relation)[offset..<limit].order{it.b.getProperty(sortAttributeName) <=> it.a.getProperty(sortAttributeName)}.toList()";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:
                 return "g.V('__guid', guid).both(relation)[offset..<limit].order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}.toList()";
+            case COMPARE_LT:
+                return ".has('%s', T.lt, %s)";
+            case COMPARE_LTE:
+                return ".has('%s', T.lte, %s)";
+            case COMPARE_GT:
+                return ".has('%s', T.gt, %s)";
+            case COMPARE_GTE:
+                return ".has('%s', T.gte, %s)";
+            case COMPARE_EQ:
+                return ".has('%s', T.eq, %s)";
+            case COMPARE_NEQ:
+                return ".has('%s', T.neq, %s)";
+            case COMPARE_MATCHES:
+                return ".filter({it.getProperty('%s').matches(%s)})";
+            case COMPARE_STARTS_WITH:
+                return ".filter({it.getProperty('%s').startsWith(%s)})";
+            case COMPARE_ENDS_WITH:
+                return ".filter({it.getProperty('%s').endsWith(%s)})";
+            case COMPARE_CONTAINS:
+                return ".filter({it.getProperty('%s').contains(%s)})";
         }
         // Should never reach this point
         return null;

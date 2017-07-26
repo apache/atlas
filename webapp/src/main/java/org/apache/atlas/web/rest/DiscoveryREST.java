@@ -168,8 +168,15 @@ public class DiscoveryREST {
                                                     typeName + "," + classification + "," + limit + "," + offset + ")");
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(query, typeName, classification, null, null,
-                                                               excludeDeletedEntities, limit, offset);
+            SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setTypeName(typeName);
+            searchParameters.setClassification(classification);
+            searchParameters.setQuery(query);
+            searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            searchParameters.setLimit(limit);
+            searchParameters.setOffset(offset);
+
+            return atlasDiscoveryService.searchWithParameters(searchParameters);
         } finally {
             AtlasPerfTracer.log(perf);
         }

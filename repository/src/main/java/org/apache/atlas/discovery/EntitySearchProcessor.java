@@ -19,7 +19,9 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -27,7 +29,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
@@ -95,7 +101,7 @@ public class EntitySearchProcessor extends SearchProcessor {
                 query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
             }
 
-            graphQuery = toGremlinFilterQuery(entityType, filterCriteria, gremlinAttributes, query);
+            graphQuery = toGraphFilterQuery(entityType, filterCriteria, gremlinAttributes, query);
 
             if (context.getSearchParameters().getExcludeDeletedEntities() && indexQuery == null) {
                 graphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
@@ -110,7 +116,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
         }
 
-        filterGraphQuery = toGremlinFilterQuery(entityType, filterCriteria, allAttributes, query);
+        filterGraphQuery = toGraphFilterQuery(entityType, filterCriteria, allAttributes, query);
 
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
             filterGraphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
