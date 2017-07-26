@@ -138,6 +138,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                     .sessionFixation()
                     .newSession()
                 .and()
+                .httpBasic()
+                .authenticationEntryPoint(getDelegatingAuthenticationEntryPoint())
+                .and()
                     .formLogin()
                         .loginPage("/login.jsp")
                         .loginProcessingUrl("/j_spring_security_check")
@@ -149,10 +152,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                     .logout()
                         .logoutSuccessUrl("/login.jsp")
                         .deleteCookies("ATLASSESSIONID")
-                        .logoutUrl("/logout.html")
-                .and()
-                    .httpBasic()
-                    .authenticationEntryPoint(getDelegatingAuthenticationEntryPoint());
+                        .logoutUrl("/logout.html");
+
         //@formatter:on
 
         if (configuration.getBoolean("atlas.server.ha.enabled", false)) {
