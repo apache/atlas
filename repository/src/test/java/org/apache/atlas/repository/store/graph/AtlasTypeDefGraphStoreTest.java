@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -38,6 +39,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static org.testng.Assert.*;
@@ -430,6 +432,69 @@ public class AtlasTypeDefGraphStoreTest {
         } catch (AtlasBaseException e) {
             fail("Tag re-creation should've succeeded");
         }
+    }
+
+    @Test
+    public void testTypeRegistryIsUpdatedAfterGraphStorage() throws AtlasBaseException {
+      String classificationDef = "{"
+          + "\"name\":\"test_classification_11\","
+          + "\"description\":\"\","
+          + "\"createdBy\":\"admin\","
+          + "\"superTypes\":[],"
+          + "\"attributeDefs\":[{"
+          + "\"name\":\"test_class_11\","
+          + "\"typeName\":\"string\","
+          + "\"isOptional\":true,"
+          + "\"isUnique\":true,"
+          + "\"isIndexable\":true,"
+          + "\"cardinality\":\"SINGLE\","
+          + "\"valuesMinCount\":0,"
+          + "\"valuesMaxCount\":1}]}";
+
+      String jsonStr = "{"
+          + "\"classificationDefs\":[" + classificationDef + "],"
+          + "\"entityDefs\":[],"
+          + "\"enumDefs\":[],"
+          + "\"structDefs\":[]}";
+
+      // create type from json string
+      AtlasTypesDef testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+      AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(testTypesDefFromJson);
+      // check returned type
+      assertEquals("test_classification_11", createdTypesDef.getClassificationDefs().get(0).getName());
+      assertTrue(createdTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
+      // save guid
+      String guid = createdTypesDef.getClassificationDefs().get(0).getGuid();
+      Date createdTime = createdTypesDef.getClassificationDefs().get(0).getCreateTime();
+
+      // get created type and check again
+      AtlasClassificationDef getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
+      assertEquals("test_classification_11", getBackFromCache.getName());
+      assertTrue(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+      assertEquals(guid, getBackFromCache.getGuid());
+      assertNotNull(getBackFromCache.getCreatedBy());
+      assertEquals(createdTime, getBackFromCache.getCreateTime());
+
+      // update type, change isIndexable, check the update result
+      testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+      testTypesDefFromJson.getClassificationDefs().get(0).getAttributeDefs().get(0).setIsIndexable(false);
+      AtlasTypesDef updatedTypesDef = typeDefStore.updateTypesDef(testTypesDefFromJson);
+      assertEquals("test_classification_11", updatedTypesDef.getClassificationDefs().get(0).getName());
+      assertFalse(updatedTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
+      assertEquals(guid, updatedTypesDef.getClassificationDefs().get(0).getGuid());
+      assertEquals(createdTime, updatedTypesDef.getClassificationDefs().get(0).getCreateTime());
+
+      // get updated type (both by name and guid) and check again
+      getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
+      assertEquals("test_classification_11", getBackFromCache.getName());
+      assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+      assertEquals(guid, getBackFromCache.getGuid());
+      assertEquals(createdTime, getBackFromCache.getCreateTime());
+      getBackFromCache = typeDefStore.getClassificationDefByGuid(guid);
+      assertEquals("test_classification_11", getBackFromCache.getName());
+      assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+      assertEquals(guid, getBackFromCache.getGuid());
+      assertEquals(createdTime, getBackFromCache.getCreateTime());
     }
 
 }
