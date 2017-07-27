@@ -263,17 +263,19 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
 
             if (management != null) {
-                recomputeIndexedKeys = false;
-
                 AtlasGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
 
-                Set<String> indexKeys = new HashSet<>();
+                if (vertexIndex != null) {
+                    recomputeIndexedKeys = false;
 
-                for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
-                    indexKeys.add(fieldKey.getName());
+                    Set<String> indexKeys = new HashSet<>();
+
+                    for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
+                        indexKeys.add(fieldKey.getName());
+                    }
+
+                    vertexIndexKeys = indexKeys;
                 }
-
-                vertexIndexKeys = indexKeys;
             }
         }
 
