@@ -474,7 +474,6 @@ public class GraphBackedMetadataRepositoryTest {
         return guid;
     }
 
-    @GraphTransaction
     AtlasVertex getTableEntityVertex() {
         AtlasGraph graph = TestUtils.getGraph();
         AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, ComparisionOperator.EQUAL, TestUtils.TABLE_TYPE);
@@ -651,6 +650,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
+    @GraphTransaction
     public void testGetIdFromVertex() throws Exception {
         AtlasVertex tableVertex = getTableEntityVertex();
 
@@ -664,6 +664,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
+    @GraphTransaction
     public void testGetTypeName() throws Exception {
         AtlasVertex tableVertex = getTableEntityVertex();
         Assert.assertEquals(GraphHelper.getTypeName(tableVertex), TestUtils.TABLE_TYPE);

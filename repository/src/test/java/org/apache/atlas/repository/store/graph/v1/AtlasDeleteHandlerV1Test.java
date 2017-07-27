@@ -41,6 +41,7 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -129,7 +130,11 @@ public abstract class AtlasDeleteHandlerV1Test {
             ImmutableList.<AtlasClassificationDef>of(),
             ImmutableList.of(mapValueDef, mapOwnerDef));
 
-        typeDefStore.createTypesDef(typesDef);
+        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
+
+        if (!typesToCreate.isEmpty()) {
+            typeDefStore.createTypesDef(typesToCreate);
+        }
 
         compositeMapOwnerType = typeRegistry.getEntityTypeByName("CompositeMapOwner");
         compositeMapValueType = typeRegistry.getEntityTypeByName("CompositeMapValue");
