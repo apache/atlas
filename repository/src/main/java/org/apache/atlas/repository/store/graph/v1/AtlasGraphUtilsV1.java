@@ -18,7 +18,9 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -29,12 +31,14 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +47,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Utility methods for Graph.
@@ -54,6 +59,19 @@ public class AtlasGraphUtilsV1 {
     public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
     public static final String VERTEX_TYPE          = "typeSystem";
 
+    private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
+
+    static {
+        try {
+            Configuration conf = ApplicationProperties.get();
+
+            USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+        } catch (Exception excp) {
+            LOG.error("Error reading configuration", excp);
+        } finally {
+            LOG.info("atlas.use.index.query.to.find.entity.by.unique.attributes=" + USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+        }
+    }
 
     public static String getTypeDefPropertyKey(AtlasBaseTypeDef typeDef) {
         return getTypeDefPropertyKey(typeDef.getName());
@@ -216,13 +234,22 @@ public class AtlasGraphUtilsV1 {
                     continue;
                 }
 
-                vertex = AtlasGraphUtilsV1.findByTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                if (canUseIndexQuery(entityType, attribute.getName())) {
+                    vertex = AtlasGraphUtilsV1.getAtlasVertexFromIndexQuery(entityType, attribute, attrValue);
+                } else {
+                    vertex = AtlasGraphUtilsV1.findByTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
 
-                if (vertex == null) {
-                    vertex = AtlasGraphUtilsV1.findBySuperTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                    if (vertex == null) {
+                        vertex = AtlasGraphUtilsV1.findBySuperTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                    }
                 }
 
                 if (vertex != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("findByUniqueAttributes(type={}, attrName={}, attrValue={}: found vertex {}",
+                                  entityType.getTypeName(), attribute.getName(), attrValue, vertex);
+                    }
+
                     break;
                 }
             }
@@ -336,5 +363,78 @@ public class AtlasGraphUtilsV1 {
 
     public static String getStateAsString(AtlasElement element) {
         return element.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+    }
+
+    private static boolean canUseIndexQuery(AtlasEntityType entityType, String attributeName) {
+        boolean ret = false;
+
+        if (USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES) {
+            final String typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
+
+            ret = typeAndSubTypesQryStr.length() <= SearchProcessor.MAX_QUERY_STR_LENGTH_TYPES;
+
+            if (ret) {
+                Set<String> indexSet = AtlasGraphProvider.getGraphInstance().getVertexIndexKeys();
+                try {
+                    ret = indexSet.contains(entityType.getQualifiedAttributeName(attributeName));
+                }
+                catch (AtlasBaseException ex) {
+                    ret = false;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private static AtlasVertex getAtlasVertexFromIndexQuery(AtlasEntityType entityType, AtlasAttribute attribute, Object attrVal) {
+        String          propertyName = attribute.getVertexPropertyName();
+        AtlasIndexQuery query        = getIndexQuery(entityType, propertyName, attrVal.toString());
+
+        for (Iterator<AtlasIndexQuery.Result> iter = query.vertices(); iter.hasNext(); ) {
+            AtlasIndexQuery.Result result = iter.next();
+            AtlasVertex            vertex = result.getVertex();
+
+            // skip non-entity vertices, if any got returned
+            if (vertex == null || !vertex.getPropertyKeys().contains(Constants.GUID_PROPERTY_KEY)) {
+                continue;
+            }
+
+            // verify the typeName
+            String typeNameInVertex = getTypeName(vertex);
+
+            if (!entityType.getTypeAndAllSubTypes().contains(typeNameInVertex)) {
+                LOG.warn("incorrect vertex type from index-query: expected='{}'; found='{}'", entityType.getTypeName(), typeNameInVertex);
+
+                continue;
+            }
+
+            if (attrVal.getClass() == String.class) {
+                String s         = (String) attrVal;
+                String vertexVal = vertex.getProperty(propertyName, String.class);
+
+                if (!s.equalsIgnoreCase(vertexVal)) {
+                    LOG.warn("incorrect match from index-query for property {}: expected='{}'; found='{}'", propertyName, s, vertexVal);
+
+                    continue;
+                }
+            }
+
+            return vertex;
+        }
+
+        return null;
+    }
+
+    private static AtlasIndexQuery getIndexQuery(AtlasEntityType entityType, String propertyName, String value) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
+                .append(" AND ")
+                .append("v.\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
+                .append(" AND ")
+                .append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+
+        return AtlasGraphProvider.getGraphInstance().indexQuery(Constants.VERTEX_INDEX, sb.toString());
     }
 }

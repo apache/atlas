@@ -307,7 +307,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false);
     }
 
     @Override
@@ -358,7 +358,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, attrName, attrType.getTypeName());
         }
 
-        return createOrUpdate(new AtlasEntityStream(updateEntity), true);
+        return createOrUpdate(new AtlasEntityStream(updateEntity), true, false);
     }
 
     @Override
