@@ -18,7 +18,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
@@ -33,7 +32,6 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,30 +63,30 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         final FilterCriteria          filterCriteria        = context.getSearchParameters().getTagFilters();
         final Set<String>             typeAndSubTypes       = classificationType.getTypeAndAllSubTypes();
         final String                  typeAndSubTypesQryStr = classificationType.getTypeAndAllSubTypesQryStr();
-        final Set<String>             solrAttributes        = new HashSet<>();
-        final Set<String>             gremlinAttributes     = new HashSet<>();
+        final Set<String>             indexAttributes       = new HashSet<>();
+        final Set<String>             graphAttributes       = new HashSet<>();
         final Set<String>             allAttributes         = new HashSet<>();
 
 
-        processSearchAttributes(classificationType, filterCriteria, solrAttributes, gremlinAttributes, allAttributes);
+        processSearchAttributes(classificationType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
-        // for classification search, if any attribute can't be handled by Solr - switch to all Gremlin
-        boolean useSolrSearch = typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS && CollectionUtils.isEmpty(gremlinAttributes) && canApplySolrFilter(classificationType, filterCriteria, false);
+        // for classification search, if any attribute can't be handled by index query - switch to all filter by Graph query
+        boolean useIndexSearch = typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS && CollectionUtils.isEmpty(graphAttributes) && canApplyIndexFilter(classificationType, filterCriteria, false);
 
         AtlasGraph graph = context.getGraph();
 
-        if (useSolrSearch) {
-            StringBuilder solrQuery = new StringBuilder();
+        if (useIndexSearch) {
+            StringBuilder indexQuery = new StringBuilder();
 
-            constructTypeTestQuery(solrQuery, typeAndSubTypesQryStr);
-            constructFilterQuery(solrQuery, classificationType, filterCriteria, solrAttributes);
+            constructTypeTestQuery(indexQuery, typeAndSubTypesQryStr);
+            constructFilterQuery(indexQuery, classificationType, filterCriteria, indexAttributes);
 
-            String solrQueryString = STRAY_AND_PATTERN.matcher(solrQuery).replaceAll(")");
+            String indexQueryString = STRAY_AND_PATTERN.matcher(indexQuery).replaceAll(")");
 
-            solrQueryString = STRAY_OR_PATTERN.matcher(solrQueryString).replaceAll(")");
-            solrQueryString = STRAY_ELIPSIS_PATTERN.matcher(solrQueryString).replaceAll("");
+            indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
+            indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            indexQuery = graph.indexQuery(Constants.VERTEX_INDEX, solrQueryString);
+            this.indexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
         } else {
             indexQuery = null;
         }
@@ -101,28 +99,29 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             // Now filter on the tag attributes
             AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
 
+            gremlinQueryBindings = new HashMap<>();
+
             StringBuilder gremlinQuery = new StringBuilder();
             gremlinQuery.append("g.V().has('__guid', T.in, guids)");
             gremlinQuery.append(queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER));
             gremlinQuery.append(".as('e').out()");
             gremlinQuery.append(queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER));
 
-            constructGremlinFilterQuery(gremlinQuery, context.getClassificationType(), context.getSearchParameters().getTagFilters());
+            constructGremlinFilterQuery(gremlinQuery, gremlinQueryBindings, context.getClassificationType(), context.getSearchParameters().getTagFilters());
             // After filtering on tags go back to e and output the list of entity vertices
             gremlinQuery.append(".back('e').toList()");
 
-            gremlinTagFilterQuery = gremlinQuery.toString();
-
-            gremlinQueryBindings = new HashMap<>();
             gremlinQueryBindings.put("traitNames", typeAndSubTypes);
             gremlinQueryBindings.put("typeNames", typeAndSubTypes); // classification typeName
+
+            gremlinTagFilterQuery = gremlinQuery.toString();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("gremlinTagFilterQuery={}", gremlinTagFilterQuery);
             }
         } else {
             gremlinTagFilterQuery = null;
-            gremlinQueryBindings = null;
+            gremlinQueryBindings  = null;
         }
     }
 
@@ -170,7 +169,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> queryResult = indexQuery.vertices(qryOffset, limit);
 
-                    if (!queryResult.hasNext()) { // no more results from solr - end of search
+                    if (!queryResult.hasNext()) { // no more results from index query - end of search
                         break;
                     }
 
@@ -259,7 +258,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 }
 
             } catch (AtlasBaseException | ScriptException e) {
-                LOG.warn(e.getMessage());
+                LOG.warn(e.getMessage(), e);
             }
         }
 
