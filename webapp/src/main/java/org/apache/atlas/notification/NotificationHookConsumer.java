@@ -50,6 +50,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -70,6 +71,7 @@ import static org.apache.atlas.AtlasClientV2.*;
  */
 @Component
 @Order(4)
+@DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV1"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationHookConsumer.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
