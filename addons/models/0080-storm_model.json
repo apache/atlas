@@ -147,7 +147,7 @@
         {
             "name": "storm_topology_nodes",
             "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "relationshipCategory": "ASSOCIATION",
             "endDef1": {
                 "type": "storm_topology",
                 "name": "nodes",
