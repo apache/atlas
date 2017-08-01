@@ -18,7 +18,9 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -27,6 +29,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.ITestContext;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -51,6 +54,12 @@ public class ImportServiceTest {
 
     @Inject
     private AtlasEntityStore entityStore;
+
+    @BeforeTest
+    public void setupTest() {
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+    }
 
     @DataProvider(name = "sales")
     public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException {

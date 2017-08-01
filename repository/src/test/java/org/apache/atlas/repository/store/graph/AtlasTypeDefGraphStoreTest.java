@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph;
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -33,6 +34,7 @@ import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -51,6 +53,12 @@ public class AtlasTypeDefGraphStoreTest {
     @Inject
     private
     AtlasTypeDefStore typeDefStore;
+
+    @BeforeTest
+    public void setupTest() {
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+    }
 
     @Test(priority = 1)
     public void testGet() {

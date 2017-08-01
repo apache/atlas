@@ -18,6 +18,8 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.common.collect.Sets;
+import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -148,6 +150,9 @@ public class ZipFileResourceTestUtils {
     public static void runAndVerifyQuickStart_v1_Import(ImportService importService, ZipSource zipSource) throws AtlasBaseException, IOException {
         AtlasExportResult exportResult = zipSource.getExportResult();
         List<String> creationOrder = zipSource.getCreationOrder();
+
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
 
         AtlasImportRequest request = getDefaultImportRequest();
         AtlasImportResult result = runImportWithParameters(importService, request, zipSource);

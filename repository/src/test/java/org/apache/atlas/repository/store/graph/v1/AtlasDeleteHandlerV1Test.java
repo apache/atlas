@@ -101,6 +101,9 @@ public abstract class AtlasDeleteHandlerV1Test {
 
     @BeforeClass
     public void setUp() throws Exception {
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+
         metadataService = TestUtils.addSessionCleanupWrapper(metadataService);
         final AtlasTypesDef deptTypesDef = TestUtilsV2.defineDeptEmployeeTypes();
         typeDefStore.createTypesDef(deptTypesDef);
@@ -143,7 +146,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     @BeforeTest
     public void init() throws Exception {
         RequestContextV1.clear();
-
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
     }
 
     @AfterClass
@@ -335,7 +338,6 @@ public abstract class AtlasDeleteHandlerV1Test {
         AtlasEntity.AtlasEntitiesWithExtInfo hrDept = TestUtilsV2.createDeptEg2();
         init();
 
-        RequestContextV1.clear();
         final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
         final AtlasEntityHeader deptCreated = hrDeptCreationResponse.getFirstUpdatedEntityByTypeName(DEPARTMENT_TYPE);
         final AtlasEntityHeader maxEmployeeCreated = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
@@ -893,7 +895,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         object = mapOwnerVertex.getProperty(atlasEdgeLabel.getQualifiedMapKey(), Object.class);
         Assert.assertNotNull(object);
 
-        RequestContextV1.clear();
+        init();
         List<AtlasEntityHeader> deletedEntities = entityStore.deleteById(mapOwnerGuid).getDeletedEntities();
         Assert.assertEquals(deletedEntities.size(), 2);
         Assert.assertTrue(extractGuids(deletedEntities).contains(mapOwnerGuid));
@@ -926,6 +928,8 @@ public abstract class AtlasDeleteHandlerV1Test {
             ImmutableList.<AtlasStructDef>of(),
             ImmutableList.<AtlasClassificationDef>of(),
             ImmutableList.<AtlasEntityDef>of(mapValueDef, mapOwnerDef));
+
+        TestUtilsV2.populateSystemAttributes(typesDef);
 
         typeDefStore.createTypesDef(typesDef);
 
@@ -1033,7 +1037,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         String mapValueGuid = mapValueInstance.getId()._getId();
 
         // Create instance of MapValueReferencerContainer
-        RequestContextV1.clear();
+        init();
         AtlasEntity mapValueReferencer = new AtlasEntity(mapValueDef.getName());
         mapValueReferencer.setAttribute("refToMapValue", new AtlasObjectId(mapValueInstance.getId()._getId(), mapValueInstance.getTypeName()));
         AtlasEntity.AtlasEntitiesWithExtInfo entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
@@ -1051,7 +1055,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         mapValueReferenceContainer.setAttribute("requiredMap", Collections.singletonMap("value1", AtlasTypeUtil.getAtlasObjectId(mapValueReferencer)));
 
 
-        RequestContextV1.clear();
+        init();
         EntityMutationResponse updateEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false);
 
         String mapValueReferencerContainerGuid = updateEntitiesResult.getCreatedEntitiesByTypeName("MapValueReferencerContainer").get(0).getGuid();

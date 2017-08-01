@@ -291,6 +291,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
         AtlasTypesDef ret = addToGraphStore(typesDef, ttr);
 
+        try {
+            ttr.updateTypes(ret);
+        } catch (AtlasBaseException e) { // this shouldn't happen, as the types were already validated
+            LOG.error("failed to update the registry after updating the store", e);
+        }
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classfications={}, entities={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),

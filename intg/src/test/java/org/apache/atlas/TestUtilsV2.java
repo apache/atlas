@@ -36,6 +36,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.math.BigDecimal;
@@ -58,6 +59,8 @@ import static org.apache.atlas.type.AtlasTypeUtil.createStructTypeDef;
 public final class TestUtilsV2 {
 
     public static final long TEST_DATE_IN_LONG = 1418265358440L;
+
+    public static final String TEST_USER = "testUser";
 
     private static AtomicInteger seq = new AtomicInteger();
 
@@ -147,9 +150,13 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, ImmutableSet.<String>of(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
-        return new AtlasTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
+        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
                 ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef defineInverseReferenceTestTypes() {
@@ -175,7 +182,11 @@ public final class TestUtilsV2 {
                     AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "manyB")))),
             new AtlasAttributeDef("mappedFromA", "A", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()));
 
-        return new AtlasTypesDef(ImmutableList.<AtlasEnumDef>of(), ImmutableList.<AtlasStructDef>of(), ImmutableList.<AtlasClassificationDef>of(), ImmutableList.<AtlasEntityDef>of(aDef, bDef));
+        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.<AtlasEnumDef>of(), ImmutableList.<AtlasStructDef>of(), ImmutableList.<AtlasClassificationDef>of(), ImmutableList.<AtlasEntityDef>of(aDef, bDef));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef defineValidUpdatedDeptEmployeeTypes() {
@@ -255,10 +266,14 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, ImmutableSet.<String>of(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
-        return new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
+        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
                 ImmutableList.of(addressDetails),
                 ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef defineInvalidUpdatedDeptEmployeeTypes() {
@@ -322,10 +337,14 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("approximationOfPi", "bigdecimal")
         );
 
-        return new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
+        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
                 ImmutableList.of(addressDetails),
                 ImmutableList.<AtlasClassificationDef>of(),
                 ImmutableList.of(deptTypeDef, personTypeDef));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static final String DEPARTMENT_TYPE = "Department";
@@ -541,8 +560,12 @@ public final class TestUtilsV2 {
         AtlasEnumDef enumTypeDefinition = new AtlasEnumDef("e_type", "enumType", "1.0",
                 Arrays.asList(new AtlasEnumElementDef("ONE", "Element Description", 1)));
 
-        return AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef simpleTypeUpdated(){
@@ -562,8 +585,12 @@ public final class TestUtilsV2 {
 
         AtlasEnumDef enumTypeDefinition = new AtlasEnumDef("e_type", "enumType",
                 Arrays.asList(new AtlasEnumElementDef("ONE", "Element Description", 1)));
-        return AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition, newSuperTypeDefinition));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef simpleTypeUpdatedDiff() {
@@ -571,10 +598,14 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createClassTypeDef("new_h_type", ImmutableSet.<String>of(),
                         AtlasTypeUtil.createOptionalAttrDef("attr", "string"));
 
-        return AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
                 ImmutableList.<AtlasStructDef>of(),
                 ImmutableList.<AtlasClassificationDef>of(),
                 ImmutableList.of(newSuperTypeDefinition));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
 
@@ -793,11 +824,15 @@ public final class TestUtilsV2 {
                                                                                     AtlasTypeUtil.createRequiredAttrDef("booleanAttr", "boolean"),
                                                                                     AtlasTypeUtil.createRequiredAttrDef("integerAttr", "int"));
 
-        return AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition, partitionDefinition),
                 ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition, phiTypeDefinition),
                 ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition,
                         storageDescClsDef, partClsDef, processClsType));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static final String randomString() {
@@ -907,8 +942,13 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", ImmutableSet.of("SecurityClearance1"),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
-        return Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);
+        List<AtlasClassificationDef> ret = Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
+
     public static List<AtlasClassificationDef> getClassificationWithValidAttribute(){
         return getClassificationWithValidSuperType();
     }
@@ -919,7 +959,11 @@ public final class TestUtilsV2 {
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
-        return Arrays.asList(developerTypeDef);
+        List<AtlasEntityDef> ret = Arrays.asList(developerTypeDef);
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static List<AtlasEntityDef> getEntityWithValidAttribute() {
@@ -938,5 +982,25 @@ public final class TestUtilsV2 {
         AtlasEntityDef entityDef = simpleType().getEntityDefs().get(0);
         entityDef.addSuperType("!@#$%");
         return entityDef;
+    }
+
+    public static void populateSystemAttributes(AtlasTypesDef typesDef) {
+        populateSystemAttributes(typesDef.getEnumDefs());
+        populateSystemAttributes(typesDef.getStructDefs());
+        populateSystemAttributes(typesDef.getClassificationDefs());
+        populateSystemAttributes(typesDef.getEntityDefs());
+    }
+
+    public static void populateSystemAttributes(List<? extends AtlasBaseTypeDef> typeDefs) {
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (AtlasBaseTypeDef typeDef : typeDefs) {
+                populateSystemAttributes(typeDef);
+            }
+        }
+    }
+
+    public static void populateSystemAttributes(AtlasBaseTypeDef typeDef) {
+        typeDef.setCreatedBy(TestUtilsV2.TEST_USER);
+        typeDef.setUpdatedBy(TestUtilsV2.TEST_USER);
     }
 }

@@ -76,6 +76,9 @@ public abstract class InverseReferenceUpdateV1Test {
 
     @BeforeClass
     public void setUp() throws Exception {
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+
         metadataService = TestUtils.addSessionCleanupWrapper(metadataService);
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
@@ -106,6 +109,7 @@ public abstract class InverseReferenceUpdateV1Test {
     @BeforeMethod
     public void init() throws Exception {
         RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
     }
 
     @Test

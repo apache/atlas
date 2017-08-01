@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -197,7 +198,9 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
                 StringUtils.isNotBlank(typeDef.getDescription()) ? typeDef.getDescription() : typeDef.getName());
         ret.setProperty(Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
         ret.setProperty(Constants.GUID_PROPERTY_KEY, typeDef.getGuid());
+        ret.setProperty(Constants.CREATED_BY_KEY, getCurrentUser());
         ret.setProperty(Constants.TIMESTAMP_PROPERTY_KEY, typeDef.getCreateTime().getTime());
+        ret.setProperty(Constants.MODIFIED_BY_KEY, getCurrentUser());
         ret.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, typeDef.getUpdateTime().getTime());
         ret.setProperty(Constants.VERSION_PROPERTY_KEY, typeDef.getVersion());
         ret.setProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
@@ -255,6 +258,8 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         String description = vertex.getProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
         String typeVersion = vertex.getProperty(Constants.TYPEVERSION_PROPERTY_KEY, String.class);
         String guid        = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+        String createdBy   = vertex.getProperty(Constants.CREATED_BY_KEY, String.class);
+        String updatedBy   = vertex.getProperty(Constants.MODIFIED_BY_KEY, String.class);
         Long   createTime  = vertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
         Long   updateTime  = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Long   version     = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Long.class);
@@ -264,6 +269,8 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         typeDef.setDescription(description);
         typeDef.setTypeVersion(typeVersion);
         typeDef.setGuid(guid);
+        typeDef.setCreatedBy(createdBy);
+        typeDef.setUpdatedBy(updatedBy);
 
         if (createTime != null) {
             typeDef.setCreateTime(new Date(createTime));
@@ -427,7 +434,22 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         Number currVersion = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Number.class);
         long   newVersion  = currVersion == null ? 1 : (currVersion.longValue() + 1);
 
+        vertex.setProperty(Constants.MODIFIED_BY_KEY, getCurrentUser());
         vertex.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, now.getTime());
         vertex.setProperty(Constants.VERSION_PROPERTY_KEY, newVersion);
+    }
+
+    private String getCurrentUser() {
+        String ret = RequestContextV1.get().getUser();
+
+        if (StringUtils.isBlank(ret)) {
+            ret = System.getProperty("user.name");
+
+            if (StringUtils.isBlank(ret)) {
+                ret = "atlas";
+            }
+        }
+
+        return ret;
     }
 }
