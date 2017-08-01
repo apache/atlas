@@ -17,7 +17,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>org.apache</groupId>
@@ -154,6 +155,17 @@
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>amestry</id>
+            <name>Ashutosh Mestry</name>
+            <email>amestry@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
             <id>bstortz</id>
             <name>Barbara Stortz</name>
             <email>bstortz@sap.com</email>
@@ -257,7 +269,7 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization />
+            <organization/>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
@@ -579,7 +591,8 @@
                 <titan.index.backend>solr</titan.index.backend>
                 <solr.zk.address>localhost:9983</solr.zk.address>
                 <titan.storage.hostname>localhost</titan.storage.hostname>
-                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository
+                </entity.repository.impl>
             </properties>
         </profile>
 
@@ -594,8 +607,9 @@
         </profile>
         <profile>
             <id>titan1</id>
-             <properties>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase</graphdb.backend.impl>
+            <properties>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase
+                </graphdb.backend.impl>
             </properties>
             <dependencyManagement>
                 <dependencies>
@@ -632,7 +646,7 @@
         <module>dashboardv2</module>
         <module>webapp</module>
         <module>docs</module>
-        
+
         <module>addons/hdfs-model</module>
         <module>plugin-classloader</module>
         <module>addons/hive-bridge-shim</module>
@@ -643,7 +657,7 @@
         <module>addons/sqoop-bridge</module>
         <module>addons/storm-bridge-shim</module>
         <module>addons/storm-bridge</module>
-	
+
         <module>distro</module>
         <module>build-tools</module>
     </modules>
@@ -1187,7 +1201,7 @@
                     <exclusion>
                         <artifactId>*</artifactId>
                         <groupId>org.apache.hadoop</groupId>
-                    </exclusion>                    
+                    </exclusion>
                 </exclusions>
             </dependency>
 
@@ -1377,7 +1391,7 @@
                 <version>${project.version}</version>
             </dependency>
 
-    	    <!-- use titan 0.5.4 by default -->
+            <!-- use titan 0.5.4 by default -->
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-graphdb-impls</artifactId>
@@ -1385,11 +1399,11 @@
                 <type>pom</type>
                 <!-- exclusions for all of the non-titan0 implementations -->
                 <exclusions>
-                        <exclusion>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-graphdb-titan1</artifactId>
-                        </exclusion>
-                 </exclusions>
+                    <exclusion>
+                        <groupId>org.apache.atlas</groupId>
+                        <artifactId>atlas-graphdb-titan1</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -1426,7 +1440,7 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-catalog</artifactId>
                 <version>${project.version}</version>
-            </dependency>         
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
@@ -1803,12 +1817,12 @@
                     </configuration>
                 </plugin>
 
-        		<plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-remote-resources-plugin</artifactId>
                     <version>1.5</version>
                     <configuration>
-                        <excludeGroupIds>org.restlet.jee</excludeGroupIds>                       
+                        <excludeGroupIds>org.restlet.jee</excludeGroupIds>
                     </configuration>
                 </plugin>
 
@@ -1977,7 +1991,7 @@
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
                         <exclude>**/dependency-reduced-pom.xml</exclude>
-			            <exclude>**/javax.script.ScriptEngineFactory</exclude>
+                        <exclude>**/javax.script.ScriptEngineFactory</exclude>
                         <exclude>.reviewboardrc</exclude>
                         <exclude>3party-licenses/**</exclude>
                         <exclude>**/.cache</exclude>
