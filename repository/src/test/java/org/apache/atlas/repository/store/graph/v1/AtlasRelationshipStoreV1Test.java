@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -113,6 +114,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         relationshipStore = new AtlasRelationshipStoreV1(typeRegistry);
 
         RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
     }
 
     @AfterClass

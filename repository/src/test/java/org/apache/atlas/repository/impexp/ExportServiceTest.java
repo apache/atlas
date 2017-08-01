@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
@@ -78,6 +80,12 @@ public class ExportServiceTest {
     private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     private AtlasEntityStoreV1 entityStore;
+
+    @BeforeTest
+    public void setupTest() {
+        RequestContextV1.clear();
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+    }
 
     @BeforeClass
     public void setupSampleData() throws AtlasBaseException {
