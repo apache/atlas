@@ -167,8 +167,8 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
                 if (isDebugEnabled) {
                     LOG.debug("You are not authorized for {} on {} : {}\nReturning 403 since the access is blocked update!!!!", atlasRequest.getAction().name(), atlasResourceTypes, atlasRequest.getResource());
                 }
+                return;
             }
-
         } else {
             if (isDebugEnabled) {
                 LOG.debug("Ignoring request {}", pathInfo);
