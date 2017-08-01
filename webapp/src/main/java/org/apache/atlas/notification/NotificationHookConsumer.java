@@ -168,12 +168,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     private void stopConsumerThreads() {
+        LOG.info("==> stopConsumerThreads()");
+
         if (consumers != null) {
             for (HookConsumer consumer : consumers) {
-                consumer.stop();
+                consumer.shutdown();
             }
             consumers.clear();
         }
+
+        LOG.info("<== stopConsumerThreads()");
     }
 
     /**
@@ -218,21 +222,35 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @Override
         public void doWork() {
+            LOG.info("==> HookConsumer doWork()");
+
             shouldRun.set(true);
 
             if (!serverAvailable(new NotificationHookConsumer.Timer())) {
                 return;
             }
 
-            while (shouldRun.get()) {
-                try {
-                    List<AtlasKafkaMessage<HookNotificationMessage>> messages = consumer.receive();
-                    for (AtlasKafkaMessage<HookNotificationMessage> msg : messages) {
-                        handleMessage(msg);
+            try {
+                while (shouldRun.get()) {
+                    try {
+                        List<AtlasKafkaMessage<HookNotificationMessage>> messages = consumer.receive();
+                        for (AtlasKafkaMessage<HookNotificationMessage> msg : messages) {
+                            handleMessage(msg);
+                        }
+                    } catch (Exception e) {
+                        if (shouldRun.get()) {
+                            LOG.warn("Exception in NotificationHookConsumer", e);
+                        }
                     }
-                } catch (Throwable t) {
-                    LOG.warn("Failure in NotificationHookConsumer", t);
                 }
+            } finally {
+                if (consumer != null) {
+                    LOG.info("closing NotificationConsumer");
+
+                    consumer.close();
+                }
+
+                LOG.info("<== HookConsumer doWork()");
             }
         }
 
@@ -369,7 +387,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private void commit(AtlasKafkaMessage<HookNotificationMessage> kafkaMessage) {
             recordFailedMessages();
             TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
-            consumer.commit(partition, kafkaMessage.getOffset());
+            consumer.commit(partition, kafkaMessage.getOffset() + 1);
         }
 
         boolean serverAvailable(Timer timer) {
@@ -397,11 +415,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @Override
         public void shutdown() {
+            LOG.info("==> HookConsumer shutdown()");
+
             super.initiateShutdown();
             shouldRun.set(false);
-            consumer.close();
+            if (consumer != null) {
+                consumer.wakeup();
+            }
             super.awaitShutdown();
+
+            LOG.info("<== HookConsumer shutdown()");
         }
+
     }
 
     private void audit(String messageUser, String method, String path) {
