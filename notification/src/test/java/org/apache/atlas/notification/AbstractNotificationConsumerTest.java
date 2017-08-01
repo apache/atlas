@@ -203,6 +203,11 @@ public class AbstractNotificationConsumerTest {
         }
 
         @Override
+        public void wakeup() {
+
+        }
+
+        @Override
         public List<AtlasKafkaMessage<T>> receive() {
             return receive(1000L);
         }

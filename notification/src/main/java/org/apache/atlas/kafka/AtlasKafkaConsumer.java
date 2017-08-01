@@ -96,4 +96,11 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
             kafkaConsumer.close();
         }
     }
+
+    @Override
+    public void wakeup() {
+        if (kafkaConsumer != null) {
+            kafkaConsumer.wakeup();
+        }
+    }
 }
