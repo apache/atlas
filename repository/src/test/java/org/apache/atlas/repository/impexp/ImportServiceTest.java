@@ -153,8 +153,7 @@ public class ImportServiceTest {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
 
-        AtlasImportRequest request = getDefaultImportRequest();
-        runImportWithParameters(getImportService(), getDefaultImportRequest(), zipSource);
+        runImportWithNoParameters(getImportService(), zipSource);
     }
 
     private ImportService getImportService() {
