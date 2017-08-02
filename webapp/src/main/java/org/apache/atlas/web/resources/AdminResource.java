@@ -62,6 +62,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -360,21 +361,16 @@ public class AdminResource {
     @Path("/import")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public AtlasImportResult importData(@FormDataParam("request") String jsonData,
+    public AtlasImportResult importData(@DefaultValue("{}") @FormDataParam("request") String jsonData,
                                         @FormDataParam("data") InputStream inputStream) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.importData(jsonData={}, inputStream={})", jsonData, (inputStream != null));
         }
 
         acquireExportImportLock("import");
-
         AtlasImportResult result;
 
         try {
-            if (StringUtils.isEmpty(jsonData)) {
-                jsonData = "{}";
-            }
-
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
             ZipSource zipSource = new ZipSource(inputStream);
 

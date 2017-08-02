@@ -55,13 +55,20 @@ public class ImportService {
         this.typeRegistry = typeRegistry;
     }
 
+    public AtlasImportResult run(ZipSource source, String userName,
+                                 String hostName, String requestingIP) throws AtlasBaseException {
+        return run(source, null, userName, hostName, requestingIP);
+    }
+
     public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
         AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
 
         try {
-
             LOG.info("==> import(user={}, from={})", userName, requestingIP);
+            if (request == null) {
+                request = new AtlasImportRequest();
+            }
 
             String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(AtlasImportRequest.TRANSFORMS_KEY) : null;
 
@@ -90,9 +97,9 @@ public class ImportService {
     }
 
     private void setStartPosition(AtlasImportRequest request, ZipSource source) throws AtlasBaseException {
-        if(request.getStartGuid() != null) {
+        if (request.getStartGuid() != null) {
             source.setPositionUsingEntityGuid(request.getStartGuid());
-        } else if(request.getStartPosition() != null) {
+        } else if (request.getStartPosition() != null) {
             source.setPosition(Integer.parseInt(request.getStartPosition()));
         }
     }
@@ -136,7 +143,7 @@ public class ImportService {
     }
 
     private void processTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        if(result.getRequest().getUpdateTypeDefs() != null && !result.getRequest().getUpdateTypeDefs().equals("true")) {
+        if (result.getRequest().getUpdateTypeDefs() != null && !result.getRequest().getUpdateTypeDefs().equals("true")) {
             return;
         }
 

@@ -147,6 +147,16 @@ public class ZipFileResourceTestUtils {
         return result;
     }
 
+    public static AtlasImportResult runImportWithNoParameters(ImportService importService, ZipSource source) throws AtlasBaseException, IOException {
+        final String requestingIP = "1.0.0.0";
+        final String hostName = "localhost";
+        final String userName = "admin";
+
+        AtlasImportResult result = importService.run(source, userName, hostName, requestingIP);
+        assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
+        return result;
+    }
+
     public static void runAndVerifyQuickStart_v1_Import(ImportService importService, ZipSource zipSource) throws AtlasBaseException, IOException {
         AtlasExportResult exportResult = zipSource.getExportResult();
         List<String> creationOrder = zipSource.getCreationOrder();

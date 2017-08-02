@@ -66,6 +66,15 @@ curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
             "http://localhost:21000/api/atlas/admin/import"
 </verbatim>
 
+The _request_ parameter is optional. If import has to be run without any options use:
+<verbatim>
+curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
+            -H "Cache-Control: no-cache"
+            -F data=@quickStartDB.zip
+            "http://localhost:21000/api/atlas/admin/import"
+</verbatim>
+
+
 The call below performs Import of _!QuickStart_ database using a ZIP file available on server.
 <verbatim>
 curl -X POST -u adminuser:password -H "Cache-Control: no-cache" -d ./importOptions.json
