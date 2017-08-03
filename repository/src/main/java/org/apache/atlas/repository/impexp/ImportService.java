@@ -60,15 +60,17 @@ public class ImportService {
         return run(source, null, userName, hostName, requestingIP);
     }
 
+
     public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
+        if (request == null) {
+            request = new AtlasImportRequest();
+        }
+
         AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
 
         try {
             LOG.info("==> import(user={}, from={})", userName, requestingIP);
-            if (request == null) {
-                request = new AtlasImportRequest();
-            }
 
             String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(AtlasImportRequest.TRANSFORMS_KEY) : null;
 
