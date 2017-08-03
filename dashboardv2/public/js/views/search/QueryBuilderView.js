@@ -64,8 +64,11 @@ define(['require',
                 if (type === "string") {
                     obj.operators = ['=', '!=', 'contains', 'begins_with', 'ends_with'];
                 }
-                if (type === "enum" || type === "date" || type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double") {
+                if (type === "date" || type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double") {
                     obj.operators = ['=', '!=', '>', '<', '>=', '<='];
+                }
+                if (type === "enum" || type === "boolean") {
+                    obj.operators = ['=', '!='];
                 }
                 return obj;
             },
