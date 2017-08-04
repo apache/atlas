@@ -1,10 +1,175 @@
 ---+ Search
 
 Atlas exposes search over the metadata in two ways:
-   * Search using DSL
-   * Full-text search
+   * Basic Search
+   * Advanced Search (DSL or Full-Text)
 
----++ Search DSL Grammar
+---++ Basic search
+The basic search allows you to query using typename of an entity, associated classification/tag
+and has support for filtering on the entity attribute(s) as well as the classification/tag attributes.
+
+The entire query structure can be represented using the following JSON structure (called !SearchParameters)
+
+<verbatim>
+{
+  "typeName": "hive_table",
+  "excludeDeletedEntities": true,
+  "classification" : "",
+  "query": "",
+  "limit": 25,
+  "offset": 0,
+  "entityFilters": {
+   "attributeName": "name",
+   "operator": "contains",
+   "attributeValue": "testtable"
+  },
+  "tagFilters": null,
+  "attributes": [""]
+}
+</verbatim>
+
+__Field description__
+
+   * typeName: The type of entity to look for
+   * excludeDeletedEntities: Should the search include deleted entities too (default: true)
+   * classification: Only include entities with given Classification/tag
+   * query: Any free text occurrence that the entity should have (generic/wildcard queries might be slow)
+   * limit: Max number of results to fetch
+   * offset: Starting offset of the result set (useful for pagination)
+   * entityFilters: Entity Attribute filter(s)
+   * tagFilters: Classification/tag Attribute filter(s)
+   * attributes: Attributes to include in the search result (default: include any attribute present in the filter)
+
+   Attribute based filtering can be done on multiple attributes with AND/OR condition.
+
+    *NOTE: The tagFilters and entityFilters field have same JSON structure.*
+
+__Examples of filtering (for hive_table attributes)__
+   * Single attribute
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "attributeName": "name",
+        "operator": "contains",
+        "attributeValue": "testtable"
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+   * Multi-attribute with OR
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "condition": "OR",
+        "criterion": [
+           {
+              "attributeName": "name",
+              "operator": "contains",
+              "attributeValue": "testtable"
+           },
+           {
+              "attributeName": "owner",
+              "operator": "eq",
+              "attributeValue": "admin"
+           }
+        ]
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+   * Multi-attribute with AND
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+           {
+              "attributeName": "name",
+              "operator": "contains",
+              "attributeValue": "testtable"
+           },
+           {
+              "attributeName": "owner",
+              "operator": "eq",
+              "attributeValue": "admin"
+           }
+        ]
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+
+__Supported operators for filtering__
+
+   * LT (symbols: <, lt) works with Numeric, Date attributes
+   * GT (symbols: >, gt) works with Numeric, Date attributes
+   * LTE (symbols: <=, lte) works with Numeric, Date attributes
+   * GTE (symbols: >=, gte) works with Numeric, Date attributes
+   * EQ (symbols: eq, =) works with Numeric, Date, String attributes
+   * NEQ (symbols: neq, !=) works with Numeric, Date, String attributes
+   * LIKE (symbols: like, LIKE) works with String attributes
+   * STARTS_WITH (symbols: startsWith, STARTSWITH) works with String attributes
+   * ENDS_WITH (symbols: endsWith, ENDSWITH) works with String attributes
+   * CONTAINS (symbols: contains, CONTAINS) works with String attributes
+
+__CURL Samples__
+
+<verbatim>
+    curl -sivk -g
+    -u <user>:<password>
+    -X POST
+    -d '{
+            "typeName": "hive_table",
+            "excludeDeletedEntities": true,
+            "classification" : "",
+            "query": "",
+            "limit": 50,
+            "offset": 0,
+            "entityFilters": {
+               "condition": "AND",
+               "criterion": [
+                  {
+                     "attributeName": "name",
+                     "operator": "contains",
+                     "attributeValue": "testtable"
+                  },
+                  {
+                     "attributeName": "owner",
+                     "operator": "eq",
+                     "attributeValue": "admin"
+                  }
+               ]
+            },
+            "tagFilters": null,
+            "attributes": [""]
+          }'
+    <protocol>://<atlas_host>:<atlas_port>/api/atlas/v2/search/basic
+</verbatim>
+
+---++ Advanced Search
+
+---+++ Search DSL Grammar
 The DSL exposes an SQL like query language for searching the metadata based on the type system.
 The grammar for the DSL is below.
 
@@ -16,9 +181,9 @@ query: querySrc ~ opt(loopExpression) ~ opt(groupByExpr) ~ opt(selectClause) ~ o
 querySrc: rep1sep(singleQrySrc, opt(COMMA))
 
 singleQrySrc = FROM ~ fromSrc ~ opt(WHERE) ~ opt(expr ^? notIdExpression) |
-        WHERE ~ (expr ^? notIdExpression) |
-        expr ^? notIdExpression |
-        fromSrc ~ opt(WHERE) ~ opt(expr ^? notIdExpression)
+      WHERE ~ (expr ^? notIdExpression) |
+      expr ^? notIdExpression |
+      fromSrc ~ opt(WHERE) ~ opt(expr ^? notIdExpression)
 
 fromSrc: identifier ~ AS ~ alias | identifier
 
@@ -51,10 +216,10 @@ expr:  compE ~ opt(rep(exprRight))
 exprRight: (AND | OR) ~ compE
 
 compE:
-        arithE ~ (LT | LTE | EQ | NEQ | GT | GTE) ~ arithE |
-            arithE ~ (ISA | IS) ~ ident  |
-            arithE ~ HAS ~ ident  |
-            arithE | countClause | maxClause | minClause | sumClause
+      arithE ~ (LT | LTE | EQ | NEQ | GT | GTE) ~ arithE |
+         arithE ~ (ISA | IS) ~ ident  |
+         arithE ~ HAS ~ ident  |
+         arithE | countClause | maxClause | minClause | sumClause
 
 arithE: multiE ~ opt(rep(arithERight))
 
@@ -71,18 +236,18 @@ identifier: rep1sep(ident, DOT)
 alias: ident | stringLit
 
 literal: booleanConstant |
-        intConstant  |
-        longConstant  |
-        floatConstant |
-        doubleConstant  |
-        stringLit
+      intConstant  |
+      longConstant  |
+      floatConstant |
+      doubleConstant  |
+      stringLit
 </verbatim>
 
 Grammar language:
 {noformat}
-opt(a)     => a is optional
-~            => a combinator. 'a ~ b' means a followed by b
-rep         => zero or more
+opt(a)    => a is optional
+~         => a combinator. 'a ~ b' means a followed by b
+rep       => zero or more
 rep1sep => one or more, separated by second arg.
 {noformat}
 
@@ -99,14 +264,14 @@ Language Notes:
   see scaladoc for 'org.apache.atlas.query.ClosureQuery')
    * GROUPBY is optional. Group by can be specified with aggregate methods like max, min, sum and count. When group by is specified aggregated results are returned based on the method specified in select clause. Select expression is mandatory with group by expression.
    * ORDERBY is optional. When order by clause is specified, case insensitive sorting is done based on the column specified.
-    For sorting in descending order specify 'DESC' after order by clause. If no order by is specified, then no default sorting is applied.
+   For sorting in descending order specify 'DESC' after order by clause. If no order by is specified, then no default sorting is applied.
    * LIMIT is optional. It limits the maximum number of objects to be fetched starting from specified optional offset. If no offset is specified count starts from beginning.
    * There are couple of Predicate functions different from SQL:
-      * _is_ or _isa_can be used to filter Entities that have a particular Trait.
-      * _has_ can be used to filter Entities that have a value for a particular Attribute.
+     * _is_ or _isa_can be used to filter Entities that have a particular Trait.
+     * _has_ can be used to filter Entities that have a value for a particular Attribute.
    * Any identifiers or constants with special characters(space,$,",{,}) should be enclosed within backquote (`)
 
----+++ DSL Examples
+---++++ DSL Examples
 For the model,
 Asset - attributes name, owner, description
 DB - supertype Asset - attributes clusterName, parameters, comment
@@ -133,6 +298,6 @@ DSL queries:
    * from Person select count() as 'count', max(Person.age) as 'max', min(Person.age)
    * `Log Data`
 
----++ Full-text Search
+---+++ Full-text Search
 
 Atlas also exposes a lucene style full-text search capability.
