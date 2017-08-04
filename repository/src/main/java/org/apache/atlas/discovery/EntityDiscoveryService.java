@@ -414,6 +414,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(searchParameters);
+        final   QueryParams   params =  validateSearchParams(searchParameters.getLimit(),searchParameters.getOffset());
+        searchParameters.setLimit(params.limit());
+        searchParameters.setOffset(params.offset());
 
         SearchContext context  = new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys());
         String        searchID = searchTracker.add(context); // For future cancellations
