@@ -134,7 +134,7 @@ define(['require',
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
                                     var values = model.get('attributes');
-                                    var data = that.classificationDefCollection.findWhere({ 'name': model.get('typeName') });
+                                    var data = that.classificationDefCollection.fullCollection.findWhere({ 'name': model.get('typeName') });
                                     var attributeDefs = Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true });
                                     var tagValue = 'NA',
                                         dataType;
