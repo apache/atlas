@@ -315,6 +315,14 @@ public class AtlasTypeUtil {
         return map;
     }
 
+    public static Map toRelationshipAttributes(Map map) {
+        if (map != null && map.containsKey("typeName") && map.containsKey("relationshipAttributes") && map.get("relationshipAttributes") instanceof Map) {
+            return (Map)map.get("relationshipAttributes");
+        }
+
+        return map;
+    }
+
     public static AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
         return new AtlasObjectId(entity.getGuid(), entity.getTypeName());
     }

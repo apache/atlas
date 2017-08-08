@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -595,8 +596,16 @@ public final class GraphHelper {
         return findVertex(Constants.GUID_PROPERTY_KEY, guid);
     }
 
-    public AtlasEdge getEdgeForGUID(String guid) throws EntityNotFoundException {
-        return findEdge(Constants.GUID_PROPERTY_KEY, guid);
+    public AtlasEdge getEdgeForGUID(String guid) throws AtlasBaseException {
+        AtlasEdge ret = null;
+
+        try {
+            ret = findEdge(Constants.GUID_PROPERTY_KEY, guid);
+        } catch (EntityNotFoundException e) {
+            new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
     }
 
     /**

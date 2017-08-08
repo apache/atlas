@@ -116,13 +116,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
         AtlasRelationship ret;
 
-        try {
-            AtlasEdge edge = graphHelper.getEdgeForGUID(guid);
+        AtlasEdge edge = graphHelper.getEdgeForGUID(guid);
 
-            ret = mapEdgeToAtlasRelationship(edge);
-        } catch (EntityNotFoundException ex) {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
-        }
+        ret = entityRetriever.mapEdgeToAtlasRelationship(edge);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getById({}): {}", guid, ret);
@@ -160,7 +156,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         AtlasEdge relationshipEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationship);
 
         if (relationshipEdge != null) {
-            ret = mapEdgeToAtlasRelationship(relationshipEdge);
+            ret = entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
 
         } else {
             validateRelationship(relationship);
@@ -196,7 +192,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
                     }
                 }
 
-                ret = mapEdgeToAtlasRelationship(relationshipEdge);
+                ret = entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
 
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
@@ -377,68 +373,6 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
 
         return (entityType != null) ? entityType.getTypeAndAllSuperTypes() : new HashSet<String>();
-    }
-
-    private AtlasRelationship mapEdgeToAtlasRelationship(AtlasEdge edge) throws AtlasBaseException {
-        AtlasRelationship ret = new AtlasRelationship();
-
-        mapSystemAttributes(edge, ret);
-
-        mapAttributes(edge, ret);
-
-        return ret;
-    }
-
-    private AtlasRelationship mapSystemAttributes(AtlasEdge edge, AtlasRelationship relationship) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Mapping system attributes for relationship");
-        }
-
-        relationship.setGuid(GraphHelper.getGuid(edge));
-        relationship.setTypeName(GraphHelper.getTypeName(edge));
-
-        relationship.setCreatedBy(GraphHelper.getCreatedByAsString(edge));
-        relationship.setUpdatedBy(GraphHelper.getModifiedByAsString(edge));
-
-        relationship.setCreateTime(new Date(GraphHelper.getCreatedTime(edge)));
-        relationship.setUpdateTime(new Date(GraphHelper.getModifiedTime(edge)));
-
-        Integer version = GraphHelper.getVersion(edge);
-
-        if (version == null) {
-            version = Integer.valueOf(1);
-        }
-
-        relationship.setVersion(version.longValue());
-        relationship.setStatus(GraphHelper.getEdgeStatus(edge));
-
-        AtlasVertex end1Vertex = edge.getOutVertex();
-        AtlasVertex end2Vertex = edge.getInVertex();
-
-        relationship.setEnd1(new AtlasObjectId(GraphHelper.getGuid(end1Vertex), GraphHelper.getTypeName(end1Vertex)));
-        relationship.setEnd2(new AtlasObjectId(GraphHelper.getGuid(end2Vertex), GraphHelper.getTypeName(end2Vertex)));
-
-        relationship.setLabel(edge.getLabel());
-
-        return relationship;
-    }
-
-    private void mapAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
-        AtlasType objType = typeRegistry.getType(relationship.getTypeName());
-
-        if (!(objType instanceof AtlasRelationshipType)) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());
-        }
-
-        AtlasRelationshipType relationshipType = (AtlasRelationshipType) objType;
-
-        for (AtlasAttribute attribute : relationshipType.getAllAttributes().values()) {
-            // mapping only primitive attributes
-            Object attrValue = entityRetriever.mapVertexToPrimitive(edge, attribute.getQualifiedName(),
-                                                                    attribute.getAttributeDef());
-
-            relationship.setAttribute(attribute.getName(), attrValue);
-        }
     }
 
     private String getTypeNameFromObjectId(AtlasObjectId objectId) {

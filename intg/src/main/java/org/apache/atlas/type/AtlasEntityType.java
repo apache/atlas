@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -266,7 +267,8 @@ public class AtlasEntityType extends AtlasStructType {
                     return false;
                 }
             }
-            return super.isValidValue(obj);
+
+            return super.isValidValue(obj) && validateRelationshipAttributes(obj);
         }
 
         return true;
@@ -339,8 +341,7 @@ public class AtlasEntityType extends AtlasStructType {
                     ret = superType.validateValue(obj, objName, messages) && ret;
                 }
 
-                ret = super.validateValue(obj, objName, messages) && ret;
-
+                ret = super.validateValue(obj, objName, messages) && validateRelationshipAttributes(obj, objName, messages) && ret;
             } else {
                 ret = false;
                 messages.add(objName + ": invalid value type '" + obj.getClass().getName());
@@ -388,7 +389,7 @@ public class AtlasEntityType extends AtlasStructType {
                 superType.normalizeAttributeValues(ent);
             }
 
-            super.normalizeAttributeValues(ent);
+            normalizeValues(ent);
         }
     }
 
@@ -409,7 +410,7 @@ public class AtlasEntityType extends AtlasStructType {
                 superType.normalizeAttributeValues(obj);
             }
 
-            super.normalizeAttributeValues(obj);
+            normalizeValues(obj);
         }
     }
 
@@ -446,10 +447,13 @@ public class AtlasEntityType extends AtlasStructType {
         collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, visitedTypes);
     }
 
+
+
     /*
      * This method should not assume that resolveReferences() has been called on all superTypes.
      * this.entityDef is the only safe member to reference here
      */
+
     private void collectTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,
                                           Set<String>                    allSuperTypeNames,
                                           Map<String, AtlasAttribute>    allAttributes,
@@ -480,9 +484,177 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
     }
-
     boolean isAssignableFrom(AtlasObjectId objId) {
         boolean ret = AtlasTypeUtil.isValid(objId) && (StringUtils.equals(objId.getTypeName(), getTypeName()) || isSuperTypeOf(objId.getTypeName()));
+
+        return ret;
+    }
+
+    private boolean validateRelationshipAttributes(Object obj) {
+        if (obj != null && MapUtils.isNotEmpty(relationshipAttributes)) {
+            if (obj instanceof AtlasEntity) {
+                AtlasEntity entityObj = (AtlasEntity) obj;
+
+                for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                    Object            attributeValue = entityObj.getRelationshipAttribute(attribute.getName());
+                    AtlasAttributeDef attributeDef   = attribute.getAttributeDef();
+
+                    if (!isAssignableValue(attributeValue, attributeDef)) {
+                        return false;
+                    }
+                }
+            } else if (obj instanceof Map) {
+                Map map = AtlasTypeUtil.toRelationshipAttributes((Map) obj);
+
+                for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                    Object            attributeValue = map.get(attribute.getName());
+                    AtlasAttributeDef attributeDef   = attribute.getAttributeDef();
+
+                    if (!isAssignableValue(attributeValue, attributeDef)) {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isAssignableValue(Object value, AtlasAttributeDef attributeDef) {
+        boolean ret = true;
+
+        if (value != null) {
+            AtlasAttribute attribute = relationshipAttributes.get(attributeDef.getName());
+
+            if (attribute != null) {
+                AtlasType attrType = attribute.getAttributeType();
+
+                if (!isValidRelationshipType(attrType) && !attrType.isValidValue(value)) {
+                    ret = false;
+                }
+            }
+        }
+
+        return ret;
+    }
+    private boolean isValidRelationshipType(AtlasType attributeType) {
+        boolean ret = false;
+
+        if (attributeType != null) {
+            if (attributeType instanceof AtlasArrayType) {
+                attributeType = ((AtlasArrayType) attributeType).getElementType();
+            }
+
+            if (attributeType instanceof AtlasObjectIdType || attributeType instanceof AtlasEntityType) {
+                ret = true;
+            }
+        }
+
+        return ret;
+    }
+
+    private void normalizeRelationshipAttributeValues(AtlasStruct obj) {
+        if (obj != null && obj instanceof AtlasEntity) {
+            AtlasEntity entityObj = (AtlasEntity) obj;
+
+            for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                String            attributeName = attribute.getName();
+                AtlasAttributeDef attributeDef  = attribute.getAttributeDef();
+
+                if (((AtlasEntity) obj).hasRelationshipAttribute(attributeName)) {
+                    Object attributeValue = getNormalizedValue(entityObj.getAttribute(attributeName), attributeDef);
+
+                    obj.setAttribute(attributeName, attributeValue);
+                }
+            }
+        }
+    }
+
+    public void normalizeRelationshipAttributeValues(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                String            attributeName = attribute.getName();
+                AtlasAttributeDef attributeDef  = attribute.getAttributeDef();
+
+                if (obj.containsKey(attributeName)) {
+                    Object attributeValue = getNormalizedValue(obj.get(attributeName), attributeDef);
+
+                    obj.put(attributeName, attributeValue);
+                }
+            }
+        }
+    }
+
+    private Object getNormalizedValue(Object value, AtlasAttributeDef attributeDef) {
+        AtlasAttribute attribute = relationshipAttributes.get(attributeDef.getName());
+
+        if (attribute != null) {
+            AtlasType attrType = attribute.getAttributeType();
+
+            if (isValidRelationshipType(attrType) && value != null) {
+                return attrType.getNormalizedValue(value);
+            }
+        }
+
+        return null;
+    }
+
+    private void normalizeValues(AtlasEntity ent) {
+        super.normalizeAttributeValues(ent);
+
+        normalizeRelationshipAttributeValues(ent);
+    }
+
+    private void normalizeValues(Map<String, Object> obj) {
+        super.normalizeAttributeValues(obj);
+
+        normalizeRelationshipAttributeValues(obj);
+    }
+
+    private boolean validateRelationshipAttributes(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null && MapUtils.isNotEmpty(relationshipAttributes)) {
+            if (obj instanceof AtlasEntity) {
+                AtlasEntity entityObj = (AtlasEntity) obj;
+
+                for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                    String attributeName = attribute.getName();
+
+                    if (attribute != null) {
+                        AtlasType dataType  = attribute.getAttributeType();
+                        Object    value     = entityObj.getAttribute(attributeName);
+                        String    fieldName = objName + "." + attributeName;
+
+                        if (isValidRelationshipType(dataType) && value != null) {
+                            ret = dataType.validateValue(value, fieldName, messages) && ret;
+                        }
+                    }
+
+                }
+            } else if (obj instanceof Map) {
+                Map attributes = AtlasTypeUtil.toStructAttributes((Map)obj);
+
+                for (AtlasAttribute attribute : relationshipAttributes.values()) {
+                    String attributeName = attribute.getName();
+
+                    if (attribute != null) {
+                        AtlasType dataType  = attribute.getAttributeType();
+                        Object    value     = attributes.get(attributeName);
+                        String    fieldName = objName + "." + attributeName;
+
+                        if (isValidRelationshipType(dataType) && value != null) {
+                            ret = dataType.validateValue(value, fieldName, messages) && ret;
+                        }
+                    }
+                }
+            } else {
+                ret = false;
+                messages.add(objName + "=" + obj + ": invalid value for type " + getTypeName());
+            }
+        }
 
         return ret;
     }

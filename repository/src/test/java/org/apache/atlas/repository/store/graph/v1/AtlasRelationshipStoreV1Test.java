@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -45,6 +46,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -456,17 +458,29 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertTrue(collection != null && collection.isEmpty());
     }
 
-    private static List<AtlasObjectId> toAtlasObjectIds(Object objectIds) {
-        if (objectIds instanceof List) {
-            return (List<AtlasObjectId>) objectIds;
+    private static List<AtlasObjectId> toAtlasObjectIds(Object object) {
+        List<AtlasObjectId> ret = new ArrayList<>();
+
+        if (object instanceof List) {
+            List<?> objectIds = (List) object;
+
+            if (CollectionUtils.isNotEmpty(objectIds)) {
+                for (Object obj : objectIds) {
+                    if (obj instanceof AtlasRelatedObjectId) {
+                        AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) obj;
+                        ret.add(new AtlasObjectId(relatedObjectId.getGuid(), relatedObjectId.getTypeName(), relatedObjectId.getUniqueAttributes()));
+                    }
+                }
+            }
         }
 
-        return null;
+        return ret;
     }
 
-    private static AtlasObjectId toAtlasObjectId(Object objectId) {
-        if (objectId instanceof AtlasObjectId) {
-            return (AtlasObjectId) objectId;
+    private static AtlasObjectId toAtlasObjectId(Object object) {
+        if (object instanceof AtlasRelatedObjectId) {
+            AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) object;
+            return new AtlasObjectId(relatedObjectId.getGuid(), relatedObjectId.getTypeName(), relatedObjectId.getUniqueAttributes());
         }
 
         return null;
@@ -482,7 +496,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         Object refValue = entity.getRelationshipAttribute(relationshipAttrName);
         assertTrue(refValue instanceof List);
 
-        List<AtlasObjectId> refList = (List<AtlasObjectId>) refValue;
+        List<AtlasObjectId> refList = toAtlasObjectIds(refValue);
         assertEquals(refList.size(), expectedValues.size());
 
         if (expectedValues.size() > 0) {
