@@ -81,7 +81,7 @@ define(['require',
             getObjDef: function(attrObj, rules) {
                 var obj = {
                     id: attrObj.name,
-                    label: attrObj.name.capitalize(),
+                    label: attrObj.name.capitalize() + " (" + attrObj.typeName + ")",
                     type: attrObj.typeName
                 };
                 if (obj.type === "date") {
@@ -104,17 +104,17 @@ define(['require',
                     return obj;
                 }
                 if (this.isPrimitive(obj.type)) {
+                    if (obj.type === "boolean") {
+                        obj['input'] = 'select';
+                        obj['values'] = ['true', 'false'];
+                    }
+                    _.extend(obj, this.getOperator(obj.type));
                     if (obj.type === "long" || obj.type === "float") {
                         obj.type = "double";
                     }
                     if (obj.type === "int" || obj.type === "byte" || obj.type === "short") {
                         obj.type = "integer";
                     }
-                    if (obj.type === "boolean") {
-                        obj['input'] = 'select';
-                        obj['values'] = ['true', 'false'];
-                    }
-                    _.extend(obj, this.getOperator(obj.type));
                     return obj;
                 }
                 var enumObj = this.enumDefCollection.fullCollection.find({ name: obj.type });
