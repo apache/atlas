@@ -53,7 +53,7 @@ define(['require',
                 var VCommonModel = new VCommon();
                 VCommonModel.aboutUs(url, {
                     success: function(data) {
-                        var str = "<b>Version : </b>" + data.Version;
+                        var str = "<b>Version : </b>" + _.escape(data.Version);
                         that.ui.atlasVersion.html(str);
                     },
                     complete: function() {}

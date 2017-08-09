@@ -17,7 +17,7 @@
 <div class="">
     <div class="tableOverlay"></div>
     <!-- Not for table Loader its only for initial loading -->
-    <div class="fontLoader">
+    <div class="fontLoader" style="z-index:999">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
@@ -26,7 +26,7 @@
     </div>
     <div class="searchTable">
         <div data-id="containerCheckBox" style="display: none;">
-            <input type="checkbox" id="inputLabel" class="checkbox-inline" name="queryType" value="text" name="check" value="1" data-id="checkDeletedEntity" />
+            <input type="checkbox" id="inputLabel" class="checkbox-inline" name="queryType" name="check" data-id="checkDeletedEntity" />
             <label class="checkbox-inline" for="inputLabel">
                 <b>Include historical entities</b></label>
         </div>
@@ -52,4 +52,7 @@
             {{/if}}
         </div>
     </div>
+</div>
+<div class="text-center" data-id="columnEmptyInfo" style="display: none;">
+    <h4>Please select one/more column to see the data</h4>
 </div>

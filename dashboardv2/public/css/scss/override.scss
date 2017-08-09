@@ -69,36 +69,46 @@
     box-shadow: 0px 0px 4px #d8d8d8;
     overflow: scroll !important;
     max-height: 500px;
+    .resizeHandler {
+        &.grid-draggable {
+            background-color: $color_jungle_green_approx !important;
+        }
+        &:hover {
+            border-left: 1px solid #d2d2d2;
+        }
+    }
+    >thead>tr>th {
+        border-width: thin;
+        border-color: $color_jungle_green_approx;
+        border-bottom-style: solid;
+        box-shadow: none;
+        padding: 20px 15px;
+        background-color: transparent;
+        text-align: left;
+        font-weight: 800;
+        border-top: 0;
+        font-size: 14px;
+        letter-spacing: 0.25px;
+        color: rgba(52, 52, 52, 1);
+    }
+    >tbody>tr>td {
+        border-color: $color_gallery_approx;
+        color: #333333;
+        font-weight: 100;
+        padding: 10px 15px;
+    }
 }
 
-.table-quickMenu>thead>tr>th {
-    border-width: thin;
-    border-color: $color_jungle_green_approx;
-    border-bottom-style: solid;
-    box-shadow: none;
-    padding: 20px 15px;
-    background-color: transparent;
-    text-align: left;
-    font-weight: 800;
-    font-size: 14px;
-    letter-spacing: 0.25px;
-    color: rgba(52, 52, 52, 1);
+td {
+    div.scroll-y {
+        max-height: 200px;
+        overflow-y: auto;
+    }
 }
 
-.table-quickMenu > tbody > tr > td {
-    border-color: $color_gallery_approx;
-    color: #333333;
-    font-weight: 100;
-    padding: 10px 15px;
-}
-
-.backgrid-paginator ul > li > a:hover,
-.backgrid-paginator ul > .active > a,
-.backgrid-paginator ul > .active > span {
-    background-color: #2EBC9A !important;
-    color: #fff !important;
-    &:hover {
-        background-color: none;
+.backgrid {
+    td {
+        white-space: normal;
     }
 }
 
@@ -108,11 +118,25 @@
     margin: 20px 0;
     border-radius: 4px;
     border: 1px #DDDDDD solid;
-}
-
-.backgrid {
-    td {
-        white-space: normal;
+    margin: 0px;
+    float: right;
+    border-radius: 10px;
+    overflow: hidden;
+    >.disabled>span,
+    >.disabled>a {
+        &:hover {
+            cursor: not-allowed;
+            background-color: #7ed3be !important;
+        }
+    }
+    >.active>span,
+    >.active>a,
+    >li>a:hover {
+        background-color: #2EBC9A !important;
+        color: #fff !important;
+        &:hover {
+            background-color: none;
+        }
     }
 }
 
@@ -216,21 +240,6 @@
     }
 }
 
-.backgrid-paginator ul {
-    margin: 0px;
-    float: right;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.backgrid-paginator ul > .disabled > span,
-.backgrid-paginator ul > .disabled > a {
-    &:hover {
-        cursor: not-allowed;
-        background-color: #7ed3be !important;
-    }
-}
-
 .popover {
     z-index: 99;
 }
@@ -248,7 +257,7 @@
     }
 }
 
-.tab-content > .tab-pane.active {
+.tab-content>.tab-pane.active {
     overflow-x: hidden;
 }
 
@@ -267,40 +276,40 @@
     cursor: pointer;
 }
 
-.query-builder .rule-container .rule-value-container {
-    display: inline-block !important;
+.query-builder {
+    .rule-container .rule-value-container {
+        display: inline-block !important;
+    }
+    .rules-list>:first-child::before {
+        top: -8px;
+    }
+    .rules-group-header .btn-group.group-conditions label {
+        display: none;
+    }
+    .rule-value-container input {
+        padding: 6px 12px !important;
+    }
 }
+
 
 .rules-group-header .btn-group.pull-right.group-actions {
     float: left !important;
 }
 
-.query-builder .rules-list>:first-child::before {
-    top: -8px;
-}
-
-.query-builder .rules-group-header .btn-group.group-conditions label {
-    display: none;
-}
-
-.query-builder .rule-value-container input {
-    padding: 6px 12px !important;
-}
-
 div.columnmanager-visibilitycontrol {
     width: auto;
     margin-bottom: 5px;
+    &.open .btn-atlasAction {
+        background-color: #37bb9b;
+        color: #fff;
+    }
 }
 
-.columnmanager-dropdown-container > li > span.column-label {
-    width: auto;
-}
-
-div.columnmanager-dropdown-container.open {
-    overflow: auto;
-}
-
-.columnmanager-visibilitycontrol.open .btn-atlasAction {
-    background-color: #37bb9b;
-    color: #fff;
+div.columnmanager-dropdown-container {
+    &.open {
+        overflow: auto;
+    }
+    >li>span.column-label {
+        width: auto;
+    }
 }

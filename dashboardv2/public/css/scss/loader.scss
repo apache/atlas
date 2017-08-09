@@ -69,3 +69,44 @@
     display: none;
     opacity: 0.2;
 }
+
+.value-loader {
+    height: 4px;
+    width: 50%;
+    position: relative;
+    overflow: hidden;
+    background-color: #ddd;
+}
+
+.value-loader:before {
+    display: block;
+    position: absolute;
+    content: "";
+    left: -200px;
+    width: 200px;
+    height: 4px;
+    background-color: #2980b9;
+    animation: value-loader 2s linear infinite;
+}
+
+@keyframes value-loader {
+    from {
+        left: -200px;
+        width: 30%;
+    }
+    50% {
+        width: 30%;
+    }
+    70% {
+        width: 70%;
+    }
+    80% {
+        left: 50%;
+    }
+    95% {
+        left: 120%;
+    }
+    to {
+        left: 100%;
+    }
+}

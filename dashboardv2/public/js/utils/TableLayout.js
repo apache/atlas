@@ -131,6 +131,8 @@ define(['require',
 
             includeOverlayLoader: false,
 
+            includeTableLoader: true,
+
 
             /** ui events hash */
             events: function() {
@@ -146,7 +148,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination',
                     'includeHeaderSearch', 'includeFilter', 'includePageSize',
-                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeOverlayLoader'));
+                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeOverlayLoader', 'includeTableLoader'));
 
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.filterOpts, options.filterOpts);
@@ -160,14 +162,20 @@ define(['require',
             /** all events binding here */
             bindEvents: function() {
                 this.listenTo(this.collection, 'request', function() {
-                    this.$('div[data-id="r_tableSpinner"]').addClass('show');
+                    if (this.includeTableLoader) {
+                        this.$('div[data-id="r_tableSpinner"]').addClass('show');
+                    }
                     if (this.includeOverlayLoader) {
+                        this.$('.t_tableOverlay').addClass('fontLoader');
                         this.$('.t_tableOverlay').show();
                     }
                 }, this);
                 this.listenTo(this.collection, 'sync error', function() {
-                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
+                    if (this.includeTableLoader) {
+                        this.$('div[data-id="r_tableSpinner"]').removeClass('show');
+                    }
                     if (this.includeOverlayLoader) {
+                        this.$('.t_tableOverlay').removeClass('fontLoader');
                         this.$('.t_tableOverlay').hide();
                     }
                 }, this);

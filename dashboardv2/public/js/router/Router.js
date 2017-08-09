@@ -53,6 +53,9 @@ define([
                 'enumDefCollection': this.enumDefCollection,
                 'classificationDefCollection': this.classificationDefCollection
             }
+            this.sharedObj = {
+                searchTableColumns: {}
+            }
         },
         bindCommonEvents: function() {
             var that = this;
@@ -237,7 +240,7 @@ define([
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'searchVent': that.searchVent
-                        }, that.preFetchedCollectionLists)
+                        }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
                     App.rSideNav.currentView.selectTab();
@@ -253,7 +256,7 @@ define([
                             'value': paramObj,
                             'initialView': true,
                             'searchVent': that.searchVent
-                        }, that.preFetchedCollectionLists)
+                        }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
                     App.rNContent.$el.html("");
@@ -276,18 +279,22 @@ define([
                         _.extend({
                             'value': paramObj,
                             'searchVent': that.searchVent
-                        }, that.preFetchedCollectionLists)
+                        }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
                     App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
                 }
                 App.rSideNav.currentView.selectTab();
+                var isinitialView = true;
+                if (paramObj) {
+                    isinitialView = (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0;
+                }
                 App.rNContent.show(new SearchDetailLayoutView(
                     _.extend({
                         'value': paramObj,
                         'searchVent': that.searchVent,
-                        'initialView': (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0
-                    }, that.preFetchedCollectionLists)
+                        'initialView': isinitialView,
+                    }, that.preFetchedCollectionLists, that.sharedObj)
                 ));
             });
         },

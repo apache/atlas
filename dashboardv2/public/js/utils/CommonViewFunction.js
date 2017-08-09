@@ -170,7 +170,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
                             fetchInputOutputValue(fetchId);
-                            tempLink += '<div data-id="' + fetchId + '"></div>';
+                            tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                         }
@@ -214,7 +214,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             }
             if (isTable) {
-                table += '<tr><td>' + _.escape(key) + '</td><td>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</td></tr>';
+                table += '<tr><td>' + _.escape(key) + '</td><td><div ' + (_.isObject(valueObject[key]) ? 'class="scroll-y"' : '') + '>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div></td></tr>';
             } else {
                 table += '<div>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div>';
             }

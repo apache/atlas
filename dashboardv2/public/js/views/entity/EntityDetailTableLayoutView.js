@@ -20,9 +20,8 @@ define(['require',
     'backbone',
     'hbs!tmpl/entity/EntityDetailTableLayoutView_tmpl',
     'utils/CommonViewFunction',
-    'models/VEntity',
-    'utils/Utils'
-], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity, Utils) {
+    'models/VEntity'
+], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity) {
     'use strict';
 
     var EntityDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -49,7 +48,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'referredEntities', 'typeHeaders', 'attributeDefs'));
+                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes'));
                 this.entityModel = new VEntity({});
             },
             bindEvents: function() {},
@@ -57,17 +56,8 @@ define(['require',
                 this.entityTableGenerate();
             },
             entityTableGenerate: function() {
-                var that = this,
-                    attributeObject = this.entity.attributes;
-                Utils.findAndMergeRefEntity(attributeObject, that.referredEntities);
-                if (attributeObject && attributeObject.columns) {
-                    var valueSorted = _.sortBy(attributeObject.columns, function(val) {
-                        return val.attributes.position
-                    });
-                    attributeObject.columns = valueSorted;
-                }
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: attributeObject, attributeDefs: this.attributeDefs });
-                that.ui.detailValue.append(table);
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.attributes, attributeDefs: this.attributeDefs });
+                this.ui.detailValue.append(table);
             }
         });
     return EntityDetailTableLayoutView;

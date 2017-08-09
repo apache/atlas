@@ -94,7 +94,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'attribute', 'referredEntities', 'fetchCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'attribute', 'fetchCollection', 'enumDefCollection'));
                 this.schemaCollection = new VSchemaList([], {});
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
@@ -166,15 +166,11 @@ define(['require',
                     }
                 }
                 _.each(this.attribute, function(obj) {
-                    newModel = that.referredEntities[obj.guid];
-                    if (newModel.attributes['position']) {
-                        newModel['position'] = newModel.attributes['position'];
-                    }
-                    if (!Enums.entityStateReadOnly[newModel.status]) {
-                        that.activeObj.push(newModel);
-                        that.schemaCollection.push(newModel);
-                    } else if (Enums.entityStateReadOnly[newModel.status]) {
-                        that.deleteObj.push(newModel);
+                    if (!Enums.entityStateReadOnly[obj.status]) {
+                        that.activeObj.push(obj);
+                        that.schemaCollection.push(obj);
+                    } else if (Enums.entityStateReadOnly[obj.status]) {
+                        that.deleteObj.push(obj);
                     }
                 });
                 $('body').click(function(e) {

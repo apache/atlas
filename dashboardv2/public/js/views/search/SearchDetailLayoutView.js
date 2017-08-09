@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'searchTableColumns'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -51,19 +51,9 @@ define(['require',
             },
             renderSearchResultLayoutView: function() {
                 var that = this;
-
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-
                     if (that.RSearchResultLayoutView) {
-                        that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                            value: that.value,
-                            tag: that.tag,
-                            initialView: that.initialView,
-                            entityDefCollection: that.entityDefCollection,
-                            typeHeaders: that.typeHeaders,
-                            searchVent: that.searchVent,
-                            enumDefCollection: that.enumDefCollection
-                        }));
+                        that.RSearchResultLayoutView.show(new SearchResultLayoutView(that.options));
                     }
                 });
             }
