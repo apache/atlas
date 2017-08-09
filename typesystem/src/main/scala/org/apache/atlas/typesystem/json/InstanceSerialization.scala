@@ -352,7 +352,7 @@ object InstanceSerialization {
     implicit val formats = buildFormat(withBigDecimals)
 
     val _s : AnyRef = asScala(value).asInstanceOf[AnyRef]
-    writePretty(_s)
+    write(_s)
   }
 
   def toJson(value: IStruct, withBigDecimals : Boolean = false): String = {
