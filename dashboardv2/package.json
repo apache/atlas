@@ -4,7 +4,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://git-wip-us.apache.org/repos/asf/atlas.git"
+    "url": "https://git-wip-us.apache.org/repos/asf/incubator-atlas.git"
   },
   "engines": {
     "node": "4.4.x",

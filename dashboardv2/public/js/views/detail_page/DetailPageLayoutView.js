@@ -112,6 +112,9 @@ define(['require',
                 this.listenTo(this.collection, 'reset', function() {
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
+                    // MergerRefEntity.
+                    Utils.findAndMergeRefEntity(collectionJSON.attributes, this.entityObject.referredEntities);
+
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -162,20 +165,29 @@ define(['require',
                                 this.ui.editButton.show();
                             }
                         }
+                        if (collectionJSON.attributes && collectionJSON.attributes.columns) {
+                            var valueSorted = _.sortBy(collectionJSON.attributes.columns, function(val) {
+                                return val.attributes.position
+                            });
+                            collectionJSON.attributes.columns = valueSorted;
+                        }
                     }
                     this.hideLoader();
                     var obj = {
                         entity: collectionJSON,
-                        referredEntities: this.entityObject.referredEntities,
                         guid: this.id,
                         entityName: this.name,
                         typeHeaders: this.typeHeaders,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that),
                         enumDefCollection: this.enumDefCollection,
-                        classificationDefCollection: this.classificationDefCollection
+                        classificationDefCollection: this.classificationDefCollection,
+                        attributeDefs: (function() {
+                            return that.getEntityDef(collectionJSON);
+                        })()
                     }
-                    this.getEntityDef(obj);
+                    this.renderEntityDetailTableLayoutView(obj);
+                    this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
                     this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
                     // To render Schema check attribute "schemaElementsAttribute"
@@ -241,16 +253,14 @@ define(['require',
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
             },
-            getEntityDef: function(obj) {
-                var data = this.entityDefCollection.fullCollection.findWhere({ name: obj.entity.typeName }).toJSON();
+            getEntityDef: function(entityObj) {
+                var data = this.entityDefCollection.fullCollection.findWhere({ name: entityObj.typeName }).toJSON();
                 var attributeDefs = Utils.getNestedSuperTypeObj({
                     data: data,
                     attrMerge: true,
                     collection: this.entityDefCollection
                 });
-                obj['attributeDefs'] = attributeDefs;
-                this.renderEntityDetailTableLayoutView(obj);
-                this.renderAuditTableLayoutView(obj);
+                return attributeDefs;
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),

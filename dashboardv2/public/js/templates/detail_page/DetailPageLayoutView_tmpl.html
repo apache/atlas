@@ -82,46 +82,46 @@
                     <div class="row">
                         <div class="col-md-12">
                             <ul class="nav nav-tabs ">
-                                <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                                <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
+                                <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
+                                <li role="tags"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
                                 {{#if taxonomy}}
-                                <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
+                                <li role="terms"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
                                 {{/if}}
-                                <li role="presentation" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
-                                <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
+                                <li role="audits" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                                <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                             </ul>
                         </div>
                     </div>
                     <div class="tab-content">
-                        <div id="tab-details" role="tabpanel" class="tab-pane active">
+                        <div id="tab-details" role="properties" class="tab-pane active">
                             <div id="r_entityDetailTableLayoutView" style="position: relative;">
                                 <div class="fontLoader">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-tagTable" role="tabpanel" class="tab-pane fade">
+                        <div id="tab-tagTable" role="tags" class="tab-pane fade">
                             <div id="r_tagTableLayoutView" style="position: relative;">
                                 <div class="fontLoader">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-termTable" role="tabpanel" class="tab-pane">
+                        <div id="tab-termTable" role="terms" class="tab-pane">
                             <div id="r_termTableLayoutView" style="position: relative;">
                                 <div class="fontLoader">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-audit" role="tabpanel" class="tab-pane">
+                        <div id="tab-audit" role="audits" class="tab-pane">
                             <div id="r_auditTableLayoutView" style="position: relative;">
                                 <div class="fontLoader">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-schema" role="tabpanel" class="tab-pane">
+                        <div id="tab-schema" role="schema" class="tab-pane">
                             <div id="r_schemaTableLayoutView" style="position: relative;">
                                 <div class="fontLoader">
                                     <i class="fa fa-refresh fa-spin-custom"></i>

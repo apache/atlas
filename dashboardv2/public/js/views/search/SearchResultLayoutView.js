@@ -62,7 +62,8 @@ define(['require',
                 editEntityButton: "[data-id='editEntityButton']",
                 createEntity: "[data-id='createEntity']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
-                containerCheckBox: "[data-id='containerCheckBox']"
+                containerCheckBox: "[data-id='containerCheckBox']",
+                columnEmptyInfo: "[data-id='columnEmptyInfo']"
             },
             templateHelpers: function() {
                 return {
@@ -127,20 +128,20 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
-                this.columnToShow = this.value && this.value.attributes ? this.value.attributes.split(',') : [];
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includePagination: false,
                     includeFooterRecords: false,
-                    includeColumnManager: (this.value && this.value.searchType === "basic" ? true : false),
-                    includeOrderAbleColumns: true,
-                    includeSizeAbleColumns: true,
+                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" ? true : false),
+                    includeOrderAbleColumns: false,
+                    includeSizeAbleColumns: false,
+                    includeTableLoader: false,
                     columnOpts: {
                         opts: {
                             initialColumnsVisible: null,
@@ -216,20 +217,29 @@ define(['require',
                 this.listenTo(this.searchCollection, "state-changed", function(state) {
                     if (Utils.getUrlState.isSearchTab()) {
                         this.updateColumnList(state);
-                        var columnList = JSON.parse(Utils.localStorage.getValue('columnList'));
-                        if (!columnList && this.value.type) {
-                            columnList = {};
-                            columnList[this.value.type] = this.value.attributes;
-                        } else {
-                            columnList[this.value.type] = this.value.attributes;
+                        var excludeDefaultColumn = [];
+                        if (this.value && this.value.type) {
+                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms");
+                            if (this.searchTableColumns[this.value.type] === null) {
+                                this.ui.columnEmptyInfo.show();
+                            } else {
+                                this.ui.columnEmptyInfo.hide();
+                            }
                         }
-                        Utils.localStorage.setValue('columnList', JSON.stringify(columnList));
+
                         Utils.setUrl({
                             url: '#!/search/searchResult',
                             urlParams: this.value,
                             mergeBrowserUrl: false,
-                            trigger: true
+                            trigger: false,
+                            updateTabState: function() {
+                                return { searchUrl: this.url, stateChanged: true };
+                            }
                         });
+                        if (excludeDefaultColumn.length > this.searchCollection.filterObj.attributes.length) {
+                            this.fetchCollection(this.value);
+                        }
+
                     }
                 }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
@@ -242,6 +252,9 @@ define(['require',
                         that = this;
                     if (this.value) {
                         value = this.value;
+                        if (value && value.includeDE) {
+                            this.ui.checkDeletedEntity.prop('checked', true);
+                        }
                     } else {
                         value = {
                             'query': null,
@@ -249,6 +262,11 @@ define(['require',
                         };
                     }
                     this.updateColumnList();
+                    if (this.value && this.searchTableColumns && this.searchTableColumns[this.value.type] === null) {
+                        this.ui.columnEmptyInfo.show();
+                    } else {
+                        this.ui.columnEmptyInfo.hide();
+                    }
                     this.fetchCollection(value);
                     $('body').click(function(e) {
                         var iconEvnt = e.target.nodeName;
@@ -267,7 +285,7 @@ define(['require',
             },
             updateColumnList: function(updatedList) {
                 if (updatedList) {
-                    var listOfColumns = []
+                    var listOfColumns = [];
                     _.map(updatedList, function(obj) {
                         var key = obj.name;
                         if (obj.renderable) {
@@ -276,8 +294,12 @@ define(['require',
                     });
                     listOfColumns = _.sortBy(listOfColumns);
                     this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
+                    if (this.value && this.searchTableColumns) {
+                        this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
+                    }
+                } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
+                    this.searchTableColumns[this.value.type] = this.value.attributes.split(",");
                 }
-                this.columnToShow = this.value && this.value.attributes ? this.value.attributes.split(',') : [];
             },
             generateQueryOfFilter: function() {
                 var value = this.value,
@@ -287,26 +309,26 @@ define(['require',
                     objToString = function(filterObj) {
                         var tempObj = [];
                         _.each(filterObj, function(obj) {
-                            tempObj.push('<span class="key">' + obj.id + '</span>&nbsp<span class="operator">' + obj.operator + '</span>&nbsp<span class="value">' + obj.value + "</span>")
+                            tempObj.push('<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>")
                         });
                         return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
                     }
                 if (value.type) {
-                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + value.type + '</span>';
+                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
                     if (entityFilters) {
                         typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(entityFilters);
                     }
                     queryArray.push(typeKeyValue)
                 }
                 if (value.tag) {
-                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + value.tag + '</span>';
+                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
                     if (tagFilters) {
                         tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(tagFilters);
                     }
                     queryArray.push(tagKeyValue);
                 }
                 if (value.query) {
-                    queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + value.query + '</span>&nbsp');
+                    queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + _.escape(value.query) + '</span>&nbsp');
                 }
                 if (queryArray.length == 1) {
                     return queryArray.join();
@@ -319,32 +341,37 @@ define(['require',
                 var that = this,
                     isPostMethod = this.value.searchType === "basic" && Utils.getUrlState.isSearchTab(),
                     tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters),
-                    entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters),
-                    filterObj = {
-                        'entityFilters': entityFilters,
-                        'tagFilters': tagFilters,
-                        'attributes': this.columnToShow.length ? _.without(this.columnToShow, "selected", "name", "description", "typeName", "owner", "tag", "terms") : null
-                    }
+                    entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters);
+                if (isPostMethod) {
+                    var excludeDefaultColumn = this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms") : null,
+                        filterObj = {
+                            'entityFilters': entityFilters,
+                            'tagFilters': tagFilters,
+                            'attributes': excludeDefaultColumn ? excludeDefaultColumn : null
+                        };
+                }
+
                 this.showLoader();
                 if (Globals.searchApiCallRef && Globals.searchApiCallRef.readyState === 1) {
                     Globals.searchApiCallRef.abort();
                 }
                 var apiObj = {
                     skipDefaultError: true,
+                    sort: false,
                     success: function(model, response) {
                         Globals.searchApiCallRef = undefined;
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if (isPostMethod) {
-                            that.searchCollection.referredEntities = model.referredEntities;
-                            that.searchCollection.reset(model.entities);
-                        }
-                        if (that.searchCollection.models.length === 0 && that.offset > that.limit) {
+                        if (!model.entities && that.offset > that.limit) {
                             that.ui.nextData.attr('disabled', true);
                             that.offset = that.offset - that.limit;
                             that.hideLoader();
                             return;
+                        }
+                        if (isPostMethod) {
+                            that.searchCollection.referredEntities = model.referredEntities;
+                            that.searchCollection.reset(model.entities);
                         }
                         if (that.searchCollection.models.length < that.limit) {
                             that.ui.nextData.attr('disabled', true);
@@ -367,38 +394,28 @@ define(['require',
                             that.ui.previousData.attr('disabled', true);
                         }
                         that.renderTableLayoutView();
-
-                        var resultArr = [];
-                        if (that.searchCollection.queryParams.typeName) {
-                            resultArr.push(that.searchCollection.queryParams.typeName)
-                        }
-                        if (that.searchCollection.queryParams.classification) {
-                            resultArr.push(that.searchCollection.queryParams.classification)
-                        }
-                        if (that.searchCollection.queryParams.query) {
-                            resultArr.push(that.searchCollection.queryParams.query)
-                        }
                         var searchString = 'Results for: <span class="filterQuery">' + that.generateQueryOfFilter() + "</span>";
                         if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                             searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                         }
                         that.$('.searchResult').html(searchString);
-
                     },
                     silent: true,
                     reset: true
                 }
                 if (value) {
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
+                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: (value.includeDE ? false : true) });
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
                     if (isPostMethod) {
+                        this.searchCollection.filterObj = _.extend({}, filterObj);
                         apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
+                        this.searchCollection.filterObj = null;
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 } else {
@@ -421,9 +438,9 @@ define(['require',
                 });
             },
             renderTableLayoutView: function(col) {
-                var that = this,
-                    count = 5;
+                var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
+                    // displayOrder added for column manager
                     var columnCollection = Backgrid.Columns.extend({
                         sortKey: "displayOrder",
                         comparator: function(item) {
@@ -438,7 +455,6 @@ define(['require',
                     });
                     var columns = new columnCollection(that.getFixedDslColumn());
                     columns.setPositions().sort();
-                    //var columns = new Backgrid.Columns(that.getFixedDslColumn());
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     })));
@@ -470,14 +486,18 @@ define(['require',
             getFixedDslColumn: function() {
                 var that = this,
                     nameCheck = 0,
+                    columnToShow = null,
                     col = {};
+                if (this.value && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
+                    columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
+                }
                 col['Check'] = {
                     name: "selected",
                     label: "Select",
                     cell: "select-row",
                     resizeable: false,
                     orderable: false,
-                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'selected') : true),
+                    renderable: (columnToShow ? _.contains(columnToShow, 'selected') : true),
                     headerCell: "select-all"
                 };
 
@@ -518,6 +538,23 @@ define(['require',
                         }
                     })
                 };
+                col['owner'] = {
+                    label: "Owner",
+                    cell: "String",
+                    editable: false,
+                    sortable: false,
+                    resizeable: true,
+                    orderable: true,
+                    renderable: true,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function(rawValue, model) {
+                            var obj = model.toJSON();
+                            if (obj && obj.attributes && obj.attributes.owner) {
+                                return obj.attributes.owner;
+                            }
+                        }
+                    })
+                };
 
                 col['description'] = {
                     label: "Description",
@@ -543,7 +580,7 @@ define(['require',
                     sortable: false,
                     resizeable: true,
                     orderable: true,
-                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'typeName') : true),
+                    renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -553,23 +590,7 @@ define(['require',
                         }
                     })
                 };
-                col['owner'] = {
-                    label: "Owner",
-                    cell: "String",
-                    editable: false,
-                    sortable: false,
-                    resizeable: true,
-                    orderable: true,
-                    renderable: true,
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            var obj = model.toJSON();
-                            if (obj && obj.attributes && obj.attributes.owner) {
-                                return obj.attributes.owner;
-                            }
-                        }
-                    })
-                };
+
                 col['tag'] = {
                     label: "Tags",
                     cell: "Html",
@@ -577,7 +598,7 @@ define(['require',
                     sortable: false,
                     resizeable: true,
                     orderable: true,
-                    renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'tag') : true),
+                    renderable: (columnToShow ? _.contains(columnToShow, 'tag') : true),
                     className: 'searchTag',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -599,7 +620,7 @@ define(['require',
                         sortable: false,
                         resizeable: true,
                         orderable: true,
-                        renderable: (that.columnToShow && that.columnToShow.length ? _.contains(that.columnToShow, 'terms') : true),
+                        renderable: (columnToShow ? _.contains(columnToShow, 'terms') : true),
                         className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -616,48 +637,48 @@ define(['require',
                             }
                         })
                     };
-                }
-                if (this.value && this.value.searchType === "basic") {
-                    var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                    if (def) {
-                        var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
-                        _.each(attrObj, function(obj, key) {
-                            var key = obj.name,
-                                isRenderable = _.contains(that.columnToShow, key)
-                            if (key == "name" || key == "description" || key == "owner") {
-                                if (that.columnToShow && that.columnToShow.length) {
-                                    col[key].renderable = isRenderable;
-                                }
-                                return;
-                            }
-                            col[obj.name] = {
-                                label: obj.name.capitalize(),
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                resizeable: true,
-                                orderable: true,
-                                renderable: isRenderable,
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        var modelObj = model.toJSON();
-
-                                        if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
-                                            var tempObj = {
-                                                'scope': that,
-                                                'attributeDefs': [obj],
-                                                'valueObject': {},
-                                                'isTable': false
-                                            }
-
-                                            tempObj.valueObject[key] = modelObj.attributes[key]
-                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
-                                            return CommonViewFunction.propertyTable(tempObj);
-                                        }
+                    if (this.value && this.value.searchType === "basic") {
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
+                        if (def) {
+                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                            _.each(attrObj, function(obj, key) {
+                                var key = obj.name,
+                                    isRenderable = _.contains(columnToShow, key)
+                                if (key == "name" || key == "description" || key == "owner") {
+                                    if (columnToShow) {
+                                        col[key].renderable = isRenderable;
                                     }
-                                })
-                            };
-                        });
+                                    return;
+                                }
+                                col[obj.name] = {
+                                    label: obj.name.capitalize(),
+                                    cell: "Html",
+                                    editable: false,
+                                    sortable: false,
+                                    resizeable: true,
+                                    orderable: true,
+                                    renderable: isRenderable,
+                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                        fromRaw: function(rawValue, model) {
+                                            var modelObj = model.toJSON();
+
+                                            if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
+                                                var tempObj = {
+                                                    'scope': that,
+                                                    'attributeDefs': [obj],
+                                                    'valueObject': {},
+                                                    'isTable': false
+                                                }
+
+                                                tempObj.valueObject[key] = modelObj.attributes[key]
+                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                                return CommonViewFunction.propertyTable(tempObj);
+                                            }
+                                        }
+                                    })
+                                };
+                            });
+                        }
                     }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
@@ -700,11 +721,11 @@ define(['require',
 
             },
             showLoader: function() {
-                this.$('.fontLoader').show();
+                this.$('.fontLoader:not(.for-ignore)').show();
                 this.$('.tableOverlay').show();
             },
             hideLoader: function() {
-                this.$('.fontLoader').hide();
+                this.$('.fontLoader:not(.for-ignore)').hide();
                 this.$('.ellipsis,.labelShowRecord').show(); // only for first time
                 this.$('.tableOverlay').hide();
             },
@@ -846,10 +867,24 @@ define(['require',
                 });
             },
             onCheckDeletedEntity: function(e) {
+                var includeDE = false;
                 if (e.target.checked) {
+                    includeDE = true;
                     $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: false });
                 } else {
                     $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
+                }
+                if (this.value) {
+                    this.value.includeDE = includeDE;
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: this.value,
+                        mergeBrowserUrl: false,
+                        trigger: false,
+                        updateTabState: function() {
+                            return { searchUrl: this.url, stateChanged: true };
+                        }
+                    });
                 }
                 this.fetchCollection();
             }

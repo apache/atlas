@@ -20,7 +20,7 @@
 /* panel.scss */
 
 .panel-default {
-    > .panel-heading {
+    >.panel-heading {
         color: $color_jungle_green_approx;
         background: $white;
         border-color: $color_jungle_green_approx;
@@ -35,7 +35,7 @@
         }
     }
     .nav-tabs {
-        > li {
+        >li {
             &.active {
                 >a {
                     color: $color_jungle_green_approx;
@@ -53,9 +53,9 @@
         //overflow: hidden;
         height: calc(100% - 46px)!important;
     }
-    .ui-resizable-handle{
-     display: none !important;
-}
+    .ui-resizable-handle {
+        display: none !important;
+    }
 }
 
 .nav-tabs {
@@ -68,8 +68,9 @@
 
 .with-nav-tabs {
     .tab-content {
-        > .tab-pane.active {
+        >.tab-pane.active {
             padding: 20px 10px 0px 10px;
+            min-height: 50px;
         }
     }
 }

@@ -45,8 +45,25 @@ define(['require',
                 that = this;
             events["click " + this.ui.tabs] = function(e) {
                 var urlString = "",
-                    elementName = $(e.currentTarget).data();
-                var tabStateUrls = Globals.saveApplicationState.tabState;
+                    elementName = $(e.currentTarget).data(),
+                    tabStateUrls = Globals.saveApplicationState.tabState,
+                    urlStateObj = Utils.getUrlState,
+                    hashUrl = Utils.getUrlState.getQueryUrl().hash;
+
+                if (urlStateObj.isTagTab()) {
+                    if (hashUrl != tabStateUrls.tagUrl) {
+                        Globals.saveApplicationState.tabState.tagUrl = hashUrl;
+                    }
+                } else if (urlStateObj.isSearchTab()) {
+                    if (hashUrl != tabStateUrls.searchUrl) {
+                        Globals.saveApplicationState.tabState.searchUrl = hashUrl;
+                    }
+                } else if (urlStateObj.isTaxonomyTab()) {
+                    if (hashUrl != tabStateUrls.taxonomyUrl) {
+                        Globals.saveApplicationState.tabState.isTaxonomyTab = hashUrl;
+                    }
+                }
+
                 if (elementName.name == "tab-tag") {
                     urlString = tabStateUrls.tagUrl; //'#!/tag';
                 } else if (elementName.name == "tab-taxonomy") {
@@ -66,7 +83,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection'));
+            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'searchTableColumns'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -110,7 +127,8 @@ define(['require',
                     typeHeaders: that.typeHeaders,
                     entityDefCollection: that.entityDefCollection,
                     enumDefCollection: that.enumDefCollection,
-                    classificationDefCollection: that.classificationDefCollection
+                    classificationDefCollection: that.classificationDefCollection,
+                    searchTableColumns: that.searchTableColumns
                 }));
             });
         },

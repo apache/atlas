@@ -81,7 +81,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns'));
                 this.type = "basic";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -94,7 +94,8 @@ define(['require',
                         type: null,
                         typeFilter: null,
                         tagFilter: null,
-                        tag: null
+                        tag: null,
+                        attributes: null
                     }
                 };
                 if (!this.value) {
@@ -244,7 +245,8 @@ define(['require',
                         type: null,
                         tag: null,
                         entityFilters: null,
-                        tagFilters: null
+                        tagFilters: null,
+                        attributes: null
                     }), param);
             },
             fetchCollection: function(value) {
@@ -389,9 +391,9 @@ define(['require',
                 if (this.dsl) {
                     params['attributes'] = null;
                 } else {
-                    var columnList = JSON.parse(Utils.localStorage.getValue('columnList'));
+                    var columnList = this.value && this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
                     if (columnList) {
-                        params['attributes'] = columnList[this.query[this.type].type];
+                        params['attributes'] = columnList.join(',');
                     } else {
                         params['attributes'] = null;
                     }
@@ -408,7 +410,7 @@ define(['require',
                 });
             },
             dslFulltextToggle: function(e) {
-                var paramQuery = "";
+                var paramObj = Utils.getUrlState.getQueryParams();
                 if (e.currentTarget.checked) {
                     this.type = "dsl";
                     this.dsl = true;
@@ -422,8 +424,11 @@ define(['require',
                     this.dsl = false;
                     this.type = "basic";
                 }
-                if (Utils.getUrlState.getQueryParams() && this.type == Utils.getUrlState.getQueryParams().searchType) {
-                    this.updateQueryObject(Utils.getUrlState.getQueryParams());
+                if (paramObj && this.type == paramObj.searchType) {
+                    this.updateQueryObject(paramObj);
+                }
+                if (this.type == "basic") {
+                    this.query[this.type].attribute = paramObj.attributes ? paramObj.attributes : null;
                 }
                 Utils.setUrl({
                     url: '#!/search/searchResult',
