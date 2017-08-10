@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -95,7 +95,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
     private Configuration applicationProperties;
-    private List<HookConsumer> consumers;
+
+    @VisibleForTesting
+    List<HookConsumer> consumers;
 
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore,
@@ -210,6 +212,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    @VisibleForTesting
     class HookConsumer extends ShutdownableThread {
         private final NotificationConsumer<HookNotificationMessage> consumer;
         private final AtomicBoolean shouldRun = new AtomicBoolean(false);
@@ -417,6 +420,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         public void shutdown() {
             LOG.info("==> HookConsumer shutdown()");
 
+            // handle the case where thread was not started at all
+            // and shutdown called
+            if(shouldRun.get() == false) {
+                return;
+            }
+
             super.initiateShutdown();
             shouldRun.set(false);
             if (consumer != null) {
@@ -426,7 +435,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             LOG.info("<== HookConsumer shutdown()");
         }
-
     }
 
     private void audit(String messageUser, String method, String path) {
