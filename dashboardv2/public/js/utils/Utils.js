@@ -335,7 +335,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
                 trem = true;
             } else if (value.values && value.values['taxonomy.namespace']) {
                 trem = true;
-            } else if (name.length > 1) {
+            } else if (Globals.taxonomy && name.length > 1) {
                 trem = true; // Temp fix
             }
 
