@@ -141,19 +141,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
                 super.filter(entityVertices);
 
-                for (AtlasVertex entityVertex : entityVertices) {
-                    resultIdx++;
-
-                    if (resultIdx <= startIdx) {
-                        continue;
-                    }
-
-                    ret.add(entityVertex);
-
-                    if (ret.size() == limit) {
-                        break;
-                    }
-                }
+                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
             }
         } finally {
             AtlasPerfTracer.log(perf);

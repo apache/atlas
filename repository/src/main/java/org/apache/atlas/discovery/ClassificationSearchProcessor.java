@@ -87,6 +87,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
             this.indexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
+
+            constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
         } else {
             indexQuery = null;
         }
@@ -184,6 +186,9 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     getVertices(queryResult, classificationVertices);
                 }
 
+                // Do in-memory filtering before the graph query
+                CollectionUtils.filter(classificationVertices, inMemoryPredicate);
+
                 for (AtlasVertex classificationVertex : classificationVertices) {
                     Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
 
@@ -208,19 +213,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
                 super.filter(entityVertices);
 
-                for (AtlasVertex entityVertex : entityVertices) {
-                    resultIdx++;
-
-                    if (resultIdx <= startIdx) {
-                        continue;
-                    }
-
-                    ret.add(entityVertex);
-
-                    if (ret.size() == limit) {
-                        break;
-                    }
-                }
+                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
             }
         } finally {
             AtlasPerfTracer.log(perf);

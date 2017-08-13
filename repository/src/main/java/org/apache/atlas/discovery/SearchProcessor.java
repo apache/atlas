@@ -23,21 +23,37 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.SearchPredicateUtil.VertexAttributePredicateGenerator;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+
+import static org.apache.atlas.util.SearchPredicateUtil.*;
 
 public abstract class SearchProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(SearchProcessor.class);
@@ -54,25 +70,48 @@ public abstract class SearchProcessor {
     public static final String  BRACE_OPEN_STR  = "(";
     public static final String  BRACE_CLOSE_STR = ")";
 
-    private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
+    private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
+    private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
     static
     {
         OPERATOR_MAP.put(SearchParameters.Operator.LT,"v.\"%s\": [* TO %s}");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LT, getLTPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.GT,"v.\"%s\": {%s TO *]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GT, getGTPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.LTE,"v.\"%s\": [* TO %s]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LTE, getLTEPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.GTE,"v.\"%s\": [%s TO *]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GTE, getGTEPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.EQ,"v.\"%s\": %s");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.EQ, getEQPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.NEQ,"-" + "v.\"%s\": %s");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NEQ, getNEQPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.IN, "v.\"%s\": (%s)"); // this should be a list of quoted strings
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IN, getINPredicateGenerator()); // this should be a list of quoted strings
+
         OPERATOR_MAP.put(SearchParameters.Operator.LIKE, "v.\"%s\": (%s)"); // this should be regex pattern
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LIKE, getLIKEPredicateGenerator()); // this should be regex pattern
+
         OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, "v.\"%s\": (%s*)");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.STARTS_WITH, getStartsWithPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, "v.\"%s\": (*%s)");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.ENDS_WITH, getEndsWithPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, "v.\"%s\": (*%s*)");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
     }
 
     protected final SearchContext   context;
     protected       SearchProcessor nextProcessor;
+    protected       Predicate       inMemoryPredicate;
 
 
     protected SearchProcessor(SearchContext context) {
@@ -88,6 +127,24 @@ public abstract class SearchProcessor {
     }
 
     public abstract List<AtlasVertex> execute();
+
+    protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
+        for (AtlasVertex entityVertex : entityVertices) {
+            resultIdx++;
+
+            if (resultIdx <= startIdx) {
+                continue;
+            }
+
+            ret.add(entityVertex);
+
+            if (ret.size() == limit) {
+                break;
+            }
+        }
+
+        return resultIdx;
+    }
 
     public void filter(List<AtlasVertex> entityVertices) {
         if (nextProcessor != null && CollectionUtils.isNotEmpty(entityVertices)) {
@@ -194,7 +251,9 @@ public abstract class SearchProcessor {
 
     protected void constructFilterQuery(StringBuilder indexQuery, AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
         if (filterCriteria != null) {
-            LOG.debug("Processing Filters");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Processing Filters");
+            }
 
             String filterQuery = toIndexQuery(type, filterCriteria, indexAttributes, 0);
 
@@ -205,6 +264,16 @@ public abstract class SearchProcessor {
 
                 indexQuery.append(filterQuery);
             }
+        }
+    }
+
+    protected void constructInMemoryPredicate(AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
+        if (filterCriteria != null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Processing Filters");
+            }
+
+            inMemoryPredicate = toInMemoryPredicate(type, filterCriteria, indexAttributes);
         }
     }
 
@@ -291,6 +360,32 @@ public abstract class SearchProcessor {
         }
     }
 
+    private Predicate toInMemoryPredicate(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes) {
+        if (criteria.getCondition() != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
+            List<Predicate> predicates = new ArrayList<>();
+
+            for (FilterCriteria filterCriteria : criteria.getCriterion()) {
+                Predicate predicate = toInMemoryPredicate(type, filterCriteria, indexAttributes);
+
+                if (predicate != null) {
+                    predicates.add(predicate);
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(predicates)) {
+                if (criteria.getCondition() == Condition.AND) {
+                    return PredicateUtils.allPredicate(predicates);
+                } else {
+                    return PredicateUtils.anyPredicate(predicates);
+                }
+            }
+        } else if (indexAttributes.contains(criteria.getAttributeName())){
+            return toInMemoryPredicate(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
+        }
+
+        return null;
+    }
+
     private String toIndexExpression(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
         String ret = EMPTY_STRING;
 
@@ -302,6 +397,71 @@ public abstract class SearchProcessor {
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
+        }
+
+        return ret;
+    }
+
+    private Predicate toInMemoryPredicate(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
+        Predicate ret = null;
+
+        AtlasAttribute                    attribute = type.getAttribute(attrName);
+        VertexAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
+
+        if (attribute != null && predicate != null) {
+            final String attributeType = attribute.getAttributeType().getTypeName().toLowerCase();
+            final Class  attrClass;
+            final Object attrValue;
+
+            switch (attributeType) {
+                case "string":
+                    attrClass = String.class;
+                    attrValue = attrVal;
+                    break;
+                case "short":
+                    attrClass = Short.class;
+                    attrValue = Short.parseShort(attrVal);
+                    break;
+                case "int":
+                    attrClass = Integer.class;
+                    attrValue = Integer.parseInt(attrVal);
+                    break;
+                case "biginteger":
+                    attrClass = BigInteger.class;
+                    attrValue = new BigInteger(attrVal);
+                    break;
+                case "boolean":
+                    attrClass = Boolean.class;
+                    attrValue = Boolean.parseBoolean(attrVal);
+                    break;
+                case "byte":
+                    attrClass = Byte.class;
+                    attrValue = Byte.parseByte(attrVal);
+                    break;
+                case "long":
+                case "date":
+                    attrClass = Long.class;
+                    attrValue = Long.parseLong(attrVal);
+                    break;
+                case "float":
+                    attrClass = Float.class;
+                    attrValue = Float.parseFloat(attrVal);
+                    break;
+                case "double":
+                    attrClass = Double.class;
+                    attrValue = Double.parseDouble(attrVal);
+                    break;
+                case "bigdecimal":
+                    attrClass = BigDecimal.class;
+                    attrValue = new BigDecimal(attrVal);
+                    break;
+                default:
+                    attrClass = Object.class;
+                    attrValue = attrVal;
+                    break;
+            }
+
+            ret = predicate.generatePredicate(attribute.getQualifiedName(), attrValue, attrClass);
         }
 
         return ret;
@@ -493,4 +653,5 @@ public abstract class SearchProcessor {
 
         return defaultValue;
     }
+
 }
