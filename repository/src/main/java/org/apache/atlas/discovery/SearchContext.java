@@ -18,6 +18,8 @@
 package org.apache.atlas.discovery;
 
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -30,7 +32,11 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.HashSet;
 import java.util.Set;
 
-
+/*
+ * Search context captures elements required for performing a basic search
+ * For every search request the search context will determine the execution sequence of the search processor(s) and the
+ * possible chaining of processor(s)
+ */
 public class SearchContext {
     private final SearchParameters        searchParameters;
     private final AtlasTypeRegistry       typeRegistry;
@@ -42,16 +48,26 @@ public class SearchContext {
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
 
-    public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) {
+    public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
         this.searchParameters   = searchParameters;
         this.typeRegistry       = typeRegistry;
         this.graph              = graph;
         this.indexedKeys        = indexedKeys;
-        this.entityAttributes   = new HashSet<>();
-        this.entityType         = typeRegistry.getEntityTypeByName(searchParameters.getTypeName());
-        this.classificationType = typeRegistry.getClassificationTypeByName(searchParameters.getClassification());
+        entityAttributes        = new HashSet<>();
+        entityType              = typeRegistry.getEntityTypeByName(searchParameters.getTypeName());
+        classificationType      = typeRegistry.getClassificationTypeByName(searchParameters.getClassification());
 
-        if (needFullTextrocessor()) {
+        // Validate if the type name exists
+        if (StringUtils.isNotEmpty(searchParameters.getTypeName()) && entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, searchParameters.getTypeName());
+        }
+
+        // Validate if the classification exists
+        if (StringUtils.isNotEmpty(searchParameters.getClassification()) && classificationType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, searchParameters.getClassification());
+        }
+
+        if (needFullTextProcessor()) {
             addProcessor(new FullTextSearchProcessor(this));
         }
 
@@ -80,7 +96,7 @@ public class SearchContext {
 
     public SearchProcessor getSearchProcessor() { return searchProcessor; }
 
-    public boolean terminateSearch() { return this.terminateSearch; }
+    public boolean terminateSearch() { return terminateSearch; }
 
     public void terminateSearch(boolean terminateSearch) { this.terminateSearch = terminateSearch; }
 
@@ -103,7 +119,7 @@ public class SearchContext {
         return toString(new StringBuilder()).toString();
     }
 
-    boolean needFullTextrocessor() {
+    boolean needFullTextProcessor() {
         return StringUtils.isNotEmpty(searchParameters.getQuery());
     }
 
@@ -121,10 +137,10 @@ public class SearchContext {
     }
 
     private void addProcessor(SearchProcessor processor) {
-        if (this.searchProcessor == null) {
-            this.searchProcessor = processor;
+        if (searchProcessor == null) {
+            searchProcessor = processor;
         } else {
-            this.searchProcessor.addProcessor(processor);
+            searchProcessor.addProcessor(processor);
         }
     }
 }
