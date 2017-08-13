@@ -71,6 +71,8 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         if (attrSearchByIndex) {
             constructFilterQuery(indexQuery, entityType, filterCriteria, indexAttributes);
+
+            constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
         } else {
             graphAttributes.addAll(indexAttributes);
         }
@@ -165,11 +167,10 @@ public class EntitySearchProcessor extends SearchProcessor {
                         break;
                     }
 
-                    while (idxQueryResult.hasNext()) {
-                        AtlasVertex vertex = idxQueryResult.next().getVertex();
+                    getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
 
-                        entityVertices.add(vertex);
-                    }
+                    // Do in-memory filtering before the graph query
+                    CollectionUtils.filter(entityVertices, inMemoryPredicate);
 
                     if (graphQuery != null) {
                         AtlasGraphQuery guidQuery = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, getGuids(entityVertices));
@@ -191,19 +192,7 @@ public class EntitySearchProcessor extends SearchProcessor {
 
                 super.filter(entityVertices);
 
-                for (AtlasVertex entityVertex : entityVertices) {
-                    resultIdx++;
-
-                    if (resultIdx <= startIdx) {
-                        continue;
-                    }
-
-                    ret.add(entityVertex);
-
-                    if (ret.size() == limit) {
-                        break;
-                    }
-                }
+                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
             }
         } finally {
             AtlasPerfTracer.log(perf);
