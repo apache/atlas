@@ -36,7 +36,7 @@ public enum AtlasErrorCode {
     CONSTRAINT_MISSING_PARAMS(400, "ATLAS-400-00-007", "{0}.{1} : invalid constraint. missing parameter {2} in {3}. params={4}"),
     CONSTRAINT_NOT_EXIST(400, "ATLAS-400-00-008", "{0}.{1} : invalid constraint. {2} {3}.{4} does not exist"),
     CONSTRAINT_NOT_MATCHED(400, "ATLAS-400-00-009", "{0}.{1} : invalid constraint. Data type of {2} {3}.{4} should be {5}, but found {6}"),
-    UNKNOWN_TYPENAME(400, "ATLAS-400-00-00A", "{0}: Unknown typename"),
+    UNKNOWN_TYPENAME(400, "ATLAS-400-00-00A", "{0}: Unknown/invalid typename"),
     CONSTRAINT_NOT_SUPPORTED_ON_MAP_TYPE(400, "ATLAS-400-00-00B", "{0}.{1} : constraints not supported on map type {2}"),
     CANNOT_ADD_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-00C", "{0}.{1} : can not add mandatory attribute"),
     ATTRIBUTE_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-00D", "{0}.{1} : attribute delete not supported"),
@@ -71,10 +71,12 @@ public enum AtlasErrorCode {
     BAD_REQUEST(400, "ATLAS-400-00-029", "{0}"),
     PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
     MISSING_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value"),
-    INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
-    INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
+	INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
+	INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
 
     // All Not found enums go here
+    UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification"),
+    INVALID_SEARCH_PARAMS(400, "ATLAS-400-00-047", "No search parameter was found. One of the following MUST be specified in the request; typeName, classification or queryText"),
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
     EMPTY_RESULTS(404, "ATLAS-404-00-004", "No result found for {0}"),

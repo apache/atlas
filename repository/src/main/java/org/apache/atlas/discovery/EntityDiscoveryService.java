@@ -438,18 +438,21 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 resultAttributes.addAll(context.getEntityAttributes());
             }
 
-            for (String resultAttribute : resultAttributes) {
-                AtlasAttribute attribute = context.getEntityType().getAttribute(resultAttribute);
+            AtlasEntityType entityType = context.getEntityType();
+            if (entityType != null) {
+                for (String resultAttribute : resultAttributes) {
+                    AtlasAttribute  attribute  = entityType.getAttribute(resultAttribute);
 
-                if (attribute != null) {
-                    AtlasType attributeType = attribute.getAttributeType();
+                    if (attribute != null) {
+                        AtlasType attributeType = attribute.getAttributeType();
 
-                    if (attributeType instanceof AtlasArrayType) {
-                        attributeType = ((AtlasArrayType) attributeType).getElementType();
-                    }
+                        if (attributeType instanceof AtlasArrayType) {
+                            attributeType = ((AtlasArrayType) attributeType).getElementType();
+                        }
 
-                    if (attributeType instanceof AtlasEntityType || attributeType instanceof AtlasObjectIdType) {
-                        entityAttributes.add(resultAttribute);
+                        if (attributeType instanceof AtlasEntityType || attributeType instanceof AtlasObjectIdType) {
+                            entityAttributes.add(resultAttribute);
+                        }
                     }
                 }
             }

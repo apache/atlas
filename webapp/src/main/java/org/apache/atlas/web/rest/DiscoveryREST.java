@@ -214,7 +214,7 @@ public class DiscoveryREST {
 
             if (StringUtils.isEmpty(attrName) && StringUtils.isEmpty(attrValuePrefix)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
-                        String.format("attrName : {0}, attrValue: {1} for attribute search.", attrName, attrValuePrefix));
+                        String.format("attrName : %s, attrValue: %s for attribute search.", attrName, attrValuePrefix));
             }
 
             return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, true, limit, offset);
@@ -255,6 +255,10 @@ public class DiscoveryREST {
 
             if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) && StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 
             return atlasDiscoveryService.searchWithParameters(parameters);
