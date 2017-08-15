@@ -40,18 +40,18 @@ import java.util.Set;
 /**
  * Abstract implementation of AtlasGraphQuery that is used by both Titan 0.5.4
  * and Titan 1.0.0.
- *
+ * <p>
  * Represents a graph query as an OrConditions which consists of
  * 1 or more AndConditions.  The query is executed by converting
  * the AndConditions to native GraphQuery instances that can be executed
  * directly against Titan.  The overall result is obtained by unioning together
  * the results from those individual GraphQueries.
- *
+ * <p>
  * Here is a pictoral view of what is going on here.  Conceptually,
  * the query being executed can be though of as the where clause
  * in a query
  *
- *
+ * <pre>
  * where (a =1 and b=2) or (a=2 and b=3)
  *
  *                ||
@@ -85,7 +85,7 @@ import java.util.Set;
  *                 \/
  *
  *               result
- *
+ * </pre>
  *
  *
  */
