@@ -151,7 +151,7 @@ public class ImportServiceTest {
     @Test(dataProvider = "ctas")
     public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1030-hive_model.json", typeDefStore, typeRegistry);
 
         runImportWithNoParameters(getImportService(), zipSource);
     }
