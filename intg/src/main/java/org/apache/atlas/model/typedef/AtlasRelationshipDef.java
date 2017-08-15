@@ -35,29 +35,34 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 
 /**
  * AtlasRelationshipDef is a TypeDef that defines a relationship.
- *
+ * <p>
  * As with other typeDefs the AtlasRelationshipDef has a name. Once created the RelationshipDef has a guid.
  * The name and the guid are the 2 ways that the RelationshipDef is identified.
- *
+ * <p>
  * RelationshipDefs have 2 ends, each of which specify cardinality, an EntityDef type name and name and optionally
  * whether the end is a container.
- * RelationshipDefs can have AttributeDefs - though only primitive types are allowed.
- * RelationshipDefs have a relationshipCategory specifying the UML type of relationship required
+ * <p>
+ * RelationshipDefs can have AttributeDefs - though only primitive types are allowed. <br>
+ * RelationshipDefs have a relationshipCategory specifying the UML type of relationship required <br>
  * RelationshipDefs also have a PropogateTag - indicating which way tags could flow over the relationships.
- *
+ * <p>
  * The way EntityDefs and RelationshipDefs are intended to be used is that EntityDefs will define AttributeDefs these AttributeDefs
  * will not specify an EntityDef type name as their types.
- *
+ * <p>
  * RelationshipDefs introduce new atributes to the entity instances. For example
- * EntityDef A might have attributes attr1,attr2,attr3
- * EntityDef B might have attributes attr4,attr5,attr6
- * RelationshipDef AtoB might define 2 ends
- *  end1:  type A, name attr7
- *  end1:  type B, name attr8
+ * <p>
+ * EntityDef A might have attributes attr1,attr2,attr3 <br>
+ * EntityDef B might have attributes attr4,attr5,attr6 <br>
+ * RelationshipDef AtoB might define 2 ends <br>
  *
- * When an instance of EntityDef A is created, it will have attributes attr1,attr2,attr3,attr7
+ * <pre>
+ *   end1:  type A, name attr7
+ *   end2:  type B, name attr8  </pre>
+ *
+ * <p>
+ * When an instance of EntityDef A is created, it will have attributes attr1,attr2,attr3,attr7 <br>
  * When an instance of EntityDef B is created, it will have attributes attr4,attr5,attr6,attr8
- *
+ * <p>
  * In this way relationshipDefs can be authored separately from entityDefs and can inject relationship attributes into
  * the entity instances
  *
@@ -74,8 +79,10 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     /**
      * The Relationship category determines the style of relationship around containment and lifecycle.
      * UML terminology is used for the values.
-     * ASSOCIATION is a relationship with no containment.
+     * <p>
+     * ASSOCIATION is a relationship with no containment. <br>
      * COMPOSITION and AGGREGATION are containment relationships.
+     * <p>
      * The difference being in the lifecycles of the container and its children. In the COMPOSITION case,
      * the children cannot exist without the container. For AGGREGATION, the life cycles
      * of the container and children are totally independant.
@@ -86,17 +93,19 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     /**
      * PropagateTags indicates whether tags should propagate across the relationship instance.
+     * <p>
      * Tags can propagate:
-     * NONE - not at all
-     * ONE_TO_TWO - from end 1 to 2
-     * TWO_TO_ONE - from end 2 to 1
+     * <p>
+     * NONE - not at all <br>
+     * ONE_TO_TWO - from end 1 to 2 <br>
+     * TWO_TO_ONE - from end 2 to 1  <br>
      * BOTH - both ways
-     *
+     * <p>
      * Care needs to be taken when specifying. The use cases we are aware of where this flag is useful:
-     *
-     * - propagating confidentiality classifications from a table to columns - ONE_TO_TWO could be used here
+     * <p>
+     * - propagating confidentiality classifications from a table to columns - ONE_TO_TWO could be used here <br>
      * - propagating classifications around Glossary synonyms - BOTH could be used here.
-     *
+     * <p>
      * There is an expectation that further enhancements will allow more granular control of tag propagation and will
      * address how to resolve conflicts.
      */

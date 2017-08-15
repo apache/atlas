@@ -27,11 +27,13 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Interface to the Atlas notification framework.  Use this interface to create consumers and to send messages of a
- * given notification type.
- *
- * 1. Atlas sends entity notifications
- * 2. Hooks send notifications to create/update types/entities. Atlas reads these messages
+ * Interface to the Atlas notification framework.
+ * <p>
+ * Use this interface to create consumers and to send messages of a given notification type.
+ * <ol>
+ *   <li>Atlas sends entity notifications
+ *   <li>Hooks send notifications to create/update types/entities. Atlas reads these messages
+ * </ol>
  */
 public interface NotificationInterface {
 

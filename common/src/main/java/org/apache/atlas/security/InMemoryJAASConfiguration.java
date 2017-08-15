@@ -44,13 +44,14 @@ import java.util.TreeSet;
 
 /**
  * InMemoryJAASConfiguration
- *
+ * <p>
  * An utility class - which has a static method init to load all JAAS configuration from Application
  * properties file (eg: atlas.properties) and set it as part of the default lookup configuration for
  * all JAAS configuration lookup.
- *
+ * <p>
  * Example settings in jaas-application.properties:
  *
+ * <pre class=code>
  * atlas.jaas.KafkaClient.loginModuleName = com.sun.security.auth.module.Krb5LoginModule
  * atlas.jaas.KafkaClient.loginModuleControlFlag = required
  * atlas.jaas.KafkaClient.option.useKeyTab = true
@@ -72,9 +73,12 @@ import java.util.TreeSet;
  * atlas.jaas.MyClient.1.option.storeKey = true
  * atlas.jaas.MyClient.1.option.serviceName = kafka
  * atlas.jaas.MyClient.1.option.keyTab = /etc/security/keytabs/kafka_client.keytab
- * atlas.jaas.MyClient.1.option.principal = kafka-client-1@EXAMPLE.COM
-
+ * atlas.jaas.MyClient.1.option.principal = kafka-client-1@EXAMPLE.COM </pre>
+ *
+ * <p>
  * This will set the JAAS configuration - equivalent to the jaas.conf file entries:
+ *
+ * <pre class=code>
  *  KafkaClient {
  *      com.sun.security.auth.module.Krb5LoginModule required
  *          useKeyTab=true
@@ -97,23 +101,26 @@ import java.util.TreeSet;
  *          serviceName=kafka
  *          keyTab="/etc/security/keytabs/kafka_client.keytab"
  *          principal="kafka-client-1@EXAMPLE.COM";
- *  };
- *
- *  Here is the syntax for atlas.properties to add JAAS configuration:
- *
- *  The property name has to begin with   'atlas.jaas.' +  clientId (in case of Kafka client,
- *  it expects the clientId to be  KafkaClient).
- *  The following property must be there to specify the JAAS loginModule name
- *          'atlas.jaas.' +  clientId  + '.loginModuleName'
- *  The following optional property should be set to specify the loginModuleControlFlag
- *          'atlas.jaas.' + clientId + '.loginModuleControlFlag'
- *          Default value :  required ,  Possible values:  required, optional, sufficient, requisite
- *  Then you can add additional optional parameters as options for the configuration using the following
+ *  }; </pre>
+ * <p>
+ * Here is the syntax for atlas.properties to add JAAS configuration:
+ * <p>
+ * The property name has to begin with   'atlas.jaas.' +  clientId (in case of Kafka client,
+ * it expects the clientId to be  KafkaClient).
+ * <p>
+ * The following property must be there to specify the JAAS loginModule name
+ * <pre>         'atlas.jaas.' +  clientId  + '.loginModuleName' </pre>
+ * <p>
+ * The following optional property should be set to specify the loginModuleControlFlag
+ * <pre>         'atlas.jaas.' + clientId + '.loginModuleControlFlag'
+ *          Default value :  required ,  Possible values:  required, optional, sufficient, requisite </pre>
+ * <p>
+ * Then you can add additional optional parameters as options for the configuration using the following
  *  syntax:
- *          'atlas.jaas.' + clientId + '.option.' + <optionName>  = <optionValue>
- *
- *  The current setup will lookup JAAS configration from the atlas-application.properties first, if not available,
- *  it will delegate to the original configuration
+ * <pre>         'atlas.jaas.' + clientId + '.option.' + <optionName>  = <optionValue> </pre>
+ * <p>
+ * The current setup will lookup JAAS configration from the atlas-application.properties first,
+ * if not available, it will delegate to the original configuration
  *
  */
 

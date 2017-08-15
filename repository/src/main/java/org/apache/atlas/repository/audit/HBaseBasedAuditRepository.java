@@ -61,15 +61,17 @@ import java.util.Map;
 
 /**
  * HBase based repository for entity audit events
- * Table -> 1, ATLAS_ENTITY_EVENTS
- * Key -> entity id + timestamp
- * Column Family -> 1,dt
- * Columns -> action, user, detail
- * versions -> 1
- *
- * Note: The timestamp in the key is assumed to be timestamp in milli seconds. Since the key is entity id + timestamp,
- * and only 1 version is kept, there can be just 1 audit event per entity id + timestamp. This is ok for one atlas server.
- * But if there are more than one atlas servers, we should use server id in the key
+ * <p>
+ * Table -> 1, ATLAS_ENTITY_EVENTS <br>
+ * Key -> entity id + timestamp <br>
+ * Column Family -> 1,dt <br>
+ * Columns -> action, user, detail <br>
+ * versions -> 1 <br>
+ * <p>
+ * Note: The timestamp in the key is assumed to be timestamp in milli seconds. Since the key is
+ * entity id + timestamp, and only 1 version is kept, there can be just 1 audit event per entity
+ * id + timestamp. This is ok for one atlas server. But if there are more than one atlas servers,
+ * we should use server id in the key
  */
 @Singleton
 @Component

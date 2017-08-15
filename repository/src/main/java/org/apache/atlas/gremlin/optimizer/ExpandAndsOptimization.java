@@ -29,33 +29,30 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Optimizer that pulls has expressions out of an 'and' expression.
- *
+ * <p>
  * For example:
- *
- * g.V().and(has('x'),has('y')
- *
+ * <pre class=code>
+ *   g.V().and(has('x'),has('y') </pre>
+ * <p>
  * is optimized to:
- *
- * g.V().has('x').has('y')
- *
+ * <pre class=code>
+ *   g.V().has('x').has('y') </pre>
+ * <p>
  * There are certain cases where it is not safe to move an expression out
  * of the 'and'.  For example, in the expression
- *
- * g.V().and(has('x').out('y'),has('z'))
- *
+ * <pre class=code>
+ * g.V().and(has('x').out('y'),has('z')) </pre>
+ * <p>
  * has('x').out('y') cannot be moved out of the 'and', since it changes the value of the traverser.
- *
+ * <p>
  * At this time, the ExpandAndsOptimizer is not able to handle this scenario, so we don't extract
  * that expression.  In this case, the result is:
- *
- * g.V().has('z').and(has('x').out('y'))
- *
+ * <pre class=code>
+ * g.V().has('z').and(has('x').out('y')) </pre>
+ * <p>
  * The optimizer will call ExpandAndsOptimization recursively on the children, so
  * there is no need to recursively update the children here.
  *
- * @param expr
- * @param context
- * @return the expressions that should be unioned together to get the query result
  */
 public class ExpandAndsOptimization implements GremlinOptimization {
 
