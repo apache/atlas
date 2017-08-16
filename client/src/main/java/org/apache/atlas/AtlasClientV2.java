@@ -67,7 +67,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final APIInfo GET_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.GET, Response.Status.OK);
     private static final APIInfo CREATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.POST, Response.Status.OK);
     private static final APIInfo UPDATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.DELETE, Response.Status.OK);
+    private static final APIInfo DELETE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.DELETE, Response.Status.NO_CONTENT);
 
     // Entity APIs
     public static final String ENTITY_API = BASE_URI + "v2/entity/";
@@ -278,7 +278,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @param typesDef A composite object that captures all types to be deleted
      */
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasServiceException {
-        callAPI(DELETE_ALL_TYPE_DEFS, AtlasTypesDef.class, AtlasType.toJson(typesDef));
+        callAPI(DELETE_ALL_TYPE_DEFS, (Class<?>)null, AtlasType.toJson(typesDef));
     }
 
     /* Lineage Calls  */
