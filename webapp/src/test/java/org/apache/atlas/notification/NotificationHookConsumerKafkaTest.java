@@ -100,30 +100,8 @@ public class NotificationHookConsumerKafkaTest {
             produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
 
             NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, false);
-            NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
-            NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
-
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
-
-            // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-            produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
-            reset(atlasEntityStore);
-        }
-        finally {
-            kafkaNotification.close();
-        }
-    }
-
-    @Test
-    public void testConsumerConsumesNewMessageWithAutoCommitDisabled1() throws AtlasException, InterruptedException, AtlasBaseException {
-        try {
-            produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
-
-            NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, false);
-            NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
+            NotificationHookConsumer notificationHookConsumer =
+                    new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
             NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
 
             consumeOneMessage(consumer, hookConsumer);
