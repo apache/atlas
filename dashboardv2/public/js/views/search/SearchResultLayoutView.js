@@ -637,48 +637,48 @@ define(['require',
                             }
                         })
                     };
-                    if (this.value && this.value.searchType === "basic") {
-                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                        if (def) {
-                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
-                            _.each(attrObj, function(obj, key) {
-                                var key = obj.name,
-                                    isRenderable = _.contains(columnToShow, key)
-                                if (key == "name" || key == "description" || key == "owner") {
-                                    if (columnToShow) {
-                                        col[key].renderable = isRenderable;
-                                    }
-                                    return;
+                }
+                if (this.value && this.value.searchType === "basic") {
+                    var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
+                    if (def) {
+                        var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                        _.each(attrObj, function(obj, key) {
+                            var key = obj.name,
+                                isRenderable = _.contains(columnToShow, key)
+                            if (key == "name" || key == "description" || key == "owner") {
+                                if (columnToShow) {
+                                    col[key].renderable = isRenderable;
                                 }
-                                col[obj.name] = {
-                                    label: obj.name.capitalize(),
-                                    cell: "Html",
-                                    editable: false,
-                                    sortable: false,
-                                    resizeable: true,
-                                    orderable: true,
-                                    renderable: isRenderable,
-                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                        fromRaw: function(rawValue, model) {
-                                            var modelObj = model.toJSON();
+                                return;
+                            }
+                            col[obj.name] = {
+                                label: obj.name.capitalize(),
+                                cell: "Html",
+                                editable: false,
+                                sortable: false,
+                                resizeable: true,
+                                orderable: true,
+                                renderable: isRenderable,
+                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                    fromRaw: function(rawValue, model) {
+                                        var modelObj = model.toJSON();
 
-                                            if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
-                                                var tempObj = {
-                                                    'scope': that,
-                                                    'attributeDefs': [obj],
-                                                    'valueObject': {},
-                                                    'isTable': false
-                                                }
-
-                                                tempObj.valueObject[key] = modelObj.attributes[key]
-                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
-                                                return CommonViewFunction.propertyTable(tempObj);
+                                        if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
+                                            var tempObj = {
+                                                'scope': that,
+                                                'attributeDefs': [obj],
+                                                'valueObject': {},
+                                                'isTable': false
                                             }
+
+                                            tempObj.valueObject[key] = modelObj.attributes[key]
+                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                            return CommonViewFunction.propertyTable(tempObj);
                                         }
-                                    })
-                                };
-                            });
-                        }
+                                    }
+                                })
+                            };
+                        });
                     }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
