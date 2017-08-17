@@ -199,6 +199,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         _.sortBy(_.keys(valueObject)).map(function(key) {
             key = _.escape(key);
+            if (key == "profileData") {
+                return;
+            }
             var keyValue = valueObject[key];
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {

@@ -184,7 +184,7 @@ define(['require',
                 });
                 if (this.schemaCollection.length === 0 && this.deleteObj.length) {
                     this.ui.checkDeletedEntity.find("input").prop('checked', true);
-                    this.schemaCollection.reset(this.deleteObj, { silent: true });
+                    this.schemaCollection.fullCollection.reset(this.deleteObj, { silent: true });
                 }
                 if (this.activeObj.length === 0 && this.deleteObj.length === 0) {
                     this.ui.checkDeletedEntity.hide();
@@ -202,29 +202,8 @@ define(['require',
             renderTableLayoutView: function() {
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
-                    var columnCollection = Backgrid.Columns.extend({
-                        // sortKey: "position",
-                        // comparator: function(item) {
-                        //     return item.get(this.sortKey) || 999;
-                        // },
-                        // setPositions: function() {
-                        //     _.each(this.models, function(model, index) {
-                        //         if (model.get('name') == "name") {
-                        //             model.set("position", 2, { silent: true });
-                        //             model.set("label", "Name");
-                        //         } else if (model.get('name') == "description") {
-                        //             model.set("position", 3, { silent: true });
-                        //             model.set("label", "Description");
-                        //         } else if (model.get('name') == "owner") {
-                        //             model.set("position", 4, { silent: true });
-                        //             model.set("label", "Owner");
-                        //         }
-                        //     });
-                        //     return this;
-                        // }
-                    });
-                    var columns = new columnCollection(that.getSchemaTableColumns());
-                    //columns.setPositions().sort();
+                    var columnCollection = Backgrid.Columns.extend({}),
+                        columns = new columnCollection(that.getSchemaTableColumns());
                     that.RSchemaTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     })));
@@ -436,10 +415,10 @@ define(['require',
             onCheckDeletedEntity: function(e) {
                 if (e.target.checked) {
                     if (this.deleteObj.length) {
-                        this.schemaCollection.reset(this.activeObj.concat(this.deleteObj));
+                        this.schemaCollection.fullCollection.reset(this.activeObj.concat(this.deleteObj));
                     }
                 } else {
-                    this.schemaCollection.reset(this.activeObj);
+                    this.schemaCollection.fullCollection.reset(this.activeObj)
                 }
             }
         });

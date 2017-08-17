@@ -43,7 +43,8 @@ define(['require',
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
-                RTermTableLayoutView: "#r_termTableLayoutView"
+                RTermTableLayoutView: "#r_termTableLayoutView",
+                RProfileLayoutView: "#r_profileLayoutView"
 
             },
             /** ui selector cache */
@@ -190,6 +191,18 @@ define(['require',
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
                     this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
+                    if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db")) {
+                        if (collectionJSON.typeName === "hive_db") {
+                            this.$('.profileTab a').text("Tables")
+                        }
+                        this.$('.profileTab').show();
+                        this.renderProfileLayoutView(_.extend({}, obj, {
+                            entityDetail: collectionJSON.attributes,
+                            profileData: collectionJSON.attributes.profileData,
+                            typeName: collectionJSON.typeName
+                        }));
+                    }
+
                     // To render Schema check attribute "schemaElementsAttribute"
                     var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
                     if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
@@ -249,6 +262,14 @@ define(['require',
                         }
                     }
                 })
+            },
+            onShow: function() {
+                var params = Utils.getUrlState.getQueryParams();
+                if (params && params.profile) {
+                    this.$('.nav.nav-tabs').find('.profileTab').addClass('active').siblings().removeClass('active');
+                    this.$('.tab-content').find('#tab-profile').addClass('active').siblings().removeClass('active');
+                    $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
+                }
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
@@ -398,6 +419,12 @@ define(['require',
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     that.RAuditTableLayoutView.show(new AuditTableLayoutView(obj));
+                });
+            },
+            renderProfileLayoutView: function(obj) {
+                var that = this;
+                require(['views/profile/ProfileLayoutView'], function(ProfileLayoutView) {
+                    that.RProfileLayoutView.show(new ProfileLayoutView(obj));
                 });
             },
             onClickEditEntity: function(e) {

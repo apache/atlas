@@ -22,8 +22,8 @@ require.config({
         'disableI18n': true, // This disables the i18n helper and doesn't require the json i18n files (e.g. en_us.json)
         'helperPathCallback': // Callback to determine the path to look for helpers
             function(name) { // ('/template/helpers/'+name by default)
-            return 'modules/Helpers';
-        },
+                return 'modules/Helpers';
+            },
         'templateExtension': 'html', // Set the extension automatically appended to templates
         'compileOptions': {} // options object which is passed to Handlebars compiler
     },
@@ -112,6 +112,13 @@ require.config({
         },
         'daterangepicker': {
             'deps': ['jquery', 'moment']
+        },
+        'nvd3': {
+            'deps': ['d3']
+        },
+        'sparkline': {
+            'deps': ['jquery'],
+            'exports': ['sparkline']
         }
     },
 
@@ -149,7 +156,9 @@ require.config({
         'jquery-placeholder': 'libs/jquery-placeholder/js/jquery.placeholder',
         'platform': 'libs/platform/platform',
         'query-builder': 'libs/jQueryQueryBuilder/js/query-builder.standalone.min',
-        'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker'
+        'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
+        'nvd3': 'libs/nvd3/nv.d3.min',
+        'sparkline': 'libs/sparkline/jquery.sparkline.min'
     },
 
     /**

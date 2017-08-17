@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums) {
     'use strict';
 
     var Utils = {};
@@ -506,6 +506,94 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'pnotify.button
         }
         getData(data, collection);
         return attributeDefs
+    }
+
+    Utils.getProfileTabType = function(profileData, skipData) {
+        var parseData = profileData.distributionData;
+        if (_.isString(parseData)) {
+            parseData = JSON.parse(parseData);
+        }
+        var createData = function(type) {
+            var orderValue = [],
+                sort = false;
+            if (type === "date") {
+                var dateObj = {};
+                _.keys(parseData).map(function(key) {
+                    var splitValue = key.split(":");
+                    if (!dateObj[splitValue[0]]) {
+                        dateObj[splitValue[0]] = {
+                            value: splitValue[0],
+                            monthlyCounts: {},
+                            totalCount: 0 // use when count is null
+                        }
+                    }
+                    if (dateObj[splitValue[0]] && splitValue[1] == "count") {
+                        dateObj[splitValue[0]].count = parseData[key];
+                    }
+                    if (dateObj[splitValue[0]] && splitValue[1] !== "count") {
+                        dateObj[splitValue[0]].monthlyCounts[splitValue[1]] = parseData[key];
+                        if (!dateObj[splitValue[0]].count) {
+                            dateObj[splitValue[0]].totalCount += parseData[key]
+                        }
+                    }
+                });
+                return _.toArray(dateObj).map(function(obj) {
+                    if (!obj.count && obj.totalCount) {
+                        obj.count = obj.totalCount
+                    }
+                    return obj
+                });
+            } else {
+                var data = [];
+                if (profileData.distributionKeyOrder) {
+                    orderValue = profileData.distributionKeyOrder;
+                } else {
+                    sort = true;
+                    orderValue = _.keys(parseData);
+                }
+                _.each(orderValue, function(key) {
+                    if (parseData[key]) {
+                        data.push({
+                            value: key,
+                            count: parseData[key]
+                        });
+                    }
+                });
+                if (sort) {
+                    data = _.sortBy(data, function(o) {
+                        return o.value.toLowerCase()
+                    });
+                }
+                return data;
+            }
+        }
+        if (profileData && profileData.distributionType) {
+            if (profileData.distributionType === "count-frequency") {
+                return {
+                    type: "string",
+                    label: Enums.profileTabType[profileData.distributionType],
+                    actualObj: !skipData ? createData("string") : null,
+                    xAxisLabel: "FREQUENCY",
+                    yAxisLabel: "COUNT"
+                }
+            } else if (profileData.distributionType === "decile-frequency") {
+                return {
+                    label: Enums.profileTabType[profileData.distributionType],
+                    type: "numeric",
+                    xAxisLabel: "DECILE RANGE",
+                    actualObj: !skipData ? createData("numeric") : null,
+                    yAxisLabel: "FREQUENCY"
+                }
+            } else if (profileData.distributionType === "annual") {
+                return {
+                    label: Enums.profileTabType[profileData.distributionType],
+                    type: "date",
+                    xAxisLabel: "",
+                    actualObj: !skipData ? createData("date") : null,
+                    yAxisLabel: "COUNT"
+                }
+            }
+        }
     }
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {

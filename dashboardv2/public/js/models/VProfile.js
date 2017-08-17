@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,20 +16,28 @@
  * limitations under the License.
  */
 
-@import "main.scss";
-@import "tab.scss";
-@import "form.scss";
-@import "nav.scss";
-@import "panel.scss";
-@import "loader.scss";
-@import "graph.scss";
-@import "breadcrumb.scss";
-//@import "login.scss";
-@import "business-catlog.scss";
-@import "old-style.scss";
-@import "theme.scss";
-@import "tree.scss";
-@import "tag.scss";
-@import "search.scss";
-@import "profile-table.scss";
-@import "override.scss";
+define(['require',
+    'utils/Globals',
+    'models/BaseModel'
+], function(require, Globals, VBaseModel) {
+    'use strict';
+    var VProfile = VBaseModel.extend({
+
+        urlRoot: Globals.baseURL,
+
+        defaults: {},
+
+        serverSchema: {},
+
+        idAttribute: 'id',
+
+        initialize: function() {
+            this.modelName = 'VLineage';
+            this.bindErrorEvents();
+        },
+        toString: function() {
+            return this.get('id');
+        },
+    }, {});
+    return VProfile;
+});
