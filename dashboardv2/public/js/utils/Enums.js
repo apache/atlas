@@ -51,5 +51,11 @@ define(['require'], function(require) {
         FULLTEXT: 'basic'
     }
 
+    Enums.profileTabType = {
+        'count-frequency': "Count Frequency Distribution",
+        'decile-frequency': "Decile Frequency Distribution",
+        'annual': "Annual Distribution"
+    }
+
     return Enums;
 });

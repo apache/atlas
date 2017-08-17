@@ -130,7 +130,9 @@ module.exports = function(grunt) {
                     'jquery-placeholder/js': 'jquery-placeholder/jquery.placeholder.js',
                     'platform': 'platform/platform.js',
                     'jQueryQueryBuilder/js': 'jQuery-QueryBuilder/dist/js/query-builder.standalone.min.js',
-                    'bootstrap-daterangepicker/js': 'bootstrap-daterangepicker/daterangepicker.js'
+                    'bootstrap-daterangepicker/js': 'bootstrap-daterangepicker/daterangepicker.js',
+                    'nvd3': 'nvd3/build/nv.d3.min.js',
+                    'sparkline': 'jquery-sparkline/jquery.sparkline.min.js'
                 }
             },
             css: {
@@ -152,7 +154,8 @@ module.exports = function(grunt) {
                     'font-awesome/css': 'font-awesome/css/font-awesome.min.css',
                     'font-awesome/fonts': 'font-awesome/fonts',
                     'jQueryQueryBuilder/css': 'jQuery-QueryBuilder/dist/css/query-builder.default.min.css',
-                    'bootstrap-daterangepicker/css': 'bootstrap-daterangepicker/daterangepicker.css'
+                    'bootstrap-daterangepicker/css': 'bootstrap-daterangepicker/daterangepicker.css',
+                    'nvd3/css': 'nvd3/build/nv.d3.min.css'
                 }
 
             },
@@ -182,7 +185,8 @@ module.exports = function(grunt) {
                     'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT',
                     'jquery-placeholder': 'jquery-placeholder/LICENSE.txt',
                     'platform/': 'platform/LICENSE',
-                    'jQueryQueryBuilder/': 'jQuery-QueryBuilder/LICENSE'
+                    'jQueryQueryBuilder/': 'jQuery-QueryBuilder/LICENSE',
+                    'nvd3/': 'nvd3/LICENSE.md'
                 }
             }
         },

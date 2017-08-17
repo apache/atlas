@@ -138,7 +138,7 @@ define(['require',
                     collection: this.searchCollection,
                     includePagination: false,
                     includeFooterRecords: false,
-                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" ? true : false),
+                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.value.profileDBView ? true : false),
                     includeOrderAbleColumns: false,
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
@@ -394,11 +394,14 @@ define(['require',
                             that.ui.previousData.attr('disabled', true);
                         }
                         that.renderTableLayoutView();
-                        var searchString = 'Results for: <span class="filterQuery">' + that.generateQueryOfFilter() + "</span>";
-                        if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
-                            searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+
+                        if (value && !value.profileDBView) {
+                            var searchString = 'Results for: <span class="filterQuery">' + that.generateQueryOfFilter() + "</span>";
+                            if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
+                                searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
+                            }
+                            that.$('.searchResult').html(searchString);
                         }
-                        that.$('.searchResult').html(searchString);
                     },
                     silent: true,
                     reset: true
@@ -409,6 +412,14 @@ define(['require',
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
+                    if (value.profileDBView && value.guid) {
+                        var profileParam = {};
+                        profileParam['guid'] = value.guid;
+                        profileParam['relation'] = '__hive_table.db';
+                        profileParam['sortBy'] = 'name';
+                        profileParam['sortOrder'] = 'ASCENDING';
+                        $.extend(this.searchCollection.queryParams, profileParam);
+                    }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
                         apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
@@ -502,7 +513,7 @@ define(['require',
                 };
 
                 col['name'] = {
-                    label: "Name",
+                    label: this.value && this.value.profileDBView ? "Table Name" : "Name",
                     cell: "html",
                     editable: false,
                     sortable: false,
@@ -555,130 +566,149 @@ define(['require',
                         }
                     })
                 };
-
-                col['description'] = {
-                    label: "Description",
-                    cell: "String",
-                    editable: false,
-                    sortable: false,
-                    resizeable: true,
-                    orderable: true,
-                    renderable: true,
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            var obj = model.toJSON();
-                            if (obj && obj.attributes && obj.attributes.description) {
-                                return obj.attributes.description;
+                if (this.value && this.value.profileDBView) {
+                    col['createTime'] = {
+                        label: "Date Created",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON();
+                                if (obj && obj.attributes && obj.attributes.createTime) {
+                                    return new Date(obj.attributes.createTime);
+                                } else {
+                                    return '-'
+                                }
                             }
-                        }
-                    })
-                };
-                col['typeName'] = {
-                    label: "Type",
-                    cell: "Html",
-                    editable: false,
-                    sortable: false,
-                    resizeable: true,
-                    orderable: true,
-                    renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            var obj = model.toJSON();
-                            if (obj && obj.typeName) {
-                                return '<a title="Search ' + obj.typeName + '" href="#!/search/searchResult?query=' + obj.typeName + ' &searchType=dsl&dslChecked=true">' + obj.typeName + '</a>';
+                        })
+                    }
+                }
+                if (this.value && !this.value.profileDBView) {
+                    col['description'] = {
+                        label: "Description",
+                        cell: "String",
+                        editable: false,
+                        sortable: false,
+                        resizeable: true,
+                        orderable: true,
+                        renderable: true,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON();
+                                if (obj && obj.attributes && obj.attributes.description) {
+                                    return obj.attributes.description;
+                                }
                             }
-                        }
-                    })
-                };
-
-                col['tag'] = {
-                    label: "Tags",
-                    cell: "Html",
-                    editable: false,
-                    sortable: false,
-                    resizeable: true,
-                    orderable: true,
-                    renderable: (columnToShow ? _.contains(columnToShow, 'tag') : true),
-                    className: 'searchTag',
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            var obj = model.toJSON();
-                            if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
-                            } else {
-                                return CommonViewFunction.tagForTable(obj);
-                            }
-
-                        }
-                    })
-                };
-                if (Globals.taxonomy) {
-                    col['terms'] = {
-                        label: "Terms",
+                        })
+                    };
+                    col['typeName'] = {
+                        label: "Type",
                         cell: "Html",
                         editable: false,
                         sortable: false,
                         resizeable: true,
                         orderable: true,
-                        renderable: (columnToShow ? _.contains(columnToShow, 'terms') : true),
-                        className: 'searchTerm',
+                        renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
-                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(obj);
-                                if (returnObject.object) {
-                                    that.bradCrumbList.push(returnObject.object);
-                                }
-                                if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                    return '<div class="readOnly">' + returnObject.html + '</div>';
-                                } else {
-                                    return returnObject.html;
+                                if (obj && obj.typeName) {
+                                    return '<a title="Search ' + obj.typeName + '" href="#!/search/searchResult?query=' + obj.typeName + ' &searchType=dsl&dslChecked=true">' + obj.typeName + '</a>';
                                 }
                             }
                         })
                     };
-                }
-                if (this.value && this.value.searchType === "basic") {
-                    var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                    if (def) {
-                        var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
-                        _.each(attrObj, function(obj, key) {
-                            var key = obj.name,
-                                isRenderable = _.contains(columnToShow, key)
-                            if (key == "name" || key == "description" || key == "owner") {
-                                if (columnToShow) {
-                                    col[key].renderable = isRenderable;
+
+                    col['tag'] = {
+                        label: "Tags",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        resizeable: true,
+                        orderable: true,
+                        renderable: (columnToShow ? _.contains(columnToShow, 'tag') : true),
+                        className: 'searchTag',
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON();
+                                if (obj.status && Enums.entityStateReadOnly[obj.status]) {
+                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
+                                } else {
+                                    return CommonViewFunction.tagForTable(obj);
                                 }
-                                return;
+
                             }
-                            col[obj.name] = {
-                                label: obj.name.capitalize(),
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                resizeable: true,
-                                orderable: true,
-                                renderable: isRenderable,
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        var modelObj = model.toJSON();
-
-                                        if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
-                                            var tempObj = {
-                                                'scope': that,
-                                                'attributeDefs': [obj],
-                                                'valueObject': {},
-                                                'isTable': false
-                                            }
-
-                                            tempObj.valueObject[key] = modelObj.attributes[key]
-                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
-                                            return CommonViewFunction.propertyTable(tempObj);
-                                        }
+                        })
+                    };
+                    if (Globals.taxonomy) {
+                        col['terms'] = {
+                            label: "Terms",
+                            cell: "Html",
+                            editable: false,
+                            sortable: false,
+                            resizeable: true,
+                            orderable: true,
+                            renderable: (columnToShow ? _.contains(columnToShow, 'terms') : true),
+                            className: 'searchTerm',
+                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                fromRaw: function(rawValue, model) {
+                                    var obj = model.toJSON();
+                                    var returnObject = CommonViewFunction.termTableBreadcrumbMaker(obj);
+                                    if (returnObject.object) {
+                                        that.bradCrumbList.push(returnObject.object);
                                     }
-                                })
-                            };
-                        });
+                                    if (obj.status && Enums.entityStateReadOnly[obj.status]) {
+                                        return '<div class="readOnly">' + returnObject.html + '</div>';
+                                    } else {
+                                        return returnObject.html;
+                                    }
+                                }
+                            })
+                        };
+                    }
+                    if (this.value && this.value.searchType === "basic") {
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
+                        if (def) {
+                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                            _.each(attrObj, function(obj, key) {
+                                var key = obj.name,
+                                    isRenderable = _.contains(columnToShow, key)
+                                if (key == "name" || key == "description" || key == "owner") {
+                                    if (columnToShow) {
+                                        col[key].renderable = isRenderable;
+                                    }
+                                    return;
+                                }
+                                col[obj.name] = {
+                                    label: obj.name.capitalize(),
+                                    cell: "Html",
+                                    editable: false,
+                                    sortable: false,
+                                    resizeable: true,
+                                    orderable: true,
+                                    renderable: isRenderable,
+                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                        fromRaw: function(rawValue, model) {
+                                            var modelObj = model.toJSON();
+
+                                            if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
+                                                var tempObj = {
+                                                    'scope': that,
+                                                    'attributeDefs': [obj],
+                                                    'valueObject': {},
+                                                    'isTable': false
+                                                }
+
+                                                tempObj.valueObject[key] = modelObj.attributes[key]
+                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                                return CommonViewFunction.propertyTable(tempObj);
+                                            }
+                                        }
+                                    })
+                                };
+                            });
+                        }
                     }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
