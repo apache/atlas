@@ -45,11 +45,15 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.BOTH;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getTypeName;
 
 @Component
 public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
@@ -410,5 +414,39 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         }
 
         return typeName;
+    }
+
+    /**
+     * Check whether this vertex has a relationship associated with this relationship type.
+     * @param vertex
+     * @param relationshipTypeName
+     * @return true if found an edge with this relationship type in.
+     */
+    private boolean vertexHasRelationshipWithType(AtlasVertex vertex, String relationshipTypeName) {
+        String relationshipEdgeLabel = getRelationshipEdgeLabel(getTypeName(vertex), relationshipTypeName);
+        Iterator<AtlasEdge> iter     = graphHelper.getAdjacentEdgesByLabel(vertex, BOTH, relationshipEdgeLabel);
+
+        return (iter != null) ? iter.hasNext() : false;
+    }
+
+    private String getRelationshipEdgeLabel(String typeName, String relationshipTypeName) {
+        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+        AtlasRelationshipDef  relationshipDef  = relationshipType.getRelationshipDef();
+        AtlasEntityType       end1Type         = relationshipType.getEnd1Type();
+        AtlasEntityType       end2Type         = relationshipType.getEnd2Type();
+        Set<String>           vertexTypes      = getTypeAndAllSuperTypes(typeName);
+        AtlasAttribute        attribute        = null;
+
+        if (vertexTypes.contains(end1Type.getTypeName())) {
+            String attributeName = relationshipDef.getEndDef1().getName();
+
+            attribute = (attributeName != null) ? end1Type.getAttribute(attributeName) : null;
+        } else if (vertexTypes.contains(end2Type.getTypeName())) {
+            String attributeName = relationshipDef.getEndDef2().getName();
+
+            attribute = (attributeName != null) ? end2Type.getAttribute(attributeName) : null;
+        }
+
+        return (attribute != null) ? attribute.getRelationshipEdgeLabel() : null;
     }
 }
