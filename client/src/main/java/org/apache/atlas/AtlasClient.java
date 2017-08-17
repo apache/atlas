@@ -101,6 +101,7 @@ public class AtlasClient extends AtlasBaseClient {
     public static final String NAME = "name";
     public static final String DESCRIPTION = "description";
     public static final String OWNER = "owner";
+    public static final String CREATE_TIME = "createTime";
 
     public static final String INFRASTRUCTURE_SUPER_TYPE = "Infrastructure";
     public static final String DATA_SET_SUPER_TYPE = "DataSet";

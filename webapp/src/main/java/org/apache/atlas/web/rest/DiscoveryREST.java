@@ -285,21 +285,22 @@ public class DiscoveryREST {
     @Path("relationship")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")      String    guid,
-                                                   @QueryParam("relation")  String    relation,
-                                                   @QueryParam("sortBy")    String    sortByAttribute,
-                                                   @QueryParam("sortOrder") SortOrder sortOrder,
-                                                   @QueryParam("limit")     int       limit,
-                                                   @QueryParam("offset")    int       offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")      String       guid,
+                                                   @QueryParam("relation")  String       relation,
+                                                   @QueryParam("sortBy")    String       sortByAttribute,
+                                                   @QueryParam("sortOrder") SortOrder    sortOrder,
+                                                   @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+                                                   @QueryParam("limit")     int          limit,
+                                                   @QueryParam("offset")    int          offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearchUsingGremlin(" + guid +
-                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + limit + ", " + offset + ")");
+                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + ", " + limit + ", " + offset + ")");
             }
 
-            return atlasDiscoveryService.searchRelatedEntities(guid, relation, sortByAttribute, sortOrder, limit, offset);
+            return atlasDiscoveryService.searchRelatedEntities(guid, relation, sortByAttribute, sortOrder, excludeDeletedEntities, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }
