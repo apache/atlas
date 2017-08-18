@@ -28,6 +28,7 @@ import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -66,6 +67,10 @@ public class MetadataDiscoveryResource {
 
     private final DiscoveryService discoveryService;
 
+    private final  boolean       gremlinSearchEnabled;
+    private static Configuration applicationProperties          = null;
+    private static final String  ENABLE_GREMLIN_SEARCH_PROPERTY = "atlas.search.gremlin.enable";
+
     /**
      * Created by the Guice ServletModule and injected with the
      * configured DiscoveryService.
@@ -73,8 +78,10 @@ public class MetadataDiscoveryResource {
      * @param discoveryService metadata service handle
      */
     @Inject
-    public MetadataDiscoveryResource(DiscoveryService discoveryService) {
-        this.discoveryService = discoveryService;
+    public MetadataDiscoveryResource(DiscoveryService discoveryService, Configuration configuration) {
+        this.discoveryService  = discoveryService;
+        applicationProperties  = configuration;
+        gremlinSearchEnabled   = applicationProperties != null && applicationProperties.getBoolean(ENABLE_GREMLIN_SEARCH_PROPERTY, false);
     }
 
     /**
@@ -210,6 +217,10 @@ public class MetadataDiscoveryResource {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingGremlinQuery(" + gremlinQuery + ")");
+            }
+
+            if (!gremlinSearchEnabled) {
+                throw new DiscoveryException("Gremlin search is not enabled.");
             }
 
             gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
