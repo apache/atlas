@@ -29,8 +29,10 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.SearchPredicateUtil.VertexAttributePredicateGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -409,9 +411,10 @@ public abstract class SearchProcessor {
         VertexAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
 
         if (attribute != null && predicate != null) {
-            final String attributeType = attribute.getAttributeType().getTypeName().toLowerCase();
-            final Class  attrClass;
-            final Object attrValue;
+            final AtlasType attrType      = attribute.getAttributeType();
+            final String    attributeType = attrType.getTypeName().toLowerCase();
+            final Class     attrClass;
+            final Object    attrValue;
 
             switch (attributeType) {
                 case "string":
@@ -456,7 +459,11 @@ public abstract class SearchProcessor {
                     attrValue = new BigDecimal(attrVal);
                     break;
                 default:
-                    attrClass = Object.class;
+                    if (attrType instanceof AtlasEnumType) {
+                        attrClass = String.class;
+                    } else {
+                        attrClass = Object.class;
+                    }
                     attrValue = attrVal;
                     break;
             }
