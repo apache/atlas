@@ -54,7 +54,11 @@ define([
                 'classificationDefCollection': this.classificationDefCollection
             }
             this.sharedObj = {
-                searchTableColumns: {}
+                searchTableColumns: {},
+                searchTableFilters: {
+                    tagFilters: {},
+                    entityFilters: {}
+                }
             }
         },
         bindCommonEvents: function() {

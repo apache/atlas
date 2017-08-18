@@ -81,7 +81,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters'));
                 this.type = "basic";
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -92,8 +92,6 @@ define(['require',
                     basic: {
                         query: null,
                         type: null,
-                        typeFilter: null,
-                        tagFilter: null,
                         tag: null,
                         attributes: null
                     }
@@ -133,51 +131,39 @@ define(['require',
                         filtertype = [filtertypeParam];
                     }
                 }
-                var typeCheck = function(filterQueryObj, type) {
-                    var filterObj = filterQueryObj[type];
+                var typeCheck = function(filterObj, type) {
                     if (that.value.type) {
                         if (filterObj && filterObj.length) {
                             that.ui.typeAttrFilter.addClass('active');
                         } else {
-                            filterQueryObj[type] = null;
-                            that.value[type] = null;
                             that.ui.typeAttrFilter.removeClass('active');
                         }
                         that.ui.typeAttrFilter.prop('disabled', false);
                     } else {
-                        filterQueryObj[type] = null;
-                        that.value[type] = null;
                         that.ui.typeAttrFilter.removeClass('active');
                         that.ui.typeAttrFilter.prop('disabled', true);
                     }
-
                 }
-                var tagCheck = function(filterQueryObj, type) {
-                    var filterObj = filterQueryObj[type];
+                var tagCheck = function(filterObj, type) {
                     if (that.value.tag) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
                             that.ui.tagAttrFilter.addClass('active');
                         } else {
-                            filterQueryObj[type] = null;
-                            that.value[type] = null;
                             that.ui.tagAttrFilter.removeClass('active');
                         }
                     } else {
-                        filterQueryObj[type] = null;
-                        that.value[type] = null;
                         that.ui.tagAttrFilter.removeClass('active');
                         that.ui.tagAttrFilter.prop('disabled', true);
                     }
                 }
                 _.each(filtertype, function(type) {
-                    var filterObj = that.query[that.type][type],
-                        filterQueryObj = that.query[that.type];
+                    var filterObj = that.searchTableFilters[type];
                     if (type == "entityFilters") {
-                        typeCheck(filterQueryObj, type)
+                        typeCheck(filterObj[that.value.type], type);
                     }
                     if (type == "tagFilters") {
-                        tagCheck(filterQueryObj, type)
+                        tagCheck(filterObj[that.value.tag], type);
                     }
                 });
             },
@@ -191,14 +177,19 @@ define(['require',
                             filterType = (isTagEl ? 'tagFilters' : 'entityFilters'),
                             value = value.length ? value : null;
                         if (this.value) {
-                            if (this.value[key] !== value || (!value && !this.value[key]) || (!this.value[filterType])) {
+                            //On Change handle
+                            if (this.value[key] !== value || (!value && !this.value[key])) {
                                 var temp = {};
                                 temp[key] = value;
                                 _.extend(this.value, temp);
-                                this.query[this.type][filterType] = null;
-                                this.value[filterType] = null;
-                                this.makeFilterButtonActive(filterType);
+                            } else {
+                                // Initial loading handle.
+                                var filterObj = this.searchTableFilters[filterType];
+                                if (filterObj && this.value[key]) {
+                                    this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
+                                }
                             }
+                            this.makeFilterButtonActive(filterType);
                         } else {
                             this.ui.tagAttrFilter.prop('disabled', true);
                             this.ui.typeAttrFilter.prop('disabled', true);
@@ -244,8 +235,6 @@ define(['require',
                         query: null,
                         type: null,
                         tag: null,
-                        entityFilters: null,
-                        tagFilters: null,
                         attributes: null
                     }), param);
             },
@@ -289,7 +278,8 @@ define(['require',
                         typeHeaders: that.typeHeaders,
                         entityDefCollection: that.entityDefCollection,
                         enumDefCollection: that.enumDefCollection,
-                        classificationDefCollection: that.classificationDefCollection
+                        classificationDefCollection: that.classificationDefCollection,
+                        searchTableFilters: that.searchTableFilters
                     });
                     that.attrModal.on('ok', function(scope, e) {
                         that.okAttrFilterButton(e);
@@ -297,11 +287,19 @@ define(['require',
                 });
             },
             okAttrFilterButton: function(e) {
-                var filtertype = this.attrModal.tag ? 'tagFilters' : 'entityFilters',
+                var isTag = this.attrModal.tag ? true : false,
+                    filtertype = isTag ? 'tagFilters' : 'entityFilters',
                     rule = this.attrModal.RQueryBuilder.currentView.ui.builder.queryBuilder('getRules');
                 if (rule) {
-                    this.query[this.type][filtertype] = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
+                    var ruleUrl = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
+                    this.searchTableFilters[filtertype][(isTag ? this.value.tag : this.value.type)] = ruleUrl;
                     this.makeFilterButtonActive(filtertype);
+                    if (this.value && this.searchTableColumns) {
+                        if (!this.searchTableColumns[this.value.type]) {
+                            this.searchTableColumns[this.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"]
+                        }
+                        this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], _.pluck(rule.rules, 'id')));
+                    }
                     this.attrModal.modal.close();
                     if ($(e.currentTarget).hasClass('search')) {
                         this.findSearchResult();
@@ -342,9 +340,9 @@ define(['require',
                     this.value = paramObj;
                 }
                 if (this.value) {
-                    if (this.value.dslChecked == "true" && this.dsl == false) {
+                    if (this.value.dslChecked == "true") {
                         this.ui.searchType.prop("checked", true).trigger("change");
-                    } else if (this.value.dslChecked == "false" && this.dsl == true) {
+                    } else {
                         this.ui.searchType.prop("checked", false).trigger("change");
                     }
                     this.ui.typeLov.val(this.value.type);
@@ -387,6 +385,14 @@ define(['require',
                 this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
                     this.query[this.type].tag = this.ui.tagLov.select2('val') || null;
+                    var entityFilterObj = this.searchTableFilters['entityFilters'],
+                        tagFilterObj = this.searchTableFilters['tagFilters'];
+                    if (this.value.tag) {
+                        params['tagFilters'] = tagFilterObj[this.value.tag]
+                    }
+                    if (this.value.type) {
+                        params['entityFilters'] = entityFilterObj[this.value.type]
+                    }
                 }
                 if (this.dsl) {
                     params['attributes'] = null;
@@ -416,9 +422,11 @@ define(['require',
                     this.dsl = true;
                     this.$('.tagBox').hide();
                     this.$('.temFilterBtn').hide();
-                    this.$('.temFilter').toggleClass('col-sm-10 col-sm-12');
+                    this.$('.temFilter').addClass('col-sm-12');
+                    this.$('.temFilter').removeClass('col-sm-10');
                 } else {
-                    this.$('.temFilter').toggleClass('col-sm-10 col-sm-12');
+                    this.$('.temFilter').addClass('col-sm-10');
+                    this.$('.temFilter').removeClass('col-sm-12');
                     this.$('.temFilterBtn').show();
                     this.$('.tagBox').show();
                     this.dsl = false;
@@ -427,7 +435,7 @@ define(['require',
                 if (paramObj && this.type == paramObj.searchType) {
                     this.updateQueryObject(paramObj);
                 }
-                if (this.type == "basic") {
+                if (paramObj && this.type == "basic") {
                     this.query[this.type].attribute = paramObj.attributes ? paramObj.attributes : null;
                 }
                 Utils.setUrl({
@@ -448,6 +456,10 @@ define(['require',
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
+                if (this.dsl) {
+                    this.searchTableFilters.tagFilters = {};
+                    this.searchTableFilters.entityFilters = {};
+                }
                 this.checkForButtonVisiblity();
                 Utils.setUrl({
                     url: '#!/search/searchResult',

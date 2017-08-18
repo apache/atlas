@@ -50,7 +50,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag'));
+                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag', 'searchTableFilters'));
                 this.bindEvents();
                 var that = this;
                 this.modal = new Modal({
@@ -83,7 +83,8 @@ define(['require',
                     searchVent: this.searchVent,
                     entityDefCollection: this.entityDefCollection,
                     enumDefCollection: this.enumDefCollection,
-                    classificationDefCollection: this.classificationDefCollection
+                    classificationDefCollection: this.classificationDefCollection,
+                    searchTableFilters: this.searchTableFilters
                 }
 
                 if (this.tag) {
