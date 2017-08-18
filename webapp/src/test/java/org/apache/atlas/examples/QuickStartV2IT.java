@@ -89,7 +89,7 @@ public class QuickStartV2IT extends BaseResourceIT {
         AtlasEntity processEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
         return processEntity;
     }
-     
+
 
     private void verifyTrait(AtlasEntity table) throws AtlasServiceException {
         AtlasClassification.AtlasClassifications classfications = atlasClientV2.getClassifications(table.getGuid());

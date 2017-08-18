@@ -448,7 +448,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String newDBId = dbInstance._getId();
 
         //Add reference property
-        addProperty(guid, "db", newDBId);
+        EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, "db", newDBId);
+        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        assertEquals(entityResult.getUpdateEntities().get(0), newDBId);
+        assertEquals(entityResult.getUpdateEntities().get(1), guid);
     }
 
     @Test
