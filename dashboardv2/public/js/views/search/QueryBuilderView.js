@@ -52,7 +52,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag', 'searchTableFilters'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
@@ -134,7 +134,7 @@ define(['require',
                 var that = this,
                     filters = [];
                 if (this.value) {
-                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl(this.value[this.filterType]);
+                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl(this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)]);
                 }
                 _.each(this.attrObj, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets);

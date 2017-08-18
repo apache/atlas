@@ -83,7 +83,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'searchTableColumns'));
+            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'searchTableColumns', 'searchTableFilters'));
             if (Globals.taxonomy) {
                 this.tabClass = "tab col-sm-4";
             } else {
@@ -128,7 +128,8 @@ define(['require',
                     entityDefCollection: that.entityDefCollection,
                     enumDefCollection: that.enumDefCollection,
                     classificationDefCollection: that.classificationDefCollection,
-                    searchTableColumns: that.searchTableColumns
+                    searchTableColumns: that.searchTableColumns,
+                    searchTableFilters: that.searchTableFilters
                 }));
             });
         },

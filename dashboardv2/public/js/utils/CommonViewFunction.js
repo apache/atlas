@@ -408,7 +408,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 _.each(attrObj, function(obj) {
                     attrQuery.push(obj.id + "::" + obj.operator + "::" + obj.value + "::" + obj.type);
                 });
-                return attrQuery.join();
+                if (attrQuery.length) {
+                    return attrQuery.join();
+                } else {
+                    return null;
+                }
             } else {
                 return null;
             }
