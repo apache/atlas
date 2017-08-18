@@ -123,6 +123,21 @@ parseArgs() {
     --run-tests)
       RUN_TESTS=true
       ;;
+    --review-id=*)
+      REVIEW_ID=${i#*=}
+      ;;
+    --local-patch=*)
+      LOCAL_PATCH=${i#*=}
+      ;;
+    --branch=*)
+      BRANCH=${i#*=}
+      ;;
+    --skip-ut=*)
+      SKIP_UT=${i#*=}
+      ;;
+    --skip-it=*)
+      SKIP_IT=${i#*=}
+      ;;
     *)
       PATCH_OR_DEFECT=$i
       ;;
@@ -184,7 +199,7 @@ checkout () {
     cd $BASEDIR
     $GIT reset --hard
     $GIT clean -xdf
-    $GIT checkout master
+    $GIT checkout $BRANCH
     $GIT pull --rebase
   fi
   GIT_REVISION=`git rev-parse --verify --short HEAD`
@@ -195,24 +210,29 @@ checkout () {
 downloadPatch () {
   ### Download latest patch file (ignoring .htm and .html) when run from patch process
   if [[ $JENKINS == "true" ]] ; then
-    $WGET -q -O $PATCH_DIR/jira http://issues.apache.org/jira/browse/$defect
-    if [[ `$GREP -c 'Patch Available' $PATCH_DIR/jira` == 0 ]] ; then
-      echo "$defect is not \"Patch Available\".  Exiting."
-      cleanupAndExit 0
+    if [[ -n $REVIEW_ID ]]; then
+        echo "Download Patch from Review Board: https://reviews.apache.org/r/$REVIEW_ID/diff/raw at `date`"
+        $WGET -q -O $PATCH_DIR/patch https://reviews.apache.org/r/$REVIEW_ID/diff/raw
+    elif [[ -n $LOCAL_PATCH ]]; then
+        echo "Using Local Patch in $LOCAL_PATCH at `date`"
+    else
+        echo "Download Patch from JIRA: http://issues.apache.org/jira/browse/$defect at `date`"
+        $WGET -q -O $PATCH_DIR/jira http://issues.apache.org/jira/browse/$defect
+        if [[ `$GREP -c 'Patch Available' $PATCH_DIR/jira` == 0 ]] ; then
+          echo "$defect is not \"Patch Available\".  Exiting."
+          cleanupAndExit 0
+        fi
+        relativePatchURL=`$GREP -o '"/jira/secure/attachment/[0-9]*/[^"]*' $PATCH_DIR/jira | $GREP -v -e 'htm[l]*$' | sort | tail -1 | $GREP -o '/jira/secure/attachment/[0-9]*/[^"]*'`
+        patchURL="http://issues.apache.org${relativePatchURL}"
+        patchNum=`echo $patchURL | $GREP -o '[0-9]*/' | $GREP -o '[0-9]*'`
+        echo "$defect patch is being downloaded at `date` from"
+        echo "$patchURL"
+        $WGET -q -O $PATCH_DIR/patch $patchURL
+        VERSION=${GIT_REVISION}_${defect}_PATCH-${patchNum}
+        JIRA_COMMENT="Here are the results of testing the latest attachment $patchURL against master revision ${GIT_REVISION}."
     fi
-    relativePatchURL=`$GREP -o '"/jira/secure/attachment/[0-9]*/[^"]*' $PATCH_DIR/jira | $GREP -v -e 'htm[l]*$' | sort | tail -1 | $GREP -o '/jira/secure/attachment/[0-9]*/[^"]*'`
-    patchURL="http://issues.apache.org${relativePatchURL}"
-    patchNum=`echo $patchURL | $GREP -o '[0-9]*/' | $GREP -o '[0-9]*'`
-    echo "$defect patch is being downloaded at `date` from"
-    echo "$patchURL"
-    $WGET -q -O $PATCH_DIR/patch $patchURL
-    VERSION=${GIT_REVISION}_${defect}_PATCH-${patchNum}
-    JIRA_COMMENT="Here are the results of testing the latest attachment
-  $patchURL
-  against master revision ${GIT_REVISION}."
-
-  ### Copy the patch file to $PATCH_DIR
   else
+    ### Copy the patch file to $PATCH_DIR
     VERSION=PATCH-${defect}
     cp $PATCH_FILE $PATCH_DIR/patch
     if [[ $? == 0 ]] ; then
@@ -557,13 +577,29 @@ buildAndInstall () {
   echo ""
   echo "======================================================================"
   echo "======================================================================"
-  echo "    Installing all of the jars"
+  echo "    Build, Install And Run Tests"
   echo "======================================================================"
   echo "======================================================================"
   echo ""
   echo ""
-  echo "$MVN install -Dmaven.javadoc.skip=true -DskipTests -D${PROJECT_NAME}PatchProcess"
-  $MVN install -Dmaven.javadoc.skip=true -DskipTests
+  #echo "$MVN clean install -DskipITs -D${PROJECT_NAME}PatchProcess"
+  #$MVN clean install -DskipITs
+
+  MVN_GOALS="clean install -DskipCheck"
+
+  if [[ $SKIP_UT == "true" ]]; then
+    echo "Unit Tests flag set to true."
+    MVN_GOALS+=" -DskipUTs"
+  fi
+
+  if [[ $SKIP_IT == "true" ]]; then
+    echo "Integration Tests flag set to true."
+    MVN_GOALS+=" -DskipITs"
+  fi
+
+  echo "$MVN $MVN_GOALS"
+  $MVN $MVN_GOALS
+
   return $?
 }
 
@@ -651,8 +687,8 @@ runTests () {
   test_timeouts=""
   test_logfile=$PATCH_DIR/testrun.txt
   echo "  Running tests "
-  echo "  $MVN clean install -fn -D${PROJECT_NAME}PatchProcess"
-  $MVN clean install -fae > $test_logfile 2>&1
+  echo "  $MVN clean install -DskipITs -fn -D${PROJECT_NAME}PatchProcess"
+  $MVN clean install -DskipITs -fae > $test_logfile 2>&1
   test_build_result=$?
   cat $test_logfile
   module_test_timeouts=`$AWK '/^Running / { if (last) { print last } last=$2 } /^Tests run: / { last="" }' $test_logfile`
@@ -750,8 +786,8 @@ $comment"
     echo ""
     ### Update Jira with a comment
     export USER=hudson
-    $JIRACLI -s https://issues.apache.org/jira -a addcomment -u atlasqa -p $JIRA_PASSWD --comment "$comment" --issue $defect
-    $JIRACLI -s https://issues.apache.org/jira -a logout -u atlasqa -p $JIRA_PASSWD
+    #$JIRACLI -s https://issues.apache.org/jira -a addcomment -u atlasqa -p $JIRA_PASSWD --comment "$comment" --issue $defect
+    #$JIRACLI -s https://issues.apache.org/jira -a logout -u atlasqa -p $JIRA_PASSWD
   fi
 }
 
@@ -803,7 +839,7 @@ if [[ $RESULT != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-prebuildWithoutPatch
+#prebuildWithoutPatch
 (( RESULT = RESULT + $? ))
 if [[ $RESULT != 0 ]] ; then
   submitJiraComment 1
@@ -815,7 +851,7 @@ checkAuthor
 if [[ $JENKINS == "true" ]] ; then
   cleanUpXml
 fi
-checkTests
+#checkTests
 (( RESULT = RESULT + $? ))
 applyPatch
 APPLY_PATCH_RET=$?
@@ -824,7 +860,7 @@ if [[ $APPLY_PATCH_RET != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-checkJavacWarnings
+#checkJavacWarnings
 JAVAC_RET=$?
 #2 is returned if the code could not compile
 if [[ $JAVAC_RET == 2 ]] ; then
@@ -832,18 +868,18 @@ if [[ $JAVAC_RET == 2 ]] ; then
   cleanupAndExit 1
 fi
 (( RESULT = RESULT + $JAVAC_RET ))
-checkJavadocWarnings
+#checkJavadocWarnings
 (( RESULT = RESULT + $? ))
-checkStyle
+#checkStyle
 (( RESULT = RESULT + $? ))
-checkFindbugsWarnings
+#checkFindbugsWarnings
 (( RESULT = RESULT + $? ))
-checkReleaseAuditWarnings
+#checkReleaseAuditWarnings
 (( RESULT = RESULT + $? ))
 buildAndInstall
 ### Run tests for Jenkins or if explictly asked for by a developer
 if [[ $JENKINS == "true" || $RUN_TESTS == "true" ]] ; then
-  runTests
+  #runTests
   (( RESULT = RESULT + $? ))
 fi
 JIRA_COMMENT_FOOTER="Test results: $BUILD_URL/testReport/
