@@ -22,7 +22,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.8.1</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>sqoop-bridge-shim</artifactId>
