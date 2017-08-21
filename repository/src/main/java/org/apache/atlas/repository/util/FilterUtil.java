@@ -115,6 +115,8 @@ public class FilterUtil {
                             return atlasType.getTypeCategory() == TypeCategory.STRUCT;
                         case "ENUM":
                             return atlasType.getTypeCategory() == TypeCategory.ENUM;
+                        case "RELATIONSHIP":
+                            return atlasType.getTypeCategory() == TypeCategory.RELATIONSHIP;
                         default:
                             // This shouldn't have happened
                             return false;

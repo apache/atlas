@@ -668,6 +668,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             case ENTITY:
                 ret = ((AtlasEntityType) type).getEntityDef();
                 break;
+            case RELATIONSHIP:
+                ret = ((AtlasRelationshipType) type).getRelationshipDef();
+                break;
             case PRIMITIVE:
             case OBJECT_ID_TYPE:
             case ARRAY:
