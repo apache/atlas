@@ -19,7 +19,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import sun.misc.BASE64Encoder;
+import org.apache.commons.codec.binary.Base64;
 import javax.ws.rs.core.Response;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -30,8 +30,7 @@ import static org.testng.Assert.assertEquals;
  *
  */
 public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
-    private BASE64Encoder enc = new sun.misc.BASE64Encoder();
-
+    private Base64 enc = new Base64();
 
     @Test(enabled = true)
     public void testSimpleLoginForValidUser() throws Exception {
@@ -39,7 +38,7 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         String userpassword = "admin:admin"; // right password
-        String encodedAuthorization = enc.encode(userpassword.getBytes());
+        String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
         connection.setRequestProperty("Authorization", "Basic " +
                 encodedAuthorization);
         connection.connect();
@@ -68,7 +67,7 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             String userpassword = "rangertagsync:rangertagsync"; //right password with no policy for taxonomies api
-            String encodedAuthorization = enc.encode(userpassword.getBytes());
+            String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
             connection.setRequestProperty("Authorization", "Basic " +
                     encodedAuthorization);
             connection.connect();
@@ -87,7 +86,7 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         String userpassword = "admin:admin1"; //wrong password
-        String encodedAuthorization = enc.encode(userpassword.getBytes());
+        String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
         connection.setRequestProperty("Authorization", "Basic " +
                 encodedAuthorization);
         connection.connect();
