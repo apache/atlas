@@ -86,7 +86,7 @@ public class AtlasMapType extends AtlasType {
     }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.keyType   = typeRegistry.getType(keyTypeName);
         this.valueType = typeRegistry.getType(valueTypeName);
     }

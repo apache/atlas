@@ -60,7 +60,7 @@ public class AtlasRelationshipType extends AtlasStructType {
     public AtlasRelationshipDef getRelationshipDef() { return relationshipDef; }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
         if (relationshipDef == null) {
@@ -91,7 +91,7 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     @Override
-    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
         AtlasRelationshipEndDef endDef1           = relationshipDef.getEndDef1();

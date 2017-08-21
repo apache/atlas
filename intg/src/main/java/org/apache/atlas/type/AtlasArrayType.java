@@ -106,7 +106,7 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         elementType = typeRegistry.getType(elementTypeName);
     }
 

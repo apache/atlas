@@ -81,7 +81,7 @@ public class AtlasStructType extends AtlasType {
     }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         Map<String, AtlasAttribute> a = new HashMap<>();
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -164,7 +164,7 @@ public class AtlasStructType extends AtlasType {
     }
 
     @Override
-    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
         for (AtlasAttribute attribute : allAttributes.values()) {
             if (attribute.getInverseRefAttributeName() == null) {

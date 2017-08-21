@@ -75,7 +75,7 @@ public class AtlasEntityType extends AtlasStructType {
     public AtlasEntityDef getEntityDef() { return entityDef; }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
         List<AtlasEntityType>       s    = new ArrayList<>();
@@ -111,7 +111,7 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     @Override
-    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
         for (String superTypeName : allSuperTypes) {
@@ -121,7 +121,7 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     @Override
-    public void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         for (AtlasAttributeDef attributeDef : getStructDef().getAttributeDefs()) {
             String          attributeName       = attributeDef.getName();
             AtlasType       attributeType       = typeRegistry.getType(attributeDef.getTypeName());
