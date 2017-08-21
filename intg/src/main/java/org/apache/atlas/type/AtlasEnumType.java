@@ -62,7 +62,7 @@ public class AtlasEnumType extends AtlasType {
     public AtlasEnumDef getEnumDef() { return enumDef; }
 
     @Override
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
     @Override

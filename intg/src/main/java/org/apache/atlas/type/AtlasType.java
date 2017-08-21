@@ -51,13 +51,13 @@ public abstract class AtlasType {
         this.typeCategory = typeCategory;
     }
 
-    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
-    public void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
-    public void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
     public String getTypeName() { return typeName; }
