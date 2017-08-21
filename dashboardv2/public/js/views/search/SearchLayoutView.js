@@ -289,7 +289,10 @@ define(['require',
             okAttrFilterButton: function(e) {
                 var isTag = this.attrModal.tag ? true : false,
                     filtertype = isTag ? 'tagFilters' : 'entityFilters',
-                    rule = this.attrModal.RQueryBuilder.currentView.ui.builder.queryBuilder('getRules');
+                    queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder;
+                if (queryBuilderRef.data('queryBuilder')) {
+                    var rule = queryBuilderRef.queryBuilder('getRules');
+                }
                 if (rule) {
                     var ruleUrl = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
                     this.searchTableFilters[filtertype][(isTag ? this.value.tag : this.value.type)] = ruleUrl;
@@ -380,7 +383,9 @@ define(['require',
                 this.query[this.type].query = value || null;
                 var params = {
                     searchType: this.type,
-                    dslChecked: this.ui.searchType.is(':checked')
+                    dslChecked: this.ui.searchType.is(':checked'),
+                    tagFilters: null,
+                    entityFilters: null
                 }
                 this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
@@ -436,27 +441,30 @@ define(['require',
                     this.updateQueryObject(paramObj);
                 }
                 if (paramObj && this.type == "basic") {
-                    this.query[this.type].attribute = paramObj.attributes ? paramObj.attributes : null;
+                    this.query[this.type].attributes = paramObj.attributes ? paramObj.attributes : null;
                 }
-                Utils.setUrl({
-                    url: '#!/search/searchResult',
-                    urlParams: _.extend(this.query[this.type], {
-                        searchType: this.type,
-                        dslChecked: this.ui.searchType.is(':checked')
-                    }),
-                    updateTabState: function() {
-                        return { searchUrl: this.url, stateChanged: true };
-                    },
-                    mergeBrowserUrl: false,
-                    trigger: true
-                });
+                if (Utils.getUrlState.isSearchTab()) {
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: _.extend(this.query[this.type], {
+                            searchType: this.type,
+                            dslChecked: this.ui.searchType.is(':checked'),
+                            includeDE: this.value.includeDE
+                        }),
+                        updateTabState: function() {
+                            return { searchUrl: this.url, stateChanged: true };
+                        },
+                        mergeBrowserUrl: false,
+                        trigger: true
+                    });
+                }
             },
             clearSearchData: function() {
                 this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
-                if (this.dsl) {
+                if (!this.dsl) {
                     this.searchTableFilters.tagFilters = {};
                     this.searchTableFilters.entityFilters = {};
                 }

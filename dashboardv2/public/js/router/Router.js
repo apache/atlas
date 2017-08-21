@@ -132,7 +132,7 @@ define([
                         App.rSideNav.show(new SideNavLayoutView(
                             _.extend({
                                 'url': url
-                            }, that.preFetchedCollectionLists)
+                            }, that.preFetchedCollectionLists, that.sharedObj)
                         ));
                     } else {
                         App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
@@ -163,7 +163,7 @@ define([
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
                         App.rSideNav.show(new SideNavLayoutView(
-                            _.extend({}, that.preFetchedCollectionLists)
+                            _.extend({}, that.preFetchedCollectionLists, that.sharedObj)
                         ));
                     } else {
                         App.rSideNav.currentView.selectTab();
@@ -171,7 +171,7 @@ define([
                     App.rNContent.show(new DetailPageLayoutView(_.extend({
                         'collection': this.entityCollection,
                         'id': id,
-                    }, that.preFetchedCollectionLists)));
+                    }, that.preFetchedCollectionLists, that.sharedObj)));
                     this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });
                 });
@@ -201,7 +201,7 @@ define([
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
                             'tag': tagName
-                        }, that.preFetchedCollectionLists)
+                        }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
                     if (paramObj && paramObj.dlttag) {
@@ -225,7 +225,7 @@ define([
                     App.rNContent.show(new TagDetailLayoutView(
                         _.extend({
                             'tag': tagName
-                        }, that.preFetchedCollectionLists)
+                        }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 }
             });
