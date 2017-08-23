@@ -23,6 +23,7 @@ import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
@@ -71,11 +72,13 @@ public class TypesResource {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesResource");
     private static AtlasTypeRegistry typeRegistry;
     private final TypesREST typesREST;
+    private final AtlasTypeDefStore typeDefStore;
 
     @Inject
-    public TypesResource(AtlasTypeRegistry typeRegistry, TypesREST typesREST) {
+    public TypesResource(AtlasTypeRegistry typeRegistry, TypesREST typesREST, AtlasTypeDefStore typeDefStore) {
         this.typeRegistry = typeRegistry;
-        this.typesREST = typesREST;
+        this.typesREST    = typesREST;
+        this.typeDefStore = typeDefStore;
     }
 
     @Context
@@ -176,7 +179,7 @@ public class TypesResource {
             }
 
             AtlasTypesDef updateTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
-            AtlasTypesDef updatedTypesDef = typesREST.updateAtlasTypeDefs(updateTypesDef);
+            AtlasTypesDef updatedTypesDef = typeDefStore.createUpdateTypesDef(updateTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
