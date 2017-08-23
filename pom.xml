@@ -1922,7 +1922,7 @@
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
-                    <forkCount>1C</forkCount>
+                    <forkCount>2C</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}

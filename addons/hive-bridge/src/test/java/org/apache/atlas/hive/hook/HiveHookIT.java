@@ -1803,7 +1803,7 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private void assertEntityIsNotRegistered(final String typeName, final String property, final String value) throws Exception {
-        waitFor(80000, new Predicate() {
+        waitFor(1000, new Predicate() {
             @Override
             public void evaluate() throws Exception {
                 try {
