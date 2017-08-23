@@ -294,7 +294,7 @@ define(['require',
                     });
                     listOfColumns = _.sortBy(listOfColumns);
                     this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
-                    if (this.value && this.searchTableColumns) {
+                    if (this.value && this.value.type && this.searchTableColumns) {
                         this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
                     }
                 } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
@@ -343,7 +343,7 @@ define(['require',
                     tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters),
                     entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters);
                 if (isPostMethod) {
-                    var excludeDefaultColumn = this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms") : null,
+                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms") : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,

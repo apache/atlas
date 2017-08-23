@@ -297,7 +297,7 @@ define(['require',
                     var ruleUrl = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
                     this.searchTableFilters[filtertype][(isTag ? this.value.tag : this.value.type)] = ruleUrl;
                     this.makeFilterButtonActive(filtertype);
-                    if (this.value && this.searchTableColumns) {
+                    if (!isTag && this.value && this.value.type && this.searchTableColumns) {
                         if (!this.searchTableColumns[this.value.type]) {
                             this.searchTableColumns[this.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"]
                         }
@@ -344,9 +344,13 @@ define(['require',
                 }
                 if (this.value) {
                     if (this.value.dslChecked == "true") {
-                        this.ui.searchType.prop("checked", true).trigger("change");
+                        if (!this.ui.searchType.prop("checked")) {
+                            this.ui.searchType.prop("checked", true).trigger("change");
+                        }
                     } else {
-                        this.ui.searchType.prop("checked", false).trigger("change");
+                        if (this.ui.searchType.prop("checked")) {
+                            this.ui.searchType.prop("checked", false).trigger("change");
+                        }
                     }
                     this.ui.typeLov.val(this.value.type);
                     if (this.ui.typeLov.data('select2')) {
@@ -385,7 +389,9 @@ define(['require',
                     searchType: this.type,
                     dslChecked: this.ui.searchType.is(':checked'),
                     tagFilters: null,
-                    entityFilters: null
+                    entityFilters: null,
+                    attributes: null,
+                    includeDE: null
                 }
                 this.query[this.type].type = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
@@ -398,15 +404,12 @@ define(['require',
                     if (this.value.type) {
                         params['entityFilters'] = entityFilterObj[this.value.type]
                     }
-                }
-                if (this.dsl) {
-                    params['attributes'] = null;
-                } else {
                     var columnList = this.value && this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
                     if (columnList) {
                         params['attributes'] = columnList.join(',');
-                    } else {
-                        params['attributes'] = null;
+                    }
+                    if (this.value.includeDE) {
+                        params['includeDE'] = this.value.includeDE
                     }
                 }
 

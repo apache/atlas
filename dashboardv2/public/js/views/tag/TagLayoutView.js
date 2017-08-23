@@ -73,7 +73,7 @@ define(['require',
             onRender: function() {
                 var that = this;
                 this.bindEvents();
-                this.fetchCollections();
+                this.tagsGenerator();
                 $('body').on("click", '.tagPopoverList li', function(e) {
                     that[$(this).find("a").data('fn')](e);
                 });
@@ -148,31 +148,32 @@ define(['require',
                 }
             },
             tagsGenerator: function(searchString) {
-                var that = this,
-                    str = '';
-                that.collection.fullCollection.comparator = function(model) {
-                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
-                };
-                that.collection.fullCollection.sort().each(function(model) {
-                    var name = Utils.getName(model.toJSON(), 'name');
-                    var checkTagOrTerm = Utils.checkTagOrTerm(name);
-                    if (checkTagOrTerm.tag) {
-                        if (searchString) {
-                            if (name.search(new RegExp(searchString, "i")) != -1) {
-                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
+                var str = '';
+                if (this.collection && this.collection.fullCollection.length) {
+                    this.collection.fullCollection.comparator = function(model) {
+                        return Utils.getName(model.toJSON(), 'name').toLowerCase();
+                    };
+                    this.collection.fullCollection.sort().each(function(model) {
+                        var name = Utils.getName(model.toJSON(), 'name');
+                        var checkTagOrTerm = Utils.checkTagOrTerm(name);
+                        if (checkTagOrTerm.tag) {
+                            if (searchString) {
+                                if (name.search(new RegExp(searchString, "i")) != -1) {
+                                    str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
+                                } else {
+                                    return;
+                                }
                             } else {
-                                return;
+                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
                             }
-                        } else {
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
                         }
+                    });
+                    this.ui.tagsParent.empty().html(str);
+                    this.setValues();
+                    this.createTagAction();
+                    if (this.createTag) {
+                        this.createTag = false;
                     }
-                });
-                this.ui.tagsParent.empty().html(str);
-                this.setValues();
-                this.createTagAction();
-                if (this.createTag) {
-                    this.createTag = false;
                 }
             },
             onClickCreateTag: function(e) {
