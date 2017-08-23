@@ -33,6 +33,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -200,9 +202,25 @@ public class EntityMutationResponse {
             mutatedEntities.put(op, opEntities);
         }
 
-        opEntities.add(header);
+        if (!entityHeaderExists(opEntities, header)) {
+            opEntities.add(header);
+        }
     }
 
+    private boolean entityHeaderExists(List<AtlasEntityHeader> entityHeaders, AtlasEntityHeader newEntityHeader) {
+        boolean ret = false;
+
+        if (CollectionUtils.isNotEmpty(entityHeaders) && newEntityHeader != null) {
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                if (StringUtils.equals(entityHeader.getGuid(), newEntityHeader.getGuid())) {
+                    ret = true;
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if ( sb == null) {

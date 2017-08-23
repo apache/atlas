@@ -621,12 +621,11 @@ public class AtlasEntityType extends AtlasStructType {
                 AtlasEntity entityObj = (AtlasEntity) obj;
 
                 for (AtlasAttribute attribute : relationshipAttributes.values()) {
-                    String attributeName = attribute.getName();
-
                     if (attribute != null) {
-                        AtlasType dataType  = attribute.getAttributeType();
-                        Object    value     = entityObj.getAttribute(attributeName);
-                        String    fieldName = objName + "." + attributeName;
+                        String    attributeName = attribute.getName();
+                        AtlasType dataType      = attribute.getAttributeType();
+                        Object    value         = entityObj.getAttribute(attributeName);
+                        String    fieldName     = objName + "." + attributeName;
 
                         if (isValidRelationshipType(dataType) && value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
@@ -638,12 +637,12 @@ public class AtlasEntityType extends AtlasStructType {
                 Map attributes = AtlasTypeUtil.toStructAttributes((Map)obj);
 
                 for (AtlasAttribute attribute : relationshipAttributes.values()) {
-                    String attributeName = attribute.getName();
 
                     if (attribute != null) {
-                        AtlasType dataType  = attribute.getAttributeType();
-                        Object    value     = attributes.get(attributeName);
-                        String    fieldName = objName + "." + attributeName;
+                        String    attributeName = attribute.getName();
+                        AtlasType dataType      = attribute.getAttributeType();
+                        Object    value         = attributes.get(attributeName);
+                        String    fieldName     = objName + "." + attributeName;
 
                         if (isValidRelationshipType(dataType) && value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;

@@ -842,7 +842,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
 
     @Test
-    public void testPartialUpdate() throws Exception {
+    public void testPartialUpdateByGuid() throws Exception {
         String dbName = "db" + randomString();
         String tableName = "table" + randomString();
         Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
@@ -878,30 +878,63 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         LOG.debug("Updating entity= {}", tableUpdated);
         EntityResult entityResult = atlasClientV1.updateEntity(guid, tableUpdated);
-        assertEquals(entityResult.getUpdateEntities().size(), 1);
-        assertEquals(entityResult.getUpdateEntities().get(0), guid);
+        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        assertEquals(entityResult.getUpdateEntities().get(1), guid);
 
         Referenceable entity = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
 
         Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
+    }
+
+    @Test
+    public void testPartialUpdateByUniqueAttributes() throws Exception {
+        String dbName = "db" + randomString();
+        String tableName = "table" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id dbId = createInstance(hiveDBInstance);
+        Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id tableId = createInstance(hiveTableInstance);
+
+        final String guid = tableId._getId();
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + guid);
+        }
+
+        String colName = "col1"+randomString();
+        final List<Referenceable> columns = new ArrayList<>();
+        Map<String, Object> values = new HashMap<>();
+        values.put(NAME, colName);
+        values.put("comment", "col1 comment");
+        values.put(QUALIFIED_NAME, "default.table.col1@"+colName);
+        values.put("comment", "col1 comment");
+        values.put("type", "string");
+        values.put("owner", "user1");
+        values.put("position", 0);
+        values.put("description", "col1");
+        values.put("table", tableId); //table is a required reference, can't be null
+
+        Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
+        columns.add(ref);
 
         //Update by unique attribute
         values.put("type", "int");
         ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.set(0, ref);
-        tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<String, Object>() {{
+        Referenceable tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<String, Object>() {{
             put("columns", columns);
         }});
 
         LOG.debug("Updating entity= {}", tableUpdated);
-        entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+        EntityResult entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 (String) hiveTableInstance.get(QUALIFIED_NAME), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 2);
         assertEquals(entityResult.getUpdateEntities().get(1), guid);
 
-        entity = atlasClientV1.getEntity(guid);
-        refs = (List<Referenceable>) entity.get("columns");
+        Referenceable entity = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
 
         Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
         Assert.assertEquals(refs.get(0).get("type"), "int");
