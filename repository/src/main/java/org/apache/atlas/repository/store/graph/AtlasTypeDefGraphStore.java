@@ -56,6 +56,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToCreate;
+import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToUpdate;
+
 
 /**
  * Abstract class for graph persistence store for TypeDef
@@ -306,6 +309,15 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         }
 
         return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+        AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, typeRegistry);
+        AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, typeRegistry);
+
+        return createUpdateTypesDef(typesToCreate, typesToUpdate);
     }
 
     @Override
