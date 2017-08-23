@@ -112,7 +112,7 @@ public class TypesUtil {
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, String description, String version,
         ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition<>(ClassType.class, name, description, superTypes, attrDefs);
+        return new HierarchicalTypeDefinition<>(ClassType.class, name, description, version, superTypes, attrDefs);
     }
 
     public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,

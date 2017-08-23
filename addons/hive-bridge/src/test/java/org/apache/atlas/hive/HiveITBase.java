@@ -155,7 +155,7 @@ public class HiveITBase {
 
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
                                             final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
-        waitFor(80000, new HiveHookIT.Predicate() {
+        waitFor(1000, new HiveHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
                 Referenceable entity = atlasClient.getEntity(typeName, property, value);

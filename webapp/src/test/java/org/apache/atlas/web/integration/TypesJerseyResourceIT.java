@@ -112,14 +112,14 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testUpdate() throws Exception {
         HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
+                .createClassTypeDef(randomString(), null, "1.0", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE));
         List<String> typesCreated = atlasClientV1.createType(TypesSerialization.toJson(typeDefinition, false));
         assertEquals(typesCreated.size(), 1);
         assertEquals(typesCreated.get(0), typeDefinition.typeName);
 
         //Add attribute description
-        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName,
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, null, "2.0",
                 ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
                 createOptionalAttrDef(DESCRIPTION, DataTypes.STRING_TYPE));
