@@ -236,22 +236,23 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             // Now filter on the tag attributes
             Set<String> guids = getGuids(entityVertices);
 
-            gremlinQueryBindings.put("guids", guids);
+            // Clear prior results
+            entityVertices.clear();
 
-            try {
-                AtlasGraph        graph               = context.getGraph();
-                ScriptEngine      gremlinScriptEngine = graph.getGremlinScriptEngine();
-                List<AtlasVertex> atlasVertices       = (List<AtlasVertex>) graph.executeGremlinScript(gremlinScriptEngine, gremlinQueryBindings, gremlinTagFilterQuery, false);
+            if (CollectionUtils.isNotEmpty(guids)) {
+                gremlinQueryBindings.put("guids", guids);
 
-                // Clear prior results
-                entityVertices.clear();
+                try {
+                    AtlasGraph        graph               = context.getGraph();
+                    ScriptEngine      gremlinScriptEngine = graph.getGremlinScriptEngine();
+                    List<AtlasVertex> atlasVertices       = (List<AtlasVertex>) graph.executeGremlinScript(gremlinScriptEngine, gremlinQueryBindings, gremlinTagFilterQuery, false);
 
-                if (CollectionUtils.isNotEmpty(atlasVertices)) {
-                    entityVertices.addAll(atlasVertices);
+                    if (CollectionUtils.isNotEmpty(atlasVertices)) {
+                        entityVertices.addAll(atlasVertices);
+                    }
+                } catch (AtlasBaseException | ScriptException e) {
+                    LOG.warn(e.getMessage(), e);
                 }
-
-            } catch (AtlasBaseException | ScriptException e) {
-                LOG.warn(e.getMessage(), e);
             }
         }
 

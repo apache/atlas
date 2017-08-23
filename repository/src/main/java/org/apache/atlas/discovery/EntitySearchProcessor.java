@@ -173,12 +173,17 @@ public class EntitySearchProcessor extends SearchProcessor {
                     CollectionUtils.filter(entityVertices, inMemoryPredicate);
 
                     if (graphQuery != null) {
-                        AtlasGraphQuery guidQuery = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, getGuids(entityVertices));
-
-                        guidQuery.addConditionsFrom(graphQuery);
+                        Set<String> guids = getGuids(entityVertices);
 
                         entityVertices.clear();
-                        getVertices(guidQuery.vertices().iterator(), entityVertices);
+
+                        if (CollectionUtils.isNotEmpty(guids)) {
+                            AtlasGraphQuery guidQuery = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, guids);
+
+                            guidQuery.addConditionsFrom(graphQuery);
+
+                            getVertices(guidQuery.vertices().iterator(), entityVertices);
+                        }
                     }
                 } else {
                     Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
@@ -211,12 +216,17 @@ public class EntitySearchProcessor extends SearchProcessor {
             LOG.debug("==> EntitySearchProcessor.filter({})", entityVertices.size());
         }
 
-        AtlasGraphQuery query = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, getGuids(entityVertices));
-
-        query.addConditionsFrom(filterGraphQuery);
+        Set<String> guids = getGuids(entityVertices);
 
         entityVertices.clear();
-        getVertices(query.vertices().iterator(), entityVertices);
+
+        if (CollectionUtils.isNotEmpty(guids)) {
+            AtlasGraphQuery query = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, guids);
+
+            query.addConditionsFrom(filterGraphQuery);
+
+            getVertices(query.vertices().iterator(), entityVertices);
+        }
 
         super.filter(entityVertices);
 
