@@ -1903,7 +1903,7 @@
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
-                    <forkCount>2C</forkCount>
+                    <forkCount>1C</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
@@ -2068,7 +2068,7 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        <phase>verify</phase>
+                        <phase>validate</phase>
                     </execution>
                 </executions>
             </plugin>

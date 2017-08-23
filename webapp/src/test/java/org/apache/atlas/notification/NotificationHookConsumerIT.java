@@ -21,6 +21,11 @@ package org.apache.atlas.notification;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
+import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
+import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
+import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.web.integration.BaseResourceIT;
@@ -31,6 +36,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static java.lang.Thread.sleep;
 import static org.testng.Assert.assertEquals;
 
 public class NotificationHookConsumerIT extends BaseResourceIT {
@@ -54,8 +60,9 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         notificationInterface.close();
     }
 
-    private void sendHookMessage(HookNotification.HookNotificationMessage message) throws NotificationException {
+    private void sendHookMessage(HookNotificationMessage message) throws NotificationException, InterruptedException {
         notificationInterface.send(NotificationInterface.NotificationType.HOOK, message);
+        sleep(1000);
     }
 
     @Test
@@ -71,8 +78,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         entity.set(DESCRIPTION, randomString());
         entity.set(QUALIFIED_NAME, dbName);
         entity.set(CLUSTER_NAME, randomString());
-        sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
-
+        sendHookMessage(new EntityCreateRequest(TEST_USER, entity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -91,8 +97,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         entity.set(QUALIFIED_NAME, dbName);
         entity.set(CLUSTER_NAME, randomString());
 
-        sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
-
+        sendHookMessage(new EntityCreateRequest(TEST_USER, entity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -103,8 +108,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         //Assert that user passed in hook message is used in audit
         Referenceable instance = atlasClientV1.getEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, (String) entity.get(QUALIFIED_NAME));
-        List<EntityAuditEvent> events =
-                atlasClientV1.getEntityAuditEvents(instance.getId()._getId(), (short) 1);
+        List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(instance.getId()._getId(), (short) 1);
         assertEquals(events.size(), 1);
         assertEquals(events.get(0).getUser(), TEST_USER);
     }
@@ -122,8 +126,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE_BUILTIN);
         newEntity.set("owner", randomString());
-        sendHookMessage(
-                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName, newEntity));
+        sendHookMessage(new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -152,8 +155,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String newName = "db" + randomString();
         newEntity.set(QUALIFIED_NAME, newName);
 
-        sendHookMessage(
-                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName, newEntity));
+        sendHookMessage(new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -179,8 +181,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         final String dbId = atlasClientV1.createEntity(entity).get(0);
 
-        sendHookMessage(
-            new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName));
+        sendHookMessage(new EntityDeleteRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -209,7 +210,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         newEntity.set(CLUSTER_NAME, randomString());
 
         //updating unique attribute
-        sendHookMessage(new HookNotification.EntityUpdateRequest(TEST_USER, newEntity));
+        sendHookMessage(new EntityUpdateRequest(TEST_USER, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
