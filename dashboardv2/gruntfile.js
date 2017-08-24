@@ -224,6 +224,9 @@ module.exports = function(grunt) {
         },
         uglify: {
             build: {
+                options: {
+                    sourceMap: true
+                },
                 files: [{
                     expand: true,
                     cwd: 'dist/js',
@@ -307,7 +310,6 @@ module.exports = function(grunt) {
         'sass:dist',
         'uglify:build',
         'cssmin:build',
-        'htmlmin:build',
         'configureProxies:server',
         'connect:server',
         'watch'
@@ -321,7 +323,6 @@ module.exports = function(grunt) {
         'copy:build',
         'sass:build',
         'uglify:build',
-        'cssmin:build',
-        'htmlmin:build'
+        'cssmin:build'
     ]);
 };
