@@ -565,6 +565,7 @@
         <atlas.surefire.options></atlas.surefire.options>
 
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
     </properties>
 
     <profiles>
@@ -613,6 +614,12 @@
                     </dependency>
                 </dependencies>
             </dependencyManagement>
+        </profile>
+        <profile>
+            <id>skipMinify</id>
+            <properties>
+                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
+            </properties>
         </profile>
     </profiles>
 

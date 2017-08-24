@@ -108,21 +108,12 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>npm remaining</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>install --ignore-scripts</arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>grunt dist</id>
                         <goals>
                             <goal>grunt</goal>
                         </goals>
                         <configuration>
-                            <arguments>build</arguments>
+                            <arguments>${project.build.dashboardv2.gruntBuild}</arguments>
                         </configuration>
                     </execution>
                 </executions>

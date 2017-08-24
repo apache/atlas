@@ -121,6 +121,16 @@ Also, a standalone instance of Solr can be started as the default search indexin
 indexing for a different Solr instance please see "Graph Search Index - Solr" in the
 [[Configuration][Configuration]] section.
 
+To build a distribution without minified js,css file, build with the skipMinify profile.
+
+<verbatim>
+
+mvn clean package -Pdist,skipMinify
+
+</verbatim>
+
+Note that by default js and css files are minified.
+
 ---+++ Installing & Running Atlas
 
 ---++++ Installing Atlas
