@@ -26,7 +26,6 @@ import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.CatalogRuntimeException;
 import org.apache.atlas.catalog.exception.ResourceAlreadyExistsException;
 import org.apache.atlas.catalog.exception.ResourceNotFoundException;
-import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -36,7 +35,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -70,34 +68,6 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
     public DefaultTypeSystem(MetadataService metadataService, AtlasTypeDefStore typeDefStore) throws AtlasBaseException {
         this.metadataService = metadataService;
         this.typeDefStore = typeDefStore;
-        //Create namespace
-        createSuperTypes();
-    }
-
-    @InterfaceAudience.Private
-    private void createSuperTypes() throws AtlasBaseException {
-
-        AtlasClassificationDef termClassification = AtlasTypeUtil.createTraitTypeDef(TaxonomyResourceProvider.TAXONOMY_TERM_TYPE, TaxonomyResourceProvider.TAXONOMY_TERM_TYPE,
-            ImmutableSet.<String>of(), AtlasTypeUtil.createOptionalAttrDef(TaxonomyResourceProvider.NAMESPACE_ATTRIBUTE_NAME, "string"));
-
-        createTraitType(termClassification);
-    }
-
-    private void createTraitType(AtlasClassificationDef classificationDef) throws AtlasBaseException {
-        try {
-            typeDefStore.getClassificationDefByName(classificationDef.getName());
-        } catch (AtlasBaseException tne) {
-            //Type not found . Create
-            if (tne.getAtlasErrorCode() == AtlasErrorCode.TYPE_NAME_NOT_FOUND) {
-                AtlasTypesDef typesDef = new AtlasTypesDef(ImmutableList.<AtlasEnumDef>of(), ImmutableList.<AtlasStructDef>of(),
-                    ImmutableList.of(classificationDef),
-                    ImmutableList.<AtlasEntityDef>of());
-
-                typeDefStore.createTypesDef(typesDef);
-            } else {
-                throw tne;
-            }
-        }
     }
 
     @Override

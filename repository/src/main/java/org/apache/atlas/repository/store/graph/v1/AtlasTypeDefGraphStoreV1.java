@@ -75,18 +75,6 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         super(typeRegistry, typeDefChangeListeners);
         this.atlasGraph = atlasGraph;
 
-        LOG.debug("==> AtlasTypeDefGraphStoreV1()");
-
-        try {
-            init();
-            // commit/close the transaction after successful type store initialization.
-            atlasGraph.commit();
-
-        } catch (AtlasBaseException excp) {
-            atlasGraph.rollback();
-            LOG.error("failed to initialize types from graph store", excp);
-        }
-
         LOG.debug("<== AtlasTypeDefGraphStoreV1()");
     }
 
@@ -113,11 +101,11 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     @Override
     @PostConstruct
     public void init() throws AtlasBaseException {
-        LOG.debug("==> AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
 
         super.init();
 
-        LOG.debug("<== AtlasTypeDefGraphStoreV1.init()");
+        LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
     }
 
     AtlasGraph getAtlasGraph() { return atlasGraph; }

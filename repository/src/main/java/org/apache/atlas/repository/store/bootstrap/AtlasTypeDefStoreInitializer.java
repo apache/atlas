@@ -18,7 +18,10 @@
 package org.apache.atlas.repository.store.bootstrap;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -32,6 +35,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -62,27 +66,41 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
  * Class that handles initial loading of models and patches into typedef store
  */
 @Service
-public class AtlasTypeDefStoreInitializer {
+public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
 
     private final AtlasTypeDefStore atlasTypeDefStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
+    private final Configuration     conf;
+
 
     @Inject
-    public AtlasTypeDefStoreInitializer(AtlasTypeDefStore atlasTypeDefStore, AtlasTypeRegistry atlasTypeRegistry) {
+    public AtlasTypeDefStoreInitializer(AtlasTypeDefStore atlasTypeDefStore, AtlasTypeRegistry atlasTypeRegistry, Configuration conf) {
         this.atlasTypeDefStore = atlasTypeDefStore;
         this.atlasTypeRegistry = atlasTypeRegistry;
+        this.conf              = conf;
     }
 
     @PostConstruct
-    public void init() {
-        String atlasHomeDir = System.getProperty("atlas.home");
-        String typesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
+    public void init() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefStoreInitializer.init()");
 
-        initializeStore(typesDirName);
+        if (!HAConfiguration.isHAEnabled(conf)) {
+            atlasTypeDefStore.init();
+
+            loadBootstrapTypeDefs();
+        } else {
+            LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
+        }
+
+        LOG.info("<== AtlasTypeDefStoreInitializer.init()");
     }
 
-    private void initializeStore(String typesDirName) {
+    private void loadBootstrapTypeDefs() {
+        LOG.info("==> AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
+
+        String atlasHomeDir = System.getProperty("atlas.home");
+        String typesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
         File   typesDir     = new File(typesDirName);
         File[] typeDefFiles = typesDir.exists() ? typesDir.listFiles() : null;
 
@@ -127,6 +145,8 @@ public class AtlasTypeDefStoreInitializer {
         }
 
         applyTypePatches(typesDirName);
+
+        LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
     }
 
     public static AtlasTypesDef getTypesToCreate(AtlasTypesDef typesDef, AtlasTypeRegistry typeRegistry) {
@@ -235,6 +255,28 @@ public class AtlasTypeDefStoreInitializer {
         }
 
         return typesToUpdate;
+    }
+
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("==> AtlasTypeDefStoreInitializer.instanceIsActive()");
+
+        try {
+            atlasTypeDefStore.init();
+
+            loadBootstrapTypeDefs();
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to init after becoming active", e);
+        }
+
+        LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsActive()");
+    }
+
+    @Override
+    public void instanceIsPassive() throws AtlasException {
+        LOG.info("==> AtlasTypeDefStoreInitializer.instanceIsPassive()");
+
+        LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsPassive()");
     }
 
     private static boolean updateTypeAttributes(AtlasStructDef oldStructDef, AtlasStructDef newStructDef, boolean checkTypeVersion) {
