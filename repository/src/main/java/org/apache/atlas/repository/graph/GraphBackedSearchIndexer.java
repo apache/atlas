@@ -132,19 +132,20 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
-            if (management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)) {
-                LOG.info("Global indexes already exist for graph");
-                management.commit();
+            LOG.info("Creating indexes for graph.");
 
-                return;
+            if (management.getGraphIndex(Constants.VERTEX_INDEX) == null) {
+                management.createVertexIndex(Constants.VERTEX_INDEX, Constants.BACKING_INDEX, Collections.<AtlasPropertyKey>emptyList());
+
+                LOG.info("Created index {}", Constants.VERTEX_INDEX);
             }
 
-            /* This is called only once, which is the first time Atlas types are made indexable .*/
-            LOG.info("Indexes do not exist, Creating indexes for graph.");
+            if (management.getGraphIndex(Constants.EDGE_INDEX) == null) {
+                management.createEdgeIndex(Constants.EDGE_INDEX, Constants.BACKING_INDEX);
 
-            
-            management.createVertexIndex(Constants.VERTEX_INDEX, Constants.BACKING_INDEX, Collections.<AtlasPropertyKey>emptyList());              
-            management.createEdgeIndex(Constants.EDGE_INDEX, Constants.BACKING_INDEX);
+                LOG.info("Created index {}", Constants.EDGE_INDEX);
+            }
+
 
             // create a composite index for guid as its unique
             createIndexes(management, Constants.GUID_PROPERTY_KEY, String.class, true,
@@ -200,11 +201,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void createFullTextIndex(AtlasGraphManagement management) {
-        AtlasPropertyKey fullText =
-                management.makePropertyKey(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class, AtlasCardinality.SINGLE);
+        if (!management.containsPropertyKey(Constants.ENTITY_TEXT_PROPERTY_KEY)) {
+            AtlasPropertyKey fullText =
+                    management.makePropertyKey(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class, AtlasCardinality.SINGLE);
 
-        management.createFullTextIndex(Constants.FULLTEXT_INDEX, fullText, Constants.BACKING_INDEX);
+            management.createFullTextIndex(Constants.FULLTEXT_INDEX, fullText, Constants.BACKING_INDEX);
 
+            LOG.info("Created index {}", Constants.ENTITY_TEXT_PROPERTY_KEY);
+        }
     }
 
     private void createTypeStoreIndexes(AtlasGraphManagement management) {
@@ -516,17 +520,21 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
             updateVertexIndex(management, propertyName, propertyClass, cardinality, propertyKey);
-
         }
 
-        if (createCompositeForAttribute) {
-            createExactMatchIndex(management, propertyClass, propertyKey, isUnique);
-        } else if (createCompositeWithTypeandSuperTypes) {
-            // Index with typename since typename+property key queries need to
-            // speed up
-            createExactMatchIndexWithTypeName(management, propertyClass, propertyKey);
-            createExactMatchIndexWithSuperTypeName(management, propertyClass, propertyKey);
+        if (propertyKey != null) {
+            if (createCompositeForAttribute) {
+                createExactMatchIndex(management, propertyClass, propertyKey, isUnique);
+            } else if (createCompositeWithTypeandSuperTypes) {
+                // Index with typename since typename+property key queries need to
+                // speed up
+                createExactMatchIndexWithTypeName(management, propertyClass, propertyKey);
+                createExactMatchIndexWithSuperTypeName(management, propertyClass, propertyKey);
+            }
+        } else {
+            LOG.warn("Index not created for {}: propertyKey is null", propertyName);
         }
+
         return propertyKey;
     }
     
@@ -542,9 +550,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         AtlasGraphIndex existingIndex = management.getGraphIndex(propertyName);
         if (existingIndex == null) {
             management.createExactMatchIndex(propertyName, enforceUniqueness, Collections.singletonList(propertyKey));
-        }
 
-        LOG.info("Created composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
+            LOG.info("Created composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
+        }
     }
     
 
@@ -578,7 +586,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         AtlasGraphIndex existingIndex = management.getGraphIndex(indexName);
 
         if (existingIndex == null) {
-            
             List<AtlasPropertyKey> keys = new ArrayList<>(2);
             keys.add(propertyKey);
             keys.add(typePropertyKey);

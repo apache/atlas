@@ -18,11 +18,9 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.SearchFilter;
@@ -52,7 +50,7 @@ import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreIniti
 /**
  * Abstract class for graph persistence store for TypeDef
  */
-public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, ActiveStateChangeHandler {
+public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStore.class);
 
@@ -79,6 +77,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
 
     @Override
     public void init() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.init()");
+
         AtlasTransientTypeRegistry ttr           = null;
         boolean                    commitUpdates = false;
 
@@ -100,6 +100,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
             commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+
+            LOG.info("<== AtlasTypeDefGraphStore.init()");
         }
     }
 
@@ -649,20 +651,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         }
         AtlasType type = typeRegistry.getTypeByGuid(guid);
         return getTypeDefFromType(type);
-    }
-
-    @Override
-    public void instanceIsActive() throws AtlasException {
-        try {
-            init();
-        } catch (AtlasBaseException e) {
-            LOG.error("Failed to init after becoming active", e);
-        }
-    }
-
-    @Override
-    public void instanceIsPassive() throws AtlasException {
-        LOG.info("Not reacting to a Passive state change");
     }
 
     private AtlasBaseTypeDef getTypeDefFromType(AtlasType type) throws AtlasBaseException {

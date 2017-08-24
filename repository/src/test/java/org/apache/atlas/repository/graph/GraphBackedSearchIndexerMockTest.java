@@ -32,7 +32,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -59,11 +58,8 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
     public void testSearchIndicesAreInitializedOnConstructionWhenHAIsDisabled() throws IndexException, RepositoryException {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);        
         when(graph.getManagementSystem()).thenReturn(management);
-        when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
         GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration, typeRegistry);
-
-        verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
     }
 
     @Test
@@ -75,7 +71,6 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
 
         new GraphBackedSearchIndexer(this, configuration, typeRegistry);
         verifyZeroInteractions(management);
-
     }
 
     @Test
@@ -83,12 +78,9 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
         when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(graph.getManagementSystem()).thenReturn(management);
-        when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
         GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration, typeRegistry);
         graphBackedSearchIndexer.instanceIsActive();
-
-        verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
     }
     
 
