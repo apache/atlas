@@ -29,7 +29,6 @@ import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.AtlasRelationshipDefStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -46,7 +45,7 @@ import java.util.List;
 /**
  * RelationshipDef store in v1 format.
  */
-public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasRelationshipDefStore {
+public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRelationshipDef> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipDefStoreV1.class);
 
     @Inject
@@ -124,19 +123,13 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
     }
 
     @Override
-    public AtlasRelationshipDef create(AtlasRelationshipDef relationshipDef, Object preCreateResult)
+    public AtlasRelationshipDef create(AtlasRelationshipDef relationshipDef, AtlasVertex preCreateResult)
             throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.create({}, {})", relationshipDef, preCreateResult);
         }
 
-        AtlasVertex vertex;
-
-        if (preCreateResult == null || !(preCreateResult instanceof AtlasVertex)) {
-            vertex = preCreate(relationshipDef);
-        } else {
-            vertex = (AtlasVertex) preCreateResult;
-        }
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(relationshipDef) : preCreateResult;
 
         AtlasRelationshipDef ret = toRelationshipDef(vertex);
 
@@ -321,27 +314,6 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
     }
 
     @Override
-    public void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasRelationshipDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
-        }
-
-        AtlasVertex vertex;
-
-        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
-            vertex = preDeleteByName(name);
-        } else {
-            vertex = (AtlasVertex) preDeleteResult;
-        }
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasRelationshipDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
-        }
-    }
-
-    @Override
     public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.preDeleteByGuid({})", guid);
@@ -366,27 +338,6 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1 impleme
         }
 
         return ret;
-    }
-
-    @Override
-    public void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasRelationshipDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
-        }
-
-        AtlasVertex vertex;
-
-        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
-            vertex = preDeleteByGuid(guid);
-        } else {
-            vertex = (AtlasVertex) preDeleteResult;
-        }
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasRelationshipDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
-        }
     }
 
     private void updateVertexPreCreate(AtlasRelationshipDef relationshipDef, AtlasRelationshipType relationshipType,

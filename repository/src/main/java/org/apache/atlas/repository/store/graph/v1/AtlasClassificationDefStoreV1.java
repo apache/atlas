@@ -23,7 +23,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.AtlasClassificationDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -41,7 +40,7 @@ import java.util.regex.Pattern;
 /**
  * ClassificationDef store in v1 format.
  */
-public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasClassificationDefStore {
+class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassificationDef> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationDefStoreV1.class);
 
     private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ .]*";
@@ -84,19 +83,13 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
     }
 
     @Override
-    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, Object preCreateResult)
+    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult)
         throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
         }
 
-        AtlasVertex vertex;
-
-        if (preCreateResult == null || !(preCreateResult instanceof AtlasVertex)) {
-            vertex = preCreate(classificationDef);
-        } else {
-            vertex = (AtlasVertex)preCreateResult;
-        }
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef) : preCreateResult;
 
         updateVertexAddReferences(classificationDef, vertex);
 
@@ -281,27 +274,6 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
     }
 
     @Override
-    public void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.deleteByName({})", name);
-        }
-
-        AtlasVertex vertex;
-
-        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
-            vertex = preDeleteByName(name);
-        } else {
-            vertex = (AtlasVertex)preDeleteResult;
-        }
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.deleteByName({})", name);
-        }
-    }
-
-    @Override
     public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByGuid({})", guid);
@@ -326,27 +298,6 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
         }
 
         return ret;
-    }
-
-    @Override
-    public void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.deleteByGuid({})", guid);
-        }
-
-        AtlasVertex vertex;
-
-        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
-            vertex = preDeleteByGuid(guid);
-        } else {
-            vertex = (AtlasVertex)preDeleteResult;
-        }
-
-        typeDefStore.deleteTypeVertex(vertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.deleteByGuid({})", guid);
-        }
     }
 
     private void updateVertexPreCreate(AtlasClassificationDef  classificationDef,

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.store.graph;
+package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
@@ -27,8 +27,6 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.store.graph.v1.AtlasAbstractDefStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasRelationshipDefStoreV1;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -46,7 +44,7 @@ public class AtlasRelationshipDefStoreV1Test {
 
     @Inject
     private
-    AtlasRelationshipDefStore relationshipDefStore;
+    AtlasRelationshipDefStoreV1 relationshipDefStore;
 
     @DataProvider
     public Object[][] invalidAttributeNameWithReservedKeywords(){

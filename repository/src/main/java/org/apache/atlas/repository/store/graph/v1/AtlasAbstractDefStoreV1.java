@@ -24,6 +24,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.QueryParser;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ import java.util.regex.Pattern;
 /**
  * Abstract typedef-store for v1 format.
  */
-public abstract class AtlasAbstractDefStoreV1 {
+  abstract class AtlasAbstractDefStoreV1 <T extends AtlasBaseTypeDef> implements AtlasDefStore<T> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractDefStoreV1.class);
     protected final AtlasTypeDefGraphStoreV1 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
@@ -76,5 +78,35 @@ public abstract class AtlasAbstractDefStoreV1 {
         Matcher m = NAME_PATTERN.matcher(typeName);
 
         return m.matches();
+    }
+
+    @Override
+    public void deleteByName(String name, AtlasVertex preDeleteResult) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasAbstractDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
+        }
+
+        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByName(name) : preDeleteResult;
+
+        typeDefStore.deleteTypeVertex(vertex);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasAbstractDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
+        }
+    }
+
+    @Override
+    public void deleteByGuid(String guid, AtlasVertex preDeleteResult) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
+        }
+
+        AtlasVertex vertex = (preDeleteResult == null) ? preDeleteByGuid(guid) : preDeleteResult;
+
+        typeDefStore.deleteTypeVertex(vertex);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
+        }
     }
 }
