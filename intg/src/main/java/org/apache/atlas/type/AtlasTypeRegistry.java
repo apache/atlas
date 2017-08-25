@@ -49,7 +49,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 @Singleton
 @Component
 public class AtlasTypeRegistry {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasStructType.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeRegistry.class);
     private static final int    DEFAULT_LOCK_MAX_WAIT_TIME_IN_SECONDS = 15;
 
     protected       RegistryData                   registryData;
