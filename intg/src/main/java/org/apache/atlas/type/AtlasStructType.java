@@ -19,6 +19,7 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -330,13 +331,24 @@ public class AtlasStructType extends AtlasType {
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
                         } else if (!attributeDef.getIsOptional()) {
-                            ret = false;
-                            messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                            // if required attribute is null, check if attribute value specified in relationship
+                            if (structObj instanceof AtlasEntity) {
+                                AtlasEntity entityObj = (AtlasEntity) structObj;
+
+                                if (entityObj.getRelationshipAttribute(attrName) == null) {
+                                    ret = false;
+                                    messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                                }
+                            } else {
+                                ret = false;
+                                messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                            }
                         }
                     }
                 }
             } else if (obj instanceof Map) {
-                Map attributes = AtlasTypeUtil.toStructAttributes((Map)obj);
+                Map attributes             = AtlasTypeUtil.toStructAttributes((Map)obj);
+                Map relationshipAttributes = AtlasTypeUtil.toRelationshipAttributes((Map)obj);
 
                 for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
                     String             attrName  = attributeDef.getName();
@@ -350,8 +362,11 @@ public class AtlasStructType extends AtlasType {
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
                         } else if (!attributeDef.getIsOptional()) {
-                            ret = false;
-                            messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                            // if required attribute is null, check if attribute value specified in relationship
+                            if (MapUtils.isEmpty(relationshipAttributes) || !relationshipAttributes.containsKey(attrName)) {
+                                ret = false;
+                                messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                            }
                         }
                     }
                 }

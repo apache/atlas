@@ -301,21 +301,38 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         visitStruct(structType, struct);
     }
 
+    void visitEntity(AtlasEntityType entityType, AtlasEntity entity) throws AtlasBaseException {
+        List<String> visitedAttributes = new ArrayList<>();
+
+        // visit relationship attributes
+        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+            AtlasType attrType = attribute.getAttributeType();
+            String    attrName = attribute.getName();
+            Object    attrVal  = entity.getRelationshipAttribute(attrName);
+
+            if (entity.hasRelationshipAttribute(attrName)) {
+                visitAttribute(attrType, attrVal);
+
+                visitedAttributes.add(attrName);
+            }
+        }
+
+        // visit struct attributes
+        for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
+            AtlasType attrType = attribute.getAttributeType();
+            String    attrName = attribute.getName();
+            Object    attrVal  = entity.getAttribute(attrName);
+
+            if (entity.hasAttribute(attrName) && !visitedAttributes.contains(attrName)) {
+                visitAttribute(attrType, attrVal);
+            }
+        }
+    }
+
     void visitStruct(AtlasStructType structType, AtlasStruct struct) throws AtlasBaseException {
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
             AtlasType attrType = attribute.getAttributeType();
             Object    attrVal  = struct.getAttribute(attribute.getName());
-
-            visitAttribute(attrType, attrVal);
-        }
-    }
-
-    void visitEntity(AtlasEntityType entityType, AtlasEntity entity) throws AtlasBaseException {
-        visitStruct(entityType, entity);
-
-        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-            AtlasType attrType = attribute.getAttributeType();
-            Object    attrVal  = entity.getRelationshipAttribute(attribute.getName());
 
             visitAttribute(attrType, attrVal);
         }

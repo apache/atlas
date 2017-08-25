@@ -85,6 +85,12 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         init(nextInternalId(), end1, end2, null, null, null, null, null, null, 0L);
     }
 
+    public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2, Map<String, Object> attributes) {
+        super(typeName, attributes);
+
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, 0L);
+    }
+
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
         super(typeName, attrName, attrValue);
 

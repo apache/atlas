@@ -316,11 +316,13 @@ public class AtlasTypeUtil {
     }
 
     public static Map toRelationshipAttributes(Map map) {
+        Map ret = null;
+
         if (map != null && map.containsKey("typeName") && map.containsKey("relationshipAttributes") && map.get("relationshipAttributes") instanceof Map) {
-            return (Map)map.get("relationshipAttributes");
+            ret = (Map) map.get("relationshipAttributes");
         }
 
-        return map;
+        return ret;
     }
 
     public static AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
