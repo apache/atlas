@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -76,13 +77,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         this.typeUpdateLockMaxWaitTimeSeconds = AtlasRepositoryConfiguration.getTypeUpdateLockMaxWaitTimeInSeconds();
     }
 
-    protected abstract AtlasEnumDefStore getEnumDefStore(AtlasTypeRegistry typeRegistry);
+    protected abstract AtlasDefStore<AtlasEnumDef> getEnumDefStore(AtlasTypeRegistry typeRegistry);
 
-    protected abstract AtlasStructDefStore getStructDefStore(AtlasTypeRegistry typeRegistry);
+    protected abstract AtlasDefStore<AtlasStructDef> getStructDefStore(AtlasTypeRegistry typeRegistry);
 
-    protected abstract AtlasClassificationDefStore getClassificationDefStore(AtlasTypeRegistry typeRegistry);
+    protected abstract AtlasDefStore<AtlasClassificationDef> getClassificationDefStore(AtlasTypeRegistry typeRegistry);
 
-    protected abstract AtlasEntityDefStore getEntityDefStore(AtlasTypeRegistry typeRegistry);
+    protected abstract AtlasDefStore<AtlasEntityDef> getEntityDefStore(AtlasTypeRegistry typeRegistry);
 
     @Override
     public void init() throws AtlasBaseException {
@@ -438,14 +439,14 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
-        AtlasEnumDefStore           enumDefStore     = getEnumDefStore(ttr);
-        AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
-        AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
-        AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasDefStore<AtlasEnumDef>           enumDefStore     = getEnumDefStore(ttr);
+        AtlasDefStore<AtlasStructDef>         structDefStore   = getStructDefStore(ttr);
+        AtlasDefStore<AtlasClassificationDef> classifiDefStore = getClassificationDefStore(ttr);
+        AtlasDefStore<AtlasEntityDef>         entityDefStore   = getEntityDefStore(ttr);
 
-        List<Object> preDeleteStructDefs   = new ArrayList<>();
-        List<Object> preDeleteClassifiDefs = new ArrayList<>();
-        List<Object> preDeleteEntityDefs   = new ArrayList<>();
+        List<AtlasVertex> preDeleteStructDefs   = new ArrayList<>();
+        List<AtlasVertex> preDeleteClassifiDefs = new ArrayList<>();
+        List<AtlasVertex> preDeleteEntityDefs   = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
@@ -516,9 +517,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
                 if (StringUtils.isNotBlank(enumDef.getGuid())) {
-                    enumDefStore.deleteByGuid(enumDef.getGuid());
+                    enumDefStore.deleteByGuid(enumDef.getGuid(), null);
                 } else {
-                    enumDefStore.deleteByName(enumDef.getName());
+                    enumDefStore.deleteByName(enumDef.getName(), null);
                 }
             }
         }
@@ -721,18 +722,18 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private AtlasTypesDef addToGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
-        AtlasEnumDefStore           enumDefStore     = getEnumDefStore(ttr);
-        AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
-        AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
-        AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasDefStore<AtlasEnumDef>           enumDefStore     = getEnumDefStore(ttr);
+        AtlasDefStore<AtlasStructDef>         structDefStore   = getStructDefStore(ttr);
+        AtlasDefStore<AtlasClassificationDef> classifiDefStore = getClassificationDefStore(ttr);
+        AtlasDefStore<AtlasEntityDef>         entityDefStore   = getEntityDefStore(ttr);
 
-        List<Object> preCreateStructDefs   = new ArrayList<>();
-        List<Object> preCreateClassifiDefs = new ArrayList<>();
-        List<Object> preCreateEntityDefs   = new ArrayList<>();
+        List<AtlasVertex> preCreateStructDefs   = new ArrayList<>();
+        List<AtlasVertex> preCreateClassifiDefs = new ArrayList<>();
+        List<AtlasVertex> preCreateEntityDefs   = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
-                AtlasEnumDef createdDef = enumDefStore.create(enumDef);
+                AtlasEnumDef createdDef = enumDefStore.create(enumDef, null);
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -800,10 +801,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private AtlasTypesDef updateGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
-        AtlasEnumDefStore           enumDefStore     = getEnumDefStore(ttr);
-        AtlasStructDefStore         structDefStore   = getStructDefStore(ttr);
-        AtlasClassificationDefStore classifiDefStore = getClassificationDefStore(ttr);
-        AtlasEntityDefStore         entityDefStore   = getEntityDefStore(ttr);
+        AtlasDefStore<AtlasEnumDef>           enumDefStore     = getEnumDefStore(ttr);
+        AtlasDefStore<AtlasStructDef>         structDefStore   = getStructDefStore(ttr);
+        AtlasDefStore<AtlasClassificationDef> classifiDefStore = getClassificationDefStore(ttr);
+        AtlasDefStore<AtlasEntityDef>         entityDefStore   = getEntityDefStore(ttr);
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {

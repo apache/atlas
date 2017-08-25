@@ -23,17 +23,13 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.AtlasClassificationDefStore;
-import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
-import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
-import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
-import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
+import org.apache.atlas.repository.store.graph.*;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -79,22 +75,22 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     }
 
     @Override
-    protected AtlasEnumDefStore getEnumDefStore(AtlasTypeRegistry typeRegistry) {
+    protected AtlasDefStore<AtlasEnumDef> getEnumDefStore(AtlasTypeRegistry typeRegistry) {
         return new AtlasEnumDefStoreV1(this, typeRegistry);
     }
 
     @Override
-    protected AtlasStructDefStore getStructDefStore(AtlasTypeRegistry typeRegistry) {
+    protected AtlasDefStore<AtlasStructDef> getStructDefStore(AtlasTypeRegistry typeRegistry) {
         return new AtlasStructDefStoreV1(this, typeRegistry);
     }
 
     @Override
-    protected AtlasClassificationDefStore getClassificationDefStore(AtlasTypeRegistry typeRegistry) {
+    protected AtlasDefStore<AtlasClassificationDef> getClassificationDefStore(AtlasTypeRegistry typeRegistry) {
         return new AtlasClassificationDefStoreV1(this, typeRegistry);
     }
 
     @Override
-    protected AtlasEntityDefStore getEntityDefStore(AtlasTypeRegistry typeRegistry) {
+    protected AtlasDefStore<AtlasEntityDef> getEntityDefStore(AtlasTypeRegistry typeRegistry) {
         return new AtlasEntityDefStoreV1(this, typeRegistry);
     }
 

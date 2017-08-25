@@ -40,16 +40,8 @@ import org.apache.atlas.repository.graph.HardDeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.impexp.ExportService;
-import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityDefStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.*;
+import org.apache.atlas.repository.store.graph.v1.*;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
@@ -128,8 +120,6 @@ public class TestModules {
             bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
             bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV1.class).asEagerSingleton();
 
-            //For testing
-            bind(AtlasEntityDefStore.class).to(AtlasEntityDefStoreV1.class).asEagerSingleton();
             bind(AtlasTypeRegistry.class).asEagerSingleton();
             bind(EntityGraphMapper.class).asEagerSingleton();
             bind(ExportService.class).asEagerSingleton();
