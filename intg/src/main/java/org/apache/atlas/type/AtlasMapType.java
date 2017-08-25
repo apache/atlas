@@ -31,7 +31,7 @@ import java.util.*;
  * class that implements behaviour of a map-type.
  */
 public class AtlasMapType extends AtlasType {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasMapType.class);
 
     private final String keyTypeName;
     private final String valueTypeName;
