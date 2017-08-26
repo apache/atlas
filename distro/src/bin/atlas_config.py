@@ -23,6 +23,7 @@ import subprocess
 import sys
 import time
 import errno
+import socket
 from re import split
 from time import sleep
 
@@ -65,6 +66,11 @@ SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr5"
 SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
 SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
 TOPICS_TO_CREATE="atlas.notification.topics"
+ATLAS_HTTP_PORT="atlas.server.http.port"
+ATLAS_HTTPS_PORT="atlas.server.https.port"
+DEFAULT_ATLAS_HTTP_PORT="21000"
+DEFAULT_ATLAS_HTTPS_PORT="21443"
+ATLAS_ENABLE_TLS="atlas.enableTLS"
 
 DEBUG = False
 
@@ -442,6 +448,45 @@ def get_topics_to_create(confdir):
         topics = ["ATLAS_HOOK", "ATLAS_ENTITIES"]
     return topics
 
+def get_atlas_url_port(confdir):
+    port = None
+    if '-port' in sys.argv:
+        port = sys.argv[sys.argv.index('-port')+1]
+
+    if port is None:
+        confdir = os.path.join(confdir, CONF_FILE)
+        enable_tls = getConfig(confdir, ATLAS_ENABLE_TLS)
+        if enable_tls is not None and enable_tls.lower() == 'true':
+            port = getConfigWithDefault(confdir, ATLAS_HTTPS_PORT, DEFAULT_ATLAS_HTTPS_PORT)
+        else:
+            port = getConfigWithDefault(confdir, ATLAS_HTTP_PORT, DEFAULT_ATLAS_HTTP_PORT)
+
+    print "starting atlas on port %s" % port
+    return port
+
+def wait_for_startup(confdir, wait):
+    count = 0
+    port = get_atlas_url_port(confdir)
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1)
+            s.connect(('localhost', int(port)))
+            s.close()
+            break
+        except Exception as e:
+            # Wait for 1 sec before next ping
+            sys.stdout.write('.')
+            sys.stdout.flush()
+            sleep(1)
+
+        if count > wait:
+            s.close()
+            break
+
+        count = count + 1
+
+    sys.stdout.write('\n')
 
 def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
 
@@ -524,6 +569,12 @@ def getConfig(file, key):
         if re.match(key, line):
             return line.split('=')[1].strip()
     return None
+
+def getConfigWithDefault(file, key, defaultValue):
+    value = getConfig(file, key)
+    if value is None:
+        value = defaultValue
+    return value
 
 def isCygwin():
     return platform.system().startswith("CYGWIN")
