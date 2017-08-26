@@ -131,6 +131,8 @@ def main():
         web_app_path = mc.convertCygwinPath(web_app_path)
     if not is_setup:
         start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+        mc.wait_for_startup(confdir, 300)
+        print "Apache Atlas Server started!!!\n"
     else:
         process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
         return process.wait()
@@ -141,8 +143,6 @@ def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_lis
     args.extend(sys.argv[1:])
     process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
     mc.writePid(atlas_pid_file, process)
-    print "Apache Atlas Server started!!!\n"
-
 
 if __name__ == '__main__':
     try:
