@@ -27,6 +27,7 @@ require.config({
         'templateExtension': 'html', // Set the extension automatically appended to templates
         'compileOptions': {} // options object which is passed to Handlebars compiler
     },
+    'urlArgs': "bust=" + getBustValue(),
     /**
      * Requested as soon as the loader has processed the configuration. It does
      * not block any other require() calls from starting their requests for

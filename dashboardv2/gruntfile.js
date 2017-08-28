@@ -23,8 +23,8 @@ module.exports = function(grunt) {
     var classPathSep = (process.platform === "win32") ? ';' : ':',
         gitHash = '',
         pkg = grunt.file.readJSON('package.json'),
+        buildTime = new Date().getTime(),
         distPath = 'dist',
-        publicPath = 'public',
         libPath = distPath + '/js/libs',
         isDashboardDirectory = grunt.file.isDir('public'),
         modulesPath = 'public/';
@@ -259,6 +259,18 @@ module.exports = function(grunt) {
                     dest: 'dist/js/templates'
                 }]
             }
+        },
+        template: {
+            build: {
+                options: {
+                    data: {
+                        'bust': buildTime
+                    }
+                },
+                files: {
+                    [distPath + '/index.html']: [modulesPath + '/index.html.tpl']
+                }
+            }
         }
     });
 
@@ -269,6 +281,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
+    grunt.loadNpmTasks('grunt-template');
 
     require('load-grunt-tasks')(grunt);
 
@@ -287,6 +300,7 @@ module.exports = function(grunt) {
         'npmcopy:license',
         'copy:dist',
         'sass:dist',
+        'template',
         'configureProxies:server',
         'connect:server',
         'watch'
@@ -298,7 +312,8 @@ module.exports = function(grunt) {
         'npmcopy:css',
         'npmcopy:license',
         'copy:build',
-        'sass:build'
+        'sass:build',
+        'template'
     ]);
 
     grunt.registerTask('dev-minify', [
@@ -310,6 +325,7 @@ module.exports = function(grunt) {
         'sass:dist',
         'uglify:build',
         'cssmin:build',
+        'template',
         'configureProxies:server',
         'connect:server',
         'watch'
@@ -323,6 +339,7 @@ module.exports = function(grunt) {
         'copy:build',
         'sass:build',
         'uglify:build',
-        'cssmin:build'
+        'cssmin:build',
+        'template'
     ]);
 };
