@@ -70,6 +70,7 @@
     "grunt-npmcopy": "^0.1.0",
     "grunt-sass": "^1.1.0",
     "grunt-shell": "^1.1.1",
+    "grunt-template": "^1.0.0",
     "load-grunt-tasks": "^3.1.0",
     "proxit": "~0.6.4"
   }
