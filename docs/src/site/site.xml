@@ -87,8 +87,10 @@
         </menu>
 
         <menu name="Releases">
+            <item name="0.8.1"
+                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.1/"/>
             <item name="0.8-incubating"
-                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.0-incubating/"/>
+                  href="http://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/"/>
             <item name="0.7.1-incubating"
                   href="http://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/"/>
             <item name="0.7-incubating"
@@ -100,6 +102,7 @@
         </menu>
 
         <menu name="Documentation">
+            <item name="0.8.1" href="./0.8.1/index.html"/>
             <item name="0.8-incubating" href="./0.8.0-incubating/index.html"/>
             <item name="0.7.1-incubating" href="./0.7.1-incubating/index.html"/>
             <item name="0.7-incubating" href="./0.7.0-incubating/index.html"/>
