@@ -33,6 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Iterator;
 
 /**
@@ -105,6 +109,17 @@ public final class Atlas {
         setApplicationHome();
         Configuration configuration = ApplicationProperties.get();
         final String enableTLSFlag = configuration.getString(SecurityProperties.TLS_ENABLED);
+        final String appHost = configuration.getString(SecurityProperties.BIND_ADDRESS, EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS);
+
+        if (!isLocalAddress(InetAddress.getByName(appHost))) {
+            String msg =
+                "Failed to start Atlas server. Address " + appHost
+                    + " does not belong to this host. Correct configuration parameter: "
+                    + SecurityProperties.BIND_ADDRESS;
+            LOG.error(msg);
+            throw new IOException(msg);
+        }
+
         final int appPort = getApplicationPort(cmd, enableTLSFlag, configuration);
         System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, String.valueOf(appPort));
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
@@ -112,7 +127,7 @@ public final class Atlas {
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
 
-        server = EmbeddedServer.newServer(appPort, appPath, enableTLS);
+        server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
 
         server.start();
@@ -162,6 +177,21 @@ public final class Atlas {
     private static boolean isTLSEnabled(String enableTLSFlag, int appPort) {
         return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag) ?
                 System.getProperty(SecurityProperties.TLS_ENABLED, (appPort % 1000) == 443 ? "true" : "false") : enableTLSFlag);
+    }
+
+    private static boolean isLocalAddress(InetAddress addr) {
+        // Check if the address is any local or loop back
+        boolean local = addr.isAnyLocalAddress() || addr.isLoopbackAddress();
+
+        // Check if the address is defined on any interface
+        if (!local) {
+            try {
+                local = NetworkInterface.getByInetAddress(addr) != null;
+            } catch (SocketException e) {
+                local = false;
+            }
+        }
+        return local;
     }
 
     private static void showStartupInfo(PropertiesConfiguration buildConfiguration, boolean enableTLS, int appPort) {

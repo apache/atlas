@@ -55,7 +55,7 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
 
     class TestEmbeddedServer extends EmbeddedServer {
         public TestEmbeddedServer(int port, String path) throws IOException {
-            super(port, path);
+            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
         }
 
         Server getServer() {

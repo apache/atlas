@@ -105,7 +105,8 @@ public class SecureEmbeddedServerTestBase {
             originalConf = System.getProperty("atlas.conf");
             System.clearProperty("atlas.conf");
             ApplicationProperties.forceReload();
-            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath());
+            secureEmbeddedServer = new SecureEmbeddedServer(
+                EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS, securePort, TestUtils.getWarPath());
             secureEmbeddedServer.server.start();
 
             Assert.fail("Should have thrown an exception");
@@ -132,7 +133,8 @@ public class SecureEmbeddedServerTestBase {
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(
+                EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS, securePort, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
@@ -159,7 +161,8 @@ public class SecureEmbeddedServerTestBase {
         setupCredentials();
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(
+                EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS, securePort, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;

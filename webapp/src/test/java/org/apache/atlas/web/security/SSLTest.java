@@ -52,7 +52,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
     class TestSecureEmbeddedServer extends SecureEmbeddedServer {
 
         public TestSecureEmbeddedServer(int port, String path) throws IOException {
-            super(port, path);
+            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
         }
 
         public Server getServer() {

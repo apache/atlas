@@ -41,9 +41,11 @@ import java.util.concurrent.TimeUnit;
 public class EmbeddedServer {
     public static final Logger LOG = LoggerFactory.getLogger(EmbeddedServer.class);
 
+    public static final String ATLAS_DEFAULT_BIND_ADDRESS = "0.0.0.0";
+
     protected final Server server;
 
-    public EmbeddedServer(int port, String path) throws IOException {
+    public EmbeddedServer(String host, int port, String path) throws IOException {
         int queueSize = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
         LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(queueSize);
 
@@ -54,7 +56,7 @@ public class EmbeddedServer {
                 new ExecutorThreadPool(minThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
         server = new Server(pool);
 
-        Connector connector = getConnector(port);
+        Connector connector = getConnector(host, port);
         server.addConnector(connector);
 
         WebAppContext application = getWebAppContext(path);
@@ -69,15 +71,16 @@ public class EmbeddedServer {
         return application;
     }
 
-    public static EmbeddedServer newServer(int port, String path, boolean secure) throws IOException {
+    public static EmbeddedServer newServer(String host, int port, String path, boolean secure)
+            throws IOException {
         if (secure) {
-            return new SecureEmbeddedServer(port, path);
+            return new SecureEmbeddedServer(host, port, path);
         } else {
-            return new EmbeddedServer(port, path);
+            return new EmbeddedServer(host, port, path);
         }
     }
 
-    protected Connector getConnector(int port) throws IOException {
+    protected Connector getConnector(String host, int port) throws IOException {
         HttpConfiguration http_config = new HttpConfiguration();
         // this is to enable large header sizes when Kerberos is enabled with AD
         final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();;
@@ -86,7 +89,7 @@ public class EmbeddedServer {
 
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
-        connector.setHost("0.0.0.0");
+        connector.setHost(host);
         return connector;
     }
 

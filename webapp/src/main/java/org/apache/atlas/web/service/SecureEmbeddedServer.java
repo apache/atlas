@@ -60,8 +60,8 @@ public class SecureEmbeddedServer extends EmbeddedServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureEmbeddedServer.class);
 
-    public SecureEmbeddedServer(int port, String path) throws IOException {
-        super(port, path);
+    public SecureEmbeddedServer(String host, int port, String path) throws IOException {
+        super(host, port, path);
     }
 
     protected Connector getConnector(int port) throws IOException {

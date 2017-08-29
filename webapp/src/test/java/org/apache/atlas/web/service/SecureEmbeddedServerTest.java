@@ -49,7 +49,8 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
         ApplicationProperties.forceReload();
         SecureEmbeddedServer secureEmbeddedServer = null;
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(ATLAS_DEFAULT_HOST_ADDRESS,
+                21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
