@@ -30,11 +30,14 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,16 +48,21 @@ import java.util.Set;
 public class FullTextMapperV2 {
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapperV2.class);
 
-    private static final String FULL_TEXT_DELIMITER         = " ";
-    private static final String FULL_TEXT_FOLLOW_REFERENCES = "atlas.search.fulltext.followReferences";
+    private static final String FULL_TEXT_DELIMITER                  = " ";
+    private static final String FULL_TEXT_FOLLOW_REFERENCES          = "atlas.search.fulltext.followReferences";
+    private static final String FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY = "atlas.search.fulltext.type";
 
-    private final EntityGraphRetriever entityGraphRetriever;
-    private final boolean              followReferences;
+    private final EntityGraphRetriever     entityGraphRetriever;
+    private final boolean                  followReferences;
+    private final Map<String, Set<String>> excludeAttributesCache = new HashMap<>();
+
+    private Configuration APPLICATION_PROPERTIES = null;
 
     @Inject
     public FullTextMapperV2(AtlasTypeRegistry typeRegistry, Configuration configuration) {
-        entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
-        followReferences = configuration != null && configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
+        entityGraphRetriever   = new EntityGraphRetriever(typeRegistry);
+        APPLICATION_PROPERTIES = configuration;
+        followReferences       = APPLICATION_PROPERTIES != null && APPLICATION_PROPERTIES.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
     }
 
     /**
@@ -75,7 +83,9 @@ public class FullTextMapperV2 {
                 for (AtlasClassification classification : classifications) {
                     sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                    mapAttributes(classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>());
+                    Set<String> excludeAttributes = getExcludeAttributesForIndexText(classification.getTypeName());
+
+                    mapAttributes(classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>(), excludeAttributes);
                 }
             }
 
@@ -117,19 +127,24 @@ public class FullTextMapperV2 {
 
         sb.append(entity.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-        mapAttributes(entity.getAttributes(), entityExtInfo, sb, processedGuids);
+        Set<String> excludeAttributes = getExcludeAttributesForIndexText(entity.getTypeName());
+
+        mapAttributes(entity.getAttributes(), entityExtInfo, sb, processedGuids, excludeAttributes);
 
         List<AtlasClassification> classifications = entity.getClassifications();
         if (CollectionUtils.isNotEmpty(classifications)) {
             for (AtlasClassification classification : classifications) {
                 sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                mapAttributes(classification.getAttributes(), entityExtInfo, sb, processedGuids);
+                Set<String> excludeClassificationAttributes = getExcludeAttributesForIndexText(classification.getTypeName());
+
+                mapAttributes(classification.getAttributes(), entityExtInfo, sb, processedGuids, excludeClassificationAttributes);
             }
         }
     }
 
-    private void mapAttributes(Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids) throws AtlasBaseException {
+    private void mapAttributes(Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
+                               Set<String> processedGuids, Set<String> excludeAttributes) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
@@ -138,7 +153,7 @@ public class FullTextMapperV2 {
             String attribKey = attributeEntry.getKey();
             Object attrValue = attributeEntry.getValue();
 
-            if (attrValue == null) {
+            if (attrValue == null || isExcludedAttribute(excludeAttributes, attribKey)) {
                 continue;
             }
 
@@ -203,5 +218,29 @@ public class FullTextMapperV2 {
             }
         }
         return entityWithExtInfo;
+    }
+
+    private boolean isExcludedAttribute(Set<String> excludeAttributes, String attributeName) {
+        return CollectionUtils.isNotEmpty(excludeAttributes) && excludeAttributes.contains(attributeName);
+    }
+
+    private Set<String> getExcludeAttributesForIndexText(String typeName) {
+        Set<String> ret = null;
+
+        if (excludeAttributesCache.containsKey(typeName)) {
+            ret = excludeAttributesCache.get(typeName);
+
+        } else if (APPLICATION_PROPERTIES != null) {
+            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
+                                                                               typeName + "." + "attributes.exclude");
+
+            if (ArrayUtils.isNotEmpty(excludeAttributes)) {
+                ret = new HashSet<>(Arrays.asList(excludeAttributes));
+            }
+
+            excludeAttributesCache.put(typeName, ret);
+        }
+
+        return ret;
     }
 }
