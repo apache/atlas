@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
@@ -118,24 +119,33 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     private void addRelationshipEdgeDirection() {
-        AtlasRelationshipEndDef endDef1       = relationshipDef.getEndDef1();
-        AtlasRelationshipEndDef endDef2       = relationshipDef.getEndDef2();
-        AtlasAttribute          end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName());
-        AtlasAttribute          end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName());
+        AtlasRelationshipEndDef endDef1 = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2 = relationshipDef.getEndDef2();
 
-        //default relationship edge direction is end1 (out) -> end2 (in)
-        AtlasRelationshipEdgeDirection end1Direction = OUT;
-        AtlasRelationshipEdgeDirection end2Direction = IN;
+        if (StringUtils.equals(endDef1.getType(), endDef2.getType()) &&
+                StringUtils.equals(endDef1.getName(), endDef2.getName())) {
 
-        if (endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-            end2Direction = OUT;
-        } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-            end1Direction = IN;
-            end2Direction = OUT;
+            AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName());
+
+            endAttribute.setRelationshipEdgeDirection(BOTH);
+        } else {
+            AtlasAttribute end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName());
+            AtlasAttribute end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName());
+
+            //default relationship edge direction is end1 (out) -> end2 (in)
+            AtlasRelationshipEdgeDirection end1Direction = OUT;
+            AtlasRelationshipEdgeDirection end2Direction = IN;
+
+            if (endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+                end2Direction = OUT;
+            } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+                end1Direction = IN;
+                end2Direction = OUT;
+            }
+
+            end1Attribute.setRelationshipEdgeDirection(end1Direction);
+            end2Attribute.setRelationshipEdgeDirection(end2Direction);
         }
-
-        end1Attribute.setRelationshipEdgeDirection(end1Direction);
-        end2Attribute.setRelationshipEdgeDirection(end2Direction);
     }
 
     @Override
@@ -200,7 +210,6 @@ public class AtlasRelationshipType extends AtlasStructType {
         AtlasRelationshipEndDef endDef2              = relationshipDef.getEndDef2();
         RelationshipCategory    relationshipCategory = relationshipDef.getRelationshipCategory();
         String                  name                 = relationshipDef.getName();
-
         boolean                 isContainer1         = endDef1.getIsContainer();
         boolean                 isContainer2         = endDef2.getIsContainer();
 

@@ -794,6 +794,6 @@ public class AtlasStructType extends AtlasType {
         private static final char   DOUBLE_QUOTE_CHAR       = '"';
         private static final char   SPACE_CHAR              = ' ';
 
-        public enum AtlasRelationshipEdgeDirection { IN, OUT }
+        public enum AtlasRelationshipEdgeDirection { IN, OUT, BOTH }
     }
 }

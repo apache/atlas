@@ -42,7 +42,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
@@ -85,6 +84,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
+
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 /**
  * Utility class for graph operations.
@@ -308,7 +311,7 @@ public final class GraphHelper {
 
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     //So traversing all the edges
-    public Iterator<AtlasEdge> getAdjacentEdgesByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {
+    public static Iterator<AtlasEdge> getAdjacentEdgesByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         }
@@ -348,11 +351,11 @@ public final class GraphHelper {
         return null;
     }
 
-    public Iterator<AtlasEdge> getIncomingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
+    public static Iterator<AtlasEdge> getIncomingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
         return getAdjacentEdgesByLabel(instanceVertex, AtlasEdgeDirection.IN, edgeLabel);
     }
 
-    public Iterator<AtlasEdge> getOutGoingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
+    public static Iterator<AtlasEdge> getOutGoingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
         return getAdjacentEdgesByLabel(instanceVertex, AtlasEdgeDirection.OUT, edgeLabel);
     }
 
@@ -361,20 +364,24 @@ public final class GraphHelper {
 
         switch (edgeDirection) {
             case IN:
-                ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.IN);
-                break;
+            ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.IN);
+            break;
 
             case OUT:
+            ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.OUT);
+            break;
+
+            case BOTH:
             default:
-                ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.OUT);
+                ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.BOTH);
                 break;
         }
 
         return ret;
     }
 
-    public Iterator<AtlasEdge> getEdgesForLabel(AtlasVertex vertex, String edgeLabel, AtlasRelationshipEdgeDirection edgeDirection) {
-        Iterator<AtlasEdge> ret;
+    public static Iterator<AtlasEdge> getEdgesForLabel(AtlasVertex vertex, String edgeLabel, AtlasRelationshipEdgeDirection edgeDirection) {
+        Iterator<AtlasEdge> ret = null;
 
         switch (edgeDirection) {
             case IN:
@@ -382,8 +389,11 @@ public final class GraphHelper {
                 break;
 
             case OUT:
-            default:
-                ret = getOutGoingEdgesByLabel(vertex, edgeLabel);
+            ret = getOutGoingEdgesByLabel(vertex, edgeLabel);
+            break;
+
+            case BOTH:
+                ret = getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.BOTH, edgeLabel);
                 break;
         }
 
@@ -1341,32 +1351,38 @@ public final class GraphHelper {
         return StringUtils.isNotEmpty(edge.getLabel()) ? edgeLabel.startsWith("r:") : false;
     }
 
-    public static AtlasObjectId getReferenceObjectId(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection) {
+    public static AtlasObjectId getReferenceObjectId(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection,
+                                                     AtlasVertex parentVertex) {
         AtlasObjectId ret = null;
 
-        if (relationshipDirection == AtlasRelationshipEdgeDirection.OUT) {
-            ret = new AtlasObjectId(getGuid(edge.getInVertex()), getTypeName(edge.getInVertex()));
+        if (relationshipDirection == OUT) {
+            ret = getAtlasObjectIdForInVertex(edge);
 
-        } else if (relationshipDirection == AtlasRelationshipEdgeDirection.IN) {
-            ret = new AtlasObjectId(getGuid(edge.getOutVertex()), getTypeName(edge.getOutVertex()));
+        } else if (relationshipDirection == IN) {
+            ret = getAtlasObjectIdForOutVertex(edge);
+
+        } else if (relationshipDirection == BOTH){
+            // since relationship direction is BOTH, edge direction can be inward or outward
+            // compare with parent entity vertex and pick the right reference vertex
+            if (verticesEquals(parentVertex, edge.getOutVertex())) {
+                ret = getAtlasObjectIdForInVertex(edge);
+            } else {
+                ret = getAtlasObjectIdForOutVertex(edge);
+            }
         }
 
         return ret;
     }
 
-    public static AtlasObjectId getCurrentObjectId(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection) {
-        String typeName = null;
-        String guid     = null;
+    public static AtlasObjectId getAtlasObjectIdForOutVertex(AtlasEdge edge) {
+        return new AtlasObjectId(getGuid(edge.getOutVertex()), getTypeName(edge.getOutVertex()));
+    }
 
-        if (relationshipDirection == AtlasRelationshipEdgeDirection.OUT) {
-            typeName = GraphHelper.getTypeName(edge.getOutVertex());
-            guid     = GraphHelper.getGuid(edge.getOutVertex());
+    public static AtlasObjectId getAtlasObjectIdForInVertex(AtlasEdge edge) {
+        return new AtlasObjectId(getGuid(edge.getInVertex()), getTypeName(edge.getInVertex()));
+    }
 
-        } else if (relationshipDirection == AtlasRelationshipEdgeDirection.IN) {
-            typeName = GraphHelper.getTypeName(edge.getInVertex());
-            guid     = GraphHelper.getGuid(edge.getInVertex());
-        }
-
-        return new AtlasObjectId(guid, typeName);
+    private static boolean verticesEquals(AtlasVertex vertexA, AtlasVertex vertexB) {
+        return StringUtils.equals(getGuid(vertexB), getGuid(vertexA));
     }
 }

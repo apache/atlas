@@ -20,9 +20,14 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.testng.annotations.Guice;
 
+import java.util.List;
+
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 
 /**
@@ -51,5 +56,61 @@ public class AtlasRelationshipStoreSoftDeleteV1Test extends AtlasRelationshipSto
     @Override
     protected void verifyRelationshipAttributeUpdate_NonComposite_OneToOne(AtlasEntity a1, AtlasEntity b) {
         verifyRelationshipAttributeValue(a1, "b", b.getGuid());
+    }
+
+    @Override
+    protected void verifyRelationshipAttributeUpdate_ManyToMany_Friends(AtlasEntity max, AtlasEntity julius, AtlasEntity mike, AtlasEntity john) throws Exception {
+        AtlasObjectId johnId   = employeeNameIdMap.get("John");
+        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
+        AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
+        AtlasObjectId maxId    = employeeNameIdMap.get("Max");
+
+        // Max's updated friends: [Julius, John, Mike(soft deleted)]
+        List<AtlasObjectId> maxFriendsIds = toAtlasObjectIds(max.getRelationshipAttribute("friends"));
+        assertNotNull(maxFriendsIds);
+        assertEquals(maxFriendsIds.size(), 3);
+        assertObjectIdsContains(maxFriendsIds, johnId);
+        assertObjectIdsContains(maxFriendsIds, juliusId);
+        assertObjectIdsContains(maxFriendsIds, mikeId);
+
+        // Julius's updated friends: [Max]
+        List<AtlasObjectId> juliusFriendsIds = toAtlasObjectIds(julius.getRelationshipAttribute("friends"));
+        assertNotNull(juliusFriendsIds);
+        assertEquals(juliusFriendsIds.size(), 1);
+        assertObjectIdsContains(juliusFriendsIds, maxId);
+
+        // Mike's updated friends: [John, Max(soft deleted)]
+        List<AtlasObjectId> mikeFriendsIds = toAtlasObjectIds(mike.getRelationshipAttribute("friends"));
+        assertNotNull(mikeFriendsIds);
+        assertEquals(mikeFriendsIds.size(), 2);
+        assertObjectIdsContains(mikeFriendsIds, johnId);
+        assertObjectIdsContains(mikeFriendsIds, maxId);
+
+        // John's updated friends: [Max, Mike]
+        List<AtlasObjectId> johnFriendsIds = toAtlasObjectIds(john.getRelationshipAttribute("friends"));
+        assertNotNull(johnFriendsIds);
+        assertEquals(johnFriendsIds.size(), 2);
+        assertObjectIdsContains(johnFriendsIds, maxId);
+        assertObjectIdsContains(johnFriendsIds, mikeId);
+    }
+
+    protected void verifyRelationshipAttributeUpdate_OneToOne_Sibling(AtlasEntity julius, AtlasEntity jane, AtlasEntity mike) throws Exception {
+        AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
+        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
+
+        // Julius sibling updated to Mike
+        AtlasObjectId juliusSiblingId = toAtlasObjectId(julius.getRelationshipAttribute("sibling"));
+        assertNotNull(juliusSiblingId);
+        assertObjectIdEquals(juliusSiblingId, mikeId);
+
+        // Mike's sibling is Julius
+        AtlasObjectId mikeSiblingId = toAtlasObjectId(mike.getRelationshipAttribute("sibling"));
+        assertNotNull(mikeSiblingId);
+        assertObjectIdEquals(mikeSiblingId, juliusId);
+
+        // Jane's sibling is still Julius (soft delete)
+        AtlasObjectId janeSiblingId = toAtlasObjectId(jane.getRelationshipAttribute("sibling"));
+        assertNotNull(janeSiblingId);
+        assertObjectIdEquals(janeSiblingId, juliusId);
     }
 }

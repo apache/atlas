@@ -131,21 +131,24 @@ public abstract class AtlasRelationshipStoreV1Test {
         AtlasObjectId johnId   = employeeNameIdMap.get("John");
         AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
         AtlasObjectId janeId   = employeeNameIdMap.get("Jane");
+        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
 
         AtlasEntity hrDept = getEntityFromStore(hrId.getGuid());
         AtlasEntity max    = getEntityFromStore(maxId.getGuid());
         AtlasEntity john   = getEntityFromStore(johnId.getGuid());
         AtlasEntity julius = getEntityFromStore(juliusId.getGuid());
         AtlasEntity jane   = getEntityFromStore(janeId.getGuid());
+        AtlasEntity mike   = getEntityFromStore(mikeId.getGuid());
 
         // Department relationship attributes
         List<AtlasObjectId> deptEmployees = toAtlasObjectIds(hrDept.getRelationshipAttribute("employees"));
         assertNotNull(deptEmployees);
-        assertEquals(deptEmployees.size(), 4);
+        assertEquals(deptEmployees.size(), 5);
         assertObjectIdsContains(deptEmployees, maxId);
         assertObjectIdsContains(deptEmployees, johnId);
         assertObjectIdsContains(deptEmployees, juliusId);
         assertObjectIdsContains(deptEmployees, janeId);
+        assertObjectIdsContains(deptEmployees, mikeId);
 
         // Max employee validation
         AtlasObjectId maxDepartmentId = toAtlasObjectId(max.getRelationshipAttribute("department"));
@@ -156,14 +159,21 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertNotNull(maxManagerId);
         assertObjectIdEquals(maxManagerId, janeId);
 
-        AtlasObjectId maxMentorId = toAtlasObjectId(max.getRelationshipAttribute("mentor"));
-        assertNotNull(maxMentorId);
-        assertObjectIdEquals(maxMentorId, juliusId);
+        List<AtlasObjectId> maxMentorsId = toAtlasObjectIds(max.getRelationshipAttribute("mentors"));
+        assertNotNull(maxMentorsId);
+        assertEquals(maxMentorsId.size(), 1);
+        assertObjectIdEquals(maxMentorsId.get(0), juliusId);
 
         List<AtlasObjectId> maxMenteesId = toAtlasObjectIds(max.getRelationshipAttribute("mentees"));
         assertNotNull(maxMenteesId);
         assertEquals(maxMenteesId.size(), 1);
         assertObjectIdEquals(maxMenteesId.get(0), johnId);
+
+        List<AtlasObjectId> maxFriendsIds = toAtlasObjectIds(max.getRelationshipAttribute("friends"));
+        assertNotNull(maxFriendsIds);
+        assertEquals(maxFriendsIds.size(), 2);
+        assertObjectIdsContains(maxFriendsIds, mikeId);
+        assertObjectIdsContains(maxFriendsIds, johnId);
 
         // John Employee validation
         AtlasObjectId johnDepartmentId = toAtlasObjectId(john.getRelationshipAttribute("department"));
@@ -174,12 +184,41 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertNotNull(johnManagerId);
         assertObjectIdEquals(johnManagerId, janeId);
 
-        AtlasObjectId johnMentorId = toAtlasObjectId(john.getRelationshipAttribute("mentor"));
-        assertNotNull(johnMentorId);
-        assertObjectIdEquals(johnMentorId, maxId);
+        List<AtlasObjectId> johnMentorIds = toAtlasObjectIds(john.getRelationshipAttribute("mentors"));
+        assertNotNull(johnMentorIds);
+        assertEquals(johnMentorIds.size(), 2);
+        assertObjectIdsContains(johnMentorIds, maxId);
+        assertObjectIdsContains(johnMentorIds, juliusId);
 
         List<AtlasObjectId> johnMenteesId = toAtlasObjectIds(john.getRelationshipAttribute("mentees"));
         assertEmpty(johnMenteesId);
+
+        List<AtlasObjectId> johnFriendsIds = toAtlasObjectIds(john.getRelationshipAttribute("friends"));
+        assertNotNull(johnFriendsIds);
+        assertEquals(johnFriendsIds.size(), 2);
+        assertObjectIdsContains(johnFriendsIds, mikeId);
+        assertObjectIdsContains(johnFriendsIds, maxId);
+
+        // Mike Employee validation
+        AtlasObjectId mikeDepartmentId = toAtlasObjectId(mike.getRelationshipAttribute("department"));
+        assertNotNull(mikeDepartmentId);
+        assertObjectIdEquals(mikeDepartmentId, hrId);
+
+        AtlasObjectId mikeManagerId = toAtlasObjectId(mike.getRelationshipAttribute("manager"));
+        assertNotNull(mikeManagerId);
+        assertObjectIdEquals(mikeManagerId, juliusId);
+
+        List<AtlasObjectId> mikeMentorIds = toAtlasObjectIds(mike.getRelationshipAttribute("mentors"));
+        assertEmpty(mikeMentorIds);
+
+        List<AtlasObjectId> mikeMenteesId = toAtlasObjectIds(mike.getRelationshipAttribute("mentees"));
+        assertEmpty(mikeMenteesId);
+
+        List<AtlasObjectId> mikeFriendsIds = toAtlasObjectIds(mike.getRelationshipAttribute("friends"));
+        assertNotNull(mikeFriendsIds);
+        assertEquals(mikeFriendsIds.size(), 2);
+        assertObjectIdsContains(mikeFriendsIds, maxId);
+        assertObjectIdsContains(mikeFriendsIds, johnId);
 
         // Jane Manager validation
         AtlasObjectId janeDepartmentId = toAtlasObjectId(jane.getRelationshipAttribute("department"));
@@ -189,8 +228,8 @@ public abstract class AtlasRelationshipStoreV1Test {
         AtlasObjectId janeManagerId = toAtlasObjectId(jane.getRelationshipAttribute("manager"));
         assertNull(janeManagerId);
 
-        AtlasObjectId janeMentorId = toAtlasObjectId(jane.getRelationshipAttribute("mentor"));
-        assertNull(janeMentorId);
+        List<AtlasObjectId> janeMentorIds = toAtlasObjectIds(jane.getRelationshipAttribute("mentors"));
+        assertEmpty(janeMentorIds);
 
         List<AtlasObjectId> janeMenteesId = toAtlasObjectIds(jane.getRelationshipAttribute("mentees"));
         assertEmpty(janeMenteesId);
@@ -201,6 +240,13 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertObjectIdsContains(janeSubordinateIds, maxId);
         assertObjectIdsContains(janeSubordinateIds, johnId);
 
+        List<AtlasObjectId> janeFriendsIds = toAtlasObjectIds(jane.getRelationshipAttribute("friends"));
+        assertEmpty(janeFriendsIds);
+
+        AtlasObjectId janeSiblingId = toAtlasObjectId(jane.getRelationshipAttribute("sibling"));
+        assertNotNull(janeSiblingId);
+        assertObjectIdEquals(janeSiblingId, juliusId);
+
         // Julius Manager validation
         AtlasObjectId juliusDepartmentId = toAtlasObjectId(julius.getRelationshipAttribute("department"));
         assertNotNull(juliusDepartmentId);
@@ -209,16 +255,26 @@ public abstract class AtlasRelationshipStoreV1Test {
         AtlasObjectId juliusManagerId = toAtlasObjectId(julius.getRelationshipAttribute("manager"));
         assertNull(juliusManagerId);
 
-        AtlasObjectId juliusMentorId = toAtlasObjectId(julius.getRelationshipAttribute("mentor"));
-        assertNull(juliusMentorId);
+        List<AtlasObjectId> juliusMentorIds = toAtlasObjectIds(julius.getRelationshipAttribute("mentors"));
+        assertEmpty(juliusMentorIds);
 
         List<AtlasObjectId> juliusMenteesId = toAtlasObjectIds(julius.getRelationshipAttribute("mentees"));
         assertNotNull(juliusMenteesId);
-        assertEquals(juliusMenteesId.size(), 1);
+        assertEquals(juliusMenteesId.size(), 2);
         assertObjectIdsContains(juliusMenteesId, maxId);
+        assertObjectIdsContains(juliusMenteesId, johnId);
 
         List<AtlasObjectId> juliusSubordinateIds = toAtlasObjectIds(julius.getRelationshipAttribute("subordinates"));
-        assertEmpty(juliusSubordinateIds);
+        assertNotNull(juliusSubordinateIds);
+        assertEquals(juliusSubordinateIds.size(), 1);
+        assertObjectIdsContains(juliusSubordinateIds, mikeId);
+
+        List<AtlasObjectId> juliusFriendsIds = toAtlasObjectIds(julius.getRelationshipAttribute("friends"));
+        assertEmpty(juliusFriendsIds);
+
+        AtlasObjectId juliusSiblingId = toAtlasObjectId(julius.getRelationshipAttribute("sibling"));
+        assertNotNull(juliusSiblingId);
+        assertObjectIdEquals(juliusSiblingId, janeId);
     }
 
     @Test
@@ -226,6 +282,8 @@ public abstract class AtlasRelationshipStoreV1Test {
         AtlasObjectId maxId    = employeeNameIdMap.get("Max");
         AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
         AtlasObjectId janeId   = employeeNameIdMap.get("Jane");
+        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
+        AtlasObjectId johnId   = employeeNameIdMap.get("John");
 
         // Change Max's Employee.manager reference to Julius and apply the change as a partial update.
         // This should also update Julius to add Max to the inverse Manager.subordinates reference.
@@ -249,9 +307,9 @@ public abstract class AtlasRelationshipStoreV1Test {
         AtlasEntity maxEntity = updatedEntities.getEntity(maxId.getGuid());
         verifyRelationshipAttributeValue(maxEntity, "manager", juliusId.getGuid());
 
-        // Max added to the subordinate list of Julius
+        // Max added to the subordinate list of Julius, existing subordinate is Mike
         AtlasEntity juliusEntity = updatedEntities.getEntity(juliusId.getGuid());
-        verifyRelationshipAttributeList(juliusEntity, "subordinates", ImmutableList.of(maxId));
+        verifyRelationshipAttributeList(juliusEntity, "subordinates", ImmutableList.of(maxId, mikeId));
 
         // Max removed from the subordinate list of Julius
         AtlasEntity janeEntity = updatedEntities.getEntity(janeId.getGuid());
@@ -259,6 +317,48 @@ public abstract class AtlasRelationshipStoreV1Test {
         // Jane's subordinates list includes John and Max for soft delete
         // Jane's subordinates list includes only John for hard delete
         verifyRelationshipAttributeUpdate_NonComposite_OneToMany(janeEntity);
+
+        // Remove Mike from Max's friends list
+        // Max's current friends: [Mike, John]
+        // Max's updated friends: [Julius, John]
+        maxEntityForUpdate = new AtlasEntity(EMPLOYEE_TYPE);
+        maxEntityForUpdate.setRelationshipAttribute("friends", ImmutableList.of(johnId, juliusId));
+
+        init();
+        updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes , new AtlasEntityWithExtInfo(maxEntityForUpdate));
+
+        partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
+        assertEquals(partialUpdatedEntities.size(), 3);
+        // 3 entities should have been updated:
+        // * Max added Julius and removed Mike from Employee.friends
+        // * Mike removed Max from Employee.friends
+        // * Julius added Max in Employee.friends
+
+        updatedEntities = entityStore.getByIds(ImmutableList.of(maxId.getGuid(), mikeId.getGuid(), johnId.getGuid(), juliusId.getGuid()));
+
+        maxEntity    = updatedEntities.getEntity(maxId.getGuid());
+        juliusEntity = updatedEntities.getEntity(juliusId.getGuid());
+        AtlasEntity mikeEntity = updatedEntities.getEntity(mikeId.getGuid());
+        AtlasEntity johnEntity = updatedEntities.getEntity(johnId.getGuid());
+
+        verifyRelationshipAttributeUpdate_ManyToMany_Friends(maxEntity, juliusEntity, mikeEntity, johnEntity);
+
+        // Remove Julius from Jane's sibling and add Mike as new sibling
+        AtlasEntity juliusEntityForUpdate = new AtlasEntity(EMPLOYEE_TYPE);
+        juliusEntityForUpdate.setRelationshipAttribute("sibling", mikeId);
+
+        init();
+        updateResponse = entityStore.updateByUniqueAttributes(employeeType, Collections.<String, Object>singletonMap("name", "Julius") , new AtlasEntityWithExtInfo(juliusEntityForUpdate));
+        partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
+        assertEquals(partialUpdatedEntities.size(), 3);
+
+        updatedEntities = entityStore.getByIds(ImmutableList.of(juliusId.getGuid(), janeId.getGuid(), mikeId.getGuid()));
+
+        juliusEntity = updatedEntities.getEntity(juliusId.getGuid());
+        janeEntity   = updatedEntities.getEntity(janeId.getGuid());
+        mikeEntity   = updatedEntities.getEntity(mikeId.getGuid());
+
+        verifyRelationshipAttributeUpdate_OneToOne_Sibling(juliusEntity, janeEntity, mikeEntity);
     }
 
     @Test
@@ -445,12 +545,16 @@ public abstract class AtlasRelationshipStoreV1Test {
 
     protected abstract void verifyRelationshipAttributeUpdate_NonComposite_ManyToOne(AtlasEntity a1, AtlasEntity a2, AtlasEntity a3, AtlasEntity b);
 
-    private static void assertObjectIdsContains(List<AtlasObjectId> objectIds, AtlasObjectId objectId) {
+    protected abstract void verifyRelationshipAttributeUpdate_ManyToMany_Friends(AtlasEntity e1, AtlasEntity e2, AtlasEntity e3, AtlasEntity e4) throws Exception;
+
+    protected abstract void verifyRelationshipAttributeUpdate_OneToOne_Sibling(AtlasEntity e1, AtlasEntity e2, AtlasEntity e3) throws Exception;
+
+    protected static void assertObjectIdsContains(List<AtlasObjectId> objectIds, AtlasObjectId objectId) {
         assertTrue(CollectionUtils.isNotEmpty(objectIds));
         assertTrue(objectIds.contains(objectId));
     }
 
-    private static void assertObjectIdEquals(AtlasObjectId objId1, AtlasObjectId objId2) {
+    protected static void assertObjectIdEquals(AtlasObjectId objId1, AtlasObjectId objId2) {
         assertTrue(objId1.equals(objId2));
     }
 
@@ -458,7 +562,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         assertTrue(collection != null && collection.isEmpty());
     }
 
-    private static List<AtlasObjectId> toAtlasObjectIds(Object object) {
+    protected static List<AtlasObjectId> toAtlasObjectIds(Object object) {
         List<AtlasObjectId> ret = new ArrayList<>();
 
         if (object instanceof List) {
@@ -477,7 +581,7 @@ public abstract class AtlasRelationshipStoreV1Test {
         return ret;
     }
 
-    private static AtlasObjectId toAtlasObjectId(Object object) {
+    protected static AtlasObjectId toAtlasObjectId(Object object) {
         if (object instanceof AtlasRelatedObjectId) {
             AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) object;
             return new AtlasObjectId(relatedObjectId.getGuid(), relatedObjectId.getTypeName(), relatedObjectId.getUniqueAttributes());

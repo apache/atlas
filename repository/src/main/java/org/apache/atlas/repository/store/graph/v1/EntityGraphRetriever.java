@@ -72,6 +72,9 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 
 public final class EntityGraphRetriever {
@@ -683,10 +686,12 @@ public final class EntityGraphRetriever {
         List<AtlasRelatedObjectId> ret   = new ArrayList<>();
         Iterator<AtlasEdge>        edges = null;
 
-        if (attribute.getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.IN) {
+        if (attribute.getRelationshipEdgeDirection() == IN) {
             edges = graphHelper.getIncomingEdgesByLabel(entityVertex, attribute.getRelationshipEdgeLabel());
-        } else if (attribute.getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.OUT) {
+        } else if (attribute.getRelationshipEdgeDirection() == OUT) {
             edges = graphHelper.getOutGoingEdgesByLabel(entityVertex, attribute.getRelationshipEdgeLabel());
+        } else if (attribute.getRelationshipEdgeDirection() == BOTH) {
+            edges = graphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, attribute.getRelationshipEdgeLabel());
         }
 
         if (edges != null) {

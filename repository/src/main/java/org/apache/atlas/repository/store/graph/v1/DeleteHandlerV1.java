@@ -40,6 +40,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +55,13 @@ import java.util.Set;
 import java.util.Stack;
 
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.graph.GraphHelper.getAtlasObjectIdForInVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getAtlasObjectIdForOutVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getReferenceObjectId;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 
 public abstract class DeleteHandlerV1 {
 
@@ -219,14 +224,14 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned,
-                                       boolean forceDeleteStructTrait) throws AtlasBaseException {
+                                       boolean forceDeleteStructTrait, AtlasVertex vertex) throws AtlasBaseException {
 
         // default edge direction is outward
-        return deleteEdgeReference(edge, typeCategory, isOwned, forceDeleteStructTrait, AtlasRelationshipEdgeDirection.OUT);
+        return deleteEdgeReference(edge, typeCategory, isOwned, forceDeleteStructTrait, AtlasRelationshipEdgeDirection.OUT, vertex);
     }
 
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned, boolean forceDeleteStructTrait,
-                                       AtlasRelationshipEdgeDirection relationshipDirection) throws AtlasBaseException {
+                                       AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex entityVertex) throws AtlasBaseException {
         LOG.debug("Deleting {}", string(edge));
         boolean forceDelete =
                 (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
@@ -250,7 +255,7 @@ public abstract class DeleteHandlerV1 {
             if (isRelationshipEdge(edge)) {
                 deleteEdge(edge, false);
 
-                AtlasObjectId deletedReferenceObjectId = getReferenceObjectId(edge, relationshipDirection);
+                AtlasObjectId deletedReferenceObjectId = getReferenceObjectId(edge, relationshipDirection, entityVertex);
                 RequestContextV1.get().recordEntityUpdate(deletedReferenceObjectId);
             } else {
                 //legacy case - not a relationship edge
@@ -344,7 +349,7 @@ public abstract class DeleteHandlerV1 {
                         if (edges != null) {
                             while (edges.hasNext()) {
                                 AtlasEdge edge = edges.next();
-                                deleteEdgeReference(edge, elemType.getTypeCategory(), isOwned, false);
+                                deleteEdgeReference(edge, elemType.getTypeCategory(), isOwned, false, instanceVertex);
                             }
                         }
                     }
@@ -377,7 +382,7 @@ public abstract class DeleteHandlerV1 {
         boolean isOwned) throws AtlasBaseException {
         AtlasEdge edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
         if (edge != null) {
-            deleteEdgeReference(edge, typeCategory, isOwned, false);
+            deleteEdgeReference(edge, typeCategory, isOwned, false, outVertex);
         }
     }
 
