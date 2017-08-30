@@ -49,7 +49,7 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
         ApplicationProperties.forceReload();
         SecureEmbeddedServer secureEmbeddedServer = null;
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(ATLAS_DEFAULT_HOST_ADDRESS,
+            secureEmbeddedServer = new SecureEmbeddedServer(EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS,
                 21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
