@@ -71,6 +71,8 @@ ATLAS_HTTPS_PORT="atlas.server.https.port"
 DEFAULT_ATLAS_HTTP_PORT="21000"
 DEFAULT_ATLAS_HTTPS_PORT="21443"
 ATLAS_ENABLE_TLS="atlas.enableTLS"
+ATLAS_SERVER_BIND_ADDRESS="atlas.server.bind.address"
+DEFAULT_ATLAS_SERVER_HOST="localhost"
 
 DEBUG = False
 
@@ -464,14 +466,23 @@ def get_atlas_url_port(confdir):
     print "starting atlas on port %s" % port
     return port
 
+def get_atlas_url_host(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    host = getConfigWithDefault(confdir, ATLAS_SERVER_BIND_ADDRESS, DEFAULT_ATLAS_SERVER_HOST)
+    if (host == '0.0.0.0'):
+        host = DEFAULT_ATLAS_SERVER_HOST
+    print "starting atlas on host %s" % host
+    return host
+
 def wait_for_startup(confdir, wait):
     count = 0
+    host = get_atlas_url_host(confdir)
     port = get_atlas_url_port(confdir)
     while True:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(1)
-            s.connect(('localhost', int(port)))
+            s.connect((host, int(port)))
             s.close()
             break
         except Exception as e:

@@ -64,7 +64,8 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         super(host, port, path);
     }
 
-    protected Connector getConnector(int port) throws IOException {
+    @Override
+    protected Connector getConnector(String host, int port) throws IOException {
         org.apache.commons.configuration.Configuration config = getConfiguration();
 
         SslContextFactory sslContextFactory = new SslContextFactory();
