@@ -82,6 +82,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_RETRIES_PROPERTY = "atlas.notification.hook.maxretries";
     public static final String CONSUMER_FAILEDCACHESIZE_PROPERTY = "atlas.notification.hook.failedcachesize";
     public static final String CONSUMER_RETRY_INTERVAL = "atlas.notification.consumer.retry.interval";
+    public static final String CONSUMER_MIN_RETRY_INTERVAL = "atlas.notification.consumer.min.retry.interval";
+    public static final String CONSUMER_MAX_RETRY_INTERVAL = "atlas.notification.consumer.max.retry.interval";
+
 
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
     private final AtlasEntityStore atlasEntityStore;
@@ -90,7 +93,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final AtlasTypeRegistry typeRegistry;
     private final int maxRetries;
     private final int failedMsgCacheSize;
-    private final int consumerRetryInterval;
+
+    @VisibleForTesting
+    final int consumerRetryInterval;
+    private final int minWaitDuration;
+    private final int maxWaitDuration;
 
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
@@ -114,7 +121,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         maxRetries = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 20);
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
-
+        minWaitDuration = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
+        maxWaitDuration = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
     }
 
     @Override
@@ -212,11 +220,63 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    static class AdaptiveWaiter {
+        private final long increment;
+        private final long maxDuration;
+        private final long minDuration;
+        private final long resetInterval;
+
+        private long lastWaitAt;
+        @VisibleForTesting
+        long waitDuration;
+
+        public AdaptiveWaiter(long minDuration, long maxDuration, long increment) {
+            this.minDuration = minDuration;
+            this.maxDuration = maxDuration;
+            this.increment = increment;
+
+            this.waitDuration = minDuration;
+            this.lastWaitAt = 0;
+            this.resetInterval = maxDuration * 2;
+        }
+
+        public void pause(Exception ex) {
+            setWaitDurations();
+
+            try {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{} in NotificationHookConsumer. Waiting for {} ms for recovery.", ex.getClass().getName(), waitDuration, ex);
+                }
+
+                Thread.sleep(waitDuration);
+            } catch (InterruptedException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{} in NotificationHookConsumer. Waiting for recovery interrupted.", ex.getClass().getName(), e);
+                }
+            }
+        }
+
+        private void setWaitDurations() {
+            long timeSinceLastWait = (lastWaitAt == 0) ? 0 : System.currentTimeMillis() - lastWaitAt;
+            lastWaitAt = System.currentTimeMillis();
+            if (timeSinceLastWait > resetInterval) {
+                waitDuration = minDuration;
+            } else {
+                waitDuration += increment;
+                if (waitDuration > maxDuration) {
+                    waitDuration = maxDuration;
+                }
+            }
+        }
+    }
+
     @VisibleForTesting
     class HookConsumer extends ShutdownableThread {
         private final NotificationConsumer<HookNotificationMessage> consumer;
         private final AtomicBoolean shouldRun = new AtomicBoolean(false);
         private List<HookNotificationMessage> failedMessages = new ArrayList<>();
+
+        private final AdaptiveWaiter adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
         public HookConsumer(NotificationConsumer<HookNotificationMessage> consumer) {
             super("atlas-hook-consumer-thread", false);
@@ -240,16 +300,20 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         for (AtlasKafkaMessage<HookNotificationMessage> msg : messages) {
                             handleMessage(msg);
                         }
+                    } catch (IllegalStateException ex) {
+                        adaptiveWaiter.pause(ex);
                     } catch (Exception e) {
                         if (shouldRun.get()) {
                             LOG.warn("Exception in NotificationHookConsumer", e);
+                            adaptiveWaiter.pause(e);
+                        } else {
+                            break;
                         }
                     }
                 }
             } finally {
                 if (consumer != null) {
                     LOG.info("closing NotificationConsumer");
-
                     consumer.close();
                 }
 
@@ -422,7 +486,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             // handle the case where thread was not started at all
             // and shutdown called
-            if(shouldRun.get() == false) {
+            if (shouldRun.get() == false) {
                 return;
             }
 
@@ -431,8 +495,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             if (consumer != null) {
                 consumer.wakeup();
             }
-            super.awaitShutdown();
 
+            super.awaitShutdown();
             LOG.info("<== HookConsumer shutdown()");
         }
     }
