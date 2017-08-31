@@ -251,4 +251,55 @@ public class NotificationHookConsumerTest {
         verify(notificationInterface).close();
         verify(executorService).shutdown();
     }
+
+    @Test
+    public void consumersThrowsIllegalStateExceptionThreadUsesPauseRetryLogic() throws Exception {
+        final NotificationHookConsumer notificationHookConsumer = setupNotificationHookConsumer();
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                notificationHookConsumer.consumers.get(0).start();
+                Thread.sleep(1000);
+                return null;
+            }
+        }).when(executorService).submit(any(NotificationHookConsumer.HookConsumer.class));
+
+        notificationHookConsumer.startInternal(configuration, executorService);
+        Thread.sleep(1000);
+        assertTrue(notificationHookConsumer.consumers.get(0).isAlive());
+        notificationHookConsumer.consumers.get(0).shutdown();
+    }
+
+    @Test
+    public void consumersThrowsIllegalStateExceptionPauseRetryLogicIsInterrupted() throws Exception {
+        final NotificationHookConsumer notificationHookConsumer = setupNotificationHookConsumer();
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                notificationHookConsumer.consumers.get(0).start();
+                Thread.sleep(1000);
+                return null;
+            }
+        }).when(executorService).submit(any(NotificationHookConsumer.HookConsumer.class));
+
+        notificationHookConsumer.startInternal(configuration, executorService);
+        Thread.sleep(1000);
+        notificationHookConsumer.consumers.get(0).shutdown();
+        assertFalse(notificationHookConsumer.consumers.get(0).isAlive());
+    }
+
+    private NotificationHookConsumer setupNotificationHookConsumer() throws AtlasException {
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
+        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        NotificationConsumer notificationConsumerMock = mock(NotificationConsumer.class);
+        when(notificationConsumerMock.receive()).thenThrow(new IllegalStateException());
+        consumers.add(notificationConsumerMock);
+
+        when(notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, 1)).thenReturn(consumers);
+        return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
+    }
 }
