@@ -47,8 +47,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static org.mockito.Mockito.*;
-import static org.testng.AssertJUnit.assertFalse;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class NotificationHookConsumerTest {
     @Mock
@@ -279,13 +279,13 @@ public class NotificationHookConsumerTest {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 notificationHookConsumer.consumers.get(0).start();
-                Thread.sleep(1000);
+                Thread.sleep(500);
                 return null;
             }
         }).when(executorService).submit(any(NotificationHookConsumer.HookConsumer.class));
 
         notificationHookConsumer.startInternal(configuration, executorService);
-        Thread.sleep(1000);
+        Thread.sleep(500);
         notificationHookConsumer.consumers.get(0).shutdown();
         assertFalse(notificationHookConsumer.consumers.get(0).isAlive());
     }
