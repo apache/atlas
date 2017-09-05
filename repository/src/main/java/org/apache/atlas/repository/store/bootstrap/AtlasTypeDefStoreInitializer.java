@@ -69,6 +69,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @Service
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
+    public static final String PATCHES_FOLDER_NAME = "patches";
 
     private final AtlasTypeDefStore atlasTypeDefStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
@@ -97,57 +98,93 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         LOG.info("<== AtlasTypeDefStoreInitializer.init()");
     }
 
+    /**
+     * This method is looking for folders in alphabetical order in the models directory. It loads each of these folders and their associated patches in order.
+     * It then loads any models in the top level folder and its patches.
+     *
+     * This allows models to be grouped into folders to help managability.
+     *
+     */
     private void loadBootstrapTypeDefs() {
         LOG.info("==> AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
 
-        String atlasHomeDir = System.getProperty("atlas.home");
-        String typesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
-        File   typesDir     = new File(typesDirName);
+        String atlasHomeDir  = System.getProperty("atlas.home");
+        String modelsDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
+
+        if (modelsDirName == null || modelsDirName.length() == 0) {
+            LOG.info("Types directory {} does not exist or not readable or has no typedef files", modelsDirName);
+        } else {
+            // look for folders we need to load models from
+            File   topModeltypesDir  = new File(modelsDirName);
+            File[] modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
+
+            Arrays.sort(modelsDirContents);
+
+            for (File folder : modelsDirContents) {
+                    if (folder.isFile()) {
+                        // ignore files
+                        continue;
+                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
+                        // load the models alphabetically in the subfolders apart from patches
+                        loadModelsInFolder(folder);
+                    }
+            }
+
+            // load any files in the top models folder and any associated patches.
+            loadModelsInFolder(topModeltypesDir);
+        }
+        LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
+    }
+
+    /**
+     * Load all the model files in the supplied folder followed by the contents of the patches folder.
+     * @param typesDir
+     */
+    private void loadModelsInFolder(File typesDir) {
+        LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
+
+        String typesDirName = typesDir.getName();
         File[] typeDefFiles = typesDir.exists() ? typesDir.listFiles() : null;
 
         if (typeDefFiles == null || typeDefFiles.length == 0) {
-            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName);
+            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName );
+        } else {
 
-            return;
-        }
+            // sort the files by filename
+            Arrays.sort(typeDefFiles);
 
-        // sort the files by filename
-        Arrays.sort(typeDefFiles);
+            for (File typeDefFile : typeDefFiles) {
+                if (typeDefFile.isFile()) {
+                    try {
+                        String        jsonStr  = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
+                        AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
 
-        for (File typeDefFile : typeDefFiles) {
-            if (!typeDefFile.isFile()) {
-                continue;
+                        if (typesDef == null || typesDef.isEmpty()) {
+                            LOG.info("No type in file {}", typeDefFile.getAbsolutePath());
+
+                            continue;
+                        }
+
+                        AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, atlasTypeRegistry);
+                        AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, atlasTypeRegistry);
+
+                        if (!typesToCreate.isEmpty() || !typesToUpdate.isEmpty()) {
+                            atlasTypeDefStore.createUpdateTypesDef(typesToCreate, typesToUpdate);
+
+                            LOG.info("Created/Updated types defined in file {}", typeDefFile.getAbsolutePath());
+                        } else {
+                            LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
+                        }
+
+                    } catch (Throwable t) {
+                        LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
+                    }
+                }
             }
 
-            try {
-                String jsonStr = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
-                AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
-
-                if (typesDef == null || typesDef.isEmpty()) {
-                    LOG.info("No type in file {}", typeDefFile.getAbsolutePath());
-
-                    continue;
-                }
-
-                AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, atlasTypeRegistry);
-                AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, atlasTypeRegistry);
-
-                if (!typesToCreate.isEmpty() || !typesToUpdate.isEmpty()) {
-                    atlasTypeDefStore.createUpdateTypesDef(typesToCreate, typesToUpdate);
-
-                    LOG.info("Created/Updated types defined in file {}", typeDefFile.getAbsolutePath());
-                } else {
-                    LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
-                }
-
-            } catch (Throwable t) {
-                LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
-            }
+            applyTypePatches(typesDir.getPath());
         }
-
-        applyTypePatches(typesDirName);
-
-        LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
+        LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
     }
 
     public static AtlasTypesDef getTypesToCreate(AtlasTypesDef typesDef, AtlasTypeRegistry typeRegistry) {
@@ -327,68 +364,67 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     private void applyTypePatches(String typesDirName) {
-        String typePatchesDirName = typesDirName + File.separator + "patches";
+        String typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
         File   typePatchesDir     = new File(typePatchesDirName);
         File[] typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
 
         if (typePatchFiles == null || typePatchFiles.length == 0) {
             LOG.info("Type patches directory {} does not exist or not readable or has no patches", typePatchesDirName);
+        } else {
+            LOG.info("Type patches directory {} is being processed", typePatchesDirName);
 
-            return;
-        }
+            // sort the files by filename
+            Arrays.sort(typePatchFiles);
 
-        // sort the files by filename
-        Arrays.sort(typePatchFiles);
+            PatchHandler[] patchHandlers = new PatchHandler[] {
+                    new AddAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
+                    new UpdateTypeDefOptionsPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
+                    new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
+            };
 
-        PatchHandler[] patchHandlers = new PatchHandler[] {
-                new AddAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
-                new UpdateTypeDefOptionsPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
-                new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
-        };
+            Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
 
-        Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
-
-        for (PatchHandler patchHandler : patchHandlers) {
-            for (String supportedAction : patchHandler.getSupportedActions()) {
-                patchHandlerRegistry.put(supportedAction, patchHandler);
-            }
-        }
-
-        for (File typePatchFile : typePatchFiles) {
-            if (!typePatchFile.isFile()) {
-                continue;
-            }
-
-            LOG.info("Applying patches in file {}", typePatchFile.getAbsolutePath());
-
-            try {
-                String         jsonStr = new String(Files.readAllBytes(typePatchFile.toPath()), StandardCharsets.UTF_8);
-                TypeDefPatches patches = AtlasType.fromJson(jsonStr, TypeDefPatches.class);
-
-                if (patches == null || CollectionUtils.isEmpty(patches.getPatches())) {
-                    LOG.info("No patches in file {}", typePatchFile.getAbsolutePath());
-
-                    continue;
+            for (PatchHandler patchHandler : patchHandlers) {
+                for (String supportedAction : patchHandler.getSupportedActions()) {
+                    patchHandlerRegistry.put(supportedAction, patchHandler);
                 }
+            }
 
-                for (TypeDefPatch patch : patches.getPatches()) {
-                    PatchHandler patchHandler = patchHandlerRegistry.get(patch.getAction());
+            for (File typePatchFile : typePatchFiles) {
+                if (typePatchFile.isFile()) {
 
-                    if (patchHandler == null) {
-                        LOG.error("Unknown patch action {} in file {}. Ignored",
-                                  patch.getAction(), typePatchFile.getAbsolutePath());
-
-                        continue;
-                    }
+                    LOG.info("Applying patches in file {}", typePatchFile.getAbsolutePath());
 
                     try {
-                        patchHandler.applyPatch(patch);
-                    } catch (AtlasBaseException excp) {
-                        LOG.error("Failed to apply {} patch in file {}. Ignored", patch.getAction(), typePatchFile.getAbsolutePath(), excp);
+                        String jsonStr = new String(Files.readAllBytes(typePatchFile.toPath()), StandardCharsets.UTF_8);
+                        TypeDefPatches patches = AtlasType.fromJson(jsonStr, TypeDefPatches.class);
+
+                        if (patches == null || CollectionUtils.isEmpty(patches.getPatches())) {
+                            LOG.info("No patches in file {}", typePatchFile.getAbsolutePath());
+
+                            continue;
+                        }
+
+                        for (TypeDefPatch patch : patches.getPatches()) {
+                            PatchHandler patchHandler = patchHandlerRegistry.get(patch.getAction());
+
+                            if (patchHandler == null) {
+                                LOG.error("Unknown patch action {} in file {}. Ignored",
+                                        patch.getAction(), typePatchFile.getAbsolutePath());
+
+                                continue;
+                            }
+
+                            try {
+                                patchHandler.applyPatch(patch);
+                            } catch (AtlasBaseException excp) {
+                                LOG.error("Failed to apply {} patch in file {}. Ignored", patch.getAction(), typePatchFile.getAbsolutePath(), excp);
+                            }
+                        }
+                    } catch (Throwable t) {
+                        LOG.error("Failed to apply patches in file {}. Ignored", typePatchFile.getAbsolutePath(), t);
                     }
                 }
-            } catch (Throwable t) {
-                LOG.error("Failed to apply patches in file {}. Ignored", typePatchFile.getAbsolutePath(), t);
             }
         }
     }

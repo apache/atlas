@@ -368,10 +368,10 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/target/models</outputDirectory>
+                            <outputDirectory>${basedir}/target/models/1000-Hadoop</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${basedir}/../models</directory>
+                                    <directory>${basedir}/../models/1000-Hadoop</directory>
                                     <filtering>true</filtering>
                                 </resource>
                             </resources>

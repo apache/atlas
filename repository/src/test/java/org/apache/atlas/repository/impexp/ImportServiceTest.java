@@ -68,7 +68,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "sales")
     public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
         runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
     }
 
@@ -79,7 +79,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "reporting")
     public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
         runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
     }
 
@@ -90,7 +90,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "logging")
     public void importDB3(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
         runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
     }
 
@@ -101,7 +101,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "salesNewTypeAttrs", dependsOnMethods = "importDB1")
     public void importDB4(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
         runImportWithParameters(new ImportService(typeDefStore, entityStore, typeRegistry), getDefaultImportRequest(), zipSource);
     }
 
@@ -150,8 +150,8 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "ctas")
     public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1030-hive_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
 
         runImportWithNoParameters(getImportService(), zipSource);
     }
