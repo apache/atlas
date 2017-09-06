@@ -220,6 +220,8 @@ public abstract class SearchProcessor {
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
             try {
+
+
                 if (insideOrCondition && !isIndexSearchable(filterCriteria, structType)) {
                     ret = false;
                 }
@@ -614,8 +616,34 @@ public abstract class SearchProcessor {
         }
     }
 
+    // ATLAS-2118: Reserved regex characters in attribute value can cause the graph query to fail when parsing the contains regex
     private String getContainsRegex(String attributeValue) {
-        return ".*" + attributeValue + ".*";
+        StringBuilder escapedAttrVal = new StringBuilder(".*");
+
+        for (int i = 0; i < attributeValue.length(); i++) {
+            final char c = attributeValue.charAt(i);
+
+            switch (c) {
+                case '+':
+                case '|':
+                case '(':
+                case '{':
+                case '[':
+                case '*':
+                case '?':
+                case '$':
+                case '/':
+                case '^':
+                    escapedAttrVal.append('\\');
+                    break;
+            }
+
+            escapedAttrVal.append(c);
+        }
+
+        escapedAttrVal.append(".*");
+
+        return escapedAttrVal.toString();
     }
 
     private String getSuffixRegex(String attributeValue) {
