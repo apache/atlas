@@ -163,14 +163,12 @@ public abstract class SearchProcessor {
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
             try {
-                String      attributeName = filterCriteria.getAttributeName();
-                String      qualifiedName = structType.getQualifiedAttributeName(attributeName);
-                Set<String> indexedKeys   = context.getIndexedKeys();
+                String attributeName = filterCriteria.getAttributeName();
 
-                if (indexedKeys != null && indexedKeys.contains(qualifiedName)) {
+                if (isIndexSearchable(filterCriteria, structType)) {
                     indexFiltered.add(attributeName);
                 } else {
-                    LOG.warn("search includes non-indexed attribute '{}'; might cause poor performance", qualifiedName);
+                    LOG.warn("not using index-search for attribute '{}' - its either non-indexed or a string attribute used with NEQ operator; might cause poor performance", structType.getQualifiedAttributeName(attributeName));
 
                     graphFiltered.add(attributeName);
                 }
@@ -222,9 +220,7 @@ public abstract class SearchProcessor {
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
             try {
-                String qualifiedName = structType.getQualifiedAttributeName(filterCriteria.getAttributeName());
-
-                if (insideOrCondition && (indexedKeys == null || !indexedKeys.contains(qualifiedName))) {
+                if (insideOrCondition && !isIndexSearchable(filterCriteria, structType)) {
                     ret = false;
                 }
             } catch (AtlasBaseException e) {
@@ -324,6 +320,25 @@ public abstract class SearchProcessor {
         }
 
         indexQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+    }
+
+    private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
+        String      qualifiedName = structType.getQualifiedAttributeName(filterCriteria.getAttributeName());
+        Set<String> indexedKeys   = context.getIndexedKeys();
+        boolean     ret           = indexedKeys != null && indexedKeys.contains(qualifiedName);
+
+        if (ret) { // index exists
+            // Don't use index query for NEQ on string type attributes - as it might return fewer entries due to tokenization of vertex property value by indexer
+            if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ) {
+                AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
+
+                if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
+                    ret = false;
+                }
+            }
+        }
+
+        return ret;
     }
 
     private String toIndexQuery(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes, int level) {
