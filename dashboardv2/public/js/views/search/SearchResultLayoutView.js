@@ -532,7 +532,7 @@ define(['require',
                             if (obj.guid) {
                                 nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + '">' + name + '</a>';
                             } else {
-                                nameHtml = '<a title="' + name + '">' + name + '</a>';
+                                nameHtml = '<span title="' + name + '">' + name + '</span>';
                             }
                             if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
