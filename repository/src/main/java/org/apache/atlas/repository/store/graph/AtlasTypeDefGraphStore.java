@@ -315,7 +315,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @GraphTransaction
     public AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, typeRegistry);
-        AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, typeRegistry);
+        AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, typeRegistry, false);
 
         return createUpdateTypesDef(typesToCreate, typesToUpdate);
     }
