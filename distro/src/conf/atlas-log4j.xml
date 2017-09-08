@@ -27,35 +27,42 @@
         </layout>
     </appender>
 
-    <appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
+    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/${atlas.log.file}"/>
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%C{1}:%L)%n"/>
+            <param name="maxFileSize" value="100MB" />
+            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
-    <appender name="AUDIT" class="org.apache.log4j.DailyRollingFileAppender">
+    <appender name="AUDIT" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/audit.log"/>
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
+            <param name="maxFileSize" value="100MB" />
+            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
-    <appender name="METRICS" class="org.apache.log4j.DailyRollingFileAppender">
+    <appender name="METRICS" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/metric.log"/>
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
+            <param name="maxFileSize" value="100MB" />
         </layout>
     </appender>
 
-    <appender name="FAILED" class="org.apache.log4j.DailyRollingFileAppender">
+    <appender name="FAILED" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/failed.log"/>
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %m"/>
+            <param name="maxFileSize" value="100MB" />
+            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
@@ -82,7 +89,7 @@
     </logger>
 
     <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="info"/>
+        <level value="warn"/>
         <appender-ref ref="FILE"/>
     </logger>
 
