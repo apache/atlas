@@ -24,12 +24,16 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.PredicateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +45,8 @@ public class EntitySearchProcessor extends SearchProcessor {
 
     private final AtlasIndexQuery indexQuery;
     private final AtlasGraphQuery graphQuery;
-    private final AtlasGraphQuery filterGraphQuery;
+    private       Predicate       graphQueryPredicate;
+    private       Predicate       filterGraphQueryPredicate;
 
     public EntitySearchProcessor(SearchContext context) {
         super(context);
@@ -54,9 +59,17 @@ public class EntitySearchProcessor extends SearchProcessor {
         final Set<String>     graphAttributes       = new HashSet<>();
         final Set<String>     allAttributes         = new HashSet<>();
 
-        final AtlasClassificationType classificationType   = context.getClassificationType();
-        final boolean                 filterClassification = classificationType != null && !context.needClassificationProcessor();
+        final AtlasClassificationType classificationType            = context.getClassificationType();
+        final boolean                 filterClassification          = classificationType != null && !context.needClassificationProcessor();
+        final Set<String>             classificationTypeAndSubTypes = classificationType != null ? classificationType.getTypeAndAllSubTypes() : Collections.EMPTY_SET;
 
+
+        final Predicate typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator()
+                                                               .generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
+        final Predicate traitPredicate    = SearchPredicateUtil.getContainsAnyPredicateGenerator()
+                                                               .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class);
+        final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
+                                                               .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
         processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
@@ -72,7 +85,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (attrSearchByIndex) {
             constructFilterQuery(indexQuery, entityType, filterCriteria, indexAttributes);
 
-            constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
+            inMemoryPredicate = constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
         } else {
             graphAttributes.addAll(indexAttributes);
         }
@@ -97,31 +110,71 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             if (!typeSearchByIndex) {
                 query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
+
+                // Construct a parallel in-memory predicate
+                if (graphQueryPredicate != null) {
+                    graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, typeNamePredicate);
+                } else {
+                    graphQueryPredicate = typeNamePredicate;
+                }
             }
 
+            // If we need to filter on the trait names then we need to build the query and equivalent in-memory predicate
             if (filterClassification) {
-                query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
+                query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes);
+
+                // Construct a parallel in-memory predicate
+                if (graphQueryPredicate != null) {
+                    graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, traitPredicate);
+                } else {
+                    graphQueryPredicate = traitPredicate;
+                }
             }
 
             graphQuery = toGraphFilterQuery(entityType, filterCriteria, graphAttributes, query);
 
+            // Prepare in-memory predicate for attribute filtering
+            Predicate attributePredicate = constructInMemoryPredicate(entityType, filterCriteria, graphAttributes);
+
+            if (attributePredicate != null) {
+                if (graphQueryPredicate != null) {
+                    graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, attributePredicate);
+                } else {
+                    graphQueryPredicate = attributePredicate;
+                }
+            }
+
+            // Filter condition for the STATUS
             if (context.getSearchParameters().getExcludeDeletedEntities() && this.indexQuery == null) {
                 graphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
+                if (graphQueryPredicate != null) {
+                    graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, activePredicate);
+                } else {
+                    graphQueryPredicate = activePredicate;
+                }
             }
         } else {
             graphQuery = null;
+            graphQueryPredicate = null;
         }
 
-        AtlasGraphQuery query = context.getGraph().query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
+
+        // Prepare the graph query and in-memory filter for the filtering phase
+        filterGraphQueryPredicate = typeNamePredicate;
+
+        Predicate attributesPredicate = constructInMemoryPredicate(entityType, filterCriteria, allAttributes);
+
+        if (attributesPredicate != null) {
+            filterGraphQueryPredicate = PredicateUtils.andPredicate(filterGraphQueryPredicate, attributesPredicate);
+        }
 
         if (filterClassification) {
-            query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes());
+            filterGraphQueryPredicate = PredicateUtils.andPredicate(filterGraphQueryPredicate, traitPredicate);
         }
 
-        filterGraphQuery = toGraphFilterQuery(entityType, filterCriteria, allAttributes, query);
-
+        // Filter condition for the STATUS
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
-            filterGraphQuery.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
+            filterGraphQueryPredicate = PredicateUtils.andPredicate(filterGraphQueryPredicate, activePredicate);
         }
     }
 
@@ -172,18 +225,8 @@ public class EntitySearchProcessor extends SearchProcessor {
                     // Do in-memory filtering before the graph query
                     CollectionUtils.filter(entityVertices, inMemoryPredicate);
 
-                    if (graphQuery != null) {
-                        Set<String> guids = getGuids(entityVertices);
-
-                        entityVertices.clear();
-
-                        if (CollectionUtils.isNotEmpty(guids)) {
-                            AtlasGraphQuery guidQuery = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, guids);
-
-                            guidQuery.addConditionsFrom(graphQuery);
-
-                            getVertices(guidQuery.vertices().iterator(), entityVertices);
-                        }
+                    if (graphQueryPredicate != null) {
+                        CollectionUtils.filter(entityVertices, graphQueryPredicate);
                     }
                 } else {
                     Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
@@ -216,16 +259,11 @@ public class EntitySearchProcessor extends SearchProcessor {
             LOG.debug("==> EntitySearchProcessor.filter({})", entityVertices.size());
         }
 
-        Set<String> guids = getGuids(entityVertices);
-
-        entityVertices.clear();
-
-        if (CollectionUtils.isNotEmpty(guids)) {
-            AtlasGraphQuery query = context.getGraph().query().in(Constants.GUID_PROPERTY_KEY, guids);
-
-            query.addConditionsFrom(filterGraphQuery);
-
-            getVertices(query.vertices().iterator(), entityVertices);
+        // Since we already have the entity vertices, a in-memory filter will be faster than fetching the same
+        // vertices again with the required filtering
+        if (filterGraphQueryPredicate != null) {
+            LOG.debug("Filtering in-memory");
+            CollectionUtils.filter(entityVertices, filterGraphQueryPredicate);
         }
 
         super.filter(entityVertices);

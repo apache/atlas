@@ -19,13 +19,14 @@ package org.apache.atlas.util;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.List;
+import java.util.Collection;
 
 public class SearchPredicateUtil {
     private static final Logger LOG = LoggerFactory.getLogger(SearchPredicateUtil.class);
@@ -228,6 +229,10 @@ public class SearchPredicateUtil {
 
                 if (attrName == null || attrClass == null || attrVal == null) {
                     ret = ALWAYS_FALSE;
+                } else if (Boolean.class.isAssignableFrom(attrClass)) {
+                    ret = BooleanPredicate.getEQPredicate(attrName, attrClass, (Boolean)attrVal);
+                } else if (Byte.class.isAssignableFrom(attrClass)) {
+                    ret = BytePredicate.getEQPredicate(attrName, attrClass, (Byte)attrVal);
                 } else if (Short.class.isAssignableFrom(attrClass)) {
                     ret = ShortPredicate.getEQPredicate(attrName, attrClass, (Short)attrVal);
                 } else if (Integer.class.isAssignableFrom(attrClass)) {
@@ -238,8 +243,6 @@ public class SearchPredicateUtil {
                     ret = FloatPredicate.getEQPredicate(attrName, attrClass, (Float)attrVal);
                 } else if (Double.class.isAssignableFrom(attrClass)) {
                     ret = DoublePredicate.getEQPredicate(attrName, attrClass, (Double)attrVal);
-                } else if (Byte.class.isAssignableFrom(attrClass)) {
-                    ret = BytePredicate.getEQPredicate(attrName, attrClass, (Byte)attrVal);
                 } else if (BigInteger.class.isAssignableFrom(attrClass)) {
                     ret = BigIntegerPredicate.getEQPredicate(attrName, attrClass, (BigInteger)attrVal);
                 } else if (BigDecimal.class.isAssignableFrom(attrClass)) {
@@ -273,6 +276,10 @@ public class SearchPredicateUtil {
 
                 if (attrName == null || attrClass == null || attrVal == null) {
                     ret = ALWAYS_FALSE;
+                } else if (Boolean.class.isAssignableFrom(attrClass)) {
+                    ret = BooleanPredicate.getNEQPredicate(attrName, attrClass, (Boolean)attrVal);
+                } else if (Byte.class.isAssignableFrom(attrClass)) {
+                    ret = BytePredicate.getNEQPredicate(attrName, attrClass, (Byte)attrVal);
                 } else if (Short.class.isAssignableFrom(attrClass)) {
                     ret = ShortPredicate.getNEQPredicate(attrName, attrClass, (Short)attrVal);
                 } else if (Integer.class.isAssignableFrom(attrClass)) {
@@ -283,8 +290,6 @@ public class SearchPredicateUtil {
                     ret = FloatPredicate.getNEQPredicate(attrName, attrClass, (Float)attrVal);
                 } else if (Double.class.isAssignableFrom(attrClass)) {
                     ret = DoublePredicate.getNEQPredicate(attrName, attrClass, (Double)attrVal);
-                } else if (Byte.class.isAssignableFrom(attrClass)) {
-                    ret = BytePredicate.getNEQPredicate(attrName, attrClass, (Byte)attrVal);
                 } else if (BigInteger.class.isAssignableFrom(attrClass)) {
                     ret = BigIntegerPredicate.getNEQPredicate(attrName, attrClass, (BigInteger)attrVal);
                 } else if (BigDecimal.class.isAssignableFrom(attrClass)) {
@@ -306,6 +311,76 @@ public class SearchPredicateUtil {
         return ret;
     }
 
+    public static VertexAttributePredicateGenerator getContainsAnyPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getContainsAnyPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null || !isValid(attrVal, attrClass)) {
+                    ret = ALWAYS_FALSE;
+                } else {
+                    ret = new VertexAttributePredicate(attrName, attrClass) {
+                        @Override
+                        public boolean compareValue(final Object value) {
+                            return CollectionUtils.containsAny((Collection) attrVal, (Collection) value);
+                        }
+                    };
+                }
+                return ret;
+            }
+
+            private boolean isValid(final Object attrVal, final Class attrClass) {
+                return attrVal instanceof Collection && Collection.class.isAssignableFrom(attrClass);
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getContainsAnyPredicateGenerator");
+        }
+
+        return ret;
+    }
+
+    public static VertexAttributePredicateGenerator getContainsAllPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getContainsAllPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null || !isValid(attrVal, attrClass)) {
+                    ret = ALWAYS_FALSE;
+                } else {
+                    ret = new VertexAttributePredicate(attrName, attrClass) {
+                        @Override
+                        public boolean compareValue(final Object value) {
+                            return ((Collection) attrVal).containsAll((Collection) value);
+                        }
+                    };
+                }
+                return ret;
+            }
+
+            private boolean isValid(final Object attrVal, final Class attrClass) {
+                return attrVal instanceof Collection && Collection.class.isAssignableFrom(attrClass);
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getContainsAllPredicateGenerator");
+        }
+
+        return ret;
+    }
+
     public static VertexAttributePredicateGenerator getINPredicateGenerator() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getINPredicateGenerator");
@@ -316,18 +391,22 @@ public class SearchPredicateUtil {
             public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
                 final Predicate ret;
 
-                if (attrName == null || attrClass == null || attrVal == null) {
+                if (attrName == null || attrClass == null || attrVal == null || !isValid(attrVal, attrClass)) {
                     ret = ALWAYS_FALSE;
                 } else {
                     ret = new VertexAttributePredicate(attrName, attrClass) {
                         @Override
                         public boolean compareValue(final Object value) {
-                            return (value instanceof List) ? ((List) value).contains(attrVal) : false;
+                            return ((Collection)attrVal).contains(value);
                         }
                     };
                 }
 
                 return ret;
+            }
+
+            private boolean isValid(final Object attrVal, final Class attrClass) {
+                return attrVal instanceof Collection;
             }
         };
 
@@ -439,6 +518,14 @@ public class SearchPredicateUtil {
                     ret = ALWAYS_FALSE;
                 } else if (String.class.isAssignableFrom(attrClass)) {
                     ret = StringPredicate.getContainsPredicate(attrName, attrClass, (String)attrVal);
+                } else if (Collection.class.isAssignableFrom(attrClass)) {
+                    // Check if the provided value is present in the list of stored values
+                    ret = new VertexAttributePredicate(attrName, attrClass) {
+                        @Override
+                        protected boolean compareValue(final Object value) {
+                            return ((Collection) value).contains(attrVal);
+                        }
+                    };
                 } else {
                     ret = ALWAYS_FALSE;
                 }
@@ -474,13 +561,14 @@ public class SearchPredicateUtil {
             AtlasVertex vertex = (object instanceof AtlasVertex) ? (AtlasVertex)object : null;
 
             if (vertex != null) {
-                Object attrValue = AtlasGraphUtilsV1.getProperty(vertex, attrName, attrClass);
-
-                if (attrValue != null) {
-                    ret = compareValue(attrValue);
+                Object attrValue;
+                if (Collection.class.isAssignableFrom(attrClass)) {
+                    attrValue = vertex.getPropertyValues(attrName, attrClass);
                 } else {
-                    ret = false;
+                    attrValue = AtlasGraphUtilsV1.getProperty(vertex, attrName, attrClass);
                 }
+
+                ret = attrValue != null && compareValue(attrValue);
             } else {
                 ret = false;
             }
@@ -489,6 +577,32 @@ public class SearchPredicateUtil {
         }
 
         protected abstract boolean compareValue(Object value);
+    }
+
+    static abstract class BooleanPredicate extends VertexAttributePredicate {
+        final Boolean value;
+
+        BooleanPredicate(String attrName, Class attrClass, Boolean value) {
+            super(attrName, attrClass);
+
+            this.value = value;
+        }
+
+        static VertexAttributePredicate getEQPredicate(String attrName, Class attrClass, Boolean value) {
+            return new SearchPredicateUtil.BooleanPredicate(attrName, attrClass, value) {
+                protected boolean compareValue(Object value) {
+                    return ((Boolean) value).compareTo(this.value) == 0;
+                }
+            };
+        }
+
+        static VertexAttributePredicate getNEQPredicate(String attrName, Class attrClass, Boolean value) {
+            return new SearchPredicateUtil.BooleanPredicate(attrName, attrClass, value) {
+                protected boolean compareValue(Object value) {
+                    return ((Boolean) value).compareTo(this.value) != 0;
+                }
+            };
+        }
     }
 
     static abstract class ShortPredicate extends VertexAttributePredicate {

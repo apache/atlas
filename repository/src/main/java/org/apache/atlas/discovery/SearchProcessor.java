@@ -23,18 +23,20 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
-import org.apache.atlas.util.SearchPredicateUtil.VertexAttributePredicateGenerator;
+import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
@@ -44,15 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.util.SearchPredicateUtil.*;
@@ -269,14 +263,16 @@ public abstract class SearchProcessor {
         }
     }
 
-    protected void constructInMemoryPredicate(AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
+    protected Predicate constructInMemoryPredicate(AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
+        Predicate ret = null;
         if (filterCriteria != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Processing Filters");
             }
 
-            inMemoryPredicate = toInMemoryPredicate(type, filterCriteria, indexAttributes);
+            ret = toInMemoryPredicate(type, filterCriteria, indexAttributes);
         }
+        return ret;
     }
 
     protected void constructGremlinFilterQuery(StringBuilder gremlinQuery, Map<String, Object> queryBindings, AtlasStructType structType, FilterCriteria filterCriteria) {
@@ -411,59 +407,61 @@ public abstract class SearchProcessor {
         VertexAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
 
         if (attribute != null && predicate != null) {
-            final AtlasType attrType      = attribute.getAttributeType();
-            final String    attributeType = attrType.getTypeName().toLowerCase();
+            final AtlasType attrType = attribute.getAttributeType();
             final Class     attrClass;
             final Object    attrValue;
 
-            switch (attributeType) {
-                case "string":
+            switch (attrType.getTypeName()) {
+                case AtlasBaseTypeDef.ATLAS_TYPE_STRING:
                     attrClass = String.class;
                     attrValue = attrVal;
                     break;
-                case "short":
+                case AtlasBaseTypeDef.ATLAS_TYPE_SHORT:
                     attrClass = Short.class;
                     attrValue = Short.parseShort(attrVal);
                     break;
-                case "int":
+                case AtlasBaseTypeDef.ATLAS_TYPE_INT:
                     attrClass = Integer.class;
                     attrValue = Integer.parseInt(attrVal);
                     break;
-                case "biginteger":
+                case AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER:
                     attrClass = BigInteger.class;
                     attrValue = new BigInteger(attrVal);
                     break;
-                case "boolean":
+                case AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN:
                     attrClass = Boolean.class;
                     attrValue = Boolean.parseBoolean(attrVal);
                     break;
-                case "byte":
+                case AtlasBaseTypeDef.ATLAS_TYPE_BYTE:
                     attrClass = Byte.class;
                     attrValue = Byte.parseByte(attrVal);
                     break;
-                case "long":
-                case "date":
+                case AtlasBaseTypeDef.ATLAS_TYPE_LONG:
+                case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
                     attrClass = Long.class;
                     attrValue = Long.parseLong(attrVal);
                     break;
-                case "float":
+                case AtlasBaseTypeDef.ATLAS_TYPE_FLOAT:
                     attrClass = Float.class;
                     attrValue = Float.parseFloat(attrVal);
                     break;
-                case "double":
+                case AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE:
                     attrClass = Double.class;
                     attrValue = Double.parseDouble(attrVal);
                     break;
-                case "bigdecimal":
+                case AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL:
                     attrClass = BigDecimal.class;
                     attrValue = new BigDecimal(attrVal);
                     break;
                 default:
                     if (attrType instanceof AtlasEnumType) {
                         attrClass = String.class;
+                    } else if (attrType instanceof AtlasArrayType) {
+                        attrClass = List.class;
                     } else {
                         attrClass = Object.class;
                     }
+
                     attrValue = attrVal;
                     break;
             }
