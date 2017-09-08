@@ -27,12 +27,14 @@
         </layout>
     </appender>
 
-    <appender name="AUDIT" class="org.apache.log4j.DailyRollingFileAppender">
+    <appender name="AUDIT" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/audit.log"/>
         <param name="Append" value="true"/>
         <param name="Threshold" value="debug"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
+            <param name="maxFileSize" value="100MB" />
+            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
@@ -71,7 +73,7 @@
     </logger>
 
     <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="info"/>
+        <level value="warn"/>
         <appender-ref ref="console"/>
     </logger>
 
