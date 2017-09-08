@@ -344,7 +344,9 @@ public class SearchParameters {
         LIKE(new String[]{"like", "LIKE"}),
         STARTS_WITH(new String[]{"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
         ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "BEGINS_WITH"}),
-        CONTAINS(new String[]{"contains", "CONTAINS"})
+        CONTAINS(new String[]{"contains", "CONTAINS"}),
+        CONTAINS_ANY(new String[]{"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
+        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"})
         ;
         static final Map<String, Operator> operatorsMap = new HashMap<>();
 

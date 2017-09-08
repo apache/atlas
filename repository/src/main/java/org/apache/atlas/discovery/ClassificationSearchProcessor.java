@@ -30,8 +30,10 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +53,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("ClassificationSearchProcessor");
 
     private final AtlasIndexQuery indexQuery;
-    private final AtlasGraphQuery allGraphQuery;
+    private final AtlasGraphQuery tagGraphQueryWithAttributes;
+    private final AtlasGraphQuery entityGraphQueryTraitNames;
+    private final Predicate       entityPredicateTraitNames;
 
     private final String              gremlinTagFilterQuery;
     private final Map<String, Object> gremlinQueryBindings;
+
 
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
@@ -88,18 +93,18 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
             this.indexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
 
-            constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
+            inMemoryPredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
         } else {
             indexQuery = null;
         }
 
-        AtlasGraphQuery query = graph.query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
-
-        allGraphQuery = toGraphFilterQuery(classificationType, filterCriteria, allAttributes, query);
-
         if (context.getSearchParameters().getTagFilters() != null) {
             // Now filter on the tag attributes
             AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
+
+            tagGraphQueryWithAttributes = toGraphFilterQuery(classificationType, filterCriteria, allAttributes, graph.query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes));
+            entityGraphQueryTraitNames  = null;
+            entityPredicateTraitNames   = null;
 
             gremlinQueryBindings = new HashMap<>();
 
@@ -122,6 +127,11 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 LOG.debug("gremlinTagFilterQuery={}", gremlinTagFilterQuery);
             }
         } else {
+            tagGraphQueryWithAttributes = null;
+            entityGraphQueryTraitNames  = graph.query().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes);
+            entityPredicateTraitNames   = SearchPredicateUtil.getContainsAnyPredicateGenerator()
+                                                             .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
+
             gremlinTagFilterQuery = null;
             gremlinQueryBindings  = null;
         }
@@ -176,38 +186,56 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     }
 
                     getVerticesFromIndexQueryResult(queryResult, classificationVertices);
+
+                    // Do in-memory filtering before the graph query
+                    CollectionUtils.filter(classificationVertices, inMemoryPredicate);
                 } else {
-                    Iterator<AtlasVertex> queryResult = allGraphQuery.vertices(qryOffset, limit).iterator();
+                    if (context.getSearchParameters().getTagFilters() == null) {
+                        // We can use single graph query to determine in this case
+                        Iterator<AtlasVertex> queryResult = entityGraphQueryTraitNames.vertices(qryOffset, limit).iterator();
 
-                    if (!queryResult.hasNext()) { // no more results - end of search
-                        break;
+                        if (!queryResult.hasNext()) { // no more results - end of search
+                            break;
+                        }
+
+                        getVertices(queryResult, entityVertices);
+                    } else {
+                        Iterator<AtlasVertex> queryResult = tagGraphQueryWithAttributes.vertices(qryOffset, limit).iterator();
+
+                        if (!queryResult.hasNext()) { // no more results - end of search
+                            break;
+                        }
+
+                        getVertices(queryResult, classificationVertices);
+
+                        // Do in-memory filtering before the graph query
+                        CollectionUtils.filter(classificationVertices, inMemoryPredicate);
                     }
-
-                    getVertices(queryResult, classificationVertices);
                 }
 
-                // Do in-memory filtering before the graph query
-                CollectionUtils.filter(classificationVertices, inMemoryPredicate);
+                // Since tag filters are present, we need to collect the entity vertices after filtering the classification
+                // vertex results (as these might be lower in number)
+                if (CollectionUtils.isNotEmpty(classificationVertices)) {
+                    for (AtlasVertex classificationVertex : classificationVertices) {
+                        Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
 
-                for (AtlasVertex classificationVertex : classificationVertices) {
-                    Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
+                        for (AtlasEdge edge : edges) {
+                            AtlasVertex entityVertex = edge.getOutVertex();
 
-                    for (AtlasEdge edge : edges) {
-                        AtlasVertex entityVertex = edge.getOutVertex();
+                            if (activeOnly && AtlasGraphUtilsV1.getState(entityVertex) != AtlasEntity.Status.ACTIVE) {
+                                continue;
+                            }
 
-                        if (activeOnly && AtlasGraphUtilsV1.getState(entityVertex) != AtlasEntity.Status.ACTIVE) {
-                            continue;
+                            String guid = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
+
+                            if (processedGuids.contains(guid)) {
+                                continue;
+                            }
+
+                            entityVertices.add(entityVertex);
+
+                            processedGuids.add(guid);
                         }
-
-                        String guid = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
-
-                        if (processedGuids.contains(guid)) {
-                            continue;
-                        }
-
-                        entityVertices.add(entityVertex);
-
-                        processedGuids.add(guid);
                     }
                 }
 
@@ -254,6 +282,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     LOG.warn(e.getMessage(), e);
                 }
             }
+        } else if (entityPredicateTraitNames != null) {
+            CollectionUtils.filter(entityVertices, entityPredicateTraitNames);
         }
 
         super.filter(entityVertices);
