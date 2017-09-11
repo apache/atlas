@@ -358,20 +358,20 @@ define(['require',
                 var apiObj = {
                     skipDefaultError: true,
                     sort: false,
-                    success: function(model, response) {
+                    success: function(dataOrCollection, response) {
                         Globals.searchApiCallRef = undefined;
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if (!model.entities && that.offset > that.limit) {
+                        if ((isPostMethod ? !dataOrCollection.entities : !dataOrCollection.length) && that.offset >= that.limit) {
                             that.ui.nextData.attr('disabled', true);
                             that.offset = that.offset - that.limit;
                             that.hideLoader();
                             return;
                         }
                         if (isPostMethod) {
-                            that.searchCollection.referredEntities = model.referredEntities;
-                            that.searchCollection.reset(model.entities);
+                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
+                            that.searchCollection.reset(dataOrCollection.entities);
                         }
                         if (that.searchCollection.models.length < that.limit) {
                             that.ui.nextData.attr('disabled', true);
@@ -407,11 +407,10 @@ define(['require',
                     reset: true
                 }
                 if (value) {
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: (value.includeDE ? false : true) });
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
                     if (value.profileDBView && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
@@ -422,7 +421,9 @@ define(['require',
                     }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
-                        apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
+                        apiObj['data'] = _.extend({
+                            'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true)
+                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'limit', 'offset', 'typeName', 'classification'))
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -431,7 +432,9 @@ define(['require',
                     }
                 } else {
                     if (isPostMethod) {
-                        apiObj['data'] = _.extend({}, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'));
+                        apiObj['data'] = _.extend({
+                            'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true)
+                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'limit', 'offset', 'typeName', 'classification'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -900,9 +903,6 @@ define(['require',
                 var includeDE = false;
                 if (e.target.checked) {
                     includeDE = true;
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: false });
-                } else {
-                    $.extend(this.searchCollection.queryParams, { limit: this.limit, excludeDeletedEntities: true });
                 }
                 if (this.value) {
                     this.value.includeDE = includeDE;
