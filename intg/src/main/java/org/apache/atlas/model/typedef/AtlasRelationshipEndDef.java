@@ -60,9 +60,21 @@ public class AtlasRelationshipEndDef implements Serializable {
      */
     private Cardinality cardinality;
     /**
-     * When set this indicates that this end is is a legacy attribute
+     * When set this indicates that this end is a legacy attribute
      */
     private boolean isLegacyAttribute;
+    /**
+     * Description of the end
+     */
+    private String description;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     /**
      * Base constructor
@@ -98,13 +110,44 @@ public class AtlasRelationshipEndDef implements Serializable {
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
         this(typeName, name, cardinality, isContainer, false);
     }
-
+    /**
+     *
+     * @param typeName
+     *   - The name of an entityDef type
+     * @param name
+     *   - The name of the new attribute that the entity instance will pick up.
+     * @param cardinality
+     *   - whether the end is SINGLE (1) or SET (many)
+     * @param isContainer
+     *   - whether the end is a container or not
+     * @param isLegacyAttribute
+     *   - whether this is a legacy attribute
+     */
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute) {
+        this(typeName, name, cardinality, isContainer, isLegacyAttribute,"");
+    }
+    /**
+     *
+     * @param typeName
+     *   - The name of an entityDef type
+     * @param name
+     *   - The name of the new attribute that the entity instance will pick up.
+     * @param cardinality
+     *   - whether the end is SINGLE (1) or SET (many)
+     * @param isContainer
+     *   - whether the end is a container or not
+     * @param isLegacyAttribute
+     *   - whether this is a legacy attribute
+     * @param description
+     *   - The description of this end of the relationship.
+     */
+    public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute, String description) {
         setType(typeName);
         setName(name);
         setCardinality(cardinality);
         setIsContainer(isContainer);
         setIsLegacyAttribute(isLegacyAttribute);
+        setDescription(description);
     }
 
     /**
@@ -118,6 +161,7 @@ public class AtlasRelationshipEndDef implements Serializable {
             setIsContainer(other.getIsContainer());
             setCardinality(other.getCardinality());
             setIsLegacyAttribute(other.isLegacyAttribute);
+            setDescription(other.description);
         }
     }
 
@@ -177,6 +221,7 @@ public class AtlasRelationshipEndDef implements Serializable {
         sb.append("AtlasRelationshipEndDef{");
         sb.append("type='").append(type).append('\'');
         sb.append(", name==>'").append(name).append('\'');
+        sb.append(", description==>'").append(description).append('\'');
         sb.append(", isContainer==>'").append(isContainer).append('\'');
         sb.append(", cardinality==>'").append(cardinality).append('\'');
         sb.append(", isLegacyAttribute==>'").append(isLegacyAttribute).append('\'');
@@ -195,6 +240,7 @@ public class AtlasRelationshipEndDef implements Serializable {
 
         return Objects.equals(type, that.type) &&
                Objects.equals(name, that.name) &&
+               Objects.equals(description, that.description) &&
                isContainer == that.isContainer &&
                cardinality == that.cardinality &&
                isLegacyAttribute == that.isLegacyAttribute;
@@ -202,7 +248,7 @@ public class AtlasRelationshipEndDef implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, getName(), isContainer, cardinality, isLegacyAttribute);
+        return Objects.hash(type, getName(), description, isContainer, cardinality, isLegacyAttribute);
     }
 
     @Override

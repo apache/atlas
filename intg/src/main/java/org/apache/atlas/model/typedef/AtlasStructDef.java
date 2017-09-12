@@ -272,6 +272,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private boolean                  isUnique;
         private boolean                  isIndexable;
         private String                   defaultValue;
+        private String                   description;
 
         private List<AtlasConstraintDef> constraints;
 
@@ -281,14 +282,15 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, false, false, null);
 
         }
+
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, List<AtlasConstraintDef> constraints) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints);
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints, "");
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, String defaultValue,
-                                 List<AtlasConstraintDef> constraints) {
+                                 List<AtlasConstraintDef> constraints, String description) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -299,6 +301,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setIsIndexable(isIndexable);
             setDefaultValue(defaultValue);
             setConstraints(constraints);
+            setDescription(description);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -313,6 +316,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIsIndexable(other.getIsIndexable());
                 setDefaultValue(other.getDefaultValue());
                 setConstraints(other.getConstraints());
+                setDescription((other.getDescription()));
             }
         }
 
@@ -412,6 +416,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             cDefs.add(constraintDef);
         }
 
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -420,6 +432,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append("AtlasAttributeDef{");
             sb.append("name='").append(name).append('\'');
             sb.append(", typeName='").append(typeName).append('\'');
+            sb.append(", description='").append(description).append('\'');
             sb.append(", getIsOptional=").append(isOptional);
             sb.append(", cardinality=").append(cardinality);
             sb.append(", valuesMinCount=").append(valuesMinCount);
@@ -458,12 +471,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(typeName, that.typeName) &&
                     cardinality == that.cardinality &&
                     Objects.equals(defaultValue, that.defaultValue) &&
+                    Objects.equals(description, that.description) &&
                     Objects.equals(constraints, that.constraints);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, defaultValue, constraints);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, defaultValue, constraints, description);
         }
 
         @Override
