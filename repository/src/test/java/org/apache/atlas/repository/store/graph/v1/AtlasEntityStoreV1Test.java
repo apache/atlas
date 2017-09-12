@@ -941,7 +941,7 @@ public class AtlasEntityStoreV1Test {
             String guid = createdEntity.get(0).getGuid();
             entityStore.addClassification(Arrays.asList(guid), new AtlasClassification(aTag.getName(), "testAttribute", "test-string"));
         } catch (AtlasBaseException e) {
-            fail("DB entity creation should've succeeded");
+            fail("DB entity creation should've succeeded, e.getMessage() => " + e.getMessage());
         }
 
     }

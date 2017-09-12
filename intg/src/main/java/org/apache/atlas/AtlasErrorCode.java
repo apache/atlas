@@ -95,6 +95,11 @@ public enum AtlasErrorCode {
     INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-048", "Expected attribute {0} to be a relationship but found type {1}"),
     INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-049", "Invalid entity type '{0}', guid '{1}' in relationship search"),
     INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED(400, "ATLAS-400-00-050", "Attribute {0}.{1} is of type {2}. Import has this attribute type as {3}"),
+    ENTITYTYPE_REMOVAL_NOT_SUPPORTED(400, "ATLAS-400-00-051", "EntityTypes cannot be removed from ClassificationDef ‘{0}‘"),
+    CLASSIFICATIONDEF_INVALID_ENTITYTYPES(400, "ATLAS-400-00-052", "ClassificationDef ‘{0}‘ has invalid ‘{1}‘ in entityTypes"),
+    CLASSIFICATIONDEF_PARENTS_ENTITYTYPES_DISJOINT(400, "ATLAS-400-00-053", "ClassificationDef ‘{0}‘ has supertypes whose entityTypes are disjoint; e.g. 2 supertypes that are not related by inheritance specify different non empty entityType lists. This means the child cannot honour the restrictions specified in both parents."),
+    CLASSIFICATIONDEF_ENTITYTYPES_NOT_PARENTS_SUBSET(400, "ATLAS-400-00-054", "ClassificationDef ‘{0}‘ has entityTypes ‘{1}‘ which are not subsets of it's supertypes entityTypes"),
+    INVALID_ENTITY_FOR_CLASSIFICATION (400, "ATLAS-400-00-055", "Entity (guid=‘{0}‘,typename=‘{1}‘) cannot be classified by Classification ‘{2}‘, because ‘{1}‘ is not in the ClassificationDef's restrictions."),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),

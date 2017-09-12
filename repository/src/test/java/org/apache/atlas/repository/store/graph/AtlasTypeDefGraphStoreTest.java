@@ -18,17 +18,13 @@
 package org.apache.atlas.repository.store.graph;
 
 import com.google.inject.Inject;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
@@ -38,11 +34,12 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Date;
 
 import static org.testng.Assert.*;
 
@@ -386,6 +383,146 @@ public class AtlasTypeDefGraphStoreTest {
             fail("Entity creation with invalid supertype should've failed");
         } catch (AtlasBaseException e) {}
 
+    }
+
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateClassificationDefWithValidEntityType(){
+        final String entityTypeName ="testCreateClassificationDefWithValidEntityTypeEntity1";
+        final String classificationTypeName ="testCreateClassificationDefWithValidEntityTypeClassification1";
+
+        List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithName(entityTypeName);
+
+        // Test Classification with entitytype
+        List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithName(classificationTypeName);
+
+        Set<String> entityTypeNames =  new HashSet<String>();
+        entityTypeNames.add(entityTypeName);
+        classificationDefs.get(0).setEntityTypes(entityTypeNames);
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                classificationDefs,
+                entityDefs);
+        try {
+            AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+            assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(),
+                    "Classification creation with valid entitytype should've succeeded");
+        } catch (AtlasBaseException e) {
+            fail("Classification creation with valid entitytype should've succeeded. Failed with " + e.getMessage());
+        }
+    }
+
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateWithInvalidEntityType(){
+        final String classificationTypeName ="testCreateClassificationDefWithInvalidEntityTypeClassification1";
+        // Test Classification with entitytype
+        List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithName(classificationTypeName);
+
+        Set<String> entityTypeNames =  new HashSet<String>();
+        entityTypeNames.add("cccc");
+        classificationDefs.get(0).setEntityTypes(entityTypeNames);
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                classificationDefs,
+                Collections.<AtlasEntityDef>emptyList());
+        try {
+            AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+            fail("Classification creation with invalid entitytype should've failed");
+        } catch (AtlasBaseException e) {
+
+        }
+    }
+
+    /**
+     * test that specifying an entitytype in a child classificationDef when then parent has unrestricted entityTypes fails.
+     */
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateWithInvalidEntityType2(){
+        final String classificationTypeName1 ="testCreateClassificationDefWithInvalidEntityType2Classification1";
+        final String classificationTypeName2 ="testCreateClassificationDefWithInvalidEntityType2Classification2";
+        final String entityTypeName1 ="testCreateClassificationDefWithInvalidEntityType2Entity1";
+
+        // Test Classification with entitytype
+        AtlasClassificationDef classificationDef1 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName1);
+        AtlasClassificationDef classificationDef2 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName2);
+        List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithName(entityTypeName1);
+
+
+        Set<String> entityTypeNames =  new HashSet<String>();
+        entityTypeNames.add(entityTypeName1);
+
+        Set<String> superTypes =  new HashSet<String>();
+        superTypes.add(classificationTypeName1);
+
+        classificationDef2.setSuperTypes(superTypes);
+        classificationDef1.setEntityTypes(entityTypeNames);
+
+        TestUtilsV2.populateSystemAttributes(classificationDef1);
+        TestUtilsV2.populateSystemAttributes(classificationDef2);
+
+        List<AtlasClassificationDef>  classificationDefs = Arrays.asList(classificationDef1,classificationDef2);
+
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                classificationDefs,
+                Collections.<AtlasEntityDef>emptyList());
+        try {
+            AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+            fail("Classification creation with invalid entitytype should've failed");
+        } catch (AtlasBaseException e) {
+
+        }
+    }
+
+    /**
+     * test that specifying an entitytype in a child classificationDef which is not in the parent fails
+     */
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateWithInvalidEntityType3(){
+        final String classificationTypeName1 ="testCreateClassificationDefWithInvalidEntityType3Classification1";
+        final String classificationTypeName2 ="testCreateClassificationDefWithInvalidEntityType3Classification2";
+        final String entityTypeName1 ="testCreateClassificationDefWithInvalidEntityType3Entity1";
+        final String entityTypeName2 ="testCreateClassificationDefWithInvalidEntityType3Entity2";
+
+
+        // Test Classification with entitytype
+        AtlasClassificationDef classificationDef1 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName1);
+        AtlasClassificationDef classificationDef2 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName2);
+        AtlasEntityDef entityDef1 = TestUtilsV2.getSingleEntityWithName(entityTypeName1);
+        AtlasEntityDef entityDef2 = TestUtilsV2.getSingleEntityWithName(entityTypeName2);
+
+        Set<String> entityTypeNames1 =  new HashSet<String>();
+        entityTypeNames1.add(entityTypeName1);
+
+        Set<String> entityTypeNames2 =  new HashSet<String>();
+        entityTypeNames2.add(entityTypeName2);
+
+        Set<String> superTypes =  new HashSet<String>();
+        superTypes.add(classificationTypeName1);
+
+        classificationDef1.setEntityTypes(entityTypeNames1);
+
+
+        classificationDef2.setSuperTypes(superTypes);
+        classificationDef2.setEntityTypes(entityTypeNames2);
+
+        TestUtilsV2.populateSystemAttributes(classificationDef1);
+        TestUtilsV2.populateSystemAttributes(classificationDef2);
+        TestUtilsV2.populateSystemAttributes(entityDef1);
+        TestUtilsV2.populateSystemAttributes(entityDef2);
+
+        List<AtlasClassificationDef>  classificationDefs = Arrays.asList(classificationDef1,classificationDef2);
+        List<AtlasEntityDef>  entityDefs = Arrays.asList(entityDef1,entityDef2);
+
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                classificationDefs,
+                entityDefs);
+        try {
+            AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+            fail("Classification creation with invalid entitytype should've failed");
+        } catch (AtlasBaseException e) {
+
+        }
     }
 
     @Test(dependsOnMethods = "testGet")

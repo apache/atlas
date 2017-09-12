@@ -1004,6 +1004,29 @@ public final class TestUtilsV2 {
         return ret;
     }
 
+    public static List<AtlasClassificationDef> getClassificationWithName(String name) {
+        AtlasClassificationDef classificationTypeDef =
+                AtlasTypeUtil.createTraitTypeDef(name, "s_description", ImmutableSet.<String>of(),
+                        AtlasTypeUtil.createRequiredAttrDef("level", "int"));
+
+
+        List<AtlasClassificationDef> ret = Arrays.asList(classificationTypeDef);
+
+        populateSystemAttributes(ret);
+
+        return ret;
+    }
+
+    public static AtlasClassificationDef getSingleClassificationWithName(String name) {
+        AtlasClassificationDef classificaitonTypeDef =
+                AtlasTypeUtil.createTraitTypeDef(name, "s_description", ImmutableSet.<String>of(),
+                        AtlasTypeUtil.createRequiredAttrDef("level", "int"));
+
+        populateSystemAttributes(classificaitonTypeDef);
+
+        return classificaitonTypeDef;
+    }
+
     public static List<AtlasClassificationDef> getClassificationWithValidAttribute(){
         return getClassificationWithValidSuperType();
     }
@@ -1019,6 +1042,28 @@ public final class TestUtilsV2 {
         populateSystemAttributes(ret);
 
         return ret;
+    }
+
+    public static List<AtlasEntityDef> getEntityWithName(String name) {
+        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", ImmutableSet.<String>of(),
+                new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
+                        1, 10, false, false,
+                        Collections.<AtlasConstraintDef>emptyList()));
+
+        List<AtlasEntityDef> ret = Arrays.asList(developerTypeDef);
+
+        populateSystemAttributes(ret);
+
+        return ret;
+    }
+
+    public static AtlasEntityDef getSingleEntityWithName(String name) {
+        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", ImmutableSet.<String>of(),
+                new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
+                        1, 10, false, false,
+                        Collections.<AtlasConstraintDef>emptyList()));
+
+        return developerTypeDef;
     }
 
     public static List<AtlasEntityDef> getEntityWithValidAttribute() {

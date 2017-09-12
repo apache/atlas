@@ -28,13 +28,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -51,12 +45,28 @@ public class AtlasClassificationType extends AtlasStructType {
     private Set<String>                   typeAndAllSubTypes       = Collections.emptySet();
     private String                        typeAndAllSubTypesQryStr = "";
 
+    // we need to store the entityTypes specified in our supertypes. i.e. our parent classificationDefs may specify more entityTypes
+    // that we also need to allow
+    private Set<String> entityTypes = Collections.emptySet();
+
+    /**
+     * Note this constructor does NOT run resolveReferences - so some fields are not setup.
+     * @param classificationDef
+     */
     public AtlasClassificationType(AtlasClassificationDef classificationDef) {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
     }
 
+    /**
+     * ClassificationType needs to be constructed with a type registry so that is can resolve references
+     * at constructor time. This is only used by junits.
+     *
+     * @param classificationDef
+     * @param typeRegistry
+     * @throws AtlasBaseException
+     */
     public AtlasClassificationType(AtlasClassificationDef classificationDef, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
         super(classificationDef);
@@ -95,6 +105,7 @@ public class AtlasClassificationType extends AtlasStructType {
         this.uniqAttributes     = getUniqueAttributes(this.allAttributes);
         this.allSubTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.typeAndAllSubTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.entityTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
     }
@@ -109,11 +120,92 @@ public class AtlasClassificationType extends AtlasStructType {
         }
     }
 
+    /**
+     * This method processes the entityTypes to ensure they are valid, using the following principles:
+     * - entityTypes are supplied on the classificationDef to restrict the types of entities that this classification can be applied to
+     * - Any subtypes of the specified entity type can also have this classification applied
+     * - Any subtypes of the classificationDef inherit the parents entityTypes restrictions
+     * - Any subtypes of the classificationDef can further restrict the parents entityTypes restrictions
+     * - An empty entityTypes list when there are no parent restrictions means there are no restrictions
+     * - An empty entityTypes list when there are parent restrictions means that the subtype picks up the parents restrictions
+     *
+     * This method validates that these priniciples are adhered to.
+     *
+     * Note that if duplicate Strings in the entityTypes are specified on an add / update, the duplicates are ignored - as Java Sets cannot have duplicates.
+     * Note if an entityType is supplied in the list that is a subtype of one of the other supplied entityTypes, we are not policing this case as invalid.
+     *
+     * @param typeRegistry
+     * @throws AtlasBaseException
+     */
     @Override
     void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         allSubTypes              = Collections.unmodifiableSet(allSubTypes);
         typeAndAllSubTypes       = Collections.unmodifiableSet(typeAndAllSubTypes);
         typeAndAllSubTypesQryStr = ""; // will be computed on next access
+
+        /*
+          Add any entityTypes defined in our parents as restrictions.
+         */
+        Set<String> superTypeEntityTypes = null;
+
+        final Set<String> classificationDefEntityTypes = classificationDef.getEntityTypes();
+
+        // Here we find the intersection of the entityTypes specified in all our supertypes; in this way we will honour our parents restrictions.
+        // This following logic assumes typeAndAllSubTypes is populated so needs to be run after resolveReferencesPhase2().
+
+        for (String superType : this.allSuperTypes) {
+            AtlasClassificationDef superTypeDef    = typeRegistry.getClassificationDefByName(superType);
+            Set<String>            entityTypeNames = superTypeDef.getEntityTypes();
+
+            if (CollectionUtils.isEmpty(entityTypeNames)) { // no restrictions specified
+                continue;
+            }
+
+            // classification is applicable for specified entityTypes and their sub-entityTypes
+            Set<String> typesAndSubEntityTypes = AtlasEntityType.getEntityTypesAndAllSubTypes(entityTypeNames, typeRegistry);
+
+            if (superTypeEntityTypes == null) {
+                superTypeEntityTypes = new HashSet<>(typesAndSubEntityTypes);
+            } else {
+                // retain only the intersections.
+                superTypeEntityTypes.retainAll(typesAndSubEntityTypes);
+            }
+            if (superTypeEntityTypes.isEmpty()) {
+                // if we have no intersections then we are disjoint - so no need to check other supertypes
+                break;
+            }
+        }
+
+        if (superTypeEntityTypes == null) {  // no supertype restrictions; use current classification restrictions
+            this.entityTypes = AtlasEntityType.getEntityTypesAndAllSubTypes(classificationDefEntityTypes, typeRegistry);
+        } else {                             // restrictions are specified in super-types
+            if (CollectionUtils.isEmpty(superTypeEntityTypes)) {
+                /*
+                 Restrictions in superTypes are disjoint! This means that the child cannot exist as it cannot be a restriction of it's parents.
+
+                 For example:
+                  parent1 specifies entityTypes ["EntityA"]
+                  parent2 specifies entityTypes ["EntityB"]
+
+                  In order to be a valid child of Parent1 the child could only be applied to EntityAs.
+                  In order to be a valid child of Parent2 the child could only be applied to EntityBs.
+
+                  Reject the creation of the classificationDef - as it would compromise Atlas's integrity.
+                 */
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_PARENTS_ENTITYTYPES_DISJOINT, this.classificationDef.getName());
+            }
+
+            if (CollectionUtils.isEmpty(classificationDefEntityTypes)) { // no restriction specified; use the restrictions from super-types
+                this.entityTypes = superTypeEntityTypes;
+            } else {
+                this.entityTypes = AtlasEntityType.getEntityTypesAndAllSubTypes(classificationDefEntityTypes,typeRegistry);
+                // Compatible parents and entityTypes, now check whether the specified entityTypes are the same as the effective entityTypes due to our parents or a subset.
+                // Only allowed to restrict our parents.
+                if (!superTypeEntityTypes.containsAll(this.entityTypes)) {
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_ENTITYTYPES_NOT_PARENTS_SUBSET, classificationDef.getName(), classificationDefEntityTypes.toString());
+                }
+            }
+        }
     }
 
     private void addSubType(AtlasClassificationType subType) {
@@ -153,6 +245,16 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public boolean isSubTypeOf(String classificationName) {
         return StringUtils.isNotEmpty(classificationName) && allSuperTypes.contains(classificationName);
+    }
+
+    /**
+     * List of all the entity type names that are valid for this classification type.
+     *
+     * An empty list means there are no restrictions on which entities can be classified by these classifications.
+     * @return
+     */
+    public Set<String> getEntityTypes() {
+        return entityTypes;
     }
 
     @Override
@@ -311,6 +413,27 @@ public class AtlasClassificationType extends AtlasStructType {
 
             super.populateDefaultValues(classification);
         }
+    }
+
+    /**
+     * Check whether the supplied entityType can be applied to this classification.
+     *
+     * We can apply this classification to the supplied entityType if
+     * - we have no restrictions (entityTypes empty including null)
+     * or
+     * - the entityType is in our list of restricted entityTypes (which includes our parent classification restrictions)
+     *
+     * @param entityType
+     * @return whether can apply
+     */
+    /**
+     * Check whether the supplied entityType can be applied to this classification.
+     *
+     * @param entityType
+     * @return whether can apply
+     */
+    public boolean canApplyToEntityType(AtlasEntityType entityType) {
+        return CollectionUtils.isEmpty(this.entityTypes) || this.entityTypes.contains(entityType.getTypeName());
     }
 
     private void getTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,

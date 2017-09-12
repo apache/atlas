@@ -316,6 +316,8 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
         AtlasStructDefStoreV1.updateVertexAddReferences(classificationDef, vertex, typeDefStore);
 
         typeDefStore.createSuperTypeEdges(vertex, classificationDef.getSuperTypes(), TypeCategory.TRAIT);
+        // create edges from this vertex to entity Type vertices with the supplied entity type names
+        typeDefStore.createEntityTypeEdges(vertex, classificationDef.getEntityTypes());
     }
 
     private AtlasClassificationDef toClassificationDef(AtlasVertex vertex) throws AtlasBaseException {
@@ -327,6 +329,7 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
             AtlasStructDefStoreV1.toStructDef(vertex, ret, typeDefStore);
 
             ret.setSuperTypes(typeDefStore.getSuperTypeNames(vertex));
+            ret.setEntityTypes(typeDefStore.getEntityTypeNames(vertex));
         }
 
         return ret;

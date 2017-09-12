@@ -220,6 +220,10 @@ public class AtlasTypeUtil {
         return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
+    public static AtlasClassificationDef createAtlasClassificationDef(String name, String description, String version, ImmutableSet<String> superTypes, ImmutableSet<String> entityTypes, AtlasAttributeDef... attrDefs) {
+        return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes, entityTypes, null);
+    }
+
     public static AtlasStructDef createStructTypeDef(String name, AtlasAttributeDef... attrDefs) {
         return createStructTypeDef(name, null, attrDefs);
     }

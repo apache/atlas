@@ -522,6 +522,28 @@ public class AtlasEntityType extends AtlasStructType {
         return true;
     }
 
+    /**
+     * Takes a set of entityType names and a registry and returns a set of the entitytype names and the names of all their subTypes.
+     *
+     * @param entityTypes
+     * @param typeRegistry
+     * @return set of strings of the types and their subtypes.
+     */
+    static public Set<String> getEntityTypesAndAllSubTypes(Set<String> entityTypes, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        Set<String> ret = new HashSet<>();
+
+        for (String typeName : entityTypes) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+            }
+
+            ret.addAll(entityType.getTypeAndAllSubTypes());
+        }
+
+        return ret;
+    }
+
     private boolean isAssignableValue(Object value, AtlasAttributeDef attributeDef) {
         boolean ret = true;
 

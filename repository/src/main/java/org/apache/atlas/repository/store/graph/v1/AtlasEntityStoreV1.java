@@ -728,7 +728,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
      * @param classifications list of classifications to be associated
      */
     private void validateEntityAssociations(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        List<String> entityClassifications = getClassificationNames(guid);
+        List<String>    entityClassifications = getClassificationNames(guid);
+        String          entityTypeName        = AtlasGraphUtilsV1.getTypeNameFromGuid(guid);
+        AtlasEntityType entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
 
         for (AtlasClassification classification : classifications) {
             String newClassification = classification.getTypeName();
@@ -736,6 +738,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
                         ", already associated with classification: " + newClassification);
+            }
+
+            // for each classification, check whether there are entities it should be restricted to
+            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+
+            if (!classificationType.canApplyToEntityType(entityType)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);
             }
         }
     }

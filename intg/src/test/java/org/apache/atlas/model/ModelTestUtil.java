@@ -216,7 +216,7 @@ public final class  ModelTestUtil {
     }
 
     public static AtlasEntityDef newEntityDef(AtlasTypeRegistry typesRegistry) {
-        return newEntityDef(getTypesRegistry(), null);
+        return newEntityDef(typesRegistry, null);
     }
 
     public static AtlasEntityDef newEntityDef(AtlasTypeRegistry typesRegistry, AtlasEntityDef[] superTypes) {

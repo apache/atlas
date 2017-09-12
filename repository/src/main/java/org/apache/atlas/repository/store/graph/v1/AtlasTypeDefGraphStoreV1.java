@@ -380,9 +380,43 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         }
     }
 
-    Set<String> getSuperTypeNames(AtlasVertex vertex) {
+    public void createEntityTypeEdges(AtlasVertex classificationVertex, Set<String> entityTypes) throws AtlasBaseException {
+        Set<String> currentEntityTypes     = getEntityTypeNames(classificationVertex);
+        String      classificationTypeName = classificationVertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+
+        if (CollectionUtils.isNotEmpty(entityTypes)) {
+            if (!entityTypes.containsAll(currentEntityTypes)) {
+                throw new AtlasBaseException(AtlasErrorCode.ENTITYTYPE_REMOVAL_NOT_SUPPORTED, classificationTypeName);
+            }
+
+            for (String entityType : entityTypes) {
+                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
+                if (entityTypeVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName,entityType);
+
+                }
+                getOrCreateEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV1.ENTITYTYPE_EDGE_LABEL);
+            }
+        }
+    }
+
+    Set<String>  getSuperTypeNames(AtlasVertex vertex) {
+        return getTypeNamesFromEdges(vertex,AtlasGraphUtilsV1.SUPERTYPE_EDGE_LABEL);
+    }
+
+    Set<String>  getEntityTypeNames(AtlasVertex vertex) {
+        return getTypeNamesFromEdges(vertex,AtlasGraphUtilsV1.ENTITYTYPE_EDGE_LABEL);
+    }
+
+    /**
+     * Get the typename properties from the edges, that are associated with the vertex and have the supplied edge label.
+     * @param vertex
+     * @param edgeLabel
+     * @return set of type names
+     */
+    private Set<String> getTypeNamesFromEdges(AtlasVertex vertex,String edgeLabel) {
         Set<String>    ret   = new HashSet<>();
-        Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT, AtlasGraphUtilsV1.SUPERTYPE_EDGE_LABEL);
+        Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT, edgeLabel);
 
         for (AtlasEdge edge : edges) {
             ret.add(edge.getInVertex().getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class));

@@ -51,6 +51,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
     private static final long serialVersionUID = 1L;
 
     private Set<String> superTypes;
+    private Set<String> entityTypes;
 
 
     public AtlasClassificationDef() {
@@ -82,9 +83,16 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
     public AtlasClassificationDef(String name, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
                                   Map<String, String> options) {
+        this(name, description, typeVersion, attributeDefs, superTypes, null, options);
+    }
+
+    public AtlasClassificationDef(String name, String description, String typeVersion,
+                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
+                                  Set<String> entityTypes, Map<String, String> options) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
 
         setSuperTypes(superTypes);
+        setEntityTypes(entityTypes);
     }
 
     public AtlasClassificationDef(AtlasClassificationDef other) {
@@ -141,6 +149,66 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         return superTypes != null && typeName != null && superTypes.contains(typeName);
     }
 
+    /**
+     * Specifying a list of entityType names in the classificationDef, ensures that classifications can
+     * only be applied to those entityTypes.
+     * <ul>
+     * <li>Any subtypes of the entity types inherit the restriction</li>
+     * <li>Any classificationDef subtypes inherit the parents entityTypes restrictions</li>
+     * <li>Any classificationDef subtypes can further restrict the parents entityTypes restrictions by specifying a subset of the entityTypes</li>
+     * <li>An empty entityTypes list when there are no parent restrictions means there are no restrictions</li>
+     * <li>An empty entityTypes list when there are parent restrictions means that the subtype picks up the parents restrictions</li>
+     * <li>If a list of entityTypes are supplied, where one inherits from another, this will be rejected. This should encourage cleaner classificationsDefs</li>
+     * </ul>
+     */
+    public Set<String> getEntityTypes() {
+        return entityTypes;
+    }
+
+    public void setEntityTypes(Set<String> entityTypes) {
+        if (entityTypes != null && this.entityTypes == entityTypes) {
+            return;
+        }
+
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            this.entityTypes = new HashSet<>();
+        } else {
+            this.entityTypes = new HashSet<>(entityTypes);
+        }
+    }
+
+    public boolean hasEntityType(String typeName) {
+        return hasEntityType(entityTypes, typeName);
+    }
+
+    public void addEntityType(String typeName) {
+        Set<String> s = this.entityTypes;
+
+        if (!hasEntityType(s, typeName)) {
+            s = new HashSet<>(s);
+
+            s.add(typeName);
+
+            this.entityTypes = s;
+        }
+    }
+
+    public void removeEntityType(String typeName) {
+        Set<String> s = this.entityTypes;
+
+        if (hasEntityType(s, typeName)) {
+            s = new HashSet<>(s);
+
+            s.remove(typeName);
+
+            this.entityTypes = s;
+        }
+    }
+
+    private static boolean hasEntityType(Set<String> entityTypes, String typeName) {
+        return entityTypes != null && typeName != null && entityTypes.contains(typeName);
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -151,6 +219,8 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         super.toString(sb);
         sb.append(", superTypes=[");
         dumpObjects(superTypes, sb);
+        sb.append("], entityTypes=[");
+        dumpObjects(entityTypes, sb);
         sb.append("]");
         sb.append('}');
 
@@ -164,7 +234,8 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         if (!super.equals(o)) { return false; }
 
         AtlasClassificationDef that = (AtlasClassificationDef) o;
-        return Objects.equals(superTypes, that.superTypes);
+
+        return Objects.equals(superTypes, that.superTypes) && Objects.equals(entityTypes,that.entityTypes);
     }
 
     @Override
