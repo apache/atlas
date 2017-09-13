@@ -68,12 +68,12 @@ To use the option, set the contents of _importOptions.json_ to:
 }
 </verbatim>
 
-To use _startIndex_, use the following in the _importOptions.json_:
+To use _startPosition_, use the following in the _importOptions.json_:
 <verbatim>
 {
 
   "options": {
-    "startIndex": "332"
+    "startPosition": "332"
   }
 }
 </verbatim>
@@ -89,7 +89,7 @@ Steps to use the behavior:
 
 The output of Export has _atlas-typedef.json_ that contains the type definitions for the entities exported.
 
-By default (that is if no options is specified), the type definitions are imported and applied to the system. The entity import is then performed.
+By default (that is if no options is specified), the type definitions are imported and applied to the system being imported to. The entity import is performed after this.
 
 In some cases, you would not want to modify the type definitions. Import may be better off failing than the types be modified.
 
@@ -100,7 +100,7 @@ Table below enumerates the conditions that get addressed as part of type definit
 |*Condition*|*Action*|
 | Incoming type does not exist in target system | Type is created. |
 |Type to be imported and type in target system are same | No change |
-|Type to be imported and type in target system differ by some attributes| Target system type is updated to the attributes present in the source. It is possible that the target system will have attributes in addition to the one present in the source. In that case, the target system's type attributes will be an union of the attributes. (Attributes in target system will not be deleted to match the source.)|
+|Type to be imported and type in target system differ by some attributes| Target system type is updated to the attributes present in the source. It is possible that the target system will have attributes in addition to the one present in the source. In that case, the target system's type attributes will be an union of the attributes. Attributes in target system will not be deleted to match the source. If the type of the attribute differ, import process will be aborted and exception logged.|
 
 To use the option, set the contents of _importOptions.json_ to:
 <verbatim>
