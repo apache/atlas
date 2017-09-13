@@ -147,7 +147,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
-    @GraphTransaction
     public EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> bulkImport()");
@@ -175,7 +174,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
             AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, entityStream);
             try {
-                EntityMutationResponse resp = createOrUpdate(oneEntityStream, false, true);
+                EntityMutationResponse resp = createOrUpdateForImport(oneEntityStream);
 
                 if (resp.getGuidAssignments() != null) {
                     ret.getGuidAssignments().putAll(resp.getGuidAssignments());
@@ -286,6 +285,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
         return createOrUpdate(entityStream, isPartialUpdate, false);
+    }
+
+    @GraphTransaction
+    private EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException {
+        return createOrUpdate(entityStream, false, true);
     }
 
     @Override
