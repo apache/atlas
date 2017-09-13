@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -25,6 +26,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ import java.util.Map;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest {
@@ -154,6 +157,29 @@ public class ImportServiceTest {
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
 
         runImportWithNoParameters(getImportService(), zipSource);
+    }
+
+    @DataProvider(name = "hdfs_path1")
+    public static Object[][] getDataFromHdfsPath1(ITestContext context) throws IOException {
+        return getZipSource("hdfs_path1.zip");
+    }
+
+
+    @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
+    public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0020-fs_model.json", typeDefStore, typeRegistry);
+        loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
+
+        try {
+            runImportWithNoParameters(getImportService(), zipSource);
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED);
+            AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
+            assertNotNull(tag1);
+            assertEquals(tag1.getAllAttributes().size(), 2);
+            throw e;
+        }
     }
 
     private ImportService getImportService() {

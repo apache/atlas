@@ -67,12 +67,13 @@ public enum AtlasErrorCode {
     INVALID_STRUCT_VALUE(400, "ATLAS-400-00-025", "not a valid struct value {0}"),
     INSTANCE_LINEAGE_INVALID_PARAMS(400, "ATLAS-400-00-026", "Invalid lineage query parameters passed {0}: {1}"),
     ATTRIBUTE_UPDATE_NOT_SUPPORTED(400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported"),
-	INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
+    INVALID_VALUE(400, "ATLAS-400-00-028", "invalid value: {0}"),
     BAD_REQUEST(400, "ATLAS-400-00-029", "{0}"),
     PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
     MISSING_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value"),
-	INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
-	INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
+    INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
+    INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
+    INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED(400, "ATLAS-400-00-050", "Attribute {0}.{1} is of type {2}. Import has this attribute type as {3}"),
 
     // All Not found enums go here
     UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification"),

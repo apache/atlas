@@ -49,8 +49,7 @@ public class ZipFileResourceTestUtils {
     public static final Logger LOG = LoggerFactory.getLogger(ZipFileResourceTestUtils.class);
 
     public static FileInputStream getFileInputStream(String fileName) {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getFilePath(userDir, fileName);
+        String filePath = getFileFromResources(fileName);
         File f = new File(filePath);
         FileInputStream fs = null;
         try {
@@ -59,6 +58,11 @@ public class ZipFileResourceTestUtils {
             LOG.error("File could not be found at: %s", filePath, e);
         }
         return fs;
+    }
+
+    private static String getFileFromResources(String fileName) {
+        final String userDir = System.getProperty("user.dir");
+        return getFilePath(userDir, fileName);
     }
 
     private static String getFilePath(String startPath, String fileName) {
@@ -71,6 +75,15 @@ public class ZipFileResourceTestUtils {
         File f = new File(filePath);
         String s = FileUtils.readFileToString(f);
         assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
+
+        return s;
+    }
+
+    public static String getModelJsonFromResources(String fileName) throws IOException {
+        String filePath = getFileFromResources(fileName);
+        File f = new File(filePath);
+        String s = FileUtils.readFileToString(f);
+        assertFalse(StringUtils.isEmpty(s), "Model file read correctly from resources!");
 
         return s;
     }
@@ -119,6 +132,11 @@ public class ZipFileResourceTestUtils {
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
+    public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+        AtlasTypesDef typesFromJson = getAtlasTypesDefFromResourceFile(fileName);
+        createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
+    }
+
     private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
 
@@ -129,6 +147,11 @@ public class ZipFileResourceTestUtils {
 
     private static AtlasTypesDef getAtlasTypesDefFromFile(String fileName) throws IOException {
         String sampleTypes = ZipFileResourceTestUtils.getModelJson(fileName);
+        return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
+    }
+
+    private static AtlasTypesDef getAtlasTypesDefFromResourceFile(String fileName) throws IOException {
+        String sampleTypes = getModelJsonFromResources(fileName);
         return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
     }
 
