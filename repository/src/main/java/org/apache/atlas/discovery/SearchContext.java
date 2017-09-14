@@ -25,6 +25,7 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,6 +67,12 @@ public class SearchContext {
         if (StringUtils.isNotEmpty(searchParameters.getClassification()) && classificationType == null) {
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, searchParameters.getClassification());
         }
+
+        // Invalid attributes will raise an exception with 400 error code
+        validateAttributes(entityType, searchParameters.getEntityFilters());
+
+        // Invalid attributes will raise an exception with 400 error code
+        validateAttributes(classificationType, searchParameters.getTagFilters());
 
         if (needFullTextProcessor()) {
             addProcessor(new FullTextSearchProcessor(this));
@@ -129,6 +136,24 @@ public class SearchContext {
 
     boolean needEntityProcessor() {
         return entityType != null;
+    }
+
+    private void validateAttributes(final AtlasStructType structType, final FilterCriteria filterCriteria) throws AtlasBaseException {
+        if (filterCriteria != null) {
+            FilterCriteria.Condition condition = filterCriteria.getCondition();
+
+            if (condition != null && CollectionUtils.isNotEmpty(filterCriteria.getCriterion())) {
+                for (FilterCriteria criteria : filterCriteria.getCriterion()) {
+                    validateAttributes(structType, criteria);
+                }
+            } else {
+                String attributeName = filterCriteria.getAttributeName();
+
+                if (StringUtils.isNotEmpty(attributeName) && structType.getAttributeType(attributeName) == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, structType.getTypeName());
+                }
+            }
+        }
     }
 
     private boolean hasAttributeFilter(FilterCriteria filterCriteria) {
