@@ -284,6 +284,8 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
             case DataTypes.TypeCategory.TRAIT =>
                 throw new UnsupportedOperationException(s"load for ${aInfo.dataType()} not supported")
             case DataTypes.TypeCategory.CLASS => loadStructAttribute(dataType, aInfo, i, v)
+            case DataTypes.TypeCategory.RELATIONSHIP =>
+                throw new UnsupportedOperationException(s"load for ${aInfo.dataType()} not supported")
         }
     }
 

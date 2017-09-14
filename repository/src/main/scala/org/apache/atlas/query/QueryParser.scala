@@ -233,6 +233,7 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     def querySrc: Parser[Expression] = rep1sep(singleQrySrc, opt(COMMA)) ^^ { l => l match {
         case h :: Nil => h
         case h :: t => t.foldLeft(h)(merge(_, _))
+        case Nil => null
     }
     }
 
@@ -277,21 +278,21 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
       case o ~ odr ~ None => (odr, true)
       case o ~ odr ~ asc => (odr, asc.get)
     }
-    
+
     def limitOffset: Parser[(Int, Int)] = LIMIT ~ lmt ~ opt (offset) ^^ {
       case l ~ lt ~ None => (lt.toInt, 0)
       case l ~ lt ~ of => (lt.toInt, of.get.toInt)
     }
-    
+
     def offset = OFFSET ~ ofset  ^^ {
       case offset ~ of  => of
     }
-    
+
     def asce = asc ^^ {
       case DESC  => false
       case  _ => true
     }
-    
+
     def loopExpression(implicit queryParams: QueryParams): Parser[(Expression, Option[Literal[Integer]], Option[String])] =
         LOOP ~ (LPAREN ~> query <~ RPAREN) ~ opt(intConstant <~ TIMES) ~ opt(AS ~> alias) ^^ {
             case l ~ e ~ None ~ a => (e, None, a)
@@ -361,17 +362,19 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         case h :: t => { //the left-most part of the identifier (h) can be
             t.foldLeft(id(h).asInstanceOf[Expression])(_.field(_))
         }
+
+        case Nil => null
     }
     }
 
     def alias = ident | stringLit
-    
+
     def lmt = intConstant
-    
+
     def ofset = intConstant
 
     def asc =  ident | stringLit
-    
+
     def literal = booleanConstant ^^ {
         boolean(_)
         } |

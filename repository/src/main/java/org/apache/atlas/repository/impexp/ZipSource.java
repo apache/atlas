@@ -175,7 +175,7 @@ public class ZipSource implements EntityImportStream {
             currentPosition++;
             return getEntityWithExtInfo(this.iterator.next());
         } catch (AtlasBaseException e) {
-            e.printStackTrace();
+            LOG.error("getNextEntityWithExtInfo", e);
             return null;
         }
     }
