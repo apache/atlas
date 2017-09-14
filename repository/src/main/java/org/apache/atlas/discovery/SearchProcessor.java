@@ -168,7 +168,7 @@ public abstract class SearchProcessor {
                 if (isIndexSearchable(filterCriteria, structType)) {
                     indexFiltered.add(attributeName);
                 } else {
-                    LOG.warn("not using index-search for attribute '{}' - its either non-indexed or a string attribute used with NEQ operator; might cause poor performance", structType.getQualifiedAttributeName(attributeName));
+                    LOG.warn("not using index-search for attribute '{}'; might cause poor performance", structType.getQualifiedAttributeName(attributeName));
 
                     graphFiltered.add(attributeName);
                 }
@@ -330,13 +330,31 @@ public abstract class SearchProcessor {
         boolean     ret           = indexedKeys != null && indexedKeys.contains(qualifiedName);
 
         if (ret) { // index exists
-            // Don't use index query for NEQ on string type attributes - as it might return fewer entries due to tokenization of vertex property value by indexer
-            if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ) {
-                AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
+            // for string type attributes, don't use index query in the following cases:
+            //   - operation is NEQ, as it might return fewer entries due to tokenization of vertex property value
+            //   - value-to-compare has special characters
+            AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
 
-                if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
+            if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
+                if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("NEQ operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", qualifiedName);
+                    }
+
+                    ret = false;
+                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue())) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getAttributeValue());
+                    }
+
                     ret = false;
                 }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            if (!ret) {
+                LOG.debug("Not using index query for: attribute='{}', operator='{}', value='{}'", qualifiedName, filterCriteria.getOperator(), filterCriteria.getAttributeValue());
             }
         }
 
@@ -358,7 +376,6 @@ public abstract class SearchProcessor {
                     if (nestedExpression.length() > 0) {
                         nestedExpression.append(SPACE_STRING).append(criteria.getCondition()).append(SPACE_STRING);
                     }
-                    // todo: when a neq operation is nested and occurs in the beginning of the query, index query has issues
                     nestedExpression.append(nestedQuery);
                 }
             }
@@ -539,8 +556,7 @@ public abstract class SearchProcessor {
                             query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
                             break;
                         case LIKE:
-                            // TODO: Maybe we need to validate pattern
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getLikeRegex(attrValue));
+                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
                             break;
                         case CONTAINS:
                             query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
@@ -616,41 +632,88 @@ public abstract class SearchProcessor {
         }
     }
 
-    // ATLAS-2118: Reserved regex characters in attribute value can cause the graph query to fail when parsing the contains regex
-    private String getContainsRegex(String attributeValue) {
-        StringBuilder escapedAttrVal = new StringBuilder(".*");
+    private static String getContainsRegex(String attributeValue) {
+        return ".*" + escapeRegExChars(attributeValue) + ".*";
+    }
 
-        for (int i = 0; i < attributeValue.length(); i++) {
-            final char c = attributeValue.charAt(i);
+    private static String getSuffixRegex(String attributeValue) {
+        return ".*" + escapeRegExChars(attributeValue);
+    }
 
-            switch (c) {
-                case '+':
-                case '|':
-                case '(':
-                case '{':
-                case '[':
-                case '*':
-                case '?':
-                case '$':
-                case '/':
-                case '^':
-                    escapedAttrVal.append('\\');
-                    break;
+    private static String escapeRegExChars(String val) {
+        StringBuilder escapedVal = new StringBuilder();
+
+        for (int i = 0; i < val.length(); i++) {
+            final char c = val.charAt(i);
+
+            if (isRegExSpecialChar(c)) {
+                escapedVal.append('\\');
             }
 
-            escapedAttrVal.append(c);
+            escapedVal.append(c);
         }
 
-        escapedAttrVal.append(".*");
-
-        return escapedAttrVal.toString();
+        return escapedVal.toString();
     }
 
-    private String getSuffixRegex(String attributeValue) {
-        return ".*" + attributeValue;
+    private static boolean isRegExSpecialChar(char c) {
+        switch (c) {
+            case '+':
+            case '|':
+            case '(':
+            case '{':
+            case '[':
+            case '*':
+            case '?':
+            case '$':
+            case '/':
+            case '^':
+                return true;
+        }
+
+        return false;
     }
 
-    private String getLikeRegex(String attributeValue) { return ".*" + attributeValue + ".*"; }
+    private static boolean hasIndexQuerySpecialChar(String attributeValue) {
+        for (int i = 0; i < attributeValue.length(); i++) {
+            if (isIndexQuerySpecialChar(attributeValue.charAt(i))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isIndexQuerySpecialChar(char c) {
+        switch (c) {
+            case '+':
+            case '-':
+            case '&':
+            case '|':
+            case '!':
+            case '(':
+            case ')':
+            case '{':
+            case '}':
+            case '[':
+            case ']':
+            case '^':
+            case '"':
+            case '~':
+            case '*':
+            case '?':
+            case ':':
+            case '/':
+            case '#':
+            case '$':
+            case '%':
+            case '@':
+            case '=':
+                return true;
+        }
+
+        return false;
+    }
 
     protected List<AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, List<AtlasVertex> vertices) {
         if (idxQueryResult != null) {
