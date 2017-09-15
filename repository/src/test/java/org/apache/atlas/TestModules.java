@@ -150,6 +150,7 @@ public class TestModules {
 
             bind(LineageService.class).to(DataSetLineageService.class).asEagerSingleton();
             bind(AtlasLineageService.class).to(EntityLineageService.class).asEagerSingleton();
+            bind(BulkImporter.class).to(BulkImporterImpl.class).asEagerSingleton();
 
             bindTypeCache();
 

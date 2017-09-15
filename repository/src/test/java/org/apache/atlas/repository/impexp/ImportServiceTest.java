@@ -24,7 +24,6 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -43,11 +42,11 @@ import java.util.Map;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceTest.class);
+    private final ImportService importService;
 
     @Inject
     AtlasTypeRegistry typeRegistry;
@@ -56,7 +55,9 @@ public class ImportServiceTest {
     private AtlasTypeDefStore typeDefStore;
 
     @Inject
-    private AtlasEntityStore entityStore;
+    public ImportServiceTest(ImportService importService) {
+        this.importService = importService;
+    }
 
     @BeforeTest
     public void setupTest() {
@@ -72,7 +73,7 @@ public class ImportServiceTest {
     @Test(dataProvider = "sales")
     public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
     @DataProvider(name = "reporting")
@@ -83,7 +84,7 @@ public class ImportServiceTest {
     @Test(dataProvider = "reporting")
     public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
     @DataProvider(name = "logging")
@@ -94,7 +95,7 @@ public class ImportServiceTest {
     @Test(dataProvider = "logging")
     public void importDB3(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        runAndVerifyQuickStart_v1_Import(new ImportService(typeDefStore, entityStore, typeRegistry), zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
     @DataProvider(name = "salesNewTypeAttrs")
@@ -105,7 +106,7 @@ public class ImportServiceTest {
     @Test(dataProvider = "salesNewTypeAttrs", dependsOnMethods = "importDB1")
     public void importDB4(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        runImportWithParameters(new ImportService(typeDefStore, entityStore, typeRegistry), getDefaultImportRequest(), zipSource);
+        runImportWithParameters(importService, getDefaultImportRequest(), zipSource);
     }
 
     @DataProvider(name = "salesNewTypeAttrs-next")
@@ -125,7 +126,7 @@ public class ImportServiceTest {
         options.put("updateTypeDefinition", "false");
         request.setOptions(options);
 
-        runImportWithParameters(new ImportService(typeDefStore, entityStore, typeRegistry), request, zipSource);
+        runImportWithParameters(importService, request, zipSource);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 4);
     }
@@ -141,7 +142,7 @@ public class ImportServiceTest {
         options.put("updateTypeDefinition", "true");
         request.setOptions(options);
 
-        runImportWithParameters(new ImportService(typeDefStore, entityStore, typeRegistry), request, zipSource);
+        runImportWithParameters(importService, request, zipSource);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 8);
     }
@@ -156,7 +157,7 @@ public class ImportServiceTest {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
 
-        runImportWithNoParameters(getImportService(), zipSource);
+        runImportWithNoParameters(importService, zipSource);
     }
 
     @DataProvider(name = "hdfs_path1")
@@ -172,7 +173,7 @@ public class ImportServiceTest {
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
         try {
-            runImportWithNoParameters(getImportService(), zipSource);
+            runImportWithNoParameters(importService, zipSource);
         } catch (AtlasBaseException e) {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED);
             AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
@@ -180,9 +181,5 @@ public class ImportServiceTest {
             assertEquals(tag1.getAllAttributes().size(), 2);
             throw e;
         }
-    }
-
-    private ImportService getImportService() {
-        return new ImportService(typeDefStore, entityStore, typeRegistry);
     }
 }
