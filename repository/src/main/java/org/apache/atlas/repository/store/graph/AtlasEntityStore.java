@@ -18,12 +18,10 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 
@@ -69,12 +67,12 @@ public interface AtlasEntityStore {
     EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
-     * Create or update  entities in the stream using repeated commits of connected entities
+     * Create or update  entities with parameters necessary for import process
      * @param entityStream AtlasEntityStream
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
      * @throws AtlasBaseException
      */
-    EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException;
+    EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException;
 
     /**
      * Update a single entity

@@ -22,7 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.MapUtils;
@@ -42,17 +42,17 @@ public class ImportService {
     private static final Logger LOG = LoggerFactory.getLogger(ImportService.class);
 
     private final AtlasTypeDefStore typeDefStore;
-    private final AtlasEntityStore entityStore;
     private final AtlasTypeRegistry typeRegistry;
+    private final BulkImporter bulkImporter;
 
     private long startTimestamp;
     private long endTimestamp;
 
     @Inject
-    public ImportService(final AtlasTypeDefStore typeDefStore, final AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter) {
         this.typeDefStore = typeDefStore;
-        this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
+        this.bulkImporter = bulkImporter;
     }
 
     public AtlasImportResult run(ZipSource source, String userName,
@@ -154,7 +154,7 @@ public class ImportService {
     }
 
     private void processEntities(ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
-        this.entityStore.bulkImport(importSource, result);
+        this.bulkImporter.bulkImport(importSource, result);
 
         endTimestamp = System.currentTimeMillis();
         result.incrementMeticsCounter("duration", (int) (this.endTimestamp - this.startTimestamp));
