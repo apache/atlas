@@ -40,6 +40,9 @@
     padding: 15px;
     text-align: right;
     border-top: 1px solid #DEDEDE;
+    .btn+.btn {
+        margin-bottom: 0;
+    }
 }
 
 .modal-body {
@@ -48,10 +51,9 @@
     max-height: 400px;
     min-height: 70px;
     overflow: auto;
-}
-
-.cancel {
-    float: left;
+    .btn+.btn {
+        margin-bottom: 2px;
+    }
 }
 
 .switch.pull-left {
@@ -116,28 +118,59 @@ td {
     display: inline-block;
     padding-left: 0;
     margin: 20px 0;
-    border-radius: 4px;
-    border: 1px #DDDDDD solid;
+    border: 1px $color_keppel_approx solid;
     margin: 0px;
     float: right;
-    border-radius: 10px;
+    border-radius: 4px;
     overflow: hidden;
-    >.disabled>span,
-    >.disabled>a {
-        &:hover {
-            cursor: not-allowed;
-            background-color: #7ed3be !important;
-        }
-    }
+
     >.active>span,
     >.active>a,
-    >li>a:hover {
-        background-color: #2EBC9A !important;
-        color: #fff !important;
+    >.active>a:hover {
+        background: none;
+        color: $color_keppel_approx;
+        background: none;
+        color: #37bb9b;
+        font-weight: 600;
+        font-family: sans-serif;
+    }
+
+    >li>a,
+    >li>span,
+    >li>button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        line-height: 30px;
+        text-decoration: none;
+        border: none;
+        float: left;
+        background: $transparent;
+        color: $color_keppel_approx;
+        @include ellipsis();
+        i {
+            font-weight: bold;
+        }
         &:hover {
-            background-color: none;
+            color: $white;
+            background: $color_keppel_approx
         }
     }
+
+    >.disabled>span,
+    >.disabled>a,
+    >li>button[disabled] {
+        color: $color_mountain_mist_approx;
+        &:hover {
+            cursor: not-allowed;
+            color: $white;
+            background: $color_jungle_green_light !important;
+        }
+    }
+}
+
+.select2-container {
+    width: 100% !important;
 }
 
 .select2-container--default {
@@ -209,7 +242,7 @@ td {
     }
 }
 
-.fixedPopover {
+.fixed-popover {
     position: fixed;
 }
 
@@ -221,23 +254,6 @@ td {
 
 .pager {
     margin: 0px;
-    li {
-        >button {
-            display: inline-block;
-            padding: 5px 14px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 15px;
-            color: $color_jungle_green_approx;
-        }
-        >button,
-        >span {
-            &:hover {
-                background-color: $color_jungle_green_approx;
-                color: $white;
-            }
-        }
-    }
 }
 
 .popover {
@@ -245,6 +261,8 @@ td {
 }
 
 .popover-content {
+    max-height: 150px;
+    overflow: auto;
     ul {
         color: $dark_gray;
         padding: 0px 5px;
@@ -261,24 +279,17 @@ td {
     overflow-x: hidden;
 }
 
-.ui-pnotify-text {
-    word-break: break-all;
-}
-
-.checkbox-inline,
-.radio-inline {
-    padding-left: 0px;
-    font-weight: bold;
-}
-
 .advancedInfo {
     margin-left: 5px;
     cursor: pointer;
 }
 
 .query-builder {
-    .rule-container .rule-value-container {
-        display: inline-block !important;
+    .rule-container {
+        margin: 6px 0;
+        .rule-value-container {
+            display: inline-block !important;
+        }
     }
     .rules-list>:first-child::before {
         top: -8px;
@@ -288,6 +299,10 @@ td {
     }
     .rule-value-container input {
         padding: 6px 12px !important;
+    }
+    .rules-group-container {
+        border: none;
+        background: none;
     }
 }
 
@@ -299,7 +314,7 @@ td {
 div.columnmanager-visibilitycontrol {
     width: auto;
     margin-bottom: 5px;
-    &.open .btn-atlasAction {
+    &.open .btn-action {
         background-color: #37bb9b;
         color: #fff;
     }
@@ -311,5 +326,35 @@ div.columnmanager-dropdown-container {
     }
     >li>span.column-label {
         width: auto;
+    }
+}
+
+.stack-modal[aria-role="alertdialog"] {
+    .alert.ui-pnotify-container {
+        color: $color_ironside_gray_approx;
+        background-color: $white;
+        border: 1px solid rgba(0, 0, 0, .2);
+        padding: 0px;
+        outline: 0;
+        -webkit-box-shadow: 0 5px 15px rgba(0, 0, 0, .5);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, .5);
+        .ui-pnotify-icon,
+        .ui-pnotify-title {
+            padding: 15px;
+        }
+        .ui-pnotify-text {
+            position: relative;
+            padding: 15px;
+            max-height: 400px;
+            min-height: 70px;
+            overflow: auto;
+            border-top: 1px solid #DEDEDE
+        }
+
+        .ui-pnotify-action-bar {
+            padding: 15px;
+            text-align: right;
+            border-top: 1px solid #DEDEDE;
+        }
     }
 }

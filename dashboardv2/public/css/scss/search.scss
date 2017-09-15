@@ -18,21 +18,6 @@
 
 //colors
 $color_celeste_approx: #1D1F2B;
-$switchTransition: .4s ease-out;
-@mixin transition($transition...) {
-    -webkit-transition: $transition;
-    -moz-transition: $transition;
-    -o-transition: $transition;
-    transition: $transition;
-}
-
-@mixin transition-property($properties...) {
-    -webkit-transition-property: $properties;
-    -moz-transition-property: $properties;
-    -o-transition-property: $properties;
-    transition-property: $properties;
-}
-
 .switch {
     position: relative;
     width: 50px;
@@ -74,29 +59,10 @@ $switchTransition: .4s ease-out;
         box-shadow: inset 0 1px rgba(black, .02);
         @include transition(inherit)
     }
-    .switch-input:checked ~ & {
+    .switch-input:checked~& {
         left: 30px;
         box-shadow: -1px 1px 5px rgba(black, .2);
     }
-}
-
-.advanceSearchBtn {
-    float: right;
-}
-
-.advanceSearchTagInput {
-    margin-bottom: 20px;
-}
-
-.advanceSearchTermInput {
-    margin-bottom: 20px;
-}
-
-.clearAdvanceSearch {
-    display: inline-block;
-    float: left;
-    margin-top: 10px;
-    cursor: pointer
 }
 
 .labelShowRecord {
@@ -129,5 +95,15 @@ $switchTransition: .4s ease-out;
     }
     .value {
         color: $tag_color;
+    }
+}
+
+.popup-tag {
+    display: none;
+}
+
+.popover-tag {
+    .btn {
+        display: block;
     }
 }

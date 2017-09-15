@@ -20,13 +20,12 @@
 /* nav.scss */
 
 .navbar-atlas {
-    background-color: $color_tuna_approx;
-    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+    background-color: $color_tuna_approx; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
     box-shadow: inset 0 0 0 $black_10, 0 1px 10px $black_10;
     .navbar-brand {
         color: $white;
     }
-    .nav > li > a {
+    .nav>li>a {
         color: $white;
         padding-top: 18px;
         padding-bottom: 18px;
@@ -44,7 +43,7 @@
     background-color: $white;
 }
 
-.navbar-fixed-top + .wrapper {
+.navbar-fixed-top+.wrapper {
     margin-top: 90px;
     padding-bottom: 90px;
 }
@@ -62,8 +61,7 @@
         padding: 6px 0;
         background-color: transparent;
         color: $white;
-        border: none;
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        border: none; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
         box-shadow: 0 2px $white;
     }
 }

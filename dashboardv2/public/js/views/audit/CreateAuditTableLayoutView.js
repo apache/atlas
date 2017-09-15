@@ -42,7 +42,7 @@ define(['require',
                 noData: "[data-id='noData']",
                 tableAudit: "[data-id='tableAudit']",
                 auditHeaderValue: "[data-id='auditHeaderValue']",
-                tagHeader: "[data-id='tagHeader']"
+                name: "[data-id='name']"
             },
             /** ui events hash */
             events: function() {
@@ -81,8 +81,8 @@ define(['require',
                     }
                     var values = parseDetailsObject.values;
                     if (parseDetailsObject && parseDetailsObject.values) {
-                        var tagHeader = ((name ? name : this.entityName));
-                        this.ui.tagHeader.append(tagHeader);
+                        var name = ((name ? name : this.entityName));
+                        this.ui.name.text(name);
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
                         table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
                         if (table.length) {
@@ -97,8 +97,9 @@ define(['require',
                         this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
                         this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
                     }
+                } else if (detailObj == "Deleted entity") {
+                    this.ui.name.text(this.entityName);
                 }
-
             },
         });
     return CreateAuditTableLayoutView;

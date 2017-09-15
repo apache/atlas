@@ -164,13 +164,15 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var deleteData = '<button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
-                                        editData = '<button class="btn btn-atlasAction btn-atlas no-margin-bottom typeLOV" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>';
+                                    var deleteData = '<button title="Delete" class="btn btn-action btn-sm" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
+                                        editData = '<button title="Edit" class="btn btn-action btn-sm" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>',
+                                        btnObj = null;
                                     if (model.get('attributes') === undefined) {
-                                        return deleteData;
+                                        btnObj = deleteData;
                                     } else {
-                                        return deleteData + editData;
+                                        btnObj = deleteData + editData;
                                     }
+                                    return '<div class="btn-inline">' + btnObj + '</div>'
                                 }
                             })
                         },

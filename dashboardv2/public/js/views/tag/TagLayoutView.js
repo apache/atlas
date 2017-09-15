@@ -74,17 +74,6 @@ define(['require',
                 var that = this;
                 this.bindEvents();
                 this.tagsGenerator();
-                $('body').on("click", '.tagPopoverList li', function(e) {
-                    that[$(this).find("a").data('fn')](e);
-                });
-                $('body').click(function(e) {
-                    if ($('.tagPopoverList').length) {
-                        if ($(e.target).hasClass('tagPopover')) {
-                            return;
-                        }
-                        that.$('.tagPopover').popover('hide');
-                    }
-                });
             },
             fetchCollections: function() {
                 this.collection.fetch({ reset: true });
@@ -107,9 +96,7 @@ define(['require',
                             Utils.setUrl({
                                 url: $firstEl.attr("href"),
                                 mergeBrowserUrl: false,
-                                updateTabState: function() {
-                                    return { tagUrl: this.url, stateChanged: true };
-                                }
+                                updateTabState: true
                             });
                         }
                     } else {
@@ -125,9 +112,7 @@ define(['require',
                         Utils.setUrl({
                             url: url,
                             urlParams: query,
-                            updateTabState: function() {
-                                return { tagUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                         if (!presentTag) {
                             return false;
@@ -274,7 +259,7 @@ define(['require',
                             confirm: true,
                             buttons: [{
                                     text: 'Ok',
-                                    addClass: 'btn-primary',
+                                    addClass: 'btn-atlas btn-md',
                                     click: function(notice) {
                                         notice.remove();
                                     }
@@ -330,9 +315,7 @@ define(['require',
                     url: url,
                     mergeBrowserUrl: false,
                     trigger: true,
-                    updateTabState: function() {
-                        return { tagUrl: this.url, stateChanged: true };
-                    }
+                    updateTabState: true
                 });
             },
             onTagList: function(e, toggle) {
@@ -345,58 +328,52 @@ define(['require',
             },
             createTagAction: function() {
                 var that = this;
-                this.$('.tagPopover').popover({
-                    placement: 'bottom',
-                    html: true,
-                    trigger: 'manual',
-                    container: 'body',
-                    content: function() {
-                        return "<ul class='tagPopoverList'>" +
-                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Tag</a></li>" +
-                            "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Tag</a></li>" +
-                            "</ul>";
+                Utils.generatePopover({
+                    el: this.$('.tagPopover'),
+                    container: this.$el,
+                    popoverOptions: {
+                        content: function() {
+                            return "<ul>" +
+                                "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Tag</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Tag</a></li>" +
+                                "</ul>";
+                        }
                     }
-                });
-                this.$('.tagPopover').off('click').on('click', function(e) {
-                    // if any other popovers are visible, hide them
-                    e.preventDefault();
-                    that.$('.tagPopover').not(this).popover('hide');
-                    $(this).popover('toggle');
+                }).parent('.tools').on('click', 'li', function(e) {
+                    e.stopPropagation();
+                    that.$('.tagPopover').popover('hide');
+                    that[$(this).find('a').data('fn')](e)
                 });
             },
             onSearchTag: function() {
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        tag: this.ui.tagsParent.find('li.active').find("a").data('name'),
+                        tag: this.ui.tagsParent.find('li.active').find('>a[data-name]').data('name'),
                         searchType: "basic",
                         dslChecked: false
                     },
-                    updateTabState: function() {
-                        return { searchUrl: this.url, stateChanged: true };
-                    },
                     mergeBrowserUrl: false,
-                    trigger: true
+                    trigger: true,
+                    updateTabState: true
                 });
             },
             onDeleteTag: function() {
-                var that = this;
-                this.tagName = this.ui.tagsParent.find('li.active').find("a").data('name');
-                this.tagDeleteData = this.ui.tagsParent.find('li.active');
-                var notifyObj = {
-                    modal: true,
-                    ok: function(argument) {
-                        that.onNotifyOk();
-                    },
-                    cancel: function(argument) {}
-                }
+                var that = this,
+                    notifyObj = {
+                        modal: true,
+                        ok: function(argument) {
+                            that.onNotifyOk();
+                        },
+                        cancel: function(argument) {}
+                    }
                 var text = "Are you sure you want to delete the tag"
                 notifyObj['text'] = text;
                 Utils.notifyConfirm(notifyObj);
             },
             onNotifyOk: function(data) {
                 var that = this,
-                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tagName }),
+                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag }),
                     classificationData = deleteTagData.toJSON(),
                     deleteJson = {
                         classificationDefs: [classificationData],
@@ -408,12 +385,12 @@ define(['require',
                     data: JSON.stringify(deleteJson),
                     success: function() {
                         Utils.notifySuccess({
-                            content: "Tag " + that.tagName + Messages.deleteSuccessMessage
+                            content: "Tag " + that.tag + Messages.deleteSuccessMessage
                         });
                         // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
                         var urlObj = Utils.getUrlState.getQueryParams(searchUrl);
-                        if (urlObj && urlObj.tag && urlObj.tag === that.tagName) {
+                        if (urlObj && urlObj.tag && urlObj.tag === that.tag) {
                             Globals.saveApplicationState.tabState.searchUrl = "#!/search";
                         }
                         that.collection.remove(deleteTagData);

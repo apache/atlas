@@ -59,21 +59,27 @@ define(['require',
                 nextData: "[data-id='nextData']",
                 pageRecordText: "[data-id='pageRecordText']",
                 addAssignTag: "[data-id='addAssignTag']",
-                editEntityButton: "[data-id='editEntityButton']",
                 createEntity: "[data-id='createEntity']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
+                colManager: "[data-id='colManager']",
                 containerCheckBox: "[data-id='containerCheckBox']",
-                columnEmptyInfo: "[data-id='columnEmptyInfo']"
+                columnEmptyInfo: "[data-id='columnEmptyInfo']",
+                showPage: "[data-id='showPage']",
+                gotoPage: "[data-id='gotoPage']",
+                gotoPagebtn: "[data-id='gotoPagebtn']",
+                activePage: "[data-id='activePage']",
             },
             templateHelpers: function() {
                 return {
                     entityCreate: Globals.entityCreate,
-                    searchType: this.searchType
+                    searchType: this.searchType,
+                    taxonomy: Globals.taxonomy
                 };
             },
             /** ui events hash */
             events: function() {
-                var events = {};
+                var events = {},
+                    that = this;
                 events["click " + this.ui.tagClick] = function(e) {
                     var scope = $(e.currentTarget);
                     if (e.target.nodeName.toLocaleLowerCase() == "i") {
@@ -81,33 +87,45 @@ define(['require',
                     } else {
                         if (scope.hasClass('term')) {
                             var url = scope.data('href').split(".").join("/terms/");
-                            Globals.saveApplicationState.tabState.stateChanged = false;
-                            Utils.setUrl({
+                            this.triggerUrl({
                                 url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
+                                urlParams: null,
                                 mergeBrowserUrl: false,
-                                trigger: true
+                                trigger: true,
+                                updateTabState: null
                             });
                         } else {
-                            Utils.setUrl({
+                            this.triggerUrl({
                                 url: '#!/tag/tagAttribute/' + scope.text(),
+                                urlParams: null,
                                 mergeBrowserUrl: false,
-                                trigger: true
+                                trigger: true,
+                                updateTabState: null
                             });
                         }
                     }
                 };
+                events["keyup " + this.ui.gotoPage] = function(e) {
+                    var code = e.which,
+                        goToPage = parseInt(e.currentTarget.value);
+                    if (e.currentTarget.value) {
+                        that.ui.gotoPagebtn.attr('disabled', false);
+                    } else {
+                        that.ui.gotoPagebtn.attr('disabled', true);
+                    }
+                    if (code == 13) {
+                        if (e.currentTarget.value) {
+                            that.gotoPagebtn();
+                        }
+                    }
+                };
+                events["change " + this.ui.showPage] = 'changePageLimit';
+                events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
                 events["click " + this.ui.addTag] = 'checkedValue';
                 events["click " + this.ui.addTerm] = 'checkedValue';
                 events["click " + this.ui.addAssignTag] = 'checkedValue';
-                events["click " + this.ui.showMoreLess] = function(e) {
-                    $(e.currentTarget).parents('tr').siblings().find("div.popover.popoverTag").hide();
-                    $(e.currentTarget).parent().find("div.popover").toggle();
-                    var positionContent = $(e.currentTarget).position();
-                    positionContent.top = positionContent.top + 26;
-                    positionContent.left = positionContent.left - 67;
-                    $(e.currentTarget).parent().find("div.popover").css(positionContent);
-                };
                 events["click " + this.ui.showMoreLessTerm] = function(e) {
+                    e.stopPropagation();
                     $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
                     $(e.currentTarget).parents('.searchTerm').find('div.termTableBreadcrumb>div.showHideDiv').toggleClass('hide');
                     if ($(e.currentTarget).find('i').hasClass('fa-angle-right')) {
@@ -118,7 +136,6 @@ define(['require',
                 };
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
-                events["click " + this.ui.editEntityButton] = "onClickEditEntity";
                 events["click " + this.ui.createEntity] = 'onClickCreateEntity';
                 events["click " + this.ui.checkDeletedEntity] = 'onCheckDeletedEntity';
                 return events;
@@ -134,36 +151,32 @@ define(['require',
                 this.limit = 25;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
-                this.commonTableOptions = {
-                    collection: this.searchCollection,
-                    includePagination: false,
-                    includeFooterRecords: false,
-                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.value.profileDBView ? true : false),
-                    includeOrderAbleColumns: false,
-                    includeSizeAbleColumns: false,
-                    includeTableLoader: false,
-                    columnOpts: {
-                        opts: {
-                            initialColumnsVisible: null,
-                            saveState: false
-                        },
-                        visibilityControlOpts: {
-                            buttonTemplate: _.template("<button class='btn btn-atlasAction btn-atlas'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
-                        }
-                    },
-                    gridOpts: {
-                        emptyText: 'No Record found!',
-                        className: 'table table-hover backgrid table-quickMenu'
-                    },
-                    filterOpts: {},
-                    paginatorOpts: {}
-                };
                 this.bindEvents();
                 this.bradCrumbList = [];
                 this.arr = [];
                 this.searchType = 'Basic Search';
-                if (this.value && this.value.searchType && this.value.searchType == 'dsl') {
-                    this.searchType = 'Advanced Search';
+                if (this.value) {
+                    if (this.value.searchType && this.value.searchType == 'dsl') {
+                        this.searchType = 'Advanced Search';
+                    }
+                    if (this.value.pageLimit) {
+                        var pageLimit = parseInt(this.value.pageLimit, 10);
+                        if (_.isNaN(pageLimit) || pageLimit == 0 || pageLimit <= -1) {
+                            this.value.pageLimit = this.limit;
+                            this.triggerUrl();
+                        } else {
+                            this.limit = pageLimit;
+                        }
+                    }
+                    if (this.value.pageOffset) {
+                        var pageOffset = parseInt(this.value.pageOffset, 10);
+                        if (_.isNaN(pageOffset) || pageLimit <= -1) {
+                            this.value.pageOffset = this.offset;
+                            this.triggerUrl();
+                        } else {
+                            this.offset = pageOffset;
+                        }
+                    }
                 }
             },
             bindEvents: function() {
@@ -226,16 +239,7 @@ define(['require',
                                 this.ui.columnEmptyInfo.hide();
                             }
                         }
-
-                        Utils.setUrl({
-                            url: '#!/search/searchResult',
-                            urlParams: this.value,
-                            mergeBrowserUrl: false,
-                            trigger: false,
-                            updateTabState: function() {
-                                return { searchUrl: this.url, stateChanged: true };
-                            }
-                        });
+                        this.triggerUrl();
                         if (excludeDefaultColumn.length > this.searchCollection.filterObj.attributes.length) {
                             this.fetchCollection(this.value);
                         }
@@ -247,6 +251,32 @@ define(['require',
                 }, this);
             },
             onRender: function() {
+                var that = this;
+                this.commonTableOptions = {
+                    collection: this.searchCollection,
+                    includePagination: false,
+                    includeFooterRecords: false,
+                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.value.profileDBView ? true : false),
+                    includeOrderAbleColumns: false,
+                    includeSizeAbleColumns: false,
+                    includeTableLoader: false,
+                    columnOpts: {
+                        opts: {
+                            initialColumnsVisible: null,
+                            saveState: false
+                        },
+                        visibilityControlOpts: {
+                            buttonTemplate: _.template("<button class='btn btn-action btn-md pull-right'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
+                        },
+                        el: this.ui.colManager
+                    },
+                    gridOpts: {
+                        emptyText: 'No Record found!',
+                        className: 'table table-hover backgrid table-quickMenu'
+                    },
+                    filterOpts: {},
+                    paginatorOpts: {}
+                };
                 if (!this.initialView) {
                     var value = {},
                         that = this;
@@ -267,21 +297,30 @@ define(['require',
                     } else {
                         this.ui.columnEmptyInfo.hide();
                     }
-                    this.fetchCollection(value);
-                    $('body').click(function(e) {
-                        var iconEvnt = e.target.nodeName;
-                        if (that.$('.popoverContainer').length) {
-                            if ($(e.target).hasClass('tagDetailPopover') || iconEvnt == "I") {
-                                return;
-                            }
-                            that.$('.popover.popoverTag').hide();
-                        }
-                    });
+                    this.fetchCollection(value, _.extend({ 'fromUrl': true }, (this.value && this.value.pageOffset ? { 'next': true } : null)));
                 } else {
                     if (Globals.entityTypeConfList) {
                         this.$(".entityLink").show();
                     }
                 }
+                this.ui.showPage.select2({
+                    data: _.sortBy(_.union([25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500], [this.limit])),
+                    tags: true,
+                    dropdownCssClass: "number-input",
+                    multiple: false
+                });
+                if (this.value && this.value.pageLimit) {
+                    this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
+                }
+            },
+            triggerUrl: function(options) {
+                Utils.setUrl(_.extend({
+                    url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                    urlParams: this.value,
+                    mergeBrowserUrl: false,
+                    trigger: false,
+                    updateTabState: true
+                }, options));
             },
             updateColumnList: function(updatedList) {
                 if (updatedList) {
@@ -301,48 +340,18 @@ define(['require',
                     this.searchTableColumns[this.value.type] = this.value.attributes.split(",");
                 }
             },
-            generateQueryOfFilter: function() {
-                var value = this.value,
-                    entityFilters = CommonViewFunction.attributeFilter.extractUrl(value.entityFilters),
-                    tagFilters = CommonViewFunction.attributeFilter.extractUrl(value.tagFilters),
-                    queryArray = [],
-                    objToString = function(filterObj) {
-                        var tempObj = [];
-                        _.each(filterObj, function(obj) {
-                            tempObj.push('<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>")
-                        });
-                        return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
-                    }
-                if (value.type) {
-                    var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
-                    if (entityFilters) {
-                        typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(entityFilters);
-                    }
-                    queryArray.push(typeKeyValue)
-                }
-                if (value.tag) {
-                    var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
-                    if (tagFilters) {
-                        tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(tagFilters);
-                    }
-                    queryArray.push(tagKeyValue);
-                }
-                if (value.query) {
-                    queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + _.escape(value.query) + '</span>&nbsp');
-                }
-                if (queryArray.length == 1) {
-                    return queryArray.join();
-                } else {
-                    return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
-
-                }
-            },
-            fetchCollection: function(value, clickObj) {
+            fetchCollection: function(value, options) {
                 var that = this,
-                    isPostMethod = this.value.searchType === "basic" && Utils.getUrlState.isSearchTab(),
-                    tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters),
+                    isPostMethod = (this.value && this.value.searchType === "basic"),
+                    isSearchTab = Utils.getUrlState.isSearchTab(),
+                    tagFilters = null,
+                    entityFilters = null;
+                if (isSearchTab) {
+                    tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters);
                     entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters);
-                if (isPostMethod) {
+                }
+
+                if (isPostMethod && isSearchTab) {
                     var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms") : null,
                         filterObj = {
                             'entityFilters': entityFilters,
@@ -360,43 +369,86 @@ define(['require',
                     sort: false,
                     success: function(dataOrCollection, response) {
                         Globals.searchApiCallRef = undefined;
+                        var isFirstPage = that.offset === 0,
+                            dataLength = 0,
+                            goToPage = that.ui.gotoPage.val();
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
-                        if ((isPostMethod ? !dataOrCollection.entities : !dataOrCollection.length) && that.offset >= that.limit) {
-                            that.ui.nextData.attr('disabled', true);
-                            that.offset = that.offset - that.limit;
+                        if (isPostMethod && dataOrCollection && dataOrCollection.entities) {
+                            dataLength = dataOrCollection.entities.length;
+                        } else {
+                            dataLength = dataOrCollection.length;
+                        }
+
+                        if (!dataLength && that.offset >= that.limit && ((options && options.next) || goToPage) && (options && !options.fromUrl)) {
+                            /* User clicks on next button and server returns 
+                            empty response then disabled the next button without rendering table*/
+
                             that.hideLoader();
+                            var pageNumber = that.activePage + 1;
+                            if (goToPage) {
+                                pageNumber = goToPage;
+                                that.offset = that.offset - ((parseInt(pageNumber, 10) - 1) * that.limit);
+                            } else {
+                                that.ui.nextData.attr('disabled', true);
+                                that.offset = that.offset - that.limit;
+                            }
+                            if (that.value) {
+                                that.value.pageOffset = that.offset;
+                                that.triggerUrl();
+                            }
+                            Utils.notifyInfo({
+                                html: true,
+                                content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: pageNumber, sup: true }) + '</b> page'
+                            });
                             return;
                         }
                         if (isPostMethod) {
-                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
+                            that.searchCollection.referredEntities = dataOrCollection.rnoRecordFoeferredEntities;
                             that.searchCollection.reset(dataOrCollection.entities);
                         }
-                        if (that.searchCollection.models.length < that.limit) {
+
+                        /*Next button check.
+                        It's outside of Previous button else condition 
+                        because when user comes from 2 page to 1 page than we need to check next button.*/
+                        if (dataLength < that.limit) {
                             that.ui.nextData.attr('disabled', true);
                         } else {
                             that.ui.nextData.attr('disabled', false);
                         }
-                        if (that.offset === 0) {
+
+                        if (isFirstPage && (!dataLength || dataLength < that.limit)) {
+                            that.ui.paginationDiv.hide();
+                        } else {
+                            that.ui.paginationDiv.show();
+                        }
+
+                        // Previous button check.
+                        if (isFirstPage) {
+                            that.ui.previousData.attr('disabled', true);
                             that.pageFrom = 1;
                             that.pageTo = that.limit;
-                        } else if (clickObj && clickObj.next) {
+                        } else {
+                            that.ui.previousData.attr('disabled', false);
+                        }
+
+                        if (options && options.next) {
                             //on next click, adding "1" for showing the another records.
                             that.pageTo = that.offset + that.limit;
                             that.pageFrom = that.offset + 1;
-                        } else if (clickObj && clickObj.previous) {
+                        } else if (!isFirstPage && options && options.previous) {
                             that.pageTo = that.pageTo - that.limit;
                             that.pageFrom = (that.pageTo - that.limit) + 1;
                         }
                         that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u> From " + that.pageFrom + " - " + that.pageTo);
-                        if (that.offset < that.limit && that.pageFrom < 26) {
-                            that.ui.previousData.attr('disabled', true);
-                        }
+                        that.activePage = Math.round(that.pageTo / that.limit);
+                        that.ui.activePage.attr('title', "Page " + that.activePage);
+                        that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
 
                         if (value && !value.profileDBView) {
-                            var searchString = 'Results for: <span class="filterQuery">' + that.generateQueryOfFilter() + "</span>";
+                            var searchString = 'Results for: <span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value) + "</span>";
                             if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                                 searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
                             }
@@ -410,20 +462,20 @@ define(['require',
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': (value.query ? value.query.trim() : null), 'typeName': value.type || null, 'classification': value.tag || null });
                     if (value.profileDBView && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
                         profileParam['relation'] = '__hive_table.db';
                         profileParam['sortBy'] = 'name';
                         profileParam['sortOrder'] = 'ASCENDING';
-                        $.extend(this.searchCollection.queryParams, profileParam);
+                        _.extend(this.searchCollection.queryParams, profileParam);
                     }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
                         apiObj['data'] = _.extend({
                             'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true)
-                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'limit', 'offset', 'typeName', 'classification'))
+                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -434,7 +486,7 @@ define(['require',
                     if (isPostMethod) {
                         apiObj['data'] = _.extend({
                             'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true)
-                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'limit', 'offset', 'typeName', 'classification'));
+                        }, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -477,7 +529,6 @@ define(['require',
                     } else {
                         that.ui.containerCheckBox.hide();
                     }
-                    that.ui.paginationDiv.show();
                     that.$(".ellipsis .inputAssignTag").hide();
                     that.renderBreadcrumb();
                     that.checkTableFetch();
@@ -495,6 +546,16 @@ define(['require',
             checkTableFetch: function() {
                 if (this.asyncFetchCounter <= 0) {
                     this.hideLoader();
+                    Utils.generatePopover({
+                        el: this.$('[data-id="showMoreLess"]'),
+                        container: this.$el,
+                        contentClass: 'popover-tag',
+                        popoverOptions: {
+                            content: function() {
+                                return $(this).find('.popup-tag').children().clone();
+                            }
+                        }
+                    });
                 }
             },
             getFixedDslColumn: function() {
@@ -532,23 +593,13 @@ define(['require',
                             if (obj.guid) {
                                 nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + '">' + name + '</a>';
                             } else {
-                                nameHtml = '<a title="' + name + '">' + name + '</a>';
+                                nameHtml = '<span title="' + name + '">' + name + '</span>';
                             }
                             if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                                 return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
-                            } else {
-                                if (Globals.entityUpdate) {
-                                    if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
-                                        nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + obj.guid + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
-                                    } else {
-                                        if (_.contains(Globals.entityTypeConfList, obj.typeName)) {
-                                            nameHtml += '<button title="Edit" data-id="editEntityButton"  data-giud= "' + obj.guid + '" class="btn btn-atlasAction btn-atlas editBtn"><i class="fa fa-pencil"></i></button>'
-                                        }
-                                    }
-                                }
-                                return nameHtml;
                             }
+                            return nameHtml;
                         }
                     })
                 };
@@ -751,7 +802,6 @@ define(['require',
                 } else {
                     return [];
                 }
-
             },
             showLoader: function() {
                 this.$('.fontLoader:not(.for-ignore)').show();
@@ -759,7 +809,7 @@ define(['require',
             },
             hideLoader: function() {
                 this.$('.fontLoader:not(.for-ignore)').hide();
-                this.$('.ellipsis,.labelShowRecord').show(); // only for first time
+                this.$('.ellipsis,.pagination-box').show(); // only for first time
                 this.$('.tableOverlay').hide();
             },
             checkedValue: function(e) {
@@ -845,43 +895,36 @@ define(['require',
                 });
             },
             onClicknextData: function() {
-                var that = this;
-                this.ui.previousData.removeAttr("disabled");
-                that.offset = that.offset + that.limit;
-                $.extend(this.searchCollection.queryParams, {
-                    offset: that.offset
+                this.offset = this.offset + this.limit;
+                _.extend(this.searchCollection.queryParams, {
+                    offset: this.offset
                 });
+                if (this.value) {
+                    this.value.pageOffset = this.offset;
+                    this.triggerUrl();
+                }
+                this.ui.gotoPage.val('');
+                this.ui.gotoPage.parent().removeClass('has-error');
                 this.fetchCollection(null, {
                     next: true
                 });
             },
             onClickpreviousData: function() {
-                var that = this;
-                this.ui.nextData.removeAttr("disabled");
-                that.offset = that.offset - that.limit;
-                $.extend(this.searchCollection.queryParams, {
-                    offset: that.offset
+                this.offset = this.offset - this.limit;
+                if (this.offset <= -1) {
+                    this.offset = 0;
+                }
+                _.extend(this.searchCollection.queryParams, {
+                    offset: this.offset
                 });
+                if (this.value) {
+                    this.value.pageOffset = this.offset;
+                    this.triggerUrl();
+                }
+                this.ui.gotoPage.val('');
+                this.ui.gotoPage.parent().removeClass('has-error');
                 this.fetchCollection(null, {
                     previous: true
-                });
-            },
-
-            onClickEditEntity: function(e) {
-                var that = this;
-                $(e.currentTarget).blur();
-                var guid = $(e.currentTarget).data('giud');
-                require([
-                    'views/entity/CreateEntityLayoutView'
-                ], function(CreateEntityLayoutView) {
-                    var view = new CreateEntityLayoutView({
-                        guid: guid,
-                        entityDefCollection: that.entityDefCollection,
-                        typeHeaders: that.typeHeaders,
-                        callback: function() {
-                            that.fetchCollection();
-                        }
-                    });
                 });
             },
             onClickCreateEntity: function(e) {
@@ -906,17 +949,55 @@ define(['require',
                 }
                 if (this.value) {
                     this.value.includeDE = includeDE;
-                    Utils.setUrl({
-                        url: '#!/search/searchResult',
-                        urlParams: this.value,
-                        mergeBrowserUrl: false,
-                        trigger: false,
-                        updateTabState: function() {
-                            return { searchUrl: this.url, stateChanged: true };
-                        }
-                    });
+                    this.triggerUrl();
                 }
+                _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.fetchCollection();
+            },
+            changePageLimit: function(e, obj) {
+                if (!obj || (obj && !obj.skipViewChange)) {
+                    var limit = parseInt(this.ui.showPage.val());
+                    if (limit == 0) {
+                        this.ui.showPage.data('select2').$container.addClass('has-error');
+                        return;
+                    } else {
+                        this.ui.showPage.data('select2').$container.removeClass('has-error');
+                    }
+                    this.limit = limit;
+                    this.offset = 0;
+                    if (this.value) {
+                        this.value.pageLimit = this.limit;
+                        this.value.pageOffset = this.offset;
+                        this.triggerUrl();
+                    }
+                    this.ui.gotoPage.val('');
+                    this.ui.gotoPage.parent().removeClass('has-error');
+                    _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
+                    this.fetchCollection();
+                }
+            },
+            gotoPagebtn: function(e) {
+                var that = this;
+                var goToPage = parseInt(this.ui.gotoPage.val());
+                if (!(_.isNaN(goToPage) || goToPage <= -1)) {
+                    this.offset = (goToPage - 1) * this.limit;
+                    if (this.offset <= -1) {
+                        this.offset = 0;
+                    }
+                    _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
+                    if (this.offset == (this.pageFrom - 1)) {
+                        Utils.notifyInfo({
+                            content: Messages.search.onSamePage
+                        });
+                    } else {
+                        if (this.value) {
+                            this.value.pageOffset = this.offset;
+                            this.triggerUrl();
+                        }
+                        // this.offset is updated in gotoPagebtn function so use next button calculation.
+                        this.fetchCollection(null, { 'next': true });
+                    }
+                }
             }
         });
     return SearchResultLayoutView;

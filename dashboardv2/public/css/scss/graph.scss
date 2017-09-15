@@ -94,8 +94,7 @@
     background: $black_80;
     color: $white;
     z-index: 999;
-    max-width: 300px;
-    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    max-width: 300px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 2px;
     .tip-inner-scroll {
         overflow: auto;
@@ -108,7 +107,7 @@
     }
 }
 
-g.type-TK > rect {
+g.type-TK>rect {
     fill: $color_bright_turquoise_approx;
 }
 
@@ -120,8 +119,8 @@ g.type-TK > rect {
 }
 
 .legends {
-    > i {
-        > span {
+    >i {
+        >span {
             font-family: 'Source Sans Pro';
         }
     }

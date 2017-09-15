@@ -15,24 +15,22 @@
  * limitations under the License.
 -->
 <div class="">
-    <h4>Use DSL (Doamin Specific Language) to build queries</h4>
-    <ul>
-    <li><b>Entity Name</b></li>
-    <li>name="string"</li>
+    <h4>Use DSL (Domain Specific Language) to build queries</h4>
+    <ul class="list-style-disc">
+        <li><b>Single Query</b>
+            <p>DB where name="Reporting" select name, owner</p>
+        </li>
+        <li><b>GROUPBY</b>
+            <p>select count(CustomerID), Country from Customers group by Country</p>
+        </li>
+        <li><b>ORDERBY</b>
+            <p>DB where name="Reporting" select name, owner orderby name limit 10 offset 5</p>
+        </li>
+        <li><b>LIMIT</b>
+            <p>DB where name="Reporting" select name, owner limit 10 offset 0</p>
+        </li>
     </ul>
-    <ul>
-    <li><b>Joining queries</b></li>
-    <li>name="sales_fact",columns as column select column.name</li>
-    </ul>
-    <ul>
-    <li><b>Query Name</b></li>
-    <li>Query Example</li>
-    </ul>
-    <ul>
-    <li><b>Query Name</b></li>
-    <li>Query Example</li>
-    </ul>
-    <ul>
-    <a href="http://atlas.apache.org/Search.html" target="_blank">More sample queries and use-cases >></a>
-    </ul>
+    <h5 style="padding-left: 22.5px;">
+        <a href="http://atlas.apache.org/Search.html" target="_blank"><i class="fa fa-info-circle" aria-hidden="true"></i> &nbsp; More sample queries and use-cases</a>
+    </h5>
 </div>

@@ -75,9 +75,7 @@ define(['require',
                     url: urlString,
                     mergeBrowserUrl: false,
                     trigger: true,
-                    updateTabState: function() {
-                        return { stateChanged: true };
-                    },
+                    updateTabState: true
                 });
             };
             return events;

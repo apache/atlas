@@ -97,7 +97,7 @@ define(['require',
                     okText: okLabel,
                     allowCancel: true,
                     okCloses: false,
-                    width: '70%'
+                    width: '50%'
                 }).open();
                 this.modal.$el.find('button.ok').attr("disabled", true);
                 this.modal.on('ok', function(e) {
@@ -400,13 +400,13 @@ define(['require',
             },
             getContainer: function(value) {
                 var entityLabel = this.capitalize(value.name);
-                return '<div class="row row-margin-bottom ' + value.isOptional + '"><span class="col-md-3">' +
-                    '<label class="' + value.isOptional + '">' + entityLabel + (value.isOptional == true ? '' : ' <span class="requiredInput">*</span>') + '</label>' + '<span class="spanEntityType" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span>' + '</span>' +
-                    '<span class="col-md-9 position-relative">' + (this.getElement(value)) +
+                return '<div class="row form-group ' + value.isOptional + '"><span class="col-md-3">' +
+                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
+                    '<span class="col-md-9">' + (this.getElement(value)) +
                     '</input></span></div>';
             },
             getFieldSet: function(name, alloptional, attributeInput) {
-                return '<fieldset class="scheduler-border' + (alloptional ? " alloptional" : "") + '"><legend class="scheduler-border">' + name + '</legend>' + attributeInput + '</fieldset>';
+                return '<fieldset class="form-group fieldset-child-pd ' + (alloptional ? "alloptional" : "") + '"><legend class="legend-sm">' + name + '</legend>' + attributeInput + '</fieldset>';
             },
             getSelect: function(value, entityValue) {
                 if (value.typeName === "boolean") {

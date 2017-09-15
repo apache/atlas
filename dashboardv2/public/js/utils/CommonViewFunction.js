@@ -94,7 +94,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         var id = "";
                         if (data.guid) {
                             if (Enums.entityStateReadOnly[data.status]) {
-                                deleteButton += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                deleteButton += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                             }
                             id = data.guid;
                         }
@@ -177,7 +177,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                     if (readOnly) {
                         if (!fetch) {
-                            tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                            tempLink += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                             subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
                         } else {
                             fetch = false;
@@ -310,7 +310,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var checkTagOrTerm = Utils.checkTagOrTerm(term);
                 if (checkTagOrTerm.term) {
                     terms.push({
-                        deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + entityName + '" data-name="' + term + '" data-guid="' + obj.guid + '" ></i></a>',
+                        deleteHtml: '<a href="javascript:void(0)" class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + entityName + '" data-name="' + term + '" data-guid="' + obj.guid + '" ></i></a>',
                         url: _.unescape(term).split(".").join("/"),
                         name: term
                     });
@@ -326,17 +326,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
         })
         if (terms.length > 1) {
-            html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
+            html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="btn btn-action btn-sm btn-icon-pd"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
         }
         if (!Enums.entityStateReadOnly[obj.status]) {
             if (obj.guid) {
-                html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm" data-guid="' + (obj.guid) + '"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
+                html += '<div><a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addTerm" data-guid="' + (obj.guid) + '"><i class="fa fa-plus"></i></a></div>'
             } else {
-                html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a></div>'
+                html += '<div><a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addTerm"><i class="fa fa-plus"></i></a></div>'
             }
         }
         return {
-            html: '<div class="termTableBreadcrumb" dataterm-id="' + id + '">' + html + '</div>',
+            html: '<div class="termTableBreadcrumb btn-inline" dataterm-id="' + id + '">' + html + '</div>',
             object: { scopeId: id, value: terms }
         }
 
@@ -352,8 +352,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             traits.map(function(tag) {
                 var checkTagOrTerm = Utils.checkTagOrTerm(tag);
                 if (checkTagOrTerm.tag) {
-                    var className = "inputTag",
-                        tagString = '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                    var className = "btn btn-action btn-sm btn-blue btn-icon",
+                        tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag + '">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
                     if (count >= 1) {
                         popTag += tagString;
                     } else {
@@ -365,15 +365,50 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         }
         if (!Enums.entityStateReadOnly[obj.status]) {
             if (obj.guid) {
-                addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
+                addTag += '<a href="javascript:void(0)" data-id="addTag" class="btn btn-action btn-sm assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
             } else {
-                addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
+                addTag += '<a href="javascript:void(0)" data-id="addTag" class="btn btn-action btn-sm assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
             }
         }
         if (count > 1) {
-            addTag += '<div data-id="showMoreLess" class="inputTagAdd assignTag tagDetailPopover"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></div>'
+            addTag += '<div data-id="showMoreLess" class="btn btn-action btn-sm assignTag"><i class="fa fa-ellipsis-h" aria-hidden="true"></i><div class="popup-tag">' + popTag + '</div></div>'
         }
-        return '<div class="tagList">' + atags + addTag + '<div class="popover popoverTag bottom" style="display:none"><div class="arrow"></div><div class="popover-content popoverContainer">' + popTag + '</div></div></div>';
+        return '<div class="tagList btn-inline btn-fixed-width">' + atags + addTag + '</div>';
+    }
+    CommonViewFunction.generateQueryOfFilter = function(value) {
+        var entityFilters = CommonViewFunction.attributeFilter.extractUrl(value.entityFilters),
+            tagFilters = CommonViewFunction.attributeFilter.extractUrl(value.tagFilters),
+            queryArray = [],
+            objToString = function(filterObj) {
+                var tempObj = [];
+                _.each(filterObj, function(obj) {
+                    tempObj.push('<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>")
+                });
+                return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
+            }
+        if (value.type) {
+            var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
+            if (entityFilters) {
+                typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(entityFilters);
+            }
+            queryArray.push(typeKeyValue)
+        }
+        if (value.tag) {
+            var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
+            if (tagFilters) {
+                tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(tagFilters);
+            }
+            queryArray.push(tagKeyValue);
+        }
+        if (value.query) {
+            queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + _.escape(value.query) + '</span>&nbsp');
+        }
+        if (queryArray.length == 1) {
+            return queryArray.join();
+        } else {
+            return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
+
+        }
     }
     CommonViewFunction.saveTermToAsset = function(options, that) {
         require(['models/VCatalog'], function(Vcatalog) {

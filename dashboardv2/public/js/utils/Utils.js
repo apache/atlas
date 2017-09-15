@@ -35,6 +35,27 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return entityMap[s];
         });
     }
+
+    Utils.generatePopover = function(options) {
+        if (options.el) {
+            return options.el.popover(_.extend({
+                placement: 'auto bottom',
+                html: true,
+                template: '<div class="popover fixed-popover fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>'
+            }, options.popoverOptions));
+        }
+    }
+
+    Utils.getNumberSuffix = function(options) {
+        if (options && options.number) {
+            var n = options.number,
+                s = ["th", "st", "nd", "rd"],
+                v = n % 100,
+                suffix = (s[(v - 20) % 10] || s[v] || s[0]);
+            return n + (options.sup ? '<sup>' + suffix + '</sup>' : suffix);
+        }
+    }
+
     Utils.generateUUID = function() {
         var d = new Date().getTime();
         if (window.performance && typeof window.performance.now === "function") {
@@ -47,7 +68,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         });
         return uuid;
     };
-
+    pnotify.prototype.options.styling = "bootstrap3";
     var notify = function(options) {
         return new pnotify(_.extend({
             icon: true,
@@ -102,7 +123,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             title: 'Confirmation',
             hide: false,
             confirm: {
-                confirm: true
+                confirm: true,
+                buttons: [{
+                        text: 'cancel',
+                        addClass: 'btn-action btn-md',
+                        click: function(notice) {
+                            options.cancel(notice);
+                            notice.remove();
+                        }
+                    },
+                    {
+                        text: 'Ok',
+                        addClass: 'btn-atlas btn-md',
+                        click: function(notice) {
+                            options.ok(notice);
+                            notice.remove();
+                        }
+                    }
+                ]
             },
             buttons: {
                 closer: false,
@@ -228,10 +266,19 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 });
                 urlParams = urlParams.slice(0, -1);
                 options.url += urlParams;
-
             }
             if (options.updateTabState) {
-                $.extend(Globals.saveApplicationState.tabState, options.updateTabState());
+                var urlUpdate = {
+                    stateChanged: true
+                };
+                if (Utils.getUrlState.isTagTab(options.url)) {
+                    urlUpdate['tagUrl'] = options.url;
+                } else if (Utils.getUrlState.isTaxonomyTab(options.url)) {
+                    urlUpdate['taxonomyUrl'] = options.url;
+                } else if (Utils.getUrlState.isSearchTab(options.url)) {
+                    urlUpdate['searchUrl'] = options.url;
+                }
+                $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
             Backbone.history.navigate(options.url, { trigger: options.trigger != undefined ? options.trigger : true });
         }
@@ -253,17 +300,17 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         isInitial: function() {
             return this.getQueryUrl().firstValue == undefined ? true : false;
         },
-        isTagTab: function() {
-            return this.getQueryUrl().firstValue == "tag" ? true : false;
+        isTagTab: function(url) {
+            return this.getQueryUrl(url).firstValue == "tag" ? true : false;
         },
-        isTaxonomyTab: function() {
-            return this.getQueryUrl().firstValue == "taxonomy" ? true : false;
+        isTaxonomyTab: function(url) {
+            return this.getQueryUrl(url).firstValue == "taxonomy" ? true : false;
         },
-        isSearchTab: function() {
-            return this.getQueryUrl().firstValue == "search" ? true : false;
+        isSearchTab: function(url) {
+            return this.getQueryUrl(url).firstValue == "search" ? true : false;
         },
-        isDetailPage: function() {
-            return this.getQueryUrl().firstValue == "detailPage" ? true : false;
+        isDetailPage: function(url) {
+            return this.getQueryUrl(url).firstValue == "detailPage" ? true : false;
         },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;

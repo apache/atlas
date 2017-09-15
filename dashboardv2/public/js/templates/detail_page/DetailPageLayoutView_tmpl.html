@@ -18,29 +18,29 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="entityDetail">
+    <div class="entityDetail form-horizontal col-md-12">
         <div class="row">
             <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
         </div>
-        <h1><span  data-id="title"></span></h1> {{#if entityUpdate}}
-        <button data-id="editButton" title="Edit Entity" style="display:none" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
+        <h1 class="form-group"><span  data-id="title"></span></h1> {{#if entityUpdate}}
+        <div data-id="editButtonContainer" class="pull-right"></div>
         {{/if}}
-        <div class="tagTerm">
-            <span class="tagSpan">Tags:</span>
-            <div class="" data-id="tagList">
-                <div class="addTag-dropdown" data-id="addTag">
-                    <div class="addTagBase tagBox" title="Add Tag" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
-                </div>
+        <div class="form-group">
+            <span class="control-label-sm-pr pull-left">Tags:</span>
+            <div class="pull-left" data-id="tagList">
+                <button class="btn btn-action btn-sm" title="Add Tag" data-id="addTag">
+                    <i class="fa fa-plus"> </i>
+                </button>
             </div>
-            <hr class="termTagLine"> {{#if taxonomy}}
-            <span class="termSpan">Terms:</span>
-            <div class="" data-id="termList">
-                <div class="addTag-dropdown" data-id="addTerm">
-                    <div class="addTagBase termBox" title="Add Term" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
-                </div>
-            </div>
-            {{/if}}
         </div>
+        {{#if taxonomy}}
+        <div class="form-group">
+            <span class="control-label-sm-pr pull-left">Terms:</span>
+            <div class="pull-left" data-id="termList">
+                <button class="btn btn-action btn-sm" title="Add Term" data-id="addTerm"><i class="fa fa-plus"></i></button>
+            </div>
+        </div>
+        {{/if}}
     </div>
 </div>
 <div class="container-fluid gray-bg">

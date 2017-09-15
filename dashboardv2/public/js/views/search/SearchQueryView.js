@@ -60,15 +60,18 @@ define(['require',
                     okCloses: false,
                     width: '50%',
                     buttons: [{
+                            text: 'Cancel',
+                            btnClass: "cancel btn-action",
+                            title: 'Cancel'
+                        }, {
                             text: 'Apply',
-                            btnClass: "ok"
+                            btnClass: "ok btn-atlas",
+                            title: "Apply the filters and close popup (won't perform search)"
                         },
                         {
-                            text: 'Apply & Search',
-                            btnClass: "ok search"
-                        }, {
-                            text: 'Cancel',
-                            btnClass: "cancel"
+                            text: 'Search',
+                            btnClass: "ok search btn-atlas",
+                            title: 'Apply the filters and do search'
                         }
                     ]
                 }).open();

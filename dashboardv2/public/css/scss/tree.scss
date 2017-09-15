@@ -57,7 +57,7 @@
             }
         }
         &.parentChild {
-            ul {
+            >ul {
                 padding-left: 9%;
             }
             li {
@@ -72,6 +72,11 @@
         &.children {
             &:hover {
                 background-color: $color_star_dust_approx;
+            }
+        }
+        &.listTerm {
+            a {
+                display: inline;
             }
         }
         &.active {
@@ -90,8 +95,7 @@
             color: $concrete;
             white-space: nowrap;
             padding: 5px 25px;
-            text-overflow: ellipsis;
-            overflow: hidden;
+            @include ellipsis();
             cursor: pointer;
         }
         .tools {
@@ -124,6 +128,7 @@
 .alertTerm {
     color: $red !important;
 }
+
 
 
 /**Css changes**/

@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="clearfix add-seperator">
-    <button type="button" class="btn btn-action btn-md pull-left" data-id="createTag" type="button"><i class="fa fa-plus"></i> Create Tag</button>
-    <button type="button" class="btn btn-action btn-md pull-right" title="Refresh" data-id="refreshTag" onclick="this.blur();" type="button"><i class="fa fa-refresh"></i></button>
-</div>
-<input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Tags">
-<ul class="tag-tree" data-id="tagsParent">
-</ul>
+{{#if btn_edit}}
+<button data-id="editButton" title="Edit Entity" class="btn btn-action btn-sm pull-right"><i class="fa fa-pencil"></i></button>
+{{/if}}

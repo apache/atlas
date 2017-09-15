@@ -15,28 +15,43 @@
  * limitations under the License.
 -->
 <div>
-<div class="t_tableOverlay"></div>
-<div class="row banded">
-    <div data-id="r_footerRecords" class="col-sm-6 margin-top-10"></div>
-    <div data-id="r_pagination" class="col-sm-6 text-right"></div>
-</div>
-<div class="clearfix">
-    <div class="form-group pull-right no-margin">
-        <div data-id="control" class="pull-right"></div>
-        <label class="select pull-right">
-            <select data-id="pageSize" class="form-control">
-                <option selected>10</option>
-                <option>25</option>
-                <option>50</option>
-                <option>100</option>
-            </select>
-        </label>
+    <div class="clearfix">
+        <div class="form-group pull-right no-margin">
+            {{#unless columnOpts.el}}
+            <div data-id="control" class="pull-right"></div>
+            {{/unless}}
+        </div>
     </div>
-</div>
-<div class="position-relative thick-border">
-    <div data-id="r_tableList" class="table-responsive tableBorder"> </div>
-    <div data-id="r_tableSpinner" class="fontLoader for-ignore">
-        <i class="fa fa-refresh fa-spin-custom"></i>
+    {{#if includePagination}}
+    <div class="clearfix banded">
+        <div data-id="r_footerRecords" class="margin-top-10"></div>
     </div>
-</div>
+    {{/if}}
+    <div class="position-relative thick-border">
+        <div data-id="r_tableList" class="table-responsive tableBorder"> </div>
+        {{#if includeTableLoader}}
+        <div data-id="r_tableSpinner" class="fontLoader for-ignore">
+            <i class="fa fa-refresh fa-spin-custom"></i>
+        </div>
+        {{/if}}
+    </div>
+    {{#if includePagination}}
+    <div class="row clearfix banded pagination-box">
+        <div class="col-md-offset-4 col-md-8">
+            <div class="inline-content-fr">
+                <div data-id="r_pagination" class="inline"></div>
+                {{#if includePageSize}}
+                <div class="inline">
+                    <div class="form-group inline-content">
+                        <span class="control-label-sm inline ">Page Limit :</span>
+                        <div class="select inline" style="width: 80px;">
+                            <select data-id="pageSize" class="form-control"></select>
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{/if}}
 </div>
