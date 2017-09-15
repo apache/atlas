@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -153,7 +152,7 @@ public class AtlasEntityStoreV1BulkImportPercentTest {
     }
 
     private float invokeBulkImportProgress(int currentIndex, int streamSize, float currentPercent) throws Exception {
-        return Whitebox.invokeMethod(AtlasEntityStoreV1.class, "updateImportProgress", log, currentIndex, streamSize, currentPercent, "additional info");
+        return BulkImporterImpl.updateImportProgress(log, currentIndex, streamSize, currentPercent, "additional info");
     }
 
     private double[] fillPercentHolderWith100() {
