@@ -49,6 +49,31 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             }
         }
     });
+    var getPopoverEl = function(e) {
+        return $(e.target).parent().data("bs.popover") || $(e.target).data("bs.popover") || $(e.target).parents('.popover').length;
+    }
+    $('body').on('click DOMMouseScroll mousewheel', function(e) {
+        if (e.originalEvent) {
+            // Do action if it is triggered by a human.
+            //e.isImmediatePropagationStopped();
+            var isPopOverEl = getPopoverEl(e)
+            if (!isPopOverEl) {
+                $('.popover').popover('hide');
+            }
+        }
+    });
+    $('body').on('hidden.bs.popover', function(e) {
+        $(e.target).data("bs.popover").inState = { click: false, hover: false, focus: false }
+    });
+    $('body').on('show.bs.popover', '[data-js="popover"]', function() {
+        $('.popover').not(this).popover('hide');
+    });
+    $('body').on('keypress', 'input.number-input,.number-input .select2-search__field', function(e) {
+        if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+            return false;
+        }
+    });
+
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
         var originalRender = Backbone.Marionette.LayoutView.prototype.render;
@@ -62,20 +87,26 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         function(n) {
             return (this.length > n) ? this.substr(0, n - 1) + '...' : this;
         };
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    }
+
+
+
     /*
      * Overriding Cell for adding custom className to Cell i.e <td>
      */
     var cellInit = Backgrid.Cell.prototype.initialize;
     Backgrid.Cell.prototype.initialize = function() {
-            cellInit.apply(this, arguments);
-            var className = this.column.get('className');
-            var rowClassName = this.column.get('rowClassName');
-            if (rowClassName) this.$el.addClass(rowClassName);
-            if (className) this.$el.addClass(className);
-        }
-        /*
-         * Overriding Cell for adding custom width to Cell i.e <td>
-         */
+        cellInit.apply(this, arguments);
+        var className = this.column.get('className');
+        var rowClassName = this.column.get('rowClassName');
+        if (rowClassName) this.$el.addClass(rowClassName);
+        if (className) this.$el.addClass(className);
+    }
+    /*
+     * Overriding Cell for adding custom width to Cell i.e <td>
+     */
     Backgrid.HeaderRow = Backgrid.HeaderRow.extend({
         render: function() {
             var that = this;
@@ -106,6 +137,55 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return this;
         }
     });
+
+
+    /*
+     * Backgrid Header render listener when resize or re-ordered
+     */
+    var BackgridHeaderInitializeMethod = function(options) {
+        this.columns = options.columns;
+        if (!(this.columns instanceof Backbone.Collection)) {
+            this.columns = new Backgrid.Columns(this.columns);
+        }
+        this.createHeaderRow();
+
+        this.listenTo(this.columns, "sort", _.bind(function() {
+            this.createHeaderRow();
+            this.render();
+        }, this));
+    };
+
+    /**
+     * Sets up a new headerRow and attaches it to the view
+     * Tested with backgrid 0.3.5
+     */
+    var BackgridHeaderCreateHeaderRowMethod = function() {
+        this.row = new Backgrid.HeaderRow({
+            columns: this.columns,
+            collection: this.collection
+        });
+    };
+
+    /**
+     * Tested with backgrid 0.3.5
+     */
+    var BackgridHeaderRenderMethod = function() {
+        this.$el.empty();
+        this.$el.append(this.row.render().$el);
+        this.delegateEvents();
+
+        // Trigger event
+        this.trigger("backgrid:header:rendered", this);
+
+        return this;
+    };
+
+    // Backgrid patch
+    Backgrid.Header.prototype.initialize = BackgridHeaderInitializeMethod;
+    Backgrid.Header.prototype.createHeaderRow = BackgridHeaderCreateHeaderRowMethod;
+    Backgrid.Header.prototype.render = BackgridHeaderRenderMethod;
+
+    /* End: Backgrid Header render listener when resize or re-ordered */
 
     var UriCell = Backgrid.UriCell = Backgrid.Cell.extend({
         className: "uri-cell",
@@ -140,8 +220,4 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return this;
         }
     });
-
-    String.prototype.capitalize = function() {
-        return this.charAt(0).toUpperCase() + this.slice(1);
-    }
 });

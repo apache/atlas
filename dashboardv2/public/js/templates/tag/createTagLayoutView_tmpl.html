@@ -17,31 +17,38 @@
 <div class="fontLoader">
     <i class="fa fa-refresh fa-spin-custom"></i>
 </div>
-<form name="tagDefinitionform" class="css-form hide" data-id="createTagForm">
+<form name="tagDefinitionform" class="hide form-horizontal" data-id="createTagForm">
     <div class="form-group">
+        <label class="control-label col-sm-2 {{#if create}}required{{/if}}" for="name">Name</label>
         {{#if create}}
-        <input class="form-control row-margin-bottom" data-id="tagName" placeholder="Name(required)" autofocus>
-        </input>
+        <div class="col-sm-10">
+            <input class="form-control" data-id="tagName" placeholder="Name(required)" autofocus/>
+        </div>
         {{else}}
-        <h4 class="ellipsis"><span data-id="title"></span></h4>
-        </input>
-        {{/if}}
-        <input class="form-control row-margin-bottom" data-id="description" value="{{description}}" placeholder="Description">
-        </input>
-        {{#if create}}
-        <div class="row row-margin-bottom">
-            <div class="col-md-12">
-                <span>Select tags to inherit attributes(optional)</span>
-                <p class="attributeText">Attributes define additional properties for the tag</p>
-                <select class="form-control" data-id="parentTagList" multiple="multiple"></select>
-            </div>
+        <span class="ellipsis control-label text-left col-sm-10" data-id="title"></span> {{/if}}
+    </div>
+    <div class="form-group">
+        <label class="control-label col-sm-2" for="description">Description</label>
+        <div class="col-sm-10">
+            <input class="form-control" data-id="description" value="{{description}}" placeholder="Description" />
         </div>
-        <div class="clearfix">
-            <span class="pull-left">Attributes(optional)</span>
-            <button type="button" class="btn btn-success btn-sm pull-right" data-id="attributeData"><i class="fa fa-plus"></i> Add New Attribute</button>
+    </div>
+    {{#if create}}
+    <div class="form-group">
+        <div class="col-md-12">
+            <label>Select tags to inherit attributes(optional)</label>
+            <p class="text-gray">Attributes define additional properties for the tag</p>
+            <select class="form-control" data-id="parentTagList" multiple="multiple"></select>
         </div>
-        {{/if}}
-        <div data-id="addAttributeDiv">
+    </div>
+    <div class="form-group">
+        <label class="col-sm-12">Attributes(optional)</label>
+        <div class="col-sm-12">
+            <button title="Add New Attribute" type="button" class="btn btn-action btn-sm" data-id="attributeData"><i class="fa fa-plus"></i> Add New Attributes</button>
         </div>
+    </div>
+    {{/if}}
+    <div data-id="addAttributeDiv">
+    </div>
     </div>
 </form>

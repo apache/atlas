@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'value', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
                 this.collection = this.classificationDefCollection;
             },
             bindEvents: function() {},
@@ -61,7 +61,7 @@ define(['require',
                     };
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                            value: value,
+                            value: _.extend({}, that.value, value),
                             entityDefCollection: that.entityDefCollection,
                             typeHeaders: that.typeHeaders,
                             tagCollection: that.collection,

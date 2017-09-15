@@ -19,7 +19,7 @@
 //tag.scss
 .tag-tree {
     padding: 0; // overflow: auto;
-    li {
+    >li {
         list-style: none;
         cursor: pointer;
         &.parent-node {
@@ -55,18 +55,22 @@
                 padding: 5px 10px;
             }
         }
-        a {
+        >a,
+        >div>a {
             display: block;
-            color: #f2f2f2;
+            color: $white !important;
             white-space: nowrap;
             padding: 5px 10px;
-            text-overflow: ellipsis;
             max-width: 91%;
-            overflow: hidden;
+            @include ellipsis();
             font-size: 14px;
+            &:hover {
+                color: $white !important;
+                text-decoration: none !important;
+            }
         }
     }
-    ul {
+    >ul {
         padding-left: 20px;
         li {}
     }
@@ -94,316 +98,6 @@
 
 .input-group.attributes .form-control:focus+.input-group-addon {
     border-color: $color_bali_hai_approx;
-}
-
-.select2-container {
-    width: 100% !important;
-    /*margin:15px 0px;*/
-}
-
-.tagListSelect {
-    margin: 15px 0px;
-}
-
-.inputTag {
-    display: inline-block;
-    border: 1px $tag_color solid;
-    color: $tag_color;
-    font-size: 14px;
-    border-radius: 4px;
-    margin-right: 3px;
-    margin-bottom: 3px;
-    float: left;
-    cursor: pointer;
-    background-color: $white;
-    white-space: nowrap;
-    overflow: hidden;
-    &:hover {
-        color: $tag_color;
-    }
-    i.fa {
-        position: relative;
-        padding: 5px;
-        cursor: pointer;
-        &:hover {
-            color: $white;
-            background-color: $tag_color;
-        }
-    }
-    >.inputValue {
-        padding: 5px;
-        &:hover {
-            color: $white;
-            background-color: $tag_color;
-        }
-    }
-}
-
-.inputTagAdd {
-    display: inline-block;
-    border: 1px $color_havelock_blue_approx solid;
-    color: $color_havelock_blue_approx;
-    font-size: 14px;
-    border-radius: 4px;
-    margin-right: 3px;
-    margin-bottom: 3px;
-    float: left;
-    cursor: pointer;
-    background-color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    padding: 2px 6px;
-    &:hover {
-        color: $white;
-        background-color: $tag_color;
-    }
-}
-
-.inputTagGreen {
-    border: 1px $color_jungle_green_approx solid;
-    background-color: $white;
-    color: $color_jungle_green_approx;
-    padding-left: 5px;
-    &:hover {
-        color: $white;
-        background-color: $color_jungle_green_approx;
-    }
-    i.fa {
-        &:hover {
-            background-color: $color_jungle_green_approx;
-        }
-    }
-}
-
-.addTagBase {
-    padding: 2px 8px;
-    border: 1px solid $action_gray;
-    color: $action_gray;
-    border-radius: 4px;
-    cursor: pointer;
-    &:hover {
-        color: $color_dark_grey_approx;
-        background-color: $color_mercury_approx;
-    }
-}
-
-.noTags {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-}
-
-.addTag-dropdown {
-    display: inline-block;
-    float: left;
-}
-
-.addTagText {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.addTagPlus {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.inputSearchTag {
-    max-width: 200px;
-}
-
-.appendList {
-    max-height: 200px;
-    overflow: auto;
-    max-width: 200px;
-    overflow-x: hidden;
-    div {
-        padding: 3px;
-    }
-}
-
-.editbutton {
-    padding: 4px 8px;
-    border: 1px solid $color_celeste_approx;
-    color: $action_gray;
-    border-radius: 4px;
-}
-
-.inputAttribute {
-    display: inline-block;
-    padding: 2px 10px;
-    border: 1px $action_gray solid;
-    color: $action_gray;
-    font-size: 14px;
-    border-radius: 4px;
-    margin-right: 3px;
-    margin-bottom: 3px;
-    float: left;
-    cursor: pointer;
-    background-color: $white;
-    i.fa {
-        position: relative;
-        right: -5px;
-        cursor: pointer;
-    }
-    &:hover {
-        color: $white;
-        background-color: $action_gray;
-    }
-}
-
-.superType {
-    margin-bottom: 15px;
-}
-
-form-control .tagInpput {
-    margin-bottom: 15px;
-    margin-top: 15px;
-}
-
-.attributeText {
-    color: $color_star_dust_approx;
-}
-
-.termTagLine {
-    border-top: none;
-}
-
-.tagTerm {
-    margin-top: 10px;
-    div {
-        display: inline-block;
-    }
-}
-
-.tagSpan,
-.termSpan {
-    float: left;
-    padding: 2px 10px 2px 0px;
-    font-weight: 600;
-    width: 45px
-}
-
-.attrLabel {
-    float: left;
-    padding: 2px 10px 2px 0px;
-    font-weight: 600;
-    width: 70px;
-    margin-right: 5px;
-}
-
-.superTypeLabel {
-    font-weight: 600;
-    width: 90px;
-    margin-right: 5px;
-    float: left;
-}
-
-.inputAssignTag {
-    display: block;
-    padding: 2px 5px;
-    border: 1px $action_gray solid;
-    color: $action_gray;
-    font-size: 14px;
-    border-radius: 4px;
-    margin-right: 3px;
-    margin-bottom: 3px;
-    float: left;
-    cursor: pointer;
-    background-color: $white;
-    white-space: nowrap;
-    &:hover {
-        color: $color_dark_grey_approx;
-        background-color: $color_mercury_approx;
-    }
-}
-
-.multiSelect {
-    float: right;
-}
-
-.multiSelectTerm {
-    float: right;
-}
-
-.multiSelectTag {
-    float: right;
-}
-
-.inputAssignTag.multiSelectTag {
-    margin-right: 10px;
-}
-
-.popover.popoverTag {
-    display: block;
-}
-
-.popoverContainer .inputTag {
-    display: block;
-    float: none;
-    margin-top: 10px;
-}
-
-.popoverContainer .inputTag>.inputValue {
-    padding: 2px 5px;
-    display: inline-block;
-    width: 100px;
-}
-
-.tagAttributeLabel {
-    color: $color_star_dust_approx;
-}
-
-fieldset.scheduler-border {
-    border-top: 1px solid #999 !important;
-    padding: 0 1em 0em 1em !important;
-    margin: 0 0 .5em 0 !important;
-}
-
-legend.scheduler-border {
-    width: auto;
-    padding: 0 5px;
-    border-bottom: none;
-    font-size: 16px;
-    margin-left: 50%;
-    margin-bottom: 10px;
-    color: #555;
-}
-
-.requiredInput {
-    color: #d20606;
-}
-
-.spanEntityType {
-    cursor: help;
-    width: 100%;
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 14px;
-    color: #a7a19f;
-}
-
-.errorClass {
-    border: 1px solid red !important;
-    box-shadow: none !important;
-}
-
-.attributeTag {
-    padding: 5px 8px;
-    border: 1px solid #999999;
-    color: #999999;
-    border-radius: 1px;
-    cursor: pointer
-}
-
-.attrTopMargin {
-    margin-top: 15px;
-}
-
-.topMargin {
-    margin-top: 13px;
 }
 
 .entityLink {

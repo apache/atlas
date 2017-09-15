@@ -61,10 +61,8 @@ define(['require',
                         Utils.setUrl({
                             url: '#!/taxonomy/detailCatalog' + that.url,
                             mergeBrowserUrl: false,
-                            updateTabState: function() {
-                                return { taxonomyUrl: this.url, stateChanged: true };
-                            },
-                            trigger: true
+                            trigger: true,
+                            updateTabState: true
                         });
                     }
                 };
@@ -79,9 +77,7 @@ define(['require',
                             url: "#!/taxonomy/detailCatalog" + termUrl,
                             mergeBrowserUrl: false,
                             trigger: true,
-                            updateTabState: function() {
-                                return { taxonomyUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                     }
                 };
@@ -130,17 +126,6 @@ define(['require',
                 this.bindEvents();
                 that.ui.backTaxanomy.hide();
                 this.fetchCollection(this.url, true);
-                this.$el.on("click", '.termPopoverList li', function(e) {
-                    that[$(this).find("a").data('fn')](e);
-                });
-                $('body').click(function(e) {
-                    if (that.$('.termPopoverList').length) {
-                        if ($(e.target).hasClass('termPopover')) {
-                            return;
-                        }
-                        that.$('.termPopover').popover('hide');
-                    }
-                });
                 this.fetchTaxanomyCollections();
                 if (!this.viewBased) {
                     this.ui.descriptionAssign.show();
@@ -163,9 +148,7 @@ define(['require',
                             url: currentURL,
                             mergeBrowserUrl: false,
                             trigger: true,
-                            updateTabState: function() {
-                                return { taxonomyUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                     }
                 }
@@ -185,9 +168,7 @@ define(['require',
                                 url: "#!/taxonomy/detailCatalog" + url,
                                 mergeBrowserUrl: false,
                                 trigger: false,
-                                updateTabState: function() {
-                                    return { taxonomyUrl: this.url, stateChanged: true };
-                                }
+                                updateTabState: true
                             });
                         }
                         this.fetchCollection(url, true);
@@ -223,9 +204,7 @@ define(['require',
                                 url: "#!/taxonomy/detailCatalog" + url,
                                 mergeBrowserUrl: false,
                                 trigger: true,
-                                updateTabState: function() {
-                                    return { taxonomyUrl: this.url, stateChanged: true };
-                                }
+                                updateTabState: true
                             });
                         }
                     } else {
@@ -327,11 +306,9 @@ define(['require',
                         searchType: "dsl",
                         dslChecked: true
                     },
-                    updateTabState: function() {
-                        return { searchUrl: this.url, stateChanged: true };
-                    },
                     mergeBrowserUrl: false,
-                    trigger: true
+                    trigger: true,
+                    updateTabState: true
                 });
             },
             selectFirstElement: function() {
@@ -343,9 +320,7 @@ define(['require',
                             url: "#!/taxonomy/detailCatalog" + dataURL,
                             mergeBrowserUrl: false,
                             trigger: true,
-                            updateTabState: function() {
-                                return { taxonomyUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                     }
                 }
@@ -425,29 +400,26 @@ define(['require',
                 }
                 this.hideLoader();
                 if (this.viewBased) {
-                    this.$('.termPopover').popover({
-                        placement: 'bottom',
-                        html: true,
-                        trigger: 'manual',
+
+
+                    Utils.generatePopover({
+                        el: this.$('.termPopover'),
                         container: this.$el,
-                        template: '<div class="popover fixedPopover fade bottom in"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
-                        content: function() {
-                            var li = "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Create Subterm</a></li>";
-                            /* "<li class='listTerm' ><i class='fa fa-arrow-right'></i> <a href='javascript:void(0)' data-fn='moveTerm'>Move Term</a></li>" +
-                             "<li class='listTerm' ><i class='fa fa-edit'></i> <a href='javascript:void(0)' data-fn='onEditTerm'>Edit Term</a></li>" +*/
-                            var termDataURL = Utils.getUrlState.getQueryUrl().hash.split("terms");
-                            if (termDataURL.length > 1) {
-                                li = "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTerm'>Search Assets</a></li>" + li;
-                                li += "<li class='listTerm'><i class='fa fa-trash'></i> <a href='javascript:void(0)' data-fn='deleteTerm'>Delete Term</a></li>";
+                        popoverOptions: {
+                            content: function() {
+                                var lis = "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Create Subterm</a></li>";
+                                var termDataURL = Utils.getUrlState.getQueryUrl().hash.split("terms");
+                                if (termDataURL.length > 1) {
+                                    lis = "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTerm'>Search Assets</a></li>" + lis;
+                                    lis += "<li class='listTerm'><i class='fa fa-trash'></i> <a href='javascript:void(0)' data-fn='deleteTerm'>Delete Term</a></li>";
+                                }
+                                return "<ul>" + lis + "</ul>";
                             }
-                            return "<ul class='termPopoverList'>" + li + "</ul>";
                         }
-                    });
-                    this.$('.termPopover').off('click').on('click', function(e) {
-                        // if any other popovers are visible, hide them
-                        e.preventDefault();
-                        that.$('.termPopover').not(this).popover('hide');
-                        $(this).popover('show');
+                    }).parent('.tools').off('click').on('click', 'li', function(e) {
+                        e.stopPropagation();
+                        that.$('.termPopover').popover('hide');
+                        that[$(this).find('a').data('fn')](e);
                     });
                 }
             },
@@ -458,7 +430,7 @@ define(['require',
                     'modules/Modal'
                 ], function(AddTermLayoutView, Modal) {
                     var view = new AddTermLayoutView({
-                        url: that.$('.taxonomyTree').find('li.active').find("a").data("href"),
+                        url: that.$('.taxonomyTree').find('li.active').find(">a[data-name]").data("href"),
                         model: new that.parentCollection.model()
                     });
                     var modal = new Modal({
@@ -545,9 +517,7 @@ define(['require',
                                     url: "#!/taxonomy/detailCatalog" + termURL,
                                     mergeBrowserUrl: false,
                                     trigger: true,
-                                    updateTabState: function() {
-                                        return { taxonomyUrl: this.url, stateChanged: true };
-                                    }
+                                    updateTabState: true
                                 });
                             }
                             that.fetchCollection(termURL, true);

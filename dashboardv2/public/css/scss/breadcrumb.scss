@@ -25,9 +25,9 @@
     margin-bottom: 0;
     font-weight: 600;
     line-height: 44px;
-    > li {
+    >li {
         display: inline-block;
-        + li:before {
+        +li:before {
             padding: 0 10px;
             font-family: $font_2;
             color: $color_ironside_gray_approx;
@@ -37,8 +37,8 @@
 }
 
 .breadcrumb-menu,
-.breadcrumb-dropdown + li:before,
-.breadcrumb-ellipsis + li:before {
+.breadcrumb-dropdown+li:before,
+.breadcrumb-ellipsis+li:before {
     display: none;
 }
 

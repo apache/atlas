@@ -193,9 +193,7 @@ define([
                         Utils.setUrl({
                             url: url,
                             trigger: false,
-                            updateTabState: function() {
-                                return { tagUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                     }
                     App.rSideNav.show(new SideNavLayoutView(
@@ -208,9 +206,7 @@ define([
                         Utils.setUrl({
                             url: url,
                             trigger: false,
-                            updateTabState: function() {
-                                return { tagUrl: this.url, stateChanged: true };
-                            }
+                            updateTabState: true
                         });
                     }
                     App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
@@ -224,7 +220,8 @@ define([
                     }
                     App.rNContent.show(new TagDetailLayoutView(
                         _.extend({
-                            'tag': tagName
+                            'tag': tagName,
+                            'value': paramObj
                         }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 }
@@ -307,10 +304,8 @@ define([
             Utils.setUrl({
                 url: '#!/search',
                 mergeBrowserUrl: false,
-                updateTabState: function() {
-                    return { searchUrl: this.url, stateChanged: false };
-                },
-                trigger: true
+                trigger: true,
+                updateTabState: true
             });
 
             console.log('No route:', actions);

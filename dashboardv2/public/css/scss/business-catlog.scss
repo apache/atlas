@@ -22,10 +22,8 @@
 .main-search {
     .form-control {
         border: none;
-        border-left: 1px $color_mystic_approx solid;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 0;
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        border-left: 1px $color_mystic_approx solid; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 0; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
         box-shadow: none;
         height: 60px;
         font-size: 18px;
@@ -47,12 +45,11 @@
     display: block !important;
 }
 
-.dropdown-menu > li > a {
+.dropdown-menu>li>a {
     color: $color_jungle_green_approx;
     padding: 6px 20px;
-    text-overflow: ellipsis;
     max-width: 276px;
-    overflow: hidden;
+    @include ellipsis();
 }
 
 .branchListParent {
@@ -81,10 +78,8 @@ ul[data-id=branchList] {
     padding-bottom: 18px;
     display: list-item;
     .form-control {
-        border-right: none;
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
-        box-shadow: none;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-right: none; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        box-shadow: none; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         border-radius: 4px;
     }
     .input-group-addon {
@@ -96,14 +91,37 @@ ul[data-id=branchList] {
     padding-bottom: 5px;
 }
 
-.lineageLabel {
-    padding-bottom: 10px;
-}
-
-.detailLabel {
-    padding-bottom: 10px;
-}
-
 .termNote {
     padding-top: 10px;
+}
+
+.termTableBreadcrumb {
+    >div {
+        @include clearfix();
+        display: block;
+        width: 100%;
+    }
+    .hide {
+        opacity: 0;
+        overflow: hidden;
+        height: 0px;
+        display: block !important;
+    }
+    .show {
+        opacity: 1;
+        overflow: visible;
+        height: auto;
+    }
+    .liContent {
+        float: left;
+        line-height: 21px !important;
+        padding: 0px 10px 0px 0px !important;
+    }
+    >div a {
+        .fa-trash,
+        .fa-ellipsis-h {
+            color: $tag_color;
+            cursor: pointer;
+        }
+    }
 }

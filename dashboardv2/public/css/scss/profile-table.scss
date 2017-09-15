@@ -67,6 +67,5 @@ th.renderable.nonNullData {
 .profileGraphDetail>div div {
     text-align: right;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    @include ellipsis();
 }

@@ -31,6 +31,7 @@ $color_celeste_approx: #ccc;
 $color_cornflower_blue_approx: #66afe9;
 $color_mystic_approx: #e8e9ee;
 $color_jungle_green_approx: #38BB9B;
+$color_jungle_green_light:#7ed3be;
 $color_froly_approx: #ee6e73;
 $color_manatee_approx: #9398a0;
 $black: #000;
@@ -105,203 +106,14 @@ $tag_color:#4A90E2;
 $delete_link:#BB5838;
 //urls
 $url_0: url(img/loading.gif);
-.card {
-    background: $white none repeat scroll 0 0;
-    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
-    box-shadow: 0 1px 3px $black_30;
-    margin-bottom: 30px;
-}
 
-body {
-    font-family: $font_0, $font_1;
-    color: $color_ironside_gray_approx;
-}
+$switchTransition: .4s ease-out;
 
-.gray-bg {
-    background-color: #f6f7fb;
-    padding-bottom: 4%;
-}
-
-header {
-    background-color: $white;
-    border-bottom: 1px $color_mystic_approx solid;
-}
-
-a {
-    color: $color_jungle_green_approx;
-    &:focus {
-        color: $color_puerto_rico_approx;
-        text-decoration: none;
-        outline: none;
-    }
-    &:hover {
-        color: $color_puerto_rico_approx;
-        text-decoration: none;
-    }
-}
-
-th {
-    text-transform: capitalize;
-}
-
-ul {
-    list-style: none;
-}
-
-.table {
-    background-color: $white;
-    .table {
-        width: auto;
-    }
-}
-
-.close {
-    font-size: 2em;
-}
-
-#sideNav-wrapper {
-    color: $white;
-    font-size: 16px !important;
-}
-
-.contentLoading {
-    position: absolute;
-    background: rgba(247, 247, 247, 0.24);
-    top: 0;
-    right: 0;
-    left: 0;
-    z-index: 99;
-    bottom: 0;
-    display: none;
-}
-
-.auditDetailBtn {
-    padding: 5px 10px;
-    font-size: 14px;
-    line-height: 1;
-    color: $color_jungle_green_approx;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 4px;
-    font-weight: 100;
-    background-color: $transparent;
-    border: 1px solid $color_jungle_green_approx;
-    cursor: pointer;
-    &+.auditDetailBtn {
-        margin-left: 5px;
-    }
-}
-
-.add-seperator {
-    margin-bottom: 10px;
-    border-bottom: 1px solid $color_mirage_approx
-}
-
-.termTableBreadcrumb {
-    /* min-width: 200px; */
-    /*   width: 200px; */
-    /*  display: inline-block; */
-    i {
-        cursor: pointer;
-    }
-    >div {
-        display: inline-block;
-        // padding: 10px 0px;
-        width: 100%;
-    }
-    .hide {
-        opacity: 0;
-        overflow: hidden;
-        height: 0px;
-        display: block !important;
-    }
-    .show {
-        opacity: 1;
-        overflow: visible;
-        height: auto;
-    }
-    .liContent {
-        /*  width: 150px; */
-        float: left;
-        line-height: 21px !important;
-        padding: 0px 10px 0px 0px !important;
-    }
-}
-
-.table-quickMenu > tbody > tr > td {
-    &.searchTerm {
-        overflow: visible;
-    }
-    &.searchTag {}
-}
-
-.tab-content >.tab-pane {
-    display: block;
-    opacity: 0;
-    height: 0;
-    padding: 0px;
-    overflow: hidden;
-    &.active {
-        padding: 25px;
-        opacity: 1;
-        height: auto;
-        overflow: auto;
-    }
-}
-
-.ellipsis {
-    text-overflow: ellipsis;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
-
-.modal-body {
-    .table {
-        table-layout: fixed;
-        word-wrap: break-word;
-    }
-}
-
-.readOnlyLink {
-    text-overflow: ellipsis;
-    overflow: hidden;
-    .deleteBtn {
-        padding: 0px 5px;
-    }
-    a {
-        color: $delete_link;
-    }
-}
 
 .readOnly {
-    .addTag-dropdown {
-        display: none;
-    }
-    span {
-        &.inputTag[data-id="tagClick"] {
-            span {
-                display: block;
-                padding: 3px 5px 3px 5px;
-            }
-            i.fa-close[data-id="deleteTag"] {
-                display: none;
-            }
-        }
-    }
+    span,
+    button,
     a {
-        &.inputTagAdd[data-id="addTag"] {
-            display: none;
-        }
-        &.inputTag[data-id="tagClick"] {
-            span {
-                display: block;
-                padding: 3px 5px 3px 5px;
-            }
-            i.fa-times[data-id="delete"] {
-                display: none;
-            }
-        }
         i {
             &.fa-trash[data-guid] {
                 display: none;
@@ -310,11 +122,9 @@ ul {
                 display: none;
             }
         }
-        &.inputAssignTag[data-id="addTerm"] {
+        &.btn[data-id="addTag"] {
             display: none;
         }
-    }
-    button {
         &.editbutton[data-id="editButton"] {
             display: none !important;
         }
@@ -322,64 +132,19 @@ ul {
         &[data-id="edit"] {
             display: none;
         }
+        &.btn[data-id="addTerm"] {
+            display: none;
+        }
+        &.btn[data-id="tagClick"] {
+            span {
+                display: block;
+                padding: 3px 5px 3px 5px;
+            }
+            i.fa-close[data-id="deleteTag"],
+            i.fa-times[data-id="deleteTag"],
+            i.fa-times[data-id="delete"] {
+                display: none;
+            }
+        }
     }
-}
-
-@media (min-width: 768px) {
-    .col-sm-custom {
-        //width: 92%;
-        margin: 25px 25px 0px;
-        position: relative;
-    }
-}
-
-.panel-fullscreen {
-    position: fixed;
-    height: 100%;
-    top: 0px;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    right: 0;
-    z-index: 999;
-}
-
-.no-padding {
-    padding: 0px !important;
-}
-
-.no-padding-bottom {
-    padding-bottom: 0px !important;
-}
-
-.no-padding-top {
-    padding-top: 0px !important;
-}
-
-.no-padding-left {
-    padding-left: 0px !important;
-}
-
-.no-padding-right {
-    padding-right: 0px !important;
-}
-
-.no-margin {
-    margin: 0px !important;
-}
-
-.no-margin-bottom {
-    margin-bottom: 0px !important;
-}
-
-.no-margin-top {
-    margin-top: 0px !important;
-}
-
-.no-margin-left {
-    margin-left: 0px !important;
-}
-
-.no-margin-right {
-    margin-right: 0px !important;
 }

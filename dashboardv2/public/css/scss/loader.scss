@@ -45,6 +45,17 @@
     }
 }
 
+.contentLoading {
+    position: absolute;
+    background: rgba(247, 247, 247, 0.24);
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 99;
+    bottom: 0;
+    display: none;
+}
+
 .fontLoader {
     top: 50%;
     left: 50%;

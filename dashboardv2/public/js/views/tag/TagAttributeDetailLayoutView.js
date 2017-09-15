@@ -41,9 +41,7 @@ define(['require',
                 editBox: '[data-id="editBox"]',
                 saveButton: "[data-id='saveButton']",
                 showAttribute: "[data-id='showAttribute']",
-                addTagListBtn: '[data-id="addTagListBtn"]',
-                addTagPlus: '[data-id="addTagPlus"]',
-                addTagBtn: '[data-id="addTagBtn"]',
+                addAttribute: '[data-id="addAttribute"]',
                 description: '[data-id="description"]',
                 publishButton: '[data-id="publishButton"]',
                 showSuperType: "[data-id='showSuperType']"
@@ -51,7 +49,7 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.addTagListBtn] = 'onClickAddTagAttributeBtn';
+                events["click " + this.ui.addAttribute] = 'onClickAddTagAttributeBtn';
                 events["click " + this.ui.editButton] = 'onEditButton';
                 return events;
             },
@@ -113,14 +111,14 @@ define(['require',
                         attributeDefs = [attributeDefs];
                     }
                     _.each(attributeDefs, function(value, key) {
-                        attributeData += '<span class="inputAttribute">' + (Utils.getName(value)) + '</span>';
+                        attributeData += '<button class="btn btn-action btn-disabled btn-sm">' + (Utils.getName(value)) + '</button>';
                     });
                     this.ui.showAttribute.html(attributeData);
                 }
                 if (superTypeArr.length > 0) {
                     this.$(".superType").show();
                     _.each(superTypeArr, function(value, key) {
-                        supertypeData += ' <a class="inputAttribute" href="#!/tag/tagAttribute/' + value + '">' + value + '</a>';
+                        supertypeData += ' <a class="btn btn-action btn-sm" href="#!/tag/tagAttribute/' + value + '">' + value + '</a>';
                     });
                     this.ui.showSuperType.html(supertypeData);
                 }
@@ -221,7 +219,7 @@ define(['require',
                                     confirm: true,
                                     buttons: [{
                                             text: 'Ok',
-                                            addClass: 'btn-primary',
+                                            addClass: 'btn-atlas btn-md',
                                             click: function(notice) {
                                                 notice.remove();
                                             }
@@ -231,7 +229,7 @@ define(['require',
                                 }
                             }
                             if (saveObj && !duplicateAttributeList.length) {
-                                that.onSaveButton(saveObj, Messages.addAttributeSuccessMessage);
+                                that.onSaveButton(saveObj, Messages.tag.addAttributeSuccessMessage);
                             } else {
                                 if (duplicateAttributeList.length < 2) {
                                     var text = "Attribute <b>" + duplicateAttributeList.join(",") + "</b> is duplicate !"
@@ -240,7 +238,7 @@ define(['require',
                                         var text = "Attributes: <b>" + duplicateAttributeList.join(",") + "</b> are duplicate ! Do you want to continue with other attributes ?"
                                         notifyObj = {
                                             ok: function(argument) {
-                                                that.onSaveButton(saveObj, Messages.addAttributeSuccessMessage);
+                                                that.onSaveButton(saveObj, Messages.tag.addAttributeSuccessMessage);
                                             },
                                             cancel: function(argument) {}
                                         }
@@ -266,7 +264,7 @@ define(['require',
             },
             onPublishClick: function(view) {
                 var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val() });
-                this.onSaveButton(saveObj, Messages.updateTagDescriptionMessage);
+                this.onSaveButton(saveObj, Messages.tag.updateTagDescriptionMessage);
                 this.ui.description.show();
             },
             onEditButton: function(e) {

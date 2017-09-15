@@ -68,14 +68,6 @@ define(['require',
                         });
                     }
                 };
-                events["click " + this.ui.showMoreLess] = function(e) {
-                    this.$('.popover.popoverTag').hide();
-                    $(e.currentTarget).parent().find("div.popover").show();
-                    var positionContent = $(e.currentTarget).position();
-                    positionContent.top = positionContent.top + 26;
-                    positionContent.left = positionContent.left - 41;
-                    $(e.currentTarget).parent().find("div.popover").css(positionContent);
-                };
                 events["click " + this.ui.showMoreLessTerm] = function(e) {
                     $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
                     $(e.currentTarget).parents('.searchTerm').find('div.termTableBreadcrumb>div.showHideDiv').toggleClass('hide');
@@ -173,15 +165,6 @@ define(['require',
                         that.deleteObj.push(obj);
                     }
                 });
-                $('body').click(function(e) {
-                    var iconEvnt = e.target.nodeName;
-                    if (that.$('.popoverContainer').length) {
-                        if ($(e.target).hasClass('tagDetailPopover') || iconEvnt == "I") {
-                            return;
-                        }
-                        that.$('.popover.popoverTag').hide();
-                    }
-                });
                 if (this.schemaCollection.length === 0 && this.deleteObj.length) {
                     this.ui.checkDeletedEntity.find("input").prop('checked', true);
                     this.schemaCollection.fullCollection.reset(this.deleteObj, { silent: true });
@@ -210,6 +193,16 @@ define(['require',
                     that.$('.multiSelectTerm').hide();
                     that.$('.multiSelectTag').hide();
                     that.renderBreadcrumb();
+                    Utils.generatePopover({
+                        el: that.$('[data-id="showMoreLess"]'),
+                        container: that.$el,
+                        contentClass: 'popover-tag',
+                        popoverOptions: {
+                            content: function() {
+                                return $(this).find('.popup-tag').children().clone();
+                            }
+                        }
+                    });
                 });
             },
             renderBreadcrumb: function() {

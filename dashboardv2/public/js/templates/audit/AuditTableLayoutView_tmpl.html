@@ -21,15 +21,28 @@
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <div class="auditTable" style="display: none">
-        <span class="labelShowRecord pull-left" data-id="pageRecordText"></span>
-        <ul class="pager pull-right">
-            <li>
-                <button type="button" class="btn" data-id="previousAuditData">Previous</button>
-            </li>
-            <li>
-                <button type="button" class="btn" data-id="nextAuditData">Next</button>
-            </li>
-        </ul>
+        <div>
+            <span class="labelShowRecord pull-left" data-id="pageRecordText"></span>
+        </div>
         <div id="r_auditTableLayoutView"></div>
+        <div class="pagination-box">
+            <div class="backgrid-paginator pull-right">
+                <ul>
+                    <li>
+                        <button type="button" data-id="previousAuditData" title="Previous" disabled=true>
+                            <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        </button>
+                    </li>
+                    <li class="active">
+                        <a href="javascript:void(0)" data-id="activePage"></a>
+                    </li>
+                    <li>
+                        <button type="button" data-id="nextAuditData" title="Next">
+                            <i class="fa fa-angle-right" aria-hidden="true"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>

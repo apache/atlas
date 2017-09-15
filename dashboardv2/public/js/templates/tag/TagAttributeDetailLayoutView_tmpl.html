@@ -18,24 +18,21 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="tagDetail">
-        <h1><span data-id="title"></span></h1>
-        <button type="button" data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
-        <p class="sub-title" data-id="description"></p>
-        <div class="superType" style="display:none">
-            <span class="superTypeLabel">Derived From:</span>
-            <div data-id="showSuperType" style="display: inline-block;">
+    <div class="tagDetail clearfix form-horizontal col-md-12">
+        <h1 class="form-group"><span data-id="title"></span></h1>
+        <button type="button" data-id="editButton" class="btn btn-sm btn-action pull-right"><i class="fa fa-pencil"></i></button>
+        <p class="form-group" data-id="description"></p>
+        <div class="superType form-group" style="display:none">
+            <label class="control-label-sm-pr pull-left">Derived From:</label>
+            <div data-id="showSuperType" class="btn-inline">
             </div>
         </div>
-        <div class="attributes">
-            <span class="attrLabel">Attributes:</span>
-            <div data-id="showAttribute">
-            </div>
-            <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
-                <div class=" addTagBase dropdown-toggle" data-id="addTagBtn" data-toggle="dropdown">
-                    <div class="addTagText" data-id="addTagtext" style="display: block">ADD Attribute &nbsp; <i class="fa fa-plus"></i></div>
-                    <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
+        <div class="attributes form-group">
+            <label class="pull-left control-label-sm-pr">Attributes:</label>
+            <div class="btn-inline">
+                <div data-id="showAttribute" class="pull-left">
                 </div>
+                <button type="button" data-id="addAttribute" class="btn btn-action btn-sm pull-left"><i class="fa fa-plus"></i></button>
             </div>
         </div>
     </div>

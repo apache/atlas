@@ -147,7 +147,7 @@ define(['require',
                                 confirm: true,
                                 buttons: [{
                                         text: 'Ok',
-                                        addClass: 'btn-primary',
+                                        addClass: 'btn-atlas btn-md',
                                         click: function(notice) {
                                             notice.remove();
                                             obj = {

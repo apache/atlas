@@ -19,6 +19,7 @@
 define(['require',
     'backbone',
     'hbs!tmpl/detail_page/DetailPageLayoutView_tmpl',
+    'hbs!tmpl/common/buttons_tmpl',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Globals',
@@ -26,7 +27,7 @@ define(['require',
     'utils/Messages',
     'utils/UrlLinks',
     'jquery-ui'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
+], function(require, Backbone, DetailPageLayoutViewTmpl, ButtonsTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -52,6 +53,7 @@ define(['require',
                 tagClick: '[data-id="tagClick"]',
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
+                editButtonContainer: '[data-id="editButtonContainer"]',
                 description: '[data-id="description"]',
                 editBox: '[data-id="editBox"]',
                 deleteTag: '[data-id="deleteTag"]',
@@ -77,7 +79,6 @@ define(['require',
                         var scope = $(e.currentTarget);
                         if (scope.hasClass('term')) {
                             var url = scope.data('href').split(".").join("/terms/");
-                            Globals.saveApplicationState.tabState.stateChanged = false;
                             Utils.setUrl({
                                 url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
                                 mergeBrowserUrl: false,
@@ -141,7 +142,7 @@ define(['require',
                                 this.ui.title.show();
                                 var titleName = '<span>' + this.name + '</span>';
                                 if (this.readOnly) {
-                                    titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
+                                    titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
                             } else {
@@ -160,10 +161,10 @@ define(['require',
                             this.addTagToTerms([]);
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
-                            this.ui.editButton.show();
+                            this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
                         } else {
                             if (_.contains(Globals.entityTypeConfList, collectionJSON.typeName)) {
-                                this.ui.editButton.show();
+                                this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
                             }
                         }
                         if (collectionJSON.attributes && collectionJSON.attributes.columns) {
@@ -330,13 +331,13 @@ define(['require',
                 _.each(tagObject, function(val) {
                     var checkTagOrTerm = Utils.checkTagOrTerm(val);
                     if (checkTagOrTerm.term) {
-                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val.typeName + '"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
+                        termData += '<span class="btn btn-action btn-sm btn-blue btn-icon term" data-id="tagClick" data-href="' + val.typeName + '"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
                     } else {
-                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
+                        tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
                     }
                 });
-                this.ui.tagList.find("span.inputTag").remove();
-                this.ui.termList.find("span.inputTag").remove();
+                this.ui.tagList.find("span.btn").remove();
+                this.ui.termList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
                 this.ui.termList.prepend(termData);
             },

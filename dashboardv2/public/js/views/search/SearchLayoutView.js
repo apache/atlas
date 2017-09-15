@@ -87,13 +87,18 @@ define(['require',
                 this.query = {
                     dsl: {
                         query: null,
-                        type: null
+                        type: null,
+                        pageOffset: null,
+                        pageLimit: null
                     },
                     basic: {
                         query: null,
                         type: null,
                         tag: null,
-                        attributes: null
+                        attributes: null,
+                        pageOffset: null,
+                        pageLimit: null,
+                        includeDE: null
                     }
                 };
                 if (!this.value) {
@@ -182,6 +187,8 @@ define(['require',
                                 var temp = {};
                                 temp[key] = value;
                                 _.extend(this.value, temp);
+                                // on change of type/tag change the offset.
+                                this.query[this.type].pageOffset = 0;
                             } else {
                                 // Initial loading handle.
                                 var filterObj = this.searchTableFilters[filterType];
@@ -230,12 +237,17 @@ define(['require',
                 _.extend(this.query[this.type],
                     (this.type == "dsl" ? {
                         query: null,
-                        type: null
+                        type: null,
+                        pageOffset: null,
+                        pageLimit: null
                     } : {
                         query: null,
                         type: null,
                         tag: null,
-                        attributes: null
+                        attributes: null,
+                        pageOffset: null,
+                        pageLimit: null,
+                        includeDE: null
                     }), param);
             },
             fetchCollection: function(value) {
@@ -384,7 +396,6 @@ define(['require',
                 this.triggerSearch(this.ui.searchInput.val());
             },
             triggerSearch: function(value) {
-                this.query[this.type].query = value || null;
                 var params = {
                     searchType: this.type,
                     dslChecked: this.ui.searchType.is(':checked'),
@@ -409,22 +420,34 @@ define(['require',
                         params['attributes'] = columnList.join(',');
                     }
                     if (this.value.includeDE) {
-                        params['includeDE'] = this.value.includeDE
+                        params['includeDE'] = this.value.includeDE;
                     }
                 }
+                if (this.value.pageLimit) {
+                    this.query[this.type].pageLimit = this.value.pageLimit;
+                }
+                if (this.value.pageOffset) {
+                    if (this.query[this.type].query != value) {
+                        this.query[this.type].pageOffset = 0;
+                    } else {
+                        this.query[this.type].pageOffset = this.value.pageOffset;
+                    }
+                }
+                this.query[this.type].query = value || null;
 
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: _.extend(this.query[this.type], params),
-                    updateTabState: function() {
-                        return { searchUrl: this.url, stateChanged: true };
-                    },
+                    urlParams: _.extend({}, this.query[this.type], params),
                     mergeBrowserUrl: false,
-                    trigger: true
+                    trigger: true,
+                    updateTabState: true
                 });
             },
             dslFulltextToggle: function(e) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                if (paramObj && this.type == paramObj.searchType) {
+                    this.updateQueryObject(paramObj);
+                }
                 if (e.currentTarget.checked) {
                     this.type = "dsl";
                     this.dsl = true;
@@ -440,25 +463,20 @@ define(['require',
                     this.dsl = false;
                     this.type = "basic";
                 }
-                if (paramObj && this.type == paramObj.searchType) {
-                    this.updateQueryObject(paramObj);
-                }
                 if (paramObj && this.type == "basic") {
                     this.query[this.type].attributes = paramObj.attributes ? paramObj.attributes : null;
+                    this.query[this.type].includeDE = this.value.includeDE;
                 }
                 if (Utils.getUrlState.isSearchTab()) {
                     Utils.setUrl({
                         url: '#!/search/searchResult',
                         urlParams: _.extend(this.query[this.type], {
                             searchType: this.type,
-                            dslChecked: this.ui.searchType.is(':checked'),
-                            includeDE: this.value.includeDE
+                            dslChecked: this.ui.searchType.is(':checked')
                         }),
-                        updateTabState: function() {
-                            return { searchUrl: this.url, stateChanged: true };
-                        },
                         mergeBrowserUrl: false,
-                        trigger: true
+                        trigger: true,
+                        updateTabState: true
                     });
                 }
             },

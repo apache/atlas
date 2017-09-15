@@ -19,8 +19,18 @@
 
 /* theme.scss */
 
+body {
+    font-family: $font_0, $font_1;
+    color: $color_ironside_gray_approx;
+}
+
+header {
+    background-color: $white;
+    border-bottom: 1px $color_mystic_approx solid;
+}
+
 .header-menu {
-    .dropdown-menu > li > a {
+    .dropdown-menu>li>a {
         color: $color_ironside_gray_approx;
         &:hover {
             color: $color_jungle_green_approx;
@@ -51,10 +61,8 @@
 .main-search {
     .form-control {
         border: none;
-        border-left: 1px $color_mystic_approx solid;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 0;
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        border-left: 1px $color_mystic_approx solid; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 0; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
         box-shadow: none;
         height: 60px;
         font-size: 18px;
@@ -68,16 +76,25 @@
     }
 }
 
+
+.close {
+    font-size: 2em;
+}
+
+#sideNav-wrapper {
+    color: $white;
+    font-size: 16px !important;
+}
+
 .page-title {
     background-color: $white;
     padding: 25px;
     h1 {
-        margin-top: 50px;
+        // margin-top: 50px;
         margin-bottom: 10px;
         font-weight: 600;
-        text-overflow: ellipsis;
+        @include ellipsis();
         max-width: 91%;
-        overflow: hidden;
         display: inline-block;
         small {
             position: relative;
@@ -96,25 +113,81 @@
     }
 }
 
-.atlas-tag {
-    padding: 6px 12px;
-    background-color: $color_havelock_blue_approx;
-    color: $white;
-    font-size: 14px;
-    text-transform: uppercase;
-    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-    border-radius: 4px;
-    i.fa {
-        position: relative;
-        right: -5px;
-        cursor: pointer;
+a {
+    color: $color_jungle_green_approx;
+    &:focus {
+        color: $color_puerto_rico_approx;
+        text-decoration: none;
+        outline: none;
+    }
+    &:hover {
+        color: $color_puerto_rico_approx;
+        text-decoration: none;
     }
 }
 
+a[href^="#!/"]:not(.btn, .not-blue-link) {
+    color: $color_havelock_blue_approx;
+    &:focus {
+        color: $color_havelock_blue_approx;
+        text-decoration: none;
+        outline: none;
+    }
+    &:hover {
+        color: $color_havelock_blue_approx;
+        text-decoration: underline;
+    }
+}
+
+th {
+    text-transform: capitalize;
+}
+
+ul {
+    list-style: none;
+}
+
+hr[size="10"] {
+    margin: 10px 0px;
+}
+
+.table {
+    margin-bottom: 2px;
+    background-color: $white;
+    .table {
+        width: auto;
+    }
+}
+
+
+.table-quickMenu>tbody>tr>td {
+    &.searchTerm {
+        overflow: visible;
+    }
+    &.searchTag {}
+}
+
+.card {
+    background: $white none repeat scroll 0 0; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+    box-shadow: 0 1px 3px $black_30;
+    margin-bottom: 30px;
+}
+
+// Colors Class
 .white-bg {
     background-color: $white;
     padding: 30px 0;
 }
+
+.gray-text {
+    color: $color_star_dust_approx;
+}
+
+.gray-bg {
+    background-color: #f6f7fb;
+    padding-bottom: 4%;
+}
+
 
 .comment-input {
     background-color: $color_white_lilac_approx;
@@ -139,6 +212,66 @@
     }
 }
 
+
+@media (min-width: 768px) {
+    .col-sm-custom {
+        //width: 92%;
+        margin: 25px 25px 0px;
+        position: relative;
+    }
+}
+
+.panel-fullscreen {
+    position: fixed;
+    height: 100%;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    right: 0;
+    z-index: 999;
+}
+
+.no-padding {
+    padding: 0px !important;
+}
+
+.no-padding-bottom {
+    padding-bottom: 0px !important;
+}
+
+.no-padding-top {
+    padding-top: 0px !important;
+}
+
+.no-padding-left {
+    padding-left: 0px !important;
+}
+
+.no-padding-right {
+    padding-right: 0px !important;
+}
+
+.no-margin {
+    margin: 0px !important;
+}
+
+.no-margin-bottom {
+    margin-bottom: 0px !important;
+}
+
+.no-margin-top {
+    margin-top: 0px !important;
+}
+
+.no-margin-left {
+    margin-left: 0px !important;
+}
+
+.no-margin-right {
+    margin-right: 0px !important;
+}
+
 .backButton {
     display: block;
     margin: 0px 13px;
@@ -152,4 +285,75 @@
 
 .position-relative {
     position: relative;
+}
+
+.pagination-box {
+    margin-top: 15px;
+}
+
+.ellipsis {
+    @include ellipsis();
+    margin-bottom: 10px;
+}
+
+.readOnlyLink {
+    @include ellipsis();
+    .deleteBtn {
+        padding: 0px 5px;
+    }
+    a {
+        color: $delete_link !important;
+    }
+}
+
+.add-seperator {
+    margin-bottom: 10px;
+    border-bottom: 1px solid $color_mirage_approx
+}
+
+.legend-sm {
+    font-size: 17px;
+}
+
+.errorClass {
+    border: 1px solid red !important;
+    box-shadow: none !important;
+}
+
+fieldset.fieldset-child-pd>div {
+    padding-left: 12px;
+}
+
+.inline-content {
+    >.inline {
+        display: inline-block;
+        &+.inline {
+            margin-left: 5px;
+        }
+    }
+}
+
+.inline-content-fl {
+    @extend .inline-content;
+    >.inline {
+        display: block;
+        float: left;
+    }
+}
+
+.inline-content-fr {
+    @extend .inline-content-fl;
+    >.inline {
+        float: right;
+        &+.inline {
+            margin-right: 5px;
+        }
+    }
+}
+
+.has-error {
+    .select2-selection--single,
+    .select2-selection--multiple {
+        border-color: $color_apple_blossom_approx;
+    }
 }

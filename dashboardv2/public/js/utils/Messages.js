@@ -31,11 +31,17 @@ define(['require'], function(require) {
         deleteErrorMessage: " could not be deleted",
         removeSuccessMessage: " has been removed successfully",
         removeErrorMessage: " could not be removed",
-        addAttributeSuccessMessage: "Tag attribute is added successfully",
-        updateTagDescriptionMessage: "Tag description is updated successfully",
-        updateTermDescriptionMessage: "Term description is updated successfully",
         editSuccessMessage: " has been updated successfully",
-        assignDeletedEntity: " is deleted, tag cannot be assigned"
+        assignDeletedEntity: " is deleted, tag cannot be assigned",
+        search: {
+            noRecordForPage: "No record found at ",
+            onSamePage : "You are on the same page!"
+        },
+        tag: {
+            addAttributeSuccessMessage: "Tag attribute is added successfully",
+            updateTagDescriptionMessage: "Tag description is updated successfully",
+            updateTermDescriptionMessage: "Term description is updated successfully",
+        }
     };
     return Messages;
 });

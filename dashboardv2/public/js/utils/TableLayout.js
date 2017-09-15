@@ -37,6 +37,9 @@ define(['require',
             _viewName: 'FSTableLayout',
 
             template: FSTablelayoutTmpl,
+            templateHelpers: function() {
+                return this.options;
+            },
 
             /** Layout sub regions */
             regions: {
@@ -86,22 +89,16 @@ define(['require',
                page handlers for pagination
             */
             controlOpts: {
-                rewind: {
-                    label: "&#12298;",
-                    title: "First"
-                },
+                rewind: null,
                 back: {
-                    label: "&#12296;",
+                    label: "<i class='fa fa-angle-left'></i>",
                     title: "Previous"
                 },
                 forward: {
-                    label: "&#12297;",
+                    label: "<i class='fa fa-angle-right'></i>",
                     title: "Next"
                 },
-                fastForward: {
-                    label: "&#12299;",
-                    title: "Last"
-                }
+                fastForward: null
             },
             columnOpts: {
                 opts: {
@@ -110,7 +107,8 @@ define(['require',
                     saveState: false,
                     loadStateOnInit: true
                 },
-                visibilityControlOpts: {}
+                visibilityControlOpts: {},
+                el: null
             },
 
             includePagination: true,
@@ -129,8 +127,6 @@ define(['require',
 
             includeOrderAbleColumns: false,
 
-            includeOverlayLoader: false,
-
             includeTableLoader: true,
 
 
@@ -148,7 +144,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination',
                     'includeHeaderSearch', 'includeFilter', 'includePageSize',
-                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeOverlayLoader', 'includeTableLoader'));
+                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeTableLoader'));
 
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.filterOpts, options.filterOpts);
@@ -162,22 +158,10 @@ define(['require',
             /** all events binding here */
             bindEvents: function() {
                 this.listenTo(this.collection, 'request', function() {
-                    if (this.includeTableLoader) {
-                        this.$('div[data-id="r_tableSpinner"]').addClass('show');
-                    }
-                    if (this.includeOverlayLoader) {
-                        this.$('.t_tableOverlay').addClass('fontLoader');
-                        this.$('.t_tableOverlay').show();
-                    }
+                    this.$('div[data-id="r_tableSpinner"]').addClass('show');
                 }, this);
                 this.listenTo(this.collection, 'sync error', function() {
-                    if (this.includeTableLoader) {
-                        this.$('div[data-id="r_tableSpinner"]').removeClass('show');
-                    }
-                    if (this.includeOverlayLoader) {
-                        this.$('.t_tableOverlay').removeClass('fontLoader');
-                        this.$('.t_tableOverlay').hide();
-                    }
+                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                 }, this);
 
                 this.listenTo(this.collection, 'reset', function(collection, response) {
@@ -222,9 +206,6 @@ define(['require',
                 if (this.includeFilter) {
                     this.renderFilter();
                 }
-                if (!this.includePageSize) {
-                    this.ui.selectPageSize.remove();
-                }
                 if (this.includeFooterRecords) {
                     this.renderFooterRecords(this.collection.state);
                 }
@@ -237,8 +218,15 @@ define(['require',
                 if (this.includeOrderAbleColumns) {
                     this.renderOrderAbleColumns();
                 }
-                this.$('[data-id="pageSize"]').val(this.collection.state.pageSize);
-
+                if (this.includePageSize) {
+                    this.ui.selectPageSize.select2({
+                        data: _.sortBy(_.union([25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500], [this.collection.state.pageSize])),
+                        tags: true,
+                        dropdownCssClass: "number-input",
+                        multiple: false
+                    });
+                    this.ui.selectPageSize.val(this.collection.state.pageSize).trigger('change', { "skipViewChange": true });
+                }
 
             },
             /**
@@ -316,13 +304,21 @@ define(['require',
              */
             renderColumnManager: function() {
                 var that = this,
-                    $el = this.$("[data-id='control']"),
+                    $el = this.columnOpts.el || this.$("[data-id='control']"),
                     colManager = new Backgrid.Extension.ColumnManager(this.columns, this.columnOpts.opts),
                     // Add control
                     colVisibilityControl = new Backgrid.Extension.ColumnManagerVisibilityControl(_.extend({
                         columnManager: colManager,
                     }, this.columnOpts.visibilityControlOpts));
-                $el.append(colVisibilityControl.render().el);
+                if (!$el.jquery) {
+                    $el = $($el)
+                }
+                if (this.columnOpts.el) {
+                    $el.html(colVisibilityControl.render().el);
+                } else {
+                    $el.append(colVisibilityControl.render().el);
+                }
+
                 colManager.on("state-changed", function(state) {
                     that.collection.trigger("state-changed", state);
                 });
@@ -387,17 +383,22 @@ define(['require',
              * handle change event on page size select box
              * @param  {Object} e event
              */
-            onPageSizeChange: function(e) {
-                var pagesize = $(e.currentTarget).val();
-                this.collection.state.pageSize = parseInt(pagesize, 10);
+            onPageSizeChange: function(e, options) {
+                if (!options || !options.skipViewChange) {
+                    var pagesize = $(e.currentTarget).val();
+                    this.collection.state.pageSize = parseInt(pagesize, 10);
 
-                this.collection.state.currentPage = this.collection.state.firstPage;
-
-                this.collection.fetch({
-                    sort: false,
-                    reset: true,
-                    cache: false
-                });
+                    this.collection.state.currentPage = this.collection.state.firstPage;
+                    if (this.collection.mode == "client") {
+                        this.collection.reset(this.collection.toJSON());
+                    } else {
+                        this.collection.fetch({
+                            sort: false,
+                            reset: true,
+                            cache: false
+                        });
+                    }
+                }
             }
         });
 

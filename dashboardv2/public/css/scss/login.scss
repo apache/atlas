@@ -45,8 +45,7 @@
     padding: 15px;
     background: $color_tuna_approx;
     color: $color_gallery_approx;
-    padding: 15px;
-    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    padding: 15px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 5px;
     h2 {
         margin-bottom: 40px;
@@ -55,21 +54,19 @@
         margin: 20px 0;
     }
     .form-control {
-        background-color: transparent;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        background-color: transparent; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         border-radius: 0;
         border-left: none;
         color: $color_gallery_approx;
         &:focus {
             border-color: $color_celeste_approx;
-            + .input-group-addon {
+            +.input-group-addon {
                 border-color: $color_cornflower_blue_approx;
             }
         }
     }
     .input-group-addon {
-        background-color: transparent;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        background-color: transparent; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         border-radius: 0;
         border-right: none;
         color: $color_celeste_approx;
@@ -78,10 +75,8 @@
         padding: 10px 20px;
         background-color: $color_keppel_approx;
         color: $white;
-        border: 1px $color_keppel_approx solid;
-        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 4px;
-        //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+        border: 1px $color_keppel_approx solid; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 4px; //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
         transition: all .3s ease;
     }
 }

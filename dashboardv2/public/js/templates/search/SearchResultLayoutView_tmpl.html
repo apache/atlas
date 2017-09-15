@@ -21,35 +21,77 @@
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTerm btnAssign" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i> Assign Term</a>
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag btnAssign" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
     </div>
     <div class="searchTable">
-        <div data-id="containerCheckBox" style="display: none;">
-            <input type="checkbox" id="inputLabel" class="checkbox-inline" name="queryType" name="check" data-id="checkDeletedEntity" />
-            <label class="checkbox-inline" for="inputLabel">
-                <b>Include historical entities</b></label>
-        </div>
-        <span style="display: none;" class="labelShowRecord pull-left" data-id="pageRecordText"></span>
-        <div data-id="paginationDiv" style="display:none">
-            <ul class="pager pull-right">
-                <li>
-                    <button type="button" class="btn" data-id="previousData" disabled=true>Previous</button>
-                </li>
-                <li>
-                    <button type="button" class="btn" data-id="nextData">Next</button>
-                </li>
-            </ul>
-        </div>
-        <div id="r_searchResultTableLayoutView">
-            {{#if entityCreate}}
-            <div class="entityLink" style="display:none">
-                <h1><b>{{searchType}}</b></h1>
-                <p class="entityLink">Search Atlas for existing entities or
-                    <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
-                </p>
+        <div class="row well">
+            <div class="row form-group pagination-box" style="display: none;">
+                <div class="col-md-4">
+                    <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
+                </div>
+                <div class="col-md-8 inline-content-fr">
+                    <div class="inline" data-id="colManager"></div>
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="inputLabel">
+                            <input type="checkbox" id="inputLabel" name="queryType" name="check" data-id="checkDeletedEntity" />
+                            <b>Show historical entities</b></label>
+                    </div>
+                    <div class="inline">
+                        {{#if taxonomy}}
+                        <a href="javascript:void(0)" class=" multiSelectTerm btn btn-action btn-sm inline" style="display:none" data-id="addTerm"><i class="fa fa-plus"></i> Assign Term</a> {{/if}}
+                        <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
+                    </div>
+                </div>
             </div>
-            {{/if}}
+            <div id="r_searchResultTableLayoutView">
+                {{#if entityCreate}}
+                <div class="entityLink" style="display:none">
+                    <h1><b>{{searchType}}</b></h1>
+                    <p class="entityLink">Search Atlas for existing entities or
+                        <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
+                    </p>
+                </div>
+                {{/if}}
+            </div>
+            <div class="row pagination-box" style="display: none">
+                <div class="col-md-offset-4 col-md-8">
+                    <div class="inline-content-fr">
+                        <div class="backgrid-paginator inline">
+                            <ul class="" data-id="paginationDiv" style="display:none">
+                                <li>
+                                    <button type="button" data-id="previousData" title="Previous" disabled=true>
+                                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                                <li class="active">
+                                    <a href="javascript:void(0)" data-id="activePage"></a>
+                                </li>
+                                <li>
+                                    <button type="button" data-id="nextData" title="Next">
+                                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="inline col-md-4" data-id="paginationDiv">
+                            <div class="input-group" data-id="goToPageDiv">
+                                <input type="text" class="form-control number-input" data-id="gotoPage" placeholder="Goto Page" />
+                                <span class="input-group-btn">
+                                    <button class="btn btn-secondary" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">Go!</button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="inline">
+                            <div class="form-group inline-content">
+                                <span class="control-label-sm inline ">Page Limit :</span>
+                                <div class="inline" style="width: 80px;">
+                                    <select data-id="showPage" multiple="multiple" class="form-control">
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

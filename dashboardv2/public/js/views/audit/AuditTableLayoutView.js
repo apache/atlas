@@ -42,7 +42,8 @@ define(['require',
                 auditCreate: "[data-id='auditCreate']",
                 previousAuditData: "[data-id='previousAuditData']",
                 nextAuditData: "[data-id='nextAuditData']",
-                pageRecordText: "[data-id='pageRecordText']"
+                pageRecordText: "[data-id='pageRecordText']",
+                activePage: "[data-id='activePage']"
             },
             /** ui events hash */
             events: function() {
@@ -92,21 +93,11 @@ define(['require',
             },
             bindEvents: function() {},
             getToOffset: function() {
-                var toOffset = 0;
-                if (this.entityCollection.models.length < this.limit) {
-                    toOffset = (this.getFromOffset() + (this.entityCollection.models.length));
-                } else {
-                    toOffset = (this.getFromOffset() + (this.entityCollection.models.length - 1));
-                }
-                return toOffset;
+                return ((this.limit - 1) * this.currPage);
             },
-            getFromOffset: function(options) {
-                var count = (this.currPage - 1) * (this.limit - 1);
-                if (options && (options.nextClick || options.previousClick || this.entityCollection.models.length)) {
-                    return count + 1;
-                } else {
-                    return count;
-                }
+            getFromOffset: function(toOffset) {
+                // +2 because of toOffset is alrady in minus and limit is +1;
+                return ((toOffset - this.limit) + 2);
             },
             renderOffset: function(options) {
                 var entityLength;
@@ -122,12 +113,16 @@ define(['require',
                         this.currPage--;
                     }
                 }
-                if (this.entityCollection.models.length > 25) {
+                if (this.entityCollection.models.length === this.limit) {
+                    // Because we have 1 extra record.
                     entityLength = this.entityCollection.models.length - 1;
                 } else {
                     entityLength = this.entityCollection.models.length
                 }
-                this.ui.pageRecordText.html("Showing  <u>" + entityLength + " records</u> From " + this.getFromOffset(options) + " - " + this.getToOffset());
+                this.ui.activePage.attr('title', "Page " + this.currPage);
+                this.ui.activePage.text(this.currPage);
+                var toOffset = this.getToOffset();
+                this.ui.pageRecordText.html("Showing  <u>" + entityLength + " records</u> From " + this.getFromOffset(toOffset) + " - " + toOffset);
             },
             fetchCollection: function(options) {
                 var that = this;
@@ -222,7 +217,7 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Enums.auditAction[model.get('action')] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
+                                return '<div class="btn btn-action btn-sm" data-id="auditCreate" data-action="' + Enums.auditAction[model.get('action')] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
                             }
                         })
                     },
