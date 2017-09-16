@@ -69,8 +69,7 @@ public final class StormTopologyUtil {
     }
 
     public static Map<String, Set<String>> getAdjacencyMap(StormTopology topology,
-                                                           boolean removeSystemComponent)
-    throws Exception {
+                                                           boolean removeSystemComponent) {
         Map<String, Set<String>> adjacencyMap = new HashMap<>();
 
         for (Map.Entry<String, Bolt> entry : topology.get_bolts().entrySet()) {
@@ -129,8 +128,7 @@ public final class StormTopologyUtil {
 
     public static Map<String, String> getFieldValues(Object instance,
                                                      boolean prependClassName,
-                                                     Set<Object> objectsToSkip)
-    throws IllegalAccessException {
+                                                     Set<Object> objectsToSkip) {
         if (objectsToSkip == null) {
             objectsToSkip = new HashSet<>();
         }
@@ -213,7 +211,7 @@ public final class StormTopologyUtil {
 
     private static String getString(Object instance,
                                     boolean wrapWithQuote,
-                                    Set<Object> objectsToSkip) throws IllegalAccessException {
+                                    Set<Object> objectsToSkip) {
         if (instance == null) {
             return null;
         } else if (instance.getClass().isPrimitive() || isWrapperType(instance.getClass())) {

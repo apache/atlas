@@ -75,11 +75,10 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
      * @param topologyInfo topology info
      * @param stormConf configuration
      * @param stormTopology a storm topology
-     * @throws IllegalAccessException
      */
     @Override
     public void notify(TopologyInfo topologyInfo, Map stormConf,
-                       StormTopology stormTopology) throws IllegalAccessException {
+                       StormTopology stormTopology) {
 
         LOG.info("Collecting metadata for a new storm topology: {}", topologyInfo.get_name());
         try {
@@ -105,7 +104,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         }
     }
 
-    private Referenceable createTopologyInstance(TopologyInfo topologyInfo, Map stormConf) throws Exception {
+    private Referenceable createTopologyInstance(TopologyInfo topologyInfo, Map stormConf) {
         Referenceable topologyReferenceable = new Referenceable(
                 StormDataTypes.STORM_TOPOLOGY.getName());
         topologyReferenceable.set("id", topologyInfo.get_id());
@@ -125,7 +124,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     private List<Referenceable> addTopologyDataSets(StormTopology stormTopology,
                                                     Referenceable topologyReferenceable,
                                                     String topologyOwner,
-                                                    Map stormConf) throws Exception {
+                                                    Map stormConf) {
         List<Referenceable> dependentEntities = new ArrayList<>();
         // add each spout as an input data set
         addTopologyInputs(topologyReferenceable,
@@ -138,7 +137,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     private void addTopologyInputs(Referenceable topologyReferenceable,
                                    Map<String, SpoutSpec> spouts,
                                    Map stormConf,
-                                   String topologyOwner, List<Referenceable> dependentEntities) throws IllegalAccessException {
+                                   String topologyOwner, List<Referenceable> dependentEntities) {
         final ArrayList<Referenceable> inputDataSets = new ArrayList<>();
         for (Map.Entry<String, SpoutSpec> entry : spouts.entrySet()) {
             Serializable instance = Utils.javaDeserialize(
@@ -156,7 +155,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
     private void addTopologyOutputs(Referenceable topologyReferenceable,
                                     StormTopology stormTopology, String topologyOwner,
-                                    Map stormConf, List<Referenceable> dependentEntities) throws Exception {
+                                    Map stormConf, List<Referenceable> dependentEntities) {
         final ArrayList<Referenceable> outputDataSets = new ArrayList<>();
 
         Map<String, Bolt> bolts = stormTopology.get_bolts();
@@ -177,7 +176,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
     private Referenceable createDataSet(String name, String topologyOwner,
                                               Serializable instance,
-                                              Map stormConf, List<Referenceable> dependentEntities) throws IllegalAccessException {
+                                              Map stormConf, List<Referenceable> dependentEntities) {
         Map<String, String> config = StormTopologyUtil.getFieldValues(instance, true, null);
 
         String clusterName = null;
@@ -265,7 +264,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
     private ArrayList<Referenceable> createTopologyGraph(StormTopology stormTopology,
                                                          Map<String, SpoutSpec> spouts,
-                                                         Map<String, Bolt> bolts) throws Exception {
+                                                         Map<String, Bolt> bolts) {
         // Add graph of nodes in the topology
         final Map<String, Referenceable> nodeEntities = new HashMap<>();
         addSpouts(spouts, nodeEntities);
@@ -279,7 +278,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private void addSpouts(Map<String, SpoutSpec> spouts,
-                           Map<String, Referenceable> nodeEntities) throws IllegalAccessException {
+                           Map<String, Referenceable> nodeEntities) {
         for (Map.Entry<String, SpoutSpec> entry : spouts.entrySet()) {
             final String spoutName = entry.getKey();
             Referenceable spoutReferenceable = createSpoutInstance(
@@ -289,7 +288,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private Referenceable createSpoutInstance(String spoutName,
-                                              SpoutSpec stormSpout) throws IllegalAccessException {
+                                              SpoutSpec stormSpout) {
         Referenceable spoutReferenceable = new Referenceable(StormDataTypes.STORM_SPOUT.getName());
         spoutReferenceable.set(AtlasClient.NAME, spoutName);
 
@@ -304,7 +303,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private void addBolts(Map<String, Bolt> bolts,
-                          Map<String, Referenceable> nodeEntities) throws IllegalAccessException {
+                          Map<String, Referenceable> nodeEntities) {
         for (Map.Entry<String, Bolt> entry : bolts.entrySet()) {
             Referenceable boltInstance = createBoltInstance(entry.getKey(), entry.getValue());
             nodeEntities.put(entry.getKey(), boltInstance);
@@ -312,7 +311,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private Referenceable createBoltInstance(String boltName,
-                                             Bolt stormBolt) throws IllegalAccessException {
+                                             Bolt stormBolt) {
         Referenceable boltReferenceable = new Referenceable(StormDataTypes.STORM_BOLT.getName());
 
         boltReferenceable.set(AtlasClient.NAME, boltName);
@@ -328,7 +327,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private void addGraphConnections(StormTopology stormTopology,
-                                     Map<String, Referenceable> nodeEntities) throws Exception {
+                                     Map<String, Referenceable> nodeEntities) {
         // adds connections between spouts and bolts
         Map<String, Set<String>> adjacencyMap =
                 StormTopologyUtil.getAdjacencyMap(stormTopology, true);

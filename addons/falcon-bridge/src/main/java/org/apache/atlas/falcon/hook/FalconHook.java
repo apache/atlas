@@ -27,6 +27,7 @@ import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.falcon.FalconException;
 import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.feed.Feed;
 import org.apache.falcon.entity.v0.process.Process;
@@ -34,6 +35,7 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -120,7 +122,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
     }
 
     @Override
-    public void publish(final Data data) throws Exception {
+    public void publish(final Data data) {
         final FalconEvent event = data.getEvent();
         try {
             if (sync) {
@@ -147,7 +149,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
         return HOOK_NUM_RETRIES;
     }
 
-    private void fireAndForget(FalconEvent event) throws Exception {
+    private void fireAndForget(FalconEvent event) throws FalconException, URISyntaxException {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
         List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
@@ -163,7 +165,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
         notifyEntities(messages);
     }
 
-    private List<Referenceable> createEntities(FalconEvent event, String user) throws Exception {
+    private List<Referenceable> createEntities(FalconEvent event, String user) throws FalconException, URISyntaxException {
         List<Referenceable> entities = new ArrayList<>();
 
         switch (event.getOperation()) {
@@ -190,7 +192,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
         return entities;
     }
 
-    private static Operation getOperation(final FalconEvent.OPERATION op) throws Exception {
+    private static Operation getOperation(final FalconEvent.OPERATION op) throws FalconException {
         switch (op) {
         case ADD_CLUSTER:
         case ADD_FEED:
@@ -203,7 +205,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
             return Operation.UPDATE;
 
         default:
-            throw new Exception("Falcon operation " + op + " is not valid or supported");
+            throw new FalconException("Falcon operation " + op + " is not valid or supported");
         }
     }
 }
