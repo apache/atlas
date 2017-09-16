@@ -35,6 +35,12 @@
             ]
         },
         {
+            "name": "__internal",
+            "superTypes": [],
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
             "name": "Asset",
             "superTypes": [],
             "typeVersion": "1.0",
@@ -105,6 +111,85 @@
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "__AtlasUserProfile",
+            "superTypes": [
+                "__internal"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "name",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true
+                },
+                {
+                    "name": "fullName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "savedSearches",
+                    "typeName": "array<__AtlasUserSavedSearch>",
+                    "cardinality": "LIST",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "constraints": [
+                        {
+                            "type": "ownedRef"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "__AtlasUserSavedSearch",
+            "superTypes": [
+                "__internal"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "name",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "ownerName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "uniqueName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true
+                },
+                {
+                    "name": "searchParameters",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
                     "isUnique": false
                 }
             ]

@@ -35,6 +35,7 @@ public final class Constants {
      * Entity type name property key.
      */
     public static final String ENTITY_TYPE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+    public static final String TYPE_NAME_INTERNAL       = INTERNAL_PROPERTY_KEY_PREFIX + "internal";
 
     /**
      * Entity type's super types property key.

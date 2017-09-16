@@ -184,7 +184,7 @@ public final class Servlets {
         return httpServletRequest.getLocalName();
     }
 
-    public static String getUserName(HttpServletRequest httpServletRequest) throws IOException {
+    public static String getUserName(HttpServletRequest httpServletRequest) {
         return httpServletRequest.getRemoteUser();
     }
 

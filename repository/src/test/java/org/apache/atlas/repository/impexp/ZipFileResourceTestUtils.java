@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,13 +71,43 @@ public class ZipFileResourceTestUtils {
     }
 
     public static String getModelJson(String fileName) throws IOException {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = userDir + "/../addons/models/" + fileName;
-        File f = new File(filePath);
-        String s = FileUtils.readFileToString(f);
-        assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
+        String  ret                 = null;
+        File   topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
+        File[] topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
-        return s;
+        assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
+
+        Arrays.sort(topModelsDirContents);
+
+        for (File modelDir : topModelsDirContents) {
+            if (modelDir.exists() && modelDir.isDirectory()) {
+                ret = getFileContents(modelDir, fileName);
+
+                if (ret != null) {
+                    break;
+                }
+            }
+        }
+
+        if (ret == null) {
+            ret = getFileContents(topModelsDir, fileName);
+        }
+
+        assertTrue(ret != null, fileName + ": unable to find model file");
+
+        return ret;
+    }
+
+    public static String getFileContents(File dir, String fileName) throws IOException {
+        if (dir.exists() && dir.isDirectory()) {
+            File file = new File(dir, fileName);
+
+            if (file.exists() && file.isFile()) {
+                return FileUtils.readFileToString(file);
+            }
+        }
+
+        return null;
     }
 
     public static String getModelJsonFromResources(String fileName) throws IOException {

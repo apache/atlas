@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.entity.EntityNotificationImpl;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -165,6 +166,10 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         List<EntityNotification> messages = new LinkedList<>();
 
         for (IReferenceableInstance entityDefinition : entityDefinitions) {
+            if(GraphHelper.isInternalType(entityDefinition.getTypeName())) {
+                continue;
+            }
+
             Referenceable       entity                  = new Referenceable(entityDefinition);
             Map<String, Object> attributesMap           = entity.getValuesMap();
             List<String>        entityNotificationAttrs = getNotificationAttributes(entity.getTypeName());
