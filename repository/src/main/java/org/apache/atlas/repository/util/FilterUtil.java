@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,11 @@ package org.apache.atlas.repository.util;
 
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.collections.functors.NotPredicate;
@@ -38,10 +37,11 @@ public class FilterUtil {
     public static Predicate getPredicateFromSearchFilter(SearchFilter searchFilter) {
         List<Predicate> predicates = new ArrayList<>();
 
-        final String type         = searchFilter.getParam(SearchFilter.PARAM_TYPE);
-        final String name         = searchFilter.getParam(SearchFilter.PARAM_NAME);
-        final String supertype    = searchFilter.getParam(SearchFilter.PARAM_SUPERTYPE);
-        final String notSupertype = searchFilter.getParam(SearchFilter.PARAM_NOT_SUPERTYPE);
+        final String       type         = searchFilter.getParam(SearchFilter.PARAM_TYPE);
+        final String       name         = searchFilter.getParam(SearchFilter.PARAM_NAME);
+        final String       supertype    = searchFilter.getParam(SearchFilter.PARAM_SUPERTYPE);
+        final String       notSupertype = searchFilter.getParam(SearchFilter.PARAM_NOT_SUPERTYPE);
+        final List<String> notNames     = searchFilter.getParams(SearchFilter.PARAM_NOT_NAME);
 
         // Add filter for the type/category
         if (StringUtils.isNotBlank(type)) {
@@ -61,6 +61,13 @@ public class FilterUtil {
         // Add filter for the supertype negation
         if (StringUtils.isNotBlank(notSupertype)) {
             predicates.add(new NotPredicate(getSuperTypePredicate(notSupertype)));
+        }
+
+        // Add filter for the type negation
+        if (CollectionUtils.isNotEmpty(notNames)) {
+            for (String notName : notNames) {
+                predicates.add(new NotPredicate(getNamePredicate(notName)));
+            }
         }
 
         return PredicateUtils.allPredicate(predicates);
@@ -91,8 +98,8 @@ public class FilterUtil {
 
             @Override
             public boolean evaluate(Object o) {
-                return (isClassificationType(o) && ((AtlasClassificationType) o).getAllSuperTypes().contains(supertype))||
-                       (isEntityType(o) && ((AtlasEntityType)o).getAllSuperTypes().contains(supertype));
+                return (isClassificationType(o) && ((AtlasClassificationType) o).getAllSuperTypes().contains(supertype)) ||
+                       (isEntityType(o) && ((AtlasEntityType) o).getAllSuperTypes().contains(supertype));
             }
         };
     }
@@ -102,7 +109,7 @@ public class FilterUtil {
             @Override
             public boolean evaluate(Object o) {
                 if (o instanceof AtlasType) {
-                    AtlasType atlasType = (AtlasType)o;
+                    AtlasType atlasType = (AtlasType) o;
 
                     switch (type.toUpperCase()) {
                         case "CLASS":
@@ -123,5 +130,10 @@ public class FilterUtil {
                 return false;
             }
         };
+    }
+
+    public static void addParamsToHideInternalType(SearchFilter searchFilter) {
+        searchFilter.setParam(SearchFilter.PARAM_NOT_NAME, Constants.TYPE_NAME_INTERNAL);
+        searchFilter.setParam(SearchFilter.PARAM_NOT_SUPERTYPE, Constants.TYPE_NAME_INTERNAL);
     }
 }

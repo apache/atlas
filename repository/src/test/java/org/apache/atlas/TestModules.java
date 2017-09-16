@@ -24,7 +24,13 @@ import com.google.inject.Singleton;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.discovery.*;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.discovery.AtlasLineageService;
+import org.apache.atlas.discovery.DataSetLineageService;
+import org.apache.atlas.discovery.DiscoveryService;
+import org.apache.atlas.discovery.EntityDiscoveryService;
+import org.apache.atlas.discovery.EntityLineageService;
+import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.listener.EntityChangeListener;
@@ -40,8 +46,16 @@ import org.apache.atlas.repository.graph.HardDeleteHandler;
 import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.impexp.ExportService;
-import org.apache.atlas.repository.store.graph.*;
-import org.apache.atlas.repository.store.graph.v1.*;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.BulkImporter;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
+import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
+import org.apache.atlas.repository.store.graph.v1.BulkImporterImpl;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
+import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
@@ -101,6 +115,7 @@ public class TestModules {
 
         @Override
         protected void configure() {
+
             GraphSandboxUtil.create();
 
             bindAuditRepository(binder());

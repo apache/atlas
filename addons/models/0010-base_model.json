@@ -1,113 +1,182 @@
 {
-    "enumDefs": [],
-    "structDefs": [],
-    "classificationDefs": [
+  "enumDefs": [],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name": "Referenceable",
+      "superTypes": [],
+      "typeVersion": "1.0",
+      "attributeDefs": [
         {
-            "name": "TaxonomyTerm",
-            "superTypes": [],
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "atlas.taxonomy",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                }
-            ]
+          "name": "qualifiedName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true
         }
-    ],
-    "entityDefs": [
+      ]
+    },
+    {
+      "name": "__internal",
+      "superTypes": [],
+      "typeVersion": "1.0",
+      "attributeDefs": []
+    },
+    {
+      "name": "Asset",
+      "superTypes": [],
+      "typeVersion": "1.0",
+      "attributeDefs": [
         {
-            "name": "Referenceable",
-            "superTypes": [],
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "qualifiedName",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": true
-                }
-            ]
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
         },
         {
-            "name": "Asset",
-            "superTypes": [],
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "name",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "description",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
-                    "name": "owner",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false
-                }
-            ]
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
         },
         {
-            "name": "DataSet",
-            "superTypes": [
-                "Referenceable",
-                "Asset"
-            ],
-            "typeVersion": "1.0",
-            "attributeDefs": []
-        },
-        {
-            "name": "Infrastructure",
-            "superTypes": [
-                "Referenceable",
-                "Asset"
-            ],
-            "typeVersion": "1.0",
-            "attributeDefs": []
-        },
-        {
-            "name": "Process",
-            "superTypes": [
-                "Referenceable",
-                "Asset"
-            ],
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "inputs",
-                    "typeName": "array<DataSet>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
-                    "name": "outputs",
-                    "typeName": "array<DataSet>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                }
-            ]
+          "name": "owner",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
         }
-    ]
+      ]
+    },
+    {
+      "name": "DataSet",
+      "superTypes": [
+        "Referenceable",
+        "Asset"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": []
+    },
+    {
+      "name": "Infrastructure",
+      "superTypes": [
+        "Referenceable",
+        "Asset"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": []
+    },
+    {
+      "name": "Process",
+      "superTypes": [
+        "Referenceable",
+        "Asset"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "inputs",
+          "typeName": "array<DataSet>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "outputs",
+          "typeName": "array<DataSet>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "__AtlasUserProfile",
+      "superTypes": [
+        "__internal"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true
+        },
+        {
+          "name": "fullName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "savedSearches",
+          "typeName": "array<__AtlasUserSavedSearch>",
+          "cardinality": "LIST",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "constraints": [
+            {
+              "type": "ownedRef"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "__AtlasUserSavedSearch",
+      "superTypes": [
+        "__internal"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "ownerName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "uniqueName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true
+        },
+        {
+          "name": "searchParameters",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
 }

@@ -227,6 +227,10 @@ public class AtlasEntityChangeNotifier {
         }
 
         for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
+            if(GraphHelper.isInternalType(atlasEntityHeader.getTypeName())) {
+                continue;
+            }
+
             String      guid        = atlasEntityHeader.getGuid();
             AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(guid);
 

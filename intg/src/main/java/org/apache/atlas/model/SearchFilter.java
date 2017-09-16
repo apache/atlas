@@ -44,6 +44,7 @@ public class SearchFilter {
     public static final String PARAM_NAME = "name";
     public static final String PARAM_SUPERTYPE = "supertype";
     public static final String PARAM_NOT_SUPERTYPE = "notsupertype";
+    public static final String PARAM_NOT_NAME      = "notname";
 
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.

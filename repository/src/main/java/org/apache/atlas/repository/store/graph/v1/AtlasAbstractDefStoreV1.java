@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -42,8 +41,10 @@ import java.util.regex.Pattern;
     protected final AtlasTypeDefGraphStoreV1 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
 
-    private static final String  NAME_REGEX         = "[a-zA-Z][a-zA-Z0-9_ ]*";
-    private static final Pattern NAME_PATTERN       = Pattern.compile(NAME_REGEX);
+    private static final String  NAME_REGEX            = "[a-zA-Z][a-zA-Z0-9_ ]*";
+    private static final String  INTERNAL_NAME_REGEX   = "__" + NAME_REGEX;
+    private static final Pattern NAME_PATTERN          = Pattern.compile(NAME_REGEX);
+    private static final Pattern INTERNAL_NAME_PATTERN = Pattern.compile(INTERNAL_NAME_REGEX);
 
     public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
 
@@ -75,9 +76,7 @@ import java.util.regex.Pattern;
     }
 
     public boolean isValidName(String typeName) {
-        Matcher m = NAME_PATTERN.matcher(typeName);
-
-        return m.matches();
+        return NAME_PATTERN.matcher(typeName).matches() || INTERNAL_NAME_PATTERN.matcher(typeName).matches();
     }
 
     @Override

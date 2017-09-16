@@ -23,6 +23,9 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+
+import java.util.List;
 
 public interface AtlasDiscoveryService {
     /**
@@ -79,4 +82,41 @@ public interface AtlasDiscoveryService {
      * @return AtlasSearchResult
      */
     AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortByAttribute, SortOrder sortOrder, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
+
+    /**
+     *
+     *
+     * @param savedSearch Search to be saved
+     * @throws AtlasBaseException
+     */
+    void addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+
+    /**
+     *
+     * @param savedSearch Search to be saved
+     * @throws AtlasBaseException
+     */
+    void updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+
+    /**
+     *
+     * @param userName Name of the user for whom the saved searches are to be retrieved
+     * @return List of saved searches for the user
+     * @throws AtlasBaseException
+     */
+    List<AtlasUserSavedSearch> getSavedSearches(String userName) throws AtlasBaseException;
+
+    /**
+     *
+     * @param userName Name of the user who the search belongs
+     * @param searchName Name of the search to be retrieved
+     * @return Search object identified by the name
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch getSavedSearch(String userName, String searchName) throws AtlasBaseException;
+
+    /**
+     * @param guid Guid for the saved search
+     */
+    void deleteSavedSearch(String guid) throws AtlasBaseException;
 }

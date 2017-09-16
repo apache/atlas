@@ -72,8 +72,9 @@ public enum AtlasErrorCode {
     PARAMETER_PARSING_FAILED(400, "ATLAS-400-00-02A", "Parameter parsing failed at: {0}"),
     MISSING_MANDATORY_ATTRIBUTE(400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value"),
     INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
-    INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type '{0}', guid '{1}' in relationship search"),
+    INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type {0}, guid {1} in relationship search"),
     INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED(400, "ATLAS-400-00-050", "Attribute {0}.{1} is of type {2}. Import has this attribute type as {3}"),
+    SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-051", "saved-search {0} can not be moved from user {1} to {2}"),
 
     // All Not found enums go here
     UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification"),
@@ -93,6 +94,7 @@ public enum AtlasErrorCode {
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
     INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
+    SAVED_SEARCH_ALREADY_EXISTS(409, "ATLAS-409-00-004", "search named {0} already exists for user {1}"),
 
      // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
@@ -112,7 +114,10 @@ public enum AtlasErrorCode {
     STORM_TOPOLOGY_UTIL(500, "ATLAS-500-00-00E", "StormToplogyUtil: {0}"),
     SQOOP_HOOK(500, "ATLAS-500-00-00F", "SqoopHook: {0}"),
     HIVE_HOOK(500, "ATLAS-500-00-010", "HiveHook: {0}"),
-    HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}");
+    HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}"),
+
+    DATA_ACCESS_SAVE_FAILED(500, "ATLAS-500-00-00B", "Save failed: {0}"),
+    DATA_ACCESS_LOAD_FAILED(500, "ATLAS-500-00-00C", "Load failed: {0}");
 
     private String errorCode;
     private String errorMessage;
