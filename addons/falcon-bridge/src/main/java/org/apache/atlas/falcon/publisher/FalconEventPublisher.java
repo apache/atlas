@@ -37,5 +37,5 @@ public interface FalconEventPublisher {
         }
     }
 
-    void publish(final Data data) throws Exception;
+    void publish(final Data data);
 }

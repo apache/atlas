@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,7 +41,7 @@ final class AtlasPluginClassLoaderUtil {
 
     private AtlasPluginClassLoaderUtil(){ }
 
-    public static URL[] getFilesInDirectories(String[] libDirs) throws Exception {
+    public static URL[] getFilesInDirectories(String[] libDirs) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasPluginClassLoaderUtil.getFilesInDirectories()");
         }
@@ -95,7 +96,7 @@ final class AtlasPluginClassLoaderUtil {
         }
     }
 
-    public static String getPluginImplLibPath(String pluginType, Class<?> pluginClass) throws Exception {
+    public static String getPluginImplLibPath(String pluginType, Class<?> pluginClass) throws URISyntaxException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class ({})", pluginClass.getName());
         }

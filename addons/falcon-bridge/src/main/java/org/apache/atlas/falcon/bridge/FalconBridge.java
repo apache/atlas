@@ -27,6 +27,7 @@ import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.falcon.FalconException;
 import org.apache.falcon.entity.CatalogStorage;
 import org.apache.falcon.entity.FeedHelper;
 import org.apache.falcon.entity.FileSystemStorage;
@@ -47,6 +48,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +125,7 @@ public class FalconBridge {
         return feedEntity;
     }
 
-    public static List<Referenceable> createFeedCreationEntity(Feed feed, ConfigurationStore falconStore) throws Exception {
+    public static List<Referenceable> createFeedCreationEntity(Feed feed, ConfigurationStore falconStore) throws FalconException, URISyntaxException {
         LOG.info("Creating feed : {}", feed.getName());
 
         List<Referenceable> entities = new ArrayList<>();
@@ -198,17 +200,18 @@ public class FalconBridge {
     }
 
     /**
-     * +     * Creates process entity
-     * +     *
-     * +     * @param process process entity
-     * +     * @param falconStore config store
-     * +     * @param user falcon user
-     * +     * @param timestamp timestamp of entity
-     * +     * @return process instance reference
-     * +
+     * Creates process entity
+     * 
+     * @param process process entity
+     * @param falconStore config store
+     * @param user falcon user
+     * @param timestamp timestamp of entity
+     * @return process instance reference
+     *
+     * @throws FalconException if retrieving from the configuration store fail
      */
     public static List<Referenceable> createProcessEntity(org.apache.falcon.entity.v0.process.Process process,
-                                                          ConfigurationStore falconStore) throws Exception {
+                                                          ConfigurationStore falconStore) throws FalconException {
         LOG.info("Creating process Entity : {}", process.getName());
 
         // The requirement is for each cluster, create a process entity with name
@@ -288,7 +291,7 @@ public class FalconBridge {
     }
 
     private static List<Referenceable> getInputEntities(org.apache.falcon.entity.v0.cluster.Cluster cluster,
-                                                        Feed feed) throws Exception {
+                                                        Feed feed) throws URISyntaxException {
         org.apache.falcon.entity.v0.feed.Cluster feedCluster = FeedHelper.getCluster(feed, cluster.getName());
 
         if(feedCluster != null) {

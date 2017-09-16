@@ -22,10 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Enumeration;
 
@@ -39,12 +41,12 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     private final MyClassLoader componentClassLoader;
 
-    private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws Exception {
+    private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws URISyntaxException {
         this(AtlasPluginClassLoaderUtil.getPluginImplLibPath(pluginType, pluginClass));
     }
 
     //visible for testing
-    AtlasPluginClassLoader(String libraryPath) throws Exception {
+    AtlasPluginClassLoader(String libraryPath) {
         super(AtlasPluginClassLoaderUtil.getFilesInDirectories(new String[]{libraryPath}), null);
 
         componentClassLoader = AccessController.doPrivileged(new PrivilegedAction<MyClassLoader>() {
@@ -54,18 +56,17 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
         });
     }
 
-    public static AtlasPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass)
-        throws Exception {
+    public static AtlasPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass) throws PrivilegedActionException {
         AtlasPluginClassLoader ret = me;
         if (ret == null) {
             synchronized (AtlasPluginClassLoader.class) {
                 ret = me;
                 if (ret == null) {
-                    me = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
-                        public AtlasPluginClassLoader run() throws Exception {
-                            return new AtlasPluginClassLoader(pluginType, pluginClass);
-                        }
-                    });
+					me = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
+					    public AtlasPluginClassLoader run() throws URISyntaxException {
+					        return new AtlasPluginClassLoader(pluginType, pluginClass);
+					    }
+					});
                     ret = me;
                 }
             }
