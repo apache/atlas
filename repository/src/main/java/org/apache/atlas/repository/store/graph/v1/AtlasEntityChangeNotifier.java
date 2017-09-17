@@ -227,14 +227,10 @@ public class AtlasEntityChangeNotifier {
         }
 
         for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
-            if(GraphHelper.isInternalType(atlasEntityHeader.getTypeName())) {
-                continue;
-            }
-
             String      guid        = atlasEntityHeader.getGuid();
             AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(guid);
 
-            if(atlasVertex == null) {
+            if(atlasVertex == null || GraphHelper.isInternalType(atlasVertex)) {
                 continue;
             }
 
@@ -262,12 +258,7 @@ public class AtlasEntityChangeNotifier {
         }
 
         AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(entityId);
-        if(atlasVertex == null) {
-            return;
-        }
-
-        if (atlasVertex == null) {
-            LOG.warn("updateFullTextMapping(): no entity exists with guid {}", entityId);
+        if(atlasVertex == null || GraphHelper.isInternalType(atlasVertex)) {
             return;
         }
 
