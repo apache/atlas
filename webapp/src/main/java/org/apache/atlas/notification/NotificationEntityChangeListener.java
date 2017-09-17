@@ -187,7 +187,9 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
             messages.add(notification);
         }
 
-        notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
+        if (!messages.isEmpty()) {
+            notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
+        }
     }
 
     private List<String> getNotificationAttributes(String entityType) {

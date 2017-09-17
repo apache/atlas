@@ -994,8 +994,12 @@ public final class GraphHelper {
 
     }
 
+    public static boolean isInternalType(AtlasVertex vertex) {
+        return vertex != null && isInternalType(getTypeName(vertex));
+    }
+
     public static boolean isInternalType(String typeName) {
-        return typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
+        return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
     public static void setArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
