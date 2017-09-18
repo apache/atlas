@@ -45,7 +45,8 @@
     "requirejs": "2.3.3",
     "requirejs-text": "2.0.15",
     "select2": "4.0.3",
-    "underscore": "1.8.3"
+    "underscore": "1.8.3",
+    "js-beautify": "1.6.14"
   },
   "devDependencies": {
     "connect-livereload": "^0.5.4",
