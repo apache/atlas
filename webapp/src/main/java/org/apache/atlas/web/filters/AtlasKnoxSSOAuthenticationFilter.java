@@ -20,6 +20,7 @@
 
 package org.apache.atlas.web.filters;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
@@ -30,6 +31,7 @@ import org.apache.atlas.web.security.AtlasAuthenticationProvider;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +50,11 @@ import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.UriBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
@@ -60,6 +64,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Enumeration;
 import org.apache.commons.lang.StringUtils;
 
 
@@ -75,6 +82,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     public static final String JWT_COOKIE_NAME_DEFAULT = "hadoop-jwt";
     public static final String JWT_ORIGINAL_URL_QUERY_PARAM_DEFAULT = "originalUrl";
     public static final String DEFAULT_BROWSER_USERAGENT = "Mozilla,Opera,Chrome";
+    public static final String PROXY_ATLAS_URL_PATH = "/atlas";
 
     private final AtlasAuthenticationProvider authenticationProvider;
 
@@ -87,6 +95,8 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private Configuration configuration = null;
     private boolean ssoEnabled = false;
     private JWSVerifier verifier = null;
+    @VisibleForTesting
+    private final int MAX_LOGIN_URL_LENGTH = 2043;
 
     @Inject
     public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider) {
@@ -292,7 +302,14 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         if (authenticationProviderUrl.contains("?")) {
             delimiter = "&";
         }
-        StringBuilder loginURL = new StringBuilder();
+
+        String xForwardedURL = constructForwardableURL(parseXForwardHeader(request), request.getRequestURI());
+
+        StringBuilder knoxLoginURL = new StringBuilder();
+        knoxLoginURL.append(authenticationProviderUrl)
+                .append(delimiter)
+                .append(originalUrlQueryParam).append("=");
+
         if (isXMLRequest) {
             String atlasApplicationURL = "";
             String referalURL = request.getHeader("referer");
@@ -303,16 +320,115 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
                 atlasApplicationURL = referalURL;
             }
 
-            loginURL.append(authenticationProviderUrl).append(delimiter).append(originalUrlQueryParam).append("=").append(atlasApplicationURL);
+            if (StringUtils.trimToNull(xForwardedURL) != null) {
+                safeAppend(knoxLoginURL, xForwardedURL, atlasApplicationURL);
+            } else {
+                safeAppend(knoxLoginURL, atlasApplicationURL);
+            }
         } else {
-            loginURL.append(authenticationProviderUrl).append(delimiter).append(originalUrlQueryParam).append("=").append(request.getRequestURL().append(getOriginalQueryString(request)));
+            if (StringUtils.trimToNull(xForwardedURL) != null) {
+                safeAppend(knoxLoginURL, xForwardedURL, getOriginalQueryString(request));
+            } else {
+                safeAppend(knoxLoginURL, request.getRequestURL().toString(), getOriginalQueryString(request));
+            }
         }
-        return loginURL.toString();
+        return knoxLoginURL.toString();
     }
 
     private String getOriginalQueryString(HttpServletRequest request) {
         String originalQueryString = request.getQueryString();
         return (originalQueryString == null) ? "" : "?" + originalQueryString;
+    }
+
+
+    private Map<String, String> parseXForwardHeader(HttpServletRequest httpRequest) {
+        String xForwardedProto = "";
+        String xForwardedHost = "";
+        String xForwardedContext = "";
+        Map<String, String> xFwdHeaderMap = null;
+        Enumeration<String> names = httpRequest.getHeaderNames();
+        while (names.hasMoreElements()) {
+            String name = (String) names.nextElement();
+            Enumeration<String> values = httpRequest.getHeaders(name);
+            String value = "";
+            if (values != null) {
+                while (values.hasMoreElements()) {
+                    value = (String) values.nextElement();
+                }
+            }
+            if (StringUtils.trimToNull(name) != null
+                    && StringUtils.trimToNull(value) != null) {
+                if (name.equalsIgnoreCase("x-forwarded-proto")) {
+                    xForwardedProto = value;
+                } else if (name.equalsIgnoreCase("x-forwarded-host")) {
+                    xForwardedHost = value;
+                } else if (name.equalsIgnoreCase("x-forwarded-context")) {
+                    xForwardedContext = value;
+                }
+            }
+        }
+
+        if (StringUtils.isNotEmpty(xForwardedProto) && StringUtils.isNotEmpty(xForwardedHost)
+                && StringUtils.isNotEmpty(xForwardedContext)) {
+            xFwdHeaderMap = new HashMap();
+            xFwdHeaderMap.put("x-forwarded-proto", xForwardedProto);
+            xFwdHeaderMap.put("x-forwarded-host", xForwardedHost);
+            xFwdHeaderMap.put("x-forwarded-context", xForwardedContext);
+        }
+
+        return xFwdHeaderMap;
+    }
+
+
+    private String constructForwardableURL(Map<String, String> xFwdHeaderMap, String requestURI) {
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(" constructForwardableURL ==>>" + xFwdHeaderMap + " requestURI " + requestURI);
+        }
+
+        String xForwardedURL = null;
+
+        if (xFwdHeaderMap != null) {
+            String xForwardedProto = xFwdHeaderMap.get("x-forwarded-proto");
+            String xForwardedHost = xFwdHeaderMap.get("x-forwarded-host");
+            String xForwardedContext = xFwdHeaderMap.get("x-forwarded-context");
+
+            if (StringUtils.isNotBlank(xForwardedProto)
+                    && StringUtils.isNotBlank(xForwardedHost)
+                    && StringUtils.isNotBlank(xForwardedContext)) {
+                try {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(" Atlas url with proxy path ==>" + xForwardedProto + "://"
+                                + xForwardedHost + xForwardedContext + PROXY_ATLAS_URL_PATH + requestURI);
+                    }
+
+                    URIBuilder builder = new URIBuilder();
+                    builder.setScheme(xForwardedProto)
+                            .setHost(xForwardedHost)
+                            .setPath(xForwardedContext + PROXY_ATLAS_URL_PATH + requestURI);
+
+                    xForwardedURL = builder.build().toString();
+                } catch (URISyntaxException ue) {
+                    LOG.error(" URISyntaxException while build xforward url ", ue);
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(" xForwardedURL ==>> " + xForwardedURL);
+        }
+
+        return xForwardedURL;
+    }
+
+
+    @VisibleForTesting
+    void safeAppend(StringBuilder sb, String... strings) {
+        for (String s : strings) {
+            if ((sb.length() + s.length()) < MAX_LOGIN_URL_LENGTH) {
+                sb.append(s);
+            }
+        }
     }
 
     /**

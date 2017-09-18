@@ -162,7 +162,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
         httpSecurity
                 .addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class)
-                .addFilterAfter(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
                 .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class)
                 .addFilterAfter(atlasAuthorizationFilter, FilterSecurityInterceptor.class);
