@@ -185,6 +185,14 @@
           "isUnique": true
         },
         {
+          "name": "searchType",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
           "name": "searchParameters",
           "typeName": "string",
           "cardinality": "SINGLE",

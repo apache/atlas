@@ -35,6 +35,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     private static final String PROPERTY_OWNER_NAME        = "ownerName";
     private static final String PROPERTY_SEARCH_PARAMETERS = "searchParameters";
     private static final String PROPERTY_UNIQUE_NAME       = "uniqueName";
+    private static final String PROPERTY_SEARCH_TYPE       = "searchType";
 
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
         super(typeRegistry, AtlasUserSavedSearch.class);
@@ -47,6 +48,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
         savedSearch.setGuid(entity.getGuid());
         savedSearch.setName((String) entity.getAttribute(PROPERTY_NAME));
         savedSearch.setOwnerName((String) entity.getAttribute(PROPERTY_OWNER_NAME));
+        savedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.to((String) entity.getAttribute(PROPERTY_SEARCH_TYPE)));
 
         String jsonSearchParams = (String) entity.getAttribute(PROPERTY_SEARCH_PARAMETERS);
 
@@ -68,6 +70,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
 
         entity.setAttribute(PROPERTY_NAME, obj.getName());
         entity.setAttribute(PROPERTY_OWNER_NAME, obj.getOwnerName());
+        entity.setAttribute(PROPERTY_SEARCH_TYPE, obj.getSearchType());
         entity.setAttribute(PROPERTY_UNIQUE_NAME, getUniqueValue(obj));
 
         if (obj.getSearchParameters() != null) {
@@ -92,6 +95,6 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     }
 
     private String getUniqueValue(AtlasUserSavedSearch obj) {
-        return obj.getOwnerName() + ":" + obj.getName();
+        return String.format("%s:%s:%s", obj.getOwnerName(), obj.getName(), obj.getSearchType()) ;
     }
 }

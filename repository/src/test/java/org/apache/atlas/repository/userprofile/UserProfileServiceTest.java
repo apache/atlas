@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType.BASIC;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.*;
 
@@ -77,7 +78,7 @@ public class UserProfileServiceTest {
     }
 
     @Test(dependsOnMethods = { "createsNewProfile", "savesQueryForAnNonExistentUser" }, expectedExceptions = AtlasBaseException.class)
-    public void savesAlreadyExistingQueryForAnExistingUser() throws AtlasBaseException {
+    public void atteptsToAddAlreadyExistingQueryForAnExistingUser() throws AtlasBaseException {
         SearchParameters expectedSearchParameter = getActualSearchParameters();
 
         for (int i = 0; i < 2; i++) {
@@ -85,13 +86,20 @@ public class UserProfileServiceTest {
 
             for (int j = 0; j < max_searches; j++) {
                 String queryName = getIndexBasedQueryName(j);
-                AtlasUserProfile actual = userProfileService.addSavedSearch(new AtlasUserSavedSearch(userName, queryName, expectedSearchParameter));
+                AtlasUserSavedSearch expected = getDefaultSavedSearch(userName, queryName, expectedSearchParameter);
+                AtlasUserSavedSearch actual = userProfileService.addSavedSearch(expected);
+
                 assertNotNull(actual);
+                assertNotNull(actual.getGuid());
+                assertEquals(actual.getOwnerName(), expected.getOwnerName());
+                assertEquals(actual.getName(), expected.getName());
+                assertEquals(actual.getSearchType(), expected.getSearchType());
+                assertEquals(actual.getSearchParameters(), expected.getSearchParameters());
             }
         }
     }
 
-    @Test(dependsOnMethods = { "createsNewProfile", "savesQueryForAnNonExistentUser", "savesAlreadyExistingQueryForAnExistingUser" })
+    @Test(dependsOnMethods = { "createsNewProfile", "savesQueryForAnNonExistentUser", "atteptsToAddAlreadyExistingQueryForAnExistingUser" })
     public void savesExistingQueryForAnExistingUser() throws AtlasBaseException {
         SearchParameters expectedSearchParameter = getActualSearchParameters();
 
@@ -100,10 +108,10 @@ public class UserProfileServiceTest {
 
             for (int j = 4; j < max_searches + 6; j++) {
                 String queryName = getIndexBasedQueryName(j);
-                AtlasUserProfile actual = userProfileService.addSavedSearch(new AtlasUserSavedSearch(userName, queryName, expectedSearchParameter));
+                AtlasUserSavedSearch actual = userProfileService.addSavedSearch(getDefaultSavedSearch(userName, queryName, expectedSearchParameter));
                 assertNotNull(actual);
 
-                AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, queryName);
+                AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, queryName, BASIC);
                 assertNotNull(savedSearch);
                 assertEquals(savedSearch.getSearchParameters(), expectedSearchParameter);
             }
@@ -122,14 +130,19 @@ public class UserProfileServiceTest {
 
     @Test(dependsOnMethods = "createsNewProfile")
     public void savesQueryForAnNonExistentUser() throws AtlasBaseException {
-        String expectedUserName = "firstXYZ";
+        String expectedUserName = getIndexBasedUserName(0);
         String expectedQueryName = "testQuery";
         SearchParameters expectedSearchParam = getActualSearchParameters();
+        AtlasUserSavedSearch expectedSavedSearch = getDefaultSavedSearch(expectedUserName, expectedQueryName, expectedSearchParam);
 
-        AtlasUserProfile actual = userProfileService.addSavedSearch(new AtlasUserSavedSearch(expectedUserName, expectedQueryName, expectedSearchParam));
-        assertEquals(actual.getName(), expectedUserName);
-        assertEquals(actual.getSavedSearches().size(), 1);
-        assertEquals(actual.getSavedSearches().get(0).getName(), expectedQueryName);
+        AtlasUserSavedSearch actual = userProfileService.addSavedSearch(expectedSavedSearch);
+        assertEquals(actual.getOwnerName(), expectedUserName);
+        assertEquals(actual.getName(), expectedQueryName);
+    }
+
+    private AtlasUserSavedSearch getDefaultSavedSearch(String userName, String queryName, SearchParameters expectedSearchParam) {
+        return new AtlasUserSavedSearch(userName, queryName,
+                BASIC, expectedSearchParam);
     }
 
     @Test(dependsOnMethods = "createsNewProfile")
@@ -143,7 +156,7 @@ public class UserProfileServiceTest {
 
         saveQueries(userName, actualSearchParameter);
         for (int i = 0; i < max_searches; i++) {
-            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, getIndexBasedQueryName(i));
+            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, getIndexBasedQueryName(i), BASIC);
             assertEquals(savedSearch.getName(), getIndexBasedQueryName(i));
             assertEquals(savedSearch.getSearchParameters(), actualSearchParameter);
         }
@@ -151,7 +164,7 @@ public class UserProfileServiceTest {
 
     private void saveQueries(String userName, SearchParameters sp) throws AtlasBaseException {
         for (int i = 0; i < max_searches; i++) {
-            userProfileService.addSavedSearch(new AtlasUserSavedSearch(userName, getIndexBasedQueryName(i), sp));
+            userProfileService.addSavedSearch(getDefaultSavedSearch(userName, getIndexBasedQueryName(i), sp));
         }
     }
 
@@ -181,7 +194,7 @@ public class UserProfileServiceTest {
     public void updateSearch() throws AtlasBaseException {
         final String queryName = getIndexBasedQueryName(0);
         String userName = getIndexBasedUserName(0);
-        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName);
+        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName, BASIC);
         assertNotNull(expected);
 
         SearchParameters sp = expected.getSearchParameters();
@@ -199,11 +212,11 @@ public class UserProfileServiceTest {
         final String queryName = getIndexBasedQueryName(1);
         String userName = getIndexBasedUserName(0);
 
-        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName);
+        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName, BASIC);
         assertNotNull(expected);
 
         userProfileService.deleteSavedSearch(expected.getGuid());
-        userProfileService.getSavedSearch(userName, queryName);
+        userProfileService.getSavedSearch(userName, queryName, BASIC);
     }
 
     @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryNameListForUser"})
@@ -236,12 +249,12 @@ public class UserProfileServiceTest {
     private void assertSaveLoadUserProfile(int i) throws AtlasBaseException {
         String s = String.valueOf(i);
         AtlasUserProfile expected = getAtlasUserProfile(i);
-        userProfileService.saveUserProfile(expected);
 
-        AtlasUserProfile actual = userProfileService.getUserProfile(expected.getName());
+        AtlasUserProfile actual = userProfileService.saveUserProfile(expected);
         assertNotNull(actual);
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.getFullName(), actual.getFullName());
+        assertNotNull(actual.getGuid());
     }
 
     public static AtlasUserProfile getAtlasUserProfile(Integer s) {

@@ -33,6 +33,7 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 import org.apache.atlas.query.Expressions.AliasExpression;
 import org.apache.atlas.query.Expressions.Expression;
 import org.apache.atlas.query.Expressions.SelectExpression;
@@ -804,9 +805,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
 
     @Override
-    public void addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+    public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         try {
-            userProfileService.addSavedSearch(savedSearch);
+            return userProfileService.addSavedSearch(savedSearch);
         } catch (AtlasBaseException e) {
             LOG.error("addSavedSearch({})", savedSearch, e);
             throw e;
@@ -815,9 +816,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
 
     @Override
-    public void updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+    public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         try {
-            userProfileService.updateSavedSearch(savedSearch);
+            return userProfileService.updateSavedSearch(savedSearch);
         } catch (AtlasBaseException e) {
             LOG.error("updateSavedSearch({})", savedSearch, e);
             throw e;
@@ -835,9 +836,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public AtlasUserSavedSearch getSavedSearch(String userName, String searchName) throws AtlasBaseException {
+    public AtlasUserSavedSearch getSavedSearch(String guid) throws AtlasBaseException {
         try {
-            return userProfileService.getSavedSearch(userName, searchName);
+            return userProfileService.getSavedSearch(guid);
+        } catch (AtlasBaseException e) {
+            LOG.error("getSavedSearch({})", guid, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public AtlasUserSavedSearch getSavedSearch(String userName, String searchName, SavedSearchType searchType) throws AtlasBaseException {
+        try {
+            return userProfileService.getSavedSearch(userName, searchName, searchType);
         } catch (AtlasBaseException e) {
             LOG.error("getSavedSearch({}, {})", userName, searchName, e);
             throw e;

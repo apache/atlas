@@ -51,7 +51,7 @@ public class DataAccess {
             throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
         }
 
-        return obj;
+        return this.load(obj);
     }
 
     public <T extends AtlasBaseModelObject> T load(T obj) throws AtlasBaseException {
