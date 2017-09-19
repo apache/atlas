@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
@@ -771,7 +772,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return "";
     }
 
-    private static String getTypeFilter(AtlasTypeRegistry typeRegistry, String typeName, int maxTypesLengthInIdxQuery) {
+    @VisibleForTesting
+    static String getTypeFilter(AtlasTypeRegistry typeRegistry, String typeName, int maxTypesLengthInIdxQuery) {
         AtlasEntityType type                  = typeRegistry.getEntityTypeByName(typeName);
         String          typeAndSubTypesQryStr = type != null ? type.getTypeAndAllSubTypesQryStr() : null;
 

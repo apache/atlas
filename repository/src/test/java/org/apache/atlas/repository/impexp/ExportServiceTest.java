@@ -37,7 +37,6 @@ import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -264,38 +263,29 @@ public class ExportServiceTest {
     public void verifyOverallStatus() throws Exception {
 
 //        ExportService service = new ExportService(typeRegistry);
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus"));
+        assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus());
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus",
-                AtlasExportResult.OperationStatus.SUCCESS));
+        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus",
+        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(
                                 AtlasExportResult.OperationStatus.SUCCESS,
                                 AtlasExportResult.OperationStatus.SUCCESS,
                                 AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus",
+        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.PARTIAL_SUCCESS,
                 AtlasExportResult.OperationStatus.SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus",
+        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.PARTIAL_SUCCESS));
 
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, Whitebox.invokeMethod(exportService,
-                "getOverallOperationStatus",
+        assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL));
-
-
     }
 
     @Test
