@@ -15,24 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.services;
+package org.apache.atlas.discovery;
 
 import org.apache.atlas.TestModules;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.powermock.reflect.Whitebox;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class EntityDiscoveryServiceTest {
@@ -121,7 +117,7 @@ public class EntityDiscoveryServiceTest {
     }
 
     private String invokeGetSubTypesForType(String inputString, int maxSubTypes) throws Exception {
-        String s = Whitebox.invokeMethod(EntityDiscoveryService.class, "getTypeFilter", typeRegistry, inputString, maxSubTypes);
+        String s = EntityDiscoveryService.getTypeFilter(typeRegistry, inputString, maxSubTypes);
 
         assertNotNull(s);
         return s;

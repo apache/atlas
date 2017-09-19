@@ -21,7 +21,6 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -76,11 +75,11 @@ public class TypeAttributeDifferenceTest {
     }
 
     private List<AtlasStructDef.AtlasAttributeDef> invokeGetAttributesAbsentInExisting(AtlasStructDef existing, AtlasStructDef incoming) throws Exception {
-        return Whitebox.invokeMethod(typeAttributeDifference, "getElementsAbsentInExisting", existing, incoming);
+        return typeAttributeDifference.getElementsAbsentInExisting(existing, incoming);
     }
 
     private List<AtlasEnumDef.AtlasEnumElementDef> invokeGetAttributesAbsentInExisting(AtlasEnumDef existing, AtlasEnumDef incoming) throws Exception {
-        return Whitebox.invokeMethod(typeAttributeDifference, "getElementsAbsentInExisting", existing, incoming);
+        return typeAttributeDifference.getElementsAbsentInExisting(existing, incoming);
     }
 
     private AtlasEnumDef getAtlasEnumWithAttributes(String... elements) {
@@ -146,6 +145,6 @@ public class TypeAttributeDifferenceTest {
     }
 
     private boolean invokeUpdate(AtlasEnumDef existing, AtlasEnumDef incoming) throws Exception {
-        return Whitebox.invokeMethod(typeAttributeDifference, "addElements", existing, incoming);
+        return typeAttributeDifference.addElements(existing, incoming);
     }
 }
