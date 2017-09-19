@@ -80,12 +80,20 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         if (typeSearchByIndex) {
             constructTypeTestQuery(indexQuery, typeAndSubTypesQryStr);
+
+            // TypeName check to be done in-memory as well to address ATLAS-2121 (case sensitivity)
+            inMemoryPredicate = typeNamePredicate;
         }
 
         if (attrSearchByIndex) {
             constructFilterQuery(indexQuery, entityType, filterCriteria, indexAttributes);
 
-            inMemoryPredicate = constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
+            Predicate attributePredicate = constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
+            if (inMemoryPredicate != null) {
+                inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
+            } else {
+                inMemoryPredicate = attributePredicate;
+            }
         } else {
             graphAttributes.addAll(indexAttributes);
         }
@@ -110,13 +118,6 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             if (!typeSearchByIndex) {
                 query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
-
-                // Construct a parallel in-memory predicate
-                if (graphQueryPredicate != null) {
-                    graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, typeNamePredicate);
-                } else {
-                    graphQueryPredicate = typeNamePredicate;
-                }
             }
 
             // If we need to filter on the trait names then we need to build the query and equivalent in-memory predicate

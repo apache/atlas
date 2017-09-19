@@ -34,6 +34,7 @@ import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.PredicateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,14 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
             this.indexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
 
-            inMemoryPredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
+            Predicate typeNamePredicate  = SearchPredicateUtil.getINPredicateGenerator()
+                                                              .generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
+            Predicate attributePredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
+            if (attributePredicate != null) {
+                inMemoryPredicate = PredicateUtils.andPredicate(typeNamePredicate, attributePredicate);
+            } else {
+                inMemoryPredicate = typeNamePredicate;
+            }
         } else {
             indexQuery = null;
         }
