@@ -27,6 +27,8 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.ITestContext;
@@ -40,6 +42,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -72,7 +76,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "sales")
     public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
         runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
@@ -83,7 +87,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "reporting")
     public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
         runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
@@ -94,7 +98,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "logging")
     public void importDB3(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
         runAndVerifyQuickStart_v1_Import(importService, zipSource);
     }
 
@@ -105,7 +109,7 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "salesNewTypeAttrs", dependsOnMethods = "importDB1")
     public void importDB4(ZipSource zipSource) throws AtlasBaseException, IOException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
         runImportWithParameters(importService, getDefaultImportRequest(), zipSource);
     }
 
@@ -154,8 +158,8 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "ctas")
     public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
+        loadHiveModel();
 
         runImportWithNoParameters(importService, zipSource);
     }
@@ -168,8 +172,8 @@ public class ImportServiceTest {
 
     @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
     public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
-        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("0020-fs_model.json", typeDefStore, typeRegistry);
+        loadBaseModel();
+        loadFsModel();
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
         try {
@@ -181,5 +185,40 @@ public class ImportServiceTest {
             assertEquals(tag1.getAllAttributes().size(), 2);
             throw e;
         }
+    }
+
+    @Test
+    public void importServiceProcessesIOException() {
+        ImportService importService = new ImportService(typeDefStore, typeRegistry, null);
+        AtlasImportRequest req = mock(AtlasImportRequest.class);
+
+        Answer<Map> answer = new Answer<Map>() {
+            @Override
+            public Map answer(InvocationOnMock invocationOnMock) throws Throwable {
+                throw new IOException("file is read only");
+            }
+        };
+
+        when(req.getFileName()).thenReturn("some-file.zip");
+        when(req.getOptions()).thenAnswer(answer);
+
+        try {
+            importService.run(req, "a", "b", "c");
+        }
+        catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.INVALID_PARAMETERS.getErrorCode());
+        }
+    }
+
+    private void loadBaseModel() throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+    }
+
+    private void loadFsModel() throws IOException, AtlasBaseException {
+        loadModelFromJson("0020-fs_model.json", typeDefStore, typeRegistry);
+    }
+
+    private void loadHiveModel() throws IOException, AtlasBaseException {
+        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
     }
 }

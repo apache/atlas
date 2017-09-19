@@ -36,6 +36,7 @@ import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 @Component
 public class ImportService {
@@ -108,7 +109,7 @@ public class ImportService {
 
     public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP)
             throws AtlasBaseException {
-        String fileName = (String) request.getFileName();
+        String fileName = request.getFileName();
 
         if (StringUtils.isBlank(fileName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME parameter not found");
@@ -122,7 +123,6 @@ public class ImportService {
             String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(AtlasImportRequest.TRANSFORMS_KEY) : null;
             File file = new File(fileName);
             ZipSource source = new ZipSource(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)), ImportTransforms.fromJson(transforms));
-
             result = run(source, request, userName, hostName, requestingIP);
         } catch (AtlasBaseException excp) {
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
@@ -132,6 +132,10 @@ public class ImportService {
             LOG.error("import(user={}, from={}, fileName={}): file not found", userName, requestingIP, excp);
 
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, fileName + ": file not found");
+        } catch (IOException excp) {
+            LOG.error("import(user={}, from={}, fileName={}): cannot read file", userName, requestingIP, excp);
+
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, fileName + ": cannot read file");
         } catch (Exception excp) {
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
 
