@@ -24,6 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 
 import java.util.List;
 
@@ -89,14 +90,14 @@ public interface AtlasDiscoveryService {
      * @param savedSearch Search to be saved
      * @throws AtlasBaseException
      */
-    void addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+    AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
 
     /**
      *
      * @param savedSearch Search to be saved
      * @throws AtlasBaseException
      */
-    void updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+    AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
 
     /**
      *
@@ -108,12 +109,20 @@ public interface AtlasDiscoveryService {
 
     /**
      *
+     * @param guid Guid for the saved search
+     * @return Search object identified by the guid
+     * @throws AtlasBaseException
+     */
+    AtlasUserSavedSearch getSavedSearch(String guid) throws AtlasBaseException;
+
+    /**
+     *
      * @param userName Name of the user who the search belongs
      * @param searchName Name of the search to be retrieved
      * @return Search object identified by the name
      * @throws AtlasBaseException
      */
-    AtlasUserSavedSearch getSavedSearch(String userName, String searchName) throws AtlasBaseException;
+    AtlasUserSavedSearch getSavedSearch(String userName, String searchName, SavedSearchType searchType) throws AtlasBaseException;
 
     /**
      * @param guid Guid for the saved search

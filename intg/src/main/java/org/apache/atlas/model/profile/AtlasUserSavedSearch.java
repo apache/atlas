@@ -34,26 +34,41 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public enum SavedSearchType {
+        BASIC,
+        ADVANCED;
+
+        public static SavedSearchType to(String val) {
+            return SavedSearchType.ADVANCED.name().equalsIgnoreCase(val) ? SavedSearchType.ADVANCED : SavedSearchType.BASIC;
+        }
+    }
+
     private String           ownerName;
     private String           name;
+    private SavedSearchType  searchType;
     private SearchParameters searchParameters;
 
 
     public AtlasUserSavedSearch() {
-        this(null, null, null);
+        this(null, null, SavedSearchType.BASIC, null);
     }
 
-    public AtlasUserSavedSearch(String name, SearchParameters searchParameters) {
-        this(null, name, searchParameters);
+    public AtlasUserSavedSearch(String name, SavedSearchType searchType, SearchParameters searchParameters) {
+        this(null, name, searchType, searchParameters);
     }
 
     public AtlasUserSavedSearch(String ownerName, String name) {
-        this(ownerName, name, null);
+        this(ownerName, name, SavedSearchType.BASIC, null);
     }
 
-    public AtlasUserSavedSearch(String ownerName, String name, SearchParameters searchParameters) {
+    public AtlasUserSavedSearch(String ownerName, String name, SavedSearchType searchType) {
+        this(ownerName, name, searchType, null);
+    }
+
+    public AtlasUserSavedSearch(String ownerName, String name, SavedSearchType savedSearchType, SearchParameters searchParameters) {
         setOwnerName(ownerName);
         setName(name);
+        setSearchType(savedSearchType);
         setSearchParameters(searchParameters);
     }
 
@@ -74,6 +89,14 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         this.name = name;
     }
 
+    public SavedSearchType getSearchType() {
+        return searchType;
+    }
+
+    public void setSearchType(SavedSearchType searchType) {
+        this.searchType = searchType;
+    }
+
     public SearchParameters getSearchParameters() {
         return searchParameters;
     }
@@ -82,11 +105,11 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         this.searchParameters = searchParameters;
     }
 
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         sb.append(", ownerName=").append(ownerName);
         sb.append(", name=").append(name);
+        sb.append(", searchType=").append(searchType);
         sb.append(", searchParameters=");
         if (searchParameters == null) {
             sb.append("null");

@@ -24,6 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -321,6 +322,139 @@ public class DiscoveryREST {
         }
     }
 
+    /**
+     * @param savedSearch
+     * @return the saved search-object
+     * @throws AtlasBaseException
+     * @throws IOException
+     */
+    @POST
+    @Path("saved")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasUserSavedSearch createSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
+        savedSearch.setOwnerName(Servlets.getUserName(httpServletRequest));
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.createSavedSearch(ownerName=" + savedSearch.getOwnerName() + ", name=" + savedSearch.getName() + ", searchType=" + savedSearch.getSearchType() + ")");
+            }
+
+            return atlasDiscoveryService.addSavedSearch(savedSearch);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /***
+     *
+     * @param savedSearch
+     * @return the updated search-object
+     * @throws AtlasBaseException
+     */
+    @PUT
+    @Path("saved")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+        savedSearch.setOwnerName(Servlets.getUserName(httpServletRequest));
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.updateSavedSearch(ownerName=" + savedSearch.getOwnerName() + ", name=" + savedSearch.getName() + ", searchType=" + savedSearch.getSearchType() + ")");
+            }
+
+            return atlasDiscoveryService.updateSavedSearch(savedSearch);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     *
+     * @param userName User for whom the search is retrieved
+     * @param searchName Name of the saved search
+     * @return
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("saved/{type}/{name}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasUserSavedSearch getSavedSearch(@PathParam("type") String searchType,
+                                               @PathParam("name") String searchName,
+                                               @QueryParam("user") String userName) throws AtlasBaseException {
+        userName = StringUtils.isBlank(userName) ? Servlets.getUserName(httpServletRequest) : userName;
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSavedSearch(user=" + userName + ", name=" + searchName + ", type=" + searchType + ")");
+            }
+
+            return atlasDiscoveryService.getSavedSearch(userName, searchName, SavedSearchType.to(searchType));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * @return list of all saved searches for given user
+     */
+    @GET
+    @Path("saved")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasUserSavedSearch> getSavedSearches(@QueryParam("user") String userName) throws AtlasBaseException {
+        userName = StringUtils.isBlank(userName) ? Servlets.getUserName(httpServletRequest) : userName;
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSavedSearches(user=" + userName + ")");
+            }
+
+            return atlasDiscoveryService.getSavedSearches(userName);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * @param guid Name of the saved search
+     */
+    @DELETE
+    @Path("saved/{guid}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void deleteSavedSearch(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.deleteSavedSearch(guid=" + guid + ")");
+            }
+
+            AtlasUserSavedSearch savedSearch = atlasDiscoveryService.getSavedSearch(guid);
+
+            // block attempt to delete another user's saved-search
+            if (!StringUtils.equals(savedSearch.getOwnerName(), Servlets.getUserName(httpServletRequest))) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "invalid data");
+            }
+
+            atlasDiscoveryService.deleteSavedSearch(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
     private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
         return filterCriteria == null ||
                 (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
@@ -336,69 +470,5 @@ public class DiscoveryREST {
         }
 
         return ret;
-    }
-
-    /**
-     * @param savedSearch
-     * @throws AtlasBaseException
-     * @throws IOException
-     */
-    @POST
-    @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void createSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
-        savedSearch.setOwnerName(Servlets.getUserName(httpServletRequest));
-
-        atlasDiscoveryService.addSavedSearch(savedSearch);
-    }
-
-    /**
-     * @param savedSearch
-     * @throws AtlasBaseException
-     * @throws IOException
-     */
-    @PUT
-    @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
-        atlasDiscoveryService.updateSavedSearch(savedSearch);
-    }
-
-    /**
-     * @param searchName Name of the saved search
-     * @return
-     */
-    @GET
-    @Path("saved/{name}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasUserSavedSearch getSavedSearch(@QueryParam("user") String userName, @PathParam("name") String searchName) throws AtlasBaseException {
-        userName = StringUtils.isBlank(userName) ? Servlets.getUserName(httpServletRequest) : userName;
-        return atlasDiscoveryService.getSavedSearch(userName, searchName);
-    }
-
-    /**
-     * @return list of all saved searches for given user
-     */
-    @GET
-    @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public List<AtlasUserSavedSearch> getSavedSearches(@QueryParam("user") String userName) throws AtlasBaseException {
-        userName = StringUtils.isBlank(userName) ? Servlets.getUserName(httpServletRequest) : userName;
-        return atlasDiscoveryService.getSavedSearches(userName);
-    }
-
-    /**
-     * @param guid Name of the saved search
-     */
-    @DELETE
-    @Path("saved/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteSavedSearch(@PathParam("guid") String guid) throws AtlasBaseException {
-        atlasDiscoveryService.deleteSavedSearch(guid);
     }
 }
