@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Globals',
+    'collection/VSearchList',
     'utils/CommonViewFunction'
-], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, CommonViewFunction) {
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, VSearchList, CommonViewFunction) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -34,7 +35,10 @@ define(['require',
             template: SearchLayoutViewTmpl,
 
             /** Layout sub regions */
-            regions: {},
+            regions: {
+                RSaveSearchBasic: "[data-id='r_saveSearchBasic']",
+                RSaveSearchAdvance: "[data-id='r_saveSearchAdvance']"
+            },
 
             /** ui selector cache */
             ui: {
@@ -56,6 +60,8 @@ define(['require',
                     that = this;
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
+                    this.value.query = e.currentTarget.value;
+                    this.query[this.type].query = this.value.query;
                     if (code == 13) {
                         that.findSearchResult();
                     }
@@ -110,6 +116,69 @@ define(['require',
                     this.updateQueryObject(param);
                 }
                 this.bindEvents();
+            },
+            renderSaveSearch: function() {
+                var that = this;
+                require(['views/search/SaveSearchView'], function(SaveSearchView) {
+                    var saveSearchBaiscCollection = new VSearchList(),
+                        saveSearchAdvanceCollection = new VSearchList(),
+                        saveSearchCollection = new VSearchList();
+                    saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+                    var obj = {
+                        value: that.value,
+                        searchVent: that.searchVent,
+                        typeHeaders: that.typeHeaders,
+                        fetchCollection: fetchSaveSearchCollection,
+                        classificationDefCollection: that.classificationDefCollection,
+                        entityDefCollection: that.entityDefCollection,
+                        getValue: function() {
+                            var queryObj = that.query[that.type],
+                                entityObj = that.searchTableFilters['entityFilters'],
+                                tagObj = that.searchTableFilters['tagFilters'],
+                                urlObj = Utils.getUrlState.getQueryParams();
+                            if (urlObj) {
+                                if (urlObj.includeDE == "true") {
+                                    urlObj.includeDE = true;
+                                } else {
+                                    urlObj.includeDE = false;
+                                }
+                            }
+                            return _.extend({}, queryObj, urlObj, {
+                                'entityFilters': entityObj ? entityObj[queryObj.type] : null,
+                                'tagFilters': tagObj ? tagObj[queryObj.tag] : null,
+                                'type': queryObj.type,
+                                'query': queryObj.query,
+                                'tag': queryObj.tag
+                            })
+                        },
+                        applyValue: function(model, searchType) {
+                            that.manualRender(_.extend(searchType, CommonViewFunction.generateUrlFromSaveSearchObject({
+                                value: model.get('searchParameters'),
+                                classificationDefCollection: that.classificationDefCollection,
+                                entityDefCollection: that.entityDefCollection
+                            })));
+                        }
+                    }
+                    that.RSaveSearchBasic.show(new SaveSearchView(_.extend(obj, {
+                        isBasic: true,
+                        collection: saveSearchBaiscCollection
+                    })));
+                    that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
+                        isBasic: false,
+                        collection: saveSearchAdvanceCollection
+                    })));
+
+                    function fetchSaveSearchCollection() {
+                        saveSearchCollection.fetch({
+                            success: function(collection, data) {
+                                saveSearchAdvanceCollection.reset(_.where(data, { "searchType": "ADVANCED" }));
+                                saveSearchBaiscCollection.reset(_.where(data, { "searchType": "BASIC" }));
+                            },
+                            silent: true
+                        });
+                    }
+                    fetchSaveSearchCollection();
+                });
             },
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
@@ -189,11 +258,25 @@ define(['require',
                                 _.extend(this.value, temp);
                                 // on change of type/tag change the offset.
                                 this.query[this.type].pageOffset = 0;
+                                _.extend(this.query[this.type], temp);
                             } else {
                                 // Initial loading handle.
                                 var filterObj = this.searchTableFilters[filterType];
                                 if (filterObj && this.value[key]) {
                                     this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
+                                }
+                                if (this.value.type) {
+                                    if (this.value.attributes) {
+                                        var attributes = _.sortBy(this.value.attributes.split(',')),
+                                            tableColumn = this.searchTableColumns[this.value.type];
+                                        if (_.isEmpty(this.searchTableColumns) || !tableColumn) {
+                                            this.searchTableColumns[this.value.type] = attributes
+                                        } else if (tableColumn.join(",") !== attributes.join(",")) {
+                                            this.searchTableColumns[this.value.type] = attributes;
+                                        }
+                                    } else if (this.searchTableColumns[this.value.type]) {
+                                        this.searchTableColumns[this.value.type] = undefined;
+                                    }
                                 }
                             }
                             this.makeFilterButtonActive(filterType);
@@ -229,6 +312,7 @@ define(['require',
                     placeholder: "Select",
                     allowClear: true
                 });
+                this.renderSaveSearch();
             },
             updateQueryObject: function(param) {
                 if (param && param.searchType) {
@@ -427,7 +511,7 @@ define(['require',
                     this.query[this.type].pageLimit = this.value.pageLimit;
                 }
                 if (this.value.pageOffset) {
-                    if (this.query[this.type].query != value) {
+                    if (this.query[this.type].query && this.query[this.type].query != value) {
                         this.query[this.type].pageOffset = 0;
                     } else {
                         this.query[this.type].pageOffset = this.value.pageOffset;
@@ -455,11 +539,15 @@ define(['require',
                     this.$('.temFilterBtn').hide();
                     this.$('.temFilter').addClass('col-sm-12');
                     this.$('.temFilter').removeClass('col-sm-10');
+                    this.$('.basicSaveSearch').hide();
+                    this.$('.advanceSaveSearch').show();
                 } else {
                     this.$('.temFilter').addClass('col-sm-10');
                     this.$('.temFilter').removeClass('col-sm-12');
                     this.$('.temFilterBtn').show();
                     this.$('.tagBox').show();
+                    this.$('.basicSaveSearch').show();
+                    this.$('.advanceSaveSearch').hide();
                     this.dsl = false;
                     this.type = "basic";
                 }
@@ -485,6 +573,12 @@ define(['require',
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
                 this.ui.searchInput.val("");
+                var type = "basicSaveSearch";
+                if (this.type == "dsl") {
+                    type = "advanceSaveSearch";
+                }
+                this.$('.' + type + ' .saveSearchList').find('li.active').removeClass('active');
+                this.$('.' + type + ' [data-id="saveBtn"]').attr('disabled', true);
                 if (!this.dsl) {
                     this.searchTableFilters.tagFilters = {};
                     this.searchTableFilters.entityFilters = {};

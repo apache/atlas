@@ -63,6 +63,13 @@
     display: none;
 }
 
+.fontLoader-relative {
+    @extend .fontLoader;
+    position: relative;
+    left: 0%;
+    text-align: center;
+}
+
 .initialLoading {
     display: block;
     position: absolute;

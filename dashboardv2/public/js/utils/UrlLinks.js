@@ -107,6 +107,14 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return searchUrl;
             }
         },
+        saveSearchApiUrl: function(saveSearchType) {
+            var saveSearchUrl = this.searchApiUrl() + "/saved";
+            if (saveSearchType) {
+                return saveSearchUrl + '/' + saveSearchType;
+            } else {
+                return saveSearchUrl;
+            }
+        },
         versionApiUrl: function() {
             return this.baseUrl + '/admin/version';
         },

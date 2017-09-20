@@ -84,6 +84,10 @@ header {
 #sideNav-wrapper {
     color: $white;
     font-size: 16px !important;
+    .well {
+        background-color: $color_tuna_approx;
+        border: 1px solid #666363;
+    }
 }
 
 .page-title {
@@ -272,17 +276,6 @@ hr[size="10"] {
     margin-right: 0px !important;
 }
 
-.backButton {
-    display: block;
-    margin: 0px 13px;
-    &:hover {
-        color: $color_jungle_green_approx;
-    }
-    &:active {
-        color: $color_jungle_green_approx;
-    }
-}
-
 .position-relative {
     position: relative;
 }
@@ -308,7 +301,8 @@ hr[size="10"] {
 
 .add-seperator {
     margin-bottom: 10px;
-    border-bottom: 1px solid $color_mirage_approx
+    border-bottom: 1px solid $color_mirage_approx;
+    padding-bottom: 10px;
 }
 
 .legend-sm {

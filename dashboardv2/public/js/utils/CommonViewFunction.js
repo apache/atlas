@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums'], function(require, Utils, Modal, Messages, Enums) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment'], function(require, Utils, Modal, Messages, Enums, moment) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -436,12 +436,110 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             });
         })
     }
+    CommonViewFunction.generateObjectForSaveSearchApi = function(options) {
+        var obj = {
+            name: options.name,
+            searchParameters: {
+                excludeDeletedEntities: true
+            }
+        };
+        var value = options.value;
+        if (value) {
+            _.each(Enums.extractFromUrlForSearch, function(v, k) {
+                var val = value[k];
+                if (!_.isUndefinedNull(val)) {
+                    if (k == "attributes") {
+                        val = val.split(',');
+                    } else if (k == "tagFilters") {
+                        val = CommonViewFunction.attributeFilter.generateAPIObj(val);
+                    } else if (k == "entityFilters") {
+                        val = CommonViewFunction.attributeFilter.generateAPIObj(val);
+                    } else if (k == "includeDE") {
+                        if (val) {
+                            val = false;
+                        } else {
+                            val = true;
+                        }
+                    }
+                }
+                obj.searchParameters[v] = val;
+            });
+            return obj;
+        }
+    }
+    CommonViewFunction.generateUrlFromSaveSearchObject = function(options) {
+        var value = options.value,
+            classificationDefCollection = options.classificationDefCollection,
+            entityDefCollection = options.entityDefCollection,
+            obj = {};
+        if (value) {
+            _.each(Enums.extractFromUrlForSearch, function(v, k) {
+                var val = value[v];
+                if (!_.isUndefinedNull(val)) {
+                    if (k == "attributes") {
+                        val = val.join(',');
+                    } else if (k == "tagFilters") {
+                        if (classificationDefCollection) {
+                            var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value.classification })
+                            attributeDefs = Utils.getNestedSuperTypeObj({
+                                collection: classificationDefCollection,
+                                attrMerge: true,
+                                data: classificationDef.toJSON()
+                            });
+                            _.each(val.criterion, function(obj) {
+                                var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
+                                if (attributeDef) {
+                                    if (attributeDef.typeName == "date") {
+                                        obj.attributeValue = moment(parseInt(obj.attributeValue)).format('MM/DD/YYYY h:mm A');
+                                    }
+                                    obj['attributeType'] = attributeDef.typeName;
+                                }
+                            });
+                        }
+                        val = CommonViewFunction.attributeFilter.generateUrl(val.criterion);
+                    } else if (k == "entityFilters") {
+                        if (entityDefCollection) {
+                            var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value.typeName }),
+                                attributeDefs = Utils.getNestedSuperTypeObj({
+                                    collection: entityDefCollection,
+                                    attrMerge: true,
+                                    data: entityDef.toJSON()
+                                });
+                            _.each(val.criterion, function(obj) {
+                                var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
+                                if (attributeDef) {
+                                    if (attributeDef.typeName == "date") {
+                                        obj.attributeValue = moment(parseInt(obj.attributeValue)).format('MM/DD/YYYY h:mm A');
+                                    }
+                                    obj['attributeType'] = attributeDef.typeName;
+                                }
+                            });
+                        }
+                        val = CommonViewFunction.attributeFilter.generateUrl(val.criterion);
+                    } else if (k == "includeDE") {
+                        if (val) {
+                            val = false;
+                        } else {
+                            val = true;
+                        }
+                    }
+                }
+                obj[k] = val;
+            });
+            return obj;
+        }
+    }
     CommonViewFunction.attributeFilter = {
         generateUrl: function(attrObj) {
             var attrQuery = [];
             if (attrObj) {
                 _.each(attrObj, function(obj) {
-                    attrQuery.push(obj.id + "::" + obj.operator + "::" + obj.value + "::" + obj.type);
+                    var url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (obj.value || obj.attributeValue)],
+                        type = (obj.type || obj.attributeType);
+                    if (type) {
+                        url.push(type);
+                    }
+                    attrQuery.push(url.join("::"));
                 });
                 if (attrQuery.length) {
                     return attrQuery.join();
@@ -451,13 +549,40 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             } else {
                 return null;
             }
+
+            function mapApiOperatorToUI(oper) {
+                if (oper == "eq") {
+                    return "=";
+                } else if (oper == "neq") {
+                    return "!=";
+                } else if (oper == "lt") {
+                    return "<";
+                } else if (oper == "lte") {
+                    return "<=";
+                } else if (oper == "gt") {
+                    return ">";
+                } else if (oper == "gte") {
+                    return ">=";
+                } else if (oper == "startsWith") {
+                    return "begins_with";
+                } else if (oper == "endsWith") {
+                    return "ends_with";
+                } else if (oper == "contains") {
+                    return "contains";
+                }
+                return oper;
+            }
         },
         extractUrl: function(urlObj) {
             var attrObj = [];
             if (urlObj && urlObj.length) {
                 _.each(urlObj.split(","), function(obj) {
                     var temp = obj.split("::");
-                    attrObj.push({ id: temp[0], operator: temp[1], value: temp[2], type: temp[3] });
+                    var finalObj = { id: temp[0], operator: temp[1], value: temp[2] }
+                    if (temp[3]) {
+                        finalObj['type'] = temp[3];
+                    }
+                    attrObj.push(finalObj);
                 });
                 return attrObj;
             } else {
@@ -479,22 +604,37 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var convertObj = [];
                 _.each(rules, function(rulObj) {
                     var tempObj = {};
-                    // For nested 
-                    // if (rulObj.rules) {
-                    //     tempObj = {
-                    //         "condition": "AND",
-                    //         "criterion": convertKeyAndExtractObj(rulObj.rules)
-                    //     }
-                    // } else {
-                    // }
                     tempObj = {
                         "attributeName": rulObj.id,
-                        "operator": rulObj.operator,
+                        "operator": mapUiOperatorToAPI(rulObj.operator),
                         "attributeValue": (rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
                     }
                     convertObj.push(tempObj);
                 });
                 return convertObj;
+            }
+
+            function mapUiOperatorToAPI(oper) {
+                if (oper == "=") {
+                    return "eq";
+                } else if (oper == "!=") {
+                    return "neq";
+                } else if (oper == "<") {
+                    return "lt";
+                } else if (oper == "<=") {
+                    return "lte";
+                } else if (oper == ">") {
+                    return "gt";
+                } else if (oper == ">=") {
+                    return "gte";
+                } else if (oper == "begins_with") {
+                    return "startsWith";
+                } else if (oper == "ends_with") {
+                    return "endsWith";
+                } else if (oper == "contains") {
+                    return "contains";
+                }
+                return oper;
             }
         }
     }
