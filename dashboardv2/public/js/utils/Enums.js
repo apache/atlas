@@ -56,6 +56,17 @@ define(['require'], function(require) {
         'decile-frequency': "Decile Frequency Distribution",
         'annual': "Annual Distribution"
     }
+    Enums.extractFromUrlForSearch = {
+        "pageLimit": "limit",
+        "type": "typeName",
+        "tag": "classification",
+        "query": "query",
+        "pageOffset": "offset",
+        "includeDE": "excludeDeletedEntities",
+        "tagFilters": "tagFilters",
+        "entityFilters": "entityFilters",
+        "attributes": "attributes"
+    }
 
     return Enums;
 });

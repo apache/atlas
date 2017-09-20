@@ -33,14 +33,22 @@ define(['require'], function(require) {
         removeErrorMessage: " could not be removed",
         editSuccessMessage: " has been updated successfully",
         assignDeletedEntity: " is deleted, tag cannot be assigned",
+        conformation: {
+            deleteMessage: "Are you sure you want to delete "
+        },
         search: {
             noRecordForPage: "No record found at ",
-            onSamePage : "You are on the same page!"
+            onSamePage: "You are on the same page!",
+            favoriteSearch: {
+                save: "Do you want to overwrite ",
+                notSelectedFavoriteElement: "Please select any one favorite search",
+                notSelectedSearchFilter:"Please select at least one filter"
+            }
         },
         tag: {
             addAttributeSuccessMessage: "Tag attribute is added successfully",
             updateTagDescriptionMessage: "Tag description is updated successfully",
-            updateTermDescriptionMessage: "Term description is updated successfully",
+            updateTermDescriptionMessage: "Term description is updated successfully"
         }
     };
     return Messages;

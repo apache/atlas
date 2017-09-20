@@ -19,6 +19,10 @@
 //tag.scss
 .tag-tree {
     padding: 0; // overflow: auto;
+    &.saveSearchList {
+        height: 150px;
+        overflow-y: auto;
+    }
     >li {
         list-style: none;
         cursor: pointer;
@@ -52,6 +56,7 @@
                 display: none;
                 position: absolute;
                 right: 0;
+                color: $white;
                 padding: 5px 10px;
             }
         }
