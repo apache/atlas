@@ -889,7 +889,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private String randomString() {
-        return RandomStringUtils.randomAlphanumeric(10);
+        return TestUtils.randomString(10);
     }
 
     @Test

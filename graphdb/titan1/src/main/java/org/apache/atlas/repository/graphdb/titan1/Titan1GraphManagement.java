@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.titan1;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
@@ -26,6 +27,7 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
@@ -135,6 +137,13 @@ public class Titan1GraphManagement implements AtlasGraphManagement {
     }
 
     @Override
+    public AtlasEdgeLabel makeEdgeLabel(String label) {
+        EdgeLabel edgeLabel = management.makeEdgeLabel(label).make();
+
+        return GraphDbObjectFactory.createEdgeLabel(edgeLabel);
+    }
+
+    @Override
     public void deletePropertyKey(String propertyKey) {
         PropertyKey titanPropertyKey = management.getPropertyKey(propertyKey);
 
@@ -153,6 +162,11 @@ public class Titan1GraphManagement implements AtlasGraphManagement {
     public AtlasPropertyKey getPropertyKey(String propertyName) {
         checkName(propertyName);
         return GraphDbObjectFactory.createPropertyKey(management.getPropertyKey(propertyName));
+    }
+
+    @Override
+    public AtlasEdgeLabel getEdgeLabel(String label) {
+        return GraphDbObjectFactory.createEdgeLabel(management.getEdgeLabel(label));
     }
 
     public void createExactMatchVertexIndex(String propertyName, boolean enforceUniqueness,

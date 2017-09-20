@@ -63,6 +63,12 @@ public interface AtlasGraphManagement {
     AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, AtlasCardinality cardinality);
 
     /**
+     *
+     * @param label edge label to be created
+     */
+    AtlasEdgeLabel makeEdgeLabel(String label);
+
+    /**
      *  @param propertyKey
      *
      */
@@ -73,6 +79,12 @@ public interface AtlasGraphManagement {
      * @return
      */
     AtlasPropertyKey getPropertyKey(String propertyName);
+
+    /**
+     * @param label
+     * @return
+     */
+    AtlasEdgeLabel getEdgeLabel(String label);
 
     /**
      * Creates a composite index for the graph.

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.titan1;
 
+import com.thinkaurelius.titan.core.EdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.titan1.query.Titan1GraphQuery;
@@ -86,6 +87,17 @@ public final class GraphDbObjectFactory {
             return null;
         }
         return new Titan1PropertyKey(propertyKey);
+    }
+
+    /**
+     * @param label The Gremlin propertyKey.
+     *
+     */
+    public static Titan1EdgeLabel createEdgeLabel(EdgeLabel label) {
+        if (label == null) {
+            return null;
+        }
+        return new Titan1EdgeLabel(label);
     }
 
     /**

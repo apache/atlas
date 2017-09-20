@@ -36,6 +36,8 @@ import org.apache.atlas.repository.MetadataRepository
 import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.repository.graph.AtlasGraphProvider
 import java.net.URL
+
+import org.apache.atlas.`type`.AtlasTypeRegistry
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.ITypedReferenceableInstance
@@ -74,8 +76,7 @@ trait GraphUtils {
 object QueryTestsUtils extends GraphUtils {
 
      def setupTypesAndIndices() : Unit = {
-         // FIXME: Do we need to init the AtlasTypeRegistry here ?
-        val indexer = new GraphBackedSearchIndexer(null);
+        val indexer = new GraphBackedSearchIndexer(new AtlasTypeRegistry());
         val typesDef : TypesDef = defineTypes;
         val newTypes = TypeSystem.getInstance.defineTypes(typesDef);
         indexer.onAdd(newTypes.values());        

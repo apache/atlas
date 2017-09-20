@@ -55,7 +55,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -586,7 +585,7 @@ public class AtlasEntityStoreV1Test {
     //TODO : Failing in typedef creation
     public void testSpecialCharacters() throws Exception {
         //Verify that type can be created with reserved characters in typename, attribute name
-        final String typeName = "test_type_"+ RandomStringUtils.randomAlphanumeric(10);
+        final String typeName = TestUtils.randomString(10);
         String strAttrName = randomStrWithReservedChars();
         String arrayAttrName = randomStrWithReservedChars();
         String mapAttrName = randomStrWithReservedChars();
@@ -642,7 +641,7 @@ public class AtlasEntityStoreV1Test {
         init();
 
         AtlasEntity dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
-        dbEntity.setAttribute("name", RandomStringUtils.randomAlphanumeric(10));
+        dbEntity.setAttribute("name", TestUtils.randomString(10));
         dbEntity.setAttribute("description", "us db");
         dbEntity.setAttribute("isReplicated", false);
         dbEntity.setAttribute("created", "09081988");
@@ -688,7 +687,7 @@ public class AtlasEntityStoreV1Test {
 
         // create a new table type
         AtlasEntity tblEntity = new AtlasEntity(TABLE_TYPE);
-        tblEntity.setAttribute("name", RandomStringUtils.randomAlphanumeric(10));
+        tblEntity.setAttribute("name", TestUtils.randomString(10));
         tblEntity.setAttribute("type", "type");
         tblEntity.setAttribute("tableType", "MANAGED");
         tblEntity.setAttribute("database", AtlasTypeUtil.getAtlasObjectId(updatedDbEntity));
