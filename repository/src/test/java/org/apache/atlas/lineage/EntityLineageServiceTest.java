@@ -34,7 +34,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
-import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -347,7 +346,7 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
     }
 
     private String random() {
-        return RandomStringUtils.randomAlphanumeric(5);
+        return TestUtils.randomString(5);
     }
 
     private String getEntityId(String typeName, String attributeName, String attributeValue) throws Exception {

@@ -885,11 +885,11 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private String randomUTF() {
-        return RandomStringUtils.random(10);
+        RandomStringUtils.random(10);
     }
 
     private String randomString() {
-        return RandomStringUtils.randomAlphanumeric(10);
+        return TestUtils.randomString(10);
     }
 
     @Test

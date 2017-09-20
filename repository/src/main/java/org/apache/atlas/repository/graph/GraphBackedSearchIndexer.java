@@ -190,8 +190,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             //Indexes for graph backed type system store
             createTypeStoreIndexes(management);
-      
-            
+
             commit(management);
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {
@@ -319,8 +318,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         try {
             AtlasType atlasType = typeRegistry.getType(attribTypeName);
 
-            if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
+            if (isMapType || isClassificationType(atlasType)) {
                 LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
+            } if (isArrayType) {
+                createLabelIfNeeded(management, propertyName, attribTypeName);
+            } if (isEntityType(atlasType)) {
+                createEdgeLabel(management, propertyName);
             } else if (isBuiltInType) {
                 createIndexes(management, propertyName, getPrimitiveClass(attribTypeName), isUnique, cardinality, false, isIndexable);
             } else if (isEnumType(atlasType)) {
@@ -331,6 +334,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
         } catch (AtlasBaseException e) {
             LOG.error("No type exists for {}", attribTypeName, e);
+        }
+    }
+
+    private void createLabelIfNeeded(final AtlasGraphManagement management, final String propertyName, final String attribTypeName) {
+        // If any of the referenced typename is of type Entity or Struct then the edge label needs to be created
+        for (String typeName : AtlasTypeUtil.getReferencedTypeNames(attribTypeName)) {
+            if (typeRegistry.getEntityDefByName(typeName) != null || typeRegistry.getStructDefByName(typeName) != null) {
+                // Create the edge label upfront to avoid running into concurrent call issue (ATLAS-2092)
+                createEdgeLabel(management, propertyName);
+            }
         }
     }
 
@@ -442,6 +455,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             break;
 
         case ARRAY:
+            createLabelIfNeeded(management, propertyName, field.dataType().getName());
+            break;
         case MAP:
             // todo - how do we overcome this limitation?
             // IGNORE: Can only index single-valued property keys on vertices in Mixed Index
@@ -457,13 +472,27 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             break;
 
         case CLASS:
-            // this is only A reference, index the attribute for edge
-            // Commenting this out since we do not need an index for edge here
-            //createEdgeMixedIndex(propertyName);
+            createEdgeLabel(management, propertyName);
             break;
 
         default:
             throw new IllegalArgumentException("bad data type" + field.dataType().getName());
+        }
+    }
+
+    private void createEdgeLabel(final AtlasGraphManagement management, final String propertyName) {
+        // Create the edge label upfront to avoid running into concurrent call issue (ATLAS-2092)
+        // ATLAS-2092 addresses this problem by creating the edge label upfront while type creation
+        // which resolves the race condition during the entity creation
+
+        String label = Constants.INTERNAL_PROPERTY_KEY_PREFIX + propertyName;
+
+        org.apache.atlas.repository.graphdb.AtlasEdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        if (edgeLabel == null) {
+            management.makeEdgeLabel(label);
+
+            LOG.info("Created edge label {} ", label);
         }
     }
 

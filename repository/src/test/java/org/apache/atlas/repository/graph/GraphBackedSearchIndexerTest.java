@@ -34,7 +34,6 @@ import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
-import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -136,7 +135,7 @@ public class GraphBackedSearchIndexerTest {
         try {
             TypeSystem typeSystem = TypeSystem.getInstance();
     
-            String enumName = "randomEnum" + RandomStringUtils.randomAlphanumeric(10);
+            String enumName = "randomEnum" + TestUtils.randomString(10);
             EnumType managedType = typeSystem.defineEnumType(enumName, new EnumValue("randomEnumValue", 0));
     
             HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =

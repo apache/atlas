@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.titan0;
 
+import com.thinkaurelius.titan.core.EdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.titan0.query.Titan0GraphQuery;
@@ -85,6 +86,17 @@ public final class GraphDbObjectFactory {
             return null;
         }
         return new Titan0PropertyKey(propertyKey);
+    }
+
+    /**
+     * @param label The label.
+     *
+     */
+    public static Titan0EdgeLabel createEdgeLabel(EdgeLabel label) {
+        if (label == null) {
+            return null;
+        }
+        return new Titan0EdgeLabel(label);
     }
 
     /**

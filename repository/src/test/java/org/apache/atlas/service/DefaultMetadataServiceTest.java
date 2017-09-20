@@ -23,9 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -34,10 +35,15 @@ import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.query.QueryParams;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -63,7 +69,6 @@ import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
-import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -80,6 +85,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.apache.atlas.TestUtils.*;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
@@ -164,7 +174,7 @@ public class DefaultMetadataServiceTest {
     @Test(expectedExceptions = TypeNotFoundException.class)
     public void testCreateEntityWithUnknownDatatype() throws Exception {
         Referenceable entity = new Referenceable("Unknown datatype");
-        String dbName = RandomStringUtils.randomAlphanumeric(10);
+        String dbName = TestUtils.randomString(10);
         entity.set(NAME, dbName);
         entity.set("description", "us db");
         TestUtils.createInstance(metadataService, entity);
@@ -197,7 +207,7 @@ public class DefaultMetadataServiceTest {
         String arrayAttrName = randomStrWithReservedChars();
         String mapAttrName = randomStrWithReservedChars();
         HierarchicalTypeDefinition<ClassType> typeDefinition =
-                createClassTypeDef("test_type_"+ RandomStringUtils.randomAlphanumeric(10), ImmutableSet.<String>of(),
+                createClassTypeDef("test_type_"+ TestUtils.randomString(10), ImmutableSet.<String>of(),
                         createOptionalAttrDef(strAttrName, DataTypes.STRING_TYPE),
                         new AttributeDefinition(arrayAttrName, DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.OPTIONAL, false, null),
@@ -1112,7 +1122,7 @@ public class DefaultMetadataServiceTest {
 
     @Test
     public void testTypeUpdateFailureShouldRollBack() throws AtlasException, JSONException {
-        String typeName = "test_type_"+ RandomStringUtils.randomAlphanumeric(10);
+        String typeName = TestUtils.randomString(10);
         HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(
                 typeName, ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE));
@@ -1225,6 +1235,97 @@ public class DefaultMetadataServiceTest {
         } catch (AtlasException e) {
             fail("getTypeNames should've succeeded", e);
         }
+    }
+
+    @Test
+    // ATLAS-2092: Concurrent edge label creation leads to inconsistency
+    // This test tries entity creation in parallel and ensures that the edges with the same label actually get created
+    public void testConcurrentCalls() {
+        final HierarchicalTypeDefinition<ClassType> refType =
+                createClassTypeDef(randomString(), ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<ClassType> type =
+                createClassTypeDef(randomString(), ImmutableSet.<String>of(),
+                                   new AttributeDefinition("ref", refType.typeName, Multiplicity.OPTIONAL, true, null));
+        try {
+            metadataService.createType(TypesSerialization.toJson(refType, false));
+            metadataService.createType(TypesSerialization.toJson(type, false));
+
+            String refId1 = createBasicEntity(refType);
+            String refId2 = createBasicEntity(refType);
+
+            // Add referenced entity for edge creation
+            final Referenceable instance1 = new Referenceable(type.typeName);
+            instance1.set("ref", new Referenceable(refId1, refType.typeName, null));
+
+            // Add referenced entity for edge creation
+            final Referenceable instance2 = new Referenceable(type.typeName);
+            instance2.set("ref", new Referenceable(refId2, refType.typeName, null));
+
+            ExecutorService      executor = Executors.newFixedThreadPool(3);
+            List<Future<Object>> futures  = new ArrayList<>();
+            // Try parallel creation of both the entities
+            futures.add(executor.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    return createEntity(instance1);
+                }
+            }));
+            futures.add(executor.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    return createEntity(instance2);
+                }
+            }));
+            futures.add(executor.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    return discoveryService.searchByDSL(TestUtils.TABLE_TYPE, new QueryParams(10, 0));
+                }
+            }));
+
+            try {
+                String id1 = (String) futures.get(0).get();
+                String id2 = (String) futures.get(1).get();
+                futures.get(2).get();
+                executor.shutdown();
+
+                assertNotNull(id1);
+                assertNotNull(id2);
+
+                boolean validated1 = assertEdge(id1, type.typeName);
+                boolean validated2 = assertEdge(id2, type.typeName);
+                assertTrue(validated1 && validated2);
+            } catch (InterruptedException | ExecutionException e) {
+                fail("Parallel entity creation failed", e);
+            }
+        } catch (AtlasException e) {
+            fail("Type/Entity creation failed", e);
+        }
+    }
+
+    private String createBasicEntity(final HierarchicalTypeDefinition<ClassType> refType) throws AtlasException {
+        String                     json = InstanceSerialization.toJson(new Referenceable(refType.typeName), false);
+        CreateUpdateEntitiesResult entities         = metadataService.createEntities("[" + json + "]");
+        return entities.getCreatedEntities().get(0);
+    }
+
+    private String createEntity(final Referenceable referenceable) throws AtlasException {
+        String                     json = InstanceSerialization.toJson(referenceable, false);
+        CreateUpdateEntitiesResult entities         = metadataService.createEntities("[" + json + "]");
+        return entities.getCreatedEntities().get(0);
+    }
+
+    private boolean assertEdge(String id, String typeName) throws AtlasException {
+        AtlasGraph            graph       = TestUtils.getGraph();
+        Iterable<AtlasVertex> vertices    = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices();
+        AtlasVertex           AtlasVertex = vertices.iterator().next();
+        Iterable<AtlasEdge>   edges       = AtlasVertex.getEdges(AtlasEdgeDirection.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
+        if (edges.iterator().hasNext()) {
+            ITypedReferenceableInstance entity = metadataService.getEntityDefinition(id);
+            assertNotNull(entity.get("ref"));
+            return true;
+        }
+        return false;
     }
 
     private static class EntitiesChangeListener implements EntityChangeListener {

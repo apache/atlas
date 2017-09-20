@@ -481,7 +481,13 @@ public final class TestUtils {
     }
 
     public static final String randomString() {
-        return RandomStringUtils.randomAlphanumeric(10);
+        return randomString(10);
+    }
+
+    public static final String randomString(int count) {
+        final String prefix = "r";
+
+        return prefix + RandomStringUtils.randomAlphanumeric(count - prefix.length()); // ensure that the string starts with a letter
     }
 
     public static Referenceable createDBEntity() {

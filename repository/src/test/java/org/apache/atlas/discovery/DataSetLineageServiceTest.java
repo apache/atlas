@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtils;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -31,7 +32,6 @@ import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
-import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -488,7 +488,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
     }
 
     private String random() {
-        return RandomStringUtils.randomAlphanumeric(5);
+        return TestUtils.randomString(5);
     }
 
     private String getEntityId(String typeName, String attributeName, String attributeValue) throws Exception {
