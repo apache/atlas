@@ -218,7 +218,7 @@ public final class EntityGraphRetriever {
             Object name        = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.NAME));
             Object description = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.DESCRIPTION));
             Object owner       = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.OWNER));
-            Object createTime  = entityVertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
+            Object createTime  = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.CREATE_TIME));
             Object displayText = name != null ? name : ret.getAttribute(AtlasClient.QUALIFIED_NAME);
 
             ret.setAttribute(AtlasClient.NAME, name);
