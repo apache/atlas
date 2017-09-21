@@ -75,6 +75,9 @@ public class ZipFileResourceTestUtils {
         File f = new File(filePath);
         String s = FileUtils.readFileToString(f);
         assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
+        if(StringUtils.isEmpty(s)) {
+            throw new IOException("Unable to read file: " + fileName);
+        }
 
         return s;
     }
@@ -138,9 +141,12 @@ public class ZipFileResourceTestUtils {
     }
 
     private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
+        if(typesFromJson == null) {
+            return;
+        }
 
-        if (!typesToCreate.isEmpty()) {
+        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
+        if (typesToCreate != null && !typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
         }
     }
