@@ -17,15 +17,15 @@
  */
 define(['require',
     'backbone',
-    'hbs!tmpl/search/SaveSearchItemView_tmpl',
+    'hbs!tmpl/search/save/SaveSearchItemView_tmpl',
     'utils/UrlLinks',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, SaveSearchItemView_tmpl, UrlLinks, Utils, CommonViewFunction, Messages) {
+], function(require, Backbone, SaveSearchItemViewTmpl, UrlLinks, Utils, CommonViewFunction, Messages) {
     'use strict';
     return Backbone.Marionette.ItemView.extend({
-        template: SaveSearchItemView_tmpl,
+        template: SaveSearchItemViewTmpl,
         tagName: 'li',
         className: 'parent-node',
         ui: {
@@ -61,6 +61,9 @@ define(['require',
             this.trigger('item:clicked');
             this.ui.stateChange.parent('li').addClass('active').siblings().removeClass('active');
         },
+        modelEvents: {
+            'change': 'render'
+        },
         showToolTip: function(e) {
             var that = this;
             Utils.generatePopover({
@@ -69,7 +72,8 @@ define(['require',
                 popoverOptions: {
                     content: function() {
                         return "<ul class='saveSearchPopoverList'>" +
-                            "<li class='th' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearch'>Search </a></li>" +
+                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearch'>Search </a></li>" +
+                            "<li class='listTerm' ><i class='fa fa-pencil'></i> <a href='javascript:void(0)' data-fn='onRename'>Rename</a></li>" +
                             "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li>" +
                             "</ul>";
                     }
@@ -93,6 +97,14 @@ define(['require',
                 mergeBrowserUrl: false,
                 trigger: true,
                 updateTabState: true
+            });
+        },
+        onRename: function() {
+            var that = this;
+            require([
+                'views/search/save/SaveModalLayoutView'
+            ], function(SaveModalLayoutView) {
+                new SaveModalLayoutView({ 'selectedModel': that.model, 'collection': that.collection, 'getValue': that.getValue, 'isBasic': that.isBasic });
             });
         },
         onDelete: function() {

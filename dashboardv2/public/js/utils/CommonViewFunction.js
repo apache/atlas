@@ -447,9 +447,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     CommonViewFunction.generateObjectForSaveSearchApi = function(options) {
         var obj = {
             name: options.name,
-            searchParameters: {
-                excludeDeletedEntities: true
-            }
+            guid: options.guid,
+            searchParameters: {}
         };
         var value = options.value;
         if (value) {
@@ -469,6 +468,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             val = true;
                         }
                     }
+                }
+                if (k == "includeDE") {
+                    val = _.isUndefinedNull(val) ? true : val;
                 }
                 obj.searchParameters[v] = val;
             });
