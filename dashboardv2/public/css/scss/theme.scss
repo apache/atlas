@@ -130,7 +130,7 @@ a {
     }
 }
 
-a[href^="#!/"]:not(.btn, .not-blue-link) {
+.blue-link {
     color: $color_havelock_blue_approx;
     &:focus {
         color: $color_havelock_blue_approx;
@@ -142,6 +142,11 @@ a[href^="#!/"]:not(.btn, .not-blue-link) {
         text-decoration: underline;
     }
 }
+
+a[href^="#!/"]:not(.btn, .not-blue-link) {
+    @extend .blue-link;
+}
+
 
 th {
     text-transform: capitalize;
