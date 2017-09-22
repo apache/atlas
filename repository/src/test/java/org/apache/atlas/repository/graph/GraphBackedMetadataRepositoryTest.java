@@ -885,7 +885,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private String randomUTF() {
-        RandomStringUtils.random(10);
+        return RandomStringUtils.random(10);
     }
 
     private String randomString() {
