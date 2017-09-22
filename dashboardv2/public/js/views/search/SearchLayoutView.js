@@ -102,8 +102,10 @@ define(['require',
                         type: null,
                         tag: null,
                         attributes: null,
+                        tagFilters: null,
                         pageOffset: null,
                         pageLimit: null,
+                        entityFilters: null,
                         includeDE: null
                     }
                 };
@@ -119,7 +121,7 @@ define(['require',
             },
             renderSaveSearch: function() {
                 var that = this;
-                require(['views/search/SaveSearchView'], function(SaveSearchView) {
+                require(['views/search/save/SaveSearchView'], function(SaveSearchView) {
                     var saveSearchBaiscCollection = new VSearchList(),
                         saveSearchAdvanceCollection = new VSearchList(),
                         saveSearchCollection = new VSearchList();
@@ -137,6 +139,7 @@ define(['require',
                                 tagObj = that.searchTableFilters['tagFilters'],
                                 urlObj = Utils.getUrlState.getQueryParams();
                             if (urlObj) {
+                                // includeDE value in because we need to send "true","false" to the server.
                                 if (urlObj.includeDE == "true") {
                                     urlObj.includeDE = true;
                                 } else {
@@ -329,8 +332,10 @@ define(['require',
                         type: null,
                         tag: null,
                         attributes: null,
+                        tagFilters: null,
                         pageOffset: null,
                         pageLimit: null,
+                        entityFilters: null,
                         includeDE: null
                     }), param);
             },
@@ -439,6 +444,7 @@ define(['require',
                     this.value = paramObj;
                 }
                 if (this.value) {
+                    this.ui.searchInput.val(this.value.query || "");
                     if (this.value.dslChecked == "true") {
                         if (!this.ui.searchType.prop("checked")) {
                             this.ui.searchType.prop("checked", true).trigger("change");
@@ -470,7 +476,6 @@ define(['require',
                             }
                         }
                     }
-                    this.ui.searchInput.val(this.value.query || "");
                     setTimeout(function() {
                         that.ui.searchInput.focus();
                     }, 0);
@@ -482,15 +487,11 @@ define(['require',
             triggerSearch: function(value) {
                 var params = {
                     searchType: this.type,
-                    dslChecked: this.ui.searchType.is(':checked'),
-                    tagFilters: null,
-                    entityFilters: null,
-                    attributes: null,
-                    includeDE: null
+                    dslChecked: this.ui.searchType.is(':checked')
                 }
-                this.query[this.type].type = this.ui.typeLov.select2('val') || null;
+                params['type'] = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
-                    this.query[this.type].tag = this.ui.tagLov.select2('val') || null;
+                    params['tag'] = this.ui.tagLov.select2('val') || null;
                     var entityFilterObj = this.searchTableFilters['entityFilters'],
                         tagFilterObj = this.searchTableFilters['tagFilters'];
                     if (this.value.tag) {
@@ -503,25 +504,27 @@ define(['require',
                     if (columnList) {
                         params['attributes'] = columnList.join(',');
                     }
-                    if (this.value.includeDE) {
+                    if (_.isUndefinedNull(this.value.includeDE)) {
+                        params['includeDE'] = false;
+                    } else {
                         params['includeDE'] = this.value.includeDE;
                     }
                 }
                 if (this.value.pageLimit) {
-                    this.query[this.type].pageLimit = this.value.pageLimit;
+                    params['pageLimit'] = this.value.pageLimit;
                 }
                 if (this.value.pageOffset) {
                     if (this.query[this.type].query && this.query[this.type].query != value) {
-                        this.query[this.type].pageOffset = 0;
+                        params['pageOffset'] = 0;
                     } else {
-                        this.query[this.type].pageOffset = this.value.pageOffset;
+                        params['pageOffset'] = this.value.pageOffset;
                     }
                 }
-                this.query[this.type].query = value || null;
-
+                params['query'] = value || null;
+                _.extend(this.query[this.type], params);
                 Utils.setUrl({
                     url: '#!/search/searchResult',
-                    urlParams: _.extend({}, this.query[this.type], params),
+                    urlParams: _.extend({}, this.query[this.type]),
                     mergeBrowserUrl: false,
                     trigger: true,
                     updateTabState: true
@@ -554,10 +557,6 @@ define(['require',
                     this.type = "basic";
                     this.$('.searchText').text('Search By Text');
                     this.ui.searchInput.attr("placeholder", "Search By Text");
-                }
-                if (paramObj && this.type == "basic") {
-                    this.query[this.type].attributes = paramObj.attributes ? paramObj.attributes : null;
-                    this.query[this.type].includeDE = this.value.includeDE;
                 }
                 if (Utils.getUrlState.isSearchTab()) {
                     Utils.setUrl({

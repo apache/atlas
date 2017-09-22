@@ -18,18 +18,18 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/search/SaveSearch_tmpl',
-    'views/search/SaveSearchItemView',
+    'hbs!tmpl/search/save/SaveSearchView_tmpl',
+    'views/search/save/SaveSearchItemView',
     'collection/VSearchList',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, SaveSearch_Tmpl, SaveSearchItemView, VSearchList, Utils, UrlLinks, CommonViewFunction, Messages) {
+], function(require, Backbone, SaveSearchViewTmpl, SaveSearchItemView, VSearchList, Utils, UrlLinks, CommonViewFunction, Messages) {
     'use strict';
 
     return Backbone.Marionette.CompositeView.extend({
-        template: SaveSearch_Tmpl,
+        template: SaveSearchViewTmpl,
         childView: SaveSearchItemView,
         childViewContainer: "[data-id='itemViewContent']",
         ui: {
@@ -68,23 +68,22 @@ define(['require',
             this.bindEvents();
         },
         bindEvents: function() {
-            this.listenTo(this.collection, "reset error", function(model, response) {
+            this.listenTo(this.collection, "add reset error", function(model, collection) {
                 this.$('.fontLoader-relative').hide();
-                if (model && model.length) {
-                    this.$("[data-id='itemViewContent']").text("");
+                if (this.collection && this.collection.length) {
+                    this.$(".noFavoriteSearch").hide();
                 } else {
-                    this.$("[data-id='itemViewContent']").text("You don't have any favorite search.")
+                    this.$(".noFavoriteSearch").show();
                 }
             }, this);
         },
         saveAs: function(e) {
-            var that = this,
-                value = this.getValue();
+            var value = this.getValue();
             if (value && (value.type || value.tag || value.query)) {
-                require([
-                    'views/search/SaveAsLayoutView'
-                ], function(SaveAsLayoutView) {
-                    new SaveAsLayoutView({ 'value': that.value, 'searchVent': that.searchVent, 'collection': that.collection, 'getValue': that.getValue, 'isBasic': that.isBasic });
+                this.callSaveModalLayoutView({
+                    'collection': this.collection,
+                    'getValue': this.getValue,
+                    'isBasic': this.isBasic
                 });
             } else {
                 Utils.notifyInfo({
@@ -99,45 +98,33 @@ define(['require',
                     modal: true,
                     html: true,
                     ok: function(argument) {
-                        that.onSaveNotifyOk(obj);
+                        that.callSaveModalLayoutView({
+                            'saveObj': obj,
+                            'collection': that.collection,
+                            'getValue': that.getValue,
+                            'isBasic': that.isBasic
+                        })
                     },
                     cancel: function(argument) {}
                 },
                 selectedEl = this.$('.saveSearchList li.active').find('div.item');
             obj.name = selectedEl.find('a').text();
-            obj.id = selectedEl.data('id');
+            obj.guid = selectedEl.data('id');
             if (selectedEl && selectedEl.length) {
                 notifyObj['text'] = Messages.search.favoriteSearch.save + " <b>" + obj.name + "</b> ?";
                 Utils.notifyConfirm(notifyObj);
             } else {
                 Utils.notifyInfo({
-                    content: Messages.search.favoriteSearch.notSelectedElement
+                    content: Messages.search.favoriteSearch.notSelectedFavoriteElement
                 })
             }
         },
-        onSaveNotifyOk: function(obj) {
-            var that = this
-            if (obj && obj.id) {
-                var model = new this.collection.model();
-                obj.value = this.getValue();
-                var saveObj = CommonViewFunction.generateObjectForSaveSearchApi(obj);
-                saveObj['guid'] = obj.id;
-                model.urlRoot = UrlLinks.saveSearchApiUrl();
-                model.save(saveObj, {
-                    type: 'PUT',
-                    success: function(model, data) {
-                        if (that.collection) {
-                            var collectionRef = that.collection.find({ guid: data.guid });
-                            if (collectionRef) {
-                                collectionRef.set(data);
-                            }
-                        }
-                        Utils.notifySuccess({
-                            content: obj.name + Messages.editSuccessMessage
-                        });
-                    }
-                });
-            }
+        callSaveModalLayoutView: function(options) {
+            require([
+                'views/search/save/SaveModalLayoutView'
+            ], function(SaveModalLayoutView) {
+                new SaveModalLayoutView(options);
+            });
         }
     });
 });
