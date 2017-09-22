@@ -541,6 +541,8 @@ define(['require',
                     this.$('.temFilter').removeClass('col-sm-10');
                     this.$('.basicSaveSearch').hide();
                     this.$('.advanceSaveSearch').show();
+                    this.$('.searchText').text('Search By Query');
+                    this.ui.searchInput.attr("placeholder", 'Search By Query eg. where name="sales_fact"');
                 } else {
                     this.$('.temFilter').addClass('col-sm-10');
                     this.$('.temFilter').removeClass('col-sm-12');
@@ -550,6 +552,8 @@ define(['require',
                     this.$('.advanceSaveSearch').hide();
                     this.dsl = false;
                     this.type = "basic";
+                    this.$('.searchText').text('Search By Text');
+                    this.ui.searchInput.attr("placeholder", "Search By Text");
                 }
                 if (paramObj && this.type == "basic") {
                     this.query[this.type].attributes = paramObj.attributes ? paramObj.attributes : null;
