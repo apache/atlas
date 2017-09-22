@@ -76,24 +76,26 @@ public class ZipFileResourceTestUtils {
         File[] topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
         assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
+        if(topModelsDirContents != null) {
+            Arrays.sort(topModelsDirContents);
+            for (File modelDir : topModelsDirContents) {
+                if (modelDir.exists() && modelDir.isDirectory()) {
+                    ret = getFileContents(modelDir, fileName);
 
-        Arrays.sort(topModelsDirContents);
-
-        for (File modelDir : topModelsDirContents) {
-            if (modelDir.exists() && modelDir.isDirectory()) {
-                ret = getFileContents(modelDir, fileName);
-
-                if (ret != null) {
-                    break;
+                    if (ret != null) {
+                        break;
+                    }
                 }
             }
-        }
 
-        if (ret == null) {
-            ret = getFileContents(topModelsDir, fileName);
-        }
+            if (ret == null) {
+                ret = getFileContents(topModelsDir, fileName);
+            }
 
-        assertTrue(ret != null, fileName + ": unable to find model file");
+            assertTrue(ret != null, fileName + ": unable to find model file");
+        } else {
+            throw new IOException("Unable to retrieve model contents.");
+        }
 
         return ret;
     }
@@ -169,15 +171,19 @@ public class ZipFileResourceTestUtils {
     }
 
     private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
+        if(typesFromJson == null) {
+            return;
+        }
 
-        if (!typesToCreate.isEmpty()) {
+        AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
+        if (typesToCreate != null && !typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
         }
     }
 
     private static AtlasTypesDef getAtlasTypesDefFromFile(String fileName) throws IOException {
         String sampleTypes = ZipFileResourceTestUtils.getModelJson(fileName);
+        if(sampleTypes == null) return null;
         return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
     }
 
