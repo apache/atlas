@@ -22,7 +22,6 @@ import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.profile.AtlasUserProfile;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public class UserProfileService {
         userProfile.getSavedSearches().add(savedSearch);
         userProfile = dataAccess.save(userProfile);
         for (AtlasUserSavedSearch s : userProfile.getSavedSearches()) {
-            if(s.getName().equals(savedSearch.getName()) && s.getSearchType().equals(savedSearch.getSearchType())) {
+            if(s.getName().equals(savedSearch.getName())) {
                 return s;
             }
         }
@@ -81,8 +80,7 @@ public class UserProfileService {
     private void checkIfQueryAlreadyExists(AtlasUserSavedSearch savedSearch, AtlasUserProfile userProfile) throws AtlasBaseException {
         for (AtlasUserSavedSearch exisingSearch : userProfile.getSavedSearches()) {
             if (StringUtils.equals(exisingSearch.getOwnerName(), savedSearch.getOwnerName()) &&
-                StringUtils.equals(exisingSearch.getName(), savedSearch.getName()) &&
-                exisingSearch.getSearchType().equals(savedSearch.getSearchType())) {
+                StringUtils.equals(exisingSearch.getName(), savedSearch.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.SAVED_SEARCH_ALREADY_EXISTS, savedSearch.getName(), savedSearch.getOwnerName());
             }
         }
@@ -129,8 +127,8 @@ public class UserProfileService {
         return (profile != null) ? profile.getSavedSearches() : null;
     }
 
-    public AtlasUserSavedSearch getSavedSearch(String userName, String searchName, SavedSearchType searchType) throws AtlasBaseException {
-        AtlasUserSavedSearch ss = new AtlasUserSavedSearch(userName, searchName, searchType);
+    public AtlasUserSavedSearch getSavedSearch(String userName, String searchName) throws AtlasBaseException {
+        AtlasUserSavedSearch ss = new AtlasUserSavedSearch(userName, searchName);
 
         return dataAccess.load(ss);
     }
