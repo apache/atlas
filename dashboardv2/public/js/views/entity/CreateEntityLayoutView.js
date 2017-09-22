@@ -462,8 +462,12 @@ define(['require',
                         if (dataValue) {
                             entityValue = dataValue;
                         }
-                        if (value.typeName === "date" && dataValue) {
-                            entityValue = moment(dataValue).format("MM/DD/YYYY");
+                        if (value.typeName === "date") {
+                            if (dataValue) {
+                                entityValue = moment(dataValue).format("MM/DD/YYYY");
+                            } else {
+                                entityValue = moment().format("MM/DD/YYYY");
+                            }
                         }
                     }
                 }
