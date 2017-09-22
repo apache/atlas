@@ -366,7 +366,8 @@ public abstract class SearchProcessor {
     }
 
     private String toIndexQuery(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes, StringBuilder sb, int level) {
-        if (criteria.getCondition() != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
+        Condition condition = criteria.getCondition();
+        if (condition != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
             StringBuilder nestedExpression = new StringBuilder();
 
             for (FilterCriteria filterCriteria : criteria.getCriterion()) {
@@ -374,16 +375,20 @@ public abstract class SearchProcessor {
 
                 if (StringUtils.isNotEmpty(nestedQuery)) {
                     if (nestedExpression.length() > 0) {
-                        nestedExpression.append(SPACE_STRING).append(criteria.getCondition()).append(SPACE_STRING);
+                        nestedExpression.append(SPACE_STRING).append(condition).append(SPACE_STRING);
                     }
                     nestedExpression.append(nestedQuery);
                 }
             }
 
-            if (level == 0) {
-                return nestedExpression.length() > 0 ? sb.append(nestedExpression).toString() : EMPTY_STRING;
+            boolean needSurroundingBraces = level != 0 || (condition == Condition.OR && criteria.getCriterion().size() > 1);
+            if (nestedExpression.length() > 0) {
+                return sb.append(needSurroundingBraces ? BRACE_OPEN_STR : EMPTY_STRING)
+                         .append(nestedExpression)
+                         .append(needSurroundingBraces ? BRACE_CLOSE_STR : EMPTY_STRING)
+                         .toString();
             } else {
-                return nestedExpression.length() > 0 ? sb.append(BRACE_OPEN_STR).append(nestedExpression).append(BRACE_CLOSE_STR).toString() : EMPTY_STRING;
+                return EMPTY_STRING;
             }
         } else if (indexAttributes.contains(criteria.getAttributeName())){
             return toIndexExpression(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
