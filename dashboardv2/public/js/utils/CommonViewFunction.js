@@ -216,10 +216,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     keyValue = extractObject(keyValue)
                 }
             }
-            if (isTable) {
-                table += '<tr><td>' + _.escape(key) + '</td><td><div ' + (_.isObject(valueObject[key]) ? 'class="scroll-y"' : '') + '>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div></td></tr>';
+            var val = "";
+            if (_.isObject(valueObject[key])) {
+                val = keyValue
+            } else if (Utils.isUrl(keyValue)) {
+                val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + keyValue + '</a>';
             } else {
-                table += '<div>' + (_.isObject(valueObject[key]) ? keyValue : _.escape(keyValue)) + '</div>';
+                val = _.escape(keyValue);
+            }
+            if (isTable) {
+                table += '<tr><td>' + _.escape(key) + '</td><td><div ' + (_.isObject(valueObject[key]) ? 'class="scroll-y"' : '') + '>' + val + '</div></td></tr>';
+            } else {
+                table += '<div>' + val + '</div>';
             }
 
         });

@@ -41,6 +41,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return options.el.popover(_.extend({
                 placement: 'auto bottom',
                 html: true,
+                animation: false,
                 template: '<div class="popover fixed-popover fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>'
             }, options.popoverOptions));
         }
@@ -641,6 +642,10 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 }
             }
         }
+    }
+    Utils.isUrl = function(url) {
+        var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        return regexp.test(url);
     }
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {
