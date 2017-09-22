@@ -389,7 +389,7 @@ define(['require',
                             var pageNumber = that.activePage + 1;
                             if (goToPage) {
                                 pageNumber = goToPage;
-                                that.offset = that.offset - ((parseInt(pageNumber, 10) - 1) * that.limit);
+                                that.offset = (that.activePage - 1) * that.limit;
                             } else {
                                 that.ui.nextData.attr('disabled', true);
                                 that.offset = that.offset - that.limit;
