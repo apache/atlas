@@ -95,6 +95,6 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     }
 
     private String getUniqueValue(AtlasUserSavedSearch obj) {
-        return String.format("%s:%s:%s", obj.getOwnerName(), obj.getName(), obj.getSearchType()) ;
+        return String.format("%s:%s", obj.getOwnerName(), obj.getName()) ;
     }
 }

@@ -61,10 +61,6 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         this(ownerName, name, SavedSearchType.BASIC, null);
     }
 
-    public AtlasUserSavedSearch(String ownerName, String name, SavedSearchType searchType) {
-        this(ownerName, name, searchType, null);
-    }
-
     public AtlasUserSavedSearch(String ownerName, String name, SavedSearchType savedSearchType, SearchParameters searchParameters) {
         setOwnerName(ownerName);
         setName(name);

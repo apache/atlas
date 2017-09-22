@@ -111,7 +111,7 @@ public class UserProfileServiceTest {
                 AtlasUserSavedSearch actual = userProfileService.addSavedSearch(getDefaultSavedSearch(userName, queryName, expectedSearchParameter));
                 assertNotNull(actual);
 
-                AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, queryName, BASIC);
+                AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, queryName);
                 assertNotNull(savedSearch);
                 assertEquals(savedSearch.getSearchParameters(), expectedSearchParameter);
             }
@@ -156,7 +156,7 @@ public class UserProfileServiceTest {
 
         saveQueries(userName, actualSearchParameter);
         for (int i = 0; i < max_searches; i++) {
-            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, getIndexBasedQueryName(i), BASIC);
+            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(userName, getIndexBasedQueryName(i));
             assertEquals(savedSearch.getName(), getIndexBasedQueryName(i));
             assertEquals(savedSearch.getSearchParameters(), actualSearchParameter);
         }
@@ -194,7 +194,7 @@ public class UserProfileServiceTest {
     public void updateSearch() throws AtlasBaseException {
         final String queryName = getIndexBasedQueryName(0);
         String userName = getIndexBasedUserName(0);
-        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName, BASIC);
+        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName);
         assertNotNull(expected);
 
         SearchParameters sp = expected.getSearchParameters();
@@ -212,11 +212,11 @@ public class UserProfileServiceTest {
         final String queryName = getIndexBasedQueryName(1);
         String userName = getIndexBasedUserName(0);
 
-        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName, BASIC);
+        AtlasUserSavedSearch expected = userProfileService.getSavedSearch(userName, queryName);
         assertNotNull(expected);
 
         userProfileService.deleteSavedSearch(expected.getGuid());
-        userProfileService.getSavedSearch(userName, queryName, BASIC);
+        userProfileService.getSavedSearch(userName, queryName);
     }
 
     @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryNameListForUser"})

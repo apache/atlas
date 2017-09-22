@@ -34,7 +34,6 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 import org.apache.atlas.query.Expressions.AliasExpression;
 import org.apache.atlas.query.Expressions.Expression;
 import org.apache.atlas.query.Expressions.SelectExpression;
@@ -807,8 +806,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
 
     @Override
-    public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+    public AtlasUserSavedSearch addSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         try {
+            if (StringUtils.isEmpty(savedSearch.getOwnerName())) {
+                savedSearch.setOwnerName(currentUser);
+            }
+
+            checkSavedSearchOwnership(currentUser, savedSearch);
+
             return userProfileService.addSavedSearch(savedSearch);
         } catch (AtlasBaseException e) {
             LOG.error("addSavedSearch({})", savedSearch, e);
@@ -818,8 +823,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
 
     @Override
-    public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+    public AtlasUserSavedSearch updateSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         try {
+            if (StringUtils.isEmpty(savedSearch.getOwnerName())) {
+                savedSearch.setOwnerName(currentUser);
+            }
+
+            checkSavedSearchOwnership(currentUser, savedSearch);
+
             return userProfileService.updateSavedSearch(savedSearch);
         } catch (AtlasBaseException e) {
             LOG.error("updateSavedSearch({})", savedSearch, e);
@@ -828,8 +839,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public List<AtlasUserSavedSearch> getSavedSearches(String userName) throws AtlasBaseException {
+    public List<AtlasUserSavedSearch> getSavedSearches(String currentUser, String userName) throws AtlasBaseException {
         try {
+            if (StringUtils.isEmpty(userName)) {
+                userName = currentUser;
+            } else if (!StringUtils.equals(currentUser, userName)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "invalid data");
+            }
+
             return userProfileService.getSavedSearches(userName);
         } catch (AtlasBaseException e) {
             LOG.error("getSavedSearches({})", userName, e);
@@ -838,27 +855,82 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
-    public AtlasUserSavedSearch getSavedSearch(String guid) throws AtlasBaseException {
+    public AtlasUserSavedSearch getSavedSearchByGuid(String currentUser, String guid) throws AtlasBaseException {
         try {
-            return userProfileService.getSavedSearch(guid);
+            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(guid);
+
+            checkSavedSearchOwnership(currentUser, savedSearch);
+
+            return savedSearch;
         } catch (AtlasBaseException e) {
-            LOG.error("getSavedSearch({})", guid, e);
+            LOG.error("getSavedSearchByGuid({})", guid, e);
             throw e;
         }
     }
 
     @Override
-    public AtlasUserSavedSearch getSavedSearch(String userName, String searchName, SavedSearchType searchType) throws AtlasBaseException {
+    public AtlasUserSavedSearch getSavedSearchByName(String currentUser, String userName, String searchName) throws AtlasBaseException {
         try {
-            return userProfileService.getSavedSearch(userName, searchName, searchType);
+            if (StringUtils.isEmpty(userName)) {
+                userName = currentUser;
+            } else if (!StringUtils.equals(currentUser, userName)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "invalid data");
+            }
+
+            return userProfileService.getSavedSearch(userName, searchName);
         } catch (AtlasBaseException e) {
-            LOG.error("getSavedSearch({}, {})", userName, searchName, e);
+            LOG.error("getSavedSearchByName({}, {})", userName, searchName, e);
             throw e;
         }
     }
 
     @Override
-    public void deleteSavedSearch(String guid) throws AtlasBaseException {
-        userProfileService.deleteSavedSearch(guid);
+    public void deleteSavedSearch(String currentUser, String guid) throws AtlasBaseException {
+        try {
+            AtlasUserSavedSearch savedSearch = userProfileService.getSavedSearch(guid);
+
+            checkSavedSearchOwnership(currentUser, savedSearch);
+
+            userProfileService.deleteSavedSearch(guid);
+        } catch (AtlasBaseException e) {
+            LOG.error("deleteSavedSearch({})", guid, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public String getDslQueryUsingTypeNameClassification(String query, String typeName, String classification) {
+        String queryStr = query == null ? "" : query;
+
+        if (org.apache.commons.lang3.StringUtils.isNoneEmpty(typeName)) {
+            queryStr = escapeTypeName(typeName) + " " + queryStr;
+        }
+
+        if (org.apache.commons.lang3.StringUtils.isNoneEmpty(classification)) {
+            // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
+            if (StringUtils.isEmpty(query)) {
+                queryStr += (" isa " + classification);
+            }
+        }
+        return queryStr;
+    }
+
+    private String escapeTypeName(String typeName) {
+        String ret;
+
+        if (StringUtils.startsWith(typeName, "`") && StringUtils.endsWith(typeName, "`")) {
+            ret = typeName;
+        } else {
+            ret = String.format("`%s`", typeName);
+        }
+
+        return ret;
+    }
+
+    private void checkSavedSearchOwnership(String claimedOwner, AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+        // block attempt to delete another user's saved-search
+        if (savedSearch != null && !StringUtils.equals(savedSearch.getOwnerName(), claimedOwner)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "invalid data");
+        }
     }
 }

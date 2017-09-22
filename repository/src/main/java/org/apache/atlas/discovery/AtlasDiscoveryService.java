@@ -24,7 +24,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType;
 
 import java.util.List;
 
@@ -37,6 +36,15 @@ public interface AtlasDiscoveryService {
      * @return AtlasSearchResult
      */
     AtlasSearchResult searchUsingDslQuery(String query, int limit, int offset) throws AtlasBaseException;
+
+    /**
+     *
+     * @param query query
+     * @param typeName type name
+     * @param classification classification
+     * @return Query in DSL form
+     */
+    String getDslQueryUsingTypeNameClassification(String query, String typeName, String classification);
 
     /**
      *
@@ -90,14 +98,14 @@ public interface AtlasDiscoveryService {
      * @param savedSearch Search to be saved
      * @throws AtlasBaseException
      */
-    AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+    AtlasUserSavedSearch addSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
 
     /**
      *
      * @param savedSearch Search to be saved
      * @throws AtlasBaseException
      */
-    AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
+    AtlasUserSavedSearch updateSavedSearch(String currentUser, AtlasUserSavedSearch savedSearch) throws AtlasBaseException;
 
     /**
      *
@@ -105,7 +113,7 @@ public interface AtlasDiscoveryService {
      * @return List of saved searches for the user
      * @throws AtlasBaseException
      */
-    List<AtlasUserSavedSearch> getSavedSearches(String userName) throws AtlasBaseException;
+    List<AtlasUserSavedSearch> getSavedSearches(String currentUser, String userName) throws AtlasBaseException;
 
     /**
      *
@@ -113,7 +121,7 @@ public interface AtlasDiscoveryService {
      * @return Search object identified by the guid
      * @throws AtlasBaseException
      */
-    AtlasUserSavedSearch getSavedSearch(String guid) throws AtlasBaseException;
+    AtlasUserSavedSearch getSavedSearchByGuid(String currentUser, String guid) throws AtlasBaseException;
 
     /**
      *
@@ -122,10 +130,13 @@ public interface AtlasDiscoveryService {
      * @return Search object identified by the name
      * @throws AtlasBaseException
      */
-    AtlasUserSavedSearch getSavedSearch(String userName, String searchName, SavedSearchType searchType) throws AtlasBaseException;
+    AtlasUserSavedSearch getSavedSearchByName(String currentUser, String userName, String searchName) throws AtlasBaseException;
 
     /**
-     * @param guid Guid for the saved search
+     *
+     * @param currentUser User requesting the operation
+     * @param guid Guid used to look up Saved Search
+     * @throws AtlasBaseException
      */
-    void deleteSavedSearch(String guid) throws AtlasBaseException;
+    void deleteSavedSearch(String currentUser, String guid) throws AtlasBaseException;
 }
