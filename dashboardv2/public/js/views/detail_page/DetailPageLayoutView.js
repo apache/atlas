@@ -106,7 +106,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
                 this.bindEvents();
             },
             bindEvents: function() {
@@ -200,7 +200,8 @@ define(['require',
                         this.renderProfileLayoutView(_.extend({}, obj, {
                             entityDetail: collectionJSON.attributes,
                             profileData: collectionJSON.attributes.profileData,
-                            typeName: collectionJSON.typeName
+                            typeName: collectionJSON.typeName,
+                            value: that.value
                         }));
                     }
 

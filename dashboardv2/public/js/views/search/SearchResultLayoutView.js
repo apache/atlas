@@ -406,7 +406,7 @@ define(['require',
                         }
                         if (isPostMethod) {
                             that.searchCollection.referredEntities = dataOrCollection.rnoRecordFoeferredEntities;
-                            that.searchCollection.reset(dataOrCollection.entities);
+                            that.searchCollection.reset(dataOrCollection.entities, { silent: true });
                         }
 
                         /*Next button check.
@@ -480,6 +480,9 @@ define(['require',
                     } else {
                         apiObj.data = null;
                         this.searchCollection.filterObj = null;
+                        if (this.value.profileDBView) {
+                            _.extend(this.searchCollection.queryParams, { 'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true) });
+                        }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 } else {
@@ -490,6 +493,9 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
+                        if (this.value.profileDBView) {
+                            _.extend(this.searchCollection.queryParams, { 'excludeDeletedEntities': (this.value && this.value.includeDE ? false : true) });
+                        }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 }
