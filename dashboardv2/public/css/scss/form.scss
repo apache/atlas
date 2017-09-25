@@ -220,14 +220,18 @@ button:focus {
 }
 
 .btn-fixed-width {
-    .btn-icon>span {
-        @include ellipsis();
-        float: left;
-        width: 100px;
-        padding: 2px 5px !important;
-    }
-    >i {
-        float: right;
+    .btn-icon {
+        min-width: 100px;
+        >span {
+            @include ellipsis();
+            float: left;
+            width: 76px;
+            padding: 2px 5px !important;
+        }
+        >i {
+            float: right;
+            line-height: 15px;
+        }
     }
 }
 
