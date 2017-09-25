@@ -160,6 +160,7 @@ define([
                     'collection/VEntityList'
                 ], function(Header, DetailPageLayoutView, SideNavLayoutView, VEntityList) {
                     this.entityCollection = new VEntityList([], {});
+                    var paramObj = Utils.getUrlState.getQueryParams();
                     App.rNHeader.show(new Header());
                     if (!App.rSideNav.currentView) {
                         App.rSideNav.show(new SideNavLayoutView(
@@ -171,6 +172,7 @@ define([
                     App.rNContent.show(new DetailPageLayoutView(_.extend({
                         'collection': this.entityCollection,
                         'id': id,
+                        'value': paramObj
                     }, that.preFetchedCollectionLists, that.sharedObj)));
                     this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
                     this.entityCollection.fetch({ reset: true });

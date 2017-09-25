@@ -57,7 +57,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'profileData', 'guid', 'typeName', 'entityDetail', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'profileData', 'guid', 'value', 'typeName', 'entityDetail', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
                 if (this.typeName === "hive_db") {
                     this.profileData = { attributes: true };
                 }
@@ -73,16 +73,15 @@ define(['require',
                         this.renderProfileColumnLayoutView();
                     }
                 }
-
             },
             renderSearchResultLayoutView: function() {
                 var that = this;
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {
+                    var value = _.extend({}, that.value, {
                         'guid': that.guid,
                         'searchType': 'relationship',
                         'profileDBView': true
-                    };
+                    });
                     that.RProfileTableOrColumnLayoutView.show(new SearchResultLayoutView({
                         'value': value,
                         'typeHeaders': that.typeHeaders,
