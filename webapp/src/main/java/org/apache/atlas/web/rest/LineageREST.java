@@ -25,6 +25,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -79,6 +80,8 @@ public class LineageREST {
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {

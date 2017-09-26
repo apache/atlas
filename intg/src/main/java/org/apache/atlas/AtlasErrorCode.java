@@ -74,7 +74,8 @@ public enum AtlasErrorCode {
     INVALID_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-02C", "Expected attribute {0} to be a relationship but found type {}"),
     INVALID_RELATIONSHIP_TYPE(400, "ATLAS-400-00-02D", "Invalid entity type {0}, guid {1} in relationship search"),
     INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED(400, "ATLAS-400-00-050", "Attribute {0}.{1} is of type {2}. Import has this attribute type as {3}"),
-    SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-051", "saved-search {0} can not be moved from user {1} to {2}"),
+    SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}"),
+    INVALID_QUERY_PARAM_LENGTH(400, "ATLAS-400-00-057" , "Length of query param {0} exceeds the limit"),
 
     // All Not found enums go here
     UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification"),

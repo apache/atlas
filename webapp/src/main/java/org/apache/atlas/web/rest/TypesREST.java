@@ -78,6 +78,8 @@ public class TypesREST {
     @Path("/typedef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
         AtlasBaseTypeDef ret = typeDefStore.getByName(name);
 
         return ret;
@@ -94,6 +96,8 @@ public class TypesREST {
     @Path("/typedef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasBaseTypeDef ret = typeDefStore.getByGuid(guid);
 
         return ret;
@@ -146,6 +150,8 @@ public class TypesREST {
     @Path("/enumdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
         AtlasEnumDef ret = typeDefStore.getEnumDefByName(name);
 
         return ret;
@@ -163,6 +169,8 @@ public class TypesREST {
     @Path("/enumdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasEnumDef ret = typeDefStore.getEnumDefByGuid(guid);
 
         return ret;
@@ -181,6 +189,8 @@ public class TypesREST {
     @Path("/structdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
         AtlasStructDef ret = typeDefStore.getStructDefByName(name);
 
         return ret;
@@ -198,6 +208,8 @@ public class TypesREST {
     @Path("/structdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
 
         return ret;
@@ -215,6 +227,8 @@ public class TypesREST {
     @Path("/classificationdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
         AtlasClassificationDef ret = typeDefStore.getClassificationDefByName(name);
 
         return ret;
@@ -232,6 +246,8 @@ public class TypesREST {
     @Path("/classificationdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasClassificationDef ret = typeDefStore.getClassificationDefByGuid(guid);
 
         return ret;
@@ -249,6 +265,8 @@ public class TypesREST {
     @Path("/entitydef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
         AtlasEntityDef ret = typeDefStore.getEntityDefByName(name);
 
         return ret;
@@ -266,6 +284,8 @@ public class TypesREST {
     @Path("/entitydef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasEntityDef ret = typeDefStore.getEntityDefByGuid(guid);
 
         return ret;

@@ -19,6 +19,8 @@
 package org.apache.atlas.web.util;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.LocalServletRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.utils.ParamChecker;
@@ -56,6 +58,8 @@ public final class Servlets {
 
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     public static final String BINARY = MediaType.APPLICATION_OCTET_STREAM;
+
+    private static final int QUERY_PARAM_MAX_LENGTH = AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt();
 
     /**
      * Returns the user of the given request.
@@ -205,5 +209,11 @@ public final class Servlets {
         }
 
         return attributes;
+    }
+
+    public static void validateQueryParamLength(String paramName, String paramValue) throws AtlasBaseException {
+        if (StringUtils.isNotEmpty(paramValue) && paramValue.length() > QUERY_PARAM_MAX_LENGTH) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_PARAM_LENGTH, paramName);
+        }
     }
 }

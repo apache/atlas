@@ -91,6 +91,8 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -116,6 +118,8 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName,
                                                         @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -171,6 +175,8 @@ public class EntityREST {
     public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName,
                                                                    @Context HttpServletRequest servletRequest,
                                                                    AtlasEntityWithExtInfo entityInfo) throws Exception {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -203,6 +209,9 @@ public class EntityREST {
     public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid,
                                                                 @QueryParam("name") String attrName,
                                                                 Object attrValue) throws Exception {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("name", attrName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -226,6 +235,8 @@ public class EntityREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse deleteByGuid(@PathParam("guid") final String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -251,6 +262,8 @@ public class EntityREST {
     @Path("/uniqueAttribute/type/{typeName}")
     public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
                                                           @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -277,6 +290,9 @@ public class EntityREST {
     @Path("/guid/{guid}/classification/{classificationName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassification getClassification(@PathParam("guid") String guid, @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("classificationName", classificationName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -304,6 +320,8 @@ public class EntityREST {
     @Path("/guid/{guid}/classifications")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassification.AtlasClassifications getClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -330,6 +348,8 @@ public class EntityREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void addClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -356,6 +376,8 @@ public class EntityREST {
     @Path("/guid/{guid}/classifications")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void updateClassification(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -384,6 +406,9 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteClassification(@PathParam("guid") String guid,
                                      @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("classificationName", classificationName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -415,6 +440,12 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -465,6 +496,12 @@ public class EntityREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public EntityMutationResponse deleteByGuids(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+
         AtlasPerfTracer perf = null;
 
         try {
