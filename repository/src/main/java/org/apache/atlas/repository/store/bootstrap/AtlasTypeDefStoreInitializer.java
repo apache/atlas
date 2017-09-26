@@ -118,16 +118,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             File   topModeltypesDir  = new File(modelsDirName);
             File[] modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
 
-            Arrays.sort(modelsDirContents);
+            if (modelsDirContents != null && modelsDirContents.length > 0) {
+	            Arrays.sort(modelsDirContents);
 
-            for (File folder : modelsDirContents) {
-                    if (folder.isFile()) {
-                        // ignore files
-                        continue;
-                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
-                        // load the models alphabetically in the subfolders apart from patches
-                        loadModelsInFolder(folder);
-                    }
+	            for (File folder : modelsDirContents) {
+	                    if (folder.isFile()) {
+	                        // ignore files
+	                        continue;
+	                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
+	                        // load the models alphabetically in the subfolders apart from patches
+	                        loadModelsInFolder(folder);
+	                    }
+	            }
             }
 
             // load any files in the top models folder and any associated patches.
