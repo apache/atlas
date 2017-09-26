@@ -61,7 +61,6 @@ define(['require',
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
                     this.value.query = e.currentTarget.value;
-                    this.query[this.type].query = this.value.query;
                     if (code == 13) {
                         that.findSearchResult();
                     }
@@ -244,7 +243,7 @@ define(['require',
                     }
                 });
             },
-            checkForButtonVisiblity: function(e) {
+            checkForButtonVisiblity: function(e, options) {
                 if (this.type == "basic" && e && e.currentTarget) {
                     var $el = $(e.currentTarget),
                         isTagEl = $el.data('id') == "tagLOV" ? true : false;
@@ -260,7 +259,9 @@ define(['require',
                                 temp[key] = value;
                                 _.extend(this.value, temp);
                                 // on change of type/tag change the offset.
-                                this.query[this.type].pageOffset = 0;
+                                if (_.isUndefined(options)) {
+                                    this.value.pageOffset = 0;
+                                }
                                 _.extend(this.query[this.type], temp);
                             } else {
                                 // Initial loading handle.
@@ -458,9 +459,9 @@ define(['require',
                     if (this.ui.typeLov.data('select2')) {
                         if (this.ui.typeLov.val() !== this.value.type) {
                             this.value.type = null;
-                            this.ui.typeLov.val("").trigger("change");
+                            this.ui.typeLov.val("").trigger("change", { 'manual': true });
                         } else {
-                            this.ui.typeLov.trigger("change");
+                            this.ui.typeLov.trigger("change", { 'manual': true });
                         }
                     }
 
@@ -470,9 +471,9 @@ define(['require',
                             // To handle delete scenario.
                             if (this.ui.tagLov.val() !== this.value.tag) {
                                 this.value.tag = null;
-                                this.ui.tagLov.val("").trigger("change");
+                                this.ui.tagLov.val("").trigger("change", { 'manual': true });
                             } else {
-                                this.ui.tagLov.trigger("change");
+                                this.ui.tagLov.trigger("change", { 'manual': true });
                             }
                         }
                     }
@@ -510,11 +511,11 @@ define(['require',
                         params['includeDE'] = this.value.includeDE;
                     }
                 }
-                if (this.value.pageLimit) {
+                if (!_.isUndefinedNull(this.value.pageLimit)) {
                     params['pageLimit'] = this.value.pageLimit;
                 }
-                if (this.value.pageOffset) {
-                    if (this.query[this.type].query && this.query[this.type].query != value) {
+                if (!_.isUndefinedNull(this.value.pageOffset)) {
+                    if (!_.isUndefinedNull(this.query[this.type]) && this.query[this.type].query != value) {
                         params['pageOffset'] = 0;
                     } else {
                         params['pageOffset'] = this.value.pageOffset;
