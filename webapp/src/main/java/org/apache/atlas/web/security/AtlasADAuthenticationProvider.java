@@ -93,9 +93,6 @@ public class AtlasADAuthenticationProvider extends AtlasAbstractAuthenticationPr
             ldapContextSource.setPooled(true);
             ldapContextSource.afterPropertiesSet();
 
-            if (adUserSearchFilter==null || adUserSearchFilter.trim().isEmpty()) {
-                adUserSearchFilter="(sAMAccountName={0})";
-            }
             FilterBasedLdapUserSearch userSearch=new FilterBasedLdapUserSearch(adBase, adUserSearchFilter,ldapContextSource);
             userSearch.setSearchSubtree(true);
 
@@ -140,6 +137,7 @@ public class AtlasADAuthenticationProvider extends AtlasAbstractAuthenticationPr
                     new ActiveDirectoryLdapAuthenticationProvider(adDomain, adURL);
             adAuthenticationProvider.setConvertSubErrorCodesToExceptions(true);
 			adAuthenticationProvider.setUseAuthenticationRequestCredentials(true);
+            adAuthenticationProvider.setSearchFilter(adUserSearchFilter);
 
             if (userName != null && userPassword != null
                     && !userName.trim().isEmpty()
@@ -174,6 +172,9 @@ public class AtlasADAuthenticationProvider extends AtlasAbstractAuthenticationPr
             this.adBindDN = properties.getProperty("bind.dn");
             this.adBindPassword = properties.getProperty("bind.password");
             this.adUserSearchFilter = properties.getProperty("user.searchfilter");
+            if (adUserSearchFilter==null || adUserSearchFilter.trim().isEmpty()) {
+                adUserSearchFilter="(sAMAccountName={0})";
+            }
             this.adBase = properties.getProperty("base.dn");
             this.adReferral = properties.getProperty("referral");
             this.adDefaultRole = properties.getProperty("default.role");
