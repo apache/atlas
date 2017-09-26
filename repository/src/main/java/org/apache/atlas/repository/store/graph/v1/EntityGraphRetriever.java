@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-import com.sun.istack.Nullable;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -35,8 +33,14 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -52,22 +56,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BYTE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_FLOAT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 
 
 public final class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
+
+    private final String NAME           = "name";
+    private final String DESCRIPTION    = "description";
+    private final String OWNER          = "owner";
+    private final String CREATE_TIME    = "createTime";
+    private final String QUALIFIED_NAME = "qualifiedName";
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
@@ -215,16 +215,16 @@ public final class EntityGraphRetriever {
                 }
             }
 
-            Object name        = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.NAME));
-            Object description = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.DESCRIPTION));
-            Object owner       = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.OWNER));
-            Object createTime  = getVertexAttribute(entityVertex, entityType.getAttribute(AtlasClient.CREATE_TIME));
-            Object displayText = name != null ? name : ret.getAttribute(AtlasClient.QUALIFIED_NAME);
+            Object name        = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+            Object description = getVertexAttribute(entityVertex, entityType.getAttribute(DESCRIPTION));
+            Object owner       = getVertexAttribute(entityVertex, entityType.getAttribute(OWNER));
+            Object createTime  = getVertexAttribute(entityVertex, entityType.getAttribute(CREATE_TIME));
+            Object displayText = name != null ? name : ret.getAttribute(QUALIFIED_NAME);
 
-            ret.setAttribute(AtlasClient.NAME, name);
-            ret.setAttribute(AtlasClient.DESCRIPTION, description);
-            ret.setAttribute(AtlasClient.OWNER, owner);
-            ret.setAttribute(AtlasClient.CREATE_TIME, createTime);
+            ret.setAttribute(NAME, name);
+            ret.setAttribute(DESCRIPTION, description);
+            ret.setAttribute(OWNER, owner);
+            ret.setAttribute(CREATE_TIME, createTime);
 
             if (displayText != null) {
                 ret.setDisplayText(displayText.toString());
@@ -322,7 +322,7 @@ public final class EntityGraphRetriever {
     }
 
 
-    private List<AtlasClassification> getClassifications(AtlasVertex instanceVertex, @Nullable String classificationNameFilter) throws AtlasBaseException {
+    private List<AtlasClassification> getClassifications(AtlasVertex instanceVertex, String classificationNameFilter) throws AtlasBaseException {
         List<AtlasClassification> classifications = new ArrayList<>();
         List<String> classificationNames = GraphHelper.getTraitNames(instanceVertex);
 

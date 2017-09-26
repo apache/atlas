@@ -21,6 +21,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import kafka.utils.ShutdownableThread;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasBaseClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.RequestContext;
@@ -63,7 +65,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.atlas.AtlasClientV2.*;
+import static org.apache.atlas.AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE;
+import static org.apache.atlas.AtlasClientV2.API_V2.UPDATE_ENTITY;
+import static org.apache.atlas.AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
@@ -348,7 +352,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 EntityCreateRequest createRequest = (EntityCreateRequest) message;
 
                                 if (numRetries == 0) { // audit only on the first attempt
-                                    audit(messageUser, CREATE_ENTITY.getMethod(), CREATE_ENTITY.getPath());
+                                    AtlasBaseClient.API api = AtlasClient.API_V1.CREATE_ENTITY;
+                                    audit(messageUser, api.getMethod(), api.getPath());
                                 }
 
                                 entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
@@ -360,8 +365,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final EntityPartialUpdateRequest partialUpdateRequest = (EntityPartialUpdateRequest) message;
 
                                 if (numRetries == 0) { // audit only on the first attempt
-                                    audit(messageUser, UPDATE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                            String.format(UPDATE_ENTITY_BY_ATTRIBUTE.getPath(), partialUpdateRequest.getTypeName()));
+                                    AtlasBaseClient.API api = UPDATE_ENTITY_BY_ATTRIBUTE;
+                                    audit(messageUser, api.getMethod(),
+                                          String.format(api.getPath(), partialUpdateRequest.getTypeName()));
                                 }
 
                                 Referenceable referenceable = partialUpdateRequest.getEntity();
@@ -384,8 +390,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final EntityDeleteRequest deleteRequest = (EntityDeleteRequest) message;
 
                                 if (numRetries == 0) { // audit only on the first attempt
-                                    audit(messageUser, DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                            String.format(DELETE_ENTITY_BY_ATTRIBUTE.getPath(), deleteRequest.getTypeName()));
+                                    AtlasBaseClient.API api = DELETE_ENTITY_BY_ATTRIBUTE;
+                                    audit(messageUser, api.getMethod(),
+                                          String.format(api.getPath(), deleteRequest.getTypeName()));
                                 }
 
                                 try {
@@ -403,7 +410,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 EntityUpdateRequest updateRequest = (EntityUpdateRequest) message;
 
                                 if (numRetries == 0) { // audit only on the first attempt
-                                    audit(messageUser, UPDATE_ENTITY.getMethod(), UPDATE_ENTITY.getPath());
+                                    AtlasBaseClient.API api = UPDATE_ENTITY;
+                                    audit(messageUser, api.getMethod(), api.getPath());
                                 }
 
                                 entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());

@@ -24,11 +24,11 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.typesystem.IReferenceableInstance;
+import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.codehaus.jettison.json.JSONObject;
 

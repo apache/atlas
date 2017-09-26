@@ -21,6 +21,7 @@ package org.apache.atlas.web.integration;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
@@ -37,19 +38,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.AtlasBaseClient.APIInfo;
-
 /**
  * Entity Lineage v2 Integration Tests.
  */
 public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceIT {
-    private static final String BASE_URI = "api/atlas/v2/lineage";
-    private static final APIInfo LINEAGE_V2_API = new APIInfo(BASE_URI, "GET", Response.Status.OK);
-    private static final String INPUT_DIRECTION = "INPUT";
-    private static final String OUTPUT_DIRECTION = "OUTPUT";
-    private static final String BOTH_DIRECTION = "BOTH";
-    private static final String DIRECTION_PARAM = "direction";
-    private static final String DEPTH_PARAM = "depth";
+    private static final String              BASE_URI         = "api/atlas/v2/lineage";
+    private static final AtlasBaseClient.API LINEAGE_V2_API   = new AtlasBaseClient.API(BASE_URI, "GET", Response.Status.OK);
+    private static final String              INPUT_DIRECTION  = "INPUT";
+    private static final String              OUTPUT_DIRECTION = "OUTPUT";
+    private static final String              BOTH_DIRECTION   = "BOTH";
+    private static final String              DIRECTION_PARAM  = "direction";
+    private static final String              DEPTH_PARAM      = "depth";
 
     private String salesFactTable;
     private String salesMonthlyTable;

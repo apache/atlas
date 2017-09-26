@@ -47,69 +47,27 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.AtlasClient.LIMIT;
-import static org.apache.atlas.AtlasClient.OFFSET;
-import static org.apache.atlas.AtlasClient.QUERY;
-
 public class AtlasClientV2 extends AtlasBaseClient {
-
     // Type APIs
-    public static final String TYPES_API = BASE_URI + "v2/types/";
-    private static final String TYPEDEFS_API = TYPES_API + "typedefs/";
-    private static final String TYPEDEF_BY_NAME = TYPES_API + "typedef/name/";
-    private static final String TYPEDEF_BY_GUID = TYPES_API + "typedef/guid/";
-
+    public static final  String TYPES_API            = BASE_URI + "v2/types/";
+    // Entity APIs
+    public static final  String ENTITY_API           = BASE_URI + "v2/entity/";
+    private static final String PREFIX_ATTR          = "attr:";
+    private static final String TYPEDEFS_API         = TYPES_API + "typedefs/";
+    private static final String TYPEDEF_BY_NAME      = TYPES_API + "typedef/name/";
+    private static final String TYPEDEF_BY_GUID      = TYPES_API + "typedef/guid/";
     private static final String GET_BY_NAME_TEMPLATE = TYPES_API + "%s/name/%s";
     private static final String GET_BY_GUID_TEMPLATE = TYPES_API + "%s/guid/%s";
-
-    private static final APIInfo GET_TYPEDEF_BY_NAME = new APIInfo(TYPEDEF_BY_NAME, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo GET_TYPEDEF_BY_GUID = new APIInfo(TYPEDEF_BY_GUID, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo GET_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.POST, Response.Status.OK);
-    private static final APIInfo UPDATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_API, HttpMethod.DELETE, Response.Status.NO_CONTENT);
-
-    // Entity APIs
-    public static final String ENTITY_API = BASE_URI + "v2/entity/";
-    private static final String ENTITY_BULK_API = ENTITY_API + "bulk/";
-
-    private static final APIInfo GET_ENTITY_BY_GUID         = new APIInfo(ENTITY_API + "guid/", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo GET_ENTITY_BY_ATTRIBUTE    = new APIInfo(ENTITY_API + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
-    public  static final APIInfo CREATE_ENTITY              = new APIInfo(ENTITY_API, HttpMethod.POST, Response.Status.OK);
-    public  static final APIInfo UPDATE_ENTITY              = CREATE_ENTITY;
-    public  static final APIInfo UPDATE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/", HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_ENTITY_BY_GUID      = new APIInfo(ENTITY_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
-    public  static final APIInfo DELETE_ENTITY_BY_ATTRIBUTE = new APIInfo(ENTITY_API + "uniqueAttribute/type/", HttpMethod.DELETE, Response.Status.OK);
-
-    private static final APIInfo GET_ENTITIES_BY_GUIDS    = new APIInfo(ENTITY_BULK_API, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo CREATE_ENTITIES          = new APIInfo(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
-    private static final APIInfo UPDATE_ENTITIES          = CREATE_ENTITIES;
-    private static final APIInfo DELETE_ENTITIES_BY_GUIDS = new APIInfo(ENTITY_BULK_API, HttpMethod.DELETE, Response.Status.OK);
-
-    private static final APIInfo GET_CLASSIFICATIONS    = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo ADD_CLASSIFICATIONS    = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
-    private static final APIInfo UPDATE_CLASSIFICATIONS = new APIInfo(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.OK);
-    private static final APIInfo DELETE_CLASSIFICATION  = new APIInfo(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
-
-    public static final String PREFIX_ATTR = "attr:";
-
+    private static final String ENTITY_BULK_API      = ENTITY_API + "bulk/";
     // Lineage APIs
-    private static final String  LINEAGE_URI  = BASE_URI + "v2/lineage/";
-    private static final APIInfo LINEAGE_INFO = new APIInfo(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
-
+    private static final String LINEAGE_URI  = BASE_URI + "v2/lineage/";
 
     // Discovery APIs
-    private static final String DISCOVERY_URI = BASE_URI + "v2/search";
-    private static final String DSL_URI       = DISCOVERY_URI + "/dsl";
-    private static final String FULL_TEXT_URI = DISCOVERY_URI + "/fulltext";
-    private static final String BASIC_SEARCH_URI = DISCOVERY_URI + "/basic";
+    private static final String DISCOVERY_URI      = BASE_URI + "v2/search";
+    private static final String DSL_URI            = DISCOVERY_URI + "/dsl";
+    private static final String FULL_TEXT_URI      = DISCOVERY_URI + "/fulltext";
+    private static final String BASIC_SEARCH_URI   = DISCOVERY_URI + "/basic";
     private static final String FACETED_SEARCH_URI = BASIC_SEARCH_URI;
-
-    private static final APIInfo DSL_SEARCH       = new APIInfo(DSL_URI, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo FULL_TEXT_SEARCH = new APIInfo(FULL_TEXT_URI, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo BASIC_SEARCH = new APIInfo(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-    private static final APIInfo FACETED_SEARCH = new APIInfo(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
-
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -155,12 +113,12 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @return A composite wrapper object with lists of all type definitions
      */
     public AtlasTypesDef getAllTypeDefs(SearchFilter searchFilter) throws AtlasServiceException {
-        return callAPI(GET_ALL_TYPE_DEFS, AtlasTypesDef.class, searchFilter.getParams());
+        return callAPI(API_V2.GET_ALL_TYPE_DEFS, AtlasTypesDef.class, searchFilter.getParams());
     }
 
     public boolean typeWithGuidExists(String guid) {
         try {
-            callAPI(GET_TYPEDEF_BY_GUID, String.class, null, guid);
+            callAPI(API_V2.GET_TYPEDEF_BY_GUID, String.class, null, guid);
         } catch (AtlasServiceException e) {
             return false;
         }
@@ -169,7 +127,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
     public boolean typeWithNameExists(String name) {
         try {
-            callAPI(GET_TYPEDEF_BY_NAME, String.class, null, name);
+            callAPI(API_V2.GET_TYPEDEF_BY_NAME, String.class, null, name);
         } catch (AtlasServiceException e) {
             return false;
         }
@@ -249,7 +207,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return created.getClassificationDefs().get(0);
     }
 
-
     /**
      * Bulk create APIs for all atlas type definitions, only new definitions will be created.
      * Any changes to the existing definitions will be discarded
@@ -259,7 +216,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * created
      */
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasServiceException {
-        return callAPI(CREATE_ALL_TYPE_DEFS, AtlasTypesDef.class, AtlasType.toJson(typesDef));
+        return callAPI(API_V2.CREATE_ALL_TYPE_DEFS, AtlasTypesDef.class, AtlasType.toJson(typesDef));
     }
 
     /**
@@ -269,7 +226,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @return A composite object with lists of type definitions that were updated
      */
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasServiceException {
-        return callAPI(UPDATE_ALL_TYPE_DEFS, AtlasTypesDef.class, AtlasType.toJson(typesDef));
+        return callAPI(API_V2.UPDATE_ALL_TYPE_DEFS, AtlasTypesDef.class, AtlasType.toJson(typesDef));
     }
 
     /**
@@ -278,54 +235,54 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @param typesDef A composite object that captures all types to be deleted
      */
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasServiceException {
-        callAPI(DELETE_ALL_TYPE_DEFS, (Class<?>)null, AtlasType.toJson(typesDef));
+        callAPI(API_V2.DELETE_ALL_TYPE_DEFS, (Class<?>)null, AtlasType.toJson(typesDef));
     }
-
-    /* Lineage Calls  */
 
     public AtlasLineageInfo getLineageInfo(final String guid, final LineageDirection direction, final int depth) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("direction", direction.toString());
         queryParams.add("depth", String.valueOf(depth));
 
-        return callAPI(LINEAGE_INFO, AtlasLineageInfo.class, queryParams, guid);
+        return callAPI(API_V2.LINEAGE_INFO, AtlasLineageInfo.class, queryParams, guid);
     }
 
-    /* Entity Calls */
-
     public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
-        return callAPI(GET_ENTITY_BY_GUID, AtlasEntityWithExtInfo.class, (MultivaluedMap<String, String>) null, guid);
+        return callAPI(API_V2.GET_ENTITY_BY_GUID, AtlasEntityWithExtInfo.class, (MultivaluedMap<String, String>) null, guid);
     }
 
     public AtlasEntityWithExtInfo getEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
 
-        return callAPI(GET_ENTITY_BY_ATTRIBUTE, AtlasEntityWithExtInfo.class, queryParams, type);
+        return callAPI(API_V2.GET_ENTITY_BY_ATTRIBUTE, AtlasEntityWithExtInfo.class, queryParams, type);
     }
 
     public EntityMutationResponse updateEntityByAttribute(String type, Map<String, String> attributes, AtlasEntityWithExtInfo entityInfo)
             throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
 
-        return callAPI(UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entityInfo, queryParams, type);
+        return callAPI(API_V2.UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entityInfo, queryParams, type);
     }
+
+    /* Lineage Calls  */
 
     public EntityMutationResponse deleteEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
 
-        return callAPI(DELETE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, queryParams, type);
+        return callAPI(API_V2.DELETE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, queryParams, type);
     }
 
+    /* Entity Calls */
+
     public EntityMutationResponse createEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.CREATE_ENTITY, EntityMutationResponse.class, entity);
     }
 
     public EntityMutationResponse updateEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.UPDATE_ENTITY, EntityMutationResponse.class, entity);
     }
 
     public EntityMutationResponse deleteEntityByGuid(String guid) throws AtlasServiceException {
-        return callAPI(DELETE_ENTITY_BY_GUID, EntityMutationResponse.class, null, guid);
+        return callAPI(API_V2.DELETE_ENTITY_BY_GUID, EntityMutationResponse.class, null, guid);
     }
 
     public AtlasEntitiesWithExtInfo getEntitiesByGuids(List<String> guids) throws AtlasServiceException {
@@ -333,41 +290,95 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         queryParams.put("guid", guids);
 
-        return callAPI(GET_ENTITIES_BY_GUIDS, AtlasEntitiesWithExtInfo.class, queryParams);
+        return callAPI(API_V2.GET_ENTITIES_BY_GUIDS, AtlasEntitiesWithExtInfo.class, queryParams);
     }
 
     public EntityMutationResponse createEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(CREATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.CREATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
     }
 
     public EntityMutationResponse updateEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(UPDATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.UPDATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
     }
 
     public EntityMutationResponse deleteEntitiesByGuids(List<String> guids) throws AtlasServiceException {
-        return callAPI(DELETE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, "guid", guids);
+        return callAPI(API_V2.DELETE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, "guid", guids);
     }
 
     public AtlasClassifications getClassifications(String guid) throws AtlasServiceException {
-        return callAPI(updatePathParameters(GET_CLASSIFICATIONS, guid), AtlasClassifications.class, null);
+        return callAPI(formatPathParameters(API_V2.GET_CLASSIFICATIONS, guid), AtlasClassifications.class, null);
     }
 
     public void addClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(updatePathParameters(ADD_CLASSIFICATIONS, guid), (Class<?>)null, classifications, (String[]) null);
+        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>)null, classifications, (String[]) null);
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(updatePathParameters(UPDATE_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
     }
 
     public void deleteClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(updatePathParameters(GET_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
+        callAPI(formatPathParameters(API_V2.GET_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
     }
 
     public void deleteClassification(String guid, String classificationName) throws AtlasServiceException {
-        callAPI(updatePathParameters(DELETE_CLASSIFICATION, guid, classificationName), null, null);
+        callAPI(formatPathParameters(API_V2.DELETE_CLASSIFICATION, guid, classificationName), null, null);
     }
 
+    /* Discovery calls */
+    public AtlasSearchResult dslSearch(final String query) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(QUERY, query);
+
+        return callAPI(API_V2.DSL_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult dslSearchWithParams(final String query, final int limit, final int offset) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(QUERY, query);
+        queryParams.add(LIMIT, String.valueOf(limit));
+        queryParams.add(OFFSET, String.valueOf(offset));
+
+        return callAPI(API_V2.DSL_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult fullTextSearch(final String query) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(QUERY, query);
+
+        return callAPI(API_V2.FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult fullTextSearchWithParams(final String query, final int limit, final int offset) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add(QUERY, query);
+        queryParams.add(LIMIT, String.valueOf(limit));
+        queryParams.add(OFFSET, String.valueOf(offset));
+
+        return callAPI(API_V2.FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult basicSearch(final String typeName, final String classification, final String query,
+                                         final boolean excludeDeletedEntities, final int limit, final int offset) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("typeName", typeName);
+        queryParams.add("classification", classification);
+        queryParams.add(QUERY, query);
+        queryParams.add("excludeDeletedEntities", String.valueOf(excludeDeletedEntities));
+        queryParams.add(LIMIT, String.valueOf(limit));
+        queryParams.add(OFFSET, String.valueOf(offset));
+
+        return callAPI(API_V2.BASIC_SEARCH, AtlasSearchResult.class, queryParams);
+    }
+
+    public AtlasSearchResult facetedSearch(SearchParameters searchParameters) throws AtlasServiceException {
+        return callAPI(API_V2.FACETED_SEARCH, AtlasSearchResult.class, searchParameters);
+    }
+
+    @Override
+    protected API formatPathParameters(final API api, final String... params) {
+        return new API(String.format(api.getPath(), params), api.getMethod(), api.getExpectedStatus());
+    }
 
     private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String> attributes) {
         return attributesToQueryParams(attributes, null);
@@ -388,66 +399,16 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return queryParams;
     }
 
-    /* Discovery calls */
-    public AtlasSearchResult dslSearch(final String query) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add(QUERY, query);
-
-        return callAPI(DSL_SEARCH, AtlasSearchResult.class, queryParams);
-    }
-
-    public AtlasSearchResult dslSearchWithParams(final String query, final int limit, final int offset) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add(QUERY, query);
-        queryParams.add(LIMIT, String.valueOf(limit));
-        queryParams.add(OFFSET, String.valueOf(offset));
-
-        return callAPI(DSL_SEARCH, AtlasSearchResult.class, queryParams);
-    }
-
-    public AtlasSearchResult fullTextSearch(final String query) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add(QUERY, query);
-
-        return callAPI(FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
-    }
-
-    public AtlasSearchResult fullTextSearchWithParams(final String query, final int limit, final int offset) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add(QUERY, query);
-        queryParams.add(LIMIT, String.valueOf(limit));
-        queryParams.add(OFFSET, String.valueOf(offset));
-
-        return callAPI(FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
-    }
-
-    public AtlasSearchResult basicSearch(final String typeName, final String classification, final String query,
-                                         final boolean excludeDeletedEntities, final int limit, final int offset) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("typeName", typeName);
-        queryParams.add("classification", classification);
-        queryParams.add(QUERY, query);
-        queryParams.add("excludeDeletedEntities", String.valueOf(excludeDeletedEntities));
-        queryParams.add(LIMIT, String.valueOf(limit));
-        queryParams.add(OFFSET, String.valueOf(offset));
-
-        return callAPI(BASIC_SEARCH, AtlasSearchResult.class, queryParams);
-    }
-
-    public AtlasSearchResult facetedSearch(SearchParameters searchParameters) throws AtlasServiceException {
-        return callAPI(FACETED_SEARCH, AtlasSearchResult.class, searchParameters);
-    }
-
     private <T> T getTypeDefByName(final String name, Class<T> typeDefClass) throws AtlasServiceException {
         String atlasPath = getAtlasPath(typeDefClass);
-        APIInfo apiInfo = new APIInfo(String.format(GET_BY_NAME_TEMPLATE, atlasPath, name), HttpMethod.GET, Response.Status.OK);
-        return callAPI(apiInfo, typeDefClass, null);
+        API    api       = new API(String.format(GET_BY_NAME_TEMPLATE, atlasPath, name), HttpMethod.GET, Response.Status.OK);
+        return callAPI(api, typeDefClass, null);
     }
 
     private <T> T getTypeDefByGuid(final String guid, Class<T> typeDefClass) throws AtlasServiceException {
         String atlasPath = getAtlasPath(typeDefClass);
-        APIInfo apiInfo = new APIInfo(String.format(GET_BY_GUID_TEMPLATE, atlasPath, guid), HttpMethod.GET, Response.Status.OK);
-        return callAPI(apiInfo, typeDefClass, null);
+        API    api       = new API(String.format(GET_BY_GUID_TEMPLATE, atlasPath, guid), HttpMethod.GET, Response.Status.OK);
+        return callAPI(api, typeDefClass, null);
     }
 
     private <T> String getAtlasPath(Class<T> typeDefClass) {
@@ -462,5 +423,38 @@ public class AtlasClientV2 extends AtlasBaseClient {
         }
         // Code should never reach this point
         return "";
+    }
+
+    public static class API_V2 extends API {
+        public static final API_V2 GET_TYPEDEF_BY_NAME        = new API_V2(TYPEDEF_BY_NAME, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_TYPEDEF_BY_GUID        = new API_V2(TYPEDEF_BY_GUID, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_ALL_TYPE_DEFS          = new API_V2(TYPEDEFS_API, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 CREATE_ALL_TYPE_DEFS       = new API_V2(TYPEDEFS_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_ALL_TYPE_DEFS       = new API_V2(TYPEDEFS_API, HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 DELETE_ALL_TYPE_DEFS       = new API_V2(TYPEDEFS_API, HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 GET_ENTITY_BY_GUID         = new API_V2(ENTITY_API + "guid/", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_ENTITY_BY_ATTRIBUTE    = new API_V2(ENTITY_API + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 CREATE_ENTITY              = new API_V2(ENTITY_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_ENTITY              = new API_V2(ENTITY_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_ENTITY_BY_ATTRIBUTE = new API_V2(ENTITY_API + "uniqueAttribute/type/", HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 DELETE_ENTITY_BY_GUID      = new API_V2(ENTITY_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 DELETE_ENTITY_BY_ATTRIBUTE = new API_V2(ENTITY_API + "uniqueAttribute/type/", HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 GET_ENTITIES_BY_GUIDS      = new API_V2(ENTITY_BULK_API, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 CREATE_ENTITIES            = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_ENTITIES            = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 DELETE_ENTITIES_BY_GUIDS   = new API_V2(ENTITY_BULK_API, HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 GET_CLASSIFICATIONS        = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 ADD_CLASSIFICATIONS        = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
+        public static final API_V2 UPDATE_CLASSIFICATIONS     = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 DELETE_CLASSIFICATION      = new API_V2(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 LINEAGE_INFO               = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 DSL_SEARCH                 = new API_V2(DSL_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 FULL_TEXT_SEARCH           = new API_V2(FULL_TEXT_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 BASIC_SEARCH               = new API_V2(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 FACETED_SEARCH             = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+
+        private API_V2(String path, String method, Response.Status status) {
+            super(path, method, status);
+        }
     }
 }

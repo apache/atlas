@@ -18,16 +18,16 @@
 
 package org.apache.atlas.authorize.simple;
 
-import javax.servlet.http.HttpServletRequest;
-import org.apache.atlas.AtlasClient;
+import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasActionTypes;
-import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.AtlasAuthorizationException;
 import org.apache.atlas.authorize.AtlasAuthorizer;
-import org.apache.atlas.authorize.AtlasAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
+import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashSet;
@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
-    private static final String BASE_URL = "/" + AtlasClient.BASE_URI;
+    private static final String BASE_URL = "/api/atlas/";
 
     public static String getApi(String contextPath) {
         if (isDebugEnabled) {

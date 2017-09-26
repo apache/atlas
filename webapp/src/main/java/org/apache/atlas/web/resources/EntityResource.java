@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -35,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
@@ -215,7 +215,7 @@ public class EntityResource {
             UriBuilder ub = uriInfo.getAbsolutePathBuilder();
             locationURI = CollectionUtils.isEmpty(guids) ? null : ub.path(guids.get(0)).build();
         } else {
-            String uriPath = AtlasClient.API.GET_ENTITY.getPath();
+            String uriPath = AtlasClient.API_V1.GET_ENTITY.getPath();
             locationURI = guids.isEmpty() ? null : UriBuilder
                 .fromPath(AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS)
                 .path(uriPath).path(guids.get(0)).build();

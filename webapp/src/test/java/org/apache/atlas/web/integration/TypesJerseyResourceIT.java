@@ -81,7 +81,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 String typesAsJSON = TypesSerialization.toJson(typeDefinition, false);
                 System.out.println("typesAsJSON = " + typesAsJSON);
 
-                JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API.CREATE_TYPE, typesAsJSON);
+                JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_TYPE, typesAsJSON);
                 Assert.assertNotNull(response);
 
 
@@ -142,7 +142,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
             System.out.println("typeName = " + typeDefinition.typeName);
 
-            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.LIST_TYPES, null, typeDefinition.typeName);
+            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, typeDefinition.typeName);
 
             Assert.assertNotNull(response);
             Assert.assertNotNull(response.get(AtlasClient.DEFINITION));
@@ -164,12 +164,12 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetDefinitionForNonexistentType() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.LIST_TYPES, null, "blah");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, "blah");
     }
 
     @Test(dependsOnMethods = "testSubmit")
     public void testGetTypeNames() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.LIST_TYPES, null, (String[]) null);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, (String[]) null);
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
@@ -190,7 +190,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", DataTypes.TypeCategory.TRAIT.name());
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.LIST_TYPES, queryParams);
+        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.LIST_TYPES, queryParams);
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));

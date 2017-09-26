@@ -50,16 +50,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An implementation backed by a Graph database provided
@@ -145,7 +136,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     @GraphTransaction
     public CreateUpdateEntitiesResult createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
-        EntityExistsException {
+                                                                                                     EntityExistsException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("adding entities={}", entities);
         }

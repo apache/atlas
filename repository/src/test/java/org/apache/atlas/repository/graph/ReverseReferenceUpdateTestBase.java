@@ -255,10 +255,10 @@ public abstract class ReverseReferenceUpdateTestBase {
         a.set("oneB", b1);
         b1.set("manyA", Collections.singletonList(a));
 
-        CreateUpdateEntitiesResult result = repositoryService.createEntities(a);
-        Map<String, String> guidAssignments = result.getGuidMapping().getGuidAssignments();
-        String aGuid = a.getId()._getId();
-        String b1Guid = guidAssignments.get(b1.getId()._getId());
+        CreateUpdateEntitiesResult result          = repositoryService.createEntities(a);
+        Map<String, String>        guidAssignments = result.getGuidMapping().getGuidAssignments();
+        String                     aGuid           = a.getId()._getId();
+        String                     b1Guid          = guidAssignments.get(b1.getId()._getId());
 
         a = repositoryService.getEntityDefinition(aGuid);
         Object object = a.get("oneB");

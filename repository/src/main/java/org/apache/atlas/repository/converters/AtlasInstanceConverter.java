@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.converters;
 
-import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
@@ -31,6 +30,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.instance.GuidMapping;
+import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -46,7 +47,6 @@ import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;

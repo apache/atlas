@@ -1304,8 +1304,8 @@ public class DefaultMetadataServiceTest {
     }
 
     private String createBasicEntity(final HierarchicalTypeDefinition<ClassType> refType) throws AtlasException {
-        String                     json = InstanceSerialization.toJson(new Referenceable(refType.typeName), false);
-        CreateUpdateEntitiesResult entities         = metadataService.createEntities("[" + json + "]");
+        String                     json     = InstanceSerialization.toJson(new Referenceable(refType.typeName), false);
+        CreateUpdateEntitiesResult entities = metadataService.createEntities("[" + json + "]");
         return entities.getCreatedEntities().get(0);
     }
 

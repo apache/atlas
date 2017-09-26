@@ -237,10 +237,10 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     }
 
     private String createInstance(Referenceable entity) throws Exception {
-        ClassType dataType = typeSystem.getDataType(ClassType.class, entity.getTypeName());
+        ClassType                   dataType = typeSystem.getDataType(ClassType.class, entity.getTypeName());
         ITypedReferenceableInstance instance = dataType.convert(entity, Multiplicity.REQUIRED);
-        CreateUpdateEntitiesResult result = repositoryService.createEntities(instance);
-        List<String> results = result.getCreatedEntities();
+        CreateUpdateEntitiesResult  result   = repositoryService.createEntities(instance);
+        List<String>                results  = result.getCreatedEntities();
         return results.get(results.size() - 1);
     }
 

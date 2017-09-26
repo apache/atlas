@@ -21,7 +21,6 @@ import org.apache.atlas.authorize.AtlasActionTypes;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.tools.jline_embedded.internal.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -232,7 +231,7 @@ public class PolicyParser {
                 } else if (type.equalsIgnoreCase("TERM")) {
                     resourceType = AtlasResourceTypes.TERM;
                 } else {
-                    Log.warn(type + " is invalid resource please check PolicyStore file");
+                    LOG.warn(type + " is invalid resource please check PolicyStore file");
                     continue;
                 }
 
