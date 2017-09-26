@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
@@ -89,6 +90,10 @@ public class DiscoveryREST {
                                             @QueryParam("classification") String classification,
                                             @QueryParam("limit")          int    limit,
                                             @QueryParam("offset")         int    offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("query", query);
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classification", classification);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -127,6 +132,8 @@ public class DiscoveryREST {
                                                  @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                                  @QueryParam("limit")                  int     limit,
                                                  @QueryParam("offset")                 int     offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("query", query);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -165,6 +172,10 @@ public class DiscoveryREST {
                                               @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                               @QueryParam("limit")                  int     limit,
                                               @QueryParam("offset")                 int     offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("query", query);
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classification", classification);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -210,6 +221,10 @@ public class DiscoveryREST {
                                                   @QueryParam("typeName")        String typeName,
                                                   @QueryParam("limit")           int    limit,
                                                   @QueryParam("offset")          int    offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("attrName", attrName);
+        Servlets.validateQueryParamLength("attrValuePrefix", attrValuePrefix);
+        Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -224,7 +239,6 @@ public class DiscoveryREST {
             }
 
             return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, true, limit, offset);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -267,6 +281,8 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 
+            validateSearchParameters(parameters);
+
             return atlasDiscoveryService.searchWithParameters(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -298,6 +314,10 @@ public class DiscoveryREST {
                                                    @QueryParam("excludeDeletedEntities") boolean   excludeDeletedEntities,
                                                    @QueryParam("limit")                  int       limit,
                                                    @QueryParam("offset")                 int       offset) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("relation", relation);
+        Servlets.validateQueryParamLength("sortBy", sortByAttribute);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -323,6 +343,8 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
+        validateUserSavedSearch(savedSearch);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -347,6 +369,8 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+        validateUserSavedSearch(savedSearch);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -373,6 +397,9 @@ public class DiscoveryREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch getSavedSearch(@PathParam("name") String searchName,
                                                @QueryParam("user") String userName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", searchName);
+        Servlets.validateQueryParamLength("user", userName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -397,6 +424,8 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasUserSavedSearch> getSavedSearches(@QueryParam("user") String userName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("user", userName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -418,6 +447,8 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteSavedSearch(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -446,6 +477,9 @@ public class DiscoveryREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult executeSavedSearchByName(@PathParam("name") String searchName,
                                                       @QueryParam("user") String userName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", searchName);
+        Servlets.validateQueryParamLength("user", userName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -474,6 +508,8 @@ public class DiscoveryREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult executeSavedSearchByGuid(@PathParam("guid") String searchGuid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", searchGuid);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -503,6 +539,24 @@ public class DiscoveryREST {
             return atlasDiscoveryService.searchUsingDslQuery(dslQuery, sp.getLimit(), sp.getOffset());
         } else {
             return atlasDiscoveryService.searchWithParameters(sp);
+        }
+    }
+
+    private void validateUserSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
+        if (savedSearch != null) {
+            Servlets.validateQueryParamLength("name", savedSearch.getName());
+            Servlets.validateQueryParamLength("ownerName", savedSearch.getOwnerName());
+            Servlets.validateQueryParamLength("guid", savedSearch.getGuid());
+
+            validateSearchParameters(savedSearch.getSearchParameters());
+        }
+    }
+
+    private void validateSearchParameters(SearchParameters parameters) throws AtlasBaseException {
+        if (parameters != null) {
+            Servlets.validateQueryParamLength("typeName", parameters.getTypeName());
+            Servlets.validateQueryParamLength("classification", parameters.getClassification());
+            Servlets.validateQueryParamLength("query", parameters.getQuery());
         }
     }
 }

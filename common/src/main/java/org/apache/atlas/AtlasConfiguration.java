@@ -31,6 +31,8 @@ public enum AtlasConfiguration {
     WEBSERVER_QUEUE_SIZE("atlas.webserver.queuesize", 100),
     WEBSERVER_REQUEST_BUFFER_SIZE("atlas.jetty.request.buffer.size", 16192),
 
+    QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
+
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
     SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100);
