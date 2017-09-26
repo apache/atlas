@@ -37,7 +37,7 @@ public class AdminJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetVersion() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.VERSION, null, (String[]) null);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.VERSION, null, (String[]) null);
         Assert.assertNotNull(response);
 
         PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("atlas-buildinfo.properties");

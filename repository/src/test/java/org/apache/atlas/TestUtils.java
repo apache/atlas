@@ -528,9 +528,9 @@ public final class TestUtils {
         String entityjson = InstanceSerialization.toJson(entity, true);
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
-        CreateUpdateEntitiesResult creationResult = metadataService.createEntities(entitiesJson.toString());
-        Map<String,String> guidMap = creationResult.getGuidMapping().getGuidAssignments();
-        Map<Id, Referenceable> referencedObjects = findReferencedObjects(entity);
+        CreateUpdateEntitiesResult creationResult    = metadataService.createEntities(entitiesJson.toString());
+        Map<String,String>         guidMap           = creationResult.getGuidMapping().getGuidAssignments();
+        Map<Id, Referenceable>     referencedObjects = findReferencedObjects(entity);
 
         for(Map.Entry<Id,Referenceable> entry : referencedObjects.entrySet()) {
             Id foundId = entry.getKey();

@@ -17,9 +17,9 @@
  */
 package org.apache.atlas.groovy;
 
-import java.util.List;
-
 import org.apache.atlas.AtlasException;
+
+import java.util.List;
 
 /**
  * Represents an arithmetic expression such as a+b.

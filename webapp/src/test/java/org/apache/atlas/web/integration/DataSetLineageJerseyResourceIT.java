@@ -59,7 +59,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
         Assert.assertNotNull(response);
         System.out.println("inputs graph = " + response);
 
@@ -95,7 +95,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
         Assert.assertNotNull(response);
         System.out.println("outputs graph= " + response);
 
@@ -131,7 +131,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
 
         Assert.assertNotNull(response);
         System.out.println("schema = " + response);
@@ -173,12 +173,12 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForInvalidTable() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForDB() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
     }
 
     private void setupInstances() throws Exception {

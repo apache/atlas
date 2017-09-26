@@ -27,41 +27,22 @@ import javax.ws.rs.WebApplicationException;
 public class AtlasServiceException extends Exception {
     private ClientResponse.Status status;
 
-    public AtlasServiceException(AtlasClient.API api, Exception e) {
-        super("Metadata service API " + api + " failed", e);
-    }
-
-    public AtlasServiceException(AtlasBaseClient.APIInfo api, Exception e) {
+    public AtlasServiceException(AtlasBaseClient.API api, Exception e) {
         super("Metadata service API " + api.getMethod() + " : " + api.getPath() + " failed", e);
     }
 
-    public AtlasServiceException(AtlasClient.API api, WebApplicationException e) throws JSONException {
+    public AtlasServiceException(AtlasBaseClient.API api, WebApplicationException e) throws JSONException {
         this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
-                ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
+             ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
     }
 
-    public AtlasServiceException(AtlasBaseClient.APIInfo api, WebApplicationException e) throws JSONException {
-        this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
-                ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
-    }
-
-    private AtlasServiceException(AtlasClient.API api, ClientResponse.Status status, String response) {
+    private AtlasServiceException(AtlasBaseClient.API api, ClientResponse.Status status, String response) {
         super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1)
                 + " (" + status + ") Response Body (" + response + ")");
         this.status = status;
     }
 
-    private AtlasServiceException(AtlasBaseClient.APIInfo api, ClientResponse.Status status, String response) {
-        super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1)
-                + " (" + status + ") Response Body (" + response + ")");
-        this.status = status;
-    }
-
-    public AtlasServiceException(AtlasClient.API api, ClientResponse response) {
-        this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
-    }
-
-    public AtlasServiceException(AtlasBaseClient.APIInfo api, ClientResponse response) {
+    public AtlasServiceException(AtlasBaseClient.API api, ClientResponse response) {
         this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
     }
 
