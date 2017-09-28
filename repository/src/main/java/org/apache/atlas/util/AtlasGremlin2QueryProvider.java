@@ -95,6 +95,10 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".filter({it.getProperty('%s').endsWith(%s)})";
             case COMPARE_CONTAINS:
                 return ".filter({it.getProperty('%s').contains(%s)})";
+            case COMPARE_IS_NULL:
+                return ".hasNot('%s')";
+            case COMPARE_NOT_NULL:
+                return ".has('%s')";
             case RELATIONSHIP_SEARCH:
                 return "g.V('__guid', guid).both(relation).has('__state', T.in, states)";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:

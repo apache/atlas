@@ -75,6 +75,8 @@ public abstract class AtlasGremlinQueryProvider {
         COMPARE_MATCHES,
         COMPARE_STARTS_WITH,
         COMPARE_ENDS_WITH,
-        COMPARE_CONTAINS
+        COMPARE_CONTAINS,
+        COMPARE_IS_NULL,
+        COMPARE_NOT_NULL
     }
 }
