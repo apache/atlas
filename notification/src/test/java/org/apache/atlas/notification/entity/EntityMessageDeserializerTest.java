@@ -24,6 +24,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,9 +49,20 @@ public class EntityMessageDeserializerTest {
         EntityNotificationImpl notification =
             new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
 
-        String json = AbstractNotification.getMessageJson(notification);
+        List<String> jsonMsgList = new ArrayList<>();
 
-        EntityNotification deserializedNotification = deserializer.deserialize(json);
+        AbstractNotification.createNotificationMessages(notification, jsonMsgList);
+
+        EntityNotification deserializedNotification = null;
+
+        for (String jsonMsg : jsonMsgList) {
+            deserializedNotification = deserializer.deserialize(jsonMsg);
+
+            if (deserializedNotification != null) {
+                break;
+            }
+        }
+
         assertEquals(deserializedNotification.getOperationType(), notification.getOperationType());
         assertEquals(deserializedNotification.getEntity().getId(), notification.getEntity().getId());
         assertEquals(deserializedNotification.getEntity().getTypeName(), notification.getEntity().getTypeName());

@@ -44,7 +44,7 @@ import java.util.Map;
 /**
  * Base notification message deserializer.
  */
-public abstract class AbstractMessageDeserializer<T> extends VersionedMessageDeserializer<T> {
+public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMessageDeserializer<T> {
 
     private static final Map<Type, JsonDeserializer> DESERIALIZER_MAP = new HashMap<>();
 
@@ -63,16 +63,16 @@ public abstract class AbstractMessageDeserializer<T> extends VersionedMessageDes
     /**
      * Create a deserializer.
      *
-     * @param versionedMessageType  the type of the versioned message
-     * @param expectedVersion       the expected message version
-     * @param deserializerMap       map of individual deserializers used to define this message deserializer
-     * @param notificationLogger    logger for message version mismatch
+     * @param notificationMessageType the type of the notification message
+     * @param expectedVersion         the expected message version
+     * @param deserializerMap         map of individual deserializers used to define this message deserializer
+     * @param notificationLogger      logger for message version mismatch
      */
-    public AbstractMessageDeserializer(Type versionedMessageType,
+    public AbstractMessageDeserializer(Type notificationMessageType,
                                        MessageVersion expectedVersion,
                                        Map<Type, JsonDeserializer> deserializerMap,
                                        Logger notificationLogger) {
-        super(versionedMessageType, expectedVersion, getDeserializer(deserializerMap), notificationLogger);
+        super(notificationMessageType, expectedVersion, getDeserializer(deserializerMap), notificationLogger);
     }
 
 

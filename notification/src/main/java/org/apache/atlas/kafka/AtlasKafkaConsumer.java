@@ -71,6 +71,10 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
                 T message = deserializer.deserialize(record.value().toString());
 
+                if (message == null) {
+                    continue;
+                }
+
                 messages.add(new AtlasKafkaMessage(message, record.offset(), record.partition()));
             }
         }

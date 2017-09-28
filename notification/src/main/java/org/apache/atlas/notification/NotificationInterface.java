@@ -54,9 +54,9 @@ public interface NotificationInterface {
      * Versioned notification message class types.
      */
     Type HOOK_VERSIONED_MESSAGE_TYPE =
-        new TypeToken<VersionedMessage<HookNotification.HookNotificationMessage>>(){}.getType();
+        new TypeToken<AtlasNotificationMessage<HookNotification.HookNotificationMessage>>(){}.getType();
 
-    Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<VersionedMessage<EntityNotification>>(){}.getType();
+    Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<AtlasNotificationMessage<EntityNotification>>(){}.getType();
 
     /**
      * Atlas notification types.

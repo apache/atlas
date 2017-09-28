@@ -23,6 +23,7 @@ import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -44,17 +45,18 @@ public class AbstractNotificationTest {
         TestMessage message2 = new TestMessage(HookNotification.HookNotificationType.TYPE_CREATE, "user1");
         TestMessage message3 = new TestMessage(HookNotification.HookNotificationType.ENTITY_FULL_UPDATE, "user1");
 
-        String messageJson1 = AbstractNotification.getMessageJson(message1);
-        String messageJson2 = AbstractNotification.getMessageJson(message2);
-        String messageJson3 = AbstractNotification.getMessageJson(message3);
+        List<String> messageJson = new ArrayList<>();
+        AbstractNotification.createNotificationMessages(message1, messageJson);
+        AbstractNotification.createNotificationMessages(message2, messageJson);
+        AbstractNotification.createNotificationMessages(message3, messageJson);
 
         notification.send(NotificationInterface.NotificationType.HOOK, message1, message2, message3);
 
         assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
-        assertEquals(3, notification.messages.length);
-        assertEquals(messageJson1, notification.messages[0]);
-        assertEquals(messageJson2, notification.messages[1]);
-        assertEquals(messageJson3, notification.messages[2]);
+        assertEquals(3, notification.messages.size());
+        assertEquals(messageJson.get(0), notification.messages.get(0));
+        assertEquals(messageJson.get(1), notification.messages.get(1));
+        assertEquals(messageJson.get(2), notification.messages.get(2));
     }
 
     @Test
@@ -72,17 +74,16 @@ public class AbstractNotificationTest {
         messages.add(message2);
         messages.add(message3);
 
-        String messageJson1 = AbstractNotification.getMessageJson(message1);
-        String messageJson2 = AbstractNotification.getMessageJson(message2);
-        String messageJson3 = AbstractNotification.getMessageJson(message3);
+        List<String> messageJson = new ArrayList<>();
+        AbstractNotification.createNotificationMessages(message1, messageJson);
+        AbstractNotification.createNotificationMessages(message2, messageJson);
+        AbstractNotification.createNotificationMessages(message3, messageJson);
 
         notification.send(NotificationInterface.NotificationType.HOOK, messages);
 
         assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
-        assertEquals(3, notification.messages.length);
-        assertEquals(messageJson1, notification.messages[0]);
-        assertEquals(messageJson2, notification.messages[1]);
-        assertEquals(messageJson3, notification.messages[2]);
+        assertEquals(messageJson.size(), notification.messages.size());
+        assertEquals(messageJson, notification.messages);
     }
 
     public static class TestMessage extends HookNotification.HookNotificationMessage {
@@ -94,14 +95,14 @@ public class AbstractNotificationTest {
 
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
-        private String[] messages;
+        private List<String>     messages;
 
         public TestNotification(Configuration applicationProperties) throws AtlasException {
             super(applicationProperties);
         }
 
         @Override
-        protected void sendInternal(NotificationType notificationType, String[] notificationMessages)
+        protected void sendInternal(NotificationType notificationType, List<String> notificationMessages)
             throws NotificationException {
 
             type = notificationType;

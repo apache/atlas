@@ -202,7 +202,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     // ----- AbstractNotification --------------------------------------------
 
     @Override
-    public void sendInternal(NotificationType type, String... messages) throws NotificationException {
+    public void sendInternal(NotificationType type, List<String> messages) throws NotificationException {
         if (producer == null) {
             createProducer();
         }
@@ -210,7 +210,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @VisibleForTesting
-    void sendInternalToProducer(Producer p, NotificationType type, String[] messages) throws NotificationException {
+    void sendInternalToProducer(Producer p, NotificationType type, List<String> messages) throws NotificationException {
         String topic = TOPIC_MAP.get(type);
         List<MessageContext> messageContexts = new ArrayList<>();
         for (String message : messages) {
