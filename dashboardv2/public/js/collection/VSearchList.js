@@ -31,14 +31,32 @@ define(['require',
             model: VSearch,
 
             initialize: function() {
-                this.modelName = 'VSearch';
+                this.modelName = 'VSearchList';
                 this.modelAttrName = '';
             },
             parseRecords: function(resp, options) {
                 this.queryType = resp.queryType;
                 this.queryText = resp.queryText;
                 this.referredEntities = resp.referredEntities;
-                return resp.entities ? resp.entities : [];
+                if (resp.attributes) {
+                    this.dynamicTable = true;
+                    var entities = [];
+                    _.each(resp.attributes.values, function(obj) {
+                        var temp = {};
+                        _.each(obj, function(val, index) {
+                            var key = resp.attributes.name[index];
+                            if (key == "__guid") {
+                                key = "guid"
+                            }
+                            temp[key] = val;
+                        });
+                        entities.push(temp);
+                    });
+                    return entities;
+                } else {
+                    this.dynamicTable = false;
+                    return resp.entities ? resp.entities : [];
+                }
             },
             getBasicRearchResult: function(options) {
                 var url = UrlLinks.searchApiUrl('basic');
