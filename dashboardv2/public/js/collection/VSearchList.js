@@ -39,16 +39,22 @@ define(['require',
                 this.queryText = resp.queryText;
                 this.referredEntities = resp.referredEntities;
                 if (resp.attributes) {
+                    this.dynamicTable = true;
                     var entities = [];
                     _.each(resp.attributes.values, function(obj) {
-                        var temp = { attributes: {} }
-                        _.each(obj, function(val, key) {
-                            temp.attributes[resp.attributes.name[key]] = val;
+                        var temp = {};
+                        _.each(obj, function(val, index) {
+                            var key = resp.attributes.name[index];
+                            if (key == "__guid") {
+                                key = "guid"
+                            }
+                            temp[key] = val;
                         });
                         entities.push(temp);
                     });
                     return entities;
                 } else {
+                    this.dynamicTable = false;
                     return resp.entities ? resp.entities : [];
                 }
             },

@@ -525,7 +525,8 @@ define(['require',
                             return this;
                         }
                     });
-                    var columns = new columnCollection(that.getFixedDslColumn());
+                    that.bradCrumbList = [];
+                    var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                     columns.setPositions().sort();
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
@@ -679,7 +680,109 @@ define(['require',
                             }
                         })
                     };
+                    this.getTagTermCol({ 'col': col, 'columnToShow': columnToShow });
 
+                    if (this.value && this.value.searchType === "basic") {
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
+                        if (def) {
+                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                            _.each(attrObj, function(obj, key) {
+                                var key = obj.name,
+                                    isRenderable = _.contains(columnToShow, key)
+                                if (key == "name" || key == "description" || key == "owner") {
+                                    if (columnToShow) {
+                                        col[key].renderable = isRenderable;
+                                    }
+                                    return;
+                                }
+                                col[obj.name] = {
+                                    label: obj.name.capitalize(),
+                                    cell: "Html",
+                                    editable: false,
+                                    sortable: false,
+                                    resizeable: true,
+                                    orderable: true,
+                                    renderable: isRenderable,
+                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                        fromRaw: function(rawValue, model) {
+                                            var modelObj = model.toJSON();
+
+                                            if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
+                                                var tempObj = {
+                                                    'scope': that,
+                                                    'attributeDefs': [obj],
+                                                    'valueObject': {},
+                                                    'isTable': false
+                                                }
+
+                                                tempObj.valueObject[key] = modelObj.attributes[key]
+                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                                return CommonViewFunction.propertyTable(tempObj);
+                                            }
+                                        }
+                                    })
+                                };
+                            });
+                        }
+                    }
+                }
+                return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            getDaynamicColumns: function(valueObj) {
+                var that = this,
+                    col = {};
+                if (valueObj && valueObj.length) {
+                    var firstObj = _.first(valueObj);
+                    _.each(_.keys(firstObj), function(key) {
+                        if (key !== 'guid') {
+                            col[key] = {
+                                label: key.capitalize(),
+                                cell: "Html",
+                                editable: false,
+                                sortable: false,
+                                resizeable: true,
+                                orderable: true,
+                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                    fromRaw: function(rawValue, model) {
+                                        var modelObj = model.toJSON();
+                                        if (key == "name") {
+                                            var nameHtml = "",
+                                                name = modelObj[key];
+                                            if (modelObj.guid) {
+                                                nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + '">' + name + '</a>';
+                                            } else {
+                                                nameHtml = '<span title="' + name + '">' + name + '</span>';
+                                            }
+                                            if (modelObj.status && Enums.entityStateReadOnly[modelObj.status]) {
+                                                nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
+                                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                            }
+                                            return nameHtml;
+                                        } else if (modelObj && !_.isUndefined(modelObj[key])) {
+                                            var tempObj = {
+                                                'scope': that,
+                                                // 'attributeDefs':
+                                                'valueObject': {},
+                                                'isTable': false
+                                            }
+
+                                            tempObj.valueObject[key] = modelObj[key]
+                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                            return CommonViewFunction.propertyTable(tempObj);
+                                        }
+                                    }
+                                })
+                            };
+                        }
+                    });
+                }
+                return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            getTagTermCol: function(options) {
+                var that = this,
+                    columnToShow = options.columnToShow,
+                    col = options.col;
+                if (col) {
                     col['tag'] = {
                         label: "Tags",
                         cell: "Html",
@@ -727,51 +830,7 @@ define(['require',
                             })
                         };
                     }
-                    if (this.value && this.value.searchType === "basic") {
-                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                        if (def) {
-                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
-                            _.each(attrObj, function(obj, key) {
-                                var key = obj.name,
-                                    isRenderable = _.contains(columnToShow, key)
-                                if (key == "name" || key == "description" || key == "owner") {
-                                    if (columnToShow) {
-                                        col[key].renderable = isRenderable;
-                                    }
-                                    return;
-                                }
-                                col[obj.name] = {
-                                    label: obj.name.capitalize(),
-                                    cell: "Html",
-                                    editable: false,
-                                    sortable: false,
-                                    resizeable: true,
-                                    orderable: true,
-                                    renderable: isRenderable,
-                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                        fromRaw: function(rawValue, model) {
-                                            var modelObj = model.toJSON();
-
-                                            if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
-                                                var tempObj = {
-                                                    'scope': that,
-                                                    'attributeDefs': [obj],
-                                                    'valueObject': {},
-                                                    'isTable': false
-                                                }
-
-                                                tempObj.valueObject[key] = modelObj.attributes[key]
-                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
-                                                return CommonViewFunction.propertyTable(tempObj);
-                                            }
-                                        }
-                                    })
-                                };
-                            });
-                        }
-                    }
                 }
-                return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
             },
             addTagModalView: function(guid, multiple) {
                 var that = this;
