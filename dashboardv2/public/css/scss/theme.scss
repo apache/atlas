@@ -87,6 +87,8 @@ header {
     .well {
         background-color: $color_tuna_approx;
         border: 1px solid #666363;
+        overflow: hidden;
+        @include clearfix();
     }
 }
 
