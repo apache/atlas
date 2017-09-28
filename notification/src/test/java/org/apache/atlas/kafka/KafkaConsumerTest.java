@@ -19,11 +19,8 @@
 package org.apache.atlas.kafka;
 
 import kafka.message.MessageAndMetadata;
-import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.notification.MessageVersion;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.IncompatibleVersionException;
-import org.apache.atlas.notification.VersionedMessage;
+import org.apache.atlas.notification.*;
+import org.apache.atlas.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.IStruct;
@@ -82,7 +79,7 @@ public class KafkaConsumerTest {
         HookNotification.EntityUpdateRequest message =
             new HookNotification.EntityUpdateRequest("user1", entity);
 
-        String json = AbstractNotification.GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), message));
+        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
 
         kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
         List<ConsumerRecord> klist = new ArrayList<>();
@@ -119,7 +116,7 @@ public class KafkaConsumerTest {
         HookNotification.EntityUpdateRequest message =
             new HookNotification.EntityUpdateRequest("user1", entity);
 
-        String json = AbstractNotification.GSON.toJson(new VersionedMessage<>(new MessageVersion("2.0.0"), message));
+        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
 
         kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
         List<ConsumerRecord> klist = new ArrayList<>();

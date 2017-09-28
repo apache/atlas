@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.mockito.Matchers.endsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
@@ -57,15 +56,15 @@ public class AbstractNotificationConsumerTest {
 
         List jsonList = new LinkedList<>();
 
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage2)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage3)));
-        jsonList.add(GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage4)));
+        jsonList.add(GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1)));
+        jsonList.add(GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage2)));
+        jsonList.add(GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage3)));
+        jsonList.add(GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage4)));
 
-        Type versionedMessageType = new TypeToken<VersionedMessage<TestMessage>>(){}.getType();
+        Type notificationMessageType = new TypeToken<AtlasNotificationMessage<TestMessage>>(){}.getType();
 
         NotificationConsumer<TestMessage> consumer =
-                new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
+                new TestNotificationConsumer<>(notificationMessageType, jsonList, logger);
 
         List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
@@ -91,9 +90,9 @@ public class AbstractNotificationConsumerTest {
 
         List jsonList = new LinkedList<>();
 
-        String json1 = GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1));
-        String json2 = GSON.toJson(new VersionedMessage<>(new MessageVersion("0.0.5"), testMessage2));
-        String json3 = GSON.toJson(new VersionedMessage<>(new MessageVersion("0.5.0"), testMessage3));
+        String json1 = GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1));
+        String json2 = GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("0.0.5"), testMessage2));
+        String json3 = GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("0.5.0"), testMessage3));
         String json4 = GSON.toJson(testMessage4);
 
         jsonList.add(json1);
@@ -101,10 +100,10 @@ public class AbstractNotificationConsumerTest {
         jsonList.add(json3);
         jsonList.add(json4);
 
-        Type versionedMessageType = new TypeToken<VersionedMessage<TestMessage>>(){}.getType();
+        Type notificationMessageType = new TypeToken<AtlasNotificationMessage<TestMessage>>(){}.getType();
 
         NotificationConsumer<TestMessage> consumer =
-            new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
+            new TestNotificationConsumer<>(notificationMessageType, jsonList, logger);
 
         List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
@@ -127,16 +126,16 @@ public class AbstractNotificationConsumerTest {
 
         List jsonList = new LinkedList<>();
 
-        String json1 = GSON.toJson(new VersionedMessage<>(new MessageVersion("1.0.0"), testMessage1));
-        String json2 = GSON.toJson(new VersionedMessage<>(new MessageVersion("2.0.0"), testMessage2));
+        String json1 = GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1));
+        String json2 = GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), testMessage2));
 
         jsonList.add(json1);
         jsonList.add(json2);
 
-        Type versionedMessageType = new TypeToken<VersionedMessage<TestMessage>>(){}.getType();
+        Type notificationMessageType = new TypeToken<AtlasNotificationMessage<TestMessage>>(){}.getType();
 
         NotificationConsumer<TestMessage> consumer =
-            new TestNotificationConsumer<>(versionedMessageType, jsonList, logger);
+            new TestNotificationConsumer<>(notificationMessageType, jsonList, logger);
         try {
             List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
@@ -187,8 +186,8 @@ public class AbstractNotificationConsumerTest {
         private final List<T> messageList;
         private int index = 0;
 
-        public TestNotificationConsumer(Type versionedMessageType, List<T> messages, Logger logger) {
-            super(new TestDeserializer<T>(versionedMessageType, logger));
+        public TestNotificationConsumer(Type notificationMessageType, List<T> messages, Logger logger) {
+            super(new TestDeserializer<T>(notificationMessageType, logger));
             this.messageList = messages;
         }
 
@@ -222,10 +221,10 @@ public class AbstractNotificationConsumerTest {
         }
     }
 
-    private static final class TestDeserializer<T> extends VersionedMessageDeserializer<T> {
+    private static final class TestDeserializer<T> extends AtlasNotificationMessageDeserializer<T> {
 
-        private TestDeserializer(Type versionedMessageType, Logger logger) {
-            super(versionedMessageType, AbstractNotification.CURRENT_MESSAGE_VERSION, GSON, logger);
+        private TestDeserializer(Type notificationMessageType, Logger logger) {
+            super(notificationMessageType, AbstractNotification.CURRENT_MESSAGE_VERSION, GSON, logger);
         }
     }
 }

@@ -29,6 +29,9 @@ public class MessageVersion implements Comparable<MessageVersion> {
      * Used for message with no version (old format).
      */
     public static final MessageVersion NO_VERSION = new MessageVersion("0");
+    public static final MessageVersion VERSION_1  = new MessageVersion("1.0.0");
+
+    public static final MessageVersion CURRENT_VERSION = VERSION_1;
 
     private final String version;
 

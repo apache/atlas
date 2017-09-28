@@ -23,23 +23,23 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
 /**
- * VersionedMessage tests.
+ * AtlasNotificationMessage tests.
  */
-public class VersionedMessageTest {
+public class AtlasNotificationMessageTest {
 
     @Test
     public void testGetVersion() throws Exception {
         MessageVersion version = new MessageVersion("1.0.0");
-        VersionedMessage<String> versionedMessage = new VersionedMessage<>(version, "a");
-        assertEquals(versionedMessage.getVersion(), version);
+        AtlasNotificationMessage<String> atlasNotificationMessage = new AtlasNotificationMessage<>(version, "a");
+        assertEquals(atlasNotificationMessage.getVersion(), version);
     }
 
     @Test
     public void testGetMessage() throws Exception {
         String message = "a";
         MessageVersion version = new MessageVersion("1.0.0");
-        VersionedMessage<String> versionedMessage = new VersionedMessage<>(version, message);
-        assertEquals(versionedMessage.getMessage(), message);
+        AtlasNotificationMessage<String> atlasNotificationMessage = new AtlasNotificationMessage<>(version, message);
+        assertEquals(atlasNotificationMessage.getMessage(), message);
     }
 
     @Test
@@ -48,10 +48,10 @@ public class VersionedMessageTest {
         MessageVersion version2 = new MessageVersion("2.0.0");
         MessageVersion version3 = new MessageVersion("0.5.0");
 
-        VersionedMessage<String> versionedMessage = new VersionedMessage<>(version1, "a");
+        AtlasNotificationMessage<String> atlasNotificationMessage = new AtlasNotificationMessage<>(version1, "a");
 
-        assertTrue(versionedMessage.compareVersion(version1) == 0);
-        assertTrue(versionedMessage.compareVersion(version2) < 0);
-        assertTrue(versionedMessage.compareVersion(version3) > 0);
+        assertTrue(atlasNotificationMessage.compareVersion(version1) == 0);
+        assertTrue(atlasNotificationMessage.compareVersion(version2) < 0);
+        assertTrue(atlasNotificationMessage.compareVersion(version3) > 0);
     }
 }

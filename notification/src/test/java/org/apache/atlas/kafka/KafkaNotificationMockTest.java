@@ -17,20 +17,14 @@
  */
 package org.apache.atlas.kafka;
 
-import kafka.consumer.KafkaStream;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.serializer.StringDecoder;
-import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.testng.annotations.Test;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,11 +32,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.apache.atlas.kafka.AtlasKafkaConsumer;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import scala.actors.threadpool.Arrays;
+
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -90,7 +82,7 @@ public class KafkaNotificationMockTest {
         when(producer.send(expectedRecord)).thenReturn(returnValue);
 
         kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, new String[]{message});
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
 
         verify(producer).send(expectedRecord);
     }
@@ -112,7 +104,7 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, new String[]{message});
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 1);
@@ -142,7 +134,7 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                    NotificationInterface.NotificationType.HOOK, new String[]{message1, message2});
+                    NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message1, message2}));
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 2);

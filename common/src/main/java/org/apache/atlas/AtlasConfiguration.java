@@ -33,6 +33,9 @@ public enum AtlasConfiguration {
 
     QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
 
+    NOTIFICATION_MESSAGE_MAX_LENGTH_BYTES("atlas.notification.message.max.length.bytes", (1000 * 1000)),
+    NOTIFICATION_MESSAGE_COMPRESSION_ENABLED("atlas.notification.message.compression.enabled", true),
+
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
     SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100);
@@ -61,6 +64,10 @@ public enum AtlasConfiguration {
 
     public long getLong() {
         return APPLICATION_PROPERTIES.getLong(propertyName, Long.valueOf(defaultValue.toString()).longValue());
+    }
+
+    public boolean getBoolean() {
+        return APPLICATION_PROPERTIES.getBoolean(propertyName, Boolean.valueOf(defaultValue.toString()).booleanValue());
     }
 
     public String getString() {

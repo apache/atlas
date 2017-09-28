@@ -21,12 +21,7 @@ package org.apache.atlas.notification;
 /**
  * Represents a notification message that is associated with a version.
  */
-public class VersionedMessage<T> {
-
-    /**
-     * The version of the message.
-     */
-    private final MessageVersion version;
+public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
 
     /**
      * The actual message.
@@ -37,37 +32,17 @@ public class VersionedMessage<T> {
     // ----- Constructors ----------------------------------------------------
 
     /**
-     * Create a versioned message.
+     * Create a notification message.
      *
      * @param version  the message version
      * @param message  the actual message
      */
-    public VersionedMessage(MessageVersion version, T message) {
-        this.version = version;
+    public AtlasNotificationMessage(MessageVersion version, T message) {
+        super(version);
+
         this.message = message;
     }
 
-
-    // ----- VersionedMessage ------------------------------------------------
-
-    /**
-     * Compare the version of this message with the given version.
-     *
-     * @param compareToVersion  the version to compare to
-     *
-     * @return a negative integer, zero, or a positive integer as this message's version is less than, equal to,
-     *         or greater than the given version.
-     */
-    public int compareVersion(MessageVersion compareToVersion) {
-        return version.compareTo(compareToVersion);
-    }
-
-
-    // ----- accessors -------------------------------------------------------
-
-    public MessageVersion getVersion() {
-        return version;
-    }
 
     public T getMessage() {
         return message;
