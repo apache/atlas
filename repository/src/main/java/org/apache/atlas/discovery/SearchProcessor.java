@@ -103,6 +103,14 @@ public abstract class SearchProcessor {
 
         OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, "v.\"%s\": (*%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
+
+        // TODO: Add contains any, contains all mappings here
+
+        OPERATOR_MAP.put(SearchParameters.Operator.IS_NULL, "(*:* NOT v.\"%s\":[* TO *])");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IS_NULL, getIsNullPredicateGenerator());
+
+        OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, "v.\"%s\":[* TO *]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
     }
 
     protected final SearchContext   context;
@@ -428,9 +436,10 @@ public abstract class SearchProcessor {
 
         try {
             if (OPERATOR_MAP.get(op) != null) {
-                String qualifiedName = type.getQualifiedAttributeName(attrName);
+                String qualifiedName         = type.getQualifiedAttributeName(attrName);
+                String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
 
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, AtlasStructType.AtlasAttribute.escapeIndexQueryValue(attrVal));
+                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
@@ -572,7 +581,13 @@ public abstract class SearchProcessor {
                         case ENDS_WITH:
                             query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
                             break;
-                        case IN:
+                        case IS_NULL:
+                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
+                            break;
+                        case NOT_NULL:
+                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                            break;
+                        default:
                             LOG.warn("{}: unsupported operator. Ignored", operator);
                             break;
                     }
