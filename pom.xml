@@ -1867,6 +1867,7 @@
                     <version>2.7</version>
                     <configuration>
                         <encoding>UTF-8</encoding>
+                        <nonFilteredFileExtensions>zip</nonFilteredFileExtensions>
                     </configuration>
                 </plugin>
 
