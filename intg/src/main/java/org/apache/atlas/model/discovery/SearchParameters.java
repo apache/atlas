@@ -346,10 +346,12 @@ public class SearchParameters implements Serializable {
         IN(new String[]{"in", "IN"}),
         LIKE(new String[]{"like", "LIKE"}),
         STARTS_WITH(new String[]{"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
-        ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "BEGINS_WITH"}),
+        ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "ENDS_WITH"}),
         CONTAINS(new String[]{"contains", "CONTAINS"}),
         CONTAINS_ANY(new String[]{"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
-        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"})
+        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
+        IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),
+        NOT_NULL(new String[]{"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
         ;
         static final Map<String, Operator> operatorsMap = new HashMap<>();
 
