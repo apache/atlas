@@ -19,16 +19,28 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.repository.impexp.ZipSource;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.io.IOException;
 
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.LOG;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.*;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class EntityDiscoveryServiceTest {
@@ -50,6 +62,12 @@ public class EntityDiscoveryServiceTest {
 
     @Inject
     EntityDiscoveryService discoveryService;
+    @Inject
+    AtlasTypeDefStore typeDefStore;
+    @Inject
+    AtlasEntityStore entityStore;
+    @Inject
+    ImportService importService;
 
 
     @BeforeClass
@@ -122,4 +140,5 @@ public class EntityDiscoveryServiceTest {
         assertNotNull(s);
         return s;
     }
+
 }

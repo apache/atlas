@@ -29,6 +29,7 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
@@ -36,37 +37,22 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class ZipFileResourceTestUtils {
     public static final Logger LOG = LoggerFactory.getLogger(ZipFileResourceTestUtils.class);
 
     public static FileInputStream getFileInputStream(String fileName) {
-        String filePath = getFileFromResources(fileName);
-        File f = new File(filePath);
-        FileInputStream fs = null;
-        try {
-            fs = new FileInputStream(f);
-        } catch (FileNotFoundException e) {
-            LOG.error("File could not be found at: %s", filePath, e);
-        }
-        return fs;
-    }
-
-    private static String getFileFromResources(String fileName) {
-        final String userDir = System.getProperty("user.dir");
-        return getFilePath(userDir, fileName);
-    }
-
-    private static String getFilePath(String startPath, String fileName) {
-        return startPath + "/src/test/resources/" + fileName;
+        return TestResourceFileUtils.getFileInputStream(fileName);
     }
 
     public static String getModelJson(String fileName) throws IOException {
@@ -83,7 +69,7 @@ public class ZipFileResourceTestUtils {
     }
 
     public static String getModelJsonFromResources(String fileName) throws IOException {
-        String filePath = getFileFromResources(fileName);
+        String filePath = TestResourceFileUtils.getTestFilePath(fileName);
         File f = new File(filePath);
         String s = FileUtils.readFileToString(f);
         assertFalse(StringUtils.isEmpty(s), "Model file read correctly from resources!");
