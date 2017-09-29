@@ -504,7 +504,8 @@
         <node.version>v0.10.30</node.version>
         <node-for-v2.version>v4.4.2</node-for-v2.version>
         <slf4j.version>1.7.21</slf4j.version>
-        <jetty.version>9.2.12.v20150709</jetty.version>
+        <jetty.version>9.4.0.v20161208</jetty.version>
+        <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
         <jersey.version>1.19</jersey.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
@@ -715,7 +716,7 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jsp</artifactId>
-                <version>${jetty.version}</version>
+                <version>${jetty.jsp.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
@@ -1005,7 +1006,7 @@
             <dependency>
                 <groupId>javax.servlet.jsp</groupId>
                 <artifactId>jsp-api</artifactId>
-                <version>2.0</version>
+                <version>2.1</version>
             </dependency>
 
             <!-- JSON -->
