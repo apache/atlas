@@ -107,15 +107,15 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                     }
 
                     if (splitMsgs == null) {
-                        LOG.error("Received multi-part message: msgID={}, {} of {}, but first message didn't arrive. Ignoring message", msgId, splitIdx + 1, splitCount);
+                        LOG.error("Received msgID={}: {} of {}, but first message didn't arrive. Ignoring message", msgId, splitIdx + 1, splitCount);
 
                         msg = null;
                     } else if (splitMsgs.length <= splitIdx) {
-                        LOG.error("Received multi-part message: msgID={}, {} of {} - out of bounds. Ignoring message", msgId, splitIdx + 1, splitCount);
+                        LOG.error("Received msgID={}: {} of {} - out of bounds. Ignoring message", msgId, splitIdx + 1, splitCount);
 
                         msg = null;
                     } else {
-                        LOG.info("Received multi-part message: msgID={}, {} of {}", msgId, splitIdx + 1, splitCount);
+                        LOG.info("Received msgID={}: {} of {}", msgId, splitIdx + 1, splitCount);
 
                         splitMsgs[splitIdx] = splitMsg;
 
@@ -130,7 +130,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                                 splitMsg = splitMsgs[i];
 
                                 if (splitMsg == null) {
-                                    LOG.warn("Multi-part message: msgID={}, message {} of {} is missing. Ignoring message", msgId, i + 1, splitCount);
+                                    LOG.warn("MsgID={}: message {} of {} is missing. Ignoring message", msgId, i + 1, splitCount);
 
                                     isValidMessage = false;
 
@@ -149,14 +149,14 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
                                     msgJson = AtlasNotificationBaseMessage.getStringUtf8(bytes);
 
-                                    LOG.info("Received multi-part, compressed message: msgID={}, compressed={} bytes, uncompressed={} bytes", msgId, encodedBytes.length, bytes.length);
+                                    LOG.info("Received msgID={}: splitCount={}, compressed={} bytes, uncompressed={} bytes", msgId, splitCount, encodedBytes.length, bytes.length);
                                 } else {
                                     byte[] encodedBytes = AtlasNotificationBaseMessage.getBytesUtf8(msgJson);
                                     byte[] bytes        = AtlasNotificationBaseMessage.decodeBase64(encodedBytes);
 
                                     msgJson = AtlasNotificationBaseMessage.getStringUtf8(bytes);
 
-                                    LOG.info("Received multi-part message: msgID={}, compressed={} bytes, uncompressed={} bytes", msgId, encodedBytes.length, bytes.length);
+                                    LOG.info("Received msgID={}: splitCount={}, length={} bytes", msgId, splitCount, bytes.length);
                                 }
 
                                 msg = gson.fromJson(msgJson, AtlasNotificationBaseMessage.class);
@@ -179,7 +179,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
                     msgJson = AtlasNotificationBaseMessage.getStringUtf8(bytes);
 
-                    LOG.info("Received compressed message: msgID={}, compressed={} bytes, uncompressed={} bytes", compressedMsg.getMsgId(), encodedBytes.length, bytes.length);
+                    LOG.info("Received msgID={}: compressed={} bytes, uncompressed={} bytes", compressedMsg.getMsgId(), encodedBytes.length, bytes.length);
                 }
 
                 AtlasNotificationMessage<T> atlasNotificationMessage = gson.fromJson(msgJson, notificationMessageType);

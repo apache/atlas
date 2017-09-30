@@ -190,15 +190,12 @@ public abstract class AbstractNotification implements NotificationInterface {
 
                 if (msgLengthExceedsLimit) {
                     // compressed messages are already base64-encoded
-                    byte[] encodedBytes = compressionKind != CompressionKind.NONE ? msgBytes : AtlasNotificationBaseMessage.encodeBase64(msgBytes);
-
-                    int splitCount = encodedBytes.length / MESSAGE_MAX_LENGTH_BYTES;
+                    byte[] encodedBytes = MESSAGE_COMPRESSION_ENABLED ? msgBytes : AtlasNotificationBaseMessage.encodeBase64(msgBytes);
+                    int    splitCount   = encodedBytes.length / MESSAGE_MAX_LENGTH_BYTES;
 
                     if ((encodedBytes.length % MESSAGE_MAX_LENGTH_BYTES) != 0) {
                         splitCount++;
                     }
-
-                    LOG.info("Splitting large message: msgID={}, length={} bytes, splitCount={}", msgId, encodedBytes.length, splitCount);
 
                     for (int i = 0, offset = 0; i < splitCount; i++) {
                         int length = MESSAGE_MAX_LENGTH_BYTES;
@@ -215,6 +212,8 @@ public abstract class AbstractNotification implements NotificationInterface {
 
                         offset += length;
                     }
+
+                    LOG.info("Split large message: msgID={}, splitCount={}, length={} bytes", msgId, splitCount, encodedBytes.length);
                 }
             }
         }
