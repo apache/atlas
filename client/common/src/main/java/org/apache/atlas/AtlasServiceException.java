@@ -28,7 +28,7 @@ public class AtlasServiceException extends Exception {
     private ClientResponse.Status status;
 
     public AtlasServiceException(AtlasBaseClient.API api, Exception e) {
-        super("Metadata service API " + api.getMethod() + " : " + api.getPath() + " failed", e);
+        super("Metadata service API " + api.getMethod() + " : " + api.getNormalizedPath() + " failed", e);
     }
 
     public AtlasServiceException(AtlasBaseClient.API api, WebApplicationException e) throws JSONException {

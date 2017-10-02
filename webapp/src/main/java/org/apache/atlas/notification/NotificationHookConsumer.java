@@ -353,7 +353,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (numRetries == 0) { // audit only on the first attempt
                                     AtlasBaseClient.API api = AtlasClient.API_V1.CREATE_ENTITY;
-                                    audit(messageUser, api.getMethod(), api.getPath());
+                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
                                 entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
@@ -367,7 +367,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 if (numRetries == 0) { // audit only on the first attempt
                                     AtlasBaseClient.API api = UPDATE_ENTITY_BY_ATTRIBUTE;
                                     audit(messageUser, api.getMethod(),
-                                          String.format(api.getPath(), partialUpdateRequest.getTypeName()));
+                                          String.format(api.getNormalizedPath(), partialUpdateRequest.getTypeName()));
                                 }
 
                                 Referenceable referenceable = partialUpdateRequest.getEntity();
@@ -392,7 +392,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 if (numRetries == 0) { // audit only on the first attempt
                                     AtlasBaseClient.API api = DELETE_ENTITY_BY_ATTRIBUTE;
                                     audit(messageUser, api.getMethod(),
-                                          String.format(api.getPath(), deleteRequest.getTypeName()));
+                                          String.format(api.getNormalizedPath(), deleteRequest.getTypeName()));
                                 }
 
                                 try {
@@ -411,7 +411,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (numRetries == 0) { // audit only on the first attempt
                                     AtlasBaseClient.API api = UPDATE_ENTITY;
-                                    audit(messageUser, api.getMethod(), api.getPath());
+                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
                                 entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());

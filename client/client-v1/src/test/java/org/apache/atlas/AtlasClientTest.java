@@ -104,6 +104,7 @@ public class AtlasClientTest {
 
     private WebResource.Builder setupBuilder(AtlasClient.API_V1 api, WebResource webResource) {
         when(webResource.path(api.getPath())).thenReturn(service);
+        when(webResource.path(api.getNormalizedPath())).thenReturn(service);
         return getBuilder(service);
     }
 
