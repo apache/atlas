@@ -46,6 +46,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -151,7 +152,7 @@ public abstract class AtlasBaseClient {
     }
 
     public boolean isServerReady() throws AtlasServiceException {
-        WebResource resource   = getResource(API_VERSION.getPath());
+        WebResource resource   = getResource(API_VERSION.getNormalizedPath());
         try {
             callAPIWithResource(API_VERSION, resource, null, JSONObject.class);
             return true;
@@ -175,7 +176,7 @@ public abstract class AtlasBaseClient {
      */
     public String getAdminStatus() throws AtlasServiceException {
         String      result    = AtlasBaseClient.UNKNOWN_STATUS;
-        WebResource resource  = getResource(service, API_STATUS.getPath());
+        WebResource resource  = getResource(service, API_STATUS.getNormalizedPath());
         JSONObject  response  = callAPIWithResource(API_STATUS, resource, null, JSONObject.class);
         try {
             result = response.getString("Status");
@@ -315,7 +316,7 @@ public abstract class AtlasBaseClient {
         int i = 0;
         do {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Calling API [ {} : {} ] {}", api.getMethod(), api.getPath(), requestObject != null ? "<== " + requestObject : "");
+                LOG.debug("Calling API [ {} : {} ] {}", api.getMethod(), api.getNormalizedPath(), requestObject != null ? "<== " + requestObject : "");
             }
 
             WebResource.Builder requestBuilder = resource.getRequestBuilder();
@@ -375,7 +376,7 @@ public abstract class AtlasBaseClient {
     }
 
     protected WebResource getResource(API api, MultivaluedMap<String, String> queryParams, String... pathParams) {
-        WebResource resource = service.path(api.getPath());
+        WebResource resource = service.path(api.getNormalizedPath());
         resource = appendPathParams(resource, pathParams);
         resource = appendQueryParams(queryParams, resource);
         return resource;
@@ -447,7 +448,7 @@ public abstract class AtlasBaseClient {
                 if (i == (getNumberOfRetries() - 1)) {
                     throw che;
                 }
-                LOG.warn("Handled exception in calling api {}", api.getPath(), che);
+                LOG.warn("Handled exception in calling api {}", api.getNormalizedPath(), che);
                 LOG.warn("Exception's cause: {}", che.getCause().getClass());
                 handleClientHandlerException(che);
             }
@@ -515,13 +516,13 @@ public abstract class AtlasBaseClient {
 
     // Modify URL to include the path params
     private WebResource getResource(WebResource service, API api, String... pathParams) {
-        WebResource resource = service.path(api.getPath());
+        WebResource resource = service.path(api.getNormalizedPath());
         resource = appendPathParams(resource, pathParams);
         return resource;
     }
 
     private WebResource getResource(API api, String queryParamKey, List<String> queryParamValues) {
-        WebResource resource = service.path(api.getPath());
+        WebResource resource = service.path(api.getNormalizedPath());
         for (String queryParamValue : queryParamValues) {
             if (StringUtils.isNotBlank(queryParamKey) && StringUtils.isNotBlank(queryParamValue)) {
                 resource = resource.queryParam(queryParamKey, queryParamValue);
@@ -541,7 +542,7 @@ public abstract class AtlasBaseClient {
 
     // Modify URL to include the query params
     private WebResource getResource(WebResource service, API api, MultivaluedMap<String, String> queryParams) {
-        WebResource resource = service.path(api.getPath());
+        WebResource resource = service.path(api.getNormalizedPath());
         resource = appendQueryParams(queryParams, resource);
         return resource;
     }
@@ -576,6 +577,10 @@ public abstract class AtlasBaseClient {
 
         public String getPath() {
             return path;
+        }
+
+        public String getNormalizedPath() {
+            return Paths.get(path).normalize().toString();
         }
 
         public Response.Status getExpectedStatus() {

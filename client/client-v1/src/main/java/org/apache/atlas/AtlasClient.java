@@ -356,7 +356,7 @@ public class AtlasClient extends AtlasBaseClient {
         JSONObject response = callAPIWithRetries(api, null, new ResourceCreator() {
             @Override
             public WebResource createResource() {
-                WebResource resource = getResource(api.getPath());
+                WebResource resource = getResource(api.getNormalizedPath());
                 resource = resource.queryParam(TYPE, category.name());
                 return resource;
             }
@@ -924,12 +924,12 @@ public class AtlasClient extends AtlasBaseClient {
 
     @VisibleForTesting
     public WebResource getResource(API api, String... params) {
-        return getResource(api.getPath(), params);
+        return getResource(api.getNormalizedPath(), params);
     }
 
     @VisibleForTesting
     public WebResource getResource(API_V1 apiV1, String... params) {
-        return getResource(apiV1.getPath(), params);
+        return getResource(apiV1.getNormalizedPath(), params);
     }
 
     @VisibleForTesting
