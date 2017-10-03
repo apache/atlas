@@ -80,9 +80,9 @@ define(['require',
                         }
                     }
                     var values = parseDetailsObject.values;
+                    var name = ((name ? name : this.entityName));
+                    this.ui.name.text(name);
                     if (parseDetailsObject && parseDetailsObject.values) {
-                        var name = ((name ? name : this.entityName));
-                        this.ui.name.text(name);
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
                         table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
                         if (table.length) {
@@ -94,8 +94,7 @@ define(['require',
                             this.ui.tableAudit.hide();
                         }
                     } else {
-                        this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
-                        this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
+                        this.ui.noData.show();
                     }
                 } else if (detailObj == "Deleted entity") {
                     this.ui.name.text(this.entityName);

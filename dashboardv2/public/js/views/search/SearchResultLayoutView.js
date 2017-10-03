@@ -145,7 +145,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -298,19 +298,24 @@ define(['require',
                         this.ui.columnEmptyInfo.hide();
                     }
                     this.fetchCollection(value, _.extend({ 'fromUrl': true }, (this.value && this.value.pageOffset ? { 'next': true } : null)));
+                    this.ui.showPage.select2({
+                        data: _.sortBy(_.union([25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500], [this.limit])),
+                        tags: true,
+                        dropdownCssClass: "number-input",
+                        multiple: false
+                    });
+                    if (this.value && this.value.pageLimit) {
+                        this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
+                    }
                 } else {
                     if (Globals.entityTypeConfList) {
                         this.$(".entityLink").show();
                     }
-                }
-                this.ui.showPage.select2({
-                    data: _.sortBy(_.union([25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500], [this.limit])),
-                    tags: true,
-                    dropdownCssClass: "number-input",
-                    multiple: false
-                });
-                if (this.value && this.value.pageLimit) {
-                    this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
+                    if (this.isTypeTagNotExists) {
+                        Utils.notifyError({
+                            content: Messages.search.notExists
+                        });
+                    }
                 }
             },
             triggerUrl: function(options) {
