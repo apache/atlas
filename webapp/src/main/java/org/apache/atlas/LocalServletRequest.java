@@ -157,7 +157,6 @@ public class LocalServletRequest implements HttpServletRequest {
         throw new IllegalStateException("Not supported");
     }
 
-    @Override
     public String changeSessionId() {
         throw new IllegalStateException("Not supported");
     }
@@ -207,7 +206,6 @@ public class LocalServletRequest implements HttpServletRequest {
         throw new IllegalStateException("Not supported");
     }
 
-    @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
         throw new IllegalStateException("Not supported");
     }
@@ -237,7 +235,6 @@ public class LocalServletRequest implements HttpServletRequest {
         throw new IllegalStateException("Not supported");
     }
 
-    @Override
     public long getContentLengthLong() {
         throw new IllegalStateException("Not supported");
     }

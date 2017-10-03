@@ -24,13 +24,8 @@ import org.apache.atlas.AtlasException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +59,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         super(port, path);
     }
 
+    @Override
     protected Connector getConnector(int port) throws IOException {
         org.apache.commons.configuration.Configuration config = getConfiguration();
 
@@ -72,14 +68,14 @@ public class SecureEmbeddedServer extends EmbeddedServer {
                 System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
         sslContextFactory.setKeyStorePassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
         sslContextFactory.setKeyManagerPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
-        sslContextFactory.setTrustStorePath(config.getString(TRUSTSTORE_FILE_KEY,
+        sslContextFactory.setTrustStore(config.getString(TRUSTSTORE_FILE_KEY,
                 System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
         sslContextFactory.setTrustStorePassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
         sslContextFactory.setWantClientAuth(config.getBoolean(CLIENT_AUTH_KEY, Boolean.getBoolean(CLIENT_AUTH_KEY)));
 
         List<Object> cipherList = config.getList(ATLAS_SSL_EXCLUDE_CIPHER_SUITES, DEFAULT_CIPHER_SUITES);
         sslContextFactory.setExcludeCipherSuites(cipherList.toArray(new String[cipherList.size()]));
-        sslContextFactory.setRenegotiationAllowed(false);
+        sslContextFactory.setAllowRenegotiate(false);
 
         String[] excludedProtocols = config.containsKey(ATLAS_SSL_EXCLUDE_PROTOCOLS) ?
                 config.getStringArray(ATLAS_SSL_EXCLUDE_PROTOCOLS) : DEFAULT_EXCLUDE_PROTOCOLS;
@@ -89,24 +85,14 @@ public class SecureEmbeddedServer extends EmbeddedServer {
 
         // SSL HTTP Configuration
         // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
         final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();
-        http_config.setSecurePort(port);
-        http_config.setRequestHeaderSize(bufferSize);
-        http_config.setResponseHeaderSize(bufferSize);
-        http_config.setSendServerVersion(true);
-        http_config.setSendDateHeader(false);
-
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
 
         // SSL Connector
-        ServerConnector sslConnector = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory(https_config));
+        SslSelectChannelConnector sslConnector = new SslSelectChannelConnector(sslContextFactory);
         sslConnector.setPort(port);
-        server.addConnector(sslConnector);
+        sslConnector.setServer(server);
+        sslConnector.setRequestHeaderSize(bufferSize);
+        sslConnector.setResponseHeaderSize(bufferSize);
 
         return sslConnector;
     }

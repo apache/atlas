@@ -22,10 +22,8 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -52,7 +50,9 @@ public class EmbeddedServer {
         long keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
         ExecutorThreadPool pool =
                 new ExecutorThreadPool(minThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
-        server = new Server(pool);
+
+        server = new Server();
+        server.setThreadPool(pool);
 
         Connector connector = getConnector(port);
         server.addConnector(connector);
@@ -78,15 +78,12 @@ public class EmbeddedServer {
     }
 
     protected Connector getConnector(int port) throws IOException {
-        HttpConfiguration http_config = new HttpConfiguration();
-        // this is to enable large header sizes when Kerberos is enabled with AD
-        final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();;
-        http_config.setResponseHeaderSize(bufferSize);
-        http_config.setRequestHeaderSize(bufferSize);
+        final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();
 
-        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(port);
-        connector.setHost("0.0.0.0");
+        connector.setResponseBufferSize(bufferSize);
+        connector.setRequestBufferSize(bufferSize);
         return connector;
     }
 

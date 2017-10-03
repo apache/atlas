@@ -504,7 +504,8 @@
         <node.version>v0.10.30</node.version>
         <node-for-v2.version>v4.4.2</node-for-v2.version>
         <slf4j.version>1.7.21</slf4j.version>
-        <jetty.version>9.2.12.v20150709</jetty.version>
+        <jetty.version>8.1.19.v20160209</jetty.version>
+        <jetty.maven.plugin.version>9.2.12.v20150709</jetty.maven.plugin.version>
         <jersey.version>1.19</jersey.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
@@ -1981,7 +1982,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty.version}</version>
+                <version>${jetty.maven.plugin.version}</version>
                 <configuration>
                     <!-- Log to the console. -->
                     <requestLog implementation="org.eclipse.jetty.server.NCSARequestLog">
