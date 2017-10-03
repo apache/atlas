@@ -467,40 +467,40 @@ public abstract class SearchProcessor {
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_SHORT:
                     attrClass = Short.class;
-                    attrValue = attrVal == null ? null : Short.parseShort(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Short.parseShort(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_INT:
                     attrClass = Integer.class;
-                    attrValue = attrVal == null ? null : Integer.parseInt(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Integer.parseInt(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER:
                     attrClass = BigInteger.class;
-                    attrValue = attrVal == null ? null : new BigInteger(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : new BigInteger(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN:
                     attrClass = Boolean.class;
-                    attrValue = attrVal == null ? null : Boolean.parseBoolean(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Boolean.parseBoolean(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BYTE:
                     attrClass = Byte.class;
-                    attrValue = attrVal == null ? null : Byte.parseByte(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Byte.parseByte(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_LONG:
                 case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
                     attrClass = Long.class;
-                    attrValue = attrVal == null ? null : Long.parseLong(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Long.parseLong(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_FLOAT:
                     attrClass = Float.class;
-                    attrValue = attrVal == null ? null : Float.parseFloat(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Float.parseFloat(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE:
                     attrClass = Double.class;
-                    attrValue = attrVal == null ? null : Double.parseDouble(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Double.parseDouble(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL:
                     attrClass = BigDecimal.class;
-                    attrValue = attrVal == null ? null : new BigDecimal(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : new BigDecimal(attrVal);
                     break;
                 default:
                     if (attrType instanceof AtlasEnumType) {
