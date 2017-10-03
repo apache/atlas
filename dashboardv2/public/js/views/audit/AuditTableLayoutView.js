@@ -232,6 +232,7 @@ define(['require',
                     'views/audit/CreateAuditTableLayoutView',
                 ], function(Modal, CreateAuditTableLayoutView) {
                     that.action = $(e.target).data("action");
+                    $(e.target).attr('disabled', true);
                     var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
                         collectionModel = new that.entityCollection.model(eventModel),
                         view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, attributeDefs: that.attributeDefs });
@@ -246,6 +247,9 @@ define(['require',
                     });
                     view.$el.on('click', 'td a', function() {
                         modal.trigger('cancel');
+                    });
+                    view.on('hidden.bs.modal', function() {
+                        that.$('.btn-action[data-id="auditCreate"]').attr('disabled', false);
                     });
                 });
             },

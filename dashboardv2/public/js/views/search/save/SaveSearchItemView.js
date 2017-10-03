@@ -93,7 +93,7 @@ define(['require',
                 });
             Utils.setUrl({
                 url: '#!/search/searchResult',
-                urlParams: _.extend(params, this.searchTypeObj),
+                urlParams: _.extend({}, this.searchTypeObj, params),
                 mergeBrowserUrl: false,
                 trigger: true,
                 updateTabState: true

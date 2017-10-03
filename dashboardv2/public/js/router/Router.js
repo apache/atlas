@@ -276,6 +276,9 @@ define([
                 'views/search/SearchDetailLayoutView'
             ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                var isinitialView = true,
+                    isTypeTagNotExists = false,
+                    tempParam = _.extend({}, paramObj);
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView(
@@ -288,7 +291,6 @@ define([
                     App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
                 }
                 App.rSideNav.currentView.selectTab();
-                var isinitialView = true;
                 if (paramObj) {
                     isinitialView = (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0;
                 }
@@ -297,6 +299,7 @@ define([
                         'value': paramObj,
                         'searchVent': that.searchVent,
                         'initialView': isinitialView,
+                        'isTypeTagNotExists': ((paramObj.type != tempParam.type) || (tempParam.tag != paramObj.tag))
                     }, that.preFetchedCollectionLists, that.sharedObj)
                 ));
             });

@@ -39,10 +39,11 @@ define(['require'], function(require) {
         search: {
             noRecordForPage: "No record found at ",
             onSamePage: "You are on the same page!",
+            notExists: "Invalid Expression or Tag/Type has been deleted.",
             favoriteSearch: {
                 save: "Do you want to overwrite ",
                 notSelectedFavoriteElement: "Please select any one favorite search",
-                notSelectedSearchFilter:"Please select at least one filter"
+                notSelectedSearchFilter: "Please select at least one filter"
             }
         },
         tag: {
