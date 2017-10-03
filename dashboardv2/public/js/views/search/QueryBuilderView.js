@@ -70,6 +70,9 @@ define(['require',
                 if (type === "enum" || type === "boolean") {
                     obj.operators = ['=', '!='];
                 }
+                if (obj.operators) {
+                    obj.operators = obj.operators.concat(['is_null', 'not_null']);
+                }
                 return obj;
             },
             isPrimitive: function(type) {
@@ -161,11 +164,16 @@ define(['require',
                             { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] }
+                            { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                            { type: 'not_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] }
                         ],
                         lang: {
                             add_rule: 'Add filter',
-                            add_group: 'Add filter group'
+                            add_group: 'Add filter group',
+                            operators: {
+                                not_null: 'is not null'
+                            }
                         },
                         rules: rules_widgets
                     });
