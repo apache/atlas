@@ -54,6 +54,13 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             } else {
                 return false;
             }
+        },
+        trim: function(val) {
+            if (val && val.trim) {
+                return val.trim();
+            } else {
+                return val;
+            }
         }
     });
     var getPopoverEl = function(e) {

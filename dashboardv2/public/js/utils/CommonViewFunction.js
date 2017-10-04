@@ -409,7 +409,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             queryArray.push(tagKeyValue);
         }
         if (value.query) {
-            queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + _.escape(value.query) + '</span>&nbsp');
+            queryArray.push('<span class="key">Query:</span>&nbsp<span class="value">' + _.trim(_.escape(value.query)) + '</span>&nbsp');
         }
         if (queryArray.length == 1) {
             return queryArray.join();
@@ -544,7 +544,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var attrQuery = [];
             if (attrObj) {
                 _.each(attrObj, function(obj) {
-                    var url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (obj.value || obj.attributeValue)],
+                    var url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), _.trim(obj.value || obj.attributeValue)],
                         type = (obj.type || obj.attributeType);
                     if (type) {
                         url.push(type);
@@ -588,7 +588,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (urlObj && urlObj.length) {
                 _.each(urlObj.split(","), function(obj) {
                     var temp = obj.split("::");
-                    var finalObj = { id: temp[0], operator: temp[1], value: temp[2] }
+                    var finalObj = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
                     if (temp[3]) {
                         finalObj['type'] = temp[3];
                     }
@@ -617,7 +617,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     tempObj = {
                         "attributeName": rulObj.id,
                         "operator": mapUiOperatorToAPI(rulObj.operator),
-                        "attributeValue": (rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
+                        "attributeValue": _.trim(rulObj.type === "date" ? Date.parse(rulObj.value) : rulObj.value)
                     }
                     convertObj.push(tempObj);
                 });
