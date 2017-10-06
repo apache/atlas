@@ -31,12 +31,14 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.lang.reflect.Type;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,6 +65,16 @@ public abstract class AbstractNotification implements NotificationInterface {
     public static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
 
     public static final int MAX_BYTES_PER_CHAR = 4;  // each char can encode upto 4 bytes in UTF-8
+
+    /**
+     * IP address of the host in which this process has started
+     */
+    private static String localHostAddress = "";
+
+    /**
+     *
+     */
+    private static String currentUser = "";
 
     private final boolean embedded;
     private final boolean isHAEnabled;
@@ -107,6 +119,11 @@ public abstract class AbstractNotification implements NotificationInterface {
         send(type, Arrays.asList(messages));
     }
 
+    @Override
+    public void setCurrentUser(String user) {
+        currentUser = user;
+    }
+
     // ----- AbstractNotification --------------------------------------------
 
     /**
@@ -146,6 +163,24 @@ public abstract class AbstractNotification implements NotificationInterface {
         return GSON.toJson(notificationMsg);
     }
 
+    private static String getHostAddress() {
+        if (StringUtils.isEmpty(localHostAddress)) {
+            try {
+                localHostAddress =  Inet4Address.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOG.warn("failed to get local host address", e);
+
+                localHostAddress =  "";
+            }
+        }
+
+        return localHostAddress;
+    }
+
+    private static String getCurrentUser() {
+        return currentUser;
+    }
+
     /**
      * Get the notification message JSON from the given object.
      *
@@ -154,7 +189,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      * @return the message as a JSON string
      */
     public static void createNotificationMessages(Object message, List<String> msgJsonList) {
-        AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message);
+        AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser());
         String                      msgJson         = GSON.toJson(notificationMsg);
 
         boolean msgLengthExceedsLimit = (msgJson.length() * MAX_BYTES_PER_CHAR) > MESSAGE_MAX_LENGTH_BYTES;

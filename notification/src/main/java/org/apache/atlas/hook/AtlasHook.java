@@ -85,6 +85,7 @@ public abstract class AtlasHook {
 
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
         notificationInterface = NotificationProvider.get();
+        notificationInterface.setCurrentUser(getUser());
 
         LOG.info("Created Atlas Hook");
     }
