@@ -18,6 +18,7 @@
 
 package org.apache.atlas.notification;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.commons.lang3.StringUtils;
@@ -26,8 +27,14 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS;
+import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS;
 
 /**
  * Deserializer that works with notification messages.  The version of each deserialized message is checked against an
@@ -47,8 +54,12 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     private final Gson gson;
 
 
-    private final Map<String, AtlasNotificationStringMessage[]> splitMsgBuffer = new HashMap<>();
-
+    private final Map<String, SplitMessageAggregator> splitMsgBuffer = new HashMap<>();
+    private final long                                splitMessageBufferPurgeIntervalMs;
+    private final long                                splitMessageSegmentsWaitTimeMs;
+    private long                                      splitMessagesLastPurgeTime    = System.currentTimeMillis();
+    private final AtomicLong                          messageCountTotal             = new AtomicLong(0);
+    private final AtomicLong                          messageCountSinceLastInterval = new AtomicLong(0);
     // ----- Constructors ----------------------------------------------------
 
     /**
@@ -61,11 +72,22 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
      */
     public AtlasNotificationMessageDeserializer(Type notificationMessageType, MessageVersion expectedVersion,
                                                 Gson gson, Logger notificationLogger) {
-        this.notificationMessageType = notificationMessageType;
-        this.messageType             = ((ParameterizedType) notificationMessageType).getActualTypeArguments()[0];
-        this.expectedVersion         = expectedVersion;
-        this.gson                    = gson;
-        this.notificationLogger      = notificationLogger;
+        this(notificationMessageType, expectedVersion, gson, notificationLogger,
+             NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS.getLong() * 1000,
+             NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS.getLong() * 1000);
+    }
+
+    public AtlasNotificationMessageDeserializer(Type notificationMessageType, MessageVersion expectedVersion,
+                                                Gson gson, Logger notificationLogger,
+                                                long splitMessageSegmentsWaitTimeMs,
+                                                long splitMessageBufferPurgeIntervalMs) {
+        this.notificationMessageType           = notificationMessageType;
+        this.messageType                       = ((ParameterizedType) notificationMessageType).getActualTypeArguments()[0];
+        this.expectedVersion                   = expectedVersion;
+        this.gson                              = gson;
+        this.notificationLogger                = notificationLogger;
+        this.splitMessageSegmentsWaitTimeMs    = splitMessageSegmentsWaitTimeMs;
+        this.splitMessageBufferPurgeIntervalMs = splitMessageBufferPurgeIntervalMs;
     }
 
     // ----- MessageDeserializer ---------------------------------------------
@@ -73,6 +95,9 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     @Override
     public T deserialize(String messageJson) {
         final T ret;
+
+        messageCountTotal.incrementAndGet();
+        messageCountSinceLastInterval.incrementAndGet();
 
         AtlasNotificationBaseMessage msg = gson.fromJson(messageJson, AtlasNotificationBaseMessage.class);
 
@@ -96,12 +121,12 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                     final int splitIdx   = splitMsg.getMsgSplitIdx();
                     final int splitCount = splitMsg.getMsgSplitCount();
 
-                    final AtlasNotificationStringMessage[] splitMsgs;
+                    final SplitMessageAggregator splitMsgs;
 
                     if (splitIdx == 0) {
-                        splitMsgs = new AtlasNotificationStringMessage[splitCount];
+                        splitMsgs = new SplitMessageAggregator(splitMsg);
 
-                        splitMsgBuffer.put(msgId, splitMsgs);
+                        splitMsgBuffer.put(splitMsgs.getMsgId(), splitMsgs);
                     } else {
                         splitMsgs = splitMsgBuffer.get(msgId);
                     }
@@ -110,24 +135,24 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                         LOG.error("Received msgID={}: {} of {}, but first message didn't arrive. Ignoring message", msgId, splitIdx + 1, splitCount);
 
                         msg = null;
-                    } else if (splitMsgs.length <= splitIdx) {
+                    } else if (splitMsgs.getTotalSplitCount() <= splitIdx) {
                         LOG.error("Received msgID={}: {} of {} - out of bounds. Ignoring message", msgId, splitIdx + 1, splitCount);
 
                         msg = null;
                     } else {
                         LOG.info("Received msgID={}: {} of {}", msgId, splitIdx + 1, splitCount);
 
-                        splitMsgs[splitIdx] = splitMsg;
+                        boolean isReady = splitMsgs.add(splitMsg);
 
-                        if (splitIdx == (splitCount - 1)) { // last message
+                        if (isReady) { // last message
                             splitMsgBuffer.remove(msgId);
 
                             boolean isValidMessage = true;
 
                             StringBuilder sb = new StringBuilder();
 
-                            for (int i = 0; i < splitMsgs.length; i++) {
-                                splitMsg = splitMsgs[i];
+                            for (int i = 0; i < splitMsgs.getTotalSplitCount(); i++) {
+                                splitMsg = splitMsgs.get(i);
 
                                 if (splitMsg == null) {
                                     LOG.warn("MsgID={}: message {} of {} is missing. Ignoring message", msgId, i + 1, splitCount);
@@ -192,7 +217,53 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
             }
         }
 
+
+        long now                = System.currentTimeMillis();
+        long timeSinceLastPurge = now - splitMessagesLastPurgeTime;
+
+        if(timeSinceLastPurge >= splitMessageBufferPurgeIntervalMs) {
+            purgeStaleMessages(splitMsgBuffer, now, splitMessageSegmentsWaitTimeMs);
+
+            LOG.info("Notification processing stats: total={}, sinceLastStatsReport={}", messageCountTotal.get(), messageCountSinceLastInterval.getAndSet(0));
+
+            splitMessagesLastPurgeTime = now;
+        }
+
         return ret;
+    }
+
+    @VisibleForTesting
+    static void purgeStaleMessages(Map<String, SplitMessageAggregator> splitMsgBuffer, long now, long maxWaitTime) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> purgeStaleMessages(bufferedMessageCount=" + splitMsgBuffer.size() + ")");
+        }
+
+        List<SplitMessageAggregator> evictionList = null;
+
+        for (SplitMessageAggregator aggregrator : splitMsgBuffer.values()) {
+            long waitTime = now - aggregrator.getFirstSplitTimestamp();
+
+            if (waitTime < maxWaitTime) {
+                continue;
+            }
+
+            if(evictionList == null) {
+                evictionList = new ArrayList<>();
+            }
+
+             evictionList.add(aggregrator);
+        }
+
+        if(evictionList != null) {
+            for (SplitMessageAggregator aggregrator : evictionList) {
+                LOG.error("evicting notification msgID={}, totalSplitCount={}, receivedSplitCount={}", aggregrator.getMsgId(), aggregrator.getTotalSplitCount(), aggregrator.getReceivedSplitCount());
+                splitMsgBuffer.remove(aggregrator.getMsgId());
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== purgeStaleMessages(bufferedMessageCount=" + splitMsgBuffer.size() + ")");
+        }
     }
 
     // ----- helper methods --------------------------------------------------

@@ -31,10 +31,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import org.apache.kafka.common.TopicPartition;
 

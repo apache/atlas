@@ -18,10 +18,16 @@
 
 package org.apache.atlas.notification;
 
+import org.joda.time.DateTimeZone;
+import org.joda.time.Instant;
+
 /**
  * Represents a notification message that is associated with a version.
  */
 public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
+    private String msgSourceIP;
+    private String msgCreatedBy;
+    private long   msgCreationTime;
 
     /**
      * The actual message.
@@ -38,11 +44,42 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
      * @param message  the actual message
      */
     public AtlasNotificationMessage(MessageVersion version, T message) {
-        super(version);
-
-        this.message = message;
+        this(version, message, null, null);
     }
 
+    public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy) {
+        super(version);
+
+        this.msgSourceIP     = msgSourceIP;
+        this.msgCreatedBy    = createdBy;
+        this.msgCreationTime = Instant.now().toDateTime(DateTimeZone.UTC).getMillis();
+        this.message         = message;
+    }
+
+
+    public String getMsgSourceIP() {
+        return msgSourceIP;
+    }
+
+    public void setMsgSourceIP(String msgSourceIP) {
+        this.msgSourceIP = msgSourceIP;
+    }
+
+    public String getMsgCreatedBy() {
+        return msgCreatedBy;
+    }
+
+    public void setMsgCreatedBy(String msgCreatedBy) {
+        this.msgCreatedBy = msgCreatedBy;
+    }
+
+    public long getMsgCreationTime() {
+        return msgCreationTime;
+    }
+
+    public void setMsgCreationTime(long msgCreationTime) {
+        this.msgCreationTime = msgCreationTime;
+    }
 
     public T getMessage() {
         return message;

@@ -38,6 +38,12 @@ public class AtlasNotificationStringMessage extends AtlasNotificationBaseMessage
         this.message = message;
     }
 
+    public AtlasNotificationStringMessage(String message, String msgId, CompressionKind compressionKind, int msgSplitIdx, int msgSplitCount) {
+        super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind, msgSplitIdx, msgSplitCount);
+
+        this.message = message;
+    }
+
     public AtlasNotificationStringMessage(byte[] encodedBytes, String msgId, CompressionKind compressionKind) {
         super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind);
 

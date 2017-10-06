@@ -99,6 +99,12 @@ public interface NotificationInterface {
     }
 
     /**
+     *
+     * @param user Name of the user under which the processes is running
+     */
+    void setCurrentUser(String user);
+
+    /**
      * Create notification consumers for the given notification type.
      *
      * @param notificationType  the notification type (i.e. HOOK, ENTITIES)

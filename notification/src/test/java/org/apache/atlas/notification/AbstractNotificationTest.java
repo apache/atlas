@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.*;
@@ -54,9 +55,9 @@ public class AbstractNotificationTest {
 
         assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
         assertEquals(3, notification.messages.size());
-        assertEquals(messageJson.get(0), notification.messages.get(0));
-        assertEquals(messageJson.get(1), notification.messages.get(1));
-        assertEquals(messageJson.get(2), notification.messages.get(2));
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
     }
 
     @Test
@@ -81,9 +82,11 @@ public class AbstractNotificationTest {
 
         notification.send(NotificationInterface.NotificationType.HOOK, messages);
 
-        assertEquals(NotificationInterface.NotificationType.HOOK, notification.type);
-        assertEquals(messageJson.size(), notification.messages.size());
-        assertEquals(messageJson, notification.messages);
+        assertEquals(notification.type, NotificationInterface.NotificationType.HOOK);
+        assertEquals(notification.messages.size(), messageJson.size());
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
     }
 
     public static class TestMessage extends HookNotification.HookNotificationMessage {
@@ -91,6 +94,17 @@ public class AbstractNotificationTest {
         public TestMessage(HookNotification.HookNotificationType type, String user) {
             super(type, user);
         }
+    }
+
+    // ignore msgCreationTime in Json
+    private void assertEqualsMessageJson(String msgJsonActual, String msgJsonExpected) {
+        Map<Object, Object> msgActual   = AbstractNotification.GSON.fromJson(msgJsonActual, Map.class);
+        Map<Object, Object> msgExpected = AbstractNotification.GSON.fromJson(msgJsonExpected, Map.class);
+
+        msgActual.remove("msgCreationTime");
+        msgExpected.remove("msgCreationTime");
+
+        assertEquals(msgActual, msgExpected);
     }
 
     public static class TestNotification extends AbstractNotification {
