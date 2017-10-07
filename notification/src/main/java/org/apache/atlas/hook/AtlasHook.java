@@ -85,7 +85,16 @@ public abstract class AtlasHook {
 
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
         notificationInterface = NotificationProvider.get();
-        notificationInterface.setCurrentUser(getUser());
+
+        String currentUser = "";
+
+        try {
+            currentUser = getUser();
+        } catch (Exception excp) {
+            LOG.warn("Error in determining current user", excp);
+        }
+
+        notificationInterface.setCurrentUser(currentUser);
 
         LOG.info("Created Atlas Hook");
     }
