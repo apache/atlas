@@ -130,6 +130,17 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
+        <!-- addons/hbase -->
+        <fileSet>
+            <directory>../addons/hbase-bridge/target/dependency/bridge</directory>
+            <outputDirectory>bridge</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>../addons/hbase-bridge/target/dependency/hook</directory>
+            <outputDirectory>hook</outputDirectory>
+        </fileSet>
+
         <!-- addons/falcon -->
         <fileSet>
             <directory>../addons/falcon-bridge/target/dependency/hook</directory>
