@@ -16,12 +16,15 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Enums'], function(require, Enums) {
+define(['require', 'utils/Enums', 'utils/Utils'], function(require, Enums, Utils) {
     'use strict';
 
     var UrlLinks = {
-        baseUrl: 'api/atlas',
-        baseUrlV2: 'api/atlas/v2',
+        apiBaseUrl: Utils.getBaseUrl(window.location.pathname)
+    };
+    _.extend(UrlLinks, {
+        baseUrl: UrlLinks.apiBaseUrl + '/api/atlas',
+        baseUrlV2: UrlLinks.apiBaseUrl + '/api/atlas/v2',
         typedefsUrl: function() {
             return {
                 defs: this.baseUrlV2 + '/types/typedefs',
@@ -122,7 +125,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             return this.baseUrl + '/admin/session';
         }
 
-    };
+    });
 
     return UrlLinks;
 });

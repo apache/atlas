@@ -20,7 +20,8 @@ define(['require',
     'hbs!tmpl/business_catalog/SideNavLayoutView_tmpl',
     'utils/Utils',
     'utils/Globals',
-], function(require, tmpl, Utils, Globals) {
+    'utils/UrlLinks'
+], function(require, tmpl, Utils, Globals, UrlLinks) {
     'use strict';
 
     var SideNavLayoutView = Marionette.LayoutView.extend({
@@ -37,7 +38,8 @@ define(['require',
         templateHelpers: function() {
             return {
                 taxonomy: Globals.taxonomy,
-                tabClass: this.tabClass
+                tabClass: this.tabClass,
+                apiBaseUrl: UrlLinks.apiBaseUrl
             };
         },
         events: function() {
