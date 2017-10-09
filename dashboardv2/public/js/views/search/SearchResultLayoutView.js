@@ -240,10 +240,10 @@ define(['require',
                             }
                         }
                         this.triggerUrl();
-                        if (excludeDefaultColumn.length > this.searchCollection.filterObj.attributes.length) {
+                        var attributes = this.searchCollection.filterObj.attributes;
+                        if (excludeDefaultColumn && attributes && excludeDefaultColumn.length > attributes.length) {
                             this.fetchCollection(this.value);
                         }
-
                     }
                 }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
@@ -452,7 +452,7 @@ define(['require',
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
 
-                        if (value && !value.profileDBView) {
+                        if (Utils.getUrlState.isSearchTab() && value && !value.profileDBView) {
                             var searchString = 'Results for: <span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value) + "</span>";
                             if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                                 searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
