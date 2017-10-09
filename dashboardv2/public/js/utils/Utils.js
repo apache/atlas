@@ -69,6 +69,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         });
         return uuid;
     };
+    Utils.getBaseUrl = function(url) {
+        return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
+    };
     pnotify.prototype.options.styling = "bootstrap3";
     var notify = function(options) {
         return new pnotify(_.extend({

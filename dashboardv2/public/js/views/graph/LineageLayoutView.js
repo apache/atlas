@@ -254,19 +254,19 @@ define(['require',
                             if (node) {
                                 if (node.isProcess) {
                                     if (Enums.entityStateReadOnly[node.status]) {
-                                        return 'img/icon-gear-delete.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-gear-delete.png';
                                     } else if (node.id == that.guid) {
-                                        return 'img/icon-gear-active.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-gear-active.png';
                                     } else {
-                                        return 'img/icon-gear.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-gear.png';
                                     }
                                 } else {
                                     if (Enums.entityStateReadOnly[node.status]) {
-                                        return 'img/icon-table-delete.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-table-delete.png';
                                     } else if (node.id == that.guid) {
-                                        return 'img/icon-table-active.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-table-active.png';
                                     } else {
-                                        return 'img/icon-table.png';
+                                        return UrlLinks.apiBaseUrl + '/img/icon-table.png';
                                     }
                                 }
                             }

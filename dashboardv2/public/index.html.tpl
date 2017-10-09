@@ -66,7 +66,7 @@
             <header id="new-header" class="clearfix"></header>
             <div id="new-page-wrapper">
                 <div>
-                    <img class="initialLoading" src="img/ring.gif">
+                    <div class="initialLoading"></div>
                 </div>
             </div>
         </div>

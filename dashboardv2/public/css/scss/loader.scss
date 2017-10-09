@@ -71,11 +71,17 @@
 }
 
 .initialLoading {
-    display: block;
-    position: absolute;
-    margin-top: 30%;
-    right: 50%;
-    height: 60px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    background: url("../img/ring.gif") no-repeat;
+    background-position: 50% 50%;
+    background-size: 60px;
+    @media (min-width: 768px) {
+        left: 350px;
+    }
 }
 
 .tableOverlay {
