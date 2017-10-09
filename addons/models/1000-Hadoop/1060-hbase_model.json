@@ -4,6 +4,47 @@
     "classificationDefs": [],
     "entityDefs": [
         {
+            "name": "hbase_namespace",
+            "superTypes": [
+                "DataSet"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "clusterName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "parameters",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "createTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "modifiedTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
             "name": "hbase_table",
             "superTypes": [
                 "DataSet"

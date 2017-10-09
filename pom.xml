@@ -679,7 +679,8 @@
         <module>addons/sqoop-bridge</module>
         <module>addons/storm-bridge-shim</module>
         <module>addons/storm-bridge</module>
-
+	<module>addons/hbase-bridge-shim</module>
+        <module>addons/hbase-bridge</module>
         <module>distro</module>
         <module>build-tools</module>
     </modules>
@@ -1518,6 +1519,19 @@
                 <artifactId>sqoop-bridge-shim</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hbase-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hbase-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <!--Scala dependencies-->
             <dependency>

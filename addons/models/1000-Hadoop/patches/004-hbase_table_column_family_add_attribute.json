@@ -1,0 +1,70 @@
+{
+  "patches": [
+    {
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "hbase_table",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "namespace",
+          "typeName": "hbase_namespace",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "parameters",
+          "typeName": "map<string,string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "createTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "modifiedTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "hbase_column_family",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "createTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "modifiedTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}
