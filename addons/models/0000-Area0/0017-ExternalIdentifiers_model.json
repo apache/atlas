@@ -62,7 +62,7 @@
         },
         {
           "name": "keyPattern",
-          "typeName": "string",
+          "typeName": "KeyPattern",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true,
