@@ -59,6 +59,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -698,7 +699,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     }
                     colLineageProcessInstances.add(0, processReferenceable);
                     entities.addAll(colLineageProcessInstances);
-                    event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<>(entities)));
+
+                    addEntityUpdateNotificationMessagess(event, entities);
                 } else {
                     LOG.info("Skipped query {} since it has no getInputs() or resulting getOutputs()", event.getQueryStr());
                 }
@@ -708,6 +710,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
         catch(Exception e) {
             throw new AtlasHookException("HiveHook.registerProcess() failed.", e);
+        }
+    }
+
+    private void addEntityUpdateNotificationMessagess(final HiveEventContext event, final Collection<Referenceable> entities) {
+        // process each entity as separate message to avoid running into OOM errors
+        for (Referenceable entity : entities) {
+            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entity));
         }
     }
 
@@ -801,7 +810,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
             entities.addAll(tables.values());
             entities.add(processReferenceable);
-            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
+
+            addEntityUpdateNotificationMessagess(event, entities);
         }
     }
 
