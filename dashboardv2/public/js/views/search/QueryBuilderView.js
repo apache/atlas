@@ -175,6 +175,11 @@ define(['require',
                                 not_null: 'is not null'
                             }
                         },
+                        icons: {
+                            add_rule: 'fa fa-plus',
+                            remove_rule: 'fa fa-times',
+                            error: 'fa fa-exclamation-triangle'
+                        },
                         rules: rules_widgets
                     });
                     this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-right pull-left');

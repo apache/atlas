@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Enums', 'utils/Utils'], function(require, Enums, Utils) {
+define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require, Enums, Utils) {
     'use strict';
 
     var UrlLinks = {

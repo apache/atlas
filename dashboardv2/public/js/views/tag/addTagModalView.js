@@ -318,6 +318,8 @@ define(['require',
                     '<option value="">--Select true or false--</option>' +
                     '<option value="true">true</option>' +
                     '<option value="false">false</option></select>';
+            } else if (typeName === "int") {
+                return '<input type="' + type + '" value="' + value + '" class="form-control attributeInputVal attrName number-input" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
             } else {
                 return '<input type="' + type + '" value="' + value + '" class="form-control attributeInputVal attrName" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
             }

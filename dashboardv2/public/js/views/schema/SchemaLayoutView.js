@@ -195,9 +195,10 @@ define(['require',
                     that.renderBreadcrumb();
                     Utils.generatePopover({
                         el: that.$('[data-id="showMoreLess"]'),
-                        container: that.$el,
                         contentClass: 'popover-tag',
+                        viewFixedPopover: true,
                         popoverOptions: {
+                            container: null,
                             content: function() {
                                 return $(this).find('.popup-tag').children().clone();
                             }

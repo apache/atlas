@@ -69,6 +69,10 @@ define(['require',
                 this.ui.tagsParent.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
                 });
+                $('body').on('click', '.tagPopoverOptions li', function(e) {
+                    that.$('.tagPopover').popover('hide');
+                    that[$(this).find('a').data('fn')](e)
+                });
             },
             onRender: function() {
                 var that = this;
@@ -330,7 +334,7 @@ define(['require',
                 var that = this;
                 Utils.generatePopover({
                     el: this.$('.tagPopover'),
-                    container: this.$el,
+                    contentClass: 'tagPopoverOptions',
                     popoverOptions: {
                         content: function() {
                             return "<ul>" +
@@ -339,10 +343,6 @@ define(['require',
                                 "</ul>";
                         }
                     }
-                }).parent('.tools').on('click', 'li', function(e) {
-                    e.stopPropagation();
-                    that.$('.tagPopover').popover('hide');
-                    that[$(this).find('a').data('fn')](e)
                 });
             },
             onSearchTag: function() {

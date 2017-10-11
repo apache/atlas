@@ -19,7 +19,18 @@
 
 /* login.scss */
 
-//colors
+@import "__variable.scss";
+
+body {
+    font-family: $font_0, $font_1;
+    background-color: $color_white_lilac_approx;
+    color: $color_ironside_gray_approx;
+}
+
+a {
+    color: $color_jungle_green_approx;
+}
+
 .errorBox {
     position: absolute;
     right: 36px;
@@ -27,7 +38,6 @@
     top: 26px;
     width: 251px;
     .alert {
-        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
         box-shadow: 4px 3px 8px -2px $gray;
     }
 }
@@ -42,22 +52,24 @@
     width: 40%;
     left: 30%;
     position: fixed;
-    padding: 15px;
     background: $color_tuna_approx;
     color: $color_gallery_approx;
-    padding: 15px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    padding: 15px;
     border-radius: 5px;
     h2 {
         margin-bottom: 40px;
     }
     .input-group {
         margin: 20px 0;
+        width: 100%;
     }
     .form-control {
-        background-color: transparent; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        background-color: transparent;
         border-radius: 0;
         border-left: none;
         color: $color_gallery_approx;
+        float: left;
+        width: 94%;
         &:focus {
             border-color: $color_celeste_approx;
             +.input-group-addon {
@@ -66,26 +78,29 @@
         }
     }
     .input-group-addon {
-        background-color: transparent; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        background-color: transparent;
         border-radius: 0;
         border-right: none;
         color: $color_celeste_approx;
+        float: left;
+        width: 6%;
+        line-height: 20px;
+        height: 34px;
     }
     .btn-atlas {
         padding: 10px 20px;
         background-color: $color_keppel_approx;
         color: $white;
-        border: 1px $color_keppel_approx solid; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        border-radius: 4px; //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+        border: 1px $color_keppel_approx solid;
+        border-radius: 4px;
         transition: all .3s ease;
     }
 }
 
 button:focus {
-    outline: none !important;
+    outline: 0!important;
 }
 
 .form-control:focus {
-    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
     box-shadow: none;
 }
