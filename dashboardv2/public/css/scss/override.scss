@@ -287,6 +287,11 @@ td {
 .query-builder {
     .rule-container {
         margin: 6px 0;
+        .rule-header {
+            .rule-actions {
+                padding: 7px 0px;
+            }
+        }
         .rule-value-container {
             display: inline-block !important;
         }
@@ -357,4 +362,9 @@ div.columnmanager-dropdown-container {
             border-top: 1px solid #DEDEDE;
         }
     }
+}
+
+.ui-pnotify-icon,
+.ui-pnotify-icon span {
+    padding: 2px 0px;
 }

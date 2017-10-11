@@ -106,6 +106,9 @@ function getBaseUrl() {
 }
 $(function() {
     // register handlers
+    if (!('placeholder' in HTMLInputElement.prototype)) {
+        $("#username , #password").placeholder();
+    }
     $('#signIn').on('click', function() {
         $('#signIn').attr('disabled', true);
         $('#signInLoading').css("visibility", "visible");

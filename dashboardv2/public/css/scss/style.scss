@@ -17,7 +17,8 @@
  */
 
 @import "__mixin.scss";
-@import "main.scss";
+@import "__variable.scss";
+@import "common.scss";
 @import "tab.scss";
 @import "form.scss";
 @import "nav.scss";

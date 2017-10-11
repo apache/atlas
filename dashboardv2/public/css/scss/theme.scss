@@ -120,6 +120,18 @@ header {
     }
 }
 
+.sm-title {
+    line-height: 30px;
+}
+
+.md-title {
+    line-height: 34px;
+}
+
+.lg-title {
+    line-height: 40px;
+}
+
 a {
     color: $color_jungle_green_approx;
     &:focus {
@@ -166,6 +178,7 @@ hr[size="10"] {
 .table {
     margin-bottom: 2px;
     background-color: $white;
+    max-width: none;
     .table {
         width: auto;
     }

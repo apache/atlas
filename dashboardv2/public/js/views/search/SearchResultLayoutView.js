@@ -560,9 +560,10 @@ define(['require',
                     this.hideLoader();
                     Utils.generatePopover({
                         el: this.$('[data-id="showMoreLess"]'),
-                        container: this.$el,
                         contentClass: 'popover-tag',
+                        viewFixedPopover: true,
                         popoverOptions: {
+                            container: null,
                             content: function() {
                                 return $(this).find('.popup-tag').children().clone();
                             }

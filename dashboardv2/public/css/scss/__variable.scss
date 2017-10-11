@@ -16,16 +16,22 @@
  * limitations under the License.
  */
 
-
-/* main.scss */
-
-//common color 
+//fonts
+$font_0: Source Sans Pro;
+$font_1: sans-serif;
+$font_2: FontAwesome;
+$font_3: Helvetica;
+$font_4: Arial;
+$font_5: sans-serf;
+//Colors
 $white: #fff;
+$black: #000;
+$red: #f00;
+$gray: #808080;
+$dark_gray:#666;
 $action_gray:#999999;
 $color_keppel_approx: #37bb9b;
 $color_gallery_approx: #eee;
-$gray: #808080;
-$dark_gray:#666;
 $color_tuna_approx: #323544;
 $color_celeste_approx: #ccc;
 $color_cornflower_blue_approx: #66afe9;
@@ -34,33 +40,17 @@ $color_jungle_green_approx: #38BB9B;
 $color_jungle_green_light:#7ed3be;
 $color_froly_approx: #ee6e73;
 $color_manatee_approx: #9398a0;
-$black: #000;
 $color_havelock_blue_approx: #4a90e2;
 $color_ironside_gray_approx: #686868;
 $color_mercury_approx: #e6e6e6;
 $color_whisper_approx: #f6f7fa;
 $color_bombay_approx: #b5b9bc;
-$red: #f00;
-//theme color
-//colors
 $color_white_lilac_approx: #f6f7fb;
 $color_puerto_rico_approx: #3dd4af;
 $color_star_dust_approx: #9a9a9a;
 $color_mirage_approx: #1c1e2a;
 $concrete: #f2f2f2;
-$lightGrey:#e1e2e4; //fonts
-$font_0: Source Sans Pro;
-$font_1: sans-serif;
-$font_2: FontAwesome;
-//fonts
-
-/* $font_0: PT Sans;
-$font_1: sans-serif;
-$font_2: Helvetica Neue; */
-
-$font_3: Helvetica;
-$font_4: Arial;
-$font_5: sans-serf;
+$lightGrey:#e1e2e4;
 //old - style color
 $color_bali_hai_approx: #8fa5b1;
 $transparent:transparent;
@@ -105,46 +95,6 @@ $color_suva_gray_approx: #868686;
 $tag_color:#4A90E2;
 $delete_link:#BB5838;
 //urls
-$url_0: url(img/loading.gif);
+$url_0: url(../img/loading.gif);
 
 $switchTransition: .4s ease-out;
-
-
-.readOnly {
-    span,
-    button,
-    a {
-        i {
-            &.fa-trash[data-guid] {
-                display: none;
-            }
-            &.fa-trash[data-id="delete"] {
-                display: none;
-            }
-        }
-        &.btn[data-id="addTag"] {
-            display: none;
-        }
-        &.editbutton[data-id="editButton"] {
-            display: none !important;
-        }
-        &[data-id="delete"],
-        &[data-id="edit"] {
-            display: none;
-        }
-        &.btn[data-id="addTerm"] {
-            display: none;
-        }
-        &.btn[data-id="tagClick"] {
-            span {
-                display: block;
-                padding: 3px 5px 3px 5px;
-            }
-            i.fa-close[data-id="deleteTag"],
-            i.fa-times[data-id="deleteTag"],
-            i.fa-times[data-id="delete"] {
-                display: none;
-            }
-        }
-    }
-}

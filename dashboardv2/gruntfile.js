@@ -193,12 +193,14 @@ module.exports = function(grunt) {
         sass: {
             dist: {
                 files: {
-                    'dist/css/style.css': 'public/css/scss/style.scss'
+                    'dist/css/style.css': 'public/css/scss/style.scss',
+                    'dist/css/login.css': 'public/css/scss/login.scss'
                 }
             },
             build: {
                 files: {
-                    'dist/css/style.css': 'dist/css/scss/style.scss'
+                    'dist/css/style.css': 'dist/css/scss/style.scss',
+                    'dist/css/login.css': 'dist/css/scss/login.scss'
                 }
             }
         },

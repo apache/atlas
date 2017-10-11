@@ -41,24 +41,16 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection'));
+            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection','searchTypeObj'));
             this.model.id = this.model.get('guid');
             this.model.idAttribute = 'guid';
-            this.searchTypeObj = {
-                'searchType': 'dsl',
-                'dslChecked': 'true'
-            }
-            if (this.isBasic) {
-                this.searchTypeObj.dslChecked = false;
-                this.searchTypeObj.searchType = 'basic';
-            }
         },
         onRender: function() {
             this.showToolTip();
         },
         stateChange: function() {
             this.applyValue(this.model, this.searchTypeObj);
-            this.trigger('item:clicked');
+            this.trigger('item:clicked'); // to enable save button
             this.ui.stateChange.parent('li').addClass('active').siblings().removeClass('active');
         },
         modelEvents: {
@@ -67,71 +59,16 @@ define(['require',
         showToolTip: function(e) {
             var that = this;
             Utils.generatePopover({
-                el: this.$('.tagPopover'),
-                container: this.$el,
+                el: this.$('.saveSearchPopover'),
+                viewFixedPopover: true,
                 popoverOptions: {
                     content: function() {
-                        return "<ul class='saveSearchPopoverList'>" +
+                        return "<ul class='saveSearchPopoverList_" + (that.isBasic ? 'isBasic' : 'isAdvance') + "' data-id=" + that.model.id + ">" +
                             "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearch'>Search </a></li>" +
                             "<li class='listTerm' ><i class='fa fa-pencil'></i> <a href='javascript:void(0)' data-fn='onRename'>Rename</a></li>" +
                             "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li>" +
                             "</ul>";
                     }
-                }
-            }).parent('div.tools').on('click', 'li', function(e) {
-                e.stopPropagation();
-                that.$('.tagPopover').popover('hide');
-                that[$(this).find('a').data('fn')](e)
-            });
-        },
-        onSearch: function() {
-            var searchParameters = this.model.toJSON().searchParameters,
-                params = CommonViewFunction.generateUrlFromSaveSearchObject({
-                    value: searchParameters,
-                    classificationDefCollection: this.classificationDefCollection,
-                    entityDefCollection: this.entityDefCollection
-                });
-            Utils.setUrl({
-                url: '#!/search/searchResult',
-                urlParams: _.extend({}, this.searchTypeObj, params),
-                mergeBrowserUrl: false,
-                trigger: true,
-                updateTabState: true
-            });
-        },
-        onRename: function() {
-            var that = this;
-            require([
-                'views/search/save/SaveModalLayoutView'
-            ], function(SaveModalLayoutView) {
-                new SaveModalLayoutView({ 'selectedModel': that.model, 'collection': that.collection, 'getValue': that.getValue, 'isBasic': that.isBasic });
-            });
-        },
-        onDelete: function() {
-            var that = this;
-            var notifyObj = {
-                modal: true,
-                html: true,
-                text: Messages.conformation.deleteMessage + "<b>" + this.model.get('name') + "</b>" + " ?",
-                ok: function(argument) {
-                    that.onDeleteNotifyOk();
-                },
-                cancel: function(argument) {}
-            }
-            Utils.notifyConfirm(notifyObj);
-        },
-        onDeleteNotifyOk: function() {
-            var that = this;
-            this.model.urlRoot = UrlLinks.saveSearchApiUrl();
-            this.model.destroy({
-                wait: true,
-                success: function(model, data) {
-                    if (that.collection) {
-                        that.collection.remove(data);
-                    }
-                    Utils.notifySuccess({
-                        content: that.model.get('name') + Messages.deleteSuccessMessage
-                    });
                 }
             });
         }

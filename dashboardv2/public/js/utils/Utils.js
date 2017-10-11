@@ -38,12 +38,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
 
     Utils.generatePopover = function(options) {
         if (options.el) {
-            return options.el.popover(_.extend({
+            var defaultObj = {
                 placement: 'auto bottom',
                 html: true,
                 animation: false,
-                template: '<div class="popover fixed-popover fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>'
-            }, options.popoverOptions));
+                container: 'body'
+            };
+            if (options.viewFixedPopover || options.contentClass) {
+                defaultObj.template = '<div class="popover ' + (options.viewFixedPopover ? 'fixed-popover' : '') + ' fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>';
+            }
+            return options.el.popover(_.extend(defaultObj, options.popoverOptions));
         }
     }
 
@@ -72,7 +76,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     Utils.getBaseUrl = function(url) {
         return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
     };
-    pnotify.prototype.options.styling = "bootstrap3";
+    pnotify.prototype.options.styling = "fontawesome";
     var notify = function(options) {
         return new pnotify(_.extend({
             icon: true,
