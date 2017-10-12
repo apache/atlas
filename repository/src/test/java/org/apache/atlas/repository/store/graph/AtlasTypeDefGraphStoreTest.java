@@ -60,7 +60,7 @@ public class AtlasTypeDefGraphStoreTest {
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
     }
 
-    @Test(priority = 1)
+    @Test
     public void testGet() {
         try {
             AtlasTypesDef typesDef = typeDefStore.searchTypesDef(new SearchFilter());
@@ -76,7 +76,7 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test(dataProvider = "invalidGetProvider", priority = 2)
+    @Test(dataProvider = "invalidGetProvider", dependsOnMethods = "testGet")
     public void testInvalidGet(String name, String guid){
         try {
             assertNull(typeDefStore.getEnumDefByName(name));
@@ -403,7 +403,7 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test
+    @Test(dependsOnMethods = "testGet")
     public void testTypeDeletionAndRecreate() {
         AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
         AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
@@ -442,7 +442,7 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test
+    @Test(dependsOnMethods = "testGet")
     public void testTypeRegistryIsUpdatedAfterGraphStorage() throws AtlasBaseException {
       String classificationDef = "{"
           + "\"name\":\"test_classification_11\","

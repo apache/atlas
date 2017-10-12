@@ -563,10 +563,14 @@
         <titan.index.backend>elasticsearch</titan.index.backend>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
+        <surefire.version>2.18.1</surefire.version>
+        <surefire.forkCount>2C</surefire.forkCount>
+        <failsafe.version>2.18.1</failsafe.version>
         <atlas.surefire.options></atlas.surefire.options>
 
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
+        <testng.version>6.9.4</testng.version>
     </properties>
 
     <profiles>
@@ -1357,6 +1361,7 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-client</artifactId>
                 <version>${project.version}</version>
+                <type>pom</type>
             </dependency>
 
             <dependency>
@@ -1630,7 +1635,7 @@
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>6.1.1</version>
+                <version>${testng.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -1780,13 +1785,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.16</version>
+                    <version>${surefire.version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.18.1</version>
+                    <version>${failsafe.version}</version>
                 </plugin>
 
                 <plugin>
@@ -1909,7 +1914,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>${surefire.version}</version>
                 <configuration>
                     <systemProperties>
                         <user.dir>${project.basedir}</user.dir>
@@ -1917,7 +1922,7 @@
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
-                    <forkCount>2C</forkCount>
+                    <forkCount>${surefire.forkCount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
@@ -1938,7 +1943,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>${failsafe.version}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <projectBaseDir>${projectBaseDir}</projectBaseDir>
