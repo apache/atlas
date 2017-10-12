@@ -124,7 +124,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     @AfterClass
-    public void tearDown() throws Exception {
+    public void tearDown() {
         TypeSystem.getInstance().reset();
 //        AtlasGraphProvider.cleanup();
     }
@@ -178,19 +178,6 @@ public class GraphBackedMetadataRepositoryTest {
         boolean validated1 = assertEdge(id1, type.typeName);
         boolean validated2 = assertEdge(id2, type.typeName);
         assertTrue(validated1 | validated2);
-    }
-
-    private boolean assertEdge(String id, String typeName) throws Exception {
-        AtlasGraph graph = TestUtils.getGraph();
-        Iterable<AtlasVertex> vertices = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices();
-        AtlasVertex AtlasVertex = vertices.iterator().next();
-        Iterable<AtlasEdge> edges = AtlasVertex.getEdges(AtlasEdgeDirection.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
-        if (!edges.iterator().hasNext()) {
-            ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);
-            assertNotNull(entity.get("ref"));
-            return true;
-        }
-        return false;
     }
 
     @Test
@@ -363,22 +350,6 @@ public class GraphBackedMetadataRepositoryTest {
         validateGuidMapping(toVerify, result);
     }
 
-    private void validateGuidMapping(List<Referenceable> toVerify, CreateUpdateEntitiesResult result)
-            throws AtlasException {
-        Map<String,String> guids = result.getGuidMapping().getGuidAssignments();
-
-        TestUtils.assertContentsSame(result.getCreatedEntities(), guids.values());
-        assertEquals(guids.size(), toVerify.size());
-        for(Referenceable r : toVerify) {
-            loadAndDoSimpleValidation(guids.get(r.getId()._getId()), r);
-        }
-    }
-
-    private ITypedReferenceableInstance loadAndDoSimpleValidation(String guid, Referenceable inst) throws AtlasException {
-        return TestUtils.loadAndDoSimpleValidation(guid, inst, repositoryService);
-    }
-
-
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinitionForDepartment() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
@@ -450,41 +421,6 @@ public class GraphBackedMetadataRepositoryTest {
         ITypedReferenceableInstance table = repositoryService.getEntityDefinition(guid);
         Assert.assertEquals(table.getDate("created"), new Date(TestUtils.TEST_DATE_IN_LONG));
         System.out.println("*** table = " + table);
-    }
-
-    private List<String> createEntities(ITypedReferenceableInstance... instances) throws Exception {
-        RequestContext.createContext();
-        return repositoryService.createEntities(instances).getCreatedEntities();
-    }
-
-    private List<String> createEntity(Referenceable entity) throws Exception {
-        ClassType type = typeSystem.getDataType(ClassType.class, entity.getTypeName());
-        ITypedReferenceableInstance instance = type.convert(entity, Multiplicity.REQUIRED);
-        return createEntities(instance);
-    }
-
-    @GraphTransaction
-    String getGUID() {
-        AtlasVertex tableVertex = getTableEntityVertex();
-
-        String guid = GraphHelper.getSingleValuedProperty(tableVertex, Constants.GUID_PROPERTY_KEY, String.class);
-        if (guid == null) {
-            Assert.fail();
-        }
-        return guid;
-    }
-
-    AtlasVertex getTableEntityVertex() {
-        AtlasGraph graph = TestUtils.getGraph();
-        AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, ComparisionOperator.EQUAL, TestUtils.TABLE_TYPE);
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-        // returning one since guid should be unique
-        AtlasVertex tableVertex = results.hasNext() ? results.next() : null;
-        if (tableVertex == null) {
-            Assert.fail();
-        }
-
-        return tableVertex;
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
@@ -593,7 +529,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(type, "SSN");
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test(dependsOnMethods = "testCreateEntity", expectedExceptions = NullPointerException.class)
     public void testAddTraitWithNullInstance() throws Exception {
         repositoryService.addTrait(getGUID(), null);
         Assert.fail();
@@ -798,7 +734,8 @@ public class GraphBackedMetadataRepositoryTest {
         //verify limit and offset
         //higher limit should return all results
         results = new JSONArray(discoveryService.searchByFullText("Department", queryParams));
-        assertEquals(results.length(), 5);
+        assertTrue(results.length() > 0);
+        int maxResults = results.length();
 
         //smaller limit should return those many rows
         results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(2, 0)));
@@ -806,11 +743,94 @@ public class GraphBackedMetadataRepositoryTest {
 
         //offset should offset the results
         results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(5, 2)));
-        assertEquals(results.length(), 3);
+        assertEquals(results.length(), maxResults > 5 ? 5 : Math.min((maxResults - 2) % 5, 5));
 
         //higher offset shouldn't return any rows
         results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(2, 6)));
-        assertEquals(results.length(), 0);
+        assertEquals(results.length(), maxResults > 6 ? Math.min(maxResults - 6, 2) : 0);
+    }
+
+    @Test
+    public void testUTFValues() throws Exception {
+        Referenceable hrDept = new Referenceable("Department");
+        Referenceable john = new Referenceable("Person");
+        john.set("name", randomUTF());
+        john.set("department", hrDept);
+
+        hrDept.set("name", randomUTF());
+        hrDept.set("employees", ImmutableList.of(john));
+
+        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
+        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+
+        List<String> guids = repositoryService.createEntities(hrDept2).getCreatedEntities();
+        Assert.assertNotNull(guids);
+        Assert.assertEquals(guids.size(), 2);
+        Assert.assertNotNull(guids.get(0));
+        Assert.assertNotNull(guids.get(1));
+    }
+
+    @GraphTransaction
+    String getGUID() {
+        AtlasVertex tableVertex = getTableEntityVertex();
+
+        String guid = GraphHelper.getSingleValuedProperty(tableVertex, Constants.GUID_PROPERTY_KEY, String.class);
+        if (guid == null) {
+            Assert.fail();
+        }
+        return guid;
+    }
+
+    AtlasVertex getTableEntityVertex() {
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, ComparisionOperator.EQUAL, TestUtils.TABLE_TYPE);
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+        // returning one since guid should be unique
+        AtlasVertex tableVertex = results.hasNext() ? results.next() : null;
+        if (tableVertex == null) {
+            Assert.fail();
+        }
+
+        return tableVertex;
+    }
+
+    private boolean assertEdge(String id, String typeName) throws Exception {
+        AtlasGraph graph = TestUtils.getGraph();
+        Iterable<AtlasVertex> vertices = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices();
+        AtlasVertex AtlasVertex = vertices.iterator().next();
+        Iterable<AtlasEdge> edges = AtlasVertex.getEdges(AtlasEdgeDirection.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
+        if (!edges.iterator().hasNext()) {
+            ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);
+            assertNotNull(entity.get("ref"));
+            return true;
+        }
+        return false;
+    }
+
+    private void validateGuidMapping(List<Referenceable> toVerify, CreateUpdateEntitiesResult result)
+            throws AtlasException {
+        Map<String,String> guids = result.getGuidMapping().getGuidAssignments();
+
+        TestUtils.assertContentsSame(result.getCreatedEntities(), guids.values());
+        assertEquals(guids.size(), toVerify.size());
+        for(Referenceable r : toVerify) {
+            loadAndDoSimpleValidation(guids.get(r.getId()._getId()), r);
+        }
+    }
+
+    private ITypedReferenceableInstance loadAndDoSimpleValidation(String guid, Referenceable inst) throws AtlasException {
+        return TestUtils.loadAndDoSimpleValidation(guid, inst, repositoryService);
+    }
+
+    private List<String> createEntities(ITypedReferenceableInstance... instances) throws Exception {
+        RequestContext.createContext();
+        return repositoryService.createEntities(instances).getCreatedEntities();
+    }
+
+    private List<String> createEntity(Referenceable entity) throws Exception {
+        ClassType type = typeSystem.getDataType(ClassType.class, entity.getTypeName());
+        ITypedReferenceableInstance instance = type.convert(entity, Multiplicity.REQUIRED);
+        return createEntities(instance);
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {
@@ -890,25 +910,5 @@ public class GraphBackedMetadataRepositoryTest {
 
     private String randomString() {
         return TestUtils.randomString(10);
-    }
-
-    @Test
-    public void testUTFValues() throws Exception {
-        Referenceable hrDept = new Referenceable("Department");
-        Referenceable john = new Referenceable("Person");
-        john.set("name", randomUTF());
-        john.set("department", hrDept);
-
-        hrDept.set("name", randomUTF());
-        hrDept.set("employees", ImmutableList.of(john));
-
-        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
-
-        List<String> guids = repositoryService.createEntities(hrDept2).getCreatedEntities();
-        Assert.assertNotNull(guids);
-        Assert.assertEquals(guids.size(), 2);
-        Assert.assertNotNull(guids.get(0));
-        Assert.assertNotNull(guids.get(1));
     }
 }
