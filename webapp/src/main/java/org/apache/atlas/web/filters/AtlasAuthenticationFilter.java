@@ -29,7 +29,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
@@ -47,7 +46,6 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -84,16 +82,23 @@ import java.util.regex.Pattern;
 @Component
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
-    static final String PREFIX = "atlas.authentication.method";
-    protected static ServletContext nullContext = new NullServletContext();
-    private Signer signer;
+
+    private   static final String         CONFIG_PROXY_USERS  = "atlas.proxyusers";
+    private   static final String         PREFIX              = "atlas.authentication.method";
+    private   static final String[]       DEFAULT_PROXY_USERS = new String[] { "knox" };
+    protected static final ServletContext nullContext         = new NullServletContext();
+
+    private Signer               signer;
     private SignerSecretProvider secretProvider;
-    public final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
-    private boolean isInitializedByTomcat;
-    private Set<Pattern> browserUserAgents;
-    private boolean supportKeyTabBrowserLogin = false;
-    private Configuration configuration;
-    private Properties headerProperties;
+    private final boolean        isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+    private boolean              isInitializedByTomcat;
+    private Set<Pattern>         browserUserAgents;
+    private boolean              supportKeyTabBrowserLogin = false;
+    private Configuration        configuration;
+    private Properties           headerProperties;
+    private Set<String>          atlasProxyUsers = new HashSet<>();
+
+
     public AtlasAuthenticationFilter() {
         try {
             LOG.info("AtlasAuthenticationFilter initialization started");
@@ -251,6 +256,14 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         if (agents == null) {
             agents = AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT;
         }
+
+        String[] proxyUsers = configuration.getStringArray(CONFIG_PROXY_USERS);
+
+        if (proxyUsers == null || proxyUsers.length == 0) {
+            proxyUsers = DEFAULT_PROXY_USERS;
+        }
+
+        atlasProxyUsers = new HashSet<>(Arrays.asList(proxyUsers));
 
         parseBrowserUserAgents(agents);
 
@@ -417,6 +430,18 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                             return (authToken != AuthenticationToken.ANONYMOUS) ? authToken : null;
                         }
                     };
+
+                    if(StringUtils.isNotBlank(httpRequest.getRemoteUser()) && atlasProxyUsers.contains(httpRequest.getRemoteUser())){
+                        LOG.info("Ignoring kerberos login from proxy user "+ httpRequest.getRemoteUser());
+
+                        httpResponse.setHeader(KerberosAuthenticator.WWW_AUTHENTICATE, "");
+                        httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        filterChain.doFilter(request, response);
+
+                        return;
+                    }
+
+
                     if (newToken && !token.isExpired() && token != AuthenticationToken.ANONYMOUS) {
                         String signedToken = signer.sign(token.toString());
                         createAuthCookie(httpResponse, signedToken, getCookieDomain(),
