@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.*;
@@ -95,7 +96,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     }
 
     @Override
-    @PostConstruct
+    @GraphTransaction
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
 
