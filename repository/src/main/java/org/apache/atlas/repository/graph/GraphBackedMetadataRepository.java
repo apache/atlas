@@ -106,6 +106,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public String getIdAttributeName() {
         return Constants.GUID_PROPERTY_KEY;
     }
+
     @Override
     public String getVersionAttributeName() {
         return Constants.VERSION_PROPERTY_KEY;
@@ -159,6 +160,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException {
         return getEntityDefinitions(guid).get(0);
     }
