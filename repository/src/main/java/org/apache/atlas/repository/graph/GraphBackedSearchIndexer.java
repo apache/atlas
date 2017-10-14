@@ -261,23 +261,33 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             try {
                 management = provider.get().getManagementSystem();
-            } catch (RepositoryException excp) {
-                LOG.error("failed to get indexedKeys from graph", excp);
-            }
 
-            if (management != null) {
-                AtlasGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
+                if (management != null) {
+                    AtlasGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
 
-                if (vertexIndex != null) {
-                    recomputeIndexedKeys = false;
+                    if (vertexIndex != null) {
+                        recomputeIndexedKeys = false;
 
-                    Set<String> indexKeys = new HashSet<>();
+                        Set<String> indexKeys = new HashSet<>();
 
-                    for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
-                        indexKeys.add(fieldKey.getName());
+                        for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
+                            indexKeys.add(fieldKey.getName());
+                        }
+
+                        vertexIndexKeys = indexKeys;
                     }
 
-                    vertexIndexKeys = indexKeys;
+                    management.commit();
+                }
+            } catch (Exception excp) {
+                LOG.error("getVertexIndexKeys(): failed to get indexedKeys from graph", excp);
+
+                if (management != null) {
+                    try {
+                        management.rollback();
+                    } catch (Exception e) {
+                        LOG.error("getVertexIndexKeys(): rollback failed", e);
+                    }
                 }
             }
         }
