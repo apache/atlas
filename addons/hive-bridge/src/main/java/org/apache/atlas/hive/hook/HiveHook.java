@@ -37,6 +37,7 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
@@ -171,18 +172,20 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         // clone to avoid concurrent access
         try {
             final HiveEventContext event = new HiveEventContext();
+
             event.setInputs(hookContext.getInputs());
             event.setOutputs(hookContext.getOutputs());
             event.setHookType(hookContext.getHookType());
 
-            final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
+            final UserGroupInformation ugi       = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
+            final QueryPlan            queryPlan = hookContext.getQueryPlan();
+
             event.setUgi(ugi);
             event.setUser(getUser(hookContext.getUserName(), hookContext.getUgi()));
             event.setOperation(OPERATION_MAP.get(hookContext.getOperationName()));
-            event.setQueryId(hookContext.getQueryPlan().getQueryId());
-            event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
-            event.setQueryStartTime(hookContext.getQueryPlan().getQueryStartTime());
-            event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
+            event.setQueryId(queryPlan.getQueryId());
+            event.setQueryStr(queryPlan.getQueryStr());
+            event.setQueryStartTime(queryPlan.getQueryStartTime());
             event.setLineageInfo(hookContext.getLinfo());
 
             if (executor == null) {
@@ -1088,8 +1091,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
-        private String queryType;
-
         public void setInputs(Set<ReadEntity> inputs) {
             this.inputs = inputs;
         }
@@ -1124,10 +1125,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         public void setQueryStartTime(Long queryStartTime) {
             this.queryStartTime = queryStartTime;
-        }
-
-        public void setQueryType(String queryType) {
-            this.queryType = queryType;
         }
 
         public void setLineageInfo(LineageInfo lineageInfo){
@@ -1173,10 +1170,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         public Long getQueryStartTime() {
             return queryStartTime;
-        }
-
-        public String getQueryType() {
-            return queryType;
         }
 
         public void addMessage(HookNotification.HookNotificationMessage message) {
