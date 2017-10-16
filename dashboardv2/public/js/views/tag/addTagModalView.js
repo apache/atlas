@@ -312,16 +312,14 @@ define(['require',
         },
         getElement: function(labelName, typeName) {
             var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[labelName] || "") : "",
-                type = (typeName === "int" || typeName === "long" || typeName === "float" || typeName === "byte" || typeName === "double" || typeName === "short") ? "number" : "text";
+                className = ((typeName === "int" || typeName === "long" || typeName === "float" || typeName === "byte" || typeName === "double" || typeName === "short") ? "number-input-negative" : "") + " form-control attributeInputVal attrName";
             if (typeName === "boolean") {
                 return '<select class="form-control attributeInputVal attrName" data-key="' + labelName + '" data-type="' + typeName + '"> ' +
                     '<option value="">--Select true or false--</option>' +
                     '<option value="true">true</option>' +
                     '<option value="false">false</option></select>';
-            } else if (typeName === "int") {
-                return '<input type="' + type + '" value="' + value + '" class="form-control attributeInputVal attrName number-input" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
             } else {
-                return '<input type="' + type + '" value="' + value + '" class="form-control attributeInputVal attrName" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
+                return '<input type="text" value="' + value + '" class="' + className + '" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
             }
         },
         saveTagData: function(options) {
