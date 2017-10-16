@@ -87,6 +87,17 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return false;
         }
     });
+    $('body').on('keypress', 'input.number-input-negative,.number-input-negative .select2-search__field', function(e) {
+        if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+            if (e.which == 45) {
+                if (this.value.length) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+    });
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
