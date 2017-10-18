@@ -1,23 +1,7 @@
 {
     "enumDefs": [],
     "structDefs": [],
-    "classificationDefs": [
-        {
-            "name": "TaxonomyTerm",
-            "superTypes": [],
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "atlas.taxonomy",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                }
-            ]
-        }
-    ],
+    "classificationDefs": [],
     "entityDefs": [
         {
             "name": "Referenceable",

@@ -226,10 +226,6 @@ public class PolicyParser {
                     resourceType = AtlasResourceTypes.OPERATION;
                 } else if (type.equalsIgnoreCase("TYPE")) {
                     resourceType = AtlasResourceTypes.TYPE;
-                } else if (type.equalsIgnoreCase("TAXONOMY")) {
-                    resourceType = AtlasResourceTypes.TAXONOMY;
-                } else if (type.equalsIgnoreCase("TERM")) {
-                    resourceType = AtlasResourceTypes.TERM;
                 } else if (type.equalsIgnoreCase("RELATIONSHIP")) {
                     resourceType = AtlasResourceTypes.RELATIONSHIP;
                 } else {

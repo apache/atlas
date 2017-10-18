@@ -19,5 +19,5 @@
 package org.apache.atlas.authorize;
 
 public enum AtlasResourceTypes {
-    UNKNOWN, ENTITY, TYPE, OPERATION, TAXONOMY, TERM, RELATIONSHIP
+    UNKNOWN, ENTITY, TYPE, OPERATION, RELATIONSHIP
 }

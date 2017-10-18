@@ -111,9 +111,6 @@ public class AtlasAuthorizationUtils {
      * entities,lineage and discovery apis are mapped with AtlasResourceTypes.ENTITY eg :- /api/atlas/lineage/hive/table/*
      * /api/atlas/entities/{guid}* /api/atlas/discovery/*
      *
-     * taxonomy API are also mapped to AtlasResourceTypes.TAXONOMY & AtlasResourceTypes.ENTITY and its terms APIs have
-     * added AtlasResourceTypes.TERM associations.
-     *
      * unprotected types are mapped with AtlasResourceTypes.UNKNOWN, access to these are allowed.
      */
     public static Set<AtlasResourceTypes> getAtlasResourceType(String contextPath) {
@@ -132,13 +129,6 @@ public class AtlasAuthorizationUtils {
         } else if (api.startsWith("entities") || api.startsWith("lineage") ||
                 api.startsWith("discovery") || api.startsWith("entity") || api.startsWith("search")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
-        } else if (api.startsWith("taxonomies")) {
-            resourceTypes.add(AtlasResourceTypes.TAXONOMY);
-            // taxonomies are modeled as entities
-            resourceTypes.add(AtlasResourceTypes.ENTITY);
-            if (contextPath.contains("/terms")) {
-                resourceTypes.add(AtlasResourceTypes.TERM);
-            }
         } else if (api.startsWith("relationship")) {
             resourceTypes.add(AtlasResourceTypes.RELATIONSHIP);
         } else {

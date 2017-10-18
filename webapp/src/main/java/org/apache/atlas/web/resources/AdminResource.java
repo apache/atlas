@@ -101,7 +101,6 @@ public class AdminResource {
     private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
     private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
     private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
-    private static final String isTaxonomyEnabled = "atlas.feature.taxonomy.enable";
     private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
     private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
     private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
@@ -242,12 +241,7 @@ public class AdminResource {
         }
 
         Response response;
-        Boolean enableTaxonomy = false;
         try {
-            if(atlasProperties != null) {
-                enableTaxonomy = atlasProperties.getBoolean(isTaxonomyEnabled, false);
-            }
-
             boolean isEntityUpdateAccessAllowed = false;
             boolean isEntityCreateAccessAllowed = false;
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -272,7 +266,6 @@ public class AdminResource {
             responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
             responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
             responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
-            responseData.put(isTaxonomyEnabled, enableTaxonomy);
             responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
             responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
             responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));

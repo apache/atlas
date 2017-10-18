@@ -70,45 +70,6 @@
                 <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
             </properties>
         </profile>
-        <profile>
-            <id>titan1</id>
-            <!-- remove conflicting lucene/titan versions from catalog when using titan 1 -->
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.atlas</groupId>
-                        <artifactId>atlas-catalog</artifactId>
-                        <version>${project.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>com.thinkaurelius.titan</groupId>
-                                <artifactId>titan-core</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.apache.lucene</groupId>
-                                <artifactId>lucene-core</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.apache.lucene</groupId>
-                                <artifactId>lucene-queryparser</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.apache.lucene</groupId>
-                                <artifactId>lucene-analyzers-common</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.atlas</groupId>
-                    <artifactId>atlas-catalog</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-        </profile>
     </profiles>
 
     <dependencies>
@@ -170,11 +131,6 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-catalog</artifactId>
         </dependency>
 
         <!-- Zookeeper, curator -->
