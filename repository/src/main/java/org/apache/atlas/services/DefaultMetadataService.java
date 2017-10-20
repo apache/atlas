@@ -797,6 +797,11 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.DEFAULT_METADATA_SERVICE.getOrder();
+    }
+
+    @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
         // All we need here is a restore of the type-system
         LOG.info("TypeSystem reset invoked by TypeRegistry changes");

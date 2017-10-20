@@ -34,7 +34,9 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -58,7 +60,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private final ServiceState serviceState;
     private final ActiveInstanceState activeInstanceState;
     private Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders;
-    private Collection<ActiveStateChangeHandler> activeStateChangeHandlers;
+    private List<ActiveStateChangeHandler> activeStateChangeHandlers;
     private CuratorFactory curatorFactory;
     private LeaderLatch leaderLatch;
     private String serverId;
@@ -158,6 +160,17 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private void cacheActiveStateChangeHandlers() {
         if (activeStateChangeHandlers.size()==0) {
             activeStateChangeHandlers.addAll(activeStateChangeHandlerProviders);
+
+            LOG.info("activeStateChangeHandlers(): before reorder: " + activeStateChangeHandlers);
+
+            Collections.sort(activeStateChangeHandlers, new Comparator<ActiveStateChangeHandler>() {
+                @Override
+                public int compare(ActiveStateChangeHandler lhs, ActiveStateChangeHandler rhs) {
+                    return Integer.compare(lhs.getHandlerOrder(), rhs.getHandlerOrder());
+                }
+            });
+
+            LOG.info("activeStateChangeHandlers(): after reorder: " + activeStateChangeHandlers);
         }
     }
 
@@ -177,9 +190,9 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     public void notLeader() {
         LOG.warn("Server instance with server id {} is removed as leader", serverId);
         serviceState.becomingPassive();
-        for (ActiveStateChangeHandler handler: activeStateChangeHandlers) {
+        for (int idx = activeStateChangeHandlers.size() - 1; idx >= 0; idx--) {
             try {
-                handler.instanceIsPassive();
+                activeStateChangeHandlers.get(idx).instanceIsPassive();
             } catch (AtlasException e) {
                 LOG.error("Error while reacting to passive state.", e);
             }

@@ -341,6 +341,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsPassive()");
     }
 
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.TYPEDEF_STORE_INITIALIZER.getOrder();
+    }
+
     private static boolean updateTypeAttributes(AtlasStructDef oldStructDef, AtlasStructDef newStructDef, boolean checkTypeVersion) {
         boolean ret = isTypeUpdateApplicable(oldStructDef, newStructDef, checkTypeVersion);
 

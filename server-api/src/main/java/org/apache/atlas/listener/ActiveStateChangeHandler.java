@@ -26,6 +26,22 @@ import org.apache.atlas.AtlasException;
  * The two state transitions we handle are (1) becoming active and (2) becoming passive.
  */
 public interface ActiveStateChangeHandler {
+    public enum HandlerOrder {
+        HBASE_AUDIT_REPOSITORY(0),
+        GRAPH_BACKED_SEARCH_INDEXER(1),
+        TYPEDEF_STORE_INITIALIZER(2),
+        DEFAULT_METADATA_SERVICE(3),
+        NOTIFICATION_HOOK_CONSUMER(4);
+
+
+        private final int order;
+
+        private HandlerOrder(int order) {
+            this.order = order;
+        }
+
+        public int getOrder() { return order; }
+    }
 
     /**
      * Callback that is invoked on an implementor when this instance of Atlas server is declared the leader.
@@ -46,4 +62,13 @@ public interface ActiveStateChangeHandler {
      * @throws {@link AtlasException} if anything is wrong on shutdown
      */
     void instanceIsPassive() throws AtlasException;
+
+
+    /**
+     * Defines the order in which the handler should be called.
+     *   When state becomes active, the handler will be called from low order to high
+     *   When state becomes passive, the handler will be called from high order to low
+     *
+     */
+    int getHandlerOrder();
 }

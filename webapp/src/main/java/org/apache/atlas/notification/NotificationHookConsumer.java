@@ -220,6 +220,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         stop();
     }
 
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.NOTIFICATION_HOOK_CONSUMER.getOrder();
+    }
+
     static class Timer {
         public void sleep(int interval) throws InterruptedException {
             Thread.sleep(interval);
