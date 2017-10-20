@@ -698,6 +698,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.GRAPH_BACKED_SEARCH_INDEXER.getOrder();
+    }
+
+    @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Processing changed typedefs {}", changedTypeDefs);

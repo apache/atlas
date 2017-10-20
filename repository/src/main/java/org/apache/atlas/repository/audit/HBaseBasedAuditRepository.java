@@ -406,4 +406,9 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public void instanceIsPassive() {
         LOG.info("Reacting to passive: No action for now.");
     }
+
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.HBASE_AUDIT_REPOSITORY.getOrder();
+    }
 }
