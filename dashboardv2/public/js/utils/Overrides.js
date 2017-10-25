@@ -98,6 +98,11 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             }
         }
     });
+    $('body').on('keypress', 'input.number-input-exponential,.number-input-exponential .select2-search__field', function(e) {
+        if ((e.which != 8 && e.which != 0) && (e.which < 48 || e.which > 57) && (e.which != 69 && e.which != 101 && e.which != 43 && e.which != 45 && e.which != 46 && e.which != 190)) {
+            return false;
+        }
+    });
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {

@@ -281,7 +281,7 @@ define(['require',
                             '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
                     } else {
                         var textElement = that.getElement(name, typeName);
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement);
+                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');
                     }
                 });
                 that.$('input[data-type="date"]').each(function() {
@@ -312,15 +312,20 @@ define(['require',
         },
         getElement: function(labelName, typeName) {
             var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[labelName] || "") : "",
-                className = ((typeName === "int" || typeName === "long" || typeName === "float" || typeName === "byte" || typeName === "double" || typeName === "short") ? "number-input-negative" : "") + " form-control attributeInputVal attrName";
+                isTypeNumber = typeName === "int" || typeName === "byte" || typeName === "short" || typeName === "double" || typeName === "float",
+                inputClassName = "form-control attributeInputVal attrName";
+            if (isTypeNumber) {
+                inputClassName += ((typeName === "int" || typeName === "byte" || typeName === "short") ? " number-input-negative" : " number-input-exponential");
+            }
             if (typeName === "boolean") {
                 return '<select class="form-control attributeInputVal attrName" data-key="' + labelName + '" data-type="' + typeName + '"> ' +
                     '<option value="">--Select true or false--</option>' +
                     '<option value="true">true</option>' +
                     '<option value="false">false</option></select>';
             } else {
-                return '<input type="text" value="' + value + '" class="' + className + '" data-key="' + labelName + '"  data-type="' + typeName + '"></input></div>';
+                return '<input type="text" value="' + value + '" class="' + inputClassName + '" data-key="' + labelName + '" data-type="' + typeName + '"/>';
             }
+
         },
         saveTagData: function(options) {
             var that = this;
