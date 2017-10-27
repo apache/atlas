@@ -7,7 +7,7 @@ git clone https://git-wip-us.apache.org/repos/asf/atlas.git atlas
 
 cd atlas
 
-export MAVEN_OPTS="-Xmx1536m -XX:MaxPermSize=512m" && mvn clean install
+export MAVEN_OPTS="-Xmx1536m" && mvn clean install
 </verbatim>
 
 Once the build successfully completes, artifacts can be packaged for deployment.
@@ -197,11 +197,6 @@ export ATLAS_SERVER_OPTS="-server -XX:SoftRefLRUPolicyMSPerMB=0 -XX:+CMSClassUnl
 
 The =-XX:SoftRefLRUPolicyMSPerMB= option was found to be particularly helpful to regulate GC performance for
 query heavy workloads with many concurrent users.
-
-The following values are recommended for JDK 7:
-<verbatim>
-export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=3072m -XX:PermSize=100M -XX:MaxPermSize=512m"
-</verbatim>
 
 The following values are recommended for JDK 8:
 <verbatim>

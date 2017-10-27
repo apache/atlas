@@ -205,7 +205,6 @@
                     </args>
                     <jvmArgs>
                         <jvmArg>-Xmx512m</jvmArg>
-                        <jvmArg>-XX:MaxPermSize=128m</jvmArg>
                     </jvmArgs>
                 </configuration>
             </plugin>

@@ -49,7 +49,7 @@ Build Process
 
 2. Execute the following commands to build Apache Atlas
 
-   $ export MAVEN_OPTS="-Xms2g -Xmx2g -XX:MaxPermSize=512M"
+   $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
 
    # currently few tests might fail in some environments

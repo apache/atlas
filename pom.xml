@@ -1968,7 +1968,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}
+                        -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}
                     </argLine>
                     <skip>${skipUTs}</skip>
                 </configuration>
@@ -1994,7 +1994,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m ${atlas.surefire.options}
+                        -Xmx1024m ${atlas.surefire.options}
                     </argLine>
                     <skip>${skipITs}</skip>
                     <reuseForks>false</reuseForks>
