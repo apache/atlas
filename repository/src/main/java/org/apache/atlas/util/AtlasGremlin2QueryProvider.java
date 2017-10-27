@@ -105,6 +105,10 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}";
             case RELATIONSHIP_SEARCH_DESCENDING_SORT:
                 return ".order{it.b.getProperty(sortAttributeName) <=> it.a.getProperty(sortAttributeName)}";
+            case GREMLIN_SEARCH_RETURNS_VERTEX_ID:
+                return "g.V.range(0,0).collect()";
+            case GREMLIN_SEARCH_RETURNS_EDGE_ID:
+                return "g.E.range(0,0).collect()";
         }
         // Should never reach this point
         return null;

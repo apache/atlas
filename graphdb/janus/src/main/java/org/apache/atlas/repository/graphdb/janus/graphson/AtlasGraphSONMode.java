@@ -15,20 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query;
+package org.apache.atlas.repository.graphdb.janus.graphson;
 
 /**
- * Interface that indicates that something can create instances of
- * NativeTitanGraphQuery.
+ * Modes of operation of the GraphSONUtility.
  *
- * @param <V>
- * @param <E>
+ * @author Stephen Mallette
  */
-public interface NativeTitanQueryFactory<V, E> {
+public enum AtlasGraphSONMode {
+    /**
+     * COMPACT constructs GraphSON on the assumption that all property keys
+     * are fair game for exclusion including _type, _inV, _outV, _label and _id.
+     * It is possible to write GraphSON that cannot be read back into Graph,
+     * if some or all of these keys are excluded.
+     */
+    COMPACT,
 
     /**
-     * Creates a NativeTitanGraphQuery.
-     * @return
+     * NORMAL includes the _type field and JSON data typing.
      */
-    NativeTitanGraphQuery<V, E> createNativeTitanQuery();
+    NORMAL,
+
+    /**
+     * EXTENDED includes the _type field and explicit data typing.
+     */
+    EXTENDED
 }

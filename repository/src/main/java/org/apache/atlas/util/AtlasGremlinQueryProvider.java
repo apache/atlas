@@ -65,6 +65,10 @@ public abstract class AtlasGremlinQueryProvider {
         RELATIONSHIP_SEARCH_ASCENDING_SORT,
         RELATIONSHIP_SEARCH_DESCENDING_SORT,
 
+        // Discovery test queries
+        GREMLIN_SEARCH_RETURNS_VERTEX_ID,
+        GREMLIN_SEARCH_RETURNS_EDGE_ID,
+
         // Comparison clauses
         COMPARE_LT,
         COMPARE_LTE,

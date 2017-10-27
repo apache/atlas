@@ -369,16 +369,16 @@ public class ExportService {
             context.bindings.clear();
             context.bindings.put("startGuid", entity.getGuid());
 
-            List<HashMap<String, Object>> result = executeGremlinQuery(query, context);
+            List<Map<String, Object>> result = executeGremlinQuery(query, context);
 
             if (CollectionUtils.isEmpty(result)) {
                 continue;
             }
 
-            for (HashMap<String, Object> hashMap : result) {
-                String             guid             = (String) hashMap.get("__guid");
+            for (Map<String, Object> map : result) {
+                String             guid             = (String) map.get("__guid");
                 TraversalDirection currentDirection = context.guidDirection.get(guid);
-                boolean            isLineage        = (boolean) hashMap.get("isProcess");
+                boolean            isLineage        = (boolean) map.get("isProcess");
 
                 if (currentDirection == null) {
                     context.addToBeProcessed(isLineage, guid, direction);
@@ -417,15 +417,15 @@ public class ExportService {
         context.bindings.clear();
         context.bindings.put("startGuid", entity.getGuid());
 
-        List<HashMap<String, Object>> result = executeGremlinQuery(query, context);
+        List<Map<String, Object>> result = executeGremlinQuery(query, context);
 
         if (CollectionUtils.isEmpty(result)) {
             return;
         }
 
-        for (HashMap<String, Object> hashMap : result) {
-            String  guid      = (String) hashMap.get("__guid");
-            boolean isLineage = (boolean) hashMap.get("isProcess");
+        for (Map<String, Object> map : result) {
+            String  guid      = (String) map.get("__guid");
+            boolean isLineage = (boolean) map.get("isProcess");
 
             if (!context.guidsProcessed.contains(guid)) {
                 context.addToBeProcessed(isLineage, guid, TraversalDirection.BOTH);
@@ -566,9 +566,9 @@ public class ExportService {
         }
     }
 
-    private List<HashMap<String, Object>> executeGremlinQuery(String query, ExportContext context) {
+    private List<Map<String, Object>> executeGremlinQuery(String query, ExportContext context) {
         try {
-            return (List<HashMap<String, Object>>) atlasGraph.executeGremlinScript(context.scriptEngine, context.bindings, query, false);
+            return (List<Map<String, Object>>) atlasGraph.executeGremlinScript(context.scriptEngine, context.bindings, query, false);
         } catch (ScriptException e) {
             LOG.error("Script execution failed for query: ", query, e);
             return null;

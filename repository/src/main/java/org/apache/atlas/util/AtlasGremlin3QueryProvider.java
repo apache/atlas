@@ -22,6 +22,34 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
     public String getQuery(final AtlasGremlinQuery gremlinQuery) {
         // In case any overrides are necessary, a specific switch case can be added here to
         // return Gremlin 3 specific query otherwise delegate to super.getQuery
+        switch (gremlinQuery) {
+            case EXPORT_TYPE_STARTS_WITH:
+                return "g.V().has('__typeName',typeName).filter({it.get().value(attrName).startsWith(attrValue)}).has('__guid').values('__guid').toList()";
+            case EXPORT_TYPE_ENDS_WITH:
+                return "g.V().has('__typeName',typeName).filter({it.get().value(attrName).endsWith(attrValue)}).has('__guid').values('__guid').toList()";
+            case EXPORT_TYPE_CONTAINS:
+                return "g.V().has('__typeName',typeName).filter({it.get().value(attrName).contains(attrValue)}).has('__guid').values('__guid').toList()";
+            case EXPORT_TYPE_MATCHES:
+                return "g.V().has('__typeName',typeName).filter({it.get().value(attrName).matches(attrValue)}).has('__guid').values('__guid').toList()";
+            case EXPORT_TYPE_DEFAULT:
+                return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').values('__guid').toList()";
+            case EXPORT_BY_GUID_CONNECTED_IN_EDGE:
+                return "g.V().has('__guid', startGuid).inE().outV().has('__guid').project('__guid', 'isProcess').by('__guid').by(map {it.get().values('__superTypeNames').toSet().contains('Process')}).dedup().toList()";
+            case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
+                return "g.V().has('__guid', startGuid).outE().inV().has('__guid').project('__guid', 'isProcess').by('__guid').by(map {it.get().values('__superTypeNames').toSet().contains('Process')}).dedup().toList()";
+            case FULL_LINEAGE:
+                return "g.V().has('__guid', '%s').repeat(__.in('%s').out('%s'))." +
+                        "emit(has('__superTypeNames').and().properties('__superTypeNames').hasValue('DataSet'))." +
+                        "path().toList()";
+            case PARTIAL_LINEAGE:
+                return "g.V().has('__guid', '%s').repeat(__.in('%s').out('%s')).times(%s)." +
+                        "emit(has('__superTypeNames').and().properties('__superTypeNames').hasValue('DataSet'))." +
+                        "path().toList()";
+            case GREMLIN_SEARCH_RETURNS_VERTEX_ID:
+                return "g.V().range(0,1).valueMap(true).toList()";
+            case GREMLIN_SEARCH_RETURNS_EDGE_ID:
+                return "g.E().range(0,1).valueMap(true).toList()";
+        }
         return super.getQuery(gremlinQuery);
     }
 }

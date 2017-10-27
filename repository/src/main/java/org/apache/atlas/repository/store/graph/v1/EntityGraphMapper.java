@@ -889,10 +889,9 @@ public class EntityGraphMapper {
         GraphHelper.setProperty(vertex, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
     }
 
-    private int getEntityVersion(AtlasEntity entity) {
+    private Long getEntityVersion(AtlasEntity entity) {
         Long ret = entity != null ? entity.getVersion() : null;
-
-        return (ret != null) ? ret.intValue() : 0;
+        return (ret != null) ? ret : 0;
     }
 
     private AtlasStructType getStructType(String typeName) throws AtlasBaseException {

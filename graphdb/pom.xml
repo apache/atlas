@@ -31,11 +31,13 @@
     <name>Apache Atlas Graph Database Projects</name>
     <packaging>pom</packaging>
 
+    <!-- Modules built for all profiles -->
     <modules>
         <module>api</module>
         <module>common</module>
         <module>graphdb-impls</module>
-        <module>titan0</module>
-        <module>titan1</module>
+        <module>${graphModule}</module>
     </modules>
+
+
 </project>

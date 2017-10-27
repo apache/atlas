@@ -13,7 +13,7 @@ details. The example below uses BerkeleyDBJE.
 
 <verbatim>
 atlas.graph.storage.backend=berkeleyje
-atlas.graph.storage.directory=data/berkley
+atlas.graph.storage.directory=data/berkeley
 </verbatim>
 
 ---++++ Graph persistence engine - Hbase

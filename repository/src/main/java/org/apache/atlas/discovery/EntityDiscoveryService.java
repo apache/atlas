@@ -724,7 +724,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return graph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery);
     }
 
-    private AttributeSearchResult toAttributesResult(List list, GremlinQuery query) {
+    private AttributeSearchResult toAttributesResult(List results, GremlinQuery query) {
         AttributeSearchResult ret = new AttributeSearchResult();
         List<String> names = new ArrayList<>();
         List<List<Object>> values = new ArrayList<>();
@@ -742,17 +742,24 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         }
 
-        for (Object mapObj : list) {
-            Map map = (mapObj instanceof Map ? (Map) mapObj : null);
-            if (MapUtils.isNotEmpty(map)) {
-                for (Object key : map.keySet()) {
-                    Object vals = map.get(key);
-                    values.add((List<Object>) vals);
+        for (Object obj : results) {
+            if (obj instanceof Map) {
+                Map map = (Map) obj;
+                if (MapUtils.isNotEmpty(map)) {
+                    for (Object key : map.keySet()) {
+                       Object vals = map.get(key);
+                       values.add((List<Object>) vals);
+                    }
+                    ret.setValues(values);
+                }
+            } else if (obj instanceof List) {
+                List list = (List) obj;
+                if (CollectionUtils.isNotEmpty(list)) {
+                    values.add(list);
                 }
                 ret.setValues(values);
             }
         }
-
         return ret;
     }
 

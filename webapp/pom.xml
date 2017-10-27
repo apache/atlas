@@ -59,6 +59,7 @@
                 <packages.to.exclude>WEB-INF/lib/je-*.jar</packages.to.exclude>
             </properties>
         </profile>
+
         <profile>
             <id>Windows</id>
             <activation>
@@ -70,6 +71,7 @@
                 <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
             </properties>
         </profile>
+
     </profiles>
 
     <dependencies>
@@ -78,6 +80,7 @@
             <artifactId>atlas-graphdb-impls</artifactId>
             <type>pom</type>
         </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-common</artifactId>
@@ -113,15 +116,16 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -390,6 +394,7 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
@@ -630,10 +635,6 @@
                         <systemProperty>
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
-                        </systemProperty>
-                        <systemProperty>
-                            <name>atlas.graphdb.backend</name>
-                            <value>${graphdb.backend.impl}</value>
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.conf</key>

@@ -95,8 +95,7 @@ public final class GraphToTypedInstanceMapper {
             LOG.debug("Found createdBy : {} modifiedBy : {} createdTime: {} modifedTime: {}", createdBy, modifiedBy, createdTime, modifiedTime);
         }
 
-        Id id = new Id(guid, Integer.parseInt(String.valueOf(GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY))),
-                typeName, state);
+        Id id = new Id(guid, Integer.parseInt(String.valueOf(GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY))), typeName, state);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Created id {} for instance type {}", id, typeName);
@@ -225,9 +224,7 @@ public final class GraphToTypedInstanceMapper {
                 return mapGraphToTypedInstance(guid, referenceVertex);
             } else {
                 String state = GraphHelper.getStateAsString(referenceVertex);
-                Id referenceId =
-                        new Id(guid, GraphHelper.getSingleValuedProperty(referenceVertex, Constants.VERSION_PROPERTY_KEY, Integer.class),
-                                dataType.getName(), state);
+                Id referenceId = new Id(guid, GraphHelper.getVersion(referenceVertex).intValue(), dataType.getName(), state);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found non-composite, adding id {} ", referenceId);

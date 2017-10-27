@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query.expr;
+package org.apache.atlas.repository.graphdb.tinkerpop.query.expr;
 
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanQueryFactory;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopQueryFactory;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,13 +76,13 @@ public class AndCondition {
     }
 
     /**
-     * Creates a NativeTitanGraphQuery that can be used to evaluate this condition.
+     * Creates a NativeTinkerpopGraphQuery that can be used to evaluate this condition.
      *
      * @param factory
      * @return
      */
-    public <V, E> NativeTitanGraphQuery<V, E> create(NativeTitanQueryFactory<V, E> factory) {
-        NativeTitanGraphQuery<V, E> query = factory.createNativeTitanQuery();
+    public <V, E> NativeTinkerpopGraphQuery<V, E> create(NativeTinkerpopQueryFactory<V, E> factory) {
+        NativeTinkerpopGraphQuery<V, E> query = factory.createNativeTinkerpopQuery();
         for (QueryPredicate predicate : children) {
             predicate.addTo(query);
         }

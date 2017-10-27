@@ -26,27 +26,22 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-graphdb-impls</artifactId>
-    <!-- Convenience dependency project that allows
-    the dependency on the correct implementation class
-    to be configured through profiles.  In implementation
-    specific profiles, the dependency on this project
-    should be configured to exclude all but the
-    proper dependency
-    -->
+
 
     <description>Apache Atlas Graph Database Implementation Dependencies</description>
     <name>Apache Atlas Graph Database Implementation Dependencies</name>
     <packaging>pom</packaging>
+
+
     <dependencies>
+        <!-- Single graph provider configured in root pom using
+             graphGroup, graphModule, graphVersion properties -->
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-titan1</artifactId>
+            <groupId>${graphGroup}</groupId>
+            <artifactId>${graphArtifact}</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-titan0</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
     </dependencies>
+
 </project>

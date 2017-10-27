@@ -153,7 +153,7 @@ public final class GraphHelper {
         setProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
 
         // add version information
-        setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, typedInstance.getId().version);
+        setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, Long.valueOf(typedInstance.getId().version));
 
         return vertexWithIdentity;
     }
@@ -721,7 +721,7 @@ public final class GraphHelper {
 
     public static Id getIdFromVertex(String dataTypeName, AtlasVertex vertex) {
         return new Id(getGuid(vertex),
-                getVersion(vertex), dataTypeName,
+                getVersion(vertex).intValue(), dataTypeName,
                 getStateAsString(vertex));
     }
 
@@ -742,8 +742,8 @@ public final class GraphHelper {
         return state == null ? null : Id.EntityState.valueOf(state);
     }
 
-    public static Integer getVersion(AtlasElement element) {
-        return element.getProperty(Constants.VERSION_PROPERTY_KEY, Integer.class);
+    public static Long getVersion(AtlasElement element) {
+        return element.getProperty(Constants.VERSION_PROPERTY_KEY, Long.class);
     }
 
     public static String getStateAsString(AtlasElement element) {

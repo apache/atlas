@@ -15,34 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query.expr;
+package org.apache.atlas.repository.graphdb.tinkerpop.query.expr;
 
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
+import java.util.Collection;
+
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
 
 /**
- * Query predicate that checks whether the given property has the specified
- * relationship with the value specified.
+ * Query predicate that checks whether the value of a given property is within the
+ * provided set of allowed values.
  */
-public class HasPredicate implements QueryPredicate {
+public class InPredicate implements QueryPredicate {
 
     private String propertyName;
-    private QueryOperator op;
-    private Object value;
+    private Collection<?> values;
 
-    public HasPredicate(String propertyName, QueryOperator op, Object value) {
+    public InPredicate(String propertyName, Collection<?> values) {
+        super();
         this.propertyName = propertyName;
-        this.op = op;
-        this.value = value;
+        this.values = values;
     }
 
     @Override
-    public void addTo(NativeTitanGraphQuery query) {
-        query.has(propertyName, op, value);
+    public void addTo(NativeTinkerpopGraphQuery query) {
+        query.in(propertyName, values);
     }
 
     @Override
     public String toString() {
-        return "HasTerm [propertyName=" + propertyName + ", op=" + op + ", value=" + value + "]";
+        return "InPredicate [propertyName=" + propertyName + ", values=" + values + "]";
     }
+
 }

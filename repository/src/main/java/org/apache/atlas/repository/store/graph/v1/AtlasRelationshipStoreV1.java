@@ -58,7 +58,7 @@ import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getTy
 @Component
 public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipStoreV1.class);
-    private static final int DEFAULT_RELATIONSHIP_VERSION = 0;
+    private static final Long DEFAULT_RELATIONSHIP_VERSION = 0L;
 
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
@@ -329,10 +329,10 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         return ret;
     }
 
-    private int getRelationshipVersion(AtlasRelationship relationship) {
+    private Long getRelationshipVersion(AtlasRelationship relationship) {
         Long ret = relationship != null ? relationship.getVersion() : null;
 
-        return (ret != null) ? ret.intValue() : DEFAULT_RELATIONSHIP_VERSION;
+        return (ret != null) ? ret : DEFAULT_RELATIONSHIP_VERSION;
     }
 
     private AtlasVertex getVertexFromEndPoint(AtlasObjectId endPoint) {

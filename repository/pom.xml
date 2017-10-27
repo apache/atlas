@@ -32,6 +32,7 @@
     <packaging>jar</packaging>
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
@@ -58,13 +59,6 @@
         </dependency>
 
 	    <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-impls</artifactId>
-	        <type>pom</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -121,6 +115,8 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Test dependencies -->
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-common</artifactId>
@@ -139,6 +135,19 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-janus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-impls</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-hbase-client-shaded</artifactId>
         </dependency>
 
@@ -147,20 +156,24 @@
             <artifactId>atlas-hbase-server-shaded</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-aop</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-multibindings</artifactId>
             <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>

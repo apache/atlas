@@ -15,19 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query.expr;
+package org.apache.atlas.repository.graphdb.janus.serializer;
 
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
+
+import org.janusgraph.graphdb.database.serialize.attribute.EnumSerializer;
 
 /**
- * Represents a predicate in an AndExpression.
+ * Serializer for TypeCategory value.
  */
-public interface QueryPredicate {
-
-    /**
-     * Adds the query term to a NativeTitanGraphQuery that is being generated.
-     *
-     * @param query
-     */
-    void addTo(NativeTitanGraphQuery query);
+public class TypeCategorySerializer extends EnumSerializer<TypeCategory> {
+    public TypeCategorySerializer() {
+        super(TypeCategory.class);
+    }
 }

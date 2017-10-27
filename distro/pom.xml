@@ -32,16 +32,16 @@
     <!-- by default configure hbase and solr with the distribution -->
     <properties>
 
-        <titan.storage.backend>hbase</titan.storage.backend>
-        <titan.storage.properties>#Hbase
+        <graph.storage.backend>hbase</graph.storage.backend>
+        <graph.storage.properties>#Hbase
 #For standalone mode , specify localhost
 #for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
 atlas.graph.storage.hostname=
 atlas.graph.storage.hbase.regions-per-server=1
 atlas.graph.storage.lock.wait-time=10000
-        </titan.storage.properties>
-        <titan.index.backend>solr5</titan.index.backend>
-        <titan.index.properties>#Solr
+        </graph.storage.properties>
+        <graph.index.backend>solr5</graph.index.backend>
+        <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=
@@ -51,7 +51,7 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http
 #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
-        </titan.index.properties>
+        </graph.index.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
 	<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
@@ -116,6 +116,7 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 </plugins>
             </build>
         </profile>
+
         <!-- profile to configure berkeley and elasticsearch with the distribution -->
         <profile>
             <id>berkeley-elasticsearch</id>
@@ -123,25 +124,25 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <titan.storage.backend>berkeleyje</titan.storage.backend>
-                <titan.storage.properties>#Berkeley
-atlas.graph.storage.directory=${sys:atlas.home}/data/berkley
+                <graph.storage.backend>berkeleyje</graph.storage.backend>
+                <graph.storage.properties>#Berkeley
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
 atlas.graph.storage.lock.clean-expired=true
 atlas.graph.storage.lock.expiry-time=500
 atlas.graph.storage.lock.wait-time=300
-                </titan.storage.properties>
-                <titan.index.backend>elasticsearch</titan.index.backend>
-                <titan.index.properties>#ElasticSearch
+                </graph.storage.properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
 atlas.graph.index.search.directory=${sys:atlas.home}/data/es
 atlas.graph.index.search.elasticsearch.client-only=false
 atlas.graph.index.search.elasticsearch.local-mode=true
 atlas.graph.index.search.elasticsearch.create.sleep=2000
-                </titan.index.properties>
-		<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+                </graph.index.properties>
+		        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
             </properties>
         </profile>
 
-        <!-- profile to configure berkeley and elasticsearch with the distribution -->
+        <!-- profile to configure external hbase and solr  with the distribution -->
         <profile>
             <id>external-hbase-solr</id>
             <activation>
@@ -156,14 +157,14 @@ atlas.graph.index.search.elasticsearch.create.sleep=2000
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <titan.storage.properties>#Hbase
+                <graph.storage.properties>#Hbase
 #For standalone mode , specify localhost
 #for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
 atlas.graph.storage.hostname=localhost
 atlas.graph.storage.hbase.regions-per-server=1
 atlas.graph.storage.lock.wait-time=10000
-                </titan.storage.properties>
-                <titan.index.properties>#Solr
+                </graph.storage.properties>
+                <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=localhost:2181
@@ -173,7 +174,7 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http
 #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
-                </titan.index.properties>
+                </graph.index.properties>
 
                 <hbase.embedded>true</hbase.embedded>
                 <solr.embedded>true</solr.embedded>

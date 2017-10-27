@@ -35,69 +35,14 @@
         <titan.version>1.0.0</titan.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
     </properties>
-    <profiles>
-        <profile>
-            <id>titan1</id>
-            <activation>
-                <jdk>1.8</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <version>1.4.1</version>
-                        <executions>
-                            <execution>
-                                <id>enforce-java-8</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireJavaVersion>
-                                            <version>1.8.0</version>
-                                        </requireJavaVersion>
-                                        <requireMavenVersion>
-                                            <version>3.1.0</version>
-                                        </requireMavenVersion>
-                                    </rules>
-                                    </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.18.1</version>
-                        <configuration>
-                            <skip>${skipUTs}</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                       <artifactId>maven-compiler-plugin</artifactId>
-                       <version>3.1</version>
-                        <configuration>
-                            <skipMain>false</skipMain>
-                            <skip>false</skip>
-                            <excludes>
-                                <exclude>org.apache.atlas</exclude>
-                             </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-            <properties>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase</graphdb.backend.impl>
-            </properties>
-        </profile>
-    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-api</artifactId>
@@ -122,6 +67,34 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${titan.version}</version>
+            <exclusions>
+                <!-- rexster does not work with servlet-api -->
+                <exclusion>
+                    <groupId>com.tinkerpop.rexster</groupId>
+                    <artifactId>rexster-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.rexster</groupId>
+                    <artifactId>rexster-server</artifactId>
+                </exclusion>
+                <!-- asm 4.0 does not work with jersey asm 3.1 -->
+                <exclusion>
+                    <groupId>com.tinkerpop</groupId>
+                    <artifactId>frames</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.esotericsoftware.reflectasm</groupId>
+                    <artifactId>reflectasm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion> <!-- GPL license imported from ganglia -->
+                    <groupId>org.acplt</groupId>
+                    <artifactId>oncrpc</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -191,14 +164,16 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
-            <version>3.0.1-incubating</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>tinkergraph-gremlin</artifactId>
-            <version>3.0.1-incubating</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
+
+        <!-- Test dependencies -->
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -207,33 +182,49 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
-            <!--  Skip the compilation of code and tests by default. Titan 1 code will be compiled only when titan1 profile is explicitly enabled. -->
+
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <skipMain>true</skipMain>
-                    <skip>true</skip>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java-8</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>1.8.0</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>3.1.0</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
                 <configuration>
-                    <skip>true</skip>
-                    <skipTests>true</skipTests>
+                    <skip>${skipUTs}</skip>
                 </configuration>
-             </plugin>
+            </plugin>
+
             <!--
                  Create 'uber' jar that contains all of the dependencies (except those whose scope is provided)
                  Only titan 1 and its dependencies are included.  The other dependencies are bundled in the war file.
-
-We also relocate the Google guava packages to avoid conflicts with Atlas code which depends on Guava 14
+                 We also relocate the Google guava packages to avoid conflicts with Atlas code which depends on Guava 14
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -268,63 +259,8 @@ We also relocate the Google guava packages to avoid conflicts with Atlas code wh
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-core</artifactId>
-                <version>1.0.0</version>
-                <exclusions>
-                    <!-- rexster does not work with servlet-api -->
-                    <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-server</artifactId>
-                    </exclusion>
-                    <!-- asm 4.0 does not work with jersey asm 3.1 -->
-                    <exclusion>
-                        <groupId>com.tinkerpop</groupId>
-                        <artifactId>frames</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.esotericsoftware.reflectasm</groupId>
-                        <artifactId>reflectasm</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                    </exclusion>
-                    <exclusion> <!-- GPL license imported from ganglia -->
-                        <groupId>org.acplt</groupId>
-                        <artifactId>oncrpc</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-berkeleyje</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-hbase</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-solr</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-        </dependencies>
-
-    </dependencyManagement>
 </project>

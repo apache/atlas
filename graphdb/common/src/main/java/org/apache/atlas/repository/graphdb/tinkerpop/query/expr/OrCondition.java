@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query.expr;
+package org.apache.atlas.repository.graphdb.tinkerpop.query.expr;
 
 import java.util.ArrayList;
 import java.util.Iterator;

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query;
+package org.apache.atlas.repository.graphdb.tinkerpop.query;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
@@ -32,7 +32,7 @@ import java.util.Collection;
  * @param <V>
  * @param <E>
  */
-public interface NativeTitanGraphQuery<V, E> {
+public interface NativeTinkerpopGraphQuery<V, E> {
 
     /**
      * Executes the graph query.

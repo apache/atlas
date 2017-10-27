@@ -31,6 +31,8 @@ import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -233,10 +235,19 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
      */
     @Test
     public void testGremlinSearchReturnVertexId() throws Exception {
-       List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.V.range(0,0).collect()");
-       assertEquals(gremlinResults.size(), 1);
-       Map<String, String> properties = gremlinResults.get(0);
-       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_ID_KEY));
+        final AtlasGremlinQueryProvider gremlinQueryProvider;
+        gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+
+        // For tinkerpop2 this query was g.V.range(0,0).collect()
+        // For tinkerpop3 it should be g.V().range(0,1),valueMap(true).toList()
+        // List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.V().range(0,1).valueMap(true).toList()");
+        final String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.GREMLIN_SEARCH_RETURNS_VERTEX_ID);
+
+        List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin(query);
+        assertEquals(gremlinResults.size(), 1);
+        Map<String, String> properties = gremlinResults.get(0);
+        Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_ID_KEY));
+
     }
     
     /*
@@ -244,12 +255,19 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
      */
     @Test
     public void testGremlinSearchReturnEdgeIds() throws Exception {
-       List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.E.range(0,0).collect()");
-       assertEquals(gremlinResults.size(), 1);
-       Map<String, String> properties = gremlinResults.get(0);
-       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_INVERTEX_KEY));
-       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_OUTVERTEX_KEY));
-       Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_LABEL_KEY));
+        final AtlasGremlinQueryProvider gremlinQueryProvider;
+        gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+
+        // For tinkerpop2 this query was g.E.range(0,0).collect()
+        // For tinkerpop3 it should be g.E().range(0,1),valueMap(true).toList()
+        // List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin("g.E().range(0,1).valueMap(true).toList()");
+        final String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.GREMLIN_SEARCH_RETURNS_EDGE_ID);
+
+        List<Map<String,String>> gremlinResults = discoveryService.searchByGremlin(query);
+        assertEquals(gremlinResults.size(), 1);
+        Map<String, String> properties = gremlinResults.get(0);
+        Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_ID_KEY));
+        Assert.assertTrue(properties.containsKey(GraphBackedDiscoveryService.GREMLIN_LABEL_KEY));
     }
 
 

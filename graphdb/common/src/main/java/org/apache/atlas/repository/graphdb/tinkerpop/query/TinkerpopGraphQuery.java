@@ -15,29 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query;
+package org.apache.atlas.repository.graphdb.tinkerpop.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.titan.query.expr.AndCondition;
-import org.apache.atlas.repository.graphdb.titan.query.expr.HasPredicate;
-import org.apache.atlas.repository.graphdb.titan.query.expr.InPredicate;
-import org.apache.atlas.repository.graphdb.titan.query.expr.OrCondition;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.AndCondition;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.HasPredicate;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.InPredicate;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.OrCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 /**
+ * TODO!! - update comment
  * Abstract implementation of AtlasGraphQuery that is used by both Titan 0.5.4
  * and Titan 1.0.0.
  * <p>
@@ -89,31 +87,31 @@ import java.util.Set;
  *
  *
  */
-public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
+public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TitanGraphQuery.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TinkerpopGraphQuery.class);
     protected final AtlasGraph<V, E> graph;
     private final OrCondition queryCondition = new OrCondition();
     private final boolean isChildQuery;
-    protected abstract NativeTitanQueryFactory<V, E> getQueryFactory();
+    protected abstract NativeTinkerpopQueryFactory<V, E> getQueryFactory();
 
     /**
-     * Creates a TitanGraphQuery.
+     * Creates a TinkerpopGraphQuery.
      *
      * @param graph
      */
-    public TitanGraphQuery(AtlasGraph<V, E> graph) {
+    public TinkerpopGraphQuery(AtlasGraph<V, E> graph) {
         this.graph = graph;
         this.isChildQuery = false;
     }
 
     /**
-     * Creates a TitanGraphQuery.
+     * Creates a TinkerpopGraphQuery.
      *
      * @param graph
      * @param isChildQuery
      */
-    public TitanGraphQuery(AtlasGraph<V, E> graph, boolean isChildQuery) {
+    public TinkerpopGraphQuery(AtlasGraph<V, E> graph, boolean isChildQuery) {
         this.graph = graph;
         this.isChildQuery = isChildQuery;
     }
@@ -133,7 +131,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
         Set<AtlasVertex<V, E>> result = new HashSet<>();
         for(AndCondition andExpr : queryCondition.getAndTerms()) {
-            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
             for(AtlasVertex<V, E> vertex : andQuery.vertices()) {
                 result.add(vertex);
             }
@@ -150,7 +148,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
         Set<AtlasEdge<V, E>> result = new HashSet<>();
         for(AndCondition andExpr : queryCondition.getAndTerms()) {
-            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
             for(AtlasEdge<V, E> edge : andQuery.edges()) {
                 result.add(edge);
             }
@@ -180,7 +178,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
                 break;
             }
 
-            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
             for(AtlasVertex<V, E> vertex : andQuery.vertices(offset + limit)) {
                 if (resultIdx >= offset) {
                     result.add(vertex);
@@ -224,7 +222,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
             if (!atlasChildQuery.isChildQuery()) {
                 throw new IllegalArgumentException(atlasChildQuery + " is not a child query");
             }
-            TitanGraphQuery<V, E> childQuery = (TitanGraphQuery<V, E>)atlasChildQuery;
+            TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>)atlasChildQuery;
             overallChildQuery.orWith(childQuery.getOrCondition());
         }
 
@@ -239,7 +237,7 @@ public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
     @Override
     public AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery) {
 
-        TitanGraphQuery<V, E> childQuery = (TitanGraphQuery<V, E>)otherQuery;
+        TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>)otherQuery;
         queryCondition.andWith(childQuery.getOrCondition());
         return this;
     }

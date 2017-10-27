@@ -15,35 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb.titan.query.expr;
+package org.apache.atlas.repository.graphdb.janus.serializer;
 
-import java.util.Collection;
+import java.math.BigInteger;
 
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.serialize.attribute.ByteArraySerializer;
 
 /**
- * Query predicate that checks whether the value of a given property is within the
- * provided set of allowed values.
+ * Serializer for BigInteger values.
  */
-public class InPredicate implements QueryPredicate {
+public class BigIntegerSerializer implements AttributeSerializer<BigInteger> {
 
-    private String propertyName;
-    private Collection<?> values;
+    private final ByteArraySerializer delegate = new ByteArraySerializer();
 
-    public InPredicate(String propertyName, Collection<?> values) {
-        super();
-        this.propertyName = propertyName;
-        this.values = values;
+    @Override
+    public BigInteger read(ScanBuffer buffer) {
+        byte[] value = delegate.read(buffer);
+        return new BigInteger(value);
     }
 
     @Override
-    public void addTo(NativeTitanGraphQuery query) {
-        query.in(propertyName, values);
-    }
-
-    @Override
-    public String toString() {
-        return "InPredicate [propertyName=" + propertyName + ", values=" + values + "]";
+    public void write(WriteBuffer buffer, BigInteger attribute) {
+        byte[] value = attribute.toByteArray();
+        delegate.write(buffer, value);
     }
 
 }

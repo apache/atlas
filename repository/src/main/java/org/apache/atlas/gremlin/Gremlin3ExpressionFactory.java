@@ -246,10 +246,10 @@ public class Gremlin3ExpressionFactory extends GremlinExpressionFactory {
 
     @Override
     public GroovyExpression generateLikeExpressionUsingFilter(GroovyExpression parent, String propertyName, GroovyExpression propertyValue) throws AtlasException {
-        GroovyExpression itExpr      = getItVariable();
-        GroovyExpression nameExpr    = new FieldExpression(itExpr, propertyName);
-        GroovyExpression matchesExpr = new FunctionCallExpression(nameExpr, MATCHES, escapePropertyValue(propertyValue));
-        GroovyExpression closureExpr = new ClosureExpression(matchesExpr);
+        GroovyExpression vertexExpr        = new FunctionCallExpression(getItVariable(), GET_METHOD);
+        GroovyExpression propertyValueExpr = new FunctionCallExpression(vertexExpr, VALUE_METHOD, new LiteralExpression(propertyName));
+        GroovyExpression matchesExpr       = new FunctionCallExpression(propertyValueExpr, MATCHES, escapePropertyValue(propertyValue));
+        GroovyExpression closureExpr       = new ClosureExpression(matchesExpr);
 
         return new FunctionCallExpression(TraversalStepType.FILTER, parent, FILTER_METHOD, closureExpr);
     }

@@ -18,9 +18,9 @@
 package org.apache.atlas.repository.graphdb.titan0.query;
 
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.titan.query.TitanGraphQuery;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanQueryFactory;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.TinkerpopGraphQuery;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopQueryFactory;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Edge;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
@@ -28,8 +28,8 @@ import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
 /**
  * Titan 0.5.4 implementation of AtlasGraphQuery.
  */
-public class Titan0GraphQuery extends TitanGraphQuery<Titan0Vertex, Titan0Edge>
-    implements NativeTitanQueryFactory<Titan0Vertex, Titan0Edge> {
+public class Titan0GraphQuery extends TinkerpopGraphQuery<Titan0Vertex, Titan0Edge>
+    implements NativeTinkerpopQueryFactory<Titan0Vertex, Titan0Edge> {
 
     public Titan0GraphQuery(Titan0Graph graph, boolean isChildQuery) {
         super(graph, isChildQuery);
@@ -45,13 +45,13 @@ public class Titan0GraphQuery extends TitanGraphQuery<Titan0Vertex, Titan0Edge>
     }
 
     @Override
-    protected NativeTitanQueryFactory<Titan0Vertex, Titan0Edge> getQueryFactory() {
+    protected NativeTinkerpopQueryFactory<Titan0Vertex, Titan0Edge> getQueryFactory() {
         return this;
     }
 
 
     @Override
-    public NativeTitanGraphQuery<Titan0Vertex, Titan0Edge> createNativeTitanQuery() {
+    public NativeTinkerpopGraphQuery<Titan0Vertex, Titan0Edge> createNativeTinkerpopQuery() {
         return new NativeTitan0GraphQuery((Titan0Graph)graph);
     }
 }

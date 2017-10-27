@@ -33,7 +33,7 @@
 
     <dependencies>
 
-         <dependency>
+        <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-typesystem</artifactId>
         </dependency>

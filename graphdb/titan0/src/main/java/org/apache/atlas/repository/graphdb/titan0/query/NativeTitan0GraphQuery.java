@@ -29,7 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.MatchingOperator;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Edge;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
 import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
@@ -43,7 +43,7 @@ import java.util.*;
  * @author jeff
  *
  */
-public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Vertex, Titan0Edge> {
+public class NativeTitan0GraphQuery implements NativeTinkerpopGraphQuery<Titan0Vertex, Titan0Edge> {
 
     private Titan0Graph graph;
     private TitanGraphQuery<?> query;
