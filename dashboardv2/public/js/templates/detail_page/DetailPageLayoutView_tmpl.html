@@ -33,14 +33,6 @@
                 </button>
             </div>
         </div>
-        {{#if taxonomy}}
-        <div class="form-group">
-            <span class="control-label-sm-pr pull-left">Terms:</span>
-            <div class="pull-left" data-id="termList">
-                <button class="btn btn-action btn-sm" title="Add Term" data-id="addTerm"><i class="fa fa-plus"></i></button>
-            </div>
-        </div>
-        {{/if}}
     </div>
 </div>
 <div class="container-fluid gray-bg">
@@ -84,9 +76,6 @@
                             <ul class="nav nav-tabs ">
                                 <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
                                 <li role="tags"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
-                                {{#if taxonomy}}
-                                <li role="terms"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
-                                {{/if}}
                                 <li role="audits" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
                                 <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                                 <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
@@ -103,13 +92,6 @@
                         </div>
                         <div id="tab-tagTable" role="tags" class="tab-pane fade">
                             <div id="r_tagTableLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-termTable" role="terms" class="tab-pane">
-                            <div id="r_termTableLayoutView">
                                 <div class="fontLoader-relative">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>

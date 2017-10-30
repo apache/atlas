@@ -32,11 +32,9 @@ define([
             '': 'defaultAction',
             '!/': 'tagAttributePageLoad',
             '!/tag/tagAttribute/(*name)': 'tagAttributePageLoad',
-            '!/taxonomy/detailCatalog/(*url)': 'detailCatalog',
             '!/search/searchResult': 'searchResult',
             '!/detailPage/:id': 'detailPage',
             '!/tag': 'commonAction',
-            '!/taxonomy': 'commonAction',
             '!/search': 'commonAction',
             // Default
             '*actions': 'defaultAction'
@@ -64,29 +62,11 @@ define([
         bindCommonEvents: function() {
             var that = this;
             $('body').on('click', 'li.aboutAtlas', function() {
-                that.aboutAtlas();
-            });
-        },
-        aboutAtlas: function() {
-            var that = this;
-            require([
-                'hbs!tmpl/common/aboutAtlas_tmpl',
-                'modules/Modal',
-                'views/common/aboutAtlas',
-            ], function(aboutAtlasTmpl, Modal, aboutAtlasView) {
-                var view = new aboutAtlasView();
-                var modal = new Modal({
-                    title: 'Apache Atlas',
-                    content: view,
-                    okCloses: true,
-                    showFooter: true,
-                    allowCancel: false,
-                }).open();
-
-                view.on('closeModal', function() {
-                    modal.trigger('cancel');
+                require([
+                    'views/common/AboutAtlas',
+                ], function(AboutAtlas) {
+                    new AboutAtlas();
                 });
-
             });
         },
         showRegions: function() {},
@@ -110,53 +90,13 @@ define([
             // console.log("Post-Route Change Operations can be performed here !!");
             // console.log("Route changed: ", name);
         },
-        detailCatalog: function(url) {
-            var that = this;
-            require([
-                'views/business_catalog/BusinessCatalogHeader',
-                'views/business_catalog/BusinessCatalogDetailLayoutView',
-                'views/business_catalog/SideNavLayoutView',
-                'collection/VCatalogList'
-            ], function(BusinessCatalogHeader, BusinessCatalogDetailLayoutView, SideNavLayoutView, VCatalogList) {
-                if (Globals.taxonomy) {
-                    var paramObj = Utils.getUrlState.getQueryParams();
-                    this.collection = new VCatalogList();
-                    this.collection.url = url;
-                    App.rNHeader.show(new BusinessCatalogHeader(
-                        _.extend({
-                            'url': url,
-                            'collection': this.collection
-                        }, that.preFetchedCollectionLists)
-                    ));
-                    if (!App.rSideNav.currentView) {
-                        App.rSideNav.show(new SideNavLayoutView(
-                            _.extend({
-                                'url': url
-                            }, that.preFetchedCollectionLists, that.sharedObj)
-                        ));
-                    } else {
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
-                        App.rSideNav.currentView.selectTab();
-                    }
-                    App.rNContent.show(new BusinessCatalogDetailLayoutView(
-                        _.extend({
-                            'url': url,
-                            'collection': this.collection
-                        }, that.preFetchedCollectionLists)
-                    ));
-                    this.collection.fetch({ reset: true });
-                } else {
-                    that.defaultAction()
-                }
-            });
-        },
         detailPage: function(id) {
             var that = this;
             if (id) {
                 require([
                     'views/site/Header',
                     'views/detail_page/DetailPageLayoutView',
-                    'views/business_catalog/SideNavLayoutView',
+                    'views/site/SideNavLayoutView',
                     'collection/VEntityList'
                 ], function(Header, DetailPageLayoutView, SideNavLayoutView, VEntityList) {
                     this.entityCollection = new VEntityList([], {});
@@ -183,10 +123,9 @@ define([
             var that = this;
             require([
                 'views/site/Header',
-                'views/business_catalog/BusinessCatalogLayoutView',
-                'views/business_catalog/SideNavLayoutView',
+                'views/site/SideNavLayoutView',
                 'views/tag/TagDetailLayoutView',
-            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, TagDetailLayoutView) {
+            ], function(Header, SideNavLayoutView, TagDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams(),
                     url = Utils.getUrlState.getQueryUrl().queyParams[0];
                 App.rNHeader.show(new Header());
@@ -233,10 +172,9 @@ define([
             var that = this;
             require([
                 'views/site/Header',
-                'views/business_catalog/BusinessCatalogLayoutView',
-                'views/business_catalog/SideNavLayoutView',
+                'views/site/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView',
-            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
+            ], function(Header, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 App.rNHeader.show(new Header());
                 if (!App.rSideNav.currentView) {
@@ -249,8 +187,6 @@ define([
                     App.rSideNav.currentView.selectTab();
                     if (Utils.getUrlState.isTagTab()) {
                         App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
-                    } else if (Utils.getUrlState.isTaxonomyTab()) {
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(undefined, true);
                     }
                 }
                 if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
@@ -271,10 +207,9 @@ define([
             var that = this;
             require([
                 'views/site/Header',
-                'views/business_catalog/BusinessCatalogLayoutView',
-                'views/business_catalog/SideNavLayoutView',
+                'views/site/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView'
-            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
+            ], function(Header, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 var isinitialView = true,
                     isTypeTagNotExists = false,

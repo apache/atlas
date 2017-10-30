@@ -48,12 +48,6 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return defApiUrl.defs + '?type=' + type;
             }
         },
-        taxonomiesApiUrl: function() {
-            return this.baseUrl + '/v1/taxonomies';
-        },
-        taxonomiesTermsApiUrl: function(name) {
-            return this.baseUrl + '/v1/taxonomies' + '/' + name + '/terms';
-        },
         entitiesApiUrl: function(guid, name) {
             var entitiesUrl = this.baseUrlV2 + '/entity';
             if (guid && name) {

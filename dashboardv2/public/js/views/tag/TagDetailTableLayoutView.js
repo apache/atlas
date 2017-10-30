@@ -35,7 +35,7 @@ define(['require',
 
             /** Layout sub regions */
             regions: {
-                RTagTermTableLayoutView: "#r_tagTermTableLayoutView"
+                RTagTableLayoutView: "#r_tagTableLayoutView"
             },
 
             /** ui selector cache */
@@ -64,27 +64,14 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'guid', 'term', 'entityName', 'fetchCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'entity', 'guid', 'entityName', 'fetchCollection', 'enumDefCollection', 'classificationDefCollection'));
                 this.collectionObject = this.entity;
-                this.tagTermCollection = new VTagList();
-                var tagorterm = _.toArray(this.collectionObject.classifications),
-                    tagTermList = [],
-                    that = this;
-                _.each(tagorterm, function(object) {
-                    var checkTagOrTerm = Utils.checkTagOrTerm(object);
-                    if (that.term) {
-                        if (checkTagOrTerm.term) {
-                            tagTermList.push(object);
-                        }
-                    } else {
-                        if (checkTagOrTerm.tag) {
-                            tagTermList.push(object);
-                        }
-                    }
-                });
-                this.tagTermCollection.set(tagTermList);
+                this.tagCollection = new VTagList();
+                var that = this,
+                    tags = _.toArray(this.collectionObject.classifications);
+                this.tagCollection.set(tags);
                 this.commonTableOptions = {
-                    collection: this.tagTermCollection,
+                    collection: this.tagCollection,
                     includeFilter: false,
                     includePagination: true,
                     includePageSize: false,
@@ -105,7 +92,7 @@ define(['require',
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
                     var cols = new Backgrid.Columns(that.getSchemaTableColumns());
-                    that.RTagTermTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                    that.RTagTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: cols
                     })));
                 });
@@ -114,9 +101,9 @@ define(['require',
                 var that = this;
                 var col = {};
 
-                return this.tagTermCollection.constructor.getTableCols({
-                        TagorTerm: {
-                            label: (this.term) ? "Terms" : "Tags",
+                return this.tagCollection.constructor.getTableCols({
+                        tag: {
+                            label: "Tags",
                             cell: "String",
                             editable: false,
                             sortable: false,
@@ -126,7 +113,7 @@ define(['require',
                                 }
                             })
                         },
-                        Attributes: {
+                        attributes: {
                             label: "Attributes",
                             cell: "html",
                             editable: false,
@@ -177,52 +164,40 @@ define(['require',
                             })
                         },
                     },
-                    this.tagTermCollection);
+                    this.tagCollection);
             },
             addModalView: function(e) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                require(['views/tag/AddTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: that.guid,
                         modalCollection: that.collection,
                         enumDefCollection: that.enumDefCollection
                     });
-                    // view.saveTagData = function() {
-                    //override saveTagData function
-                    // }
                 });
             },
             deleteTagDataModal: function(e) {
-                var tagName = $(e.currentTarget).data("name"),
-                    that = this;
-                if (that.term) {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
-                        titleMessage: Messages.removeTerm,
-                        buttonText: "Remove",
-                    });
-                } else {
-                    var modal = CommonViewFunction.deleteTagModel({
+                var that = this,
+                    tagName = $(e.currentTarget).data("name"),
+                    modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove",
                     });
-                }
 
                 modal.on('ok', function() {
-                    that.deleteTagData(e);
+                    that.deleteTagData({
+                        'tagName': tagName,
+                        'guid': that.guid
+                    });
                 });
                 modal.on('closeModal', function() {
                     modal.trigger('cancel');
                 });
             },
-            deleteTagData: function(e) {
-                var that = this,
-                    tagName = $(e.currentTarget).data("name");
-                CommonViewFunction.deleteTag({
-                    'tagName': tagName,
-                    'guid': that.guid,
-                    'tagOrTerm': (that.term ? "term" : "tag"),
+            deleteTagData: function(options) {
+                var that = this;
+                CommonViewFunction.deleteTag(_.extend({}, options, {
                     showLoader: function() {
                         that.$('.fontLoader').show();
                         that.$('.tableOverlay').show();
@@ -238,14 +213,14 @@ define(['require',
                         }
 
                     }
-                });
+                }));
             },
             editTagDataModal: function(e) {
                 var that = this,
                     tagName = $(e.currentTarget).data('name'),
                     tagModel = _.findWhere(that.collectionObject.classifications, { typeName: tagName });
                 require([
-                    'views/tag/addTagModalView'
+                    'views/tag/AddTagModalView'
                 ], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         'tagModel': tagModel,

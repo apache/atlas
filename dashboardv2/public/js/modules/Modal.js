@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backbone, template) {
+define(['require', 'backbone', 'hbs!tmpl/common/Modal'], function(require, Backbone, template) {
 
     var Modal = Backbone.View.extend({
 

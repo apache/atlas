@@ -17,7 +17,7 @@
  */
 
 define(['require',
-    'hbs!tmpl/business_catalog/SideNavLayoutView_tmpl',
+    'hbs!tmpl/site/SideNavLayoutView_tmpl',
     'utils/Utils',
     'utils/Globals',
     'utils/UrlLinks'
@@ -37,7 +37,6 @@ define(['require',
         },
         templateHelpers: function() {
             return {
-                taxonomy: Globals.taxonomy,
                 tabClass: this.tabClass,
                 apiBaseUrl: UrlLinks.apiBaseUrl
             };
@@ -60,16 +59,10 @@ define(['require',
                     if (hashUrl != tabStateUrls.searchUrl) {
                         Globals.saveApplicationState.tabState.searchUrl = hashUrl;
                     }
-                } else if (urlStateObj.isTaxonomyTab()) {
-                    if (hashUrl != tabStateUrls.taxonomyUrl) {
-                        Globals.saveApplicationState.tabState.isTaxonomyTab = hashUrl;
-                    }
                 }
 
                 if (elementName.name == "tab-tag") {
                     urlString = tabStateUrls.tagUrl; //'#!/tag';
-                } else if (elementName.name == "tab-taxonomy") {
-                    urlString = tabStateUrls.taxonomyUrl; // '#!/taxonomy';
                 } else if (elementName.name == "tab-search") {
                     urlString = tabStateUrls.searchUrl; // '#!/search';
                 }
@@ -84,28 +77,13 @@ define(['require',
         },
         initialize: function(options) {
             _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'searchTableColumns', 'searchTableFilters'));
-            if (Globals.taxonomy) {
-                this.tabClass = "tab col-sm-4";
-            } else {
-                this.tabClass = "tab col-sm-6";
-            }
+            this.tabClass = "tab col-sm-6";
         },
         onRender: function() {
             this.renderTagLayoutView();
             this.renderSearchLayoutView();
-            if (Globals.taxonomy) {
-                this.rendeBusinessCatalogLayoutView();
-            }
             this.selectTab();
 
-        },
-        rendeBusinessCatalogLayoutView: function() {
-            var that = this;
-            require(['views/business_catalog/BusinessCatalogLayoutView'], function(BusinessCatalogLayoutView) {
-                that.RBusinessCatalogLayoutView.show(new BusinessCatalogLayoutView({
-                    url: that.url
-                }));
-            });
         },
         renderTagLayoutView: function() {
             var that = this;
@@ -137,9 +115,6 @@ define(['require',
             if (Utils.getUrlState.isTagTab()) {
                 this.$('.tabs').find('li a[aria-controls="tab-tag"]').parents('li').addClass('active').siblings().removeClass('active');
                 this.$('.tab-content').find('div#tab-tag').addClass('active').siblings().removeClass('active');
-            } else if (Utils.getUrlState.isTaxonomyTab()) {
-                this.$('.tabs').find('li a[aria-controls="tab-taxonomy"]').parents('li').addClass('active').siblings().removeClass('active');
-                this.$('.tab-content').find('div#tab-taxonomy').addClass('active').siblings().removeClass('active');
             } else if (Utils.getUrlState.isSearchTab() || (Utils.getUrlState.isDetailPage()) || Utils.getUrlState.isInitial()) {
                 this.$('.tabs').find('li a[aria-controls="tab-search"]').parents('li').addClass('active').siblings().removeClass('active');
                 this.$('.tab-content').find('div#tab-search').addClass('active').siblings().removeClass('active');

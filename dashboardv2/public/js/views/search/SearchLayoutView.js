@@ -429,10 +429,7 @@ define(['require',
                         typeStr += '<option>' + (name) + '</option>';
                     }
                     if (model.get('category') == 'CLASSIFICATION') {
-                        var checkTagOrTerm = Utils.checkTagOrTerm(name);
-                        if (checkTagOrTerm.tag) {
-                            tagStr += '<option>' + (name) + '</option>';
-                        }
+                        tagStr += '<option>' + (name) + '</option>';
                     }
                 });
                 that.ui.typeLov.html(typeStr);

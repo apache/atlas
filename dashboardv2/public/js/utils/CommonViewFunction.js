@@ -42,14 +42,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 tagModel.deleteAssociation(options.guid, options.tagName, {
                     skipDefaultError: true,
                     success: function(data) {
-                        var msg = "Tag " + name.name + Messages.removeSuccessMessage;
-                        if (options.tagOrTerm === "term") {
-                            msg = "Term " + options.tagName + Messages.removeSuccessMessage;
-                        } else if (options.tagOrTerm === "tag") {
-                            msg = "Tag " + options.tagName + Messages.removeSuccessMessage;
-                        }
                         Utils.notifySuccess({
-                            content: msg
+                            content: "Tag " + options.tagName + Messages.removeSuccessMessage
                         });
                         if (options.callback) {
                             options.callback();
@@ -233,122 +227,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         });
         return table;
     }
-    CommonViewFunction.breadcrumbUrlMaker = function(url) {
-        if (url) {
-            var urlList = [];
-            var splitURL = url.split("api/atlas/v1/taxonomies/");
-            if (splitURL.length > 1) {
-                var splitUrlWithoutTerm = splitURL[1].split("/terms/");
-                if (splitUrlWithoutTerm.length == 1) {
-                    splitUrlWithoutTerm = splitUrlWithoutTerm[0].split("/");
-                }
-            } else {
-                var splitUrlWithoutTerm = splitURL[0].split("/terms/");
-                if (splitUrlWithoutTerm.length == 1) {
-                    splitUrlWithoutTerm = splitUrlWithoutTerm[0].split("/");
-                }
-            }
-
-            var href = "";
-            for (var i in splitUrlWithoutTerm) {
-                if (i == 0) {
-                    href = splitUrlWithoutTerm[i];
-                    urlList.push({
-                        value: _.escape(splitUrlWithoutTerm[i]),
-                        href: href
-                    });
-                } else {
-                    href += "/terms/" + splitUrlWithoutTerm[i];
-                    urlList.push({
-                        value: _.escape(splitUrlWithoutTerm[i]),
-                        href: href
-                    });
-                };
-            }
-            return urlList;
-        }
-    }
-    CommonViewFunction.breadcrumbMaker = function(options) {
-        var li = "";
-        if (options.urlList) {
-            _.each(options.urlList, function(object) {
-                li += '<li><a class="link" href="#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '?load=true">' + _.escape(object.value) + '</a></li>';
-            });
-        }
-        if (options.scope) {
-            options.scope.html(li);
-            options.scope.asBreadcrumbs("destroy");
-            options.scope.asBreadcrumbs({
-                namespace: 'breadcrumb',
-                overflow: "left",
-                responsive: false,
-                toggleIconClass: 'fa fa-ellipsis-h',
-                dropdown: function(classes) {
-                    var dropdownClass = 'dropdown';
-                    var dropdownMenuClass = 'dropdown-menu popover popoverTerm bottom arrowPosition';
-                    if (this.options.overflow === 'right') {
-                        dropdownMenuClass += ' dropdown-menu-right';
-                    }
-
-                    return '<li class="' + dropdownClass + ' ' + classes.dropdownClass + '">' +
-                        '<a href="javascript:void(0);" class="' + classes.toggleClass + '" data-toggle="dropdown">' +
-                        '<i class="' + classes.toggleIconClass + '"></i>' +
-                        '</a>' +
-                        '<ul class="' + dropdownMenuClass + ' ' + classes.dropdownMenuClass + '">' +
-                        '<div class="arrow"></div>' +
-                        '</ul>' +
-                        '</li>';
-                }
-            });
-        }
-    }
-    CommonViewFunction.termTableBreadcrumbMaker = function(obj) {
-        if (!obj) {
-            return "";
-        }
-        var traits = obj.classificationNames || _.pluck(obj.classifications, 'typeName'),
-            url = "",
-            deleteHtml = "",
-            html = "",
-            id = obj.guid,
-            terms = [],
-            entityName = Utils.getName(obj);
-        if (traits) {
-            traits.map(function(term) {
-                var checkTagOrTerm = Utils.checkTagOrTerm(term);
-                if (checkTagOrTerm.term) {
-                    terms.push({
-                        deleteHtml: '<a href="javascript:void(0)" class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + entityName + '" data-name="' + term + '" data-guid="' + obj.guid + '" ></i></a>',
-                        url: _.unescape(term).split(".").join("/"),
-                        name: term
-                    });
-                }
-            });
-        }
-        _.each(terms, function(obj, i) {
-            var className = "";
-            if (i >= 1) {
-                className += "showHideDiv hide";
-            }
-            obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
-            html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
-        })
-        if (terms.length > 1) {
-            html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="btn btn-action btn-sm btn-icon-pd"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
-        }
-        if (!Enums.entityStateReadOnly[obj.status]) {
-            if (obj.guid) {
-                html += '<div><a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addTerm" data-guid="' + (obj.guid) + '"><i class="fa fa-plus"></i></a></div>'
-            } else {
-                html += '<div><a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addTerm"><i class="fa fa-plus"></i></a></div>'
-            }
-        }
-        return {
-            html: '<div class="termTableBreadcrumb btn-inline" dataterm-id="' + id + '">' + html + '</div>',
-            object: { scopeId: id, value: terms }
-        }
-
-    }
     CommonViewFunction.tagForTable = function(obj) {
         var traits = obj.classificationNames || _.pluck(obj.classifications, 'typeName'),
             atags = "",
@@ -358,17 +236,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (traits) {
             traits.map(function(tag) {
-                var checkTagOrTerm = Utils.checkTagOrTerm(tag);
-                if (checkTagOrTerm.tag) {
-                    var className = "btn btn-action btn-sm btn-blue btn-icon",
-                        tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag + '">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
-                    if (count >= 1) {
-                        popTag += tagString;
-                    } else {
-                        atags += tagString;
-                    }
-                    ++count;
+                var className = "btn btn-action btn-sm btn-blue btn-icon",
+                    tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag + '">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                if (count >= 1) {
+                    popTag += tagString;
+                } else {
+                    atags += tagString;
                 }
+                ++count;
             });
         }
         if (!Enums.entityStateReadOnly[obj.status]) {
@@ -417,32 +292,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             return "<span>(</span>&nbsp" + queryArray.join('<span>&nbsp)</span>&nbsp<span>AND</span>&nbsp<span>(</span>&nbsp') + "&nbsp<span>)</span>";
 
         }
-    }
-    CommonViewFunction.saveTermToAsset = function(options, that) {
-        require(['models/VCatalog'], function(Vcatalog) {
-            var VCatalog = new Vcatalog();
-            var name = options.termName;
-            ++that.asyncFetchCounter;
-            VCatalog.url = function() {
-                return "api/atlas/v1/entities/" + options.guid + "/tags/" + name;
-            };
-            VCatalog.save(null, {
-                success: function(data) {
-                    Utils.notifySuccess({
-                        content: "Term " + name + Messages.addTermToEntitySuccessMessage
-                    });
-                    if (options.collection) {
-                        options.collection.fetch({ reset: true });
-                    }
-                },
-                complete: function() {
-                    --that.asyncFetchCounter
-                    if (that.callback && that.asyncFetchCounter === 0) {
-                        that.callback(); // It will call to parent of parent Callback i.e callback of searchLayoutView
-                    }
-                }
-            });
-        })
     }
     CommonViewFunction.generateObjectForSaveSearchApi = function(options) {
         var obj = {

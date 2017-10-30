@@ -51,9 +51,6 @@ define(['require',
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 addTag: '[data-id="addTag"]',
-                addTerm: '[data-id="addTerm"]',
-                showMoreLess: '[data-id="showMoreLess"]',
-                showMoreLessTerm: '[data-id="showMoreLessTerm"]',
                 paginationDiv: '[data-id="paginationDiv"]',
                 previousData: "[data-id='previousData']",
                 nextData: "[data-id='nextData']",
@@ -72,8 +69,7 @@ define(['require',
             templateHelpers: function() {
                 return {
                     entityCreate: Globals.entityCreate,
-                    searchType: this.searchType,
-                    taxonomy: Globals.taxonomy
+                    searchType: this.searchType
                 };
             },
             /** ui events hash */
@@ -85,24 +81,13 @@ define(['require',
                     if (e.target.nodeName.toLocaleLowerCase() == "i") {
                         this.onClickTagCross(e);
                     } else {
-                        if (scope.hasClass('term')) {
-                            var url = scope.data('href').split(".").join("/terms/");
-                            this.triggerUrl({
-                                url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
-                                urlParams: null,
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: null
-                            });
-                        } else {
-                            this.triggerUrl({
-                                url: '#!/tag/tagAttribute/' + scope.text(),
-                                urlParams: null,
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: null
-                            });
-                        }
+                        this.triggerUrl({
+                            url: '#!/tag/tagAttribute/' + scope.text(),
+                            urlParams: null,
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: null
+                        });
                     }
                 };
                 events["keyup " + this.ui.gotoPage] = function(e) {
@@ -122,18 +107,7 @@ define(['require',
                 events["change " + this.ui.showPage] = 'changePageLimit';
                 events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
                 events["click " + this.ui.addTag] = 'checkedValue';
-                events["click " + this.ui.addTerm] = 'checkedValue';
                 events["click " + this.ui.addAssignTag] = 'checkedValue';
-                events["click " + this.ui.showMoreLessTerm] = function(e) {
-                    e.stopPropagation();
-                    $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
-                    $(e.currentTarget).parents('.searchTerm').find('div.termTableBreadcrumb>div.showHideDiv').toggleClass('hide');
-                    if ($(e.currentTarget).find('i').hasClass('fa-angle-right')) {
-                        $(e.currentTarget).find('span').text('Show More');
-                    } else {
-                        $(e.currentTarget).find('span').text('Show less');
-                    }
-                };
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
                 events["click " + this.ui.createEntity] = 'onClickCreateEntity';
@@ -190,7 +164,6 @@ define(['require',
                     }
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
-                            var term = [];
                             var obj = item.toJSON();
                             that.arr.push({
                                 id: obj.guid,
@@ -200,14 +173,8 @@ define(['require',
                     });
 
                     if (this.arr.length > 0) {
-                        if (Globals.taxonomy) {
-                            this.$('.multiSelectTerm').show();
-                        }
                         this.$('.multiSelectTag').show();
                     } else {
-                        if (Globals.taxonomy) {
-                            this.$('.multiSelectTerm').hide();
-                        }
                         this.$('.multiSelectTag').hide();
                     }
                 });
@@ -232,7 +199,7 @@ define(['require',
                         this.updateColumnList(state);
                         var excludeDefaultColumn = [];
                         if (this.value && this.value.type) {
-                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms");
+                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag");
                             if (this.searchTableColumns[this.value.type] === null) {
                                 this.ui.columnEmptyInfo.show();
                             } else {
@@ -357,7 +324,7 @@ define(['require',
                 }
 
                 if (isPostMethod && isSearchTab) {
-                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "terms") : null,
+                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag") : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,
@@ -544,17 +511,7 @@ define(['require',
                         that.ui.containerCheckBox.hide();
                     }
                     that.$(".ellipsis .inputAssignTag").hide();
-                    that.renderBreadcrumb();
                     that.checkTableFetch();
-                });
-            },
-            renderBreadcrumb: function() {
-                var that = this;
-                _.each(this.bradCrumbList, function(object) {
-                    _.each(object.value, function(subObj) {
-                        var scopeObject = that.$('[dataterm-id="' + object.scopeId + '"]').find('[dataterm-name="' + subObj.name + '"] .liContent');
-                        CommonViewFunction.breadcrumbMaker({ urlList: subObj.valueUrl, scope: scopeObject });
-                    });
                 });
             },
             checkTableFetch: function() {
@@ -688,7 +645,7 @@ define(['require',
                             }
                         })
                     };
-                    this.getTagTermCol({ 'col': col, 'columnToShow': columnToShow });
+                    this.getTagCol({ 'col': col, 'columnToShow': columnToShow });
 
                     if (this.value && this.value.searchType === "basic") {
                         var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
@@ -781,7 +738,7 @@ define(['require',
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
             },
-            getTagTermCol: function(options) {
+            getTagCol: function(options) {
                 var that = this,
                     columnToShow = options.columnToShow,
                     col = options.col;
@@ -807,37 +764,11 @@ define(['require',
                             }
                         })
                     };
-                    if (Globals.taxonomy) {
-                        col['terms'] = {
-                            label: "Terms",
-                            cell: "Html",
-                            editable: false,
-                            sortable: false,
-                            resizeable: true,
-                            orderable: true,
-                            renderable: (columnToShow ? _.contains(columnToShow, 'terms') : true),
-                            className: 'searchTerm',
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                fromRaw: function(rawValue, model) {
-                                    var obj = model.toJSON();
-                                    var returnObject = CommonViewFunction.termTableBreadcrumbMaker(obj);
-                                    if (returnObject.object) {
-                                        that.bradCrumbList.push(returnObject.object);
-                                    }
-                                    if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                        return '<div class="readOnly">' + returnObject.html + '</div>';
-                                    } else {
-                                        return returnObject.html;
-                                    }
-                                }
-                            })
-                        };
-                    }
                 }
             },
             addTagModalView: function(guid, multiple) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                require(['views/tag/AddTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: guid,
                         multiple: multiple,
@@ -883,84 +814,45 @@ define(['require',
             checkedValue: function(e) {
                 var guid = "",
                     that = this,
-                    isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag'),
-                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm'),
-                    isTagButton = $(e.currentTarget).hasClass('assignTag');
-                if (isTagButton) {
-                    if (isTagMultiSelect && this.arr && this.arr.length) {
-                        that.addTagModalView(guid, this.arr);
-                    } else {
-                        guid = that.$(e.currentTarget).data("guid");
-                        that.addTagModalView(guid);
-                    }
+                    isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag');
+                if (isTagMultiSelect && this.arr && this.arr.length) {
+                    that.addTagModalView(guid, this.arr);
                 } else {
-                    if (isTermMultiSelect && this.arr && this.arr.length) {
-                        that.addTermModalView(guid, this.arr);
-                    } else {
-                        guid = that.$(e.currentTarget).data("guid");
-                        that.addTermModalView(guid);
-                    }
+                    guid = that.$(e.currentTarget).data("guid");
+                    that.addTagModalView(guid);
                 }
             },
-            addTermModalView: function(guid, multiple) {
-                var that = this;
-                require([
-                    'views/business_catalog/AddTermToEntityLayoutView',
-                ], function(AddTermToEntityLayoutView) {
-                    var view = new AddTermToEntityLayoutView({
-                        guid: guid,
-                        multiple: multiple,
-                        callback: function() {
-                            that.fetchCollection();
-                            that.arr = [];
-                        },
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that)
-                    });
-                });
-            },
             onClickTagCross: function(e) {
-                var tagName = $(e.target).data("name"),
+                var that = this,
+                    tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
                     assetName = $(e.target).data("assetname"),
-                    tagOrTerm = $(e.target).data("type"),
-                    that = this;
-                if (tagOrTerm === "term") {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
-                        titleMessage: Messages.removeTerm,
-                        buttonText: "Remove"
-                    });
-                } else if (tagOrTerm === "tag") {
-                    var modal = CommonViewFunction.deleteTagModel({
+                    modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });
-                }
                 if (modal) {
                     modal.on('ok', function() {
-                        that.deleteTagData(e, tagOrTerm);
+                        that.deleteTagData({
+                            'tagName': tagName,
+                            'guid': guid
+                        });
                     });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
                 }
             },
-            deleteTagData: function(e, tagOrTerm) {
-                var that = this,
-                    tagName = $(e.target).data("name"),
-                    guid = $(e.target).data("guid");
-                CommonViewFunction.deleteTag({
-                    'tagName': tagName,
-                    'guid': guid,
-                    'tagOrTerm': tagOrTerm,
+            deleteTagData: function(options) {
+                var that = this;
+                CommonViewFunction.deleteTag(_.extend({}, options, {
                     showLoader: that.showLoader.bind(that),
                     hideLoader: that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
                     }
-                });
+                }));
             },
             onClicknextData: function() {
                 this.offset = this.offset + this.limit;

@@ -18,16 +18,17 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/common/aboutAtlas_tmpl',
+    'hbs!tmpl/common/AboutAtlas_tmpl',
+    'modules/Modal',
     'models/VCommon',
-    'utils/UrlLinks'
-], function(require, Backbone, aboutAtlasTmpl, VCommon, UrlLinks) {
+    'utils/UrlLinks',
+], function(require, Backbone, AboutAtlasTmpl, Modal, VCommon, UrlLinks) {
     'use strict';
 
-    var aboutAtlasView = Backbone.Marionette.LayoutView.extend(
-        /** @lends aboutAtlasView */
+    var AboutAtlasView = Backbone.Marionette.LayoutView.extend(
+        /** @lends AboutAtlasView */
         {
-            template: aboutAtlasTmpl,
+            template: AboutAtlasTmpl,
             /** Layout sub regions */
             regions: {},
             /** ui selector cache */
@@ -37,16 +38,24 @@ define(['require',
             /** ui events hash */
             events: function() {},
             /**
-             * intialize a new aboutAtlasView Layout
+             * intialize a new AboutAtlasView Layout
              * @constructs
              */
             initialize: function(options) {
                 _.extend(this, options);
-            },
-            bindEvents: function() {
+                var modal = new Modal({
+                    title: 'Apache Atlas',
+                    content: this,
+                    okCloses: true,
+                    showFooter: true,
+                    allowCancel: false,
+                }).open();
 
-
+                modal.on('closeModal', function() {
+                    modal.trigger('cancel');
+                });
             },
+            bindEvents: function() {},
             onRender: function() {
                 var that = this;
                 var url = UrlLinks.versionApiUrl();
@@ -61,5 +70,5 @@ define(['require',
             },
 
         });
-    return aboutAtlasView;
+    return AboutAtlasView;
 });

@@ -44,7 +44,6 @@ define(['require',
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
-                RTermTableLayoutView: "#r_termTableLayoutView",
                 RProfileLayoutView: "#r_profileLayoutView"
 
             },
@@ -59,14 +58,11 @@ define(['require',
                 deleteTag: '[data-id="deleteTag"]',
                 backButton: "[data-id='backButton']",
                 addTag: '[data-id="addTag"]',
-                addTerm: '[data-id="addTerm"]',
                 tagList: '[data-id="tagList"]',
-                termList: '[data-id="termList"]',
                 fullscreenPanel: "#fullscreen_panel"
             },
             templateHelpers: function() {
                 return {
-                    taxonomy: Globals.taxonomy,
                     entityUpdate: Globals.entityUpdate
                 };
             },
@@ -76,26 +72,15 @@ define(['require',
                 events["click " + this.ui.editButton] = 'onClickEditEntity';
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
-                        var scope = $(e.currentTarget);
-                        if (scope.hasClass('term')) {
-                            var url = scope.data('href').split(".").join("/terms/");
-                            Utils.setUrl({
-                                url: '#!/taxonomy/detailCatalog' + UrlLinks.taxonomiesApiUrl() + '/' + url,
-                                mergeBrowserUrl: false,
-                                trigger: true
-                            });
-                        } else {
-                            Utils.setUrl({
-                                url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
-                                mergeBrowserUrl: false,
-                                trigger: true
-                            });
-                        }
+                        Utils.setUrl({
+                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                            mergeBrowserUrl: false,
+                            trigger: true
+                        });
                     }
                 };
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
-                events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events['click ' + this.ui.backButton] = function() {
                     Backbone.history.history.back();
                 };
@@ -156,9 +141,9 @@ define(['require',
                             }
                         }
                         if (collectionJSON.classifications) {
-                            this.addTagToTerms(collectionJSON.classifications);
+                            this.generateTag(collectionJSON.classifications);
                         } else {
-                            this.addTagToTerms([]);
+                            this.generateTag([]);
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
                             this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
@@ -191,7 +176,6 @@ define(['require',
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
-                    this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
                     if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db")) {
                         if (collectionJSON.typeName === "hive_db") {
                             this.$('.profileTab a').text("Tables")
@@ -287,60 +271,42 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),
-                    tagOrTerm = $(e.target).data("type"),
                     that = this;
-                if (tagOrTerm === "term") {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
-                        titleMessage: Messages.removeTerm,
-                        buttonText: "Remove"
-                    });
-                } else if (tagOrTerm === "tag") {
-                    var modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
-                        titleMessage: Messages.removeTag,
-                        buttonText: "Remove"
-                    });
-                }
+                var modal = CommonViewFunction.deleteTagModel({
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    buttonText: "Remove"
+                });
                 if (modal) {
                     modal.on('ok', function() {
-                        that.deleteTagData(e, tagOrTerm);
+                        that.deleteTagData({
+                            'tagName': tagName,
+                            'guid': that.id
+                        });
                     });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
                 }
             },
-            deleteTagData: function(e, tagOrTerm) {
+            deleteTagData: function(options) {
                 var that = this,
                     tagName = $(e.currentTarget).text();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
-                CommonViewFunction.deleteTag({
-                    'tagName': tagName,
-                    'guid': that.id,
-                    'tagOrTerm': tagOrTerm,
+                CommonViewFunction.deleteTag(_.extend({}, options, {
                     callback: function() {
                         that.fetchCollection();
                     }
-                });
+                }));
             },
-            addTagToTerms: function(tagObject) {
+            generateTag: function(tagObject) {
                 var that = this,
-                    tagData = "",
-                    termData = "";
-
+                    tagData = "";
                 _.each(tagObject, function(val) {
-                    var checkTagOrTerm = Utils.checkTagOrTerm(val);
-                    if (checkTagOrTerm.term) {
-                        termData += '<span class="btn btn-action btn-sm btn-blue btn-icon term" data-id="tagClick" data-href="' + val.typeName + '"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
-                    } else {
-                        tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
-                    }
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
                 });
                 this.ui.tagList.find("span.btn").remove();
-                this.ui.termList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
-                this.ui.termList.prepend(termData);
             },
             hideLoader: function() {
                 Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
@@ -350,7 +316,7 @@ define(['require',
             },
             onClickAddTagBtn: function(e) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                require(['views/tag/AddTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: that.id,
                         tagList: _.map(that.entityObject.entity.classifications, function(obj) {
@@ -368,25 +334,6 @@ define(['require',
                     });
                 });
             },
-            onClickAddTermBtn: function(e) {
-                var that = this;
-                require([
-                    'views/business_catalog/AddTermToEntityLayoutView',
-                ], function(AddTermToEntityLayoutView) {
-                    var view = new AddTermToEntityLayoutView({
-                        guid: that.id,
-                        callback: function() {
-                            that.fetchCollection();
-                        },
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that)
-                    });
-                    view.modal.on('ok', function() {
-                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
-                    });
-                });
-
-            },
             renderEntityDetailTableLayoutView: function(obj) {
                 var that = this;
                 require(['views/entity/EntityDetailTableLayoutView'], function(EntityDetailTableLayoutView) {
@@ -397,12 +344,6 @@ define(['require',
                 var that = this;
                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
                     that.RTagTableLayoutView.show(new TagDetailTableLayoutView(obj));
-                });
-            },
-            renderTermTableLayoutView: function(obj) {
-                var that = this;
-                require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
-                    that.RTermTableLayoutView.show(new TagDetailTableLayoutView(obj));
                 });
             },
             renderLineageLayoutView: function(obj) {

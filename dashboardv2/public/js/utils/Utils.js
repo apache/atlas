@@ -281,8 +281,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 };
                 if (Utils.getUrlState.isTagTab(options.url)) {
                     urlUpdate['tagUrl'] = options.url;
-                } else if (Utils.getUrlState.isTaxonomyTab(options.url)) {
-                    urlUpdate['taxonomyUrl'] = options.url;
                 } else if (Utils.getUrlState.isSearchTab(options.url)) {
                     urlUpdate['searchUrl'] = options.url;
                 }
@@ -310,9 +308,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         },
         isTagTab: function(url) {
             return this.getQueryUrl(url).firstValue == "tag" ? true : false;
-        },
-        isTaxonomyTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "taxonomy" ? true : false;
         },
         isSearchTab: function(url) {
             return this.getQueryUrl(url).firstValue == "search" ? true : false;
@@ -351,63 +346,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 })
             } else {
                 return paramsObj[key];
-            }
-        }
-    }
-    Utils.checkTagOrTerm = function(value, isTermView) {
-        if (value && _.isString(value) && isTermView) {
-            // For string break
-            if (value == "TaxonomyTerm") {
-                return {}
-            }
-            var name = _.escape(value).split('.');
-            return {
-                term: true,
-                tag: false,
-                name: name[name.length - 1],
-                fullName: value
-            }
-        }
-        if (value && _.isString(value)) {
-            value = {
-                typeName: value
-            }
-        }
-        if (_.isObject(value)) {
-            var name = "";
-            if (value && value.$typeName$) {
-                name = value.$typeName$;
-            } else if (value && value.typeName) {
-                name = value.typeName;
-            }
-            if (name === "TaxonomyTerm") {
-                return {}
-            }
-            name = _.escape(name).split('.');
-
-            var trem = false;
-            if (value['taxonomy.namespace']) {
-                trem = true;
-            } else if (value.values && value.values['taxonomy.namespace']) {
-                trem = true;
-            } else if (Globals.taxonomy && name.length > 1) {
-                trem = true; // Temp fix
-            }
-
-            if (trem) {
-                return {
-                    term: true,
-                    tag: false,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
-            } else {
-                return {
-                    term: false,
-                    tag: true,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
             }
         }
     }

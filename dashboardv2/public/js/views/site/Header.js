@@ -17,7 +17,7 @@
  */
 
 define(['require',
-    'hbs!tmpl/site/header',
+    'hbs!tmpl/site/Header',
     'utils/CommonViewFunction',
     'utils/Globals'
 ], function(require, tmpl, CommonViewFunction, Globals) {

@@ -144,17 +144,14 @@ define(['require',
                     };
                     this.collection.fullCollection.sort().each(function(model) {
                         var name = Utils.getName(model.toJSON(), 'name');
-                        var checkTagOrTerm = Utils.checkTagOrTerm(name);
-                        if (checkTagOrTerm.tag) {
-                            if (searchString) {
-                                if (name.search(new RegExp(searchString, "i")) != -1) {
-                                    str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
-                                } else {
-                                    return;
-                                }
+                        if (searchString) {
+                            if (name.search(new RegExp(searchString, "i")) != -1) {
+                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '" >' + name + '</a></li>';
                             } else {
-                                str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
+                                return;
                             }
+                        } else {
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + name + '"  data-name="' + name + '">' + name + '</a></li>';
                         }
                     });
                     this.ui.tagsParent.empty().html(str);

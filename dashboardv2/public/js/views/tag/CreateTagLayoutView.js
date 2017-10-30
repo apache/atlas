@@ -18,7 +18,7 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/tag/createTagLayoutView_tmpl',
+    'hbs!tmpl/tag/CreateTagLayoutView_tmpl',
     'utils/Utils',
     'views/tag/TagAttributeItemView',
     'collection/VTagList',
@@ -74,11 +74,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection', 'model', 'tag', 'termCollection', 'descriptionData'));
+                _.extend(this, _.pick(options, 'tagCollection', 'model', 'tag', 'descriptionData'));
                 if (this.model) {
                     this.description = this.model.get('description');
-                } else if (this.termCollection) {
-                    this.description = this.descriptionData;
                 } else {
                     this.create = true;
                 }
@@ -107,15 +105,12 @@ define(['require',
                 });
             },
             tagCollectionList: function() {
-                var str = '',
-                    that = this;
+                var that = this,
+                    str = '';
                 this.ui.parentTag.empty();
                 this.tagCollection.fullCollection.each(function(val) {
-                    var name = Utils.getName(val.toJSON()),
-                        checkTagOrTerm = Utils.checkTagOrTerm(name);
-                    if (checkTagOrTerm.tag) {
-                        str += '<option>' + (name) + '</option>';
-                    }
+                    var name = Utils.getName(val.toJSON());
+                    str += '<option>' + (name) + '</option>';
                 });
                 that.ui.parentTag.html(str);
                 // IE9 support

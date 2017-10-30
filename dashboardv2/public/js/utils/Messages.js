@@ -23,10 +23,7 @@ define(['require'], function(require) {
         defaultErrorMessage: "Something went wrong",
         addSuccessMessage: " has been created successfully",
         addErrorMessage: " could not be Created",
-        addTermToEntitySuccessMessage: " has been added to entity",
-        deleteTerm: "Delete Term",
         removeTag: "Remove Tag Assignment",
-        removeTerm: "Remove Term Assignment",
         deleteSuccessMessage: " has been deleted successfully",
         deleteErrorMessage: " could not be deleted",
         removeSuccessMessage: " has been removed successfully",
@@ -48,8 +45,7 @@ define(['require'], function(require) {
         },
         tag: {
             addAttributeSuccessMessage: "Tag attribute is added successfully",
-            updateTagDescriptionMessage: "Tag description is updated successfully",
-            updateTermDescriptionMessage: "Term description is updated successfully"
+            updateTagDescriptionMessage: "Tag description is updated successfully"
         }
     };
     return Messages;
