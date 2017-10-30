@@ -68,9 +68,14 @@
 
 .with-nav-tabs {
     .tab-content {
-        >.tab-pane.active {
-            padding: 20px 10px 0px 10px;
-            min-height: 50px;
+        >.tab-pane {
+            &>div {
+                position: relative;
+            }
+            &.active {
+                padding: 20px 10px 0px 10px;
+                min-height: 50px;
+            }
         }
     }
 }
