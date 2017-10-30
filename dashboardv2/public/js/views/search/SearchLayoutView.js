@@ -488,7 +488,9 @@ define(['require',
             triggerSearch: function(value) {
                 var params = {
                     searchType: this.type,
-                    dslChecked: this.ui.searchType.is(':checked')
+                    dslChecked: this.ui.searchType.is(':checked'),
+                    tagFilters: null,
+                    entityFilters: null
                 }
                 params['type'] = this.ui.typeLov.select2('val') || null;
                 if (!this.dsl) {
