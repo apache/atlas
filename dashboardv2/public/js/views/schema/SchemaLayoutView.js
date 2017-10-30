@@ -106,14 +106,14 @@ define(['require',
                 this.bradCrumbList = [];
             },
             bindEvents: function() {
+                var that = this;
                 this.listenTo(this.schemaCollection, 'backgrid:selected', function(model, checked) {
+                    this.arr = [];
                     if (checked === true) {
                         model.set("isEnable", true);
                     } else {
                         model.set("isEnable", false);
                     }
-                    this.arr = [];
-                    var that = this;
                     this.schemaCollection.find(function(item) {
                         var obj = item.toJSON();
                         if (item.get('isEnable')) {
@@ -167,7 +167,7 @@ define(['require',
                 });
                 if (this.schemaCollection.length === 0 && this.deleteObj.length) {
                     this.ui.checkDeletedEntity.find("input").prop('checked', true);
-                    this.schemaCollection.fullCollection.reset(this.deleteObj, { silent: true });
+                    this.schemaCollection.fullCollection.reset(this.deleteObj);
                 }
                 if (this.activeObj.length === 0 && this.deleteObj.length === 0) {
                     this.ui.checkDeletedEntity.hide();
@@ -240,7 +240,7 @@ define(['require',
                                         if (key === "name" && model.get('guid')) {
                                             var nameHtml = '<a href="#!/detailPage/' + model.get('guid') + '">' + value + '</a>';
                                             if (model.get('status') && Enums.entityStateReadOnly[model.get('status')]) {
-                                                nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                                nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                                                 return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                             } else {
                                                 return nameHtml;
@@ -304,17 +304,19 @@ define(['require',
                     e.stopPropagation();
                 }
                 var guid = "",
-                    that = this;
-                var multiSelectTag = $(e.currentTarget).hasClass('assignTag');
-                if (multiSelectTag) {
-                    if (this.arr && this.arr.length && multiSelectTag) {
+                    that = this,
+                    isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag'),
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm'),
+                    isTagButton = $(e.currentTarget).hasClass('assignTag');
+                if (isTagButton) {
+                    if (isTagMultiSelect && this.arr && this.arr.length) {
                         that.addTagModalView(guid, this.arr);
                     } else {
                         guid = that.$(e.currentTarget).data("guid");
                         that.addTagModalView(guid);
                     }
                 } else {
-                    if (this.arr && this.arr.length) {
+                    if (isTermMultiSelect && this.arr && this.arr.length) {
                         that.addTermModalView(guid, this.arr);
                     } else {
                         guid = that.$(e.currentTarget).data("guid");

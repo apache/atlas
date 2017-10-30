@@ -16,13 +16,15 @@
 -->
 <div>
     <div class="tableOverlay"></div>
-    <div style="margin-left: 20px" data-id="checkDeletedEntity">
-        <label class="checkbox">
-            <input type="checkbox" class="input" name="queryType" value="text" name="check" value="1" />Include historical entities</label>
-    </div>
-    <div class="clearfix">
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTerm btnAssign" style="display:none" data-id="addTerm"><i class="fa fa-plus"></i></a>
-        <a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag btnAssign" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
+    <div class="inline-content-fr table-action-btn">
+        <div class="inline" data-id="checkDeletedEntity">
+            <label class="checkbox-inline btn">
+                <input type="checkbox" class="input" name="queryType" value="text" name="check" value="1" />Show historical entities</label>
+        </div>
+        <div class="clearfix inline">
+            <a href="javascript:void(0)" class="inputAssignTag multiSelectTerm btn btn-action btn-sm" style="display:none" data-id="addTerm"><i class="fa fa-plus"></i> Assign Term</a>
+            <a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
+        </div>
     </div>
     <div id="r_schemaTableLayoutView">
     </div>

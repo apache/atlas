@@ -73,6 +73,8 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             var isPopOverEl = getPopoverEl(e)
             if (!isPopOverEl) {
                 $('.popover').popover('hide');
+            } else if (isPopOverEl.$tip) {
+                $('.popover').not(isPopOverEl.$tip).popover('hide');
             }
         }
     });
