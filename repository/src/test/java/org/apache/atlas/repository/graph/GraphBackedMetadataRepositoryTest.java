@@ -129,8 +129,7 @@ public class GraphBackedMetadataRepositoryTest {
 //        AtlasGraphProvider.cleanup();
     }
 
-    // Disabling this test as it fails with janus profile, will enable it once fixed.
-    @Test(enabled = false)
+    @Test
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     public void testConcurrentCalls() throws Exception {
         final HierarchicalTypeDefinition<ClassType> refType =
@@ -796,11 +795,12 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private boolean assertEdge(String id, String typeName) throws Exception {
-        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraph            graph    = TestUtils.getGraph();
         Iterable<AtlasVertex> vertices = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices();
-        AtlasVertex AtlasVertex = vertices.iterator().next();
-        Iterable<AtlasEdge> edges = AtlasVertex.getEdges(AtlasEdgeDirection.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
-        if (!edges.iterator().hasNext()) {
+        AtlasVertex           vertex   = vertices.iterator().next();
+        Iterable<AtlasEdge>   edges    = vertex.getEdges(AtlasEdgeDirection.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
+
+        if (edges.iterator().hasNext()) {
             ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);
             assertNotNull(entity.get("ref"));
             return true;

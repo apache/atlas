@@ -86,6 +86,13 @@ public abstract class BaseResourceIT {
     public static final String QUALIFIED_NAME = "qualifiedName";
     public static final String CLUSTER_NAME = "clusterName";
     public static final String DESCRIPTION = "description";
+    public static final String PII_TAG = "pii_Tag";
+    public static final String PHI_TAG = "phi_Tag";
+    public static final String PCI_TAG = "pci_Tag";
+    public static final String SOX_TAG = "sox_Tag";
+    public static final String SEC_TAG = "sec_Tag";
+    public static final String FINANCE_TAG = "finance_Tag";
+    public static final String CLASSIFICATION = "classification";
 
     // All service clients
     protected AtlasClient atlasClientV1;
@@ -334,17 +341,17 @@ public abstract class BaseResourceIT {
                 .createTraitTypeDef("classification", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef("pii", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(PII_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> phiTrait =
-                TypesUtil.createTraitTypeDef("phi", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(PHI_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> pciTrait =
-                TypesUtil.createTraitTypeDef("pci", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(PCI_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> soxTrait =
-                TypesUtil.createTraitTypeDef("sox", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(SOX_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> secTrait =
-                TypesUtil.createTraitTypeDef("sec", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(SEC_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> financeTrait =
-                TypesUtil.createTraitTypeDef("finance", ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(FINANCE_TAG, ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> factTrait =
                 TypesUtil.createTraitTypeDef("Fact" + randomString(), ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> etlTrait =
@@ -434,17 +441,17 @@ public abstract class BaseResourceIT {
                 .createTraitTypeDef("classification",ImmutableSet.<String>of(),
                         AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
         AtlasClassificationDef piiTrait =
-                AtlasTypeUtil.createTraitTypeDef("pii", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(PII_TAG, ImmutableSet.<String>of());
         AtlasClassificationDef phiTrait =
-                AtlasTypeUtil.createTraitTypeDef("phi", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(PHI_TAG, ImmutableSet.<String>of());
         AtlasClassificationDef pciTrait =
-                AtlasTypeUtil.createTraitTypeDef("pci", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(PCI_TAG, ImmutableSet.<String>of());
         AtlasClassificationDef soxTrait =
-                AtlasTypeUtil.createTraitTypeDef("sox", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(SOX_TAG, ImmutableSet.<String>of());
         AtlasClassificationDef secTrait =
-                AtlasTypeUtil.createTraitTypeDef("sec", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(SEC_TAG, ImmutableSet.<String>of());
         AtlasClassificationDef financeTrait =
-                AtlasTypeUtil.createTraitTypeDef("finance", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(FINANCE_TAG, ImmutableSet.<String>of());
 
         AtlasTypesDef typesDef = new AtlasTypesDef(ImmutableList.of(enumDef),
                 ImmutableList.of(structTypeDef),
@@ -485,7 +492,7 @@ public abstract class BaseResourceIT {
         values.put("location", "/tmp");
         Referenceable databaseInstance = new Referenceable(dbId._getId(), dbId.getTypeName(), values);
         Referenceable tableInstance =
-                new Referenceable(HIVE_TABLE_TYPE_BUILTIN, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
+                new Referenceable(HIVE_TABLE_TYPE_BUILTIN, CLASSIFICATION, PII_TAG, PHI_TAG, PCI_TAG, SOX_TAG, SEC_TAG, FINANCE_TAG);
         tableInstance.set(NAME, tableName);
         tableInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
         tableInstance.set("db", databaseInstance);
@@ -518,13 +525,13 @@ public abstract class BaseResourceIT {
     protected AtlasEntity createHiveTableInstanceV2(AtlasEntity databaseInstance, String tableName) throws Exception {
         AtlasEntity tableInstance = new AtlasEntity(HIVE_TABLE_TYPE_V2);
         tableInstance.setClassifications(
-                Arrays.asList(new AtlasClassification("classification"),
-                        new AtlasClassification("pii"),
-                        new AtlasClassification("phi"),
-                        new AtlasClassification("pci"),
-                        new AtlasClassification("sox"),
-                        new AtlasClassification("sec"),
-                        new AtlasClassification("finance"))
+                Arrays.asList(new AtlasClassification(CLASSIFICATION),
+                        new AtlasClassification(PII_TAG),
+                        new AtlasClassification(PHI_TAG),
+                        new AtlasClassification(PCI_TAG),
+                        new AtlasClassification(SOX_TAG),
+                        new AtlasClassification(SEC_TAG),
+                        new AtlasClassification(FINANCE_TAG))
         );
 
         tableInstance.setAttribute(NAME, tableName);
