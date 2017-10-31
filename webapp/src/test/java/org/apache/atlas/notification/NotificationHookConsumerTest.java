@@ -287,6 +287,7 @@ public class NotificationHookConsumerTest {
         notificationHookConsumer.startInternal(configuration, executorService);
         Thread.sleep(500);
         notificationHookConsumer.consumers.get(0).shutdown();
+        Thread.sleep(500);
         assertFalse(notificationHookConsumer.consumers.get(0).isAlive());
     }
 
