@@ -46,9 +46,9 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
                         "emit(has('__superTypeNames').and().properties('__superTypeNames').hasValue('DataSet'))." +
                         "path().toList()";
             case GREMLIN_SEARCH_RETURNS_VERTEX_ID:
-                return "g.V().range(0,1).valueMap(true).toList()";
+                return "g.V().range(0,1).toList()";
             case GREMLIN_SEARCH_RETURNS_EDGE_ID:
-                return "g.E().range(0,1).valueMap(true).toList()";
+                return "g.E().range(0,1).toList()";
         }
         return super.getQuery(gremlinQuery);
     }
