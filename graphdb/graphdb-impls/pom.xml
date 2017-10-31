@@ -34,8 +34,7 @@
 
 
     <dependencies>
-        <!-- Single graph provider configured in root pom using
-             graphGroup, graphModule, graphVersion properties -->
+        <!-- Use the single graph provider configured in root pom using graphGroup, graphArtifact properties -->
         <dependency>
             <groupId>${graphGroup}</groupId>
             <artifactId>${graphArtifact}</artifactId>

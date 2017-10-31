@@ -628,18 +628,18 @@
         </profile>
 
         <!-- Graph provider selection profiles
-            The following profiles are used to select the graph provider.
-            These profiles are mutually exclusive and should be activated by setting the system
-            property GRAPH-PROVIDER.
-            This can be optionally specified when invoking mvn:
-               e.g. mvn clean install -DGRAPH-PROVIDER=titan0
-            The settings for GRAPH-PROVIDER have the following effects:
-            * If GRAPH-PROVIDER is not specified, the graph-provider-default profile is activated.
-            * If GRAPH-PROVIDER is set to titan0, the graph-provider-titan0 profile is activated.
-            * If GRAPH-PROVIDER is set to titan1, the graph-provider-titan1 profile is activated.
-            * If GRAPH-PROVIDER is set to anything else, the build will fail.
-            Do not activate the graph-provider selection profiles using -P.
-         -->
+        The following profiles are used to select the graph provider.
+        These profiles are mutually exclusive and should be activated by setting the system
+        property GRAPH-PROVIDER.
+        This can be optionally specified when invoking mvn:
+           e.g. mvn clean install -DGRAPH-PROVIDER=titan0
+        The settings for GRAPH-PROVIDER have the following effects:
+        * If GRAPH-PROVIDER is not specified, the graph-provider-default profile is activated.
+        * If GRAPH-PROVIDER is set to titan0, the graph-provider-titan0 profile is activated.
+        * If GRAPH-PROVIDER is set to titan1, the graph-provider-titan1 profile is activated.
+        * If GRAPH-PROVIDER is set to anything else, the build will fail.
+        Do not activate the graph-provider selection profiles using -P.
+        -->
 
         <profile>
             <!-- Default profile, i.e. GRAPH-PROVIDER not set -->
@@ -651,7 +651,6 @@
             </activation>
             <properties>
                 <!-- Define graph dependency type/version -->
-                <graphModule>titan0</graphModule>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphArtifact>atlas-graphdb-titan0</graphArtifact>
                 <skipDocs>false</skipDocs>
@@ -670,7 +669,6 @@
             </activation>
             <properties>
                 <!-- Define graph dependency type/version -->
-                <graphModule>titan0</graphModule>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphArtifact>atlas-graphdb-titan0</graphArtifact>
                 <skipDocs>false</skipDocs>
@@ -689,7 +687,6 @@
             </activation>
             <properties>
                 <!-- Define graph dependency type/version -->
-                <graphModule>titan1</graphModule>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphArtifact>atlas-graphdb-titan1</graphArtifact>
                 <skipDocs>false</skipDocs>
@@ -708,7 +705,6 @@
             </activation>
             <properties>
                 <!-- Define graph dependency type/version -->
-                <graphModule>janus</graphModule>
                 <graphGroup>org.apache.atlas</graphGroup>
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <skipDocs>false</skipDocs>
