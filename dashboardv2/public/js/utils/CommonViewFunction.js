@@ -552,7 +552,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     attrQuery.push(url.join("::"));
                 });
                 if (attrQuery.length) {
-                    return attrQuery.join();
+                    return attrQuery.join(":,:");
                 } else {
                     return null;
                 }
@@ -586,7 +586,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         extractUrl: function(urlObj) {
             var attrObj = [];
             if (urlObj && urlObj.length) {
-                _.each(urlObj.split(","), function(obj) {
+                _.each(urlObj.split(":,:"), function(obj) {
                     var temp = obj.split("::");
                     var finalObj = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
                     if (temp[3]) {
