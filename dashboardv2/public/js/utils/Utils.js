@@ -510,15 +510,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         titleBoxEl.fadeIn();
     }
     Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
+        var megeObject = function(obj) {
+            if (obj) {
+                if (obj.attributes) {
+                    Utils.findAndMergeRefEntity(obj.attributes, referredEntities);
+                } else if (referredEntities[obj.guid]) {
+                    _.extend(obj, referredEntities[obj.guid]);
+                }
+            }
+        }
         if (attributeObject && referredEntities) {
             _.each(attributeObject, function(obj, key) {
                 if (_.isObject(obj)) {
                     if (_.isArray(obj)) {
                         _.each(obj, function(value) {
-                            _.extend(value, referredEntities[value.guid]);
+                            megeObject(value);
                         });
                     } else {
-                        _.extend(obj, referredEntities[obj.guid]);
+                        megeObject(obj);
                     }
                 }
             });
