@@ -241,7 +241,7 @@ define(['require',
                         }
                         this.triggerUrl();
                         var attributes = this.searchCollection.filterObj.attributes;
-                        if (excludeDefaultColumn && attributes && excludeDefaultColumn.length > attributes.length) {
+                        if ((excludeDefaultColumn && attributes) && (excludeDefaultColumn.length > attributes.length || _.difference(excludeDefaultColumn, attributes).length)) {
                             this.fetchCollection(this.value);
                         }
                     }
@@ -410,9 +410,11 @@ define(['require',
                             return;
                         }
                         if (isPostMethod) {
-                            that.searchCollection.referredEntities = dataOrCollection.rnoRecordFoeferredEntities;
+                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
+                            Utils.findAndMergeRefEntity(dataOrCollection.entities, dataOrCollection.referredEntities);
                             that.searchCollection.reset(dataOrCollection.entities, { silent: true });
                         }
+
 
                         /*Next button check.
                         It's outside of Previous button else condition 
@@ -712,17 +714,14 @@ define(['require',
                                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                         fromRaw: function(rawValue, model) {
                                             var modelObj = model.toJSON();
-
                                             if (modelObj && modelObj.attributes && !_.isUndefined(modelObj.attributes[key])) {
                                                 var tempObj = {
                                                     'scope': that,
                                                     'attributeDefs': [obj],
                                                     'valueObject': {},
                                                     'isTable': false
-                                                }
-
-                                                tempObj.valueObject[key] = modelObj.attributes[key]
-                                                Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                                };
+                                                tempObj.valueObject[key] = modelObj.attributes[key];
                                                 return CommonViewFunction.propertyTable(tempObj);
                                             }
                                         }
@@ -770,10 +769,8 @@ define(['require',
                                                 // 'attributeDefs':
                                                 'valueObject': {},
                                                 'isTable': false
-                                            }
-
-                                            tempObj.valueObject[key] = modelObj[key]
-                                            Utils.findAndMergeRefEntity(tempObj.valueObject, that.searchCollection.referredEntities);
+                                            };
+                                            tempObj.valueObject[key] = modelObj[key];
                                             return CommonViewFunction.propertyTable(tempObj);
                                         }
                                     }
