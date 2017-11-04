@@ -20,7 +20,6 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
@@ -70,7 +69,8 @@ public class AuditFilter implements Filter {
 
         try {
             currentThread.setName(formatName(oldName, requestId));
-            RequestContext requestContext = RequestContext.createContext();
+            RequestContextV1.clear();
+            RequestContextV1 requestContext = RequestContextV1.get();
             requestContext.setUser(user);
             recordAudit(httpRequest, requestTimeISO9601, user);
             filterChain.doFilter(request, response);
@@ -79,7 +79,6 @@ public class AuditFilter implements Filter {
             ((HttpServletResponse) response).setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
             recordMetrics();
-            RequestContext.clear();
             RequestContextV1.clear();
         }
     }
@@ -120,7 +119,7 @@ public class AuditFilter implements Filter {
 
     public static void recordMetrics() {
         //record metrics
-        Metrics requestMetrics = RequestContext.getMetrics();
+        Metrics requestMetrics = RequestContextV1.getMetrics();
         if (!requestMetrics.isEmpty()) {
             METRICS_LOG.info("{}", requestMetrics);
         }

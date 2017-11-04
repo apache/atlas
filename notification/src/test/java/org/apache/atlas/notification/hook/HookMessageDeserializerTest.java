@@ -18,12 +18,13 @@
 
 package org.apache.atlas.notification.hook;
 
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;
 import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
 import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
@@ -61,7 +62,7 @@ public class HookMessageDeserializerTest {
         Referenceable       entity  = generateEntityWithTrait();
         EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
 
-        String                  jsonMsg             = AbstractNotification.GSON.toJson(message);
+        String                  jsonMsg             = AtlasType.toV1Json(message);
         HookNotificationMessage deserializedMessage = deserializer.deserialize(jsonMsg);
 
         assertEqualMessage(deserializedMessage, message);
@@ -79,7 +80,7 @@ public class HookMessageDeserializerTest {
         assertTrue(jsonMsgList.size() == 1);
 
         String compressedMsg   = jsonMsgList.get(0);
-        String uncompressedMsg = AbstractNotification.GSON.toJson(message);
+        String uncompressedMsg = AtlasType.toV1Json(message);
 
         assertTrue(compressedMsg.length() < uncompressedMsg.length(), "Compressed message (" + compressedMsg.length() + ") should be shorter than uncompressed message (" + uncompressedMsg.length() + ")");
 
@@ -134,7 +135,7 @@ public class HookMessageDeserializerTest {
         EntityUpdateRequest deserializedEntityUpdateRequest = (EntityUpdateRequest) deserializedMessage;
         Referenceable       deserializedEntity              = deserializedEntityUpdateRequest.getEntities().get(0);
         Referenceable       entity                          = message.getEntities().get(0);
-        String              traitName                       = entity.getTraits().get(0);
+        String              traitName                       = entity.getTraitNames().get(0);
 
         assertEquals(deserializedEntity.getId(), entity.getId());
         assertEquals(deserializedEntity.getTypeName(), entity.getTypeName());

@@ -17,8 +17,9 @@
  */
 package org.apache.atlas.notification.entity;
 
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
+
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
 
 import java.util.List;
 
@@ -47,14 +48,14 @@ public interface EntityNotification {
      *
      * @return the associated entity
      */
-    IReferenceableInstance getEntity();
+    Referenceable getEntity();
 
     /**
      * Get flattened list of traits that are associated with this entity (includes super traits).
      *
      * @return the list of all traits
      */
-    List<IStruct> getAllTraits();
+    List<Struct> getAllTraits();
 
     /**
      * Get the type of operation that triggered this notification.

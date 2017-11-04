@@ -19,14 +19,12 @@
 package org.apache.atlas;
 
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 public class RequestContextV1 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContextV1.class);
@@ -36,11 +34,11 @@ public class RequestContextV1 {
     private Set<AtlasObjectId> createdEntityIds = new LinkedHashSet<>();
     private Set<AtlasObjectId> updatedEntityIds = new LinkedHashSet<>();
     private Set<AtlasObjectId> deletedEntityIds = new LinkedHashSet<>();
+    private Map<String, AtlasEntityWithExtInfo> entityCacheV2 = new HashMap<>();
 
     private String user;
     private final long requestTime;
 
-    TypeSystem typeSystem = TypeSystem.getInstance();
     private Metrics metrics = new Metrics();
 
     private RequestContextV1() {
@@ -59,7 +57,16 @@ public class RequestContextV1 {
 
         return ret;
     }
+
     public static void clear() {
+        RequestContextV1 instance = CURRENT_CONTEXT.get();
+
+        if (instance != null) {
+            if (instance.entityCacheV2 != null) {
+                instance.entityCacheV2.clear();
+            }
+        }
+
         CURRENT_CONTEXT.remove();
     }
 
@@ -91,6 +98,16 @@ public class RequestContextV1 {
         deletedEntityIds.add(entityId);
     }
 
+    /**
+     * Adds the specified instance to the cache
+     *
+     */
+    public void cache(AtlasEntityWithExtInfo entity) {
+        if (entity != null && entity.getEntity() != null && entity.getEntity().getGuid() != null) {
+            entityCacheV2.put(entity.getEntity().getGuid(), entity);
+        }
+    }
+
     public Collection<AtlasObjectId> getCreatedEntityIds() {
         return createdEntityIds;
     }
@@ -101,6 +118,17 @@ public class RequestContextV1 {
 
     public Collection<AtlasObjectId> getDeletedEntityIds() {
         return deletedEntityIds;
+    }
+
+    /**
+     * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
+     * or null if it is not in the cache.
+     *
+     * @param guid the guid to find
+     * @return Either the instance or null if it is not in the cache.
+     */
+    public AtlasEntityWithExtInfo getInstanceV2(String guid) {
+        return entityCacheV2.get(guid);
     }
 
     public long getRequestTime() {

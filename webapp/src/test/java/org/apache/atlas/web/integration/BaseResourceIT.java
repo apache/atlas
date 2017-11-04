@@ -32,25 +32,20 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.model.v1.typedef.*;
+import org.apache.atlas.model.v1.typedef.EnumTypeDefinition.EnumValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.kafka.*;
 import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.*;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
@@ -172,47 +167,44 @@ public abstract class BaseResourceIT {
     protected List<String> createType(TypesDef typesDef) throws Exception {
         List<EnumTypeDefinition> enumTypes = new ArrayList<>();
         List<StructTypeDefinition> structTypes = new ArrayList<>();
-        List<HierarchicalTypeDefinition<TraitType>> traitTypes = new ArrayList<>();
-        List<HierarchicalTypeDefinition<ClassType>> classTypes = new ArrayList<>();
+        List<TraitTypeDefinition> traitTypes = new ArrayList<>();
+        List<ClassTypeDefinition> classTypes = new ArrayList<>();
 
-        for (EnumTypeDefinition enumTypeDefinition : typesDef.enumTypesAsJavaList()) {
-            if (atlasClientV2.typeWithNameExists(enumTypeDefinition.name)) {
-                LOG.warn("Type with name {} already exists. Skipping", enumTypeDefinition.name);
+        for (EnumTypeDefinition enumTypeDefinition : typesDef.getEnumTypes()) {
+            if (atlasClientV2.typeWithNameExists(enumTypeDefinition.getName())) {
+                LOG.warn("Type with name {} already exists. Skipping", enumTypeDefinition.getName());
             } else {
                 enumTypes.add(enumTypeDefinition);
             }
         }
-        for (StructTypeDefinition structTypeDefinition : typesDef.structTypesAsJavaList()) {
-            if (atlasClientV2.typeWithNameExists(structTypeDefinition.typeName)) {
-                LOG.warn("Type with name {} already exists. Skipping", structTypeDefinition.typeName);
+        for (StructTypeDefinition structTypeDefinition : typesDef.getStructTypes()) {
+            if (atlasClientV2.typeWithNameExists(structTypeDefinition.getTypeName())) {
+                LOG.warn("Type with name {} already exists. Skipping", structTypeDefinition.getTypeName());
             } else {
                 structTypes.add(structTypeDefinition);
             }
         }
-        for (HierarchicalTypeDefinition<TraitType> hierarchicalTypeDefinition : typesDef.traitTypesAsJavaList()) {
-            if (atlasClientV2.typeWithNameExists(hierarchicalTypeDefinition.typeName)) {
-                LOG.warn("Type with name {} already exists. Skipping", hierarchicalTypeDefinition.typeName);
+        for (TraitTypeDefinition hierarchicalTypeDefinition : typesDef.getTraitTypes()) {
+            if (atlasClientV2.typeWithNameExists(hierarchicalTypeDefinition.getTypeName())) {
+                LOG.warn("Type with name {} already exists. Skipping", hierarchicalTypeDefinition.getTypeName());
             } else {
                 traitTypes.add(hierarchicalTypeDefinition);
             }
         }
-        for (HierarchicalTypeDefinition<ClassType> hierarchicalTypeDefinition : typesDef.classTypesAsJavaList()) {
-            if (atlasClientV2.typeWithNameExists(hierarchicalTypeDefinition.typeName)) {
-                LOG.warn("Type with name {} already exists. Skipping", hierarchicalTypeDefinition.typeName);
+        for (ClassTypeDefinition hierarchicalTypeDefinition : typesDef.getClassTypes()) {
+            if (atlasClientV2.typeWithNameExists(hierarchicalTypeDefinition.getTypeName())) {
+                LOG.warn("Type with name {} already exists. Skipping", hierarchicalTypeDefinition.getTypeName());
             } else {
                 classTypes.add(hierarchicalTypeDefinition);
             }
         }
 
-        TypesDef toCreate = TypesUtil.getTypesDef(ImmutableList.copyOf(enumTypes),
-                ImmutableList.copyOf(structTypes),
-                ImmutableList.copyOf(traitTypes),
-                ImmutableList.copyOf(classTypes));
+        TypesDef toCreate = new TypesDef(enumTypes, structTypes, traitTypes, classTypes);
         return atlasClientV1.createType(toCreate);
     }
 
     protected List<String> createType(String typesAsJSON) throws Exception {
-        return createType(TypesSerialization.fromJson(typesAsJSON));
+        return createType(AtlasType.fromV1Json(typesAsJSON, TypesDef.class));
     }
 
     protected Id createInstance(Referenceable referenceable) throws Exception {
@@ -231,19 +223,19 @@ public abstract class BaseResourceIT {
 
     protected TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,
                                    ImmutableList<StructTypeDefinition> structs,
-                                   ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
-                                   ImmutableList<HierarchicalTypeDefinition<ClassType>> classes){
+                                   ImmutableList<TraitTypeDefinition> traits,
+                                   ImmutableList<ClassTypeDefinition> classes){
         enums = (enums != null) ? enums : ImmutableList
                 .<EnumTypeDefinition>of();
         structs =
                 (structs != null) ? structs : ImmutableList.<StructTypeDefinition>of();
 
         traits = (traits != null) ? traits : ImmutableList
-                .<HierarchicalTypeDefinition<TraitType>>of();
+                .<TraitTypeDefinition>of();
 
         classes = (classes != null) ? classes : ImmutableList
-                .<HierarchicalTypeDefinition<ClassType>>of();
-        return TypesUtil.getTypesDef(enums, structs, traits, classes);
+                .<ClassTypeDefinition>of();
+        return new TypesDef(enums, structs, traits, classes);
 
     }
 
@@ -294,72 +286,72 @@ public abstract class BaseResourceIT {
     protected static final String HIVE_PROCESS_TYPE_BUILTIN = "hive_process";
 
     protected void createTypeDefinitionsV1() throws Exception {
-        HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
-                .createClassTypeDef(DATABASE_TYPE, null,
-                        TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef(DESCRIPTION, DataTypes.STRING_TYPE),
-                        attrDef("locationUri", DataTypes.STRING_TYPE),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("tables", DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
+        ClassTypeDefinition dbClsDef = TypesUtil
+                .createClassTypeDef(DATABASE_TYPE, null, null,
+                        TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef(DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("locationUri", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_INT),
+                        new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE),
                                 Multiplicity.OPTIONAL, false, "db")
                 );
 
-        HierarchicalTypeDefinition<ClassType> columnClsDef = TypesUtil
-                .createClassTypeDef(COLUMN_TYPE, null, attrDef(NAME, DataTypes.STRING_TYPE),
-                        attrDef("dataType", DataTypes.STRING_TYPE), attrDef("comment", DataTypes.STRING_TYPE));
+        ClassTypeDefinition columnClsDef = TypesUtil
+                .createClassTypeDef(COLUMN_TYPE, null, null, attrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("dataType", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("comment", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
-        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
-                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType", null,
+                Arrays.asList(new AttributeDefinition[]{TypesUtil.createRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef("serde", AtlasBaseTypeDef.ATLAS_TYPE_STRING)}));
 
         EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
-        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", null, null, Arrays.asList(values));
 
-        HierarchicalTypeDefinition<ClassType> tblClsDef = TypesUtil
-                .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableSet.of("DataSet"),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE),
-                        attrDef("lastAccessTime", DataTypes.DATE_TYPE),
-                        attrDef("temporary", DataTypes.BOOLEAN_TYPE),
+        ClassTypeDefinition tblClsDef = TypesUtil
+                .createClassTypeDef(HIVE_TABLE_TYPE, null, ImmutableSet.of("DataSet"),
+                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("lastAccessTime", AtlasBaseTypeDef.ATLAS_TYPE_DATE),
+                        attrDef("temporary", AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN),
                         new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.OPTIONAL, true, "tables"),
-                        new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
+                        new AttributeDefinition("columns", AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE),
                                 Multiplicity.OPTIONAL, true, null),
                         new AttributeDefinition("tableType", "tableType", Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("serde1", "serdeType", Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("serde2", "serdeType", Multiplicity.OPTIONAL, false, null));
 
-        HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
-                .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableSet.of("Process"),
-                        attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.INT_TYPE),
-                        attrDef("endTime", DataTypes.LONG_TYPE),
-                        attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryGraph", DataTypes.STRING_TYPE, Multiplicity.REQUIRED));
+        ClassTypeDefinition loadProcessClsDef = TypesUtil
+                .createClassTypeDef(HIVE_PROCESS_TYPE, null, ImmutableSet.of("Process"),
+                        attrDef("userName", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("startTime", AtlasBaseTypeDef.ATLAS_TYPE_INT),
+                        attrDef("endTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("queryText", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryPlan", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryId", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryGraph", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED));
 
-        HierarchicalTypeDefinition<TraitType> classificationTrait = TypesUtil
-                .createTraitTypeDef("classification", ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(PII_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> phiTrait =
-                TypesUtil.createTraitTypeDef(PHI_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> pciTrait =
-                TypesUtil.createTraitTypeDef(PCI_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> soxTrait =
-                TypesUtil.createTraitTypeDef(SOX_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> secTrait =
-                TypesUtil.createTraitTypeDef(SEC_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> financeTrait =
-                TypesUtil.createTraitTypeDef(FINANCE_TAG, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> factTrait =
-                TypesUtil.createTraitTypeDef("Fact" + randomString(), ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> etlTrait =
-                TypesUtil.createTraitTypeDef("ETL" + randomString(), ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> dimensionTrait =
-                TypesUtil.createTraitTypeDef("Dimension" + randomString(), ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> metricTrait =
-                TypesUtil.createTraitTypeDef("Metric" + randomString(), ImmutableSet.<String>of());
+        TraitTypeDefinition classificationTrait = TypesUtil
+                .createTraitTypeDef("classification", null, ImmutableSet.<String>of(),
+                        TypesUtil.createRequiredAttrDef("tag", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(PII_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition phiTrait =
+                TypesUtil.createTraitTypeDef(PHI_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition pciTrait =
+                TypesUtil.createTraitTypeDef(PCI_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition soxTrait =
+                TypesUtil.createTraitTypeDef(SOX_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition secTrait =
+                TypesUtil.createTraitTypeDef(SEC_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition financeTrait =
+                TypesUtil.createTraitTypeDef(FINANCE_TAG, null, ImmutableSet.<String>of());
+        TraitTypeDefinition factTrait =
+                TypesUtil.createTraitTypeDef("Fact" + randomString(), null, ImmutableSet.<String>of());
+        TraitTypeDefinition etlTrait =
+                TypesUtil.createTraitTypeDef("ETL" + randomString(), null, ImmutableSet.<String>of());
+        TraitTypeDefinition dimensionTrait =
+                TypesUtil.createTraitTypeDef("Dimension" + randomString(), null, ImmutableSet.<String>of());
+        TraitTypeDefinition metricTrait =
+                TypesUtil.createTraitTypeDef("Metric" + randomString(), null, ImmutableSet.<String>of());
 
         createType(getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait,
@@ -385,7 +377,7 @@ public abstract class BaseResourceIT {
                 AtlasTypeUtil.createOptionalAttrDef("createTime", "int"),
                 //there is a serializ
                 new AtlasAttributeDef("randomTable",
-                        DataTypes.arrayTypeName(HIVE_TABLE_TYPE_V2),
+                        AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE_V2),
                         true,
                         Cardinality.SET,
                         0, -1, false, true, Collections.singletonList(isCompositeSourceConstraint))
@@ -421,7 +413,7 @@ public abstract class BaseResourceIT {
                                 0, 1, false, true, Collections.singletonList(isCompositeTargetConstraint)),
 
                         //some tests don't set the columns field or set it to null...
-                        AtlasTypeUtil.createOptionalAttrDef("columns", DataTypes.arrayTypeName(COLUMN_TYPE_V2)),
+                        AtlasTypeUtil.createOptionalAttrDef("columns", AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE_V2)),
                         AtlasTypeUtil.createOptionalAttrDef("tableType", "tableType"),
                         AtlasTypeUtil.createOptionalAttrDef("serde1", "serdeType"),
                         AtlasTypeUtil.createOptionalAttrDef("serde2", "serdeType"));
@@ -461,19 +453,19 @@ public abstract class BaseResourceIT {
         batchCreateTypes(typesDef);
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT) {
+    AttributeDefinition attrDef(String name, String dT) {
         return attrDef(name, dT, Multiplicity.OPTIONAL, false, null);
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m) {
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m) {
         return attrDef(name, dT, m, false, null);
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m, boolean isComposite,
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m, boolean isComposite,
                                 String reverseAttributeName) {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(dT);
-        return new AttributeDefinition(name, dT.getName(), m, isComposite, reverseAttributeName);
+        return new AttributeDefinition(name, dT, m, isComposite, reverseAttributeName);
     }
 
     protected String randomString() {
@@ -516,7 +508,7 @@ public abstract class BaseResourceIT {
         serde2Instance.set("serde", "serde2");
         tableInstance.set("serde2", serde2Instance);
 
-        List<String> traits = tableInstance.getTraits();
+        List<String> traits = tableInstance.getTraitNames();
         Assert.assertEquals(traits.size(), 7);
 
         return tableInstance;
@@ -636,7 +628,7 @@ public abstract class BaseResourceIT {
 
     protected EntityNotification waitForNotification(final NotificationConsumer<EntityNotification> consumer, int maxWait,
                                                      final NotificationPredicate predicate) throws Exception {
-        final TypeUtils.Pair<EntityNotification, String> pair = TypeUtils.Pair.of(null, null);
+        final TypesUtil.Pair<EntityNotification, String> pair = TypesUtil.Pair.of(null, null);
         final long maxCurrentTime = System.currentTimeMillis() + maxWait;
         waitFor(maxWait, new Predicate() {
             @Override

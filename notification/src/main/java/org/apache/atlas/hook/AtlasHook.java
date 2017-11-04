@@ -21,12 +21,12 @@ package org.apache.atlas.hook;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.security.InMemoryJAASConfiguration;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -106,7 +106,7 @@ public abstract class AtlasHook {
 
         for (Referenceable entity : entities) {
             LOG.info("Adding entity for type: {}", entity.getTypeName());
-            final String entityJson = InstanceSerialization.toJson(entity, true);
+            final String entityJson = AtlasType.toV1Json(entity);
             entitiesArray.put(entityJson);
         }
 

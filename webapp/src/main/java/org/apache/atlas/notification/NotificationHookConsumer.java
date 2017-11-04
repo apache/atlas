@@ -25,12 +25,12 @@ import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
@@ -43,7 +43,6 @@ import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.service.ServiceState;
@@ -345,13 +344,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             try {
                 // Used for intermediate conversions during create and update
-                AtlasEntity.AtlasEntitiesWithExtInfo entities;
+                AtlasEntity.AtlasEntitiesWithExtInfo entities = null;
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
                     }
                     try {
-                        RequestContext requestContext = RequestContext.createContext();
+                        RequestContextV1 requestContext = RequestContextV1.get();
                         requestContext.setUser(messageUser);
 
                         switch (message.getType()) {
@@ -363,7 +362,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
-                                entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
+                                // TODO: entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                                 break;
@@ -378,7 +377,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 }
 
                                 Referenceable referenceable = partialUpdateRequest.getEntity();
-                                entities = instanceConverter.toAtlasEntity(referenceable);
+                                // TODO: entities = instanceConverter.toAtlasEntity(referenceable);
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
                                 String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, new HashMap<String, Object>() {
@@ -421,7 +420,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
-                                entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
+                                // TODO: entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                                 break;
 
@@ -448,7 +447,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             return;
                         }
                     } finally {
-                        RequestContext.clear();
                         RequestContextV1.clear();
                     }
                 }

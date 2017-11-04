@@ -22,12 +22,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.model.v1.typedef.TraitTypeDefinition;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -73,7 +72,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 4);
 
@@ -88,7 +87,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = atlasClientV1.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 4);
         Struct vertex = vertices.get(tableId);
@@ -109,7 +108,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 3);
 
@@ -124,7 +123,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = atlasClientV1.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 3);
         Struct vertex = vertices.get(tableId);
@@ -187,14 +186,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     private void setupInstances() throws Exception {
-        HierarchicalTypeDefinition<TraitType> factTrait =
-                TypesUtil.createTraitTypeDef(FACT, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> etlTrait =
-                TypesUtil.createTraitTypeDef(ETL, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> dimensionTrait =
-                TypesUtil.createTraitTypeDef(DIMENSION, ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> metricTrait =
-                TypesUtil.createTraitTypeDef(METRIC, ImmutableSet.<String>of());
+        TraitTypeDefinition factTrait =
+                TypesUtil.createTraitTypeDef(FACT, null, ImmutableSet.<String>of());
+        TraitTypeDefinition etlTrait =
+                TypesUtil.createTraitTypeDef(ETL, null, ImmutableSet.<String>of());
+        TraitTypeDefinition dimensionTrait =
+                TypesUtil.createTraitTypeDef(DIMENSION, null, ImmutableSet.<String>of());
+        TraitTypeDefinition metricTrait =
+                TypesUtil.createTraitTypeDef(METRIC, null, ImmutableSet.<String>of());
         createType(getTypesDef(null, null,
                         ImmutableList.of(factTrait, etlTrait, dimensionTrait, metricTrait), null));
 

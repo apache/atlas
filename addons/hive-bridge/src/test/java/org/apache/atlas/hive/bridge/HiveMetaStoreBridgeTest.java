@@ -21,7 +21,7 @@ package org.apache.atlas.hive.bridge;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;

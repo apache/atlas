@@ -45,7 +45,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.titan0.query.Titan0GraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
-import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,14 +348,14 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, IDataType<?> type) {
+    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, AtlasType type) {
 
         //nothing special needed, value is stored in required type
         return expr;
     }
 
     @Override
-    public boolean isPropertyValueConversionNeeded(IDataType<?> type) {
+    public boolean isPropertyValueConversionNeeded(AtlasType type) {
 
         return false;
     }

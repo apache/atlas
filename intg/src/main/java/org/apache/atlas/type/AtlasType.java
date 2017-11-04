@@ -21,10 +21,14 @@ package org.apache.atlas.type;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.apache.atlas.model.v1.typedef.Multiplicity;
+import org.codehaus.jackson.*;
+import org.codehaus.jackson.map.*;
+import org.codehaus.jackson.map.module.SimpleModule;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.util.Date;
 import java.util.List;
 
 
@@ -38,6 +42,21 @@ public abstract class AtlasType {
 
     private static final ObjectMapper mapper = new ObjectMapper()
                                             .configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
+    private static final ObjectMapper mapperV1 = new ObjectMapper()
+                                            .configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
+    static {
+        SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
+
+        atlasSerDeModule.addSerializer(Date.class, new DateSerializer());
+        atlasSerDeModule.addDeserializer(Date.class, new DateDeserializer());
+        atlasSerDeModule.addSerializer(Multiplicity.class, new MultiplicitySerializer());
+        atlasSerDeModule.addDeserializer(Multiplicity.class, new MultiplicityDeserializer());
+
+        mapperV1.registerModule(atlasSerDeModule);
+    }
+
 
     private final String       typeName;
     private final TypeCategory typeCategory;
@@ -122,5 +141,96 @@ public abstract class AtlasType {
             ret = null;
         }
         return ret;
+    }
+
+    public static String toV1Json(Object obj) {
+        String ret;
+        try {
+            ret = mapperV1.writeValueAsString(obj);
+        }catch (IOException e){
+            ret = null;
+        }
+        return ret;
+    }
+
+    public static <T> T fromV1Json(String jsonStr, Class<T> type) {
+        T ret;
+        try {
+            ret =  mapperV1.readValue(jsonStr, type);
+        }catch (IOException e){
+            ret = null;
+        }
+        return ret;
+    }
+
+    static class DateSerializer extends JsonSerializer<Date> {
+        @Override
+        public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                jgen.writeString(AtlasBaseTypeDef.DATE_FORMATTER.format(value));
+            }
+        }
+    }
+
+    static class DateDeserializer extends JsonDeserializer<Date> {
+        @Override
+        public Date deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Date ret = null;
+
+            String value = parser.readValueAs(String.class);
+
+            if (value != null) {
+                try {
+                    ret = AtlasBaseTypeDef.DATE_FORMATTER.parse(value);
+                } catch (ParseException excp) {
+                }
+            }
+
+            return ret;
+        }
+    }
+
+    static class MultiplicitySerializer extends JsonSerializer<Multiplicity> {
+        @Override
+        public void serialize(Multiplicity value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                if (value.equals(Multiplicity.REQUIRED)) {
+                    jgen.writeString("required");
+                } else if (value.equals(Multiplicity.OPTIONAL)) {
+                    jgen.writeString("optional");
+                } else if (value.equals(Multiplicity.COLLECTION)) {
+                    jgen.writeString("collection");
+                } else if (value.equals(Multiplicity.SET)) {
+                    jgen.writeString("set");
+                }
+            }
+        }
+    }
+
+    static class MultiplicityDeserializer extends JsonDeserializer<Multiplicity> {
+        @Override
+        public Multiplicity deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Multiplicity ret = null;
+
+            String value = parser.readValueAs(String.class);
+
+            if (value != null) {
+                if (value.equals("required")) {
+                    ret = new Multiplicity(Multiplicity.REQUIRED);
+                } else if (value.equals("optional")) {
+                    ret = new Multiplicity(Multiplicity.OPTIONAL);
+                } else if (value.equals("collection")) {
+                    ret = new Multiplicity(Multiplicity.COLLECTION);
+                } else if (value.equals("set")) {
+                    ret = new Multiplicity(Multiplicity.SET);
+                }
+            }
+
+            if (ret == null) {
+                ret = new Multiplicity();
+            }
+
+            return ret;
+        }
     }
 }

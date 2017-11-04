@@ -18,13 +18,12 @@
 package org.apache.atlas.notification.entity;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.types.FieldMapping;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +40,7 @@ public class EntityNotificationImpl implements EntityNotification {
 
     private final Referenceable entity;
     private final OperationType operationType;
-    private final List<IStruct> traits;
+    private final List<Struct> traits;
 
 
     // ----- Constructors ------------------------------------------------------
@@ -51,7 +50,7 @@ public class EntityNotificationImpl implements EntityNotification {
      */
     @SuppressWarnings("unused")
     private EntityNotificationImpl() throws AtlasException {
-        this(null, OperationType.ENTITY_CREATE, Collections.<IStruct>emptyList());
+        this(null, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
     }
 
     /**
@@ -63,7 +62,7 @@ public class EntityNotificationImpl implements EntityNotification {
      *
      * @throws AtlasException if the entity notification can not be created
      */
-    public EntityNotificationImpl(Referenceable entity, OperationType operationType, List<IStruct> traits)
+    public EntityNotificationImpl(Referenceable entity, OperationType operationType, List<Struct> traits)
         throws AtlasException {
         this.entity = entity;
         this.operationType = operationType;
@@ -75,25 +74,25 @@ public class EntityNotificationImpl implements EntityNotification {
      *
      * @param entity         the entity subject of the notification
      * @param operationType  the type of operation that caused the notification
-     * @param typeSystem     the Atlas type system
+     * @param typeRegistry     the Atlas type system
      *
      * @throws AtlasException if the entity notification can not be created
      */
-    public EntityNotificationImpl(Referenceable entity, OperationType operationType, TypeSystem typeSystem)
+    public EntityNotificationImpl(Referenceable entity, OperationType operationType, AtlasTypeRegistry typeRegistry)
         throws AtlasException {
-        this(entity, operationType, getAllTraits(entity, typeSystem));
+        this(entity, operationType, getAllTraits(entity, typeRegistry));
     }
 
 
     // ----- EntityNotification ------------------------------------------------
 
     @Override
-    public IReferenceableInstance getEntity() {
+    public Referenceable getEntity() {
         return entity;
     }
 
     @Override
-    public List<IStruct> getAllTraits() {
+    public List<Struct> getAllTraits() {
         return traits;
     }
 
@@ -123,48 +122,36 @@ public class EntityNotificationImpl implements EntityNotification {
 
     // ----- helper methods ----------------------------------------------------
 
-    private static List<IStruct> getAllTraits(IReferenceableInstance entityDefinition,
-                                              TypeSystem typeSystem) throws AtlasException {
-        List<IStruct> traitInfo = new LinkedList<>();
-        for (String traitName : entityDefinition.getTraits()) {
-            IStruct trait = entityDefinition.getTrait(traitName);
-            String typeName = trait.getTypeName();
-            Map<String, Object> valuesMap = trait.getValuesMap();
-            traitInfo.add(new Struct(typeName, valuesMap));
-            traitInfo.addAll(getSuperTraits(typeName, valuesMap, typeSystem));
-        }
-        return traitInfo;
-    }
+    private static List<Struct> getAllTraits(Referenceable entityDefinition, AtlasTypeRegistry typeRegistry) throws AtlasException {
+        List<Struct> ret = new LinkedList<>();
 
-    private static List<IStruct> getSuperTraits(
-            String typeName, Map<String, Object> values, TypeSystem typeSystem) throws AtlasException {
+        for (String traitName : entityDefinition.getTraitNames()) {
+            Struct                  trait          = entityDefinition.getTrait(traitName);
+            AtlasClassificationType traitType      = typeRegistry.getClassificationTypeByName(traitName);
+            Set<String>             superTypeNames = traitType != null ? traitType.getAllSuperTypes() : null;
 
-        List<IStruct> superTypes = new LinkedList<>();
+            ret.add(trait);
 
-        TraitType traitDef = typeSystem.getDataType(TraitType.class, typeName);
-        Set<String> superTypeNames = traitDef.getAllSuperTypeNames();
+            if (CollectionUtils.isNotEmpty(superTypeNames)) {
+                for (String superTypeName : superTypeNames) {
+                    Struct superTypeTrait = new Struct(superTypeName);
 
-        for (String superTypeName : superTypeNames) {
-            TraitType superTraitDef = typeSystem.getDataType(TraitType.class, superTypeName);
+                    if (MapUtils.isNotEmpty(trait.getValues())) {
+                        AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
 
-            Map<String, Object> superTypeValues = new HashMap<>();
+                        if (superType != null && MapUtils.isNotEmpty(superType.getAllAttributes())) {
+                            Map<String, Object> attributes = new HashMap<>();
 
-            FieldMapping fieldMapping = superTraitDef.fieldMapping();
+                            // TODO: add superTypeTrait attributess
 
-            if (fieldMapping != null) {
-                Set<String> superTypeAttributeNames = fieldMapping.fields.keySet();
-
-                for (String superTypeAttributeName : superTypeAttributeNames) {
-                    if (values.containsKey(superTypeAttributeName)) {
-                        superTypeValues.put(superTypeAttributeName, values.get(superTypeAttributeName));
+                            superTypeTrait.setValues(attributes);
+                        }
                     }
+
+                    ret.add(superTypeTrait);
                 }
             }
-            IStruct superTrait = new Struct(superTypeName, superTypeValues);
-            superTypes.add(superTrait);
-            superTypes.addAll(getSuperTraits(superTypeName, values, typeSystem));
         }
 
-        return superTypes;
-    }
-}
+        return ret;
+    }}

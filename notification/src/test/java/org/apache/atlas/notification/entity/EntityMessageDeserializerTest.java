@@ -18,10 +18,9 @@
 
 package org.apache.atlas.notification.entity;
 
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -42,8 +41,8 @@ public class EntityMessageDeserializerTest {
 
         Referenceable entity = EntityNotificationImplTest.getEntity("id");
         String traitName = "MyTrait";
-        List<IStruct> traitInfo = new LinkedList<>();
-        IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
+        List<Struct> traitInfo = new LinkedList<>();
+        Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
 
         EntityNotificationImpl notification =

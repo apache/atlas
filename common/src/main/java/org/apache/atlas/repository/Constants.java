@@ -104,6 +104,13 @@ public final class Constants {
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH  = "atlas.graph.fulltext-max-query-str-length";
     public static final String MAX_DSL_QUERY_STR_LENGTH  = "atlas.graph.dsl-max-query-str-length";
 
+    public static final String ATTRIBUTE_NAME_GUID     = "guid";
+    public static final String ATTRIBUTE_NAME_TYPENAME = "typeName";
+    public static final String ATTRIBUTE_NAME_SUPERTYPENAMES = "superTypeNames";
+    public static final String ATTRIBUTE_NAME_STATE    = "state";
+    public static final String ATTRIBUTE_NAME_VERSION  = "version";
+    public static final String TEMP_STRUCT_NAME_PREFIX = "__tempQueryResultStruct";
+
     private Constants() {
     }
 

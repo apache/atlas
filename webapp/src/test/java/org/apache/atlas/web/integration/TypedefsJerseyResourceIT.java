@@ -33,7 +33,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -306,10 +305,10 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                 createClassTypeDef("table", ImmutableSet.<String>of(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"),
-                        AtlasTypeUtil.createOptionalAttrDef("columnNames", DataTypes.arrayTypeName("string")),
+                        AtlasTypeUtil.createOptionalAttrDef("columnNames", AtlasBaseTypeDef.getArrayTypeName("string")),
                         AtlasTypeUtil.createOptionalAttrDef("created", "date"),
                         AtlasTypeUtil.createOptionalAttrDef("parameters",
-                                DataTypes.mapTypeName("string", "string")),
+                                AtlasBaseTypeDef.getMapTypeName("string", "string")),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
                         new AtlasAttributeDef("database", "database",
                                 false,

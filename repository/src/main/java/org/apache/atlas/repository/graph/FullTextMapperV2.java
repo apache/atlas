@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.graph;
 
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -203,7 +203,7 @@ public class FullTextMapperV2 {
     }
 
     private AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
-        RequestContext         context = RequestContext.get();
+        RequestContextV1       context           = RequestContextV1.get();
         AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
 
         if (entityWithExtInfo == null) {

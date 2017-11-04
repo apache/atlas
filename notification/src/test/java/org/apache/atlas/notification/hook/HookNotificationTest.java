@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.type.AtlasType;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -37,7 +37,7 @@ public class HookNotificationTest {
         String user = "user";
         HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(user, entity1, entity2);
 
-        String notificationJson = AbstractNotification.GSON.toJson(request);
+        String notificationJson = AtlasType.toV1Json(request);
         HookNotification.HookNotificationMessage actualNotification =
             HOOK_MESSAGE_DESERIALIZER.deserialize(notificationJson);
 
@@ -60,7 +60,7 @@ public class HookNotificationTest {
         entity.set("attr", "value");
         HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(null, entity);
 
-        String notificationJsonFromCode = AbstractNotification.GSON.toJson(request);
+        String notificationJsonFromCode = AtlasType.toV1Json(request);
         System.out.println(notificationJsonFromCode);
 
         //Json without user and assert that the string can be deserialised

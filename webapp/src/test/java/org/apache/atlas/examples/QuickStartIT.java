@@ -20,8 +20,8 @@ package org.apache.atlas.examples;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;

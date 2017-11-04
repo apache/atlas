@@ -27,11 +27,9 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.type.AtlasType;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
@@ -52,8 +50,7 @@ public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMe
         DESERIALIZER_MAP.put(ImmutableList.class, new ImmutableListDeserializer());
         DESERIALIZER_MAP.put(ImmutableMap.class, new ImmutableMapDeserializer());
         DESERIALIZER_MAP.put(JSONArray.class, new JSONArrayDeserializer());
-        DESERIALIZER_MAP.put(IStruct.class, new StructDeserializer());
-        DESERIALIZER_MAP.put(IReferenceableInstance.class, new ReferenceableDeserializer());
+        DESERIALIZER_MAP.put(Struct.class, new StructDeserializer());
         DESERIALIZER_MAP.put(Referenceable.class, new ReferenceableDeserializer());
     }
 
@@ -143,9 +140,9 @@ public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMe
     /**
      * Deserializer for Struct.
      */
-    protected static final class StructDeserializer implements JsonDeserializer<IStruct> {
+    protected static final class StructDeserializer implements JsonDeserializer<Struct> {
         @Override
-        public IStruct deserialize(final JsonElement json, final Type type,
+        public Struct deserialize(final JsonElement json, final Type type,
                                    final JsonDeserializationContext context) {
             return context.deserialize(json, Struct.class);
         }
@@ -154,12 +151,12 @@ public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMe
     /**
      * Deserializer for Referenceable.
      */
-    protected static final class ReferenceableDeserializer implements JsonDeserializer<IReferenceableInstance> {
+    protected static final class ReferenceableDeserializer implements JsonDeserializer<Referenceable> {
         @Override
-        public IReferenceableInstance deserialize(final JsonElement json, final Type type,
+        public Referenceable deserialize(final JsonElement json, final Type type,
                                                   final JsonDeserializationContext context) {
 
-            return InstanceSerialization.fromJsonReferenceable(json.toString(), true);
+            return AtlasType.fromV1Json(json.toString(), Referenceable.class);
         }
     }
 }

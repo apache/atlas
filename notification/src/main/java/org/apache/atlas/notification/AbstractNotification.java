@@ -26,10 +26,9 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -83,7 +82,6 @@ public abstract class AbstractNotification implements NotificationInterface {
      * Used for message serialization.
      */
     public static final Gson GSON = new GsonBuilder().
-        registerTypeAdapter(IReferenceableInstance.class, new ReferenceableSerializer()).
         registerTypeAdapter(Referenceable.class, new ReferenceableSerializer()).
         registerTypeAdapter(JSONArray.class, new JSONArraySerializer()).
         create();
@@ -264,10 +262,10 @@ public abstract class AbstractNotification implements NotificationInterface {
     /**
      * Serializer for Referenceable.
      */
-    public static final class ReferenceableSerializer implements JsonSerializer<IReferenceableInstance> {
+    public static final class ReferenceableSerializer implements JsonSerializer<Referenceable> {
         @Override
-        public JsonElement serialize(IReferenceableInstance src, Type typeOfSrc, JsonSerializationContext context) {
-            String instanceJson = InstanceSerialization.toJson(src, true);
+        public JsonElement serialize(Referenceable src, Type typeOfSrc, JsonSerializationContext context) {
+            String instanceJson = AtlasType.toV1Json(src);
             return new JsonParser().parse(instanceJson).getAsJsonObject();
         }
     }

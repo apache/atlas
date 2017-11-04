@@ -25,7 +25,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -37,11 +36,8 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.notification.NotificationConsumer;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.joda.time.DateTime;
@@ -83,7 +79,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSubmitEntity() throws Exception {
-        TypeUtils.Pair dbAndTable = createDBAndTable();
+        TypesUtil.Pair dbAndTable = createDBAndTable();
         assertNotNull(dbAndTable);
         assertNotNull(dbAndTable.left);
         assertNotNull(dbAndTable.right);
@@ -419,10 +415,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         return hiveDBInstanceV2;
     }
 
-    private TypeUtils.Pair<AtlasEntity, AtlasEntity> createDBAndTable() throws Exception {
+    private TypesUtil.Pair<AtlasEntity, AtlasEntity> createDBAndTable() throws Exception {
         AtlasEntity dbInstanceV2 = createHiveDB();
         AtlasEntity hiveTableInstanceV2 = createHiveTable();
-        return TypeUtils.Pair.of(dbInstanceV2, hiveTableInstanceV2);
+        return TypesUtil.Pair.of(dbInstanceV2, hiveTableInstanceV2);
     }
 
     private AtlasEntity createHiveTable() throws Exception {

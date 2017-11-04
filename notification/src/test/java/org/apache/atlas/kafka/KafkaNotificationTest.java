@@ -19,10 +19,10 @@
 package org.apache.atlas.kafka;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.AfterClass;
@@ -33,7 +33,6 @@ import static org.apache.atlas.notification.hook.HookNotification.HookNotificati
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class KafkaNotificationTest {
 

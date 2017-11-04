@@ -58,7 +58,7 @@ public class AtlasGraphUtilsV1 {
     public static final String PROPERTY_PREFIX      = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
     public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
     public static final String ENTITYTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".entitytype";
-    public static final String VERTEX_TYPE          = "typeSystem";
+    public static final String VERTEX_TYPE          = "typeRegistry";
     public static final String RELATIONSHIPTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".relationshipType";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;

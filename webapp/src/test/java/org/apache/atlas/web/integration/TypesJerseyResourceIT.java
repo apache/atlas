@@ -23,17 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.typesystem.json.TypesSerialization$;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.v1.typedef.*;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -76,9 +69,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     public void testSubmit() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
             try{
-                atlasClientV1.getType(typeDefinition.typeName);
+                atlasClientV1.getType(typeDefinition.getTypeName());
             } catch (AtlasServiceException ase){
-                String typesAsJSON = TypesSerialization.toJson(typeDefinition, false);
+                String typesAsJSON = AtlasType.toV1Json(typeDefinition);
                 System.out.println("typesAsJSON = " + typesAsJSON);
 
                 JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_TYPE, typesAsJSON);
@@ -87,18 +80,18 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
                 JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
                 assertEquals(typesAdded.length(), 1);
-                assertEquals(typesAdded.getJSONObject(0).getString(NAME), typeDefinition.typeName);
+                assertEquals(typesAdded.getJSONObject(0).getString(NAME), typeDefinition.getTypeName());
                 Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));}
         }
     }
 
     @Test
     public void testDuplicateSubmit() throws Exception {
-        HierarchicalTypeDefinition<ClassType> type = TypesUtil.createClassTypeDef(randomString(),
-                ImmutableSet.<String>of(), TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE));
+        ClassTypeDefinition type = TypesUtil.createClassTypeDef(randomString(), null,
+                ImmutableSet.<String>of(), TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         TypesDef typesDef =
-                TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(), ImmutableList.of(type));
+                new TypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<TraitTypeDefinition>of(), ImmutableList.of(type));
         atlasClientV1.createType(typesDef);
 
         try {
@@ -111,51 +104,51 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testUpdate() throws Exception {
-        HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
+        ClassTypeDefinition typeDefinition = TypesUtil
                 .createClassTypeDef(randomString(), null, "1.0", ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE));
-        List<String> typesCreated = atlasClientV1.createType(TypesSerialization.toJson(typeDefinition, false));
+                        TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        List<String> typesCreated = atlasClientV1.createType(AtlasType.toV1Json(typeDefinition));
         assertEquals(typesCreated.size(), 1);
-        assertEquals(typesCreated.get(0), typeDefinition.typeName);
+        assertEquals(typesCreated.get(0), typeDefinition.getTypeName());
 
         //Add attribute description
-        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, null, "2.0",
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, "2.0",
                 ImmutableSet.<String>of(),
-                TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
-                createOptionalAttrDef(DESCRIPTION, DataTypes.STRING_TYPE));
-        TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
-                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                createOptionalAttrDef(DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef typeDef = new TypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<TraitTypeDefinition>of(),
                 ImmutableList.of(typeDefinition));
         List<String> typesUpdated = atlasClientV1.updateType(typeDef);
         assertEquals(typesUpdated.size(), 1);
-        Assert.assertTrue(typesUpdated.contains(typeDefinition.typeName));
+        Assert.assertTrue(typesUpdated.contains(typeDefinition.getTypeName()));
 
-        TypesDef updatedTypeDef = atlasClientV1.getType(typeDefinition.typeName);
+        TypesDef updatedTypeDef = atlasClientV1.getType(typeDefinition.getTypeName());
         assertNotNull(updatedTypeDef);
 
-        HierarchicalTypeDefinition<ClassType> updatedType = updatedTypeDef.classTypesAsJavaList().get(0);
-        assertEquals(updatedType.attributeDefinitions.length, 2);
+        ClassTypeDefinition updatedType = updatedTypeDef.getClassTypes().get(0);
+        assertEquals(updatedType.getAttributeDefinitions().size(), 2);
     }
 
     @Test(dependsOnMethods = "testSubmit")
     public void testGetDefinition() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
-            System.out.println("typeName = " + typeDefinition.typeName);
+            System.out.println("typeName = " + typeDefinition.getTypeName());
 
-            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, typeDefinition.typeName);
+            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, typeDefinition.getTypeName());
 
             Assert.assertNotNull(response);
             Assert.assertNotNull(response.get(AtlasClient.DEFINITION));
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
             String typesJson = response.getString(AtlasClient.DEFINITION);
-            final TypesDef typesDef = TypesSerialization.fromJson(typesJson);
-            List<HierarchicalTypeDefinition<ClassType>> hierarchicalTypeDefinitions = typesDef.classTypesAsJavaList();
-            for (HierarchicalTypeDefinition<ClassType> classType : hierarchicalTypeDefinitions) {
-                for (AttributeDefinition attrDef : classType.attributeDefinitions) {
-                    if (NAME.equals(attrDef.name)) {
-                        assertEquals(attrDef.isIndexable, true);
-                        assertEquals(attrDef.isUnique, true);
+            final TypesDef typesDef = AtlasType.fromV1Json(typesJson, TypesDef.class);
+            List<ClassTypeDefinition> hierarchicalTypeDefinitions = typesDef.getClassTypes();
+            for (ClassTypeDefinition classType : hierarchicalTypeDefinitions) {
+                for (AttributeDefinition attrDef : classType.getAttributeDefinitions()) {
+                    if (NAME.equals(attrDef.getName())) {
+                        assertEquals(attrDef.getIsIndexable(), true);
+                        assertEquals(attrDef.getIsUnique(), true);
                     }
                 }
             }
@@ -202,15 +195,15 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testListTypesByFilter() throws Exception {
-        AttributeDefinition attr = TypesUtil.createOptionalAttrDef("attr", DataTypes.STRING_TYPE);
-        String a = createType(TypesSerialization.toJson(
-                TypesUtil.createClassTypeDef("A" + randomString(), ImmutableSet.<String>of(), attr), false)).get(0);
-        String a1 = createType(TypesSerialization.toJson(
-                TypesUtil.createClassTypeDef("A1" + randomString(), ImmutableSet.of(a), attr), false)).get(0);
-        String b = createType(TypesSerialization.toJson(
-                TypesUtil.createClassTypeDef("B" + randomString(), ImmutableSet.<String>of(), attr), false)).get(0);
-        String c = createType(TypesSerialization.toJson(
-                TypesUtil.createClassTypeDef("C" + randomString(), ImmutableSet.of(a, b), attr), false)).get(0);
+        AttributeDefinition attr = TypesUtil.createOptionalAttrDef("attr", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        String a = createType(AtlasType.toV1Json(
+                TypesUtil.createClassTypeDef("A" + randomString(), null, ImmutableSet.<String>of(), attr))).get(0);
+        String a1 = createType(AtlasType.toV1Json(
+                TypesUtil.createClassTypeDef("A1" + randomString(), null, ImmutableSet.of(a), attr))).get(0);
+        String b = createType(AtlasType.toV1Json(
+                TypesUtil.createClassTypeDef("B" + randomString(), null, ImmutableSet.<String>of(), attr))).get(0);
+        String c = createType(AtlasType.toV1Json(
+                TypesUtil.createClassTypeDef("C" + randomString(), null, ImmutableSet.of(a, b), attr))).get(0);
 
         List<String> results = atlasClientV1.listTypes(DataTypes.TypeCategory.CLASS, a, b);
         assertEquals(results, Arrays.asList(a1), "Results: " + results);
@@ -220,9 +213,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         String[] traitNames = {"class_trait", "secure_trait", "pii_trait", "ssn_trait", "salary_trait", "sox_trait",};
 
         for (String traitName : traitNames) {
-            HierarchicalTypeDefinition<TraitType> traitTypeDef =
-                    TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-            String json = TypesSerialization$.MODULE$.toJson(traitTypeDef, true);
+            TraitTypeDefinition traitTypeDef =
+                    TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+            String json = AtlasType.toV1Json(traitTypeDef);
             createType(json);
         }
 
@@ -232,29 +225,29 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     private List<HierarchicalTypeDefinition> createHiveTypes() throws Exception {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
-                .createClassTypeDef("database", ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef(DESCRIPTION, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef(QUALIFIED_NAME, DataTypes.STRING_TYPE));
+        ClassTypeDefinition databaseTypeDefinition = TypesUtil
+                .createClassTypeDef("database", null, ImmutableSet.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef(DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef(QUALIFIED_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         typeDefinitions.add(databaseTypeDefinition);
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
-                .createClassTypeDef("table", ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef(DESCRIPTION, DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef(QUALIFIED_NAME, DataTypes.STRING_TYPE),
-                        createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
-                        createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+        ClassTypeDefinition tableTypeDefinition = TypesUtil
+                .createClassTypeDef("table", null, ImmutableSet.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef(DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef(QUALIFIED_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        createOptionalAttrDef("columnNames", AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.ATLAS_TYPE_STRING)),
+                        createOptionalAttrDef("created", AtlasBaseTypeDef.ATLAS_TYPE_DATE),
                         createOptionalAttrDef("parameters",
-                                DataTypes.mapTypeName(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE)),
-                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                                AtlasBaseTypeDef.getMapTypeName(AtlasBaseTypeDef.ATLAS_TYPE_STRING, AtlasBaseTypeDef.ATLAS_TYPE_STRING)),
+                        TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         new AttributeDefinition("database", "database", Multiplicity.REQUIRED, false, "database"));
         typeDefinitions.add(tableTypeDefinition);
 
-        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil
-                .createTraitTypeDef("fetl", ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
+        TraitTypeDefinition fetlTypeDefinition = TypesUtil
+                .createTraitTypeDef("fetl", null, ImmutableSet.<String>of(),
+                        TypesUtil.createRequiredAttrDef("level", AtlasBaseTypeDef.ATLAS_TYPE_INT));
         typeDefinitions.add(fetlTypeDefinition);
 
         return typeDefinitions;

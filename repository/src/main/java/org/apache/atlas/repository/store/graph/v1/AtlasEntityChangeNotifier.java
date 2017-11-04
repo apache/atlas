@@ -26,13 +26,13 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.FullTextMapperV2;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -74,7 +74,7 @@ public class AtlasEntityChangeNotifier {
         List<AtlasEntityHeader> partiallyUpdatedEntities = entityMutationResponse.getPartialUpdatedEntities();
         List<AtlasEntityHeader> deletedEntities          = entityMutationResponse.getDeletedEntities();
 
-        // complete full text mapping before calling toITypedReferenceable(), from notifyListners(), to
+        // complete full text mapping before calling toReferenceables(), from notifyListners(), to
         // include all vertex updates in the current graph-transaction
         doFullTextMapping(createdEntities);
         doFullTextMapping(updatedEntities);
@@ -91,13 +91,14 @@ public class AtlasEntityChangeNotifier {
         // appended to the existing fullText
         updateFullTextMapping(entityId, classifications);
 
-        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
-        List<ITypedStruct>          traits = toITypedStructs(classifications);
+        Referenceable entity = toReferenceable(entityId);
+        List<Struct>  traits = toStruct(classifications);
 
         if (entity == null || CollectionUtils.isEmpty(traits)) {
             return;
         }
 
+        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsAdded(entity, traits);
@@ -105,18 +106,20 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitAdd");
             }
         }
+         */
     }
 
     public void onClassificationDeletedFromEntity(String entityId, List<String> traitNames) throws AtlasBaseException {
         // Since the entity has already been modified in the graph, we need to recursively remap the entity
         doFullTextMapping(entityId);
 
-        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
+        Referenceable entity = toReferenceable(entityId);
 
         if (entity == null || CollectionUtils.isEmpty(traitNames)) {
             return;
         }
 
+        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsDeleted(entity, traitNames);
@@ -124,19 +127,21 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
             }
         }
+        */
     }
 
     public void onClassificationUpdatedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
         // Since the classification attributes are updated in the graph, we need to recursively remap the entityText
         doFullTextMapping(entityId);
 
-        ITypedReferenceableInstance entity = toITypedReferenceable(entityId);
-        List<ITypedStruct>          traits = toITypedStructs(classifications);
+        Referenceable entity = toReferenceable(entityId);
+        List<Struct>  traits = toStruct(classifications);
 
         if (entity == null || CollectionUtils.isEmpty(traits)) {
             return;
         }
 
+        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsUpdated(entity, traits);
@@ -144,6 +149,7 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
             }
         }
+        */
     }
 
     private String getListenerName(EntityChangeListener listener) {
@@ -155,8 +161,9 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        List<ITypedReferenceableInstance> typedRefInsts = toITypedReferenceable(entityHeaders);
+        List<Referenceable> typedRefInsts = toReferenceables(entityHeaders);
 
+        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 switch (operation) {
@@ -175,30 +182,33 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), operation.toString());
             }
         }
+        */
     }
 
-    private List<ITypedReferenceableInstance> toITypedReferenceable(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
-        List<ITypedReferenceableInstance> ret = new ArrayList<>(entityHeaders.size());
+    private List<Referenceable> toReferenceables(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+        List<Referenceable> ret = new ArrayList<>(entityHeaders.size());
 
         for (AtlasEntityHeader entityHeader : entityHeaders) {
-            ret.add(instanceConverter.getITypedReferenceable(entityHeader.getGuid()));
+            ret.add(toReferenceable(entityHeader.getGuid()));
         }
 
         return ret;
     }
 
-    private ITypedReferenceableInstance toITypedReferenceable(String entityId) throws AtlasBaseException {
-        ITypedReferenceableInstance ret = null;
+    private Referenceable toReferenceable(String entityId) throws AtlasBaseException {
+        Referenceable ret = null;
 
+        /* TODO:
         if (StringUtils.isNotEmpty(entityId)) {
-            ret = instanceConverter.getITypedReferenceable(entityId);
+            ret = instanceConverter.getReferenceable(entityId);
         }
+        */
 
         return ret;
     }
 
-    private List<ITypedStruct> toITypedStructs(List<AtlasClassification> classifications) throws AtlasBaseException {
-        List<ITypedStruct> ret = null;
+    private List<Struct> toStruct(List<AtlasClassification> classifications) throws AtlasBaseException {
+        List<Struct> ret = null;
 
         if (classifications != null) {
             ret = new ArrayList<>(classifications.size());

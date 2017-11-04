@@ -26,11 +26,10 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.HiveITBase;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -182,7 +181,7 @@ public class HiveHookIT extends HiveITBase {
     private void verifyTimestamps(Referenceable ref, String property, long expectedTime) throws ParseException {
         //Verify timestamps.
         String createTimeStr = (String) ref.get(property);
-        Date createDate = TypeSystem.getInstance().getDateFormat().parse(createTimeStr);
+        Date createDate = AtlasBaseTypeDef.DATE_FORMATTER.parse(createTimeStr);
         Assert.assertNotNull(createTimeStr);
 
         if (expectedTime > 0) {
@@ -1262,7 +1261,7 @@ public class HiveHookIT extends HiveITBase {
         String guid2 = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id_new"));
         assertEquals(guid2, guid);
 
-        assertTrue(atlasClient.getEntity(guid2).getTraits().contains(trait));
+        assertTrue(atlasClient.getEntity(guid2).getTraitNames().contains(trait));
     }
 
     @Test

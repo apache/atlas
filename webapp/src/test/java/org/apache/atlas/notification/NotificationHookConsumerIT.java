@@ -20,14 +20,14 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
 import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.annotations.AfterClass;

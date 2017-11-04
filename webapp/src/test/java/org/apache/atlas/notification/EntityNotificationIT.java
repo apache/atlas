@@ -21,16 +21,12 @@ package org.apache.atlas.notification;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.model.v1.typedef.TraitTypeDefinition;
 import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.json.TypesSerialization$;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.testng.annotations.BeforeClass;
@@ -119,7 +115,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         createTrait(traitName, superTraitName);
 
         Struct traitInstance = new Struct(traitName);
-        String traitInstanceJSON = InstanceSerialization.toJson(traitInstance, true);
+        String traitInstanceJSON = AtlasType.toV1Json(traitInstance);
         LOG.debug("Trait instance = {}", traitInstanceJSON);
 
         final String guid = tableId._getId();
@@ -129,13 +125,13 @@ public class EntityNotificationIT extends BaseResourceIT {
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE_BUILTIN, guid));
 
-        IReferenceableInstance entity = entityNotification.getEntity();
-        assertTrue(entity.getTraits().contains(traitName));
+        Referenceable entity = entityNotification.getEntity();
+        assertTrue(entity.getTraitNames().contains(traitName));
 
-        List<IStruct> allTraits = entityNotification.getAllTraits();
+        List<Struct> allTraits = entityNotification.getAllTraits();
         List<String> allTraitNames = new LinkedList<>();
 
-        for (IStruct struct : allTraits) {
+        for (Struct struct : allTraits) {
             allTraitNames.add(struct.getTypeName());
         }
         assertTrue(allTraitNames.contains(traitName));
@@ -146,7 +142,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         createTrait(anotherTraitName, superTraitName);
 
         traitInstance = new Struct(anotherTraitName);
-        traitInstanceJSON = InstanceSerialization.toJson(traitInstance, true);
+        traitInstanceJSON = AtlasType.toV1Json(traitInstance);
         LOG.debug("Trait instance = {}", traitInstanceJSON);
 
         atlasClientV1.addTrait(guid, traitInstance);
@@ -157,7 +153,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         allTraits = entityNotification.getAllTraits();
         allTraitNames = new LinkedList<>();
 
-        for (IStruct struct : allTraits) {
+        for (Struct struct : allTraits) {
             allTraitNames.add(struct.getTypeName());
         }
         assertTrue(allTraitNames.contains(traitName));
@@ -174,17 +170,17 @@ public class EntityNotificationIT extends BaseResourceIT {
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.TRAIT_DELETE, HIVE_TABLE_TYPE_BUILTIN, guid));
 
-        assertFalse(entityNotification.getEntity().getTraits().contains(traitName));
+        assertFalse(entityNotification.getEntity().getTraitNames().contains(traitName));
     }
 
 
     // ----- helper methods ---------------------------------------------------
 
     private void createTrait(String traitName, String ... superTraitNames) throws Exception {
-        HierarchicalTypeDefinition<TraitType> trait =
-            TypesUtil.createTraitTypeDef(traitName, ImmutableSet.copyOf(superTraitNames));
+        TraitTypeDefinition trait =
+            TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.copyOf(superTraitNames));
 
-        String traitDefinitionJSON = TypesSerialization$.MODULE$.toJson(trait, true);
+        String traitDefinitionJSON = AtlasType.toV1Json(trait);
         LOG.debug("Trait definition = {}", traitDefinitionJSON);
         createType(traitDefinitionJSON);
     }

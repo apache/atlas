@@ -19,13 +19,13 @@
 package org.apache.atlas.kafka;
 
 import kafka.message.MessageAndMetadata;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
 import org.apache.atlas.notification.*;
 import org.apache.atlas.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;
 import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.type.AtlasType;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -79,7 +79,7 @@ public class KafkaConsumerTest {
         HookNotification.EntityUpdateRequest message =
             new HookNotification.EntityUpdateRequest("user1", entity);
 
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
+        String json = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
 
         kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
         List<ConsumerRecord> klist = new ArrayList<>();
@@ -116,7 +116,7 @@ public class KafkaConsumerTest {
         HookNotification.EntityUpdateRequest message =
             new HookNotification.EntityUpdateRequest("user1", entity);
 
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
+        String json = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
 
         kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
         List<ConsumerRecord> klist = new ArrayList<>();
@@ -172,8 +172,8 @@ public class KafkaConsumerTest {
 
     private Referenceable getEntity(String traitName) {
         Referenceable entity = EntityNotificationImplTest.getEntity("id");
-        List<IStruct> traitInfo = new LinkedList<>();
-        IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
+        List<Struct> traitInfo = new LinkedList<>();
+        Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
         return entity;
     }

@@ -22,7 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.v1.instance.Referenceable;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.hadoop.conf.Configuration;

@@ -22,9 +22,9 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.typedef.TypesDef;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -149,7 +149,7 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
             entities = new ArrayList<>();
             for (int index = 0; index < jsonArray.length(); index++) {
                 try {
-                    entities.add(InstanceSerialization.fromJsonReferenceable(jsonArray.getString(index), true));
+                    entities.add(AtlasType.fromV1Json(jsonArray.getString(index), Referenceable.class));
                 } catch (JSONException e) {
                     throw new JsonParseException(e);
                 }

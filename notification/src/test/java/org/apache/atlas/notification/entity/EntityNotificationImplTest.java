@@ -18,11 +18,10 @@
 
 package org.apache.atlas.notification.entity;
 
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -48,7 +47,7 @@ public class EntityNotificationImplTest {
 
         EntityNotificationImpl entityNotification =
             new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-                Collections.<IStruct>emptyList());
+                Collections.<Struct>emptyList());
 
         assertEquals(entity, entityNotification.getEntity());
     }
@@ -59,7 +58,7 @@ public class EntityNotificationImplTest {
 
         EntityNotificationImpl entityNotification =
             new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-                Collections.<IStruct>emptyList());
+                Collections.<Struct>emptyList());
 
         assertEquals(EntityNotification.OperationType.ENTITY_CREATE, entityNotification.getOperationType());
     }
@@ -68,8 +67,8 @@ public class EntityNotificationImplTest {
     public void testGetAllTraits() throws Exception {
         Referenceable entity = getEntity("id");
         String traitName = "MyTrait";
-        List<IStruct> traitInfo = new LinkedList<>();
-        IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
+        List<Struct> traitInfo = new LinkedList<>();
+        Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
 
         EntityNotificationImpl entityNotification =
@@ -80,36 +79,35 @@ public class EntityNotificationImplTest {
 
     @Test
     public void testGetAllTraitsSuperTraits() throws Exception {
-
-        TypeSystem typeSystem = mock(TypeSystem.class);
+        AtlasTypeRegistry typeRegistry = mock(AtlasTypeRegistry.class);
 
         String traitName = "MyTrait";
-        IStruct myTrait = new Struct(traitName);
+        Struct myTrait = new Struct(traitName);
 
         String superTraitName = "MySuperTrait";
 
-        TraitType traitDef = mock(TraitType.class);
+        AtlasClassificationType traitType = mock(AtlasClassificationType.class);
         Set<String> superTypeNames = Collections.singleton(superTraitName);
 
-        TraitType superTraitDef = mock(TraitType.class);
+        AtlasClassificationType superTraitType = mock(AtlasClassificationType.class);
         Set<String> superSuperTypeNames = Collections.emptySet();
 
         Referenceable entity = getEntity("id", myTrait);
 
-        when(typeSystem.getDataType(TraitType.class, traitName)).thenReturn(traitDef);
-        when(typeSystem.getDataType(TraitType.class, superTraitName)).thenReturn(superTraitDef);
+        when(typeRegistry.getClassificationTypeByName(traitName)).thenReturn(traitType);
+        when(typeRegistry.getClassificationTypeByName(superTraitName)).thenReturn(superTraitType);
 
-        when(traitDef.getAllSuperTypeNames()).thenReturn(superTypeNames);
-        when(superTraitDef.getAllSuperTypeNames()).thenReturn(superSuperTypeNames);
+        when(traitType.getAllSuperTypes()).thenReturn(superTypeNames);
+        when(superTraitType.getAllSuperTypes()).thenReturn(superSuperTypeNames);
 
         EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, typeSystem);
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, typeRegistry);
 
-        List<IStruct> allTraits = entityNotification.getAllTraits();
+        List<Struct> allTraits = entityNotification.getAllTraits();
 
         assertEquals(2, allTraits.size());
 
-        for (IStruct trait : allTraits) {
+        for (Struct trait : allTraits) {
             String typeName = trait.getTypeName();
             assertTrue(typeName.equals(traitName) || typeName.equals(superTraitName));
         }
@@ -121,24 +119,24 @@ public class EntityNotificationImplTest {
 
         EntityNotificationImpl entityNotification2 =
             new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-                Collections.<IStruct>emptyList());
+                Collections.<Struct>emptyList());
 
         EntityNotificationImpl entityNotification =
             new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-                Collections.<IStruct>emptyList());
+                Collections.<Struct>emptyList());
 
         assertTrue(entityNotification.equals(entityNotification2));
         assertTrue(entityNotification2.equals(entityNotification));
     }
 
-    public static Referenceable getEntity(String id, IStruct... traits) {
+    public static Referenceable getEntity(String id, Struct... traits) {
         String typeName = "typeName";
         Map<String, Object> values = new HashMap<>();
 
         List<String> traitNames = new LinkedList<>();
-        Map<String, IStruct> traitMap = new HashMap<>();
+        Map<String, Struct> traitMap = new HashMap<>();
 
-        for (IStruct trait : traits) {
+        for (Struct trait : traits) {
             String traitName = trait.getTypeName();
 
             traitNames.add(traitName);
