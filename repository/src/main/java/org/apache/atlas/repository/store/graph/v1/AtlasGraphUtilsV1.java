@@ -43,9 +43,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -323,6 +326,22 @@ public class AtlasGraphUtilsV1 {
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
 
         return vertex;
+    }
+
+    public static List<String> findEntityGUIDsByType(String typename) {
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+                                                  .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typename);
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+        if (!results.hasNext()) {
+            return Collections.emptyList();
+        }
+
+        ArrayList<String> entityList = new ArrayList<>();
+        while (results.hasNext()) {
+            entityList.add(getIdFromVertex(results.next()));
+        }
+
+        return entityList;
     }
 
     public static boolean relationshipTypeHasInstanceEdges(String typeName) throws AtlasBaseException {

@@ -23,8 +23,11 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
 import org.apache.atlas.hook.AtlasHook;
-import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -219,13 +222,13 @@ public class HBaseAtlasHook extends AtlasHook {
             case CREATE_NAMESPACE:
                 LOG.info("Create NameSpace {}", nameSpaceRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
                 break;
 
             case ALTER_NAMESPACE:
                 LOG.info("Modify NameSpace {}", nameSpaceRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
                 break;
         }
     }
@@ -235,10 +238,10 @@ public class HBaseAtlasHook extends AtlasHook {
 
         LOG.info("Delete NameSpace {}", nameSpaceQualifiedName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_NAMESPACE.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  nameSpaceQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequest(hbaseOperationContext.getUser(),
+                                                                 HBaseDataTypes.HBASE_NAMESPACE.getName(),
+                                                                 REFERENCEABLE_ATTRIBUTE_NAME,
+                                                                 nameSpaceQualifiedName));
     }
 
     private void createOrUpdateTableInstance(HBaseOperationContext hbaseOperationContext) {
@@ -252,13 +255,13 @@ public class HBaseAtlasHook extends AtlasHook {
             case CREATE_TABLE:
                 LOG.info("Create Table {}", tableRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
                 break;
 
             case ALTER_TABLE:
                 LOG.info("Modify Table {}", tableRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
                 break;
         }
     }
@@ -276,10 +279,10 @@ public class HBaseAtlasHook extends AtlasHook {
 
         LOG.info("Delete Table {}", tableQualifiedName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_TABLE.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  tableQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequest(hbaseOperationContext.getUser(),
+                                                                 HBaseDataTypes.HBASE_TABLE.getName(),
+                                                                 REFERENCEABLE_ATTRIBUTE_NAME,
+                                                                 tableQualifiedName));
     }
 
     private void createOrUpdateColumnFamilyInstance(HBaseOperationContext hbaseOperationContext) {
@@ -291,13 +294,13 @@ public class HBaseAtlasHook extends AtlasHook {
             case CREATE_COLUMN_FAMILY:
                 LOG.info("Create ColumnFamily {}", columnFamilyRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
                 break;
 
             case ALTER_COLUMN_FAMILY:
                 LOG.info("Alter ColumnFamily {}", columnFamilyRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
                 break;
         }
     }
@@ -316,10 +319,10 @@ public class HBaseAtlasHook extends AtlasHook {
 
         LOG.info("Delete ColumnFamily {}", columnFamilyQualifiedName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  columnFamilyQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequest(hbaseOperationContext.getUser(),
+                                                                 HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(),
+                                                                 REFERENCEABLE_ATTRIBUTE_NAME,
+                                                                 columnFamilyQualifiedName));
     }
 
 
@@ -491,7 +494,7 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.debug("==> HBaseAtlasHook.notifyAsPrivilegedAction({})", hbaseOperationContext);
         }
 
-        final List<HookNotification.HookNotificationMessage> messages = hbaseOperationContext.getMessages();
+        final List<HookNotification> messages = hbaseOperationContext.getMessages();
 
 
         try {
@@ -534,7 +537,7 @@ public class HBaseAtlasHook extends AtlasHook {
      *
      * @param messages hook notification messages
      */
-    protected void notifyEntities(List<HookNotification.HookNotificationMessage> messages) {
+    protected void notifyEntities(List<HookNotification> messages) {
         final int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
         notifyEntities(messages, maxRetries);
     }

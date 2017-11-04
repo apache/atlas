@@ -18,14 +18,11 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -37,11 +34,8 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.notification.NotificationConsumer;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.joda.time.DateTime;
@@ -51,11 +45,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.atlas.kafka.AtlasKafkaConsumer;
+import java.util.*;
+
 import static org.testng.Assert.*;
 
 
@@ -83,7 +74,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSubmitEntity() throws Exception {
-        TypeUtils.Pair dbAndTable = createDBAndTable();
+        TypesUtil.Pair dbAndTable = createDBAndTable();
         assertNotNull(dbAndTable);
         assertNotNull(dbAndTable.left);
         assertNotNull(dbAndTable.right);
@@ -192,7 +183,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         //create type
         AtlasEntityDef entityDef = AtlasTypeUtil
                 .createClassTypeDef(randomString(),
-                        ImmutableSet.<String>of(),
+                        Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string")
                 );
         AtlasTypesDef typesDef = new AtlasTypesDef();
@@ -213,7 +204,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         String guid = mutationResponse.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
         //update type - add attribute
-        entityDef = AtlasTypeUtil.createClassTypeDef(entityDef.getName(), ImmutableSet.<String>of(),
+        entityDef = AtlasTypeUtil.createClassTypeDef(entityDef.getName(), Collections.<String>emptySet(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("description", "string"));
 
@@ -366,7 +357,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     private String addNewType() throws Exception {
         String typeName = "test" + randomString();
         AtlasEntityDef classTypeDef = AtlasTypeUtil
-                .createClassTypeDef(typeName, ImmutableSet.<String>of(),
+                .createClassTypeDef(typeName, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"));
         AtlasTypesDef typesDef = new AtlasTypesDef();
@@ -419,10 +410,10 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         return hiveDBInstanceV2;
     }
 
-    private TypeUtils.Pair<AtlasEntity, AtlasEntity> createDBAndTable() throws Exception {
+    private TypesUtil.Pair<AtlasEntity, AtlasEntity> createDBAndTable() throws Exception {
         AtlasEntity dbInstanceV2 = createHiveDB();
         AtlasEntity hiveTableInstanceV2 = createHiveTable();
-        return TypeUtils.Pair.of(dbInstanceV2, hiveTableInstanceV2);
+        return TypesUtil.Pair.of(dbInstanceV2, hiveTableInstanceV2);
     }
 
     private AtlasEntity createHiveTable() throws Exception {
@@ -447,12 +438,12 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testAddTrait() throws Exception {
         traitName = "PII_Trait" + randomString();
         AtlasClassificationDef piiTrait =
-                AtlasTypeUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(traitName, Collections.<String>emptySet());
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.getClassificationDefs().add(piiTrait);
         createType(typesDef);
 
-        atlasClientV2.addClassifications(createHiveTable().getGuid(), ImmutableList.of(new AtlasClassification(piiTrait.getName())));
+        atlasClientV2.addClassifications(createHiveTable().getGuid(), Collections.singletonList(new AtlasClassification(piiTrait.getName())));
 
         assertEntityAudit(createHiveTable().getGuid(), EntityAuditEvent.EntityAuditAction.TAG_ADD);
     }
@@ -461,7 +452,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testGetTraitDefinitionForEntity() throws Exception{
         traitName = "PII_Trait" + randomString();
         AtlasClassificationDef piiTrait =
-                AtlasTypeUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(traitName, Collections.<String>emptySet());
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.getClassificationDefs().add(piiTrait);
         createType(typesDef);
@@ -487,7 +478,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     public void testAddTraitWithAttribute() throws Exception {
         final String traitName = "PII_Trait" + randomString();
         AtlasClassificationDef piiTrait = AtlasTypeUtil
-                .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
+                .createTraitTypeDef(traitName, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"));
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.getClassificationDefs().add(piiTrait);
@@ -497,7 +488,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         traitInstance.setAttribute("type", "SSN");
 
         final String guid = createHiveTable().getGuid();
-        atlasClientV2.addClassifications(guid, ImmutableList.of(traitInstance));
+        atlasClientV2.addClassifications(guid, Collections.singletonList(traitInstance));
 
         // verify the response
         AtlasEntity withAssociationByGuid = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -518,11 +509,11 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testAddTraitWithNoRegistration() throws Exception {
         final String traitName = "PII_Trait" + randomString();
-        AtlasTypeUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+        AtlasTypeUtil.createTraitTypeDef(traitName, Collections.<String>emptySet());
 
         AtlasClassification traitInstance = new AtlasClassification(traitName);
 
-        atlasClientV2.addClassifications("random", ImmutableList.of(traitInstance));
+        atlasClientV2.addClassifications("random", Collections.singletonList(traitInstance));
     }
 
     @Test(dependsOnMethods = "testAddTrait")
@@ -558,7 +549,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         final String guid = createHiveTable().getGuid();
         final String traitName = "PII_Trait" + randomString();
         AtlasClassificationDef piiTrait = AtlasTypeUtil
-                .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
+                .createTraitTypeDef(traitName, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"));
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.getClassificationDefs().add(piiTrait);
@@ -584,7 +575,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         String attrValue = random();
 
         AtlasEntityDef classTypeDef = AtlasTypeUtil
-                .createClassTypeDef(classType, ImmutableSet.<String>of(),
+                .createClassTypeDef(classType, Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef(attrName, "string"));
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
         atlasTypesDef.getEntityDefs().add(classTypeDef);
@@ -721,7 +712,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         AtlasEntityHeader entity2Header = createEntity(db2);
 
         // Delete the database entities
-        EntityMutationResponse deleteResponse = atlasClientV2.deleteEntitiesByGuids(ImmutableList.of(entity1Header.getGuid(), entity2Header.getGuid()));
+        EntityMutationResponse deleteResponse = atlasClientV2.deleteEntitiesByGuids(Arrays.asList(entity1Header.getGuid(), entity2Header.getGuid()));
 
         // Verify that deleteEntities() response has database entity guids
         assertNotNull(deleteResponse);

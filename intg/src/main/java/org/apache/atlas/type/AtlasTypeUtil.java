@@ -17,17 +17,29 @@
  */
 package org.apache.atlas.type;
 
-import com.google.common.collect.ImmutableSet;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +47,7 @@ import org.apache.commons.lang.StringUtils;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 
@@ -208,19 +221,19 @@ public class AtlasTypeUtil {
         return new AtlasEnumDef(name, description, "1.0", Arrays.asList(enumValues));
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createTraitTypeDef(name, null, superTypes, attrDefs);
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, String description, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, String description, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createTraitTypeDef(name, description, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, String description, String version, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, String description, String version, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
-    public static AtlasClassificationDef createAtlasClassificationDef(String name, String description, String version, ImmutableSet<String> superTypes, ImmutableSet<String> entityTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createAtlasClassificationDef(String name, String description, String version, Set<String> superTypes, Set<String> entityTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes, entityTypes, null);
     }
 
@@ -232,18 +245,15 @@ public class AtlasTypeUtil {
         return new AtlasStructDef(name, description, "1.0", Arrays.asList(attrDefs));
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createClassTypeDef(name, null, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name, String description,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, String description, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createClassTypeDef(name, description, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name, String description, String version,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, String description, String version, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
@@ -407,6 +417,129 @@ public class AtlasTypeUtil {
         sb.append("}");
 
         return sb.toString();
+    }
+
+    public static ClassTypeDefinition toClassTypeDefinition(final AtlasEntityType entityType) {
+        ClassTypeDefinition ret = null;
+
+        if (entityType != null) {
+            AtlasEntityDef entityDef = entityType.getEntityDef();
+            ret = new ClassTypeDefinition();
+            ret.setTypeName(entityDef.getName());
+            ret.setTypeDescription(entityDef.getDescription());
+            ret.setTypeVersion(entityDef.getTypeVersion());
+            ret.setSuperTypes(entityDef.getSuperTypes());
+
+            if (MapUtils.isNotEmpty(entityType.getAllAttributes())) {
+                List<AttributeDefinition> attributeDefinitions = entityType.getAllAttributes()
+                                                                           .entrySet()
+                                                                           .stream()
+                                                                           .map(e -> toV1AttributeDefinition(e.getValue()))
+                                                                           .collect(Collectors.toList());
+
+                ret.setAttributeDefinitions(attributeDefinitions);
+            }
+        }
+
+        return ret;
+    }
+
+    public static AttributeDefinition toV1AttributeDefinition(AtlasStructType.AtlasAttribute attribute) {
+        AtlasAttributeDef   attributeDef = attribute.getAttributeDef();
+        AttributeDefinition ret = new AttributeDefinition();
+
+        ret.setName(attributeDef.getName());
+        ret.setDataTypeName(attributeDef.getTypeName());
+        ret.setIsUnique(attributeDef.getIsUnique());
+        ret.setIsIndexable(attributeDef.getIsIndexable());
+        ret.setIsComposite(attribute.isOwnedRef());
+        ret.setReverseAttributeName(attribute.getInverseRefAttributeName());
+        ret.setDefaultValue(attributeDef.getDefaultValue());
+        ret.setDescription(attributeDef.getDescription());
+
+        final int lower;
+        final int upper;
+
+        if (attributeDef.getCardinality() == AtlasAttributeDef.Cardinality.SINGLE) {
+            lower = attributeDef.getIsOptional() ? 0 : 1;
+            upper = 1;
+        } else {
+            if(attributeDef.getIsOptional()) {
+                lower = 0;
+            } else {
+                lower = attributeDef.getValuesMinCount() < 1 ? 1 : attributeDef.getValuesMinCount();
+            }
+
+            upper = attributeDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attributeDef.getValuesMaxCount();
+        }
+
+        Multiplicity multiplicity = new Multiplicity();
+        multiplicity.setLower(lower);
+        multiplicity.setUpper(upper);
+        multiplicity.setIsUnique(AtlasAttributeDef.Cardinality.SET.equals(attributeDef.getCardinality()));
+
+        ret.setMultiplicity(multiplicity);
+
+        return ret;
+    }
+
+    public static Map<String, Object> toMap(AtlasEntity entity) {
+        Map<String, Object> ret = null;
+
+        if (entity != null) {
+            ret = new LinkedHashMap<>();
+
+            // Id type
+            ret.put("$typeName$", entity.getTypeName());
+            ret.put("$id$", new LinkedHashMap<String, Object>(){{
+                put("id", entity.getGuid());
+                put("$typeName$", entity.getTypeName());
+                put("version", entity.getVersion().intValue());
+                put("state", entity.getStatus().name());
+            }});
+
+            // System attributes
+            ret.put("$systemAttributes$", new LinkedHashMap<String, String>() {{
+                put("createdBy", entity.getCreatedBy());
+                put("modifiedBy", entity.getUpdatedBy());
+                put("createdTime", entity.getCreateTime().toString());
+                put("modifiedTime", entity.getUpdateTime().toString());
+            }});
+
+            // Traits
+            if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+                Map<String, HashMap> traitDetails = entity.getClassifications()
+                                                          .stream()
+                                                          .collect(Collectors.toMap(AtlasStruct::getTypeName, AtlasTypeUtil::getNestedTraitDetails));
+                ret.put("$traits$", traitDetails);
+            }
+
+            // All attributes
+            if (MapUtils.isNotEmpty(entity.getAttributes())) {
+                for (Map.Entry<String, Object> entry : entity.getAttributes().entrySet()) {
+                    if (entry.getValue() instanceof AtlasObjectId) {
+                        ret.put(entry.getKey(), new LinkedHashMap<String, Object>(){{
+                            put("id", ((AtlasObjectId) entry.getValue()).getGuid());
+                            put("$typeName$", ((AtlasObjectId) entry.getValue()).getTypeName());
+//                        put("version", entity.getVersion().intValue());
+//                        put("state", entity.getStatus().name());
+                        }});
+                    } else {
+                        ret.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+
+        }
+
+        return ret;
+    }
+
+    private static HashMap getNestedTraitDetails(final AtlasClassification atlasClassification) {
+        return new HashMap<String, Object>() {{
+            put("$typeName$", atlasClassification.getTypeName());
+            putAll(atlasClassification.getAttributes());
+        }};
     }
 
     private static void dumpTypeNames(List<? extends AtlasBaseTypeDef> typeDefs, StringBuilder sb) {

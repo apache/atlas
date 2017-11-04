@@ -21,22 +21,20 @@ package org.apache.atlas.hook;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.security.InMemoryJAASConfiguration;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 
@@ -101,18 +99,10 @@ public abstract class AtlasHook {
 
     protected abstract String getNumberOfRetriesPropertyKey();
 
-    protected void notifyEntities(String user, Collection<Referenceable> entities) {
-        JSONArray entitiesArray = new JSONArray();
-
-        for (Referenceable entity : entities) {
-            LOG.info("Adding entity for type: {}", entity.getTypeName());
-            final String entityJson = InstanceSerialization.toJson(entity, true);
-            entitiesArray.put(entityJson);
-        }
-
-        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
-        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(user, entitiesArray));
-        notifyEntities(hookNotificationMessages);
+    protected void notifyEntities(String user, List<Referenceable> entities) {
+        List<HookNotification> hookNotifications = new ArrayList<>();
+        hookNotifications.add(new EntityCreateRequest(user, entities));
+        notifyEntities(hookNotifications);
     }
 
     /**
@@ -124,12 +114,12 @@ public abstract class AtlasHook {
      * @param messages   hook notification messages
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
-    public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
+    public static void notifyEntities(List<HookNotification> messages, int maxRetries) {
         notifyEntitiesInternal(messages, maxRetries, notificationInterface, logFailedMessages, failedMessagesLogger);
     }
 
     @VisibleForTesting
-    static void notifyEntitiesInternal(List<HookNotification.HookNotificationMessage> messages, int maxRetries,
+    static void notifyEntitiesInternal(List<HookNotification> messages, int maxRetries,
                                        NotificationInterface notificationInterface,
                                        boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
         if (messages == null || messages.isEmpty()) {
@@ -176,7 +166,7 @@ public abstract class AtlasHook {
      *
      * @param messages hook notification messages
      */
-    protected void notifyEntities(List<HookNotification.HookNotificationMessage> messages) {
+    protected void notifyEntities(List<HookNotification> messages) {
         final int maxRetries = atlasProperties.getInt(getNumberOfRetriesPropertyKey(), 3);
         notifyEntities(messages, maxRetries);
     }

@@ -21,8 +21,8 @@ package org.apache.atlas.hive.bridge;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.HiveITBase;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Id;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -50,7 +50,7 @@ public class HiveMetastoreBridgeIT extends HiveITBase {
 
         List<Id> outputs = (List<Id>) processReference.get(OUTPUTS);
         assertEquals(outputs.size(), 1);
-        assertEquals(outputs.get(0).getId()._getId(), tableId);
+        assertEquals(outputs.get(0).getId(), tableId);
 
         int tableCount = atlasClient.listEntities(HiveDataTypes.HIVE_TABLE.getName()).size();
 
@@ -84,6 +84,6 @@ public class HiveMetastoreBridgeIT extends HiveITBase {
                 getTableProcessQualifiedName(DEFAULT_DB, tableName), null);
         List<Id> outputs = (List<Id>) atlasClient.getEntity(processId).get(OUTPUTS);
         assertEquals(outputs.size(), 1);
-        assertEquals(outputs.get(0).getId()._getId(), tableId);
+        assertEquals(outputs.get(0).getId(), tableId);
     }
 }

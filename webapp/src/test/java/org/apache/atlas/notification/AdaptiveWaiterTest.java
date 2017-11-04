@@ -26,7 +26,7 @@ public class AdaptiveWaiterTest {
 
     private final int maxDuration = 100;
     private final int minDuration = 5;
-    private final int increment = 5;
+    private final int increment   = 5;
     private NotificationHookConsumer.AdaptiveWaiter waiter;
 
     @BeforeClass
@@ -36,11 +36,13 @@ public class AdaptiveWaiterTest {
 
     @Test
     public void basicTest() {
-        for (int i = 0; i < 20; i++) {
+        int pauseCount = 10;
+
+        for (int i = 0; i < pauseCount; i++) {
             waiter.pause(new IllegalStateException());
         }
 
-        assertEquals(waiter.waitDuration, 95);
+        assertEquals(waiter.waitDuration, Math.min((pauseCount + 1) * minDuration, maxDuration)); // waiter.waitDuration will be set to wait time for next pause()
     }
 
     @Test
@@ -63,6 +65,6 @@ public class AdaptiveWaiterTest {
         }
 
         waiter.pause(new IllegalArgumentException());
-        assertEquals(waiter.waitDuration, 5);
+        assertEquals(waiter.waitDuration, minDuration);
     }
 }

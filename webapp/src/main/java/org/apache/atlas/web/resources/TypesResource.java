@@ -23,10 +23,10 @@ import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.rest.TypesREST;
@@ -237,7 +237,7 @@ public class TypesResource {
 
         try {
             TypesDef typesDef       = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
-            String   typeDefinition = TypesSerialization.toJson(typesDef);
+            String   typeDefinition = AtlasType.toV1Json(typesDef);
 
             response.put(AtlasClient.TYPENAME, typeName);
             response.put(AtlasClient.DEFINITION, new JSONObject(typeDefinition));

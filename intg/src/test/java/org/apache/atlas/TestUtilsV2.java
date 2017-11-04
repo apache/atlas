@@ -18,8 +18,6 @@
 
 package org.apache.atlas;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -30,7 +28,6 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
@@ -92,7 +89,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createRequiredAttrDef("city", "string"));
 
         AtlasEntityDef deptTypeDef =
-                AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
@@ -100,7 +97,7 @@ public final class TestUtilsV2 {
                                 add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                             }}));
 
-        AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
+        AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, Collections.<String>emptySet(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("address", "Address"),
                 AtlasTypeUtil.createOptionalAttrDef("birthday", "date"),
@@ -113,7 +110,7 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("approximationOfPi", "bigdecimal")
         );
 
-        AtlasEntityDef employeeTypeDef = AtlasTypeUtil.createClassTypeDef("Employee", "Employee"+_description, ImmutableSet.of("Person"),
+        AtlasEntityDef employeeTypeDef = AtlasTypeUtil.createClassTypeDef("Employee", "Employee"+_description, Collections.singleton("Person"),
                 AtlasTypeUtil.createOptionalAttrDef("orgLevel", "OrgLevel"),
                 new AtlasAttributeDef("department", "Department", false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
@@ -142,18 +139,18 @@ public final class TestUtilsV2 {
                 put(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "employees");
             }}));
 
-        AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description, ImmutableSet.of("Employee"),
+        AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description, Collections.singleton("Employee"),
                 new AtlasAttributeDef("subordinates", String.format("array<%s>", "Employee"), false, AtlasAttributeDef.Cardinality.SET,
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         AtlasClassificationDef securityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
-        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
-                ImmutableList.of(securityClearanceTypeDef),
-                ImmutableList.of(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
+        AtlasTypesDef ret = new AtlasTypesDef(Collections.singletonList(orgLevelEnum), Collections.singletonList(addressDetails),
+                Collections.singletonList(securityClearanceTypeDef),
+                Arrays.asList(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
 
         populateSystemAttributes(ret);
 
@@ -161,7 +158,7 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasTypesDef defineInverseReferenceTestTypes() {
-        AtlasEntityDef aDef = AtlasTypeUtil.createClassTypeDef("A", ImmutableSet.<String>of(),
+        AtlasEntityDef aDef = AtlasTypeUtil.createClassTypeDef("A", Collections.<String>emptySet(),
             AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
             new AtlasAttributeDef("b", "B", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-1
             new AtlasAttributeDef("oneB", "B", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-*
@@ -170,7 +167,7 @@ public final class TestUtilsV2 {
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
                 AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "mappedFromA"))))); // *-*
 
-        AtlasEntityDef bDef = AtlasTypeUtil.createClassTypeDef("B", ImmutableSet.<String>of(),
+        AtlasEntityDef bDef = AtlasTypeUtil.createClassTypeDef("B", Collections.<String>emptySet(),
             AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
             new AtlasAttributeDef("a", "A", true, Cardinality.SINGLE, 0, 1, false, false,
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
@@ -183,7 +180,7 @@ public final class TestUtilsV2 {
                     AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "manyB")))),
             new AtlasAttributeDef("mappedFromA", "A", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()));
 
-        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.<AtlasEnumDef>of(), ImmutableList.<AtlasStructDef>of(), ImmutableList.<AtlasClassificationDef>of(), ImmutableList.<AtlasEntityDef>of(aDef, bDef));
+        AtlasTypesDef ret = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(), Collections.<AtlasStructDef>emptyList(), Collections.<AtlasClassificationDef>emptyList(), Arrays.asList(aDef, bDef));
 
         populateSystemAttributes(ret);
 
@@ -207,7 +204,7 @@ public final class TestUtilsV2 {
 
         AtlasEntityDef deptTypeDef =
                 AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description,
-                        ImmutableSet.<String>of(),
+                        Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
@@ -217,7 +214,7 @@ public final class TestUtilsV2 {
                             }}));
 
         AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description,
-                ImmutableSet.<String>of(),
+                Collections.<String>emptySet(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("email", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("address", "Address"),
@@ -232,7 +229,7 @@ public final class TestUtilsV2 {
         );
 
         AtlasEntityDef employeeTypeDef = AtlasTypeUtil.createClassTypeDef("Employee", "Employee"+_description,
-                ImmutableSet.of("Person"),
+                Collections.singleton("Person"),
                 AtlasTypeUtil.createOptionalAttrDef("orgLevel", "OrgLevel"),
                 AtlasTypeUtil.createOptionalAttrDef("empCode", "string"),
                 new AtlasAttributeDef("department", "Department", false,
@@ -258,19 +255,19 @@ public final class TestUtilsV2 {
         );
 
         AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description,
-                ImmutableSet.of("Employee"),
+                Collections.singleton("Employee"),
                 new AtlasAttributeDef("subordinates", String.format("array<%s>", "Employee"), false, AtlasAttributeDef.Cardinality.SET,
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         AtlasClassificationDef securityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
-        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
-                ImmutableList.of(addressDetails),
-                ImmutableList.of(securityClearanceTypeDef),
-                ImmutableList.of(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
+        AtlasTypesDef ret = new AtlasTypesDef(Collections.singletonList(orgLevelEnum),
+                Collections.singletonList(addressDetails),
+                Collections.singletonList(securityClearanceTypeDef),
+                Arrays.asList(deptTypeDef, personTypeDef, employeeTypeDef, managerTypeDef));
 
         populateSystemAttributes(ret);
 
@@ -295,7 +292,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createRequiredAttrDef("zip", "int"));
 
         AtlasEntityDef deptTypeDef =
-                AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Person"), true,
@@ -304,7 +301,7 @@ public final class TestUtilsV2 {
                                 add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                             }}));
 
-        AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, ImmutableSet.<String>of(),
+        AtlasEntityDef personTypeDef = AtlasTypeUtil.createClassTypeDef("Person", "Person"+_description, Collections.<String>emptySet(),
                 AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createRequiredAttrDef("emp-code", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("orgLevel", "OrgLevel"),
@@ -338,10 +335,10 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("approximationOfPi", "bigdecimal")
         );
 
-        AtlasTypesDef ret = new AtlasTypesDef(ImmutableList.of(orgLevelEnum),
-                ImmutableList.of(addressDetails),
-                ImmutableList.<AtlasClassificationDef>of(),
-                ImmutableList.of(deptTypeDef, personTypeDef));
+        AtlasTypesDef ret = new AtlasTypesDef(Collections.singletonList(orgLevelEnum),
+                                              Collections.singletonList(addressDetails),
+                                              Collections.<AtlasClassificationDef>emptyList(),
+                                              Arrays.asList(deptTypeDef, personTypeDef));
 
         populateSystemAttributes(ret);
 
@@ -390,7 +387,7 @@ public final class TestUtilsV2 {
             julius.setAttribute("name", "Julius");
             julius.setAttribute("department", hrDeptId);
             julius.setAttribute("address", juliusAddr);
-            julius.setAttribute("subordinates", ImmutableList.of());
+            julius.setAttribute("subordinates", Collections.emptyList());
 
         /******* Employee - Max (Manager: Jane, Mentor: Julius) *******/
         AtlasEntity   max   = new AtlasEntity(EMPLOYEE_TYPE);
@@ -430,8 +427,8 @@ public final class TestUtilsV2 {
             john.setAttribute("numberOfStarsEstimate", new BigInteger("1000000000000000000000"));
             john.setAttribute("approximationOfPi", new BigDecimal("3.141592653589793238462643383279502884197169399375105820974944592307816406286"));
 
-        jane.setAttribute("subordinates", ImmutableList.of(johnId, maxId));
-        hrDept.setAttribute("employees", ImmutableList.of(janeId, juliusId, maxId, johnId));
+        jane.setAttribute("subordinates", Arrays.asList(johnId, maxId));
+        hrDept.setAttribute("employees", Arrays.asList(janeId, juliusId, maxId, johnId));
 
         entitiesWithExtInfo.addEntity(hrDept);
         entitiesWithExtInfo.addEntity(jane);
@@ -487,7 +484,7 @@ public final class TestUtilsV2 {
         juliusAddr.setAttribute("street", "Madison Ave");
         juliusAddr.setAttribute("city", "Newtonville");
         julius.setAttribute("address", juliusAddr);
-        julius.setAttribute("subordinates", ImmutableList.of());
+        julius.setAttribute("subordinates", Collections.emptyList());
 
         AtlasObjectId janeId = AtlasTypeUtil.getAtlasObjectId(jane);
         AtlasObjectId johnId = AtlasTypeUtil.getAtlasObjectId(john);
@@ -516,9 +513,9 @@ public final class TestUtilsV2 {
 
         john.setAttribute("manager", janeId);
         john.setAttribute("mentor", maxId);
-        hrDept.setAttribute("employees", ImmutableList.of(johnId, janeId, juliusId, maxId));
+        hrDept.setAttribute("employees", Arrays.asList(johnId, janeId, juliusId, maxId));
 
-        jane.setAttribute("subordinates", ImmutableList.of(johnId, maxId));
+        jane.setAttribute("subordinates", Arrays.asList(johnId, maxId));
 
         deptEmpEntities.put(jane.getGuid(), jane);
         deptEmpEntities.put(john.getGuid(), john);
@@ -549,20 +546,20 @@ public final class TestUtilsV2 {
 
     public static AtlasTypesDef simpleType(){
         AtlasEntityDef superTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef("h_type", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef("h_type", Collections.<String>emptySet(),
                         AtlasTypeUtil.createOptionalAttrDef("attr", "string"));
 
         AtlasStructDef structTypeDefinition = new AtlasStructDef("s_type", "structType", "1.0",
                 Arrays.asList(AtlasTypeUtil.createRequiredAttrDef("name", "string")));
 
         AtlasClassificationDef traitTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef("t_type", "traitType", Collections.<String>emptySet());
 
         AtlasEnumDef enumTypeDefinition = new AtlasEnumDef("e_type", "enumType", "1.0",
                 Arrays.asList(new AtlasEnumElementDef("ONE", "Element Description", 1)));
 
-        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
-                ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition));
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.singletonList(enumTypeDefinition), Collections.singletonList(structTypeDefinition),
+                Collections.singletonList(traitTypeDefinition), Collections.singletonList(superTypeDefinition));
 
         populateSystemAttributes(ret);
 
@@ -571,23 +568,23 @@ public final class TestUtilsV2 {
 
     public static AtlasTypesDef simpleTypeUpdated(){
         AtlasEntityDef superTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef("h_type", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef("h_type", Collections.<String>emptySet(),
                         AtlasTypeUtil.createOptionalAttrDef("attr", "string"));
 
         AtlasEntityDef newSuperTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef("new_h_type", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef("new_h_type", Collections.<String>emptySet(),
                         AtlasTypeUtil.createOptionalAttrDef("attr", "string"));
 
         AtlasStructDef structTypeDefinition = new AtlasStructDef("s_type", "structType", "1.0",
                 Arrays.asList(AtlasTypeUtil.createRequiredAttrDef("name", "string")));
 
         AtlasClassificationDef traitTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef("t_type", "traitType", Collections.<String>emptySet());
 
         AtlasEnumDef enumTypeDefinition = new AtlasEnumDef("e_type", "enumType",
                 Arrays.asList(new AtlasEnumElementDef("ONE", "Element Description", 1)));
-        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
-                ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition, newSuperTypeDefinition));
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.singletonList(enumTypeDefinition), Collections.singletonList(structTypeDefinition),
+                Collections.singletonList(traitTypeDefinition), Arrays.asList(superTypeDefinition, newSuperTypeDefinition));
 
         populateSystemAttributes(ret);
 
@@ -596,13 +593,13 @@ public final class TestUtilsV2 {
 
     public static AtlasTypesDef simpleTypeUpdatedDiff() {
         AtlasEntityDef newSuperTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef("new_h_type", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef("new_h_type", Collections.<String>emptySet(),
                         AtlasTypeUtil.createOptionalAttrDef("attr", "string"));
 
-        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
-                ImmutableList.<AtlasStructDef>of(),
-                ImmutableList.<AtlasClassificationDef>of(),
-                ImmutableList.of(newSuperTypeDefinition));
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                Collections.<AtlasClassificationDef>emptyList(),
+                Collections.singletonList(newSuperTypeDefinition));
 
         populateSystemAttributes(ret);
 
@@ -613,12 +610,12 @@ public final class TestUtilsV2 {
     public static AtlasTypesDef defineHiveTypes() {
         String _description = "_description";
         AtlasEntityDef superTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef(SUPER_TYPE_NAME, "SuperType_description", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createClassTypeDef(SUPER_TYPE_NAME, "SuperType_description", Collections.<String>emptySet(),
                         AtlasTypeUtil.createOptionalAttrDef("namespace", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("cluster", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("colo", "string"));
         AtlasEntityDef databaseTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,ImmutableSet.of(SUPER_TYPE_NAME),
+                AtlasTypeUtil.createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,Collections.singleton(SUPER_TYPE_NAME),
                         AtlasTypeUtil.createUniqueRequiredAttrDef(NAME, "string"),
                         AtlasTypeUtil.createOptionalAttrDef("isReplicated", "boolean"),
                         AtlasTypeUtil.createOptionalAttrDef("created", "string"),
@@ -640,7 +637,7 @@ public final class TestUtilsV2 {
 
         AtlasEntityDef columnsDefinition =
                 AtlasTypeUtil.createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE + "_description",
-                        ImmutableSet.<String>of(),
+                        Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("description", "string"),
@@ -684,7 +681,7 @@ public final class TestUtilsV2 {
 
         AtlasEntityDef storageDescClsDef =
                 new AtlasEntityDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE + _description, "1.0",
-                        Arrays.asList(attributeDefinitions), ImmutableSet.of(SUPER_TYPE_NAME));
+                        Arrays.asList(attributeDefinitions), Collections.singleton(SUPER_TYPE_NAME));
 
         AtlasAttributeDef[] partClsAttributes = new AtlasAttributeDef[]{
                 new AtlasAttributeDef("values", "array<string>",
@@ -720,7 +717,7 @@ public final class TestUtilsV2 {
 
         AtlasEntityDef partClsDef =
                 new AtlasEntityDef("partition_class_type", "partition_class_type" + _description, "1.0",
-                        Arrays.asList(partClsAttributes), ImmutableSet.of(SUPER_TYPE_NAME));
+                        Arrays.asList(partClsAttributes), Collections.singleton(SUPER_TYPE_NAME));
 
         AtlasEntityDef processClsType =
                 new AtlasEntityDef(PROCESS_TYPE, PROCESS_TYPE + _description, "1.0",
@@ -728,10 +725,10 @@ public final class TestUtilsV2 {
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
                                 false, false,
                                 Collections.<AtlasConstraintDef>emptyList())),
-                        ImmutableSet.<String>of());
+                        Collections.<String>emptySet());
 
         AtlasEntityDef tableTypeDefinition =
-                AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE + _description, ImmutableSet.of(SUPER_TYPE_NAME),
+                AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE + _description, Collections.singleton(SUPER_TYPE_NAME),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("description", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("type", "string"),
@@ -810,26 +807,25 @@ public final class TestUtilsV2 {
                         ));
 
         AtlasClassificationDef piiTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef(PII, PII + _description, ImmutableSet.<String>of());
+                AtlasTypeUtil.createTraitTypeDef(PII, PII + _description, Collections.<String>emptySet());
 
         AtlasClassificationDef classificationTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef(CLASSIFICATION, CLASSIFICATION + _description, ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef(CLASSIFICATION, CLASSIFICATION + _description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
 
         AtlasClassificationDef fetlClassificationTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, ImmutableSet.of(CLASSIFICATION),
+                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, Collections.singleton(CLASSIFICATION),
                         AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
 
-        AtlasClassificationDef phiTypeDefinition = AtlasTypeUtil.createTraitTypeDef(PHI, PHI + _description, ImmutableSet.<String>of(),
+        AtlasClassificationDef phiTypeDefinition = AtlasTypeUtil.createTraitTypeDef(PHI, PHI + _description, Collections.<String>emptySet(),
                                                                                     AtlasTypeUtil.createRequiredAttrDef("stringAttr", "string"),
                                                                                     AtlasTypeUtil.createRequiredAttrDef("booleanAttr", "boolean"),
                                                                                     AtlasTypeUtil.createRequiredAttrDef("integerAttr", "int"));
 
-        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
-                ImmutableList.of(structTypeDefinition, partitionDefinition),
-                ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition, phiTypeDefinition),
-                ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition,
-                        storageDescClsDef, partClsDef, processClsType));
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.singletonList(enumTypeDefinition),
+                                                      Arrays.asList(structTypeDefinition, partitionDefinition),
+                                                      Arrays.asList(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition, phiTypeDefinition),
+                                                      Arrays.asList(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition, storageDescClsDef, partClsDef, processClsType));
 
         populateSystemAttributes(ret);
 
@@ -838,6 +834,10 @@ public final class TestUtilsV2 {
 
     public static final String randomString() {
         return RandomStringUtils.randomAlphanumeric(10);
+    }
+
+    public static final String randomString(int count) {
+        return RandomStringUtils.randomAlphanumeric(count);
     }
 
     public static AtlasEntity createDBEntity() {
@@ -990,11 +990,11 @@ public final class TestUtilsV2 {
 
     public static List<AtlasClassificationDef> getClassificationWithValidSuperType() {
         AtlasClassificationDef securityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("SecurityClearance1", "SecurityClearance_description", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef("SecurityClearance1", "SecurityClearance_description", Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
         AtlasClassificationDef janitorSecurityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", ImmutableSet.of("SecurityClearance1"),
+                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", Collections.singleton("SecurityClearance1"),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
         List<AtlasClassificationDef> ret = Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);
@@ -1006,7 +1006,7 @@ public final class TestUtilsV2 {
 
     public static List<AtlasClassificationDef> getClassificationWithName(String name) {
         AtlasClassificationDef classificationTypeDef =
-                AtlasTypeUtil.createTraitTypeDef(name, "s_description", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef(name, "s_description", Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
 
@@ -1019,7 +1019,7 @@ public final class TestUtilsV2 {
 
     public static AtlasClassificationDef getSingleClassificationWithName(String name) {
         AtlasClassificationDef classificaitonTypeDef =
-                AtlasTypeUtil.createTraitTypeDef(name, "s_description", ImmutableSet.<String>of(),
+                AtlasTypeUtil.createTraitTypeDef(name, "s_description", Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
 
         populateSystemAttributes(classificaitonTypeDef);
@@ -1032,7 +1032,7 @@ public final class TestUtilsV2 {
     }
 
     public static List<AtlasEntityDef> getEntityWithValidSuperType() {
-        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef("Developer", "Developer_description", ImmutableSet.of("Employee"),
+        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef("Developer", "Developer_description", Collections.singleton("Employee"),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
@@ -1045,7 +1045,7 @@ public final class TestUtilsV2 {
     }
 
     public static List<AtlasEntityDef> getEntityWithName(String name) {
-        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", ImmutableSet.<String>of(),
+        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", Collections.<String>emptySet(),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
@@ -1058,7 +1058,7 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasEntityDef getSingleEntityWithName(String name) {
-        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", ImmutableSet.<String>of(),
+        AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", Collections.<String>emptySet(),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
                         1, 10, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));

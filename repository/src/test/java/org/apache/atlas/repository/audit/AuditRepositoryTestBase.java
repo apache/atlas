@@ -19,8 +19,8 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.TestUtils;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -34,7 +34,7 @@ public class AuditRepositoryTestBase {
     protected EntityAuditRepository eventRepository;
 
     private String rand() {
-         return TestUtils.randomString(10);
+         return TestUtilsV2.randomString(10);
     }
 
     @BeforeTest
@@ -44,37 +44,34 @@ public class AuditRepositoryTestBase {
 
     @Test
     public void testAddEvents() throws Exception {
-        TestUtils.skipForGremlin3EnabledGraphDb();
         EntityAuditEvent event = new EntityAuditEvent(rand(), System.currentTimeMillis(), "u1",
                 EntityAuditEvent.EntityAuditAction.ENTITY_CREATE, "d1", new Referenceable(rand()));
 
         eventRepository.putEvents(event);
 
-        List<EntityAuditEvent> events =
-                eventRepository.listEvents(event.getEntityId(), null, (short) 10);
+        List<EntityAuditEvent> events = eventRepository.listEvents(event.getEntityId(), null, (short) 10);
+
         assertEquals(events.size(), 1);
         assertEventEquals(events.get(0), event);
     }
 
     @Test
     public void testListPagination() throws Exception {
-        TestUtils.skipForGremlin3EnabledGraphDb();
-        String id1 = "id1" + rand();
-        String id2 = "id2" + rand();
-        String id3 = "id3" + rand();
-        long ts = System.currentTimeMillis();
-        Referenceable entity = new Referenceable(rand());
+        String                 id1            = "id1" + rand();
+        String                 id2            = "id2" + rand();
+        String                 id3            = "id3" + rand();
+        long                   ts             = System.currentTimeMillis();
+        Referenceable          entity         = new Referenceable(rand());
         List<EntityAuditEvent> expectedEvents = new ArrayList<>(3);
+
         for (int i = 0; i < 3; i++) {
             //Add events for both ids
-            EntityAuditEvent event = new EntityAuditEvent(id2, ts - i, "user" + i,
-                            EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE, "details" + i, entity);
+            EntityAuditEvent event = new EntityAuditEvent(id2, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE, "details" + i, entity);
+
             eventRepository.putEvents(event);
             expectedEvents.add(event);
-            eventRepository.putEvents(new EntityAuditEvent(id1, ts - i, "user" + i,
-                    EntityAuditEvent.EntityAuditAction.TAG_DELETE, "details" + i, entity));
-            eventRepository.putEvents(new EntityAuditEvent(id3, ts - i, "user" + i,
-                    EntityAuditEvent.EntityAuditAction.TAG_ADD, "details" + i, entity));
+            eventRepository.putEvents(new EntityAuditEvent(id1, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_DELETE, "details" + i, entity));
+            eventRepository.putEvents(new EntityAuditEvent(id3, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_ADD, "details" + i, entity));
         }
 
         //Use ts for which there is no event - ts + 2
@@ -92,8 +89,8 @@ public class AuditRepositoryTestBase {
 
     @Test
     public void testInvalidEntityId() throws Exception {
-        TestUtils.skipForGremlin3EnabledGraphDb();
         List<EntityAuditEvent> events = eventRepository.listEvents(rand(), null, (short) 3);
+
         assertEquals(events.size(), 0);
     }
 

@@ -27,7 +27,7 @@ import javax.script.ScriptException;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.type.AtlasType;
 
 /**
  * Represents a graph.
@@ -110,7 +110,6 @@ public interface AtlasGraph<V, E> {
      * Gets the names of the indexes on edges
      * type.
      *
-     * @param type
      * @return
      */
     Set<String> getEdgeIndexKeys();
@@ -120,7 +119,6 @@ public interface AtlasGraph<V, E> {
      * Gets the names of the indexes on vertices.
      * type.
      *
-     * @param type
      * @return
      */
     Set<String> getVertexIndexKeys();
@@ -218,11 +216,11 @@ public interface AtlasGraph<V, E> {
      * convert property values from the value that is stored in the graph
      * to the value/type that the user expects to get back.
      *
-     * @param expr - gremlin expr that represents the persistent property value
+     * @param valueExpr - gremlin expr that represents the persistent property value
      * @param type
      * @return
      */
-    GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression valueExpr, IDataType<?> type);
+    GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression valueExpr, AtlasType type);
 
     /**
      * Indicates whether or not stored values with the specified type need to be converted
@@ -234,7 +232,7 @@ public interface AtlasGraph<V, E> {
      * gremlin expression with the converted value.  In addition, this cause the gremlin
      * 'filter' step to be used to compare the values instead of a 'has' step.
      */
-    boolean isPropertyValueConversionNeeded(IDataType<?> type);
+    boolean isPropertyValueConversionNeeded(AtlasType type);
 
     /**
      * Gets the version of Gremlin that this graph uses.
@@ -286,7 +284,7 @@ public interface AtlasGraph<V, E> {
     /**
      * Executes a Gremlin script, returns an object with the result.
      *
-     * @param gremlinQuery
+     * @param query
      * @param isPath whether this is a path query
      *
      * @return the result from executing the script

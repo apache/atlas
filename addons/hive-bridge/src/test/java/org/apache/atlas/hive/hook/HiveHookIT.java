@@ -19,18 +19,16 @@
 package org.apache.atlas.hive.hook;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.HiveITBase;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -182,7 +180,7 @@ public class HiveHookIT extends HiveITBase {
     private void verifyTimestamps(Referenceable ref, String property, long expectedTime) throws ParseException {
         //Verify timestamps.
         String createTimeStr = (String) ref.get(property);
-        Date createDate = TypeSystem.getInstance().getDateFormat().parse(createTimeStr);
+        Date createDate = AtlasBaseTypeDef.DATE_FORMATTER.parse(createTimeStr);
         Assert.assertNotNull(createTimeStr);
 
         if (expectedTime > 0) {
@@ -1262,7 +1260,7 @@ public class HiveHookIT extends HiveITBase {
         String guid2 = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id_new"));
         assertEquals(guid2, guid);
 
-        assertTrue(atlasClient.getEntity(guid2).getTraits().contains(trait));
+        assertTrue(atlasClient.getEntity(guid2).getTraitNames().contains(trait));
     }
 
     @Test
@@ -1349,15 +1347,15 @@ public class HiveHookIT extends HiveITBase {
     @Test
     public void testAlterTableBucketingClusterSort() throws Exception {
         String tableName = createTable();
-        ImmutableList<String> cols = ImmutableList.of("id");
+        List<String> cols = Collections.singletonList("id");
         runBucketSortQuery(tableName, 5, cols, cols);
 
-        cols = ImmutableList.of("id", NAME);
+        cols = Arrays.asList("id", NAME);
         runBucketSortQuery(tableName, 2, cols, cols);
     }
 
-    private void runBucketSortQuery(String tableName, final int numBuckets,  final ImmutableList<String> bucketCols,
-                                    final ImmutableList<String> sortCols) throws Exception {
+    private void runBucketSortQuery(String tableName, final int numBuckets,  final List<String> bucketCols,
+                                    final List<String> sortCols) throws Exception {
         final String fmtQuery = "alter table %s CLUSTERED BY (%s) SORTED BY (%s) INTO %s BUCKETS";
         String query = String.format(fmtQuery, tableName, stripListBrackets(bucketCols.toString()),
                 stripListBrackets(sortCols.toString()), numBuckets);
@@ -1375,8 +1373,8 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private void verifyBucketSortingProperties(Referenceable tableRef, int numBuckets,
-                                               ImmutableList<String> bucketColNames,
-                                               ImmutableList<String>  sortcolNames) throws Exception {
+                                               List<String> bucketColNames,
+                                               List<String>  sortcolNames) throws Exception {
         Referenceable sdRef = (Referenceable) tableRef.get(HiveMetaStoreBridge.STORAGE_DESC);
         Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveMetaStoreBridge.STORAGE_NUM_BUCKETS)).intValue(),
             numBuckets);

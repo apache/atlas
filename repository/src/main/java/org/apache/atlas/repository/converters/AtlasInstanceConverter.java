@@ -20,6 +20,7 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -27,27 +28,17 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
-import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.ITypedStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.exception.EntityExistsException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TraitNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -66,54 +57,55 @@ import java.util.Map;
 @Singleton
 @Component
 public class AtlasInstanceConverter {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasInstanceConverter.class);
 
-    private AtlasTypeRegistry typeRegistry;
-
-    private AtlasFormatConverters instanceFormatters;
-
-    private MetadataService metadataService;
+    private final AtlasTypeRegistry     typeRegistry;
+    private final AtlasFormatConverters instanceFormatters;
+    private final EntityGraphRetriever  entityGraphRetriever;
 
     @Inject
-    public AtlasInstanceConverter(AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters, MetadataService metadataService) {
-        this.typeRegistry = typeRegistry;
-        this.instanceFormatters = instanceFormatters;
-        this.metadataService = metadataService;
+    public AtlasInstanceConverter(AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
+        this.typeRegistry         = typeRegistry;
+        this.instanceFormatters   = instanceFormatters;
+        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
     }
 
-    public ITypedReferenceableInstance[] getITypedReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {
-        ITypedReferenceableInstance[] entitiesInOldFormat = new ITypedReferenceableInstance[entities.size()];
+    public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {
+        Referenceable[] ret = new Referenceable[entities.size()];
 
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
+
         for(Iterator<AtlasEntity> i = entities.iterator(); i.hasNext(); ) {
             ctx.addEntity(i.next());
         }
 
         Iterator<AtlasEntity> entityIterator = entities.iterator();
         for (int i = 0; i < entities.size(); i++) {
-            ITypedReferenceableInstance typedInstance = getITypedReferenceable(entityIterator.next());
-            entitiesInOldFormat[i] = typedInstance;
+            ret[i] = getReferenceable(entityIterator.next(), ctx);
         }
-        return entitiesInOldFormat;
+
+        return ret;
     }
 
-    public ITypedReferenceableInstance getITypedReferenceable(AtlasEntity entity) throws AtlasBaseException {
-        try {
-            return metadataService.getEntityDefinition(entity.getGuid());
-        } catch (AtlasException e) {
-            LOG.error("Exception while getting a typed reference for the entity ", e);
-            throw toAtlasBaseException(e);
-        }
+    public Referenceable getReferenceable(AtlasEntity entity) throws AtlasBaseException {
+        return getReferenceable(entity, new ConverterContext());
     }
 
-    public ITypedReferenceableInstance getITypedReferenceable(String guid) throws AtlasBaseException {
-        try {
-            return metadataService.getEntityDefinition(guid);
-        } catch (AtlasException e) {
-            LOG.error("Exception while getting a typed reference for the entity ", e);
-            throw toAtlasBaseException(e);
+    public Referenceable getReferenceable(String guid) throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entity = getAndCacheEntity(guid);
+
+        return getReferenceable(entity);
+    }
+
+    public Referenceable getReferenceable(AtlasEntity.AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+        AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
+
+        ctx.addEntity(entity.getEntity());
+        for(Map.Entry<String, AtlasEntity> entry : entity.getReferredEntities().entrySet()) {
+            ctx.addEntity(entry.getValue());
         }
+
+        return getReferenceable(entity.getEntity(), ctx);
     }
 
     public Referenceable getReferenceable(AtlasEntity entity, final ConverterContext ctx) throws AtlasBaseException {
@@ -124,43 +116,33 @@ public class AtlasInstanceConverter {
         return ref;
     }
 
-    public ITypedStruct getTrait(AtlasClassification classification) throws AtlasBaseException {
+    public Struct getTrait(AtlasClassification classification) throws AtlasBaseException {
         AtlasFormatConverter converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
         AtlasType            classificationType = typeRegistry.getType(classification.getTypeName());
         Struct               trait               = (Struct)converter.fromV2ToV1(classification, classificationType, new ConverterContext());
 
-        try {
-            return metadataService.createTraitInstance(trait);
-        } catch (AtlasException e) {
-            LOG.error("Exception while getting a typed reference for the entity ", e);
-            throw toAtlasBaseException(e);
-        }
+        return trait;
     }
 
-    public AtlasClassification getClassification(IStruct classification) throws AtlasBaseException {
-        AtlasFormatConverter converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
+    public AtlasClassification toAtlasClassification(Struct classification) throws AtlasBaseException {
+        AtlasFormatConverter    converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
         AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+
         if (classificationType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.CLASSIFICATION.name(), classification.getTypeName());
         }
-        AtlasClassification  ret                = (AtlasClassification)converter.fromV1ToV2(classification, classificationType, new AtlasFormatConverter.ConverterContext());
+
+        AtlasClassification  ret = (AtlasClassification)converter.fromV1ToV2(classification, classificationType, new AtlasFormatConverter.ConverterContext());
 
         return ret;
     }
 
-    public AtlasEntitiesWithExtInfo toAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo toAtlasEntity(Referenceable referenceable) throws AtlasBaseException {
         AtlasEntityFormatConverter converter  = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
         AtlasEntityType            entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
 
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
-        }
-
-        // validate
-        try {
-            metadataService.validateAndConvertToTypedInstance(referenceable, entityType.getTypeName());
-        } catch (AtlasException excp) {
-            throw toAtlasBaseException(excp);
         }
 
         ConverterContext ctx    = new ConverterContext();
@@ -171,106 +153,59 @@ public class AtlasInstanceConverter {
         return ctx.getEntities();
     }
 
-    public static EntityMutationResponse toEntityMutationResponse(EntityResult entityResult) {
-
-        CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
-        result.setEntityResult(entityResult);
-        return toEntityMutationResponse(result);
-    }
-
-    public static EntityMutationResponse toEntityMutationResponse(CreateUpdateEntitiesResult result) {
-        EntityMutationResponse response = new EntityMutationResponse();
-        for (String guid : result.getCreatedEntities()) {
-            AtlasEntityHeader header = new AtlasEntityHeader();
-            header.setGuid(guid);
-            response.addEntity(EntityMutations.EntityOperation.CREATE, header);
-        }
-
-        for (String guid : result.getUpdatedEntities()) {
-            AtlasEntityHeader header = new AtlasEntityHeader();
-            header.setGuid(guid);
-            response.addEntity(EntityMutations.EntityOperation.UPDATE, header);
-        }
-
-        for (String guid : result.getDeletedEntities()) {
-            AtlasEntityHeader header = new AtlasEntityHeader();
-            header.setGuid(guid);
-            response.addEntity(EntityMutations.EntityOperation.DELETE, header);
-        }
-        GuidMapping guidMapping = result.getGuidMapping();
-        if(guidMapping != null) {
-            response.setGuidAssignments(guidMapping.getGuidAssignments());
-        }
-        return response;
-    }
-
-    public static AtlasBaseException toAtlasBaseException(AtlasException e) {
-        if (e instanceof EntityExistsException) {
-            return new AtlasBaseException(AtlasErrorCode.INSTANCE_ALREADY_EXISTS, e.getMessage());
-        }
-
-        if ( e instanceof EntityNotFoundException || e instanceof TraitNotFoundException) {
-            return new AtlasBaseException(AtlasErrorCode.INSTANCE_NOT_FOUND, e.getMessage());
-        }
-
-        if ( e instanceof TypeNotFoundException) {
-            return new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e.getMessage());
-        }
-
-        if (e instanceof ValueConversionException) {
-            return new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, e, e.getMessage());
-        }
-
-        return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, e.getMessage());
-    }
-
 
     public AtlasEntity.AtlasEntitiesWithExtInfo toAtlasEntities(List<Referenceable> referenceables) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> toAtlasEntities");
+            LOG.debug("==> toAtlasEntities({})", referenceables);
         }
 
         AtlasFormatConverter.ConverterContext context = new AtlasFormatConverter.ConverterContext();
+
         for (Referenceable referenceable : referenceables) {
             AtlasEntity entity = fromV1toV2Entity(referenceable, context);
 
             context.addEntity(entity);
         }
+
+        AtlasEntity.AtlasEntitiesWithExtInfo ret = context.getEntities();
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== toAtlasEntities");
+            LOG.debug("<== toAtlasEntities({}): ret=", referenceables, ret);
         }
 
-        return context.getEntities();
+        return ret;
     }
 
-    public AtlasEntitiesWithExtInfo toAtlasEntities(String entitiesJson) throws AtlasBaseException, AtlasException {
-        ITypedReferenceableInstance[] referenceables = metadataService.deserializeClassInstances(entitiesJson);
-        AtlasEntityFormatConverter    converter      = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
-        ConverterContext              context        = new ConverterContext();
-        AtlasEntitiesWithExtInfo      ret            = null;
+    public AtlasEntitiesWithExtInfo toAtlasEntities(String[] jsonEntities) throws AtlasBaseException, AtlasException {
+        Referenceable[] referenceables = new Referenceable[jsonEntities.length];
 
-        if (referenceables != null) {
-            for (IReferenceableInstance referenceable : referenceables) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
+        for (int i = 0; i < jsonEntities.length; i++) {
+            referenceables[i] = AtlasType.fromV1Json(jsonEntities[i], Referenceable.class);
+        }
 
-                if (entityType == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
-                }
+        AtlasEntityFormatConverter converter = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
+        ConverterContext           context   = new ConverterContext();
 
-                AtlasEntity entity = converter.fromV1ToV2(referenceable, entityType, context);
+        for (Referenceable referenceable : referenceables) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(referenceable.getTypeName());
 
-                context.addEntity(entity);
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), referenceable.getTypeName());
             }
 
-            ret = context.getEntities();
+            AtlasEntity entity = converter.fromV1ToV2(referenceable, entityType, context);
+
+            context.addEntity(entity);
         }
+
+        AtlasEntitiesWithExtInfo ret = context.getEntities();
 
         return ret;
     }
 
     private AtlasEntity fromV1toV2Entity(Referenceable referenceable, AtlasFormatConverter.ConverterContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> fromV1toV2Entity");
+            LOG.debug("==> fromV1toV2Entity({})", referenceable);
         }
 
         AtlasEntityFormatConverter converter = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
@@ -278,8 +213,9 @@ public class AtlasInstanceConverter {
         AtlasEntity entity = converter.fromV1ToV2(referenceable, typeRegistry.getType(referenceable.getTypeName()), context);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== fromV1toV2Entity");
+            LOG.debug("<== fromV1toV2Entity({}): {}", referenceable, entity);
         }
+
         return entity;
     }
 
@@ -351,5 +287,25 @@ public class AtlasInstanceConverter {
         }
 
         return ret;
+    }
+
+
+    private AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
+        RequestContextV1                   context           = RequestContextV1.get();
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
+
+        if (entityWithExtInfo == null) {
+            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+
+            if (entityWithExtInfo != null) {
+                context.cache(entityWithExtInfo);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
+        }
+
+        return entityWithExtInfo;
     }
 }

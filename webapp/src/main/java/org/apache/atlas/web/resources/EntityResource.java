@@ -20,39 +20,34 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
-import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.exception.EntityExistsException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.ValueConversionException;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.web.rest.EntityREST;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -98,32 +93,29 @@ public class EntityResource {
 
     private static final String TRAIT_NAME = "traitName";
 
-    private final MetadataService        metadataService;
     private final AtlasInstanceConverter restAdapters;
     private final AtlasEntityStore       entitiesStore;
     private final AtlasTypeRegistry      typeRegistry;
-    private final EntityREST entityREST;
+    private final EntityREST             entityREST;
+    private final EntityAuditRepository  entityAuditRepository;
+    private final AtlasDiscoveryService  atlasDiscoveryService;
 
     @Context
     UriInfo uriInfo;
 
-    @Context
-    private ResourceContext resourceContext;
-
-    /**
-     * Created by the Guice ServletModule and injected with the
-     * configured MetadataService.
-     *
-     * @param metadataService metadata service handle
-     */
     @Inject
-    public EntityResource(MetadataService metadataService, AtlasInstanceConverter restAdapters,
-                          AtlasEntityStore entitiesStore, AtlasTypeRegistry typeRegistry, EntityREST entityREST) {
-        this.metadataService = metadataService;
-        this.restAdapters    = restAdapters;
-        this.entitiesStore   = entitiesStore;
-        this.typeRegistry    = typeRegistry;
+    public EntityResource(final AtlasInstanceConverter restAdapters,
+                          final AtlasEntityStore entitiesStore,
+                          final AtlasTypeRegistry typeRegistry,
+                          final EntityREST entityREST,
+                          final EntityAuditRepository entityAuditRepository,
+                          final AtlasDiscoveryService atlasDiscoveryService) {
+        this.restAdapters  = restAdapters;
+        this.entitiesStore = entitiesStore;
+        this.typeRegistry  = typeRegistry;
         this.entityREST    = entityREST;
+        this.entityAuditRepository = entityAuditRepository;
+        this.atlasDiscoveryService = atlasDiscoveryService;
     }
 
     /**
@@ -149,22 +141,28 @@ public class EntityResource {
             String entities = Servlets.getRequestPayload(request);
 
             //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
+            JSONArray jsonEntities = null;
+
             try {
-                new JSONArray(entities);
+                jsonEntities = new JSONArray(entities);
             } catch (JSONException e) {
                 final String finalEntities = entities;
-                entities = new JSONArray() {{
+                jsonEntities = new JSONArray() {{
                     put(finalEntities);
-                }}.toString();
+                }};
             }
 
-            entityJson = AtlasClient.toString(new JSONArray(entities));
+            String[] jsonStrings = new String[jsonEntities.length()];
+
+            for (int i = 0; i < jsonEntities.length(); i++) {
+                jsonStrings[i] = jsonEntities.getString(i);
+            }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("submitting entities {} ", entityJson);
+                LOG.debug("submitting entities {} ", jsonEntities);
             }
 
-            AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(entities);
+            AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
             EntityMutationResponse   mutationResponse = entityREST.createOrUpdate(entitiesInfo);
 
             final List<String> guids = restAdapters.getGuids(mutationResponse.getCreatedEntities());
@@ -183,12 +181,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw toWebApplicationException(e);
-        } catch(EntityExistsException e) {
-            LOG.error("Unique constraint violation for entity entityDef={}", entityJson, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
-        } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a deserialization error entityDef={}", entityJson, ve);
-            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause() != null ? ve.getCause() : ve, Response.Status.BAD_REQUEST));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -224,13 +216,13 @@ public class EntityResource {
         return locationURI;
     }
 
-    private JSONObject getResponse(EntityResult entityResult) throws AtlasException, JSONException {
+    private JSONObject getResponse(EntityResult entityResult) throws AtlasBaseException, AtlasException, JSONException {
         CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
         result.setEntityResult(entityResult);
         return getResponse(result);
 
     }
-    private JSONObject getResponse(CreateUpdateEntitiesResult result) throws AtlasException, JSONException {
+    private JSONObject getResponse(CreateUpdateEntitiesResult result) throws AtlasBaseException, AtlasException, JSONException {
         JSONObject response = new JSONObject();
         EntityResult entityResult = result.getEntityResult();
         GuidMapping mapping = result.getGuidMapping();
@@ -239,12 +231,12 @@ public class EntityResource {
             response.put(AtlasClient.ENTITIES, new JSONObject(entityResult.toString()).get(AtlasClient.ENTITIES));
             String sampleEntityId = getSample(result.getEntityResult());
             if (sampleEntityId != null) {
-                String entityDefinition = metadataService.getEntityDefinitionJson(sampleEntityId);
+                String entityDefinition = getEntityJson(sampleEntityId);
                 response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
             }
         }
         if(mapping != null) {
-            response.put(AtlasClient.GUID_ASSIGNMENTS, new JSONObject(AtlasType.toJson(mapping)).get(AtlasClient.GUID_ASSIGNMENTS));
+            response.put(AtlasClient.GUID_ASSIGNMENTS, new JSONObject(AtlasType.toV1Json(mapping)).get(AtlasClient.GUID_ASSIGNMENTS));
         }
         return response;
     }
@@ -270,14 +262,18 @@ public class EntityResource {
             }
 
             final String entities = Servlets.getRequestPayload(request);
+            JSONArray jsonEntities = new JSONArray(entities);
+            String[]  jsonStrings = new String[jsonEntities.length()];
 
-            entityJson = AtlasClient.toString(new JSONArray(entities));
+            for (int i = 0; i < jsonEntities.length(); i++) {
+                jsonStrings[i] = jsonEntities.getString(i);
+            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.info("updating entities {} ", entityJson);
             }
 
-            AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(entities);
+            AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
             EntityMutationResponse     mutationResponse = entityREST.createOrUpdate(entitiesInfo);
             CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
@@ -290,12 +286,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw toWebApplicationException(e);
-        } catch(EntityExistsException e) {
-            LOG.error("Unique constraint violation for entityDef={}", entityJson, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
-        } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a deserialization error entityDef={}", entityJson, ve);
-            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance entityDef={}", entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -367,7 +357,7 @@ public class EntityResource {
                 LOG.debug("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
             }
 
-            Referenceable updatedEntity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            Referenceable updatedEntity = AtlasType.fromV1Json(entityJson, Referenceable.class);
 
             entityType = ParamChecker.notEmpty(entityType, "Entity type cannot be null");
             attribute  = ParamChecker.notEmpty(attribute, "attribute name cannot be null");
@@ -379,10 +369,10 @@ public class EntityResource {
             // update referenceable with Id if not specified in payload
             Id updateId = updatedEntity.getId();
 
-            if (updateId != null && !updateId.isAssigned()) {
+            if (updateId != null && !AtlasTypeUtil.isAssignedGuid(updateId.getId())) {
                 String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(getEntityType(entityType), attributes);
 
-                updatedEntity.replaceWithNewId(new Id(guid, 0, updatedEntity.getTypeName()));
+                updatedEntity.setId(new Id(guid, 0, updatedEntity.getTypeName()));
             }
 
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
@@ -398,15 +388,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to partially update entity {} {}:{}.{}", entityJson, entityType, attribute, value, e);
             throw toWebApplicationException(e);
-        } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a deserialization error {} ", entityJson, ve);
-            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
-        } catch(EntityExistsException e) {
-            LOG.error("Unique constraint violation for entity {} ", entityJson, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with type={} and qualifiedName={} does not exist {} ", entityType, value, entityJson, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to partially update entity {} {}:{}.{}", entityJson, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -474,13 +455,13 @@ public class EntityResource {
                 LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
             }
 
-            Referenceable updatedEntity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            Referenceable updatedEntity = AtlasType.fromV1Json(entityJson, Referenceable.class);
 
             // update referenceable with Id if not specified in payload
             Id updateId = updatedEntity.getId();
 
-            if (updateId != null && !updateId.isAssigned()) {
-                updatedEntity.replaceWithNewId(new Id(guid, 0, updatedEntity.getTypeName()));
+            if (updateId != null && !AtlasTypeUtil.isAssignedGuid(updateId.getId())) {
+                updatedEntity.setId(new Id(guid, 0, updatedEntity.getTypeName()));
             }
 
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntity(updatedEntity);
@@ -496,9 +477,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to update entity by GUID {} {} ", guid, entityJson, e);
             throw toWebApplicationException(e);
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist {} ", guid, entityJson, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to update entity by GUID {} {}", guid, entityJson, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -544,9 +522,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to add property {} to entity id {} {} ", property, guid, value, e);
             throw toWebApplicationException(e);
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist {} ", guid, value, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to add property {} to entity id {} {} ", property, guid, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -617,13 +592,6 @@ public class EntityResource {
         } catch (AtlasBaseException e) {
             LOG.error("Unable to delete entities {} {} {} {} ", guids, entityType, attribute, value, e);
             throw toWebApplicationException(e);
-        } catch (EntityNotFoundException e) {
-            if(guids != null && !guids.isEmpty()) {
-                LOG.error("An entity with GUID={} does not exist ", guids, e);
-            } else {
-                LOG.error("An entity with qualifiedName {}-{}-{} does not exist", entityType, attribute, value, e);
-            }
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         }  catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to delete entities {} {} {} {} ", guids, entityType, attribute, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -666,7 +634,8 @@ public class EntityResource {
             }
 
             guid = ParamChecker.notEmpty(guid, "guid cannot be null");
-            final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
+
+            String entityDefinition = getEntityJson(guid);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -681,11 +650,7 @@ public class EntityResource {
             }
 
             return Response.status(status).entity(response).build();
-
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist ", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Bad GUID={} ", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -716,19 +681,19 @@ public class EntityResource {
                 LOG.debug("Fetching entity list for type={} ", entityType);
             }
 
-            final List<String> entityList = metadataService.getEntityList(entityType);
+            List<String> entityGUIDS = entitiesStore.getEntityGUIDS(entityType);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPENAME, entityType);
-            response.put(AtlasClient.RESULTS, new JSONArray(entityList));
-            response.put(AtlasClient.COUNT, entityList.size());
+            response.put(AtlasClient.RESULTS, new JSONArray(entityGUIDS));
+            response.put(AtlasClient.COUNT, entityGUIDS.size());
 
             return Response.ok(response).build();
         } catch (NullPointerException e) {
             LOG.error("Entity type cannot be null", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -804,10 +769,9 @@ public class EntityResource {
             String entityDefinition = null;
 
             if (entityInfo != null) {
-                AtlasEntity entity = entityInfo.getEntity();
-                final ITypedReferenceableInstance instance = restAdapters.getITypedReferenceable(entity);
+                Referenceable instance = restAdapters.getReferenceable(entityInfo);
 
-                entityDefinition = InstanceSerialization.toJson(instance, true);
+                entityDefinition = AtlasType.toV1Json(instance);
             }
 
             JSONObject response = new JSONObject();
@@ -926,8 +890,8 @@ public class EntityResource {
 
             JSONArray traits = new JSONArray();
             for (AtlasClassification classification : classifications) {
-                IStruct trait = restAdapters.getTrait(classification);
-                traits.put(new JSONObject(InstanceSerialization.toJson(trait, true)));
+                Struct trait = restAdapters.getTrait(classification);
+                traits.put(new JSONObject(AtlasType.toV1Json(trait)));
             }
 
             JSONObject response = new JSONObject();
@@ -984,11 +948,11 @@ public class EntityResource {
 
             final AtlasClassification classification = entitiesStore.getClassification(guid, traitName);
 
-            IStruct traitDefinition = restAdapters.getTrait(classification);
+            Struct traitDefinition = restAdapters.getTrait(classification);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.RESULTS, new JSONObject(InstanceSerialization.toJson(traitDefinition, true)));
+            response.put(AtlasClient.RESULTS, new JSONObject(AtlasType.toV1Json(traitDefinition)));
 
             return Response.ok(response).build();
 
@@ -1044,7 +1008,7 @@ public class EntityResource {
                 add(guid);
             }};
 
-            entitiesStore.addClassification(guids, restAdapters.getClassification(InstanceSerialization.fromJsonStruct(traitDefinition, true)));
+            entitiesStore.addClassification(guids, restAdapters.toAtlasClassification(AtlasType.fromV1Json(traitDefinition, Struct.class)));
 
             URI locationURI = getLocationURI(new ArrayList<String>() {{
                 add(guid);
@@ -1160,13 +1124,13 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
-            List<EntityAuditEvent> events = metadataService.getAuditEvents(guid, startKey, count);
+            List<EntityAuditEvent> events = entityAuditRepository.listEvents(guid, startKey, count);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.EVENTS, getJSONArray(events));
             return Response.ok(response).build();
-        } catch (AtlasException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -1215,5 +1179,13 @@ public class EntityResource {
         }
 
         return new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
+    }
+
+    private String getEntityJson(String guid) throws AtlasBaseException {
+        AtlasEntityWithExtInfo entity        = entitiesStore.getById(guid);
+        Referenceable          referenceable = restAdapters.getReferenceable(entity);
+        String                 entityJson    = AtlasType.toV1Json(referenceable);
+
+        return entityJson;
     }
 }

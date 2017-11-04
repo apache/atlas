@@ -17,7 +17,8 @@
  */
 package org.apache.atlas.notification;
 
-import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

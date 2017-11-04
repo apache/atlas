@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -27,18 +25,14 @@ import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.typedef.*;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -196,16 +190,16 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
     }
 
     private void createTypes() throws Exception {
-        HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition = TypesUtil
-                .createClassTypeDef("dsl_test_type", ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+        ClassTypeDefinition dslTestTypeDefinition = TypesUtil
+                .createClassTypeDef("dsl_test_type", null, Collections.<String>emptySet(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
-        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition = TypesUtil
-                .createTraitTypeDef("Classification", ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
-        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(classificationTraitDefinition), ImmutableList.of(dslTestTypeDefinition));
+        TraitTypeDefinition classificationTraitDefinition = TypesUtil
+                .createTraitTypeDef("Classification", null, Collections.<String>emptySet(),
+                        TypesUtil.createRequiredAttrDef("tag", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
+                Collections.singletonList(classificationTraitDefinition), Collections.singletonList(dslTestTypeDefinition));
         createType(typesDef);
     }
 }

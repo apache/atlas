@@ -18,15 +18,14 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -34,9 +33,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Entity Lineage v2 Integration Tests.
@@ -53,7 +50,6 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
     private String salesFactTable;
     private String salesMonthlyTable;
     private String salesDBName;
-    Gson gson = new Gson();
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -76,7 +72,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         System.out.println("input lineage info = " + response
         );
 
-        AtlasLineageInfo inputLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
+        AtlasLineageInfo inputLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = inputLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);
@@ -104,7 +100,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         Assert.assertNotNull(response);
         System.out.println("output lineage info = " + response);
 
-        AtlasLineageInfo outputLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
+        AtlasLineageInfo outputLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = outputLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);
@@ -132,7 +128,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         Assert.assertNotNull(response);
         System.out.println("both lineage info = " + response);
 
-        AtlasLineageInfo bothLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
+        AtlasLineageInfo bothLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = bothLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);
@@ -151,16 +147,14 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         salesDBName = "Sales" + randomString();
         Id salesDB = database(salesDBName, "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
-        List<Referenceable> salesFactColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
-                        column("customer_id", "int", "customer id"),
-                        column("sales", "double", "product id"));
+        List<Referenceable> salesFactColumns = Arrays.asList(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
+                column("customer_id", "int", "customer id"),
+                column("sales", "double", "product id"));
 
         salesFactTable = "sales_fact" + randomString();
         Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns);
 
-        List<Referenceable> timeDimColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
+        List<Referenceable> timeDimColumns = Arrays.asList(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
                         column("weekDay", "int", "week Day"));
 
         Id timeDim =
@@ -175,15 +169,15 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns);
 
-        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
-                ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph");
+        loadProcess("loadSalesDaily" + randomString(), "John ETL", Arrays.asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph");
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
         Id salesFactMonthly =
                 table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
                         "MANAGED", salesFactColumns);
 
-        loadProcess("loadSalesMonthly" + randomString(), "John ETL", ImmutableList.of(salesFactDaily),
-                ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph");
+        loadProcess("loadSalesMonthly" + randomString(), "John ETL", Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph");
     }
 }

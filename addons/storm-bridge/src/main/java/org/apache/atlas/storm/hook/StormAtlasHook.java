@@ -18,6 +18,7 @@
 
 package org.apache.atlas.storm.hook;
 
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.storm.ISubmitterHook;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.SpoutSpec;
@@ -29,7 +30,6 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.storm.model.StormDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

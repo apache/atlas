@@ -21,7 +21,7 @@ package org.apache.atlas.hive.bridge;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -38,8 +38,8 @@ import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import scala.actors.threadpool.Arrays;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 

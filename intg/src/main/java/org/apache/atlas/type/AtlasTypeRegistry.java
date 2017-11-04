@@ -846,8 +846,8 @@ public class AtlasTypeRegistry {
             boolean alreadyLockedByCurrentThread = typeRegistryUpdateLock.isHeldByCurrentThread();
 
             if (!alreadyLockedByCurrentThread) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("lockTypeRegistryForUpdate(): waiting for lock to be released by thread {}", lockedByThread);
+                if (lockedByThread != null) {
+                    LOG.info("lockTypeRegistryForUpdate(): waiting for lock to be released by thread {}", lockedByThread);
                 }
             } else {
                 LOG.warn("lockTypeRegistryForUpdate(): already locked. currentLockCount={}",

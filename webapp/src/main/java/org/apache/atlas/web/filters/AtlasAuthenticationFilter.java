@@ -19,7 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
@@ -311,7 +311,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     try {
                         String requestUser = httpRequest.getRemoteUser();
                         NDC.push(requestUser + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
-                        RequestContext requestContext = RequestContext.get();
+                        RequestContextV1 requestContext = RequestContextV1.get();
                         if (requestContext != null) {
                             requestContext.setUser(requestUser);
                         }

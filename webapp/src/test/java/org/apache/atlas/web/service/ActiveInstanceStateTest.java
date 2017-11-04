@@ -34,8 +34,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import scala.actors.threadpool.Arrays;
 
+import java.util.Arrays;
 import java.nio.charset.Charset;
 
 import static org.mockito.Mockito.mock;

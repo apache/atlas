@@ -25,8 +25,9 @@ import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.NotificationProvider;
-import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.falcon.FalconException;
 import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.feed.Feed;
@@ -151,14 +152,14 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
     private void fireAndForget(FalconEvent event) throws FalconException, URISyntaxException {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
-        List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
+        List<HookNotification> messages = new ArrayList<>();
 
         Operation op = getOperation(event.getOperation());
         String user = getUser(event.getUser());
         LOG.info("fireAndForget user:{}", user);
         switch (op) {
         case ADD:
-            messages.add(new HookNotification.EntityCreateRequest(user, createEntities(event, user)));
+            messages.add(new EntityCreateRequest(user, createEntities(event, user)));
             break;
 
         }

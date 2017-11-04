@@ -22,8 +22,8 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.legacy.EntityResult;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONObject;
@@ -99,7 +99,7 @@ public class AtlasClientTest {
         JSONObject jsonResponse = new JSONObject(new EntityResult(Arrays.asList("id"), null, null).toString());
         when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
         when(response.getLength()).thenReturn(jsonResponse.length());
-        String entityJson = InstanceSerialization.toJson(new Referenceable("type"), true);
+        String entityJson = AtlasType.toV1Json(new Referenceable("type"));
         when(builder.method(anyString(), Matchers.<Class>any(), anyString())).thenReturn(response);
 
         List<String> ids = atlasClient.createEntity(entityJson);

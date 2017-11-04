@@ -26,9 +26,9 @@ import org.apache.atlas.falcon.bridge.FalconBridge;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
@@ -162,7 +162,7 @@ public class FalconHookIT {
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, cluster.getName());
     }
 
-    private TypeUtils.Pair<String, Feed> getHDFSFeed(String feedResource, String clusterName) throws Exception {
+    private TypesUtil.Pair<String, Feed> getHDFSFeed(String feedResource, String clusterName) throws Exception {
         Feed feed = loadEntity(EntityType.FEED, feedResource, "feed" + random());
         org.apache.falcon.entity.v0.feed.Cluster feedCluster = feed.getClusters().getClusters().get(0);
         feedCluster.setName(clusterName);
@@ -174,9 +174,9 @@ public class FalconHookIT {
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 FalconBridge.getFeedQualifiedName(feed.getName(), clusterName));
         Referenceable processEntity = atlasClient.getEntity(processId);
-        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId()._getId(), feedId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId(), feedId);
 
-        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
+        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId();
         Referenceable pathEntity = atlasClient.getEntity(inputId);
         assertEquals(pathEntity.getTypeName(), HiveMetaStoreBridge.HDFS_PATH);
 
@@ -185,7 +185,7 @@ public class FalconHookIT {
         assertEquals(pathEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
                 FalconBridge.normalize(dataLocation.getPath()));
 
-        return TypeUtils.Pair.of(feedId, feed);
+        return TypesUtil.Pair.of(feedId, feed);
     }
 
     private Feed getTableFeed(String feedResource, String clusterName) throws Exception {
@@ -236,9 +236,9 @@ public class FalconHookIT {
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 FalconBridge.getFeedQualifiedName(feedName, clusterName));
         Referenceable processEntity = atlasClient.getEntity(processId);
-        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId()._getId(), feedId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId(), feedId);
 
-        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
+        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId();
         Referenceable tableEntity = atlasClient.getEntity(inputId);
         assertEquals(tableEntity.getTypeName(), HiveDataTypes.HIVE_TABLE.getName());
         assertEquals(tableEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
@@ -280,7 +280,7 @@ public class FalconHookIT {
         Cluster cluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
         STORE.publish(EntityType.CLUSTER, cluster);
 
-        TypeUtils.Pair<String, Feed> result = getHDFSFeed(FEED_HDFS_RESOURCE, cluster.getName());
+        TypesUtil.Pair<String, Feed> result = getHDFSFeed(FEED_HDFS_RESOURCE, cluster.getName());
         Feed infeed = result.right;
         String infeedId = result.left;
 

@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.typesystem.IReferenceableInstance;
 
 /**
  * Map of attribute values to a collection of IndexedInstances with that attribute value.
@@ -37,7 +37,7 @@ public class AttributeValueMap {
     //need collection in case they are adding the same entity twice?
     private Map<Object,Collection<IndexedInstance>> valueMap_ = new HashMap<>();
 
-    public void put(Object value, IReferenceableInstance instance, int index) {
+    public void put(Object value, Referenceable instance, int index) {
         IndexedInstance wrapper = new IndexedInstance(instance, index);
         Collection<IndexedInstance> existingValues = valueMap_.get(value);
         if(existingValues == null) {

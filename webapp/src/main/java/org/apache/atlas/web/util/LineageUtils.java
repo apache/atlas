@@ -23,13 +23,11 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.v1.model.instance.Struct;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,21 +36,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_PREFIX;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_SUFFIX;
 
 public final class LineageUtils {
     private LineageUtils() {}
 
-    private static final String VERTICES_ATTR_NAME    = "vertices";
-    private static final String EDGES_ATTR_NAME       = "edges";
     private static final String VERTEX_ID_ATTR_NAME   = "vertexId";
     private static final String TEMP_STRUCT_ID_RESULT = "__IdType";
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
 
-    public static String toLineageStruct(AtlasLineageInfo lineageInfo, AtlasTypeRegistry registry) throws AtlasBaseException {
-        String ret = null;
+    public static Struct toLineageStruct(AtlasLineageInfo lineageInfo, AtlasTypeRegistry registry) throws AtlasBaseException {
+        Struct ret = new Struct();
+
+        ret.setTypeName(Constants.TEMP_STRUCT_NAME_PREFIX + COUNTER.getAndIncrement());
 
         if (lineageInfo != null) {
             Map<String, AtlasEntityHeader>        entities    = lineageInfo.getGuidEntityMap();
@@ -66,11 +62,10 @@ public final class LineageUtils {
 
                 if (isDataSet(entityHeader.getTypeName(), registry)) {
                     Map<String, Object> vertexIdMap = new HashMap<>();
-                    TypeSystem.IdType   idType      = TypeSystem.getInstance().getIdType();
 
-                    vertexIdMap.put(idType.idAttrName(), guid);
-                    vertexIdMap.put(idType.stateAttrName(), (entityHeader.getStatus() == AtlasEntity.Status.ACTIVE) ? "ACTIVE" : "DELETED");
-                    vertexIdMap.put(idType.typeNameAttrName(), entityHeader.getTypeName());
+                    vertexIdMap.put(Constants.ATTRIBUTE_NAME_GUID, guid);
+                    vertexIdMap.put(Constants.ATTRIBUTE_NAME_STATE, (entityHeader.getStatus() == AtlasEntity.Status.ACTIVE) ? "ACTIVE" : "DELETED");
+                    vertexIdMap.put(Constants.ATTRIBUTE_NAME_TYPENAME, entityHeader.getTypeName());
 
                     Object qualifiedName = entityHeader.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
                     if (qualifiedName == null) {
@@ -106,11 +101,8 @@ public final class LineageUtils {
                 }
             }
 
-            Map<String, Object> map = new HashMap<>();
-            map.put(VERTICES_ATTR_NAME, verticesMap);
-            map.put(EDGES_ATTR_NAME, edgesMap);
-
-            ret = InstanceSerialization.toJson(constructResultStruct(map, false), false);
+            ret.set("vertices", verticesMap);
+            ret.set("edges", edgesMap);
         }
 
         return ret;
@@ -121,7 +113,7 @@ public final class LineageUtils {
             return new Struct(TEMP_STRUCT_ID_RESULT, values);
         }
 
-        return new Struct(org.apache.atlas.query.TypeUtils.TEMP_STRUCT_NAME_PREFIX() + COUNTER.getAndIncrement(), values);
+        return new Struct(Constants.TEMP_STRUCT_NAME_PREFIX + COUNTER.getAndIncrement(), values);
     }
 
     private static boolean isDataSet(String typeName, AtlasTypeRegistry registry) throws AtlasBaseException {

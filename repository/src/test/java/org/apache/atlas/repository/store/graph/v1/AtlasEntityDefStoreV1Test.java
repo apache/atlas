@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
@@ -33,6 +32,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+
 /**
  * Tests for AtlasEntityStoreV1
  */
@@ -46,7 +47,7 @@ public class AtlasEntityDefStoreV1Test {
     @DataProvider
     public Object[][] invalidAttributeNameWithReservedKeywords(){
         AtlasEntityDef invalidAttrNameType =
-            AtlasTypeUtil.createClassTypeDef("Invalid_Attribute_Type", "description", ImmutableSet.<String>of(),
+            AtlasTypeUtil.createClassTypeDef("Invalid_Attribute_Type", "description", Collections.emptySet(),
                 AtlasTypeUtil.createRequiredAttrDef("order", "string"),
                 AtlasTypeUtil.createRequiredAttrDef("limit", "string"));
 

@@ -42,7 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.titan1.query.Titan1GraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
-import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
@@ -359,13 +359,13 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
     }
 
     @Override
-    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, IDataType<?> type) {
+    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, AtlasType type) {
         //nothing special needed, value is stored in required type
         return expr;
     }
 
     @Override
-    public boolean isPropertyValueConversionNeeded(IDataType<?> type) {
+    public boolean isPropertyValueConversionNeeded(AtlasType type) {
         return false;
     }
 

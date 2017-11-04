@@ -17,16 +17,19 @@
  */
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+
 
 public class HookNotificationTest {
-
-    public static final HookMessageDeserializer HOOK_MESSAGE_DESERIALIZER = new HookMessageDeserializer();
+    private HookMessageDeserializer deserializer = new HookMessageDeserializer();
 
     @Test
     public void testNewMessageSerDe() throws Exception {
@@ -35,19 +38,21 @@ public class HookNotificationTest {
         entity1.set("complex", new Referenceable("othertype"));
         Referenceable entity2 = new Referenceable("newtype");
         String user = "user";
-        HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(user, entity1, entity2);
 
-        String notificationJson = AbstractNotification.GSON.toJson(request);
-        HookNotification.HookNotificationMessage actualNotification =
-            HOOK_MESSAGE_DESERIALIZER.deserialize(notificationJson);
+        EntityCreateRequest request           = new EntityCreateRequest(user, entity1, entity2);
+        String              notificationJson  = AtlasType.toV1Json(request);
+        HookNotification    actualNotification = deserializer.deserialize(notificationJson);
 
-        assertEquals(actualNotification.getType(), HookNotification.HookNotificationType.ENTITY_CREATE);
+        assertEquals(actualNotification.getType(), HookNotificationType.ENTITY_CREATE);
         assertEquals(actualNotification.getUser(), user);
+        assertTrue(actualNotification instanceof EntityCreateRequest);
 
-        HookNotification.EntityCreateRequest createRequest = (HookNotification.EntityCreateRequest) actualNotification;
+        EntityCreateRequest createRequest = (EntityCreateRequest) actualNotification;
+
         assertEquals(createRequest.getEntities().size(), 2);
 
         Referenceable actualEntity1 = createRequest.getEntities().get(0);
+
         assertEquals(actualEntity1.getTypeName(), "sometype");
         assertEquals(((Referenceable)actualEntity1.get("complex")).getTypeName(), "othertype");
         assertEquals(createRequest.getEntities().get(1).getTypeName(), "newtype");
@@ -58,9 +63,10 @@ public class HookNotificationTest {
         //Code to generate the json, use it for hard-coded json used later in this test
         Referenceable entity = new Referenceable("sometype");
         entity.set("attr", "value");
-        HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(null, entity);
 
-        String notificationJsonFromCode = AbstractNotification.GSON.toJson(request);
+        EntityCreateRequest request                  = new EntityCreateRequest(null, entity);
+        String              notificationJsonFromCode = AtlasType.toV1Json(request);
+
         System.out.println(notificationJsonFromCode);
 
         //Json without user and assert that the string can be deserialised
@@ -87,11 +93,9 @@ public class HookNotificationTest {
                 + "}";
 
 
-        HookNotification.HookNotificationMessage actualNotification =
-            HOOK_MESSAGE_DESERIALIZER.deserialize(notificationJson);
+        HookNotification actualNotification = deserializer.deserialize(notificationJson);
 
-        assertEquals(actualNotification.getType(), HookNotification.HookNotificationType.ENTITY_CREATE);
-        assertNull(actualNotification.user);
-        assertEquals(actualNotification.getUser(), HookNotification.HookNotificationMessage.UNKNOW_USER);
+        assertEquals(actualNotification.getType(), HookNotificationType.ENTITY_CREATE);
+        assertEquals(actualNotification.getUser(), HookNotification.UNKNOW_USER);
     }
 }

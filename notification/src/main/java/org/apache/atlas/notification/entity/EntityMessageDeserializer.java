@@ -18,18 +18,13 @@
 
 package org.apache.atlas.notification.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.notification.AbstractMessageDeserializer;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.notification.NotificationInterface;
+import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Entity notification message deserializer.
@@ -48,29 +43,19 @@ public class EntityMessageDeserializer extends AbstractMessageDeserializer<Entit
      * Create an entity notification message deserializer.
      */
     public EntityMessageDeserializer() {
-        super(NotificationInterface.ENTITY_VERSIONED_MESSAGE_TYPE,
-            AbstractNotification.CURRENT_MESSAGE_VERSION, getDeserializerMap(), NOTIFICATION_LOGGER);
+        super(new TypeReference<EntityNotification>() {},
+              new TypeReference<AtlasNotificationMessage<EntityNotification>>() {},
+              AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
     }
 
+    @Override
+    public EntityNotification deserialize(String messageJson) {
+        final EntityNotification ret = super.deserialize(messageJson);
 
-    // ----- helper methods --------------------------------------------------
-
-    private static Map<Type, JsonDeserializer> getDeserializerMap() {
-        return Collections.<Type, JsonDeserializer>singletonMap(
-            NotificationInterface.ENTITY_NOTIFICATION_CLASS, new EntityNotificationDeserializer());
-    }
-
-
-    // ----- deserializer classes --------------------------------------------
-
-    /**
-     * Deserializer for EntityNotification.
-     */
-    protected static final class EntityNotificationDeserializer implements JsonDeserializer<EntityNotification> {
-        @Override
-        public EntityNotification deserialize(final JsonElement json, final Type type,
-                                              final JsonDeserializationContext context) {
-            return context.deserialize(json, EntityNotificationImpl.class);
+        if (ret != null) {
+            ret.normalize();
         }
+
+        return ret;
     }
 }

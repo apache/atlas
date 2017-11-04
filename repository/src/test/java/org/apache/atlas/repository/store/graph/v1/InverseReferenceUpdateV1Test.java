@@ -20,7 +20,6 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.TestUtils;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -32,7 +31,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -48,10 +46,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.TestUtils.NAME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import static org.apache.atlas.TestUtilsV2.NAME;
 
 /**
  * Test automatic inverse reference updating in V1 (V2?) code path.
@@ -67,9 +66,6 @@ public abstract class InverseReferenceUpdateV1Test {
     @Inject
     AtlasEntityStore entityStore;
 
-    @Inject
-    MetadataService metadataService;
-
     private AtlasEntitiesWithExtInfo deptEntity;
 
     protected Map<String, AtlasObjectId> nameIdMap = new HashMap<>();
@@ -78,8 +74,6 @@ public abstract class InverseReferenceUpdateV1Test {
     public void setUp() throws Exception {
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
-
-        metadataService = TestUtils.addSessionCleanupWrapper(metadataService);
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
                                                               TestUtilsV2.defineInverseReferenceTestTypes()
@@ -147,14 +141,14 @@ public abstract class InverseReferenceUpdateV1Test {
     public void testInverseReferenceAutoUpdate_NonCompositeManyToOne() throws Exception {
         AtlasEntityType bType = typeRegistry.getEntityTypeByName("B");
         AtlasEntity a1 = new AtlasEntity("A");
-        a1.setAttribute(NAME, TestUtils.randomString());
+        a1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity a2 = new AtlasEntity("A");
-        a2.setAttribute(NAME, TestUtils.randomString());
+        a2.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity a3 = new AtlasEntity("A");
-        a3.setAttribute(NAME, TestUtils.randomString());
+        a3.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b = new AtlasEntity("B");
 
-        b.setAttribute(NAME, TestUtils.randomString());
+        b.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo();
         atlasEntitiesWithExtInfo.addEntity(a1);
         atlasEntitiesWithExtInfo.addEntity(a2);
@@ -208,11 +202,11 @@ public abstract class InverseReferenceUpdateV1Test {
     public void testInverseReferenceAutoUpdate_NonComposite_OneToOne() throws Exception {
         AtlasEntityType bType = typeRegistry.getEntityTypeByName("B");
         AtlasEntity a1 = new AtlasEntity("A");
-        a1.setAttribute(NAME, TestUtils.randomString());
+        a1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity a2 = new AtlasEntity("A");
-        a2.setAttribute(NAME, TestUtils.randomString());
+        a2.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b = new AtlasEntity("B");
-        b.setAttribute(NAME, TestUtils.randomString());
+        b.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo();
         atlasEntitiesWithExtInfo.addEntity(a1);
         atlasEntitiesWithExtInfo.addEntity(a2);
@@ -261,15 +255,15 @@ public abstract class InverseReferenceUpdateV1Test {
     public void testInverseReferenceAutoUpdate_NonComposite_ManyToMany() throws Exception {
         AtlasEntityType bType = typeRegistry.getEntityTypeByName("B");
         AtlasEntity a1 = new AtlasEntity("A");
-        a1.setAttribute(NAME, TestUtils.randomString());
+        a1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity a2 = new AtlasEntity("A");
-        a2.setAttribute(NAME, TestUtils.randomString());
+        a2.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity a3 = new AtlasEntity("A");
-        a3.setAttribute(NAME, TestUtils.randomString());
+        a3.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b1 = new AtlasEntity("B");
-        b1.setAttribute(NAME, TestUtils.randomString());
+        b1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b2 = new AtlasEntity("B");
-        b2.setAttribute(NAME, TestUtils.randomString());
+        b2.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo();
         atlasEntitiesWithExtInfo.addEntity(a1);
         atlasEntitiesWithExtInfo.addEntity(a2);
@@ -297,13 +291,13 @@ public abstract class InverseReferenceUpdateV1Test {
     @Test
     public void testInverseReferenceAutoUpdate_Map() throws Exception {
         AtlasEntity a1 = new AtlasEntity("A");
-        a1.setAttribute(NAME, TestUtils.randomString());
+        a1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b1 = new AtlasEntity("B");
-        b1.setAttribute(NAME, TestUtils.randomString());
+        b1.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b2 = new AtlasEntity("B");
-        b2.setAttribute(NAME, TestUtils.randomString());
+        b2.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntity b3 = new AtlasEntity("B");
-        b3.setAttribute(NAME, TestUtils.randomString());
+        b3.setAttribute(NAME, TestUtilsV2.randomString());
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo();
         atlasEntitiesWithExtInfo.addEntity(a1);
         atlasEntitiesWithExtInfo.addEntity(b1);

@@ -124,13 +124,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <version>${hbase.version}</version>
@@ -186,42 +179,6 @@
             <id>dist</id>
             <build>
                 <plugins>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile-first</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <recompileMode>incremental</recompileMode>
-                    <useZincServer>true</useZincServer>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <args>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                    </args>
-                    <jvmArgs>
-                        <jvmArg>-Xmx512m</jvmArg>
-                    </jvmArgs>
-                </configuration>
-            </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
@@ -244,21 +201,6 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-native_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-core_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-ast_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-client-v1</artifactId>
                                             <version>${project.version}</version>
@@ -271,11 +213,6 @@
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-intg</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-typesystem</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -294,44 +231,14 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-compiler</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-reflect</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-library</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scalap</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.inject.extensions</groupId>
-                                            <artifactId>guice-multibindings</artifactId>
-                                            <version>${guice.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka_${scala.binary.version}</artifactId>
+                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
                                             <artifactId>kafka-clients</artifactId>
                                             <version>${kafka.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.code.gson</groupId>
-                                            <artifactId>gson</artifactId>
-                                            <version>${gson.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -406,7 +313,7 @@
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                            <value>${project.build.directory}/../../../intg/target/test-classes</value>
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.home</key>

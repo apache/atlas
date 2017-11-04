@@ -21,44 +21,34 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
-import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.notification.entity.EntityNotificationImpl;
+import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1.OperationType;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.types.FieldMapping;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Listen to the repository for entity changes and produce entity change notifications.
  */
 @Component
 public class NotificationEntityChangeListener implements EntityChangeListener {
-
-    private final NotificationInterface notificationInterface;
-    private final TypeSystem typeSystem;
-
-    private Map<String, List<String>> notificationAttributesCache = new HashMap<>();
     private static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
-    static Configuration APPLICATION_PROPERTIES = null;
+
+    private final NotificationInterface     notificationInterface;
+    private final AtlasTypeRegistry         typeRegistry;
+    private final Map<String, List<String>> notificationAttributesCache = new HashMap<>();
+
+    private static Configuration APPLICATION_PROPERTIES = null;
 
 
 
@@ -68,45 +58,45 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
      * Construct a NotificationEntityChangeListener.
      *
      * @param notificationInterface the notification framework interface
-     * @param typeSystem the Atlas type system
+     * @param typeRegistry the Atlas type system
      */
     @Inject
-    public NotificationEntityChangeListener(NotificationInterface notificationInterface, TypeSystem typeSystem) {
+    public NotificationEntityChangeListener(NotificationInterface notificationInterface, AtlasTypeRegistry typeRegistry) {
         this.notificationInterface = notificationInterface;
-        this.typeSystem = typeSystem;
+        this.typeRegistry          = typeRegistry;
     }
 
 
     // ----- EntityChangeListener ----------------------------------------------
 
     @Override
-    public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_CREATE);
+    public void onEntitiesAdded(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        notifyOfEntityEvent(entities, OperationType.ENTITY_CREATE);
     }
 
     @Override
-    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_UPDATE);
+    public void onEntitiesUpdated(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        notifyOfEntityEvent(entities, OperationType.ENTITY_UPDATE);
     }
 
     @Override
-    public void onTraitsAdded(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_ADD);
+    public void onTraitsAdded(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_ADD);
     }
 
     @Override
-    public void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_DELETE);
+    public void onTraitsDeleted(Referenceable entity, Collection<String> traitNames) throws AtlasException {
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_DELETE);
     }
 
     @Override
-    public void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_UPDATE);
+    public void onTraitsUpdated(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_UPDATE);
     }
 
     @Override
-    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_DELETE);
+    public void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        notifyOfEntityEvent(entities, OperationType.ENTITY_DELETE);
     }
 
 
@@ -115,57 +105,52 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
 
     // ----- helper methods ----------------------------------------------------
     @VisibleForTesting
-    public static List<IStruct> getAllTraits(IReferenceableInstance entityDefinition,
-                                              TypeSystem typeSystem) throws AtlasException {
-        List<IStruct> traitInfo = new LinkedList<>();
-        for (String traitName : entityDefinition.getTraits()) {
-            IStruct trait = entityDefinition.getTrait(traitName);
-            String typeName = trait.getTypeName();
-            Map<String, Object> valuesMap = trait.getValuesMap();
-            traitInfo.add(new Struct(typeName, valuesMap));
-            traitInfo.addAll(getSuperTraits(typeName, valuesMap, typeSystem));
-        }
-        return traitInfo;
-    }
+    public static List<Struct> getAllTraits(Referenceable entityDefinition, AtlasTypeRegistry typeRegistry) throws AtlasException {
+        List<Struct> ret = new ArrayList<>();
 
-    private static List<IStruct> getSuperTraits(
-            String typeName, Map<String, Object> values, TypeSystem typeSystem) throws AtlasException {
+        for (String traitName : entityDefinition.getTraitNames()) {
+            Struct                  trait          = entityDefinition.getTrait(traitName);
+            AtlasClassificationType traitType      = typeRegistry.getClassificationTypeByName(traitName);
+            Set<String>             superTypeNames = traitType != null ? traitType.getAllSuperTypes() : null;
 
-        List<IStruct> superTypes = new LinkedList<>();
+            ret.add(trait);
 
-        TraitType traitDef = typeSystem.getDataType(TraitType.class, typeName);
-        Set<String> superTypeNames = traitDef.getAllSuperTypeNames();
+            if (CollectionUtils.isNotEmpty(superTypeNames)) {
+                for (String superTypeName : superTypeNames) {
+                    Struct superTypeTrait = new Struct(superTypeName);
 
-        for (String superTypeName : superTypeNames) {
-            TraitType superTraitDef = typeSystem.getDataType(TraitType.class, superTypeName);
+                    if (MapUtils.isNotEmpty(trait.getValues())) {
+                        AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
 
-            Map<String, Object> superTypeValues = new HashMap<>();
+                        if (superType != null && MapUtils.isNotEmpty(superType.getAllAttributes())) {
+                            Map<String, Object> superTypeTraitAttributes = new HashMap<>();
 
-            FieldMapping fieldMapping = superTraitDef.fieldMapping();
+                            for (Map.Entry<String, Object> attrEntry : trait.getValues().entrySet()) {
+                                String attrName = attrEntry.getKey();
 
-            if (fieldMapping != null) {
-                Set<String> superTypeAttributeNames = fieldMapping.fields.keySet();
+                                if (superType.getAllAttributes().containsKey(attrName)) {
+                                    superTypeTraitAttributes.put(attrName, attrEntry.getValue());
+                                }
+                            }
 
-                for (String superTypeAttributeName : superTypeAttributeNames) {
-                    if (values.containsKey(superTypeAttributeName)) {
-                        superTypeValues.put(superTypeAttributeName, values.get(superTypeAttributeName));
+                            superTypeTrait.setValues(superTypeTraitAttributes);
+                        }
                     }
+
+                    ret.add(superTypeTrait);
                 }
             }
-            IStruct superTrait = new Struct(superTypeName, superTypeValues);
-            superTypes.add(superTrait);
-            superTypes.addAll(getSuperTraits(superTypeName, values, typeSystem));
         }
 
-        return superTypes;
+        return ret;
     }
 
     // send notification of entity change
-    private void notifyOfEntityEvent(Collection<ITypedReferenceableInstance> entityDefinitions,
-                                     EntityNotification.OperationType operationType) throws AtlasException {
-        List<EntityNotification> messages = new LinkedList<>();
+    private void notifyOfEntityEvent(Collection<Referenceable> entityDefinitions,
+                                     OperationType             operationType) throws AtlasException {
+        List<EntityNotificationV1> messages = new ArrayList<>();
 
-        for (IReferenceableInstance entityDefinition : entityDefinitions) {
+        for (Referenceable entityDefinition : entityDefinitions) {
             if(GraphHelper.isInternalType(entityDefinition.getTypeName())) {
                 continue;
             }
@@ -182,13 +167,13 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                 }
             }
 
-            EntityNotificationImpl notification = new EntityNotificationImpl(entity, operationType, getAllTraits(entity, typeSystem));
+            EntityNotificationV1 notification = new EntityNotificationV1(entity, operationType, getAllTraits(entity, typeRegistry));
 
             messages.add(notification);
         }
 
         if (!messages.isEmpty()) {
-            notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
+            notificationInterface.send(NotificationType.ENTITIES, messages);
         }
     }
 

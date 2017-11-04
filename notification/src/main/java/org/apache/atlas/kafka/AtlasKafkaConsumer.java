@@ -18,7 +18,8 @@
 package org.apache.atlas.kafka;
 
 import org.apache.atlas.notification.AbstractNotificationConsumer;
-import org.apache.atlas.notification.MessageDeserializer;
+import org.apache.atlas.notification.AtlasNotificationMessageDeserializer;
+import org.apache.atlas.notification.NotificationInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,13 +42,18 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasKafkaConsumer.class);
 
     private final KafkaConsumer kafkaConsumer;
-    private final boolean autoCommitEnabled;
-    private long pollTimeoutMilliSeconds = 1000L;
+    private final boolean       autoCommitEnabled;
+    private       long          pollTimeoutMilliSeconds = 1000L;
 
-    public AtlasKafkaConsumer(MessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
+    public AtlasKafkaConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
+        this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
+    }
+
+    public AtlasKafkaConsumer(AtlasNotificationMessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
         super(deserializer);
-        this.kafkaConsumer = kafkaConsumer;
-        this.autoCommitEnabled = autoCommitEnabled;
+
+        this.autoCommitEnabled       = autoCommitEnabled;
+        this.kafkaConsumer           = kafkaConsumer;
         this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
     }
 

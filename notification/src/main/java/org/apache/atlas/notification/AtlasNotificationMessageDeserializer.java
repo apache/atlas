@@ -19,14 +19,17 @@
 package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.Gson;
-import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,11 +50,10 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     public static final String VERSION_MISMATCH_MSG =
         "Notification message version mismatch. Expected %s but recieved %s. Message %s";
 
-    private final Type notificationMessageType;
-    private final Type messageType;
-    private final MessageVersion expectedVersion;
-    private final Logger notificationLogger;
-    private final Gson gson;
+    private final TypeReference<T>                           messageType;
+    private final TypeReference<AtlasNotificationMessage<T>> notificationMessageType;
+    private final MessageVersion                             expectedVersion;
+    private final Logger                                     notificationLogger;
 
 
     private final Map<String, SplitMessageAggregator> splitMsgBuffer = new HashMap<>();
@@ -65,33 +67,40 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     /**
      * Create a notification message deserializer.
      *
-     * @param notificationMessageType the type of the notification message
      * @param expectedVersion         the expected message version
-     * @param gson                    JSON serialization/deserialization
      * @param notificationLogger      logger for message version mismatch
      */
-    public AtlasNotificationMessageDeserializer(Type notificationMessageType, MessageVersion expectedVersion,
-                                                Gson gson, Logger notificationLogger) {
-        this(notificationMessageType, expectedVersion, gson, notificationLogger,
+    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType,
+                                                TypeReference<AtlasNotificationMessage<T>> notificationMessageType,
+                                                MessageVersion expectedVersion, Logger notificationLogger) {
+        this(messageType, notificationMessageType, expectedVersion, notificationLogger,
              NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS.getLong() * 1000,
              NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS.getLong() * 1000);
     }
 
-    public AtlasNotificationMessageDeserializer(Type notificationMessageType, MessageVersion expectedVersion,
-                                                Gson gson, Logger notificationLogger,
+    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType,
+                                                TypeReference<AtlasNotificationMessage<T>> notificationMessageType,
+                                                MessageVersion expectedVersion,
+                                                Logger notificationLogger,
                                                 long splitMessageSegmentsWaitTimeMs,
                                                 long splitMessageBufferPurgeIntervalMs) {
+        this.messageType                       = messageType;
         this.notificationMessageType           = notificationMessageType;
-        this.messageType                       = ((ParameterizedType) notificationMessageType).getActualTypeArguments()[0];
         this.expectedVersion                   = expectedVersion;
-        this.gson                              = gson;
         this.notificationLogger                = notificationLogger;
         this.splitMessageSegmentsWaitTimeMs    = splitMessageSegmentsWaitTimeMs;
         this.splitMessageBufferPurgeIntervalMs = splitMessageBufferPurgeIntervalMs;
     }
 
-    // ----- MessageDeserializer ---------------------------------------------
+    public TypeReference<T> getMessageType() {
+        return messageType;
+    }
 
+    public TypeReference<AtlasNotificationMessage<T>> getNotificationMessageType() {
+        return notificationMessageType;
+    }
+
+    // ----- MessageDeserializer ---------------------------------------------
     @Override
     public T deserialize(String messageJson) {
         final T ret;
@@ -99,15 +108,15 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         messageCountTotal.incrementAndGet();
         messageCountSinceLastInterval.incrementAndGet();
 
-        AtlasNotificationBaseMessage msg = gson.fromJson(messageJson, AtlasNotificationBaseMessage.class);
+        AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationBaseMessage.class);
 
         if (msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
-            ret = gson.fromJson(messageJson, messageType);
+            ret = AtlasType.fromV1Json(messageJson, messageType);
         } else  {
             String msgJson = messageJson;
 
             if (msg.getMsgSplitCount() > 1) { // multi-part message
-                AtlasNotificationStringMessage splitMsg = gson.fromJson(msgJson, AtlasNotificationStringMessage.class);
+                AtlasNotificationStringMessage splitMsg = AtlasType.fromV1Json(msgJson, AtlasNotificationStringMessage.class);
 
                 checkVersion(splitMsg, msgJson);
 
@@ -184,7 +193,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                                     LOG.info("Received msgID={}: splitCount={}, length={} bytes", msgId, splitCount, bytes.length);
                                 }
 
-                                msg = gson.fromJson(msgJson, AtlasNotificationBaseMessage.class);
+                                msg = AtlasType.fromV1Json(msgJson, AtlasNotificationBaseMessage.class);
                             } else {
                                 msg = null;
                             }
@@ -197,7 +206,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
             if (msg != null) {
                 if (CompressionKind.GZIP.equals(msg.getMsgCompressionKind())) {
-                    AtlasNotificationStringMessage compressedMsg = gson.fromJson(msgJson, AtlasNotificationStringMessage.class);
+                    AtlasNotificationStringMessage compressedMsg = AtlasType.fromV1Json(msgJson, AtlasNotificationStringMessage.class);
 
                     byte[] encodedBytes = AtlasNotificationBaseMessage.getBytesUtf8(compressedMsg.getMessage());
                     byte[] bytes        = AtlasNotificationBaseMessage.decodeBase64AndGzipUncompress(encodedBytes);
@@ -207,7 +216,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
                     LOG.info("Received msgID={}: compressed={} bytes, uncompressed={} bytes", compressedMsg.getMsgId(), encodedBytes.length, bytes.length);
                 }
 
-                AtlasNotificationMessage<T> atlasNotificationMessage = gson.fromJson(msgJson, notificationMessageType);
+                AtlasNotificationMessage<T> atlasNotificationMessage = AtlasType.fromV1Json(msgJson, notificationMessageType);
 
                 checkVersion(atlasNotificationMessage, msgJson);
 

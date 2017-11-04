@@ -28,8 +28,11 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.hook.AtlasHookException;
-import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.fs.Path;
@@ -331,7 +334,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable());
         LOG.info("Deleting table {} ", tblQualifiedName);
         event.addMessage(
-            new HookNotification.EntityDeleteRequest(event.getUser(),
+            new EntityDeleteRequest(event.getUser(),
                 HiveDataTypes.HIVE_TABLE.getName(),
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 tblQualifiedName));
@@ -350,7 +353,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             } else if (Type.DATABASE.equals(output.getType())) {
                 final String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(dgiBridge.getClusterName(), output.getDatabase().getName());
                 event.addMessage(
-                    new HookNotification.EntityDeleteRequest(event.getUser(),
+                    new EntityDeleteRequest(event.getUser(),
                         HiveDataTypes.HIVE_DB.getName(),
                         AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                         dbQualifiedName));
@@ -412,7 +415,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
                     newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
 
-                    event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+                    event.addMessage(new EntityPartialUpdateRequest(event.getUser(),
                             HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                             oldColumnQFName, newColEntity));
                 }
@@ -481,7 +484,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         ArrayList<String> alias_list = new ArrayList<>();
         alias_list.add(oldTable.getTableName().toLowerCase());
         newEntity.set(HiveMetaStoreBridge.TABLE_ALIAS_LIST, alias_list);
-        event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+        event.addMessage(new EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldTableQFName, newEntity));
 
@@ -499,7 +502,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             ///Only QF Name changes
             newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
-            event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+            event.addMessage(new EntityPartialUpdateRequest(event.getUser(),
                 HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 oldColumnQFName, newColEntity));
             newColEntities.add(newColEntity);
@@ -518,7 +521,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         final Referenceable newSDEntity = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
         newSDEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newSDQFName);
-        event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+        event.addMessage(new EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_STORAGEDESC.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldSDQFName, newSDEntity));
 
@@ -593,7 +596,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             }
 
             if (!entities.isEmpty()) {
-                event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
+                event.addMessage(new EntityUpdateRequest(event.getUser(), entities));
             }
 
             return result;
@@ -719,7 +722,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private void addEntityUpdateNotificationMessagess(final HiveEventContext event, final Collection<Referenceable> entities) {
         // process each entity as separate message to avoid running into OOM errors
         for (Referenceable entity : entities) {
-            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entity));
+            event.addMessage(new EntityUpdateRequest(event.getUser(), entity));
         }
     }
 
@@ -1089,7 +1092,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         public Map<String, List<ColumnLineageUtils.HiveColumnLineageInfo>> lineageInfo;
 
-        private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
+        private List<HookNotification> messages = new ArrayList<>();
 
         public void setInputs(Set<ReadEntity> inputs) {
             this.inputs = inputs;
@@ -1172,11 +1175,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             return queryStartTime;
         }
 
-        public void addMessage(HookNotification.HookNotificationMessage message) {
+        public void addMessage(HookNotification message) {
             messages.add(message);
         }
 
-        public List<HookNotification.HookNotificationMessage> getMessages() {
+        public List<HookNotification> getMessages() {
             return messages;
         }
     }

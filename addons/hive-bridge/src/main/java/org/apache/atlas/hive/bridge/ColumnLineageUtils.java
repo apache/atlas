@@ -20,7 +20,7 @@ package org.apache.atlas.hive.bridge;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

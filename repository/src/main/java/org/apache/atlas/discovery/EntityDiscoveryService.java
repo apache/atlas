@@ -24,7 +24,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -44,7 +43,6 @@ import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.query.QueryProcessor;
 import org.apache.atlas.query.SelectExpressionHelper;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -70,9 +68,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import scala.Option;
-import scala.util.Either;
-import scala.util.parsing.combinator.Parsers.NoSuccess;
 
 import javax.inject.Inject;
 import javax.script.Bindings;
@@ -104,7 +99,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
 
     private final AtlasGraph                      graph;
-    private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
     private final EntityGraphRetriever            entityRetriever;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
@@ -116,11 +110,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final UserProfileService              userProfileService;
 
     @Inject
-    EntityDiscoveryService(MetadataRepository metadataRepository, AtlasTypeRegistry typeRegistry,
+    EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker,
                            UserProfileService userProfileService) throws AtlasException {
         this.graph                    = graph;
-        this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.entityRetriever          = new EntityGraphRetriever(typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
@@ -685,15 +678,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private GremlinQuery toGremlinQuery(String query, int limit, int offset) throws AtlasBaseException {
         QueryParams params = validateSearchParams(limit, offset);
-        Either<NoSuccess, Expression> either = QueryParser.apply(query, params);
+        Expression expression = QueryParser.apply(query, params);
 
-        if (either.isLeft()) {
+        if (expression == null) {
             throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, query);
         }
 
-        Expression   expression      = either.right().get();
         Expression   validExpression = QueryProcessor.validate(expression);
-        GremlinQuery gremlinQuery    = new GremlinTranslator(validExpression, graphPersistenceStrategy).translate();
+        GremlinQuery gremlinQuery    = new GremlinTranslator(validExpression).translate();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Translated Gremlin Query: {}", gremlinQuery.queryStr());
@@ -730,9 +722,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         List<List<Object>> values = new ArrayList<>();
 
         // extract select attributes from gremlin query
-        Option<SelectExpression> selectExpr = SelectExpressionHelper.extractSelectExpression(query.expr());
-        if (selectExpr.isDefined()) {
-            List<AliasExpression> aliases = selectExpr.get().toJavaList();
+        SelectExpression selectExpr = SelectExpressionHelper.extractSelectExpression(query.expr());
+        if (selectExpr != null) {
+            List<AliasExpression> aliases = selectExpr.toJavaList();
 
             if (CollectionUtils.isNotEmpty(aliases)) {
                 for (AliasExpression alias : aliases) {

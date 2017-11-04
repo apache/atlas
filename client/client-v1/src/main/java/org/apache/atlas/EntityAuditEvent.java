@@ -18,8 +18,9 @@
 
 package org.apache.atlas;
 
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.type.AtlasType;
 
 import java.util.Objects;
 
@@ -38,13 +39,13 @@ public class EntityAuditEvent {
     private EntityAuditAction action;
     private String details;
     private String eventKey;
-    private IReferenceableInstance entityDefinition;
+    private Referenceable entityDefinition;
 
     public EntityAuditEvent() {
     }
 
     public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details,
-                            IReferenceableInstance entityDefinition) throws AtlasException {
+                            Referenceable entityDefinition) throws AtlasException {
         this.entityId = entityId;
         this.timestamp = ts;
         this.user = user;
@@ -74,11 +75,11 @@ public class EntityAuditEvent {
 
     @Override
     public String toString() {
-        return SerDe.GSON.toJson(this);
+        return AtlasType.toV1Json(this);
     }
 
     public static EntityAuditEvent fromString(String eventString) {
-        return SerDe.GSON.fromJson(eventString, EntityAuditEvent.class);
+        return AtlasType.fromV1Json(eventString, EntityAuditEvent.class);
     }
 
     public String getEntityId() {
@@ -129,18 +130,18 @@ public class EntityAuditEvent {
         this.eventKey = eventKey;
     }
 
-    public IReferenceableInstance getEntityDefinition() {
+    public Referenceable getEntityDefinition() {
         return entityDefinition;
     }
 
     public String getEntityDefinitionString() {
         if (entityDefinition != null) {
-            return InstanceSerialization.toJson(entityDefinition, true);
+            return AtlasType.toV1Json(entityDefinition);
         }
         return null;
     }
 
     public void setEntityDefinition(String entityDefinition) {
-        this.entityDefinition = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
+        this.entityDefinition = AtlasType.fromV1Json(entityDefinition, Referenceable.class);
     }
 }

@@ -21,10 +21,10 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.types.EnumValue;
 
 import java.util.Map;
 
@@ -47,10 +47,10 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
         if (v1Obj instanceof EnumValue) {
             EnumValue enumValue = (EnumValue)v1Obj;
 
-            v1Value = enumValue.value;
+            v1Value = enumValue.getValue();
 
             if (v1Value == null) {
-                v1Value = enumValue.ordinal;
+                v1Value = enumValue.getOrdinal();
             }
         } else if (v1Obj instanceof Map) {
             Map mapValue = (Map)v1Obj;

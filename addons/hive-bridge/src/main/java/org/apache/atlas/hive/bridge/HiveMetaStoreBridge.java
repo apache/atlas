@@ -27,10 +27,10 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHookException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -170,7 +170,7 @@ public class HiveMetaStoreBridge {
                 dbRef = createDBInstance(db);
                 dbRef = registerInstance(dbRef);
             } else {
-                LOG.info("Database {} is already registered with id {}. Updating it.", databaseName, dbRef.getId().id);
+                LOG.info("Database {} is already registered with id {}. Updating it.", databaseName, dbRef.getId().getId());
                 dbRef = createOrUpdateDBInstance(db, dbRef);
                 updateInstance(dbRef);
             }
@@ -208,7 +208,7 @@ public class HiveMetaStoreBridge {
         String typeName = referenceable.getTypeName();
         LOG.debug("creating instance of type {}", typeName);
 
-        String entityJSON = InstanceSerialization.toJson(referenceable, true);
+        String entityJSON = AtlasType.toV1Json(referenceable);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
         List<String> guids = getAtlasClient().createEntity(entityJSON);
         LOG.debug("created instance for type {}, guid: {}", typeName, guids);
@@ -506,7 +506,7 @@ public class HiveMetaStoreBridge {
                 tableReference = registerInstance(tableReference);
             } else {
                 LOG.info("Table {}.{} is already registered with id {}. Updating entity.", dbName, tableName,
-                        tableReference.getId().id);
+                        tableReference.getId().getId());
                 tableReference = createOrUpdateTableInstance(dbReference, tableReference, table);
                 updateInstance(tableReference);
             }
@@ -520,10 +520,10 @@ public class HiveMetaStoreBridge {
         String typeName = referenceable.getTypeName();
         LOG.debug("updating instance of type {}", typeName);
 
-        String entityJSON = InstanceSerialization.toJson(referenceable, true);
+        String entityJSON = AtlasType.toV1Json(referenceable);
         LOG.debug("Updating entity {} = {}", referenceable.getTypeName(), entityJSON);
 
-        atlasClient.updateEntity(referenceable.getId().id, referenceable);
+        atlasClient.updateEntity(referenceable.getId().getId(), referenceable);
     }
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,

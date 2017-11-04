@@ -18,34 +18,30 @@
 
 package org.apache.atlas.kafka;
 
-import kafka.message.MessageAndMetadata;
-import org.apache.atlas.notification.*;
-import org.apache.atlas.notification.AtlasNotificationMessage;
-import org.apache.atlas.notification.entity.EntityNotificationImplTest;
-import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.notification.IncompatibleVersionException;
+import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.notification.entity.EntityNotificationTest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.codehaus.jettison.json.JSONException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +51,6 @@ import static org.testng.Assert.*;
  * KafkaConsumer tests.
  */
 public class KafkaConsumerTest {
-
     private static final String TRAIT_NAME = "MyTrait";
 
 
@@ -70,88 +65,62 @@ public class KafkaConsumerTest {
 
     @Test
     public void testReceive() throws Exception {
-
-
-        MessageAndMetadata<String, String> messageAndMetadata = mock(MessageAndMetadata.class);
-
-        Referenceable entity = getEntity(TRAIT_NAME);
-
-        HookNotification.EntityUpdateRequest message =
-            new HookNotification.EntityUpdateRequest("user1", entity);
-
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
-
-        kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
-        List<ConsumerRecord> klist = new ArrayList<>();
-        klist.add(new ConsumerRecord<String, String>("ATLAS_HOOK",
-                0, 0L, "mykey", json));
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-        Map mp = new HashMap();
-        mp.put(tp,klist);
-        ConsumerRecords records = new ConsumerRecords(mp);
-
+        Referenceable                        entity  = getEntity(TRAIT_NAME);
+        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
+        TopicPartition                       tp      = new TopicPartition("ATLAS_HOOK", 0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>("ATLAS_HOOK", 0, 0L, "mykey", json));
+        Map                                  mp      = Collections.singletonMap(tp, klist);
+        ConsumerRecords                      records = new ConsumerRecords(mp);
 
         when(kafkaConsumer.poll(100)).thenReturn(records);
-        when(messageAndMetadata.message()).thenReturn(json);
 
+        kafkaConsumer.assign(Collections.singletonList(tp));
 
-        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
-        List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
+        AtlasKafkaConsumer                        consumer    = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, false, 100L);
+        List<AtlasKafkaMessage<HookNotification>> messageList = consumer.receive();
+
         assertTrue(messageList.size() > 0);
 
-        HookNotification.HookNotificationMessage consumedMessage  = messageList.get(0).getMessage();
+        HookNotification consumedMessage  = messageList.get(0).getMessage();
 
         assertMessagesEqual(message, consumedMessage, entity);
-
     }
 
     @Test
     public void testNextVersionMismatch() throws Exception {
+        Referenceable                        entity  = getEntity(TRAIT_NAME);
+        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
+        TopicPartition                       tp      = new TopicPartition("ATLAS_HOOK",0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>("ATLAS_HOOK", 0, 0L, "mykey", json));
+        Map                                  mp      = Collections.singletonMap(tp,klist);
+        ConsumerRecords                      records = new ConsumerRecords(mp);
 
-        MessageAndMetadata<String, String> messageAndMetadata = mock(MessageAndMetadata.class);
-
-        Referenceable entity = getEntity(TRAIT_NAME);
-
-        HookNotification.EntityUpdateRequest message =
-            new HookNotification.EntityUpdateRequest("user1", entity);
-
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
-
-        kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
-        List<ConsumerRecord> klist = new ArrayList<>();
-        klist.add(new ConsumerRecord<String, String>("ATLAS_HOOK",
-                0, 0L, "mykey", json));
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-        Map mp = new HashMap();
-        mp.put(tp,klist);
-        ConsumerRecords records = new ConsumerRecords(mp);
+        kafkaConsumer.assign(Collections.singletonList(tp));
 
         when(kafkaConsumer.poll(100L)).thenReturn(records);
-        when(messageAndMetadata.message()).thenReturn(json);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer ,false, 100L);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer ,false, 100L);
+
         try {
-            List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
+            List<AtlasKafkaMessage<HookNotification>> messageList = consumer.receive();
+
             assertTrue(messageList.size() > 0);
 
-            HookNotification.HookNotificationMessage consumedMessage  = messageList.get(0).getMessage();
+            HookNotification consumedMessage  = messageList.get(0).getMessage();
 
             fail("Expected VersionMismatchException!");
         } catch (IncompatibleVersionException e) {
             e.printStackTrace();
         }
-
   }
 
 
     @Test
     public void testCommitIsCalledIfAutoCommitDisabled() {
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
+        TopicPartition     tp       = new TopicPartition("ATLAS_HOOK",0);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, false, 100L);
 
         consumer.commit(tp, 1);
 
@@ -160,10 +129,8 @@ public class KafkaConsumerTest {
 
     @Test
     public void testCommitIsNotCalledIfAutoCommitEnabled() {
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, true , 100L);
+        TopicPartition     tp       = new TopicPartition("ATLAS_HOOK",0);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, true , 100L);
 
         consumer.commit(tp, 1);
 
@@ -171,26 +138,21 @@ public class KafkaConsumerTest {
     }
 
     private Referenceable getEntity(String traitName) {
-        Referenceable entity = EntityNotificationImplTest.getEntity("id");
-        List<IStruct> traitInfo = new LinkedList<>();
-        IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
-        traitInfo.add(trait);
-        return entity;
+        return EntityNotificationTest.getEntity("id", new Struct(traitName, Collections.<String, Object>emptyMap()));
     }
 
-    private void assertMessagesEqual(HookNotification.EntityUpdateRequest message,
-                                     HookNotification.HookNotificationMessage consumedMessage,
-                                     Referenceable entity) throws JSONException {
-
+    private void assertMessagesEqual(EntityUpdateRequest message,
+                                     HookNotification    consumedMessage,
+                                     Referenceable       entity) {
         assertEquals(consumedMessage.getType(), message.getType());
         assertEquals(consumedMessage.getUser(), message.getUser());
 
-        assertTrue(consumedMessage instanceof HookNotification.EntityUpdateRequest);
+        assertTrue(consumedMessage instanceof EntityUpdateRequest);
 
-        HookNotification.EntityUpdateRequest deserializedEntityUpdateRequest =
-            (HookNotification.EntityUpdateRequest) consumedMessage;
+        EntityUpdateRequest deserializedEntityUpdateRequest = (EntityUpdateRequest) consumedMessage;
 
         Referenceable deserializedEntity = deserializedEntityUpdateRequest.getEntities().get(0);
+
         assertEquals(deserializedEntity.getId(), entity.getId());
         assertEquals(deserializedEntity.getTypeName(), entity.getTypeName());
         assertEquals(deserializedEntity.getTraits(), entity.getTraits());

@@ -535,13 +535,10 @@
         <hbase.version>1.1.2</hbase.version>
         <solr.version>5.5.1</solr.version>
         <kafka.version>0.10.0.0</kafka.version>
+        <kafka.scala.binary.version>2.11</kafka.scala.binary.version>
         <curator.version>2.11.0</curator.version>
         <zookeeper.version>3.4.6</zookeeper.version>
 
-        <!-- scala versions -->
-        <scala.version>2.11.8</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <scala.macros.version>2.0.1</scala.macros.version>
         <json.version>3.2.11</json.version>
         <log4j.version>1.2.17</log4j.version>
         <akka.version>2.3.7</akka.version>
@@ -582,7 +579,7 @@
         <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
 
         <!-- The following graph.{storage|index}.backend definitions dictate the backends for test
-             resources in typesystem and each of the graph profiles. They do not affect packaging
+             resources in intg and each of the graph profiles. They do not affect packaging
              which is handled by defaults and profiles set in atlas-distro POM -->
         <graph.storage.backend>berkeleyje</graph.storage.backend>
         <graph.index.backend>elasticsearch</graph.index.backend>
@@ -725,7 +722,6 @@
         <module>build-tools</module>
         <module>intg</module>
         <module>common</module>
-        <module>typesystem</module>
         <module>server-api</module>
         <module>notification</module>
         <module>client</module>
@@ -748,7 +744,7 @@
         <module>addons/sqoop-bridge</module>
         <module>addons/storm-bridge-shim</module>
         <module>addons/storm-bridge</module>
-	    <module>addons/hbase-bridge-shim</module>
+        <module>addons/hbase-bridge-shim</module>
         <module>addons/hbase-bridge</module>
         <module>distro</module>
     </modules>
@@ -804,7 +800,6 @@
 
     <dependencyManagement>
         <dependencies>
-
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -1336,20 +1331,6 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-typesystem</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-typesystem</artifactId>
-                <version>${project.version}</version>
-                <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-graphdb-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1531,109 +1512,6 @@
             </dependency>
 
 
-            <!--Scala dependencies-->
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-compiler</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-reflect</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-actors</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scalap</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.json4s</groupId>
-                <artifactId>json4s-native_${scala.binary.version}</artifactId>
-                <version>${json.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.github.nscala-time</groupId>
-                <artifactId>nscala-time_${scala.binary.version}</artifactId>
-                <version>1.6.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe</groupId>
-                <artifactId>config</artifactId>
-                <version>1.2.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-actor_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-testkit_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-slf4j_${scala.binary.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-routing</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-can</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-httpx</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.spray</groupId>
-                <artifactId>spray-testkit</artifactId>
-                <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>${gson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>it.unimi.dsi</groupId>
-                <artifactId>fastutil</artifactId>
-                <version>${fastutil.version}</version>
-            </dependency>
-
             <!-- API documentation  -->
             <dependency>
                 <groupId>com.webcohesion.enunciate</groupId>
@@ -1704,7 +1582,7 @@
 
             <dependency>
                 <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka_${scala.binary.version}</artifactId>
+                <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                 <version>${kafka.version}</version>
                 <exclusions>
                     <exclusion>
@@ -1778,10 +1656,6 @@
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
-            <testResource>
-                <directory>typesystem/src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
         </testResources>
 
         <pluginManagement>
@@ -1796,6 +1670,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.7.0</version>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -1927,16 +1805,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <optimize>true</optimize>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.felix</groupId>
@@ -2025,12 +1893,6 @@
                         <append>true</append>
                     </requestLog>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
             </plugin>
 
             <plugin>

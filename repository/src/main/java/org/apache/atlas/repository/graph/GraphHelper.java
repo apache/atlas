@@ -24,12 +24,15 @@ import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
@@ -43,31 +46,11 @@ import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.ITypedInstance;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
-import org.apache.atlas.typesystem.types.AttributeInfo;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.typesystem.types.HierarchicalType;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.ValueConversionException;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.util.AttributeValueMap;
 import org.apache.atlas.util.IndexedInstance;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.UUID;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -96,8 +78,6 @@ public final class GraphHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphHelper.class);
     public static final String EDGE_LABEL_PREFIX = "__";
-
-    private static final TypeSystem typeSystem = TypeSystem.getInstance();
 
     public static final String RETRY_COUNT = "atlas.graph.storage.num.retries";
     public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
@@ -143,7 +123,7 @@ public final class GraphHelper {
     }
 
 
-    public AtlasVertex createVertexWithIdentity(ITypedReferenceableInstance typedInstance, Set<String> superTypeNames) {
+    public AtlasVertex createVertexWithIdentity(Referenceable typedInstance, Set<String> superTypeNames) {
         final String guid = UUID.randomUUID().toString();
 
         final AtlasVertex vertexWithIdentity = createVertexWithoutIdentity(typedInstance.getTypeName(),
@@ -153,7 +133,7 @@ public final class GraphHelper {
         setProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
 
         // add version information
-        setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, Long.valueOf(typedInstance.getId().version));
+        setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, Long.valueOf(typedInstance.getId().getVersion()));
 
         return vertexWithIdentity;
     }
@@ -179,12 +159,12 @@ public final class GraphHelper {
         setProperty(vertexWithoutIdentity, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         // add timestamp information
-        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
         setProperty(vertexWithoutIdentity, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
-                RequestContext.get().getRequestTime());
+                RequestContextV1.get().getRequestTime());
 
-        setProperty(vertexWithoutIdentity, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
-        setProperty(vertexWithoutIdentity, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
+        setProperty(vertexWithoutIdentity, Constants.CREATED_BY_KEY, RequestContextV1.get().getUser());
+        setProperty(vertexWithoutIdentity, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
         return vertexWithoutIdentity;
     }
 
@@ -196,10 +176,10 @@ public final class GraphHelper {
         AtlasEdge edge = graph.addEdge(fromVertex, toVertex, edgeLabel);
 
         setProperty(edge, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-        setProperty(edge, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setProperty(edge, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setProperty(edge, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
-        setProperty(edge, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
+        setProperty(edge, Constants.TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
+        setProperty(edge, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
+        setProperty(edge, Constants.CREATED_BY_KEY, RequestContextV1.get().getUser());
+        setProperty(edge, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Added {}", string(edge));
@@ -673,17 +653,6 @@ public final class GraphHelper {
         return prefix + "." + key;
     }
 
-    public static String getQualifiedFieldName(ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
-        IDataType dataType = typeSystem.getDataType(IDataType.class, typedInstance.getTypeName());
-        return getQualifiedFieldName(dataType, attributeInfo.name);
-    }
-
-    public static String getQualifiedFieldName(IDataType dataType, String attributeName) throws AtlasException {
-        return dataType.getTypeCategory() == DataTypes.TypeCategory.STRUCT ? dataType.getName() + "." + attributeName
-                // else class or trait
-                : ((HierarchicalType) dataType).getQualifiedName(attributeName);
-    }
-
     public static String getTraitLabel(String typeName, String attrName) {
         return attrName;
     }
@@ -710,13 +679,8 @@ public final class GraphHelper {
         return superTypes;
     }
 
-    public static String getEdgeLabel(ITypedInstance typedInstance, AttributeInfo aInfo) throws AtlasException {
-        IDataType dataType = typeSystem.getDataType(IDataType.class, typedInstance.getTypeName());
-        return getEdgeLabel(dataType, aInfo);
-    }
-
-    public static String getEdgeLabel(IDataType dataType, AttributeInfo aInfo) throws AtlasException {
-        return GraphHelper.EDGE_LABEL_PREFIX + getQualifiedFieldName(dataType, aInfo.name);
+    public static String getEdgeLabel(AtlasAttribute aInfo) throws AtlasException {
+        return GraphHelper.EDGE_LABEL_PREFIX + aInfo.getQualifiedName();
     }
 
     public static Id getIdFromVertex(String dataTypeName, AtlasVertex vertex) {
@@ -784,26 +748,24 @@ public final class GraphHelper {
      * @return
      * @throws AtlasException
      */
-    public AtlasVertex getVertexForInstanceByUniqueAttribute(ClassType classType, IReferenceableInstance instance)
+    public AtlasVertex getVertexForInstanceByUniqueAttribute(AtlasEntityType classType, Referenceable instance)
         throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Checking if there is an instance with the same unique attributes for instance {}", instance.toShortString());
         }
 
         AtlasVertex result = null;
-        for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
-            if (attributeInfo.isUnique) {
-                String propertyKey = getQualifiedFieldName(classType, attributeInfo.name);
-                try {
-                    result = findVertex(propertyKey, instance.get(attributeInfo.name),
-                            Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getName(),
-                            Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Found vertex by unique attribute : {}={}", propertyKey, instance.get(attributeInfo.name));
-                    }
-                } catch (EntityNotFoundException e) {
-                    //Its ok if there is no entity with the same unique value
+        for (AtlasAttribute attributeInfo : classType.getUniqAttributes().values()) {
+            String propertyKey = attributeInfo.getQualifiedName();
+            try {
+                result = findVertex(propertyKey, instance.get(attributeInfo.getName()),
+                        Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getTypeName(),
+                        Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Found vertex by unique attribute : {}={}", propertyKey, instance.get(attributeInfo.getName()));
                 }
+            } catch (EntityNotFoundException e) {
+                //Its ok if there is no entity with the same unique value
             }
         }
 
@@ -821,23 +783,21 @@ public final class GraphHelper {
      * @return
      * @throws AtlasException
      */
-    public List<AtlasVertex> getVerticesForInstancesByUniqueAttribute(ClassType classType, List<? extends IReferenceableInstance> instancesForClass) throws AtlasException {
+    public List<AtlasVertex> getVerticesForInstancesByUniqueAttribute(AtlasEntityType classType, List<? extends Referenceable> instancesForClass) throws AtlasException {
 
         //For each attribute, need to figure out what values to search for and which instance(s)
         //those values correspond to.
         Map<String, AttributeValueMap> map = new HashMap<String, AttributeValueMap>();
 
-        for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
-            if (attributeInfo.isUnique) {
-                String propertyKey = getQualifiedFieldName(classType, attributeInfo.name);
-                AttributeValueMap mapForAttribute = new AttributeValueMap();
-                for(int idx = 0; idx < instancesForClass.size(); idx++) {
-                    IReferenceableInstance instance = instancesForClass.get(idx);
-                    Object value = instance.get(attributeInfo.name);
-                    mapForAttribute.put(value, instance, idx);
-                }
-                map.put(propertyKey, mapForAttribute);
+        for (AtlasAttribute attributeInfo : classType.getUniqAttributes().values()) {
+            String propertyKey = attributeInfo.getQualifiedName();
+            AttributeValueMap mapForAttribute = new AttributeValueMap();
+            for(int idx = 0; idx < instancesForClass.size(); idx++) {
+                Referenceable instance = instancesForClass.get(idx);
+                Object value = instance.get(attributeInfo.getName());
+                mapForAttribute.put(value, instance, idx);
             }
+            map.put(propertyKey, mapForAttribute);
         }
 
         AtlasVertex[] result = new AtlasVertex[instancesForClass.size()];
@@ -849,7 +809,7 @@ public final class GraphHelper {
         //construct gremlin query
         AtlasGraphQuery query = graph.query();
 
-        query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getName());
+        query.has(Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getTypeName());
         query.has(Constants.STATE_PROPERTY_KEY,Id.EntityState.ACTIVE.name());
 
         List<AtlasGraphQuery> orChildren = new ArrayList<AtlasGraphQuery>();
@@ -965,6 +925,7 @@ public final class GraphHelper {
      * @return set of VertexInfo for all composite entities
      * @throws AtlasException
      */
+    /*
     public Set<VertexInfo> getCompositeVertices(AtlasVertex entityVertex) throws AtlasException {
         Set<VertexInfo> result = new HashSet<>();
         Stack<AtlasVertex> vertices = new Stack<>();
@@ -1035,20 +996,22 @@ public final class GraphHelper {
         }
         return result;
     }
+    */
 
-    public static ITypedReferenceableInstance[] deserializeClassInstances(TypeSystem typeSystem, String entityInstanceDefinition)
+    /*
+    public static Referenceable[] deserializeClassInstances(AtlasTypeRegistry typeRegistry, String entityInstanceDefinition)
     throws AtlasException {
         try {
             JSONArray referableInstances = new JSONArray(entityInstanceDefinition);
-            ITypedReferenceableInstance[] instances = new ITypedReferenceableInstance[referableInstances.length()];
+            Referenceable[] instances = new Referenceable[referableInstances.length()];
             for (int index = 0; index < referableInstances.length(); index++) {
                 Referenceable entityInstance =
-                        InstanceSerialization.fromJsonReferenceable(referableInstances.getString(index), true);
-                ITypedReferenceableInstance typedInstrance = getTypedReferenceableInstance(typeSystem, entityInstance);
+                        AtlasType.fromV1Json(referableInstances.getString(index), Referenceable.class);
+                Referenceable typedInstrance = getTypedReferenceableInstance(typeRegistry, entityInstance);
                 instances[index] = typedInstrance;
             }
             return instances;
-        } catch(ValueConversionException | TypeNotFoundException  e) {
+        } catch(TypeNotFoundException  e) {
             throw e;
         } catch (Exception e) {  // exception from deserializer
             LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
@@ -1056,28 +1019,22 @@ public final class GraphHelper {
         }
     }
 
-    public static ITypedReferenceableInstance getTypedReferenceableInstance(TypeSystem typeSystem, Referenceable entityInstance)
+    public static Referenceable getTypedReferenceableInstance(AtlasTypeRegistry typeRegistry, Referenceable entityInstance)
             throws AtlasException {
         final String entityTypeName = ParamChecker.notEmpty(entityInstance.getTypeName(), "Entity type cannot be null");
 
-        ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
 
         //Both assigned id and values are required for full update
         //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
         // then replace with original id
         Id origId = entityInstance.getId();
-        entityInstance.replaceWithNewId(new Id(entityInstance.getTypeName()));
-        ITypedReferenceableInstance typedInstrance = entityType.convert(entityInstance, Multiplicity.REQUIRED);
-        ((ReferenceableInstance)typedInstrance).replaceWithNewId(origId);
+        entityInstance.setId(new Id(entityInstance.getTypeName()));
+        Referenceable typedInstrance = new Referenceable(entityInstance);
+        typedInstrance.setId(origId);
         return typedInstrance;
     }
-
-    public static boolean isReference(IDataType type) {
-
-        return type.getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
-                type.getTypeCategory() == DataTypes.TypeCategory.CLASS;
-
-    }
+    */
 
     public static boolean isInternalType(AtlasVertex vertex) {
         return vertex != null && isInternalType(getTypeName(vertex));
@@ -1087,9 +1044,9 @@ public final class GraphHelper {
         return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
-    public static void setArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
+    public static void setArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(GraphHelper.isReference(elementType)) {
+        if(AtlasGraphUtilsV1.isReference(elementType)) {
             setListPropertyFromElementIds(instanceVertex, actualPropertyName, (List)values);
         }
         else {
@@ -1097,23 +1054,13 @@ public final class GraphHelper {
         }
     }
 
-    public static void setMapValueProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, Object value) {
+    public static void setMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, Object value) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(GraphHelper.isReference(elementType)) {
+        if(AtlasGraphUtilsV1.isReference(elementType)) {
             instanceVertex.setPropertyFromElementId(actualPropertyName, (AtlasEdge)value);
         }
         else {
             instanceVertex.setProperty(actualPropertyName, value);
-        }
-    }
-
-    public static Object getMapValueProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(GraphHelper.isReference(elementType)) {
-            return instanceVertex.getProperty(actualPropertyName, AtlasEdge.class);
-        }
-        else {
-            return instanceVertex.getProperty(actualPropertyName, Object.class).toString();
         }
     }
 
@@ -1138,16 +1085,6 @@ public final class GraphHelper {
         }
     }
 
-    public static List<Object> getArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(GraphHelper.isReference(elementType)) {
-            return (List)instanceVertex.getListProperty(actualPropertyName, AtlasEdge.class);
-        }
-        else {
-            return (List)instanceVertex.getListProperty(actualPropertyName);
-        }
-    }
-
     public static void dumpToLog(final AtlasGraph<?,?> graph) {
         LOG.debug("*******************Graph Dump****************************");
         LOG.debug("Vertices of {}", graph);
@@ -1162,7 +1099,7 @@ public final class GraphHelper {
         LOG.debug("*******************Graph Dump****************************");
     }
 
-    public static String string(ITypedReferenceableInstance instance) {
+    public static String string(Referenceable instance) {
         return String.format("entity[type=%s guid=%s]", instance.getTypeName(), instance.getId()._getId());
     }
 
@@ -1245,6 +1182,7 @@ public final class GraphHelper {
         return instanceVertexId;
     }
 
+    /*
     public static AttributeInfo getAttributeInfoForSystemAttributes(String field) {
         switch (field) {
         case Constants.STATE_PROPERTY_KEY:
@@ -1259,6 +1197,7 @@ public final class GraphHelper {
         }
         return null;
     }
+    */
 
     public static boolean elementExists(AtlasElement v) {
         return v != null && v.exists();

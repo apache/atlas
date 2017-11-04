@@ -18,18 +18,19 @@
 package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -45,8 +46,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.atlas.notification.AtlasNotificationBaseMessage.MESSAGE_COMPRESSION_ENABLED;
-import static org.apache.atlas.notification.AtlasNotificationBaseMessage.MESSAGE_MAX_LENGTH_BYTES;
+import static org.apache.atlas.model.notification.AtlasNotificationBaseMessage.MESSAGE_COMPRESSION_ENABLED;
+import static org.apache.atlas.model.notification.AtlasNotificationBaseMessage.MESSAGE_MAX_LENGTH_BYTES;
 
 /**
  * Abstract notification interface implementation.
@@ -78,15 +79,6 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     private final boolean embedded;
     private final boolean isHAEnabled;
-
-    /**
-     * Used for message serialization.
-     */
-    public static final Gson GSON = new GsonBuilder().
-        registerTypeAdapter(IReferenceableInstance.class, new ReferenceableSerializer()).
-        registerTypeAdapter(Referenceable.class, new ReferenceableSerializer()).
-        registerTypeAdapter(JSONArray.class, new JSONArraySerializer()).
-        create();
 
     // ----- Constructors ----------------------------------------------------
 
@@ -160,7 +152,7 @@ public abstract class AbstractNotification implements NotificationInterface {
     public static String getMessageJson(Object message) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message);
 
-        return GSON.toJson(notificationMsg);
+        return AtlasType.toV1Json(notificationMsg);
     }
 
     private static String getHostAddress() {
@@ -190,7 +182,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public static void createNotificationMessages(Object message, List<String> msgJsonList) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser());
-        String                      msgJson         = GSON.toJson(notificationMsg);
+        String                      msgJson         = AtlasType.toV1Json(notificationMsg);
 
         boolean msgLengthExceedsLimit = (msgJson.length() * MAX_BYTES_PER_CHAR) > MESSAGE_MAX_LENGTH_BYTES;
 
@@ -215,7 +207,7 @@ public abstract class AbstractNotification implements NotificationInterface {
                     if (!msgLengthExceedsLimit) { // no need to split
                         AtlasNotificationStringMessage compressedMsg = new AtlasNotificationStringMessage(encodedBytes, msgId, compressionKind);
 
-                        msgJson  = GSON.toJson(compressedMsg); // msgJson will not have multi-byte characters here, due to use of encodeBase64() above
+                        msgJson  = AtlasType.toV1Json(compressedMsg); // msgJson will not have multi-byte characters here, due to use of encodeBase64() above
                         msgBytes = null; // not used after this point
                     } else { // encodedBytes will be split
                         msgJson  = null; // not used after this point
@@ -241,7 +233,7 @@ public abstract class AbstractNotification implements NotificationInterface {
 
                         AtlasNotificationStringMessage splitMsg = new AtlasNotificationStringMessage(encodedBytes, offset, length, msgId, compressionKind, i, splitCount);
 
-                        String splitMsgJson = GSON.toJson(splitMsg);
+                        String splitMsgJson = AtlasType.toV1Json(splitMsg);
 
                         msgJsonList.add(splitMsgJson);
 
@@ -264,10 +256,10 @@ public abstract class AbstractNotification implements NotificationInterface {
     /**
      * Serializer for Referenceable.
      */
-    public static final class ReferenceableSerializer implements JsonSerializer<IReferenceableInstance> {
+    public static final class ReferenceableSerializer implements JsonSerializer<Referenceable> {
         @Override
-        public JsonElement serialize(IReferenceableInstance src, Type typeOfSrc, JsonSerializationContext context) {
-            String instanceJson = InstanceSerialization.toJson(src, true);
+        public JsonElement serialize(Referenceable src, Type typeOfSrc, JsonSerializationContext context) {
+            String instanceJson = AtlasType.toV1Json(src);
             return new JsonParser().parse(instanceJson).getAsJsonObject();
         }
     }

@@ -42,8 +42,15 @@
       </dependency>
 
       <dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>${guava.version}</version>
+      </dependency>
+
+      <dependency>
           <groupId>org.testng</groupId>
           <artifactId>testng</artifactId>
+          <scope>test</scope>
       </dependency>
 
   </dependencies>

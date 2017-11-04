@@ -22,8 +22,6 @@ import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.classification.InterfaceAudience;
-import org.apache.atlas.discovery.DiscoveryException;
-import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
@@ -46,6 +44,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -65,8 +64,6 @@ public class MetadataDiscoveryResource {
     private static final String QUERY_TYPE_FULLTEXT = "full-text";
     private static final String LIMIT_OFFSET_DEFAULT = "-1";
 
-    private final DiscoveryService discoveryService;
-
     private final  boolean       gremlinSearchEnabled;
     private static Configuration applicationProperties          = null;
     private static final String  ENABLE_GREMLIN_SEARCH_PROPERTY = "atlas.search.gremlin.enable";
@@ -75,11 +72,10 @@ public class MetadataDiscoveryResource {
      * Created by the Guice ServletModule and injected with the
      * configured DiscoveryService.
      *
-     * @param discoveryService metadata service handle
+     * @param configuration configuration
      */
     @Inject
-    public MetadataDiscoveryResource(DiscoveryService discoveryService, Configuration configuration) {
-        this.discoveryService  = discoveryService;
+    public MetadataDiscoveryResource(Configuration configuration) {
         applicationProperties  = configuration;
         gremlinSearchEnabled   = applicationProperties != null && applicationProperties.getBoolean(ENABLE_GREMLIN_SEARCH_PROPERTY, false);
     }
@@ -152,12 +148,12 @@ public class MetadataDiscoveryResource {
 
             dslQuery = ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = discoveryService.searchByDSL(dslQuery, queryParams);
+            final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByDSL(dslQuery, queryParams);
 
             JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
 
             return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -220,11 +216,11 @@ public class MetadataDiscoveryResource {
             }
 
             if (!gremlinSearchEnabled) {
-                throw new DiscoveryException("Gremlin search is not enabled.");
+                throw new Exception("Gremlin search is not enabled.");
             }
 
             gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
-            final List<Map<String, String>> results = discoveryService.searchByGremlin(gremlinQuery);
+            final List<Map<String, String>> results = new ArrayList<>(); // TODO-typeSystem-removal: discoveryService.searchByGremlin(gremlinQuery);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -239,7 +235,7 @@ public class MetadataDiscoveryResource {
             response.put(AtlasClient.COUNT, list.length());
 
             return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -284,12 +280,12 @@ public class MetadataDiscoveryResource {
 
             query = ParamChecker.notEmpty(query, "query cannot be null or empty");
             QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = discoveryService.searchByFullText(query, queryParams);
+            final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByFullText(query, queryParams);
             JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
 
             JSONObject response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
             return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {

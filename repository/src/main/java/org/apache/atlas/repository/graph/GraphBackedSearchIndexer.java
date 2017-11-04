@@ -34,7 +34,6 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
@@ -49,13 +48,6 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.AttributeInfo;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructType;
-import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -66,11 +58,9 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
@@ -80,8 +70,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
  * Adds index for properties of a given type when its added before any instances are added.
  */
 @Component
-public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler,
-        TypeDefChangeListener {
+public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler, TypeDefChangeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
     
@@ -115,6 +104,110 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (!HAConfiguration.isHAEnabled(configuration)) {
             initialize(provider.get());
         }
+    }
+
+    /**
+     * Initialize global indices for Titan graph on server activation.
+     *
+     * Since the indices are shared state, we need to do this only from an active instance.
+     */
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("Reacting to active: initializing index");
+        try {
+            initialize();
+        } catch (RepositoryException | IndexException e) {
+            throw new AtlasException("Error in reacting to active on initialization", e);
+        }
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive state: No action right now.");
+    }
+
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.GRAPH_BACKED_SEARCH_INDEXER.getOrder();
+    }
+
+    @Override
+    public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Processing changed typedefs {}", changedTypeDefs);
+        }
+        AtlasGraphManagement management = null;
+        try {
+            management = provider.get().getManagementSystem();
+
+            // Update index for newly created types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreateTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreateTypeDefs()) {
+                    updateIndexForTypeDef(management, typeDef);
+                }
+            }
+
+            // Update index for updated types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getUpdatedTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getUpdatedTypeDefs()) {
+                    updateIndexForTypeDef(management, typeDef);
+                }
+            }
+
+            // Invalidate the property key for deleted types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getDeletedTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getDeletedTypeDefs()) {
+                    cleanupIndices(management, typeDef);
+                }
+            }
+
+            //Commit indexes
+            commit(management);
+        } catch (RepositoryException | IndexException e) {
+            LOG.error("Failed to update indexes for changed typedefs", e);
+            attemptRollback(changedTypeDefs, management);
+        }
+
+    }
+
+    public Set<String> getVertexIndexKeys() {
+        if (recomputeIndexedKeys) {
+            AtlasGraphManagement management = null;
+
+            try {
+                management = provider.get().getManagementSystem();
+
+                if (management != null) {
+                    AtlasGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
+
+                    if (vertexIndex != null) {
+                        recomputeIndexedKeys = false;
+
+                        Set<String> indexKeys = new HashSet<>();
+
+                        for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
+                            indexKeys.add(fieldKey.getName());
+                        }
+
+                        vertexIndexKeys = indexKeys;
+                    }
+
+                    management.commit();
+                }
+            } catch (Exception excp) {
+                LOG.error("getVertexIndexKeys(): failed to get indexedKeys from graph", excp);
+
+                if (management != null) {
+                    try {
+                        management.rollback();
+                    } catch (Exception e) {
+                        LOG.error("getVertexIndexKeys(): rollback failed", e);
+                    }
+                }
+            }
+        }
+
+        return vertexIndexKeys;
     }
 
     /**
@@ -218,81 +311,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         //create index on vertex type
         createIndexes(management, Constants.VERTEX_TYPE_PROPERTY_KEY, String.class, false, AtlasCardinality.SINGLE,
                 true, true);
-    }
-
-    /**
-     * This is upon adding a new type to Store.
-     *
-     * @param dataTypes data type
-     * @throws AtlasException
-     */
-    @Override
-    public void onAdd(Collection<? extends IDataType> dataTypes) throws AtlasException {
-        AtlasGraphManagement management = provider.get().getManagementSystem();
-               
-        for (IDataType dataType : dataTypes) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
-            }
-
-            try {
-                addIndexForType(management, dataType);
-                LOG.info("Index creation for type {} complete", dataType.getName());
-            } catch (Throwable throwable) {
-                LOG.error("Error creating index for type {}", dataType, throwable);
-                //Rollback indexes if any failure
-                rollback(management);
-                throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
-            }
-        }
-
-        //Commit indexes
-        commit(management);
-    }
-
-    @Override
-    public void onChange(Collection<? extends IDataType> dataTypes) throws AtlasException {
-        onAdd(dataTypes);
-    }
-
-    public Set<String> getVertexIndexKeys() {
-        if (recomputeIndexedKeys) {
-            AtlasGraphManagement management = null;
-
-            try {
-                management = provider.get().getManagementSystem();
-
-                if (management != null) {
-                    AtlasGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
-
-                    if (vertexIndex != null) {
-                        recomputeIndexedKeys = false;
-
-                        Set<String> indexKeys = new HashSet<>();
-
-                        for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
-                            indexKeys.add(fieldKey.getName());
-                        }
-
-                        vertexIndexKeys = indexKeys;
-                    }
-
-                    management.commit();
-                }
-            } catch (Exception excp) {
-                LOG.error("getVertexIndexKeys(): failed to get indexedKeys from graph", excp);
-
-                if (management != null) {
-                    try {
-                        management.rollback();
-                    } catch (Exception e) {
-                        LOG.error("getVertexIndexKeys(): rollback failed", e);
-                    }
-                }
-            }
-        }
-
-        return vertexIndexKeys;
     }
 
     private void addIndexForType(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
@@ -414,82 +432,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         throw new IllegalArgumentException(String.format("Bad cardinality %s", cardinality));
     }
 
-    private void addIndexForType(AtlasGraphManagement management, IDataType dataType) {
-        switch (dataType.getTypeCategory()) {
-        case PRIMITIVE:
-        case ENUM:
-        case ARRAY:
-        case MAP:
-            // do nothing since these are only attributes
-            // and not types like structs, traits or classes
-            break;
-
-        case STRUCT:
-            StructType structType = (StructType) dataType;
-            createIndexForFields(management, structType, structType.fieldMapping().fields);
-            break;
-
-        case TRAIT:
-            TraitType traitType = (TraitType) dataType;
-            createIndexForFields(management, traitType, traitType.fieldMapping().fields);
-            break;
-
-        case CLASS:
-            ClassType classType = (ClassType) dataType;
-            createIndexForFields(management, classType, classType.fieldMapping().fields);
-            break;
-
-        default:
-            throw new IllegalArgumentException("bad data type" + dataType);
-        }
-    }
-
-    private void createIndexForFields(AtlasGraphManagement management, IDataType dataType, Map<String, AttributeInfo> fields) {
-        for (AttributeInfo field : fields.values()) {
-            createIndexForAttribute(management, dataType.getName(), field);
-        }
-    }
-
-    private void createIndexForAttribute(AtlasGraphManagement management, String typeName, AttributeInfo field) {
-        final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + field.name);
-        switch (field.dataType().getTypeCategory()) {
-        case PRIMITIVE:
-            AtlasCardinality cardinality = getCardinality(field.multiplicity);
-            createIndexes(management, propertyName, getPrimitiveClass(field.dataType()), field.isUnique,
-                    cardinality, false, field.isIndexable);
-            break;
-
-        case ENUM:
-            cardinality = getCardinality(field.multiplicity);
-            createIndexes(management, propertyName, String.class, field.isUnique, cardinality, false, field.isIndexable);
-            break;
-
-        case ARRAY:
-            createLabelIfNeeded(management, propertyName, field.dataType().getName());
-            break;
-        case MAP:
-            // todo - how do we overcome this limitation?
-            // IGNORE: Can only index single-valued property keys on vertices in Mixed Index
-            break;
-
-        case STRUCT:
-            StructType structType = (StructType) field.dataType();
-            createIndexForFields(management, structType, structType.fieldMapping().fields);
-            break;
-
-        case TRAIT:
-            // do nothing since this is NOT contained in other types
-            break;
-
-        case CLASS:
-            createEdgeLabel(management, propertyName);
-            break;
-
-        default:
-            throw new IllegalArgumentException("bad data type" + field.dataType().getName());
-        }
-    }
-
     private void createEdgeLabel(final AtlasGraphManagement management, final String propertyName) {
         // Create the edge label upfront to avoid running into concurrent call issue (ATLAS-2092)
         // ATLAS-2092 addresses this problem by creating the edge label upfront while type creation
@@ -506,50 +448,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private Class getPrimitiveClass(IDataType dataType) {
-        if (dataType == DataTypes.STRING_TYPE) {
-            return String.class;
-        } else if (dataType == DataTypes.SHORT_TYPE) {
-            return Short.class;
-        } else if (dataType == DataTypes.INT_TYPE) {
-            return Integer.class;
-        } else if (dataType == DataTypes.BIGINTEGER_TYPE) {
-            return BigInteger.class;
-        } else if (dataType == DataTypes.BOOLEAN_TYPE) {
-            return Boolean.class;
-        } else if (dataType == DataTypes.BYTE_TYPE) {
-            return Byte.class;
-        } else if (dataType == DataTypes.LONG_TYPE) {
-            return Long.class;
-        } else if (dataType == DataTypes.FLOAT_TYPE) {
-            return Float.class;
-        } else if (dataType == DataTypes.DOUBLE_TYPE) {
-            return Double.class;
-        } else if (dataType == DataTypes.BIGDECIMAL_TYPE) {
-            return BigDecimal.class;
-        } else if (dataType == DataTypes.DATE_TYPE) {
-            //Indexing with date converted to long as of now since Titan is yet to add support for Date type with mixed indexes
-            return Long.class;
-        }
-
-
-        throw new IllegalArgumentException("unknown data type " + dataType);
-    }
-  
-
-    private AtlasCardinality getCardinality(Multiplicity multiplicity) {
-        if (multiplicity == Multiplicity.OPTIONAL || multiplicity == Multiplicity.REQUIRED) {
-            return AtlasCardinality.SINGLE;
-        } else if (multiplicity == Multiplicity.COLLECTION) {
-            return AtlasCardinality.LIST;
-        } else if (multiplicity == Multiplicity.SET) {
-            return AtlasCardinality.SET;
-        }
-
-        // todo - default to LIST as this is the most forgiving
-        return AtlasCardinality.LIST;
-    }
-    
     private AtlasPropertyKey createIndexes(AtlasGraphManagement management, String propertyName, Class propertyClass,
             boolean isUnique, AtlasCardinality cardinality, boolean createCompositeForAttribute,
             boolean createCompositeWithTypeandSuperTypes) {
@@ -677,70 +575,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    /**
-     * Initialize global indices for Titan graph on server activation.
-     *
-     * Since the indices are shared state, we need to do this only from an active instance.
-     */
-    @Override
-    public void instanceIsActive() throws AtlasException {
-        LOG.info("Reacting to active: initializing index");
-        try {
-            initialize();
-        } catch (RepositoryException | IndexException e) {
-            throw new AtlasException("Error in reacting to active on initialization", e);
-        }
-    }
-
-    @Override
-    public void instanceIsPassive() {
-        LOG.info("Reacting to passive state: No action right now.");
-    }
-
-    @Override
-    public int getHandlerOrder() {
-        return HandlerOrder.GRAPH_BACKED_SEARCH_INDEXER.getOrder();
-    }
-
-    @Override
-    public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Processing changed typedefs {}", changedTypeDefs);
-        }
-        AtlasGraphManagement management = null;
-        try {
-            management = provider.get().getManagementSystem();
-
-            // Update index for newly created types
-            if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreateTypeDefs())) {
-                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreateTypeDefs()) {
-                    updateIndexForTypeDef(management, typeDef);
-                }
-            }
-
-            // Update index for updated types
-            if (CollectionUtils.isNotEmpty(changedTypeDefs.getUpdatedTypeDefs())) {
-                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getUpdatedTypeDefs()) {
-                    updateIndexForTypeDef(management, typeDef);
-                }
-            }
-
-            // Invalidate the property key for deleted types
-            if (CollectionUtils.isNotEmpty(changedTypeDefs.getDeletedTypeDefs())) {
-                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getDeletedTypeDefs()) {
-                    cleanupIndices(management, typeDef);
-                }
-            }
-
-            //Commit indexes
-            commit(management);
-        } catch (RepositoryException | IndexException e) {
-            LOG.error("Failed to update indexes for changed typedefs", e);
-            attemptRollback(changedTypeDefs, management);
-        }
-
-    }
-
     private void cleanupIndices(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
         Preconditions.checkNotNull(typeDef, "Cannot process null typedef");
         if (LOG.isDebugEnabled()) {
@@ -816,14 +650,4 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         addIndexForType(management, typeDef);
         LOG.info("Index creation for type {} complete", typeDef.getName());
     }
-
-    /* Commenting this out since we do not need an index for edge label here
-    private void createEdgeMixedIndex(String propertyName) {
-        EdgeLabel edgeLabel = management.getEdgeLabel(propertyName);
-        if (edgeLabel == null) {
-            edgeLabel = management.makeEdgeLabel(propertyName).make();
-            management.buildEdgeIndex(edgeLabel, propertyName, Direction.BOTH, Order.DEFAULT);
-            LOG.info("Created index for edge label {}", propertyName);
-        }
-    }*/
 }

@@ -56,7 +56,7 @@ import static org.apache.atlas.TestRelationshipUtilsV2.EMPLOYEE_TYPE;
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeInstances;
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
 import static org.apache.atlas.TestRelationshipUtilsV2.getInverseReferenceTestTypes;
-import static org.apache.atlas.TestUtils.NAME;
+import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;

@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
@@ -27,22 +25,14 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.v1.model.typedef.*;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.json.InstanceSerialization$;
-import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.typesystem.json.TypesSerialization$;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -57,12 +47,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -193,7 +178,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("location", "/tmp");
 
         JSONObject response = atlasClientV1
-                .callAPIWithBody(AtlasClient.API_V1.CREATE_ENTITY, InstanceSerialization.toJson(databaseInstance, true));
+                .callAPIWithBody(AtlasClient.API_V1.CREATE_ENTITY, AtlasType.toV1Json(databaseInstance));
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -244,23 +229,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testEntityDefinitionAcrossTypeUpdate() throws Exception {
         //create type
-        HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
-        atlasClientV1.createType(TypesSerialization.toJson(typeDefinition, false));
+        ClassTypeDefinition typeDefinition = TypesUtil
+                .createClassTypeDef(randomString(), null, Collections.<String>emptySet(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        atlasClientV1.createType(AtlasType.toV1Json(typeDefinition));
 
         //create entity for the type
-        Referenceable instance = new Referenceable(typeDefinition.typeName);
+        Referenceable instance = new Referenceable(typeDefinition.getTypeName());
         instance.set("name", randomString());
         String guid = atlasClientV1.createEntity(instance).get(0);
 
         //update type - add attribute
-        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, ImmutableSet.<String>of(),
-                TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
-        TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
-                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(typeDefinition));
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, Collections.<String>emptySet(),
+                TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                TypesUtil.createOptionalAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef typeDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(),
+                Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(),
+                Arrays.asList(typeDefinition));
         atlasClientV1.updateType(typeDef);
 
         //Get definition after type update - new attributes should be null
@@ -537,12 +522,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private String addNewType() throws Exception {
         String typeName = "test" + randomString();
-        HierarchicalTypeDefinition<ClassType> testTypeDefinition = TypesUtil
-                .createClassTypeDef(typeName, ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+        ClassTypeDefinition testTypeDefinition = TypesUtil
+                .createClassTypeDef(typeName, null, Collections.<String>emptySet(),
+                        TypesUtil.createRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
-        String typesAsJSON = TypesSerialization.toJson(testTypeDefinition, false);
+        String typesAsJSON = AtlasType.toV1Json(testTypeDefinition);
         createType(typesAsJSON);
         return typeName;
     }
@@ -585,9 +570,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
@@ -614,9 +599,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
@@ -648,9 +633,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
@@ -682,10 +667,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         final String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait = TypesUtil
+                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
+                        TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
@@ -705,13 +690,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testAddTraitWithNoRegistration() throws Exception {
         final String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
-        String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
+        String traitInstanceAsJSON = AtlasType.toV1Json(traitInstance);
         LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
         atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
@@ -734,9 +719,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
 
@@ -794,10 +779,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
 
         final String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
-        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        TraitTypeDefinition piiTrait = TypesUtil
+                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
+                        TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         createType(traitDefinitionAsJSON);
 
         try {
@@ -821,12 +806,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String attrName = random();
         String attrValue = random();
 
-        HierarchicalTypeDefinition<ClassType> classTypeDefinition = TypesUtil
-                .createClassTypeDef(classType, ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef(attrName, DataTypes.STRING_TYPE));
-        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(classTypeDefinition));
+        ClassTypeDefinition classTypeDefinition = TypesUtil
+                .createClassTypeDef(classType, null, Collections.<String>emptySet(),
+                        TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
+                Collections.<TraitTypeDefinition>emptyList(),
+                Collections.singletonList(classTypeDefinition));
         createType(typesDef);
 
         Referenceable instance = new Referenceable(classType);
@@ -834,7 +819,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id guid = createInstance(instance);
 
         JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
-        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
+        Referenceable getReferenceable = AtlasType.fromV1Json(response.getString(AtlasClient.DEFINITION), Referenceable.class);
         Assert.assertEquals(getReferenceable.get(attrName), attrValue);
     }
 
@@ -882,7 +867,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable entity = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
 
-        Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
+        Assert.assertTrue(refs.get(0).equals(columns.get(0)));
     }
 
     @Test

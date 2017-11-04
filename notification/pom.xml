@@ -42,12 +42,12 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-server-api</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-server-api</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
 
         <dependency>
@@ -57,7 +57,7 @@
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_${scala.binary.version}</artifactId>
+            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
         </dependency>
 
         <dependency>
@@ -77,11 +77,10 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -159,33 +158,13 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
-                                    <artifactId>kafka_${scala.binary.version}</artifactId>
+                                    <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                     <version>${kafka.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
                                     <artifactId>kafka-clients</artifactId>
                                     <version>${kafka.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-compiler</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-reflect</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scala-library</artifactId>
-                                    <version>${scala.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.scala-lang</groupId>
-                                    <artifactId>scalap</artifactId>
-                                    <version>${scala.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>com.101tec</groupId>

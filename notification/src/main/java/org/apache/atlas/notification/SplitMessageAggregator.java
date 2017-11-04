@@ -18,6 +18,8 @@
 package org.apache.atlas.notification;
 
 
+import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
+
 public class SplitMessageAggregator {
     private final String                           msgId;
     private final AtlasNotificationStringMessage[] splitMessagesBuffer;

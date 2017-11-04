@@ -20,31 +20,23 @@ package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.typedef.*;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -142,7 +134,7 @@ public class QuickStart {
     void createTypes() throws Exception {
         TypesDef typesDef = createTypeDefinitions();
 
-        String typesAsJSON = TypesSerialization.toJson(typesDef);
+        String typesAsJSON = AtlasType.toV1Json(typesDef);
         System.out.println("typesAsJSON = " + typesAsJSON);
         metadataServiceClient.createType(typesAsJSON);
 
@@ -151,80 +143,80 @@ public class QuickStart {
     }
 
     TypesDef createTypeDefinitions() throws Exception {
-        HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
+        ClassTypeDefinition dbClsDef = TypesUtil
                 .createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE, null,
-                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE), attrDef("locationUri", DataTypes.STRING_TYPE),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE));
+                        TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("locationUri", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG));
 
-        HierarchicalTypeDefinition<ClassType> storageDescClsDef = TypesUtil
-                .createClassTypeDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE, null, attrDef("location", DataTypes.STRING_TYPE),
-                        attrDef("inputFormat", DataTypes.STRING_TYPE), attrDef("outputFormat", DataTypes.STRING_TYPE),
-                        attrDef("compressed", DataTypes.STRING_TYPE, Multiplicity.REQUIRED, false, null));
+        ClassTypeDefinition storageDescClsDef = TypesUtil
+                .createClassTypeDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE, null, attrDef("location", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("inputFormat", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("outputFormat", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("compressed", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED, false, null));
 
-        HierarchicalTypeDefinition<ClassType> columnClsDef = TypesUtil
-                .createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE, null, attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("dataType", DataTypes.STRING_TYPE), attrDef("comment", DataTypes.STRING_TYPE));
+        ClassTypeDefinition columnClsDef = TypesUtil
+                .createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE, null, attrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("dataType", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("comment", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
-        HierarchicalTypeDefinition<ClassType> tblClsDef = TypesUtil
-                .createClassTypeDef(TABLE_TYPE, TABLE_TYPE, ImmutableSet.of("DataSet"),
+        ClassTypeDefinition tblClsDef = TypesUtil
+                .createClassTypeDef(TABLE_TYPE, TABLE_TYPE, Collections.singleton("DataSet"),
                         new AttributeDefinition(DB_ATTRIBUTE, DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true, null),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE),
-                        attrDef("lastAccessTime", DataTypes.LONG_TYPE), attrDef("retention", DataTypes.LONG_TYPE),
-                        attrDef("viewOriginalText", DataTypes.STRING_TYPE),
-                        attrDef("viewExpandedText", DataTypes.STRING_TYPE), attrDef("tableType", DataTypes.STRING_TYPE),
-                        attrDef("temporary", DataTypes.BOOLEAN_TYPE),
-                        new AttributeDefinition(COLUMNS_ATTRIBUTE, DataTypes.arrayTypeName(COLUMN_TYPE),
+                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("lastAccessTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG), attrDef("retention", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("viewOriginalText", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("viewExpandedText", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("tableType", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("temporary", AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN),
+                        new AttributeDefinition(COLUMNS_ATTRIBUTE, AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE),
                                 Multiplicity.COLLECTION, true, null));
 
-        HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
-                .createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, ImmutableSet.of("Process"),
-                        attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.LONG_TYPE),
-                        attrDef("endTime", DataTypes.LONG_TYPE),
-                        attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryGraph", DataTypes.STRING_TYPE, Multiplicity.REQUIRED));
+        ClassTypeDefinition loadProcessClsDef = TypesUtil
+                .createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, Collections.singleton("Process"),
+                        attrDef("userName", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("startTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("endTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("queryText", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryPlan", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryId", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
+                        attrDef("queryGraph", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED));
 
-        HierarchicalTypeDefinition<ClassType> viewClsDef = TypesUtil
-            .createClassTypeDef(VIEW_TYPE, VIEW_TYPE, ImmutableSet.of("DataSet"),
+        ClassTypeDefinition viewClsDef = TypesUtil
+            .createClassTypeDef(VIEW_TYPE, VIEW_TYPE, Collections.singleton("DataSet"),
                 new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("inputTables", DataTypes.arrayTypeName(TABLE_TYPE),
+                new AttributeDefinition("inputTables", AtlasBaseTypeDef.getArrayTypeName(TABLE_TYPE),
                     Multiplicity.COLLECTION, false, null));
 
-        HierarchicalTypeDefinition<TraitType> dimTraitDef = TypesUtil.createTraitTypeDef("Dimension_v1",  "Dimension Trait", null);
+        TraitTypeDefinition dimTraitDef = TypesUtil.createTraitTypeDef("Dimension_v1",  "Dimension Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> factTraitDef = TypesUtil.createTraitTypeDef("Fact_v1", "Fact Trait", null);
+        TraitTypeDefinition factTraitDef = TypesUtil.createTraitTypeDef("Fact_v1", "Fact Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> piiTraitDef = TypesUtil.createTraitTypeDef("PII_v1", "PII Trait", null);
+        TraitTypeDefinition piiTraitDef = TypesUtil.createTraitTypeDef("PII_v1", "PII Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> metricTraitDef = TypesUtil.createTraitTypeDef("Metric_v1", "Metric Trait", null);
+        TraitTypeDefinition metricTraitDef = TypesUtil.createTraitTypeDef("Metric_v1", "Metric Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> etlTraitDef = TypesUtil.createTraitTypeDef("ETL_v1", "ETL Trait", null);
+        TraitTypeDefinition etlTraitDef = TypesUtil.createTraitTypeDef("ETL_v1", "ETL Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> jdbcTraitDef = TypesUtil.createTraitTypeDef("JdbcAccess_v1", "JdbcAccess Trait", null);
+        TraitTypeDefinition jdbcTraitDef = TypesUtil.createTraitTypeDef("JdbcAccess_v1", "JdbcAccess Trait", null);
 
-        HierarchicalTypeDefinition<TraitType> logTraitDef = TypesUtil.createTraitTypeDef("Log Data_v1", "LogData Trait",  null);
+        TraitTypeDefinition logTraitDef = TypesUtil.createTraitTypeDef("Log Data_v1", "LogData Trait",  null);
 
-        return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
-                ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef));
+        return new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
+                Arrays.asList(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
+                Arrays.asList(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef));
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT) {
+    AttributeDefinition attrDef(String name, String dT) {
         return attrDef(name, dT, Multiplicity.OPTIONAL, false, null);
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m) {
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m) {
         return attrDef(name, dT, m, false, null);
     }
 
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m, boolean isComposite,
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m, boolean isComposite,
             String reverseAttributeName) {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(dT);
-        return new AttributeDefinition(name, dT.getName(), m, isComposite, reverseAttributeName);
+        return new AttributeDefinition(name, dT, m, isComposite, reverseAttributeName);
     }
 
     void createEntities() throws Exception {
@@ -235,35 +227,31 @@ public class QuickStart {
                 rawStorageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat",
                         true);
 
-        List<Referenceable> salesFactColumns = ImmutableList
-                .of(rawColumn(TIME_ID_COLUMN, "int", "time id"), rawColumn("product_id", "int", "product id"),
+        List<Referenceable> salesFactColumns = Arrays.asList(rawColumn(TIME_ID_COLUMN, "int", "time id"), rawColumn("product_id", "int", "product id"),
                         rawColumn("customer_id", "int", "customer id", "PII_v1"),
                         rawColumn("sales", "double", "product id", "Metric_v1"));
 
-        List<Referenceable> logFactColumns = ImmutableList
-                .of(rawColumn("time_id", "int", "time id"), rawColumn("app_id", "int", "app id"),
+        List<Referenceable> logFactColumns = Arrays.asList(rawColumn("time_id", "int", "time id"), rawColumn("app_id", "int", "app id"),
                         rawColumn("machine_id", "int", "machine id"), rawColumn("log", "string", "log data", "Log Data_v1"));
 
         Id salesFact = table(SALES_FACT_TABLE, SALES_FACT_TABLE_DESCRIPTION, salesDB, sd, "Joe", "Managed",
                 salesFactColumns, FACT_TRAIT);
 
-        List<Referenceable> productDimColumns = ImmutableList
-                .of(rawColumn("product_id", "int", "product id"), rawColumn("product_name", "string", "product name"),
+        List<Referenceable> productDimColumns = Arrays.asList(rawColumn("product_id", "int", "product id"), rawColumn("product_name", "string", "product name"),
                         rawColumn("brand_name", "int", "brand name"));
 
         Id productDim =
                 table(PRODUCT_DIM_TABLE, "product dimension table", salesDB, sd, "John Doe", "Managed",
                         productDimColumns, "Dimension_v1");
 
-        List<Referenceable> timeDimColumns = ImmutableList
-                .of(rawColumn("time_id", "int", "time id"), rawColumn("dayOfYear", "int", "day Of Year"),
+        List<Referenceable> timeDimColumns = Arrays.asList(rawColumn("time_id", "int", "time id"), rawColumn("dayOfYear", "int", "day Of Year"),
                         rawColumn("weekDay", "int", "week Day"));
 
         Id timeDim = table(TIME_DIM_TABLE, "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
                 "Dimension_v1");
 
 
-        List<Referenceable> customerDimColumns = ImmutableList.of(rawColumn("customer_id", "int", "customer id", "PII_v1"),
+        List<Referenceable> customerDimColumns = Arrays.asList(rawColumn("customer_id", "int", "customer id", "PII_v1"),
                 rawColumn("name", "string", "customer name", "PII_v1"),
                 rawColumn("address", "string", "customer address", "PII_v1"));
 
@@ -286,32 +274,32 @@ public class QuickStart {
                         logFactColumns, "Log Data_v1");
 
         loadProcess(LOAD_SALES_DAILY_PROCESS, LOAD_SALES_DAILY_PROCESS_DESCRIPTION, "John ETL",
-                ImmutableList.of(salesFact, timeDim),
-                ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL_v1");
+                Arrays.asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL_v1");
 
-        view(PRODUCT_DIM_VIEW, reportingDB, ImmutableList.of(productDim), "Dimension_v1", "JdbcAccess_v1");
+        view(PRODUCT_DIM_VIEW, reportingDB, Collections.singletonList(productDim), "Dimension_v1", "JdbcAccess_v1");
 
-        view("customer_dim_view", reportingDB, ImmutableList.of(customerDim), "Dimension_v1", "JdbcAccess_v1");
+        view("customer_dim_view", reportingDB, Collections.singletonList(customerDim), "Dimension_v1", "JdbcAccess_v1");
 
         Id salesFactMonthly =
                 table("sales_fact_monthly_mv", "sales fact monthly materialized view", reportingDB, sd, "Jane BI",
                         "Managed", salesFactColumns, "Metric_v1");
 
-        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
-                ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
+        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
 
         Id loggingFactMonthly =
                 table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL",
                         "Managed", logFactColumns, "Log Data_v1");
 
-        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", ImmutableList.of(loggingFactDaily),
-                ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
+        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", Collections.singletonList(loggingFactDaily),
+                Collections.singletonList(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
     }
 
     private Id createInstance(Referenceable referenceable) throws Exception {
         String typeName = referenceable.getTypeName();
 
-        String entityJSON = InstanceSerialization.toJson(referenceable, true);
+        String entityJSON = AtlasType.toV1Json(referenceable);
         System.out.println("Submitting new entity= " + entityJSON);
         List<String> guids = metadataServiceClient.createEntity(entityJSON);
         System.out.println("created instance for type " + typeName + ", guid: " + guids);

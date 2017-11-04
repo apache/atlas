@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -31,12 +32,9 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -547,15 +545,9 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
     }
 
     public static AttributeDefinition toAttributeDefintion(AtlasAttribute attribute) {
-        AttributeDefinition ret = null;
-
         String jsonString = toJsonFromAttribute(attribute);
 
-        try {
-            ret = AttributeInfo.fromJson(jsonString);
-        } catch (JSONException excp) {
-            LOG.error("failed in converting to AttributeDefinition: " + jsonString, excp);
-        }
+        AttributeDefinition ret = AtlasType.fromV1Json(jsonString, AttributeDefinition.class);
 
         return ret;
     }
