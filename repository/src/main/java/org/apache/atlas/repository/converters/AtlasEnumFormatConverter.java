@@ -21,7 +21,7 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.v1.typedef.EnumTypeDefinition.EnumValue;
+import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;

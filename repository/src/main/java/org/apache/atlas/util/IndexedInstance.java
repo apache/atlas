@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.util;
 
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.repository.graph.GraphHelper;
 
 /**

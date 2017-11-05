@@ -24,7 +24,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;

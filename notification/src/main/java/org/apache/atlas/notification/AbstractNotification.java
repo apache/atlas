@@ -26,7 +26,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;

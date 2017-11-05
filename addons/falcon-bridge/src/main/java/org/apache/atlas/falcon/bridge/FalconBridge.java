@@ -24,7 +24,7 @@ import org.apache.atlas.falcon.Util.EventUtil;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.FalconException;

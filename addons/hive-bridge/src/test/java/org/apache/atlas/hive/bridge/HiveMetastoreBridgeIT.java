@@ -21,8 +21,8 @@ package org.apache.atlas.hive.bridge;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.HiveITBase;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Id;
 import org.testng.annotations.Test;
 
 import java.util.List;

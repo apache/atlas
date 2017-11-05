@@ -22,7 +22,7 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.legacy.EntityResult;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;

@@ -21,7 +21,7 @@ package org.apache.atlas.storm.hook;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;

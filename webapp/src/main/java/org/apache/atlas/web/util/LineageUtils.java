@@ -23,7 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;

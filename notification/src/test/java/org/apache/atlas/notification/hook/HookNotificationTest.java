@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
 import org.testng.annotations.Test;
 

@@ -19,8 +19,8 @@
 package org.apache.atlas.kafka;
 
 import kafka.message.MessageAndMetadata;
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.*;
 import org.apache.atlas.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;

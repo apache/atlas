@@ -24,10 +24,10 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.v1.instance.AtlasSystemAttributes;
-import org.apache.atlas.model.v1.instance.Id;
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

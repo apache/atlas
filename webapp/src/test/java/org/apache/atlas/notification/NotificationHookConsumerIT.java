@@ -20,8 +20,8 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.kafka.NotificationProvider;
-import org.apache.atlas.model.v1.instance.Id;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
 import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;

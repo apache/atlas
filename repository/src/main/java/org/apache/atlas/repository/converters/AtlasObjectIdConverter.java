@@ -23,8 +23,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.v1.instance.Id;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -102,7 +102,7 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
         return ret;
     }
 
-    private boolean hasAnyAssignedAttribute(org.apache.atlas.model.v1.instance.Referenceable rInstance) {
+    private boolean hasAnyAssignedAttribute(org.apache.atlas.v1.model.instance.Referenceable rInstance) {
         boolean ret = false;
 
         Map<String, Object> attributes = rInstance.getValues();

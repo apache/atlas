@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.typesystem.types.utils;
+package org.apache.atlas.v1.typesystem.types.utils;
 
 
-import org.apache.atlas.model.v1.typedef.AttributeDefinition;
-import org.apache.atlas.model.v1.typedef.ClassTypeDefinition;
-import org.apache.atlas.model.v1.typedef.Multiplicity;
-import org.apache.atlas.model.v1.typedef.TraitTypeDefinition;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 
 import java.util.Arrays;
 import java.util.List;

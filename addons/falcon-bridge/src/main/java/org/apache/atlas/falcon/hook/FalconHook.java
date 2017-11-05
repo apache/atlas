@@ -25,7 +25,7 @@ import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.NotificationProvider;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.falcon.FalconException;
 import org.apache.falcon.entity.store.ConfigurationStore;

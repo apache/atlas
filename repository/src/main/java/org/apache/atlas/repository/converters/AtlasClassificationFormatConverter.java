@@ -21,7 +21,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;

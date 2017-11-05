@@ -18,8 +18,8 @@
 
 package org.apache.atlas.notification;
 
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.Test;

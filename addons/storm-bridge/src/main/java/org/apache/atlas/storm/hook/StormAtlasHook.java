@@ -18,7 +18,7 @@
 
 package org.apache.atlas.storm.hook;
 
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.storm.ISubmitterHook;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.SpoutSpec;

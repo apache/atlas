@@ -18,8 +18,8 @@
 
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;
 import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;

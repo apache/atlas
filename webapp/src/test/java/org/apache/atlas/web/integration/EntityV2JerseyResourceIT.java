@@ -37,7 +37,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.joda.time.DateTime;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.model.v1.instance;
+package org.apache.atlas.v1.model.instance;
 
 
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -28,9 +28,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -41,38 +40,66 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class Struct implements Serializable {
+public class Id implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String              typeName;
-    private Map<String, Object> values;
+    @JsonIgnore
+    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+
+    public enum EntityState { ACTIVE, DELETED }
+
+    private String      id;
+    private String      typeName;
+    private int         version;
+    private EntityState state;
 
 
-    public Struct() {
+    public Id() {
     }
 
-    public Struct(Struct that) {
+    public Id(Id that) {
         if (that != null) {
+            this.id       = that.id;
             this.typeName = that.typeName;
-
-            if (that.values != null) {
-                this.values = new HashMap<>(that.values);
-            }
+            this.version  = that.version;
+            this.state    = that.state;
         }
     }
 
-    public Struct(String typeName) {
-        this(typeName, null);
+    public Id(String typeName) {
+        this("" + nextNegativeLong(), 0, typeName);
     }
 
-    public Struct(String typeName, Map<String, Object> values) {
+    public Id(String id, int version, String typeName) {
+        this(id, version, typeName, null);
+    }
+
+    public Id(long id, int version, String typeName) {
+        this(id, version, typeName, null);
+    }
+
+    public Id(long id, int version, String typeName, String state) {
+        this("" + id, version, typeName, state);
+    }
+
+    public Id(String id, int version, String typeName, String state) {
+        this.id       = id;
         this.typeName = typeName;
-        this.values   = values;
+        this.version  = version;
+        this.state    = state == null ? EntityState.ACTIVE : EntityState.valueOf(state.toUpperCase());
     }
 
     // for serialization backward compatibility
     public String getJsonClass() {
-        return "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct";
+        return "org.apache.atlas.typesystem.json.InstanceSerialization$_Id";
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getTypeName() {
@@ -83,38 +110,25 @@ public class Struct implements Serializable {
         this.typeName = typeName;
     }
 
-    public Map<String, Object> getValues() {
-        return values;
+    public int getVersion() {
+        return version;
     }
 
-    public void setValues(Map<String, Object> values) {
-        this.values = values;
+    public void setVersion(int version) {
+        this.version = version;
     }
 
-    @JsonIgnore
-    public Map<String, Object> getValuesMap() {
-        return values;
+    public EntityState getState() {
+        return state;
     }
 
-    @JsonIgnore
-    public void set(String attrName, Object attrValue) {
-        if (values == null) {
-            values = new HashMap<>();
-        }
-
-        values.put(attrName, attrValue);
+    public void setState(EntityState state) {
+        this.state = state;
     }
 
     @JsonIgnore
-    public Object get(String attrName) {
-        return values != null ? values.get(attrName) : null;
-    }
-
-    @JsonIgnore
-    public void setNull(String attrName) {
-        if (values != null) {
-            values.remove(attrName);
-        }
+    public String _getId() {
+        return id;
     }
 
 
@@ -124,18 +138,34 @@ public class Struct implements Serializable {
             return true;
         }
 
-        if (o == null || o.getClass() != getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        Struct obj = (Struct)o;
+        Id obj = (Id) o;
 
-        return Objects.equals(typeName, obj.typeName) &&
-               Objects.equals(values, obj.values);
+        return version == obj.version &&
+               Objects.equals(id, obj.id) &&
+               Objects.equals(typeName, obj.typeName) &&
+                Objects.equals(state, obj.state);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(typeName, values);
+        return Objects.hash(id, typeName, version, state);
+    }
+
+
+
+    private static long nextNegativeLong() {
+        long ret = s_nextId.getAndDecrement();
+
+        if (ret > 0) {
+            ret *= -1;
+        } else if (ret == 0) {
+            ret = Long.MIN_VALUE;
+        }
+
+        return ret;
     }
 }

@@ -18,8 +18,8 @@
 package org.apache.atlas.notification.entity;
 
 
-import org.apache.atlas.model.v1.instance.Referenceable;
-import org.apache.atlas.model.v1.instance.Struct;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 
 import java.util.List;
 

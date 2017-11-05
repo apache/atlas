@@ -21,7 +21,7 @@ package org.apache.atlas.type;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.v1.typedef.Multiplicity;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.map.module.SimpleModule;

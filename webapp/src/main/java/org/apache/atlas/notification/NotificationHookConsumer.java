@@ -30,7 +30,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
 import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;

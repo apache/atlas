@@ -23,7 +23,7 @@ import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.model.v1.typedef.TypesDef;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;

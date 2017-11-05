@@ -19,7 +19,7 @@
 package org.apache.atlas;
 
 
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
 
 import java.util.Objects;

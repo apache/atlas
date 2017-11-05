@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.model.v1.typedef;
+package org.apache.atlas.v1.model.typedef;
 
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -37,55 +38,14 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class TypesDef implements Serializable {
+public class TraitTypeDefinition extends HierarchicalTypeDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private List<EnumTypeDefinition>   enumTypes;
-    private List<StructTypeDefinition> structTypes;
-    private List<TraitTypeDefinition>  traitTypes;
-    private List<ClassTypeDefinition>  classTypes;
 
-
-    public TypesDef() {
+    public TraitTypeDefinition() {
     }
 
-    public TypesDef(List<EnumTypeDefinition> enumTypes, List<StructTypeDefinition> structTypes, List<TraitTypeDefinition> traitTypes, List<ClassTypeDefinition> classTypes) {
-        this.enumTypes   = enumTypes;
-        this.structTypes = structTypes;
-        this.traitTypes  = traitTypes;
-        this.classTypes  = classTypes;
-    }
-
-
-    public List<EnumTypeDefinition> getEnumTypes() {
-        return enumTypes;
-    }
-
-    public void setEnumTypes(List<EnumTypeDefinition> enumTypes) {
-        this.enumTypes = enumTypes;
-    }
-
-    public List<StructTypeDefinition> getStructTypes() {
-        return structTypes;
-    }
-
-    public void setStructTypes(List<StructTypeDefinition> structTypes) {
-        this.structTypes = structTypes;
-    }
-
-    public List<TraitTypeDefinition> getTraitTypes() {
-        return traitTypes;
-    }
-
-    public void setTraitTypes(List<TraitTypeDefinition> traitTypes) {
-        this.traitTypes = traitTypes;
-    }
-
-    public List<ClassTypeDefinition> getClassTypes() {
-        return classTypes;
-    }
-
-    public void setClassTypes(List<ClassTypeDefinition> classTypes) {
-        this.classTypes = classTypes;
+    public TraitTypeDefinition(String typeName, String typeDescription, String typeVersion, List<AttributeDefinition> attributeDefinitions, Set<String> superTypes) {
+        super(typeName, typeDescription, typeVersion, attributeDefinitions, "org.apache.atlas.typesystem.types.TraitType", superTypes);
     }
 }

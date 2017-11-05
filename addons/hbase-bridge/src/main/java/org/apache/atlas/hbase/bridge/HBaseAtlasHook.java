@@ -23,7 +23,7 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
 import org.apache.atlas.hook.AtlasHook;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hbase.HTableDescriptor;

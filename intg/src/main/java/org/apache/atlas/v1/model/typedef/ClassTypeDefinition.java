@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.model.v1.typedef;
+package org.apache.atlas.v1.model.typedef;
 
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;

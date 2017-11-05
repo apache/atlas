@@ -28,8 +28,8 @@ import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.v1.typedef.*;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.v1.model.typedef.*;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

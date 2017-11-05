@@ -19,7 +19,7 @@
 package org.apache.atlas.kafka;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.hook.HookNotification;

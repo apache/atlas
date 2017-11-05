@@ -26,7 +26,7 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.hook.AtlasHookException;
-import org.apache.atlas.model.v1.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.commons.configuration.Configuration;
