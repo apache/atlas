@@ -19,7 +19,8 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.Test;
 
@@ -98,8 +99,8 @@ public class AbstractNotificationTest {
 
     // ignore msgCreationTime in Json
     private void assertEqualsMessageJson(String msgJsonActual, String msgJsonExpected) {
-        Map<Object, Object> msgActual   = AbstractNotification.GSON.fromJson(msgJsonActual, Map.class);
-        Map<Object, Object> msgExpected = AbstractNotification.GSON.fromJson(msgJsonExpected, Map.class);
+        Map<Object, Object> msgActual   = AtlasType.fromV1Json(msgJsonActual, Map.class);
+        Map<Object, Object> msgExpected = AtlasType.fromV1Json(msgJsonExpected, Map.class);
 
         msgActual.remove("msgCreationTime");
         msgExpected.remove("msgCreationTime");

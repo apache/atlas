@@ -16,15 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification;
+package org.apache.atlas.model.notification;
 
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Represents the version of a notification message.
  */
-public class MessageVersion implements Comparable<MessageVersion> {
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class MessageVersion implements Comparable<MessageVersion>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     /**
      * Used for message with no version (old format).
      */
@@ -33,10 +51,13 @@ public class MessageVersion implements Comparable<MessageVersion> {
 
     public static final MessageVersion CURRENT_VERSION = VERSION_1;
 
-    private final String version;
+    private String version;
 
 
     // ----- Constructors ----------------------------------------------------
+    public MessageVersion() {
+        this.version = CURRENT_VERSION.version;
+    }
 
     /**
      * Create a message version.
@@ -51,6 +72,14 @@ public class MessageVersion implements Comparable<MessageVersion> {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(String.format("Invalid version string : %s.", version), e);
         }
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
 
@@ -113,7 +142,7 @@ public class MessageVersion implements Comparable<MessageVersion> {
      *
      * @return  the version parts array
      */
-    protected Integer[] getVersionParts() {
+    public Integer[] getVersionParts() {
 
         String[] sParts = version.split("\\.");
         ArrayList<Integer> iParts = new ArrayList<>();
@@ -135,7 +164,7 @@ public class MessageVersion implements Comparable<MessageVersion> {
         return iParts.toArray(new Integer[iParts.size()]);
     }
 
-    private Integer getVersionPart(Integer[] versionParts, int i) {
+    public Integer getVersionPart(Integer[] versionParts, int i) {
         return i < versionParts.length ? versionParts[i] : 0;
     }
 }

@@ -43,7 +43,7 @@ import org.apache.atlas.v1.model.typedef.*;
 import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.kafka.*;
-import org.apache.atlas.notification.entity.EntityNotification;
+import org.apache.atlas.v1.model.notification.EntityNotification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;

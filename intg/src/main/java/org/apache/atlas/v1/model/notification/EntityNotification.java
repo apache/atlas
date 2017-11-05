@@ -15,17 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification.entity;
+package org.apache.atlas.v1.model.notification;
 
-import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-import java.util.Collections;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,14 +40,32 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Entity notification implementation.
- */
-public class EntityNotificationImpl implements EntityNotification {
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-    private final Referenceable entity;
-    private final OperationType operationType;
-    private final List<Struct> traits;
+/**
+ * Entity notification
+ */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class EntityNotification implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    public enum OperationType {
+        ENTITY_CREATE,
+        ENTITY_UPDATE,
+        ENTITY_DELETE,
+        TRAIT_ADD,
+        TRAIT_DELETE,
+        TRAIT_UPDATE
+    }
+
+    private Referenceable entity;
+    private OperationType operationType;
+    private List<Struct>  traits;
 
 
     // ----- Constructors ------------------------------------------------------
@@ -48,9 +73,7 @@ public class EntityNotificationImpl implements EntityNotification {
     /**
      * No-arg constructor for serialization.
      */
-    @SuppressWarnings("unused")
-    private EntityNotificationImpl() throws AtlasException {
-        this(null, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
+    public EntityNotification() {
     }
 
     /**
@@ -59,14 +82,11 @@ public class EntityNotificationImpl implements EntityNotification {
      * @param entity            the entity subject of the notification
      * @param operationType     the type of operation that caused the notification
      * @param traits            the traits for the given entity
-     *
-     * @throws AtlasException if the entity notification can not be created
      */
-    public EntityNotificationImpl(Referenceable entity, OperationType operationType, List<Struct> traits)
-        throws AtlasException {
-        this.entity = entity;
+    public EntityNotification(Referenceable entity, OperationType operationType, List<Struct> traits) {
+        this.entity        = entity;
         this.operationType = operationType;
-        this.traits = traits;
+        this.traits        = traits;
     }
 
     /**
@@ -75,30 +95,38 @@ public class EntityNotificationImpl implements EntityNotification {
      * @param entity         the entity subject of the notification
      * @param operationType  the type of operation that caused the notification
      * @param typeRegistry     the Atlas type system
-     *
-     * @throws AtlasException if the entity notification can not be created
      */
-    public EntityNotificationImpl(Referenceable entity, OperationType operationType, AtlasTypeRegistry typeRegistry)
-        throws AtlasException {
+    public EntityNotification(Referenceable entity, OperationType operationType, AtlasTypeRegistry typeRegistry) {
         this(entity, operationType, getAllTraits(entity, typeRegistry));
     }
 
-
-    // ----- EntityNotification ------------------------------------------------
-
-    @Override
     public Referenceable getEntity() {
         return entity;
     }
 
-    @Override
-    public List<Struct> getAllTraits() {
+    public void setEntity(Referenceable entity) {
+        this.entity = entity;
+    }
+
+    public OperationType getOperationType() {
+        return operationType;
+    }
+
+    public void setOperationType(OperationType operationType) {
+        this.operationType = operationType;
+    }
+
+    public List<Struct> getTraits() {
         return traits;
     }
 
-    @Override
-    public OperationType getOperationType() {
-        return operationType;
+    public void setTraits(List<Struct> traits) {
+        this.traits = traits;
+    }
+
+    @JsonIgnore
+    public List<Struct> getAllTraits() {
+        return traits;
     }
 
 
@@ -108,7 +136,7 @@ public class EntityNotificationImpl implements EntityNotification {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        EntityNotificationImpl that = (EntityNotificationImpl) o;
+        EntityNotification that = (EntityNotification) o;
         return Objects.equals(entity, that.entity) &&
                 operationType == that.operationType &&
                 Objects.equals(traits, that.traits);
@@ -119,10 +147,36 @@ public class EntityNotificationImpl implements EntityNotification {
         return Objects.hash(entity, operationType, traits);
     }
 
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("EntityNotification{");
+        sb.append("entity=");
+        if (entity != null) {
+            entity.toString(sb);
+        } else {
+            sb.append(entity);
+        }
+        sb.append(", operationType=").append(operationType);
+        sb.append(", traits=[");
+        AtlasBaseTypeDef.dumpObjects(traits, sb);
+        sb.append("]");
+        sb.append("}");
+
+        return sb;
+    }
+
 
     // ----- helper methods ----------------------------------------------------
 
-    private static List<Struct> getAllTraits(Referenceable entityDefinition, AtlasTypeRegistry typeRegistry) throws AtlasException {
+    private static List<Struct> getAllTraits(Referenceable entityDefinition, AtlasTypeRegistry typeRegistry) {
         List<Struct> ret = new LinkedList<>();
 
         for (String traitName : entityDefinition.getTraitNames()) {
@@ -140,11 +194,17 @@ public class EntityNotificationImpl implements EntityNotification {
                         AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
 
                         if (superType != null && MapUtils.isNotEmpty(superType.getAllAttributes())) {
-                            Map<String, Object> attributes = new HashMap<>();
+                            Map<String, Object> superTypeTraitAttributes = new HashMap<>();
 
-                            // TODO: add superTypeTrait attributess
+                            for (Map.Entry<String, Object> attrEntry : trait.getValues().entrySet()) {
+                                String attrName = attrEntry.getKey();
 
-                            superTypeTrait.setValues(attributes);
+                                if (superType.getAllAttributes().containsKey(attrName)) {
+                                    superTypeTraitAttributes.put(attrName, attrEntry.getValue());
+                                }
+                            }
+
+                            superTypeTrait.setValues(superTypeTraitAttributes);
                         }
                     }
 
@@ -154,4 +214,5 @@ public class EntityNotificationImpl implements EntityNotification {
         }
 
         return ret;
-    }}
+    }
+}

@@ -16,14 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification;
+package org.apache.atlas.model.notification;
 
-import org.joda.time.DateTimeZone;
-import org.joda.time.Instant;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Date;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Represents a notification message that is associated with a version.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
     private String msgSourceIP;
     private String msgCreatedBy;
@@ -32,17 +46,13 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
     /**
      * The actual message.
      */
-    private final T message;
+    private T message;
 
 
     // ----- Constructors ----------------------------------------------------
+    public AtlasNotificationMessage() {
+    }
 
-    /**
-     * Create a notification message.
-     *
-     * @param version  the message version
-     * @param message  the actual message
-     */
     public AtlasNotificationMessage(MessageVersion version, T message) {
         this(version, message, null, null);
     }
@@ -52,7 +62,7 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
 
         this.msgSourceIP     = msgSourceIP;
         this.msgCreatedBy    = createdBy;
-        this.msgCreationTime = Instant.now().toDateTime(DateTimeZone.UTC).getMillis();
+        this.msgCreationTime = (new Date()).getTime();
         this.message         = message;
     }
 
@@ -83,5 +93,9 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
 
     public T getMessage() {
         return message;
+    }
+
+    public void setMessage(T message) {
+        this.message = message;
     }
 }

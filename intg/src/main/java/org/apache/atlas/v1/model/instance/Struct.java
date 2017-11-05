@@ -19,6 +19,7 @@
 package org.apache.atlas.v1.model.instance;
 
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -137,5 +138,25 @@ public class Struct implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(typeName, values);
+    }
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("Struct{");
+        sb.append("typeName=").append(typeName);
+        sb.append(", values={");
+        AtlasBaseTypeDef.dumpObjects(values, sb);
+        sb.append("}");
+        sb.append("}");
+
+        return sb;
     }
 }

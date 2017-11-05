@@ -23,8 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.notification.entity.EntityNotificationImpl;
+import org.apache.atlas.v1.model.notification.EntityNotification;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -41,13 +40,13 @@ import java.util.*;
  */
 @Component
 public class NotificationEntityChangeListener implements EntityChangeListener {
-
-    private final NotificationInterface notificationInterface;
-    private final AtlasTypeRegistry    typeRegistry;
-
-    private Map<String, List<String>> notificationAttributesCache = new HashMap<>();
     private static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
-    static Configuration APPLICATION_PROPERTIES = null;
+
+    private final NotificationInterface     notificationInterface;
+    private final AtlasTypeRegistry         typeRegistry;
+    private final Map<String, List<String>> notificationAttributesCache = new HashMap<>();
+
+    private static Configuration APPLICATION_PROPERTIES = null;
 
 
 
@@ -122,11 +121,17 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                         AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
 
                         if (superType != null && MapUtils.isNotEmpty(superType.getAllAttributes())) {
-                            Map<String, Object> attributes = new HashMap<>();
+                            Map<String, Object> superTypeTraitAttributes = new HashMap<>();
 
-                            // TODO: add superTypeTrait attributess
+                            for (Map.Entry<String, Object> attrEntry : trait.getValues().entrySet()) {
+                                String attrName = attrEntry.getKey();
 
-                            superTypeTrait.setValues(attributes);
+                                if (superType.getAllAttributes().containsKey(attrName)) {
+                                    superTypeTraitAttributes.put(attrName, attrEntry.getValue());
+                                }
+                            }
+
+                            superTypeTrait.setValues(superTypeTraitAttributes);
                         }
                     }
 
@@ -160,7 +165,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                 }
             }
 
-            EntityNotificationImpl notification = new EntityNotificationImpl(entity, operationType, getAllTraits(entity, typeRegistry));
+            EntityNotification notification = new EntityNotification(entity, operationType, getAllTraits(entity, typeRegistry));
 
             messages.add(notification);
         }

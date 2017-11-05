@@ -21,6 +21,7 @@ package org.apache.atlas.notification.entity;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.v1.model.notification.EntityNotification;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -34,19 +35,18 @@ import static org.testng.Assert.assertEquals;
  * EntityMessageDeserializer tests.
  */
 public class EntityMessageDeserializerTest {
+    private EntityMessageDeserializer deserializer = new EntityMessageDeserializer();
 
     @Test
     public void testDeserialize() throws Exception {
-        EntityMessageDeserializer deserializer = new EntityMessageDeserializer();
-
-        Referenceable entity = EntityNotificationImplTest.getEntity("id");
+        Referenceable entity = EntityNotificationTest.getEntity("id");
         String traitName = "MyTrait";
         List<Struct> traitInfo = new LinkedList<>();
         Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
 
-        EntityNotificationImpl notification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
+        EntityNotification notification =
+            new EntityNotification(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
 
         List<String> jsonMsgList = new ArrayList<>();
 
@@ -55,7 +55,7 @@ public class EntityMessageDeserializerTest {
         EntityNotification deserializedNotification = null;
 
         for (String jsonMsg : jsonMsgList) {
-            deserializedNotification = deserializer.deserialize(jsonMsg);
+            deserializedNotification =  deserializer.deserialize(jsonMsg);
 
             if (deserializedNotification != null) {
                 break;

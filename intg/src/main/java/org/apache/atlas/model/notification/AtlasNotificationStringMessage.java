@@ -16,42 +16,58 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.notification;
+package org.apache.atlas.model.notification;
 
 
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasNotificationStringMessage extends AtlasNotificationBaseMessage {
     private String message = null;
 
     public AtlasNotificationStringMessage() {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION);
+        super(MessageVersion.CURRENT_VERSION);
     }
 
     public AtlasNotificationStringMessage(String message) {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION);
+        super(MessageVersion.CURRENT_VERSION);
 
         this.message = message;
     }
 
     public AtlasNotificationStringMessage(String message, String msgId, CompressionKind compressionKind) {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind);
+        super(MessageVersion.CURRENT_VERSION, msgId, compressionKind);
 
         this.message = message;
     }
 
     public AtlasNotificationStringMessage(String message, String msgId, CompressionKind compressionKind, int msgSplitIdx, int msgSplitCount) {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind, msgSplitIdx, msgSplitCount);
+        super(MessageVersion.CURRENT_VERSION, msgId, compressionKind, msgSplitIdx, msgSplitCount);
 
         this.message = message;
     }
 
     public AtlasNotificationStringMessage(byte[] encodedBytes, String msgId, CompressionKind compressionKind) {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind);
+        super(MessageVersion.CURRENT_VERSION, msgId, compressionKind);
 
         this.message = AtlasNotificationBaseMessage.getStringUtf8(encodedBytes);
     }
 
     public AtlasNotificationStringMessage(byte[] encodedBytes, int offset, int length, String msgId, CompressionKind compressionKind, int msgSplitIdx, int msgSplitCount) {
-        super(AbstractNotification.CURRENT_MESSAGE_VERSION, msgId, compressionKind, msgSplitIdx, msgSplitCount);
+        super(MessageVersion.CURRENT_VERSION, msgId, compressionKind, msgSplitIdx, msgSplitCount);
 
         this.message = new String(encodedBytes, offset, length);
     }

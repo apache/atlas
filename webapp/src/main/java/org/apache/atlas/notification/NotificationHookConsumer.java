@@ -31,11 +31,11 @@ import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequest;
-import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequest;
-import org.apache.atlas.notification.hook.HookNotification.EntityPartialUpdateRequest;
-import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
-import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityCreateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityPartialUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
@@ -362,7 +362,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
-                                // TODO: entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
+                                entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                                 break;
@@ -377,7 +377,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 }
 
                                 Referenceable referenceable = partialUpdateRequest.getEntity();
-                                // TODO: entities = instanceConverter.toAtlasEntity(referenceable);
+                                entities = instanceConverter.toAtlasEntity(referenceable);
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
                                 String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, new HashMap<String, Object>() {
@@ -420,7 +420,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     audit(messageUser, api.getMethod(), api.getNormalizedPath());
                                 }
 
-                                // TODO: entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
+                                entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                                 break;
 

@@ -23,6 +23,7 @@ import kafka.server.KafkaServer;
 import kafka.utils.Time;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
@@ -40,6 +41,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -185,7 +187,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         Properties consumerProperties = getConsumerProperties(notificationType);
 
         List<NotificationConsumer<T>> consumers = new ArrayList<>();
-        AtlasKafkaConsumer kafkaConsumer = new AtlasKafkaConsumer(notificationType.getDeserializer(), getKafkaConsumer(consumerProperties,notificationType, autoCommitEnabled), autoCommitEnabled, pollTimeOutMs );
+        AtlasKafkaConsumer kafkaConsumer =new AtlasKafkaConsumer(notificationType, getKafkaConsumer(consumerProperties, notificationType, autoCommitEnabled), autoCommitEnabled, pollTimeOutMs);
+
         consumers.add(kafkaConsumer);
         return consumers;
     }

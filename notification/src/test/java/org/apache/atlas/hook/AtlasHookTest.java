@@ -20,7 +20,7 @@ package org.apache.atlas.hook;
 
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;

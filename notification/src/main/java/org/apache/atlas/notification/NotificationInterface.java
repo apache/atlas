@@ -18,10 +18,13 @@
 package org.apache.atlas.notification;
 
 import com.google.gson.reflect.TypeToken;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
-import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.EntityNotification;
+import org.apache.atlas.v1.model.notification.HookNotification;
+import org.codehaus.jackson.type.TypeReference;
+import scala.reflect.internal.Types;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -53,47 +56,25 @@ public interface NotificationInterface {
     /**
      * Versioned notification message class types.
      */
-    Type HOOK_VERSIONED_MESSAGE_TYPE =
-        new TypeToken<AtlasNotificationMessage<HookNotification.HookNotificationMessage>>(){}.getType();
-
     Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<AtlasNotificationMessage<EntityNotification>>(){}.getType();
 
     /**
      * Atlas notification types.
      */
     enum NotificationType {
-
         // Notifications from the Atlas integration hooks.
-        HOOK(HOOK_NOTIFICATION_CLASS, new HookMessageDeserializer()),
+        HOOK(new HookMessageDeserializer()),
 
         // Notifications to entity change consumers.
-        ENTITIES(ENTITY_NOTIFICATION_CLASS, new EntityMessageDeserializer());
+        ENTITIES(new EntityMessageDeserializer());
 
+        private final AtlasNotificationMessageDeserializer deserializer;
 
-        /**
-         * The notification class associated with this type.
-         */
-        private final Class classType;
-
-        /**
-         * The message deserializer for this type.
-         */
-        private final MessageDeserializer deserializer;
-
-
-        NotificationType(Class classType, MessageDeserializer<?> deserializer) {
-            this.classType = classType;
+        NotificationType(AtlasNotificationMessageDeserializer deserializer) {
             this.deserializer = deserializer;
         }
 
-
-        // ----- accessors ---------------------------------------------------
-
-        public Class getClassType() {
-            return classType;
-        }
-
-        public MessageDeserializer getDeserializer() {
+        public AtlasNotificationMessageDeserializer getDeserializer() {
             return deserializer;
         }
     }

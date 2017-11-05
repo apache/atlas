@@ -156,6 +156,25 @@ public class Id implements Serializable {
     }
 
 
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("Id{")
+          .append("id=").append(id)
+          .append(", typeName=").append(typeName)
+          .append(", version=").append(version)
+          .append(", state=").append(state)
+          .append("}");
+
+        return sb;
+    }
 
     private static long nextNegativeLong() {
         long ret = s_nextId.getAndDecrement();

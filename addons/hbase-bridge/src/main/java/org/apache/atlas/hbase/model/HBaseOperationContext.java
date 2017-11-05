@@ -19,7 +19,7 @@
 package org.apache.atlas.hbase.model;
 
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;

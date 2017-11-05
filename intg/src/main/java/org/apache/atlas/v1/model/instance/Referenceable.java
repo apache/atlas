@@ -20,6 +20,7 @@ package org.apache.atlas.v1.model.instance;
 
 
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -197,5 +198,31 @@ public class Referenceable extends Struct implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, traits, traitNames, systemAttributes);
+    }
+
+
+    @Override
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("Referenceable{");
+        super.toString(sb);
+        sb.append(", id=");
+        if (id != null) {
+            id.toString(sb);
+        }
+        sb.append(", triats={");
+        AtlasBaseTypeDef.dumpObjects(this.traits, sb);
+        sb.append("}, traitNames=[");
+        AtlasBaseTypeDef.dumpObjects(traitNames, sb);
+        sb.append("], systemAttributes=");
+        if (systemAttributes != null) {
+            systemAttributes.toString(sb);
+        }
+        sb.append("}");
+
+        return sb;
     }
 }

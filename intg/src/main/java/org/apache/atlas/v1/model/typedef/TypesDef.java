@@ -18,6 +18,7 @@
 
 package org.apache.atlas.v1.model.typedef;
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -87,5 +88,31 @@ public class TypesDef implements Serializable {
 
     public void setClassTypes(List<ClassTypeDefinition> classTypes) {
         this.classTypes = classTypes;
+    }
+
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("TypesDef{");
+        sb.append("enumTypes=[");
+        AtlasBaseTypeDef.dumpObjects(enumTypes, sb);
+        sb.append("], structTypes=[");
+        AtlasBaseTypeDef.dumpObjects(structTypes, sb);
+        sb.append("], traitTypes=[");
+        AtlasBaseTypeDef.dumpObjects(traitTypes, sb);
+        sb.append("], classTypes=[");
+        AtlasBaseTypeDef.dumpObjects(classTypes, sb);
+        sb.append("]");
+        sb.append("}");
+
+        return sb;
     }
 }

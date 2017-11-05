@@ -27,7 +27,7 @@ import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
@@ -41,7 +41,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import static org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+import static org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
 import java.util.List;
 
 import org.apache.atlas.kafka.AtlasKafkaConsumer;

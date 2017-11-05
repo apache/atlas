@@ -21,17 +21,24 @@ package org.apache.atlas.type;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityCreateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityPartialUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.EntityUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
+import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.v1.model.notification.HookNotification.TypeRequest;
 import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.map.module.SimpleModule;
+import org.codehaus.jackson.node.ObjectNode;
+import org.codehaus.jackson.type.TypeReference;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
-
-
 
 
 /**
@@ -53,6 +60,7 @@ public abstract class AtlasType {
         atlasSerDeModule.addDeserializer(Date.class, new DateDeserializer());
         atlasSerDeModule.addSerializer(Multiplicity.class, new MultiplicitySerializer());
         atlasSerDeModule.addDeserializer(Multiplicity.class, new MultiplicityDeserializer());
+        atlasSerDeModule.addDeserializer(HookNotificationMessage.class, new HookMessageDeserializer());
 
         mapperV1.registerModule(atlasSerDeModule);
     }
@@ -148,12 +156,23 @@ public abstract class AtlasType {
         try {
             ret = mapperV1.writeValueAsString(obj);
         }catch (IOException e){
+            e.printStackTrace(System.out);
             ret = null;
         }
         return ret;
     }
 
     public static <T> T fromV1Json(String jsonStr, Class<T> type) {
+        T ret;
+        try {
+            ret =  mapperV1.readValue(jsonStr, type);
+        }catch (IOException e){
+            ret = null;
+        }
+        return ret;
+    }
+
+    public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
         T ret;
         try {
             ret =  mapperV1.readValue(jsonStr, type);
@@ -228,6 +247,45 @@ public abstract class AtlasType {
 
             if (ret == null) {
                 ret = new Multiplicity();
+            }
+
+            return ret;
+        }
+    }
+
+    static class HookMessageDeserializer extends JsonDeserializer<HookNotificationMessage> {
+        @Override
+        public HookNotificationMessage deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            HookNotificationMessage ret = null;
+
+            ObjectMapper mapper = (ObjectMapper) parser.getCodec();
+            ObjectNode   root   = (ObjectNode) mapper.readTree(parser);
+
+            JsonNode             typeNode         = root.get("type");
+            String               strType          = typeNode.asText();
+            HookNotificationType notificationType = HookNotificationType.valueOf(strType);
+
+            switch (notificationType) {
+                case TYPE_CREATE:
+                case TYPE_UPDATE:
+                    ret = mapper.readValue(root, TypeRequest.class);
+                break;
+
+                case ENTITY_CREATE:
+                    ret = mapper.readValue(root, EntityCreateRequest.class);
+                    break;
+
+                case ENTITY_PARTIAL_UPDATE:
+                    ret = mapper.readValue(root, EntityPartialUpdateRequest.class);
+                    break;
+
+                case ENTITY_FULL_UPDATE:
+                    ret = mapper.readValue(root, EntityUpdateRequest.class);
+                    break;
+
+                case ENTITY_DELETE:
+                    ret = mapper.readValue(root, EntityDeleteRequest.class);
+                    break;
             }
 
             return ret;

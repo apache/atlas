@@ -22,6 +22,7 @@ import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.notification.EntityNotification;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -37,16 +38,16 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 /**
- * EntityNotificationImpl tests.
+ * EntityNotification tests.
  */
-public class EntityNotificationImplTest {
+public class EntityNotificationTest {
 
     @Test
     public void testGetEntity() throws Exception {
         Referenceable entity = getEntity("id");
 
-        EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+        EntityNotification entityNotification =
+            new EntityNotification(entity, EntityNotification.OperationType.ENTITY_CREATE,
                 Collections.<Struct>emptyList());
 
         assertEquals(entity, entityNotification.getEntity());
@@ -56,8 +57,8 @@ public class EntityNotificationImplTest {
     public void testGetOperationType() throws Exception {
         Referenceable entity = getEntity("id");
 
-        EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+        EntityNotification entityNotification =
+            new EntityNotification(entity, EntityNotification.OperationType.ENTITY_CREATE,
                 Collections.<Struct>emptyList());
 
         assertEquals(EntityNotification.OperationType.ENTITY_CREATE, entityNotification.getOperationType());
@@ -71,8 +72,8 @@ public class EntityNotificationImplTest {
         Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
 
-        EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
+        EntityNotification entityNotification =
+            new EntityNotification(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
 
         assertEquals(traitInfo, entityNotification.getAllTraits());
     }
@@ -100,8 +101,8 @@ public class EntityNotificationImplTest {
         when(traitType.getAllSuperTypes()).thenReturn(superTypeNames);
         when(superTraitType.getAllSuperTypes()).thenReturn(superSuperTypeNames);
 
-        EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, typeRegistry);
+        EntityNotification entityNotification =
+            new EntityNotification(entity, EntityNotification.OperationType.TRAIT_ADD, typeRegistry);
 
         List<Struct> allTraits = entityNotification.getAllTraits();
 
@@ -117,12 +118,12 @@ public class EntityNotificationImplTest {
     public void testEquals() throws Exception {
         Referenceable entity = getEntity("id");
 
-        EntityNotificationImpl entityNotification2 =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+        EntityNotification entityNotification2 =
+            new EntityNotification(entity, EntityNotification.OperationType.ENTITY_CREATE,
                 Collections.<Struct>emptyList());
 
-        EntityNotificationImpl entityNotification =
-            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+        EntityNotification entityNotification =
+            new EntityNotification(entity, EntityNotification.OperationType.ENTITY_CREATE,
                 Collections.<Struct>emptyList());
 
         assertTrue(entityNotification.equals(entityNotification2));

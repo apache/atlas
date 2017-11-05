@@ -18,16 +18,15 @@
 
 package org.apache.atlas.notification.hook;
 
-import com.google.gson.JsonDeserializer;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractMessageDeserializer;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.v1.model.notification.HookNotification;
+import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Map;
+
 
 /**
  * Hook notification message deserializer.
@@ -46,15 +45,11 @@ public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNot
      * Create a hook notification message deserializer.
      */
     public HookMessageDeserializer() {
-        super(NotificationInterface.HOOK_VERSIONED_MESSAGE_TYPE,
-            AbstractNotification.CURRENT_MESSAGE_VERSION, getDeserializerMap(), NOTIFICATION_LOGGER);
+        super(new TypeReference<HookNotification.HookNotificationMessage>() {},
+              new TypeReference<AtlasNotificationMessage<HookNotification.HookNotificationMessage>>() {},
+              AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
     }
 
 
     // ----- helper methods --------------------------------------------------
-
-    private static Map<Type, JsonDeserializer> getDeserializerMap() {
-        return Collections.<Type, JsonDeserializer>singletonMap(
-            NotificationInterface.HOOK_NOTIFICATION_CLASS, new HookNotification());
-    }
 }

@@ -18,7 +18,9 @@
 
 package org.apache.atlas.typesystem.types;
 
-
+/*
+ * this enum must be in package org.apache.atlas.typesystem.types, since vertex property in GraphDB has reference to this type
+ */
 public class DataTypes {
     public enum TypeCategory {
         PRIMITIVE,

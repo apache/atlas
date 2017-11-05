@@ -25,7 +25,7 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
-import org.apache.atlas.notification.entity.EntityNotification;
+import org.apache.atlas.v1.model.notification.EntityNotification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;

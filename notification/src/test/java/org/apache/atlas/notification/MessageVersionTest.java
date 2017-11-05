@@ -18,6 +18,7 @@
 
 package org.apache.atlas.notification;
 
+import org.apache.atlas.model.notification.MessageVersion;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;

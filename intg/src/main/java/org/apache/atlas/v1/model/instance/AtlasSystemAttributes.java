@@ -120,4 +120,25 @@ public class AtlasSystemAttributes implements Serializable {
     public int hashCode() {
         return Objects.hash(createdBy, modifiedBy, createdTime, modifiedTime);
     }
+
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("AtlasSystemAttributes{")
+                .append("createdBy=").append(createdBy)
+                .append(", modifiedBy=").append(modifiedBy)
+                .append(", createdTime=").append(createdTime)
+                .append(", modifiedTime=").append(modifiedTime)
+                .append("}");
+
+        return sb;
+    }
 }

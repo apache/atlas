@@ -24,7 +24,7 @@ import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;

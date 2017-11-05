@@ -22,10 +22,11 @@ import kafka.message.MessageAndMetadata;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.*;
-import org.apache.atlas.notification.AtlasNotificationMessage;
-import org.apache.atlas.notification.entity.EntityNotificationImplTest;
-import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.notification.entity.EntityNotificationTest;
+import org.apache.atlas.v1.model.notification.HookNotification;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -96,7 +97,7 @@ public class KafkaConsumerTest {
         when(messageAndMetadata.message()).thenReturn(json);
 
 
-        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK, kafkaConsumer, false, 100L);
         List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
         assertTrue(messageList.size() > 0);
 
@@ -131,7 +132,7 @@ public class KafkaConsumerTest {
         when(kafkaConsumer.poll(100L)).thenReturn(records);
         when(messageAndMetadata.message()).thenReturn(json);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer ,false, 100L);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK, kafkaConsumer ,false, 100L);
         try {
             List<AtlasKafkaMessage<HookNotification.HookNotificationMessage>> messageList = consumer.receive();
             assertTrue(messageList.size() > 0);
@@ -151,7 +152,7 @@ public class KafkaConsumerTest {
 
         TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK, kafkaConsumer, false, 100L);
 
         consumer.commit(tp, 1);
 
@@ -163,7 +164,7 @@ public class KafkaConsumerTest {
 
         TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
 
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, true , 100L);
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK, kafkaConsumer, true , 100L);
 
         consumer.commit(tp, 1);
 
@@ -171,7 +172,7 @@ public class KafkaConsumerTest {
     }
 
     private Referenceable getEntity(String traitName) {
-        Referenceable entity = EntityNotificationImplTest.getEntity("id");
+        Referenceable entity = EntityNotificationTest.getEntity("id");
         List<Struct> traitInfo = new LinkedList<>();
         Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
         traitInfo.add(trait);
