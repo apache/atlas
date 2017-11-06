@@ -17,16 +17,12 @@
  */
 
 'use strict';
-
-var git = require('git-rev');
 module.exports = function(grunt) {
-    var classPathSep = (process.platform === "win32") ? ';' : ':',
-        gitHash = '',
-        pkg = grunt.file.readJSON('package.json'),
-        buildTime = new Date().getTime(),
-        distPath = 'dist',
-        libPath = distPath + '/js/libs',
+    var buildTime = new Date().getTime(),
+        distPath = './dist/',
+        libPath = distPath + 'js/libs/',
         isDashboardDirectory = grunt.file.isDir('public'),
+        nodeModulePath = './node_modules/',
         modulesPath = 'public/';
     if (!isDashboardDirectory) {
         modulesPath = '../public/'
@@ -58,135 +54,124 @@ module.exports = function(grunt) {
                     base: distPath,
                     // change this to '0.0.0.0' to access the server from outside
                     hostname: '0.0.0.0',
-                    middleware: function(connect, options, defaultMiddleware) {
-                        var proxy = require('grunt-connect-proxy/lib/utils').proxyRequest;
-                        return [
-                            // Include the proxy first
-                            proxy
-                        ].concat(defaultMiddleware);
-
+                    middleware: function(connect, options, middlewares) {
+                        middlewares.unshift(require('grunt-middleware-proxy/lib/Utils').getProxyMiddleware());
+                        return middlewares;
                     }
-
                 },
                 proxies: [{
                     context: '/api', // the context of the data service
                     host: '127.0.0.1',
                     port: 21000, // the port that the data service is running on
-                    ws: true,
-                    changeOrigin: false,
-                    https: false,
-                    xforward: false,
-                    //xforward: false
+                    https: false
                 }],
             },
         },
-        devUpdate: {
-            main: {
-                options: {
-                    updateType: 'force'
-                }
-            }
-        },
-        compress: {
-            release: {
-                options: {
-                    archive: function() {
-                        return [pkg.name, pkg.version, gitHash].join('_') + '.tgz';
-                    }
-                },
-                src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
-            }
-        },
         npmcopy: {
-            // Javascript 
             js: {
                 options: {
-                    destPrefix: libPath
+                    destPrefix: libPath,
+                    srcPrefix: nodeModulePath
                 },
                 files: {
-                    'jquery/js': 'jquery/dist/jquery.min.js',
-                    'requirejs': 'requirejs/require.js',
-                    'requirejs-text': 'requirejs-text/text.js',
-                    'underscore': 'underscore/underscore-min.js',
-                    'bootstrap/js': 'bootstrap/dist/js/bootstrap.min.js',
-                    'backbone': 'backbone/backbone-min.js',
-                    'backbone-babysitter': 'backbone.babysitter/lib/backbone.babysitter.min.js',
-                    'backbone-marionette': 'backbone.marionette/lib/backbone.marionette.min.js',
-                    'backbone-paginator': 'backbone.paginator/lib/backbone.paginator.min.js',
-                    'backbone-wreqr': 'backbone.wreqr/lib/backbone.wreqr.min.js',
-                    'backgrid/js': 'backgrid/lib/backgrid.js',
-                    'backgrid-filter/js': 'backgrid-filter/backgrid-filter.min.js',
-                    'backgrid-orderable-columns/js': 'backgrid-orderable-columns/backgrid-orderable-columns.js',
-                    'backgrid-paginator/js': 'backgrid-paginator/backgrid-paginator.min.js',
-                    'backgrid-sizeable-columns/js': 'backgrid-sizeable-columns/backgrid-sizeable-columns.js',
-                    'backgrid-columnmanager/js': 'backgrid-columnmanager/src/Backgrid.ColumnManager.js',
-                    'jquery-asBreadcrumbs/js': 'jquery-asBreadcrumbs/dist/jquery-asBreadcrumbs.min.js',
-                    'd3': 'd3/d3.min.js',
-                    'd3/': 'd3-tip/index.js',
-                    'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
-                    'select2': 'select2/dist/js/select2.full.min.js',
-                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js',
-                    'moment/js': 'moment/min/moment.min.js',
-                    'jquery-placeholder/js': 'jquery-placeholder/jquery.placeholder.js',
-                    'platform': 'platform/platform.js',
-                    'jQueryQueryBuilder/js': 'jQuery-QueryBuilder/dist/js/query-builder.standalone.min.js',
-                    'bootstrap-daterangepicker/js': 'bootstrap-daterangepicker/daterangepicker.js',
-                    'nvd3': 'nvd3/build/nv.d3.min.js',
-                    'sparkline': 'jquery-sparkline/jquery.sparkline.min.js'
+                    // FileName : {"src":"dest"}
+                    'jquery.min.js': { 'jquery/dist': 'jquery/js' },
+                    'require.js': { 'requirejs': 'requirejs' },
+                    'text.js': { 'requirejs-text': 'requirejs-text' },
+                    'underscore-min.js': { 'underscore': 'underscore' },
+                    'bootstrap.min.js': { 'bootstrap/dist/js': 'bootstrap/js' },
+                    'backbone-min.js': { 'backbone': 'backbone' },
+                    'backbone.babysitter.min.js': { 'backbone.babysitter/lib': 'backbone-babysitter' },
+                    'backbone.marionette.min.js': { 'backbone.marionette/lib': 'backbone-marionette' },
+                    'backbone.paginator.min.js': { 'backbone.paginator/lib': 'backbone-paginator' },
+                    'backbone.wreqr.min.js': { 'backbone.wreqr/lib': 'backbone-wreqr' },
+                    'backgrid.js': { 'backgrid/lib': 'backgrid/js' },
+                    'backgrid-filter.min.js': { 'backgrid-filter': 'backgrid-filter/js' },
+                    'backgrid-orderable-columns.js': { 'backgrid-orderable-columns': 'backgrid-orderable-columns/js' },
+                    'backgrid-paginator.min.js': { 'backgrid-paginator': 'backgrid-paginator/js' },
+                    'backgrid-sizeable-columns.js': { 'backgrid-sizeable-columns': 'backgrid-sizeable-columns/js' },
+                    'Backgrid.ColumnManager.js': { 'backgrid-columnmanager/src': 'backgrid-columnmanager/js' },
+                    'jquery-asBreadcrumbs.min.js': { 'jquery-asBreadcrumbs/dist': 'jquery-asBreadcrumbs/js' },
+                    'd3.min.js': { 'd3': 'd3' },
+                    'index.js': { 'd3-tip': 'd3/' },
+                    'dagre-d3.min.js': { 'dagre-d3/dist': 'dagre-d3' },
+                    'select2.full.min.js': { 'select2/dist/js': 'select2' },
+                    'backgrid-select-all.min.js': { 'backgrid-select-all': 'backgrid-select-all' },
+                    'moment.min.js': { 'moment/min': 'moment/js' },
+                    'jquery.placeholder.js': { 'jquery-placeholder': 'jquery-placeholder/js' },
+                    'platform.js': { 'platform': 'platform' },
+                    'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
+                    'daterangepicker.js': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/js' },
+                    'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
+                    'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' }
                 }
+
             },
             css: {
                 options: {
-                    destPrefix: libPath
+                    destPrefix: libPath,
+                    srcPrefix: nodeModulePath
                 },
                 files: {
-                    'bootstrap/css': 'bootstrap/dist/css/bootstrap.min.css',
-                    'bootstrap/fonts': 'bootstrap/fonts/glyphicons-halflings-regular.woff2',
-                    'backgrid/css': 'backgrid/lib/backgrid.css',
-                    'backgrid-filter/css': 'backgrid-filter/backgrid-filter.min.css',
-                    'backgrid-orderable-columns/css': 'backgrid-orderable-columns/backgrid-orderable-columns.css',
-                    'backgrid-paginator/css': 'backgrid-paginator/backgrid-paginator.css',
-                    'backgrid-sizeable-columns/css': 'backgrid-sizeable-columns/backgrid-sizeable-columns.css',
-                    'backgrid-columnmanager/css': 'backgrid-columnmanager/lib/Backgrid.ColumnManager.css',
-                    'jquery-asBreadcrumbs/css': 'jquery-asBreadcrumbs/dist/css/asBreadcrumbs.min.css',
-                    'select2/css': 'select2/dist/css/select2.min.css',
-                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.css',
-                    'font-awesome/css': 'font-awesome/css/font-awesome.min.css',
-                    'font-awesome/fonts': 'font-awesome/fonts',
-                    'jQueryQueryBuilder/css': 'jQuery-QueryBuilder/dist/css/query-builder.default.min.css',
-                    'bootstrap-daterangepicker/css': 'bootstrap-daterangepicker/daterangepicker.css',
-                    'nvd3/css': 'nvd3/build/nv.d3.min.css'
+                    'bootstrap.min.css': { 'bootstrap/dist/css': 'bootstrap/css' },
+                    'glyphicons-halflings-regular.woff2': { 'bootstrap/fonts': 'bootstrap/fonts' },
+                    'backgrid.css': { 'backgrid/lib': 'backgrid/css' },
+                    'backgrid-filter.min.css': { 'backgrid-filter': 'backgrid-filter/css' },
+                    'backgrid-orderable-columns.css': { 'backgrid-orderable-columns': 'backgrid-orderable-columns/css' },
+                    'backgrid-paginator.css': { 'backgrid-paginator': 'backgrid-paginator/css' },
+                    'backgrid-sizeable-columns.css': { 'backgrid-sizeable-columns': 'backgrid-sizeable-columns/css' },
+                    'Backgrid.ColumnManager.css': { 'backgrid-columnmanager/lib': 'backgrid-columnmanager/css' },
+                    'asBreadcrumbs.min.css': { 'jquery-asBreadcrumbs/dist/css': 'jquery-asBreadcrumbs/css' },
+                    'select2.min.css': { 'select2/dist/css': 'select2/css' },
+                    'backgrid-select-all.min.css': { 'backgrid-select-all': 'backgrid-select-all' },
+                    'font-awesome.min.css': { 'font-awesome/css': 'font-awesome/css' },
+                    '*': {
+                        'expand': true,
+                        'dot': true,
+                        'cwd': nodeModulePath + 'font-awesome',
+                        'src': ['fonts/*.*'],
+                        'dest': libPath + 'font-awesome/'
+                    },
+                    'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
+                    'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
+                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' }
                 }
 
             },
             license: {
                 options: {
-                    destPrefix: libPath
+                    destPrefix: libPath,
+                    srcPrefix: nodeModulePath
                 },
                 files: {
-                    'jquery': 'jquery/LICENSE.txt',
-                    'requirejs-text': 'requirejs-text/LICENSE',
-                    'underscore': 'underscore/LICENSE',
-                    'bootstrap': 'bootstrap/LICENSE',
-                    'backbone-babysitter': 'backbone.babysitter/LICENSE.md',
-                    'backbone-marionette': 'backbone.marionette/license.txt',
-                    'backbone-paginator': 'backbone.paginator/LICENSE-MIT',
-                    'backbone-wreqr': 'backbone.wreqr/LICENSE.md',
-                    'backgrid': 'backgrid/LICENSE-MIT',
-                    'backgrid-filter': 'backgrid-filter/LICENSE-MIT',
-                    'backgrid-orderable-columns': 'backgrid-orderable-columns/LICENSE-MIT',
-                    'backgrid-paginator': 'backgrid-paginator/LICENSE-MIT',
-                    'backgrid-sizeable-columns': 'backgrid-sizeable-columns/LICENSE-MIT',
-                    'backgrid-columnmanager': 'backgrid-columnmanager/LICENSE',
-                    'jquery-asBreadcrumbs': 'jquery-asBreadcrumbs/LICENSE',
-                    'd3': 'd3/LICENSE',
-                    'd3/': 'd3-tip/LICENSE',
-                    'dagre-d3': 'dagre-d3/LICENSE',
-                    'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT',
-                    'jquery-placeholder': 'jquery-placeholder/LICENSE.txt',
-                    'platform/': 'platform/LICENSE',
-                    'jQueryQueryBuilder/': 'jQuery-QueryBuilder/LICENSE',
-                    'nvd3/': 'nvd3/LICENSE.md'
+                    'LICENSE.txt': [
+                        { 'jquery': 'jquery' },
+                        { 'jquery-placeholder': 'jquery-placeholder' }
+                    ],
+                    'LICENSE': [{ 'requirejs-text': 'requirejs-text' },
+                        { 'underscore': 'underscore' },
+                        { 'bootstrap': 'bootstrap' },
+                        { 'backgrid-columnmanager': 'backgrid-columnmanager' },
+                        { 'jquery-asBreadcrumbs': 'jquery-asBreadcrumbs' },
+                        { 'd3': 'd3' },
+                        { 'd3-tip': 'd3/' },
+                        { 'dagre-d3': 'dagre-d3' },
+                        { 'platform': 'platform/' },
+                        { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' }
+                    ],
+                    'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
+                        { 'backbone.wreqr': 'backbone-wreqr' },
+                        { 'nvd3': 'nvd3/' }
+                    ],
+                    'license.txt': [{ 'backbone.marionette': 'backbone-marionette' }],
+                    'LICENSE-MIT': [{ 'backbone.paginator': 'backbone-paginator' },
+                        { 'backgrid': 'backgrid' },
+                        { 'backgrid-filter': 'backgrid-filter' },
+                        { 'backgrid-orderable-columns': 'backgrid-orderable-columns' },
+                        { 'backgrid-paginator': 'backgrid-paginator' },
+                        { 'backgrid-sizeable-columns': 'backgrid-sizeable-columns' },
+                        { 'backgrid-select-all': 'backgrid-select-all' }
+                    ]
                 }
             }
         },
@@ -225,14 +210,29 @@ module.exports = function(grunt) {
             }
         },
         uglify: {
-            build: {
+            buildlibs: {
                 options: {
-                    mangle: false
+                    mangle: true,
+                    compress: true,
+                    beautify: false
                 },
                 files: [{
                     expand: true,
                     cwd: 'dist/js',
-                    src: '**/*.js',
+                    src: ['external_lib/**/*.js', 'libs/**/*.js'],
+                    dest: 'dist/js'
+                }]
+            },
+            buildjs: {
+                options: {
+                    mangle: false,
+                    compress: true,
+                    beautify: true
+                },
+                files: [{
+                    expand: true,
+                    cwd: 'dist/js',
+                    src: ['**/*.js', '!libs/**', '!external_lib/**'],
                     dest: 'dist/js'
                 }]
             }
@@ -246,7 +246,6 @@ module.exports = function(grunt) {
                     dest: 'dist/css'
                 }]
             }
-
         },
         htmlmin: {
             build: {
@@ -270,16 +269,55 @@ module.exports = function(grunt) {
                     }
                 },
                 files: {
-                    [distPath + '/index.html']: [modulesPath + '/index.html.tpl']
+                    [distPath + 'index.html']: [modulesPath + 'index.html.tpl']
                 }
             }
         }
     });
 
-    grunt.loadNpmTasks('grunt-connect-proxy');
+    // Dynamically add copy-task using npmcopy
+    var npmCopy = grunt.config.get('npmcopy'),
+        libFiles = [],
+        createPath = function(options) {
+            var obj = options.obj,
+                fileName = options.fileName,
+                pathPrefix = options.pathPrefix;
+            if (obj.length) {
+                for (var i in obj) {
+                    createPath({
+                        'obj': obj[i],
+                        'libFiles': options.libFiles,
+                        'pathPrefix': pathPrefix,
+                        'fileName': fileName
+                    });
+                }
+            } else {
+                key = Object.keys(obj);
+                options.libFiles.push({ 'src': pathPrefix.srcPrefix + key + "/" + fileName, 'dest': pathPrefix.destPrefix + obj[key] + "/" + fileName });
+            }
+        };
+
+    for (var key in npmCopy) {
+        var options = npmCopy[key].options,
+            files = npmCopy[key].files;
+        for (var fileName in files) {
+            if (fileName == "*") {
+                libFiles.push(files[fileName]);
+            } else {
+                createPath({
+                    'obj': files[fileName],
+                    'libFiles': libFiles,
+                    'pathPrefix': options,
+                    'fileName': fileName
+                });
+            }
+        }
+    };
+    grunt.config.set('copy.libs', { files: libFiles });
+
     grunt.loadNpmTasks('grunt-contrib-connect');
+    grunt.loadNpmTasks('grunt-middleware-proxy');
     grunt.loadNpmTasks('grunt-contrib-watch');
-    grunt.loadNpmTasks('grunt-npmcopy');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
@@ -287,32 +325,20 @@ module.exports = function(grunt) {
 
     require('load-grunt-tasks')(grunt);
 
-    grunt.registerTask('default', [
-        'devUpdate',
-        'npmcopy:js',
-        'npmcopy:css'
-    ]);
-
-    grunt.registerTask('server', ['clean', 'copy:dist', 'concurrent', 'watch']);
-
     grunt.registerTask('dev', [
         'clean',
-        'npmcopy:js',
-        'npmcopy:css',
-        'npmcopy:license',
+        'copy:libs',
         'copy:dist',
         'sass:dist',
         'template',
-        'configureProxies:server',
+        'setupProxies:server',
         'connect:server',
         'watch'
     ]);
 
     grunt.registerTask('build', [
         'clean',
-        'npmcopy:js',
-        'npmcopy:css',
-        'npmcopy:license',
+        'copy:libs',
         'copy:build',
         'sass:build',
         'template'
@@ -320,28 +346,24 @@ module.exports = function(grunt) {
 
     grunt.registerTask('dev-minify', [
         'clean',
-        'npmcopy:js',
-        'npmcopy:css',
-        'npmcopy:license',
+        'copy:libs',
         'copy:dist',
         'sass:dist',
-        'uglify:build',
-        'cssmin:build',
+        'uglify',
+        'cssmin',
         'template',
-        'configureProxies:server',
+        'setupProxies:server',
         'connect:server',
         'watch'
     ]);
 
     grunt.registerTask('build-minify', [
         'clean',
-        'npmcopy:js',
-        'npmcopy:css',
-        'npmcopy:license',
+        'copy:libs',
         'copy:build',
         'sass:build',
-        'uglify:build',
-        'cssmin:build',
+        'uglify',
+        'cssmin',
         'template'
     ]);
 };

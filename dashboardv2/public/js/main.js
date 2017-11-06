@@ -137,7 +137,7 @@ require.config({
         'backgrid-orderable': 'libs/backgrid-orderable-columns/js/backgrid-orderable-columns',
         'backgrid-paginator': 'libs/backgrid-paginator/js/backgrid-paginator.min',
         'backgrid-sizeable': 'libs/backgrid-sizeable-columns/js/backgrid-sizeable-columns',
-        'backgrid-columnmanager': 'libs/backgrid-columnmanager/js/Backgrid.ColumnManager',
+        'backgrid-columnmanager': 'external_lib/backgrid-columnmanager/js/Backgrid.ColumnManager',
         'asBreadcrumbs': 'libs/jquery-asBreadcrumbs/js/jquery-asBreadcrumbs.min',
         'd3': 'libs/d3/d3.min',
         'd3-tip': 'libs/d3/index',
