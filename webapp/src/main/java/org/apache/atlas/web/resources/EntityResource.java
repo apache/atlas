@@ -20,21 +20,21 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
-import org.apache.atlas.v1.model.instance.Id;
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
@@ -45,6 +45,9 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.web.rest.EntityREST;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -93,21 +96,26 @@ public class EntityResource {
     private final AtlasInstanceConverter restAdapters;
     private final AtlasEntityStore       entitiesStore;
     private final AtlasTypeRegistry      typeRegistry;
-    private final EntityREST entityREST;
+    private final EntityREST             entityREST;
+    private final EntityAuditRepository  entityAuditRepository;
+    private final AtlasDiscoveryService  atlasDiscoveryService;
 
     @Context
     UriInfo uriInfo;
 
-    @Context
-    private ResourceContext resourceContext;
-
-
     @Inject
-    public EntityResource(AtlasInstanceConverter restAdapters, AtlasEntityStore entitiesStore, AtlasTypeRegistry typeRegistry, EntityREST entityREST) {
+    public EntityResource(final AtlasInstanceConverter restAdapters,
+                          final AtlasEntityStore entitiesStore,
+                          final AtlasTypeRegistry typeRegistry,
+                          final EntityREST entityREST,
+                          final EntityAuditRepository entityAuditRepository,
+                          final AtlasDiscoveryService atlasDiscoveryService) {
         this.restAdapters  = restAdapters;
         this.entitiesStore = entitiesStore;
         this.typeRegistry  = typeRegistry;
         this.entityREST    = entityREST;
+        this.entityAuditRepository = entityAuditRepository;
+        this.atlasDiscoveryService = atlasDiscoveryService;
     }
 
     /**
@@ -673,13 +681,13 @@ public class EntityResource {
                 LOG.debug("Fetching entity list for type={} ", entityType);
             }
 
-            final List<String> entityList = new ArrayList<>(); // TODO: metadataService.getEntityList(entityType);
+            List<String> entityGUIDS = entitiesStore.getEntityGUIDS(entityType);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPENAME, entityType);
-            response.put(AtlasClient.RESULTS, new JSONArray(entityList));
-            response.put(AtlasClient.COUNT, entityList.size());
+            response.put(AtlasClient.RESULTS, new JSONArray(entityGUIDS));
+            response.put(AtlasClient.COUNT, entityGUIDS.size());
 
             return Response.ok(response).build();
         } catch (NullPointerException e) {
@@ -1116,7 +1124,7 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
-            List<EntityAuditEvent> events = new ArrayList<>(); // TODO: metadataService.getAuditEvents(guid, startKey, count);
+            List<EntityAuditEvent> events = entityAuditRepository.listEvents(guid, startKey, count);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());

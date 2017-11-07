@@ -32,6 +32,15 @@ import java.util.Map;
  * Persistence/Retrieval API for AtlasEntity
  */
 public interface AtlasEntityStore {
+
+    /**
+     * List all the entity guids for a given typename
+     * @param typename
+     * @return
+     * @throws AtlasBaseException
+     */
+    List<String> getEntityGUIDS(String typename) throws AtlasBaseException;
+
     /**
      *
      * Get entity definition by its guid

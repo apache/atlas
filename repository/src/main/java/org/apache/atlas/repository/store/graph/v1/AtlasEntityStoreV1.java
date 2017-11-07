@@ -77,6 +77,26 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public List<String> getEntityGUIDS(final String typename) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getEntityGUIDS({})", typename);
+        }
+
+        if (StringUtils.isEmpty(typename)) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME);
+        }
+
+        List<String> ret = AtlasGraphUtilsV1.findEntityGUIDsByType(typename);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getEntityGUIDS({})", typename);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getById({})", guid);
