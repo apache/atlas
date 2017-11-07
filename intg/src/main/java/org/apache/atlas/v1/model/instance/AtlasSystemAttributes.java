@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -64,6 +65,17 @@ public class AtlasSystemAttributes implements Serializable {
         this.modifiedBy   = modifiedBy;
         this.createdTime  = createdTime;
         this.modifiedTime = modifiedTime;
+    }
+
+    public AtlasSystemAttributes(Map<String, Object> map) {
+        this();
+
+        if (map != null) {
+            this.createdBy    = Id.asString(map.get("createdBy"));
+            this.modifiedBy   = Id.asString(map.get("modifiedBy"));
+            this.createdTime  = Id.asDate(map.get("createdTime"));
+            this.modifiedTime = Id.asDate(map.get("modifiedTime"));
+        }
     }
 
     public String getCreatedBy(){

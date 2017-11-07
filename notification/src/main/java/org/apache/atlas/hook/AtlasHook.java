@@ -101,17 +101,9 @@ public abstract class AtlasHook {
 
     protected abstract String getNumberOfRetriesPropertyKey();
 
-    protected void notifyEntities(String user, Collection<Referenceable> entities) {
-        JSONArray entitiesArray = new JSONArray();
-
-        for (Referenceable entity : entities) {
-            LOG.info("Adding entity for type: {}", entity.getTypeName());
-            final String entityJson = AtlasType.toV1Json(entity);
-            entitiesArray.put(entityJson);
-        }
-
+    protected void notifyEntities(String user, List<Referenceable> entities) {
         List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
-        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(user, entitiesArray));
+        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(user, entities));
         notifyEntities(hookNotificationMessages);
     }
 

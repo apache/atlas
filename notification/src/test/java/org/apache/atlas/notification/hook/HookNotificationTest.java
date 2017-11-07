@@ -47,9 +47,7 @@ public class HookNotificationTest {
 
         Referenceable actualEntity1 = createRequest.getEntities().get(0);
         assertEquals(actualEntity1.getTypeName(), "sometype");
-        /* TODO:
         assertEquals(((Referenceable)actualEntity1.get("complex")).getTypeName(), "othertype");
-        */
         assertEquals(createRequest.getEntities().get(1).getTypeName(), "newtype");
     }
 

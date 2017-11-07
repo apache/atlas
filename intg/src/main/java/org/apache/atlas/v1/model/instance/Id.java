@@ -19,6 +19,7 @@
 package org.apache.atlas.v1.model.instance;
 
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -28,6 +29,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,6 +50,8 @@ public class Id implements Serializable {
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+
+    public static final String JSON_CLASS_ID = "org.apache.atlas.typesystem.json.InstanceSerialization$_Id";
 
     public enum EntityState { ACTIVE, DELETED }
 
@@ -89,9 +96,20 @@ public class Id implements Serializable {
         this.state    = state == null ? EntityState.ACTIVE : EntityState.valueOf(state.toUpperCase());
     }
 
+    public Id(Map<String, Object> map) {
+        this();
+
+        if (map != null) {
+            this.id       = Id.asString(map.get("id"));
+            this.typeName = Id.asString(map.get("typeName"));
+            this.version  = Id.asInt(map.get("id"));
+            this.state    = Id.asEntityState(map.get("state"));
+        }
+    }
+
     // for serialization backward compatibility
     public String getJsonClass() {
-        return "org.apache.atlas.typesystem.json.InstanceSerialization$_Id";
+        return JSON_CLASS_ID;
     }
 
     public String getId() {
@@ -158,10 +176,10 @@ public class Id implements Serializable {
 
     @Override
     public String toString() {
-        return toString(new StringBuilder()).toString();
+        return asString(new StringBuilder()).toString();
     }
 
-    public StringBuilder toString(StringBuilder sb) {
+    public StringBuilder asString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
@@ -186,5 +204,67 @@ public class Id implements Serializable {
         }
 
         return ret;
+    }
+
+    static String asString(Object val) {
+        return val == null ? null : val.toString();
+    }
+
+    static int asInt(Object val) {
+        if (val != null) {
+            if (val instanceof Number) {
+                return ((Number)val).intValue();
+            }
+
+            try {
+                return Integer.parseInt(val.toString());
+            } catch (NumberFormatException excp) {
+                // ignore
+            }
+        }
+
+        return 0;
+    }
+
+    static Date asDate(Object val) {
+        if (val != null) {
+            if (val instanceof Date) {
+                return (Date) val;
+            } else if (val instanceof Number) {
+                return new Date(((Number)val).longValue());
+            }
+
+            try {
+                return AtlasBaseTypeDef.DATE_FORMATTER.parse(val.toString());
+            } catch (ParseException excp) {
+                // ignore
+            }
+        }
+
+        return null;
+    }
+
+    static EntityState asEntityState(Object val) {
+        if (val != null) {
+            if (val instanceof EntityState) {
+                return (EntityState) val;
+            }
+
+            try {
+                return EntityState.valueOf(val.toString());
+            } catch (Exception excp) {
+                // ignore
+            }
+        }
+
+        return EntityState.ACTIVE;
+    }
+
+    static Map asMap(Object val) {
+        return (val instanceof Map) ? ((Map) val) : null;
+    }
+
+    static List asList(Object val) {
+        return (val instanceof List) ? ((List) val) : null;
     }
 }

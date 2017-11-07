@@ -129,6 +129,19 @@ public class EntityNotification implements Serializable {
         return traits;
     }
 
+    public void normalize() {
+        if (entity != null) {
+            entity.normailze();
+        }
+
+        if (traits != null) {
+            for (Struct trait : traits) {
+                if (trait != null) {
+                    trait.normailze();
+                }
+            }
+        }
+    }
 
     // ----- Object overrides --------------------------------------------------
 

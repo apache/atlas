@@ -17,23 +17,18 @@
  */
 package org.apache.atlas.v1.model.notification;
 
-import com.google.gson.JsonParseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.typedef.TypesDef;
-import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -94,6 +89,8 @@ public class HookNotification {
         public void setUser(String user) {
             this.user = user;
         }
+
+        public void normalize() { }
 
         @Override
         public String toString() {
@@ -187,19 +184,8 @@ public class HookNotification {
 
         protected EntityCreateRequest(HookNotificationType type, List<Referenceable> entities, String user) {
             super(type, user);
-            this.entities = entities;
-        }
 
-        public EntityCreateRequest(String user, JSONArray jsonArray) {
-            super(HookNotificationType.ENTITY_CREATE, user);
-            entities = new ArrayList<>();
-            for (int index = 0; index < jsonArray.length(); index++) {
-                try {
-                    entities.add(AtlasType.fromV1Json(jsonArray.getString(index), Referenceable.class));
-                } catch (JSONException e) {
-                    throw new JsonParseException(e);
-                }
-            }
+            this.entities = entities;
         }
 
         public List<Referenceable> getEntities() {
@@ -208,6 +194,19 @@ public class HookNotification {
 
         public void setEntities(List<Referenceable> entities) {
             this.entities = entities;
+        }
+
+        @Override
+        public void normalize() {
+            super.normalize();
+
+            if (entities != null) {
+                for (Referenceable entity : entities) {
+                    if (entity != null) {
+                        entity.normailze();
+                    }
+                }
+            }
         }
 
         @Override
@@ -319,6 +318,15 @@ public class HookNotification {
 
         public void setEntity(Referenceable entity) {
             this.entity = entity;
+        }
+
+        @Override
+        public void normalize() {
+            super.normalize();
+
+            if (entity != null) {
+                entity.normailze();
+            }
         }
 
         @Override

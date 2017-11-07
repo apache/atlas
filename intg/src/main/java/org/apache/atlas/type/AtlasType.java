@@ -28,7 +28,6 @@ import org.apache.atlas.v1.model.notification.HookNotification.EntityUpdateReque
 import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
 import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.v1.model.notification.HookNotification.TypeRequest;
-import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.map.module.SimpleModule;
@@ -58,8 +57,6 @@ public abstract class AtlasType {
 
         atlasSerDeModule.addSerializer(Date.class, new DateSerializer());
         atlasSerDeModule.addDeserializer(Date.class, new DateDeserializer());
-        atlasSerDeModule.addSerializer(Multiplicity.class, new MultiplicitySerializer());
-        atlasSerDeModule.addDeserializer(Multiplicity.class, new MultiplicityDeserializer());
         atlasSerDeModule.addDeserializer(HookNotificationMessage.class, new HookMessageDeserializer());
 
         mapperV1.registerModule(atlasSerDeModule);
@@ -209,83 +206,43 @@ public abstract class AtlasType {
         }
     }
 
-    static class MultiplicitySerializer extends JsonSerializer<Multiplicity> {
-        @Override
-        public void serialize(Multiplicity value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-            if (value != null) {
-                if (value.equals(Multiplicity.REQUIRED)) {
-                    jgen.writeString("required");
-                } else if (value.equals(Multiplicity.OPTIONAL)) {
-                    jgen.writeString("optional");
-                } else if (value.equals(Multiplicity.COLLECTION)) {
-                    jgen.writeString("collection");
-                } else if (value.equals(Multiplicity.SET)) {
-                    jgen.writeString("set");
-                }
-            }
-        }
-    }
-
-    static class MultiplicityDeserializer extends JsonDeserializer<Multiplicity> {
-        @Override
-        public Multiplicity deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            Multiplicity ret = null;
-
-            String value = parser.readValueAs(String.class);
-
-            if (value != null) {
-                if (value.equals("required")) {
-                    ret = new Multiplicity(Multiplicity.REQUIRED);
-                } else if (value.equals("optional")) {
-                    ret = new Multiplicity(Multiplicity.OPTIONAL);
-                } else if (value.equals("collection")) {
-                    ret = new Multiplicity(Multiplicity.COLLECTION);
-                } else if (value.equals("set")) {
-                    ret = new Multiplicity(Multiplicity.SET);
-                }
-            }
-
-            if (ret == null) {
-                ret = new Multiplicity();
-            }
-
-            return ret;
-        }
-    }
-
     static class HookMessageDeserializer extends JsonDeserializer<HookNotificationMessage> {
         @Override
         public HookNotificationMessage deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            HookNotificationMessage ret = null;
+            HookNotificationMessage ret              = null;
+            ObjectMapper            mapper           = (ObjectMapper) parser.getCodec();
+            ObjectNode              root             = (ObjectNode) mapper.readTree(parser);
+            JsonNode                typeNode         = root != null ? root.get("type") : null;
+            String                  strType          = typeNode != null ? typeNode.asText() : null;
+            HookNotificationType    notificationType = strType != null ? HookNotificationType.valueOf(strType) : null;
 
-            ObjectMapper mapper = (ObjectMapper) parser.getCodec();
-            ObjectNode   root   = (ObjectNode) mapper.readTree(parser);
+            if (notificationType != null) {
+                switch (notificationType) {
+                    case TYPE_CREATE:
+                    case TYPE_UPDATE:
+                        ret = mapper.readValue(root, TypeRequest.class);
+                        break;
 
-            JsonNode             typeNode         = root.get("type");
-            String               strType          = typeNode.asText();
-            HookNotificationType notificationType = HookNotificationType.valueOf(strType);
+                    case ENTITY_CREATE:
+                        ret = mapper.readValue(root, EntityCreateRequest.class);
+                        break;
 
-            switch (notificationType) {
-                case TYPE_CREATE:
-                case TYPE_UPDATE:
-                    ret = mapper.readValue(root, TypeRequest.class);
-                break;
+                    case ENTITY_PARTIAL_UPDATE:
+                        ret = mapper.readValue(root, EntityPartialUpdateRequest.class);
+                        break;
 
-                case ENTITY_CREATE:
-                    ret = mapper.readValue(root, EntityCreateRequest.class);
-                    break;
+                    case ENTITY_FULL_UPDATE:
+                        ret = mapper.readValue(root, EntityUpdateRequest.class);
+                        break;
 
-                case ENTITY_PARTIAL_UPDATE:
-                    ret = mapper.readValue(root, EntityPartialUpdateRequest.class);
-                    break;
+                    case ENTITY_DELETE:
+                        ret = mapper.readValue(root, EntityDeleteRequest.class);
+                        break;
+                }
 
-                case ENTITY_FULL_UPDATE:
-                    ret = mapper.readValue(root, EntityUpdateRequest.class);
-                    break;
-
-                case ENTITY_DELETE:
-                    ret = mapper.readValue(root, EntityDeleteRequest.class);
-                    break;
+                if (ret != null) {
+                    ret.normalize();
+                }
             }
 
             return ret;

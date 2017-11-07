@@ -18,14 +18,22 @@
 
 package org.apache.atlas.v1.model.typedef;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.DeserializationContext;
+import org.codehaus.jackson.map.JsonDeserializer;
+import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.SerializerProvider;
+import org.codehaus.jackson.map.annotate.JsonDeserialize;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -34,7 +42,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonSerialize(using = Multiplicity.MultiplicitySerializer.class, include=JsonSerialize.Inclusion.NON_NULL)
+@JsonDeserialize(using = Multiplicity.MultiplicityDeserializer.class)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -109,5 +118,50 @@ public class Multiplicity implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(lower, upper, isUnique);
+    }
+
+
+    static class MultiplicitySerializer extends JsonSerializer<Multiplicity> {
+        @Override
+        public void serialize(Multiplicity value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                if (value.equals(Multiplicity.REQUIRED)) {
+                    jgen.writeString("required");
+                } else if (value.equals(Multiplicity.OPTIONAL)) {
+                    jgen.writeString("optional");
+                } else if (value.equals(Multiplicity.COLLECTION)) {
+                    jgen.writeString("collection");
+                } else if (value.equals(Multiplicity.SET)) {
+                    jgen.writeString("set");
+                }
+            }
+        }
+    }
+
+    static class MultiplicityDeserializer extends JsonDeserializer<Multiplicity> {
+        @Override
+        public Multiplicity deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Multiplicity ret = null;
+
+            String value = parser.readValueAs(String.class);
+
+            if (value != null) {
+                if (value.equals("required")) {
+                    ret = new Multiplicity(Multiplicity.REQUIRED);
+                } else if (value.equals("optional")) {
+                    ret = new Multiplicity(Multiplicity.OPTIONAL);
+                } else if (value.equals("collection")) {
+                    ret = new Multiplicity(Multiplicity.COLLECTION);
+                } else if (value.equals("set")) {
+                    ret = new Multiplicity(Multiplicity.SET);
+                }
+            }
+
+            if (ret == null) {
+                ret = new Multiplicity();
+            }
+
+            return ret;
+        }
     }
 }

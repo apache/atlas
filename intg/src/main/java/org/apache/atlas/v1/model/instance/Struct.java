@@ -20,6 +20,7 @@ package org.apache.atlas.v1.model.instance;
 
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -29,9 +30,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -44,6 +43,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Struct implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    public static final String JSON_CLASS_STRUCT = "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct";
 
     private String              typeName;
     private Map<String, Object> values;
@@ -71,9 +72,20 @@ public class Struct implements Serializable {
         this.values   = values;
     }
 
+    public Struct(Map<String, Object> map) {
+        this();
+
+        if (map != null) {
+            this.typeName = Id.asString(map.get("typeName"));
+            this.values   = Id.asMap(map.get("values"));
+
+            this.normailze();
+        }
+    }
+
     // for serialization backward compatibility
     public String getJsonClass() {
-        return "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct";
+        return JSON_CLASS_STRUCT;
     }
 
     public String getTypeName() {
@@ -118,6 +130,41 @@ public class Struct implements Serializable {
         }
     }
 
+    public void normailze() {
+        if (MapUtils.isEmpty(values)) {
+            return;
+        }
+
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+            entry.setValue(normalizeAttributeValue(entry.getValue()));
+        }
+    }
+
+    private Object normalizeAttributeValue(Object value) {
+        if (value instanceof Map) {
+            Map    mapValue  = (Map) value;
+            String jsonClass = (String)mapValue.get("jsonClass");
+
+            if (jsonClass != null) {
+                if (Id.JSON_CLASS_ID.equals(jsonClass)) {
+                    value = new Id(mapValue);
+                } else if (Struct.JSON_CLASS_STRUCT.equals(jsonClass)) {
+                    value = new Struct(mapValue);
+                } else if (Referenceable.JSON_CLASS_REFERENCE.equals(jsonClass)) {
+                    value = new Referenceable(mapValue);
+                }
+            }
+        } else if (value instanceof List) {
+            List<Object> listValue       = (List) value;
+            List<Object> normalizedValue = new ArrayList<>(listValue.size());
+
+            for (Object val : listValue) {
+                normalizedValue.add(normalizeAttributeValue(val));
+            }
+        }
+
+        return value;
+    }
 
     @Override
     public boolean equals(Object o) {

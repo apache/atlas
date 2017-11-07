@@ -21,9 +21,11 @@ package org.apache.atlas.v1.model.instance;
 
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonFilter;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -47,6 +49,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Referenceable extends Struct implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    public static final String JSON_CLASS_REFERENCE = "org.apache.atlas.typesystem.json.InstanceSerialization$_Reference";
 
     private Id                    id;
     private Map<String, Struct>   traits     = new HashMap<>();
@@ -129,10 +133,30 @@ public class Referenceable extends Struct implements Serializable {
         }
     }
 
+    public Referenceable(Map<String, Object> map) {
+        super(map);
+
+        if (map != null) {
+            this.id               = new Id((Map)map.get("id"));
+            this.traitNames       = Id.asList(map.get("traitNames"));
+            this.systemAttributes = new AtlasSystemAttributes((Map) map.get("systemAttributes"));
+
+            Map traits = Id.asMap(map.get("traits"));
+
+            if (MapUtils.isNotEmpty(traits)) {
+                this.traits = new HashMap<>(traits.size());
+
+                for (Object key : traits.keySet()) {
+                    this.traits.put(Id.asString(key), new Struct(Id.asMap(traits.get(key))));
+                }
+            }
+        }
+    }
+
 
     // for serialization backward compatibility
     public String getJsonClass() {
-        return "org.apache.atlas.typesystem.json.InstanceSerialization$_Reference";
+        return JSON_CLASS_REFERENCE;
     }
 
     public Id getId() {
@@ -211,7 +235,7 @@ public class Referenceable extends Struct implements Serializable {
         super.toString(sb);
         sb.append(", id=");
         if (id != null) {
-            id.toString(sb);
+            id.asString(sb);
         }
         sb.append(", triats={");
         AtlasBaseTypeDef.dumpObjects(this.traits, sb);
