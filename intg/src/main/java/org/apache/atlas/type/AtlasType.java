@@ -239,10 +239,6 @@ public abstract class AtlasType {
                         ret = mapper.readValue(root, EntityDeleteRequest.class);
                         break;
                 }
-
-                if (ret != null) {
-                    ret.normalize();
-                }
             }
 
             return ret;

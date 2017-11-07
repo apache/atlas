@@ -21,7 +21,7 @@ package org.apache.atlas.notification.hook;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractMessageDeserializer;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.v1.model.notification.HookNotification;
+import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
 import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Hook notification message deserializer.
  */
-public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNotification.HookNotificationMessage> {
+public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNotificationMessage> {
 
     /**
      * Logger for hook notification messages.
@@ -45,11 +45,19 @@ public class HookMessageDeserializer extends AbstractMessageDeserializer<HookNot
      * Create a hook notification message deserializer.
      */
     public HookMessageDeserializer() {
-        super(new TypeReference<HookNotification.HookNotificationMessage>() {},
-              new TypeReference<AtlasNotificationMessage<HookNotification.HookNotificationMessage>>() {},
+        super(new TypeReference<HookNotificationMessage>() {},
+              new TypeReference<AtlasNotificationMessage<HookNotificationMessage>>() {},
               AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
     }
 
+    @Override
+    public HookNotificationMessage deserialize(String messageJson) {
+        final HookNotificationMessage ret = super.deserialize(messageJson);
 
-    // ----- helper methods --------------------------------------------------
+        if (ret != null) {
+            ret.normalize();
+        }
+
+        return ret;
+    }
 }

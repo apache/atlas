@@ -20,6 +20,7 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -30,6 +31,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
@@ -59,11 +61,13 @@ public class AtlasInstanceConverter {
 
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasFormatConverters instanceFormatters;
+    private final EntityGraphRetriever  entityGraphRetriever;
 
     @Inject
     public AtlasInstanceConverter(AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
-        this.typeRegistry       = typeRegistry;
-        this.instanceFormatters = instanceFormatters;
+        this.typeRegistry         = typeRegistry;
+        this.instanceFormatters   = instanceFormatters;
+        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
     }
 
     public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {
@@ -85,6 +89,12 @@ public class AtlasInstanceConverter {
 
     public Referenceable getReferenceable(AtlasEntity entity) throws AtlasBaseException {
         return getReferenceable(entity, new ConverterContext());
+    }
+
+    public Referenceable getReferenceable(String guid) throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entity = getAndCacheEntity(guid);
+
+        return getReferenceable(entity);
     }
 
     public Referenceable getReferenceable(AtlasEntity.AtlasEntityWithExtInfo entity) throws AtlasBaseException {
@@ -277,5 +287,25 @@ public class AtlasInstanceConverter {
         }
 
         return ret;
+    }
+
+
+    private AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
+        RequestContextV1                   context           = RequestContextV1.get();
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
+
+        if (entityWithExtInfo == null) {
+            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+
+            if (entityWithExtInfo != null) {
+                context.cache(entityWithExtInfo);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
+        }
+
+        return entityWithExtInfo;
     }
 }

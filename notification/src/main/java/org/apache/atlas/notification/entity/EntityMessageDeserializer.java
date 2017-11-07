@@ -47,4 +47,15 @@ public class EntityMessageDeserializer extends AbstractMessageDeserializer<Entit
               new TypeReference<AtlasNotificationMessage<EntityNotification>>() {},
               AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
     }
+
+    @Override
+    public EntityNotification deserialize(String messageJson) {
+        final EntityNotification ret = super.deserialize(messageJson);
+
+        if (ret != null) {
+            ret.normalize();
+        }
+
+        return ret;
+    }
 }

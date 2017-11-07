@@ -161,6 +161,8 @@ public class Struct implements Serializable {
             for (Object val : listValue) {
                 normalizedValue.add(normalizeAttributeValue(val));
             }
+
+            value = normalizedValue;
         }
 
         return value;

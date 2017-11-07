@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
@@ -97,7 +98,6 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsAdded(entity, traits);
@@ -105,7 +105,6 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitAdd");
             }
         }
-         */
     }
 
     public void onClassificationDeletedFromEntity(String entityId, List<String> traitNames) throws AtlasBaseException {
@@ -118,7 +117,6 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsDeleted(entity, traitNames);
@@ -126,7 +124,6 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
             }
         }
-        */
     }
 
     public void onClassificationUpdatedToEntity(String entityId, List<AtlasClassification> classifications) throws AtlasBaseException {
@@ -140,7 +137,6 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 listener.onTraitsUpdated(entity, traits);
@@ -148,7 +144,6 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
             }
         }
-        */
     }
 
     private String getListenerName(EntityChangeListener listener) {
@@ -162,7 +157,6 @@ public class AtlasEntityChangeNotifier {
 
         List<Referenceable> typedRefInsts = toReferenceables(entityHeaders);
 
-        /* TODO:
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
                 switch (operation) {
@@ -181,7 +175,6 @@ public class AtlasEntityChangeNotifier {
                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), operation.toString());
             }
         }
-        */
     }
 
     private List<Referenceable> toReferenceables(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
@@ -197,11 +190,9 @@ public class AtlasEntityChangeNotifier {
     private Referenceable toReferenceable(String entityId) throws AtlasBaseException {
         Referenceable ret = null;
 
-        /* TODO:
         if (StringUtils.isNotEmpty(entityId)) {
             ret = instanceConverter.getReferenceable(entityId);
         }
-        */
 
         return ret;
     }
