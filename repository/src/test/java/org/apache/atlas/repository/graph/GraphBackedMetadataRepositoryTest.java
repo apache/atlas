@@ -130,57 +130,6 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     @Test
-    //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
-    public void testConcurrentCalls() throws Exception {
-        final HierarchicalTypeDefinition<ClassType> refType =
-                createClassTypeDef(randomString(), ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<ClassType> type =
-                createClassTypeDef(randomString(), ImmutableSet.<String>of(),
-                        new AttributeDefinition("ref", refType.typeName, Multiplicity.OPTIONAL, true, null));
-        typeSystem.defineClassType(refType);
-        typeSystem.defineClassType(type);
-
-        String refId1 = createEntity(new Referenceable(refType.typeName)).get(0);
-        String refId2 = createEntity(new Referenceable(refType.typeName)).get(0);
-
-        final Referenceable instance1 = new Referenceable(type.typeName);
-        instance1.set("ref", new Referenceable(refId1, refType.typeName, null));
-
-        final Referenceable instance2 = new Referenceable(type.typeName);
-        instance2.set("ref", new Referenceable(refId2, refType.typeName, null));
-
-        ExecutorService executor = Executors.newFixedThreadPool(3);
-        List<Future<Object>> futures = new ArrayList<>();
-        futures.add(executor.submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return createEntity(instance1).get(0);
-            }
-        }));
-        futures.add(executor.submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return createEntity(instance2).get(0);
-            }
-        }));
-        futures.add(executor.submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return discoveryService.searchByDSL(TestUtils.TABLE_TYPE, new QueryParams(10, 0));
-            }
-        }));
-
-        String id1 = (String) futures.get(0).get();
-        String id2 = (String) futures.get(1).get();
-        futures.get(2).get();
-        executor.shutdown();
-
-        boolean validated1 = assertEdge(id1, type.typeName);
-        boolean validated2 = assertEdge(id2, type.typeName);
-        assertTrue(validated1 | validated2);
-    }
-
-    @Test
     public void testSubmitEntity() throws Exception {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
 
