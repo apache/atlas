@@ -17,10 +17,10 @@
  */
 package org.apache.atlas.v1.model.notification;
 
+import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.typedef.TypesDef;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -38,88 +38,17 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 /**
  * Contains the structure of messages transferred from hooks to atlas.
  */
-public class HookNotification {
-    /**
-     * Type of the hook message.
-     */
-    public enum HookNotificationType {
-        TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE, ENTITY_DELETE
-    }
-
-    /**
-     * Base type of hook message.
-     */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class HookNotificationMessage implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        public static final String UNKNOW_USER = "UNKNOWN";
-
-        protected HookNotificationType type;
-        protected String               user;
-
-        public HookNotificationMessage() {
-        }
-
-        public HookNotificationMessage(HookNotificationType type, String user) {
-            this.type = type;
-            this.user = user;
-        }
-
-        public HookNotificationType getType() {
-            return type;
-        }
-
-        public void setType(HookNotificationType type) {
-            this.type = type;
-        }
-
-        public String getUser() {
-            if (StringUtils.isEmpty(user)) {
-                return UNKNOW_USER;
-            }
-
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public void normalize() { }
-
-        @Override
-        public String toString() {
-            return toString(new StringBuilder()).toString();
-        }
-
-        public StringBuilder toString(StringBuilder sb) {
-            if (sb == null) {
-                sb = new StringBuilder();
-            }
-
-            sb.append("HookNotificationMessage{");
-            sb.append("type=").append(type);
-            sb.append(", user=").append(user);
-            sb.append("}");
-
-            return sb;
-        }
-    }
+public class HookNotificationV1 {
 
     /**
      * Hook message for create type definitions.
      */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class TypeRequest extends HookNotificationMessage implements Serializable {
+    public static class TypeRequest extends HookNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private TypesDef typesDef;
@@ -162,11 +91,11 @@ public class HookNotification {
      * Hook message for creating new entities.
      */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class EntityCreateRequest extends HookNotificationMessage implements Serializable {
+    public static class EntityCreateRequest extends HookNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private List<Referenceable> entities;
@@ -230,7 +159,7 @@ public class HookNotification {
      * Hook message for updating entities(full update).
      */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -268,7 +197,12 @@ public class HookNotification {
     /**
      * Hook message for updating entities(partial update).
      */
-    public static class EntityPartialUpdateRequest extends HookNotificationMessage {
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class EntityPartialUpdateRequest extends HookNotification {
         private static final long serialVersionUID = 1L;
 
         private String        typeName;
@@ -351,14 +285,14 @@ public class HookNotification {
     }
 
     /**
-     * Hook message for creating new entities.
+     * Hook message for entity delete.
      */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class EntityDeleteRequest extends HookNotificationMessage implements Serializable {
+    public static class EntityDeleteRequest extends HookNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private String typeName;

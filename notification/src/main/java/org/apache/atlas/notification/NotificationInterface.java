@@ -17,16 +17,9 @@
  */
 package org.apache.atlas.notification;
 
-import com.google.gson.reflect.TypeToken;
-import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
-import org.apache.atlas.v1.model.notification.EntityNotification;
-import org.apache.atlas.v1.model.notification.HookNotification;
-import org.codehaus.jackson.type.TypeReference;
-import scala.reflect.internal.Types;
 
-import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -44,19 +37,6 @@ public interface NotificationInterface {
      * Prefix for Atlas notification related configuration properties.
      */
     String PROPERTY_PREFIX = "atlas.notification";
-
-    /**
-     * Notification message class types.
-     */
-    Class<HookNotification.HookNotificationMessage> HOOK_NOTIFICATION_CLASS =
-        HookNotification.HookNotificationMessage.class;
-
-    Class<EntityNotification> ENTITY_NOTIFICATION_CLASS = EntityNotification.class;
-
-    /**
-     * Versioned notification message class types.
-     */
-    Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<AtlasNotificationMessage<EntityNotification>>(){}.getType();
 
     /**
      * Atlas notification types.

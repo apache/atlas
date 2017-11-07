@@ -20,14 +20,17 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.model.notification.EntityNotification.EntityNotificationType;
+import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.v1.model.notification.HookNotification.EntityCreateRequest;
-import org.apache.atlas.v1.model.notification.HookNotification.EntityDeleteRequest;
-import org.apache.atlas.v1.model.notification.HookNotification.EntityPartialUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotification.EntityUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
-import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationType;
-import org.apache.atlas.v1.model.notification.HookNotification.TypeRequest;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.TypeRequest;
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.map.module.SimpleModule;
@@ -57,7 +60,8 @@ public abstract class AtlasType {
 
         atlasSerDeModule.addSerializer(Date.class, new DateSerializer());
         atlasSerDeModule.addDeserializer(Date.class, new DateDeserializer());
-        atlasSerDeModule.addDeserializer(HookNotificationMessage.class, new HookMessageDeserializer());
+        atlasSerDeModule.addDeserializer(HookNotification.class, new HookNotificationDeserializer());
+        atlasSerDeModule.addDeserializer(EntityNotification.class, new EntityNotificationDeserializer());
 
         mapperV1.registerModule(atlasSerDeModule);
     }
@@ -206,15 +210,15 @@ public abstract class AtlasType {
         }
     }
 
-    static class HookMessageDeserializer extends JsonDeserializer<HookNotificationMessage> {
+    static class HookNotificationDeserializer extends JsonDeserializer<HookNotification> {
         @Override
-        public HookNotificationMessage deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            HookNotificationMessage ret              = null;
-            ObjectMapper            mapper           = (ObjectMapper) parser.getCodec();
-            ObjectNode              root             = (ObjectNode) mapper.readTree(parser);
-            JsonNode                typeNode         = root != null ? root.get("type") : null;
-            String                  strType          = typeNode != null ? typeNode.asText() : null;
-            HookNotificationType    notificationType = strType != null ? HookNotificationType.valueOf(strType) : null;
+        public HookNotification deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            HookNotification     ret              = null;
+            ObjectMapper         mapper           = (ObjectMapper) parser.getCodec();
+            ObjectNode           root             = (ObjectNode) mapper.readTree(parser);
+            JsonNode             typeNode         = root != null ? root.get("type") : null;
+            String               strType          = typeNode != null ? typeNode.asText() : null;
+            HookNotificationType notificationType = strType != null ? HookNotificationType.valueOf(strType) : null;
 
             if (notificationType != null) {
                 switch (notificationType) {
@@ -237,6 +241,28 @@ public abstract class AtlasType {
 
                     case ENTITY_DELETE:
                         ret = mapper.readValue(root, EntityDeleteRequest.class);
+                        break;
+                }
+            }
+
+            return ret;
+        }
+    }
+
+    static class EntityNotificationDeserializer extends JsonDeserializer<EntityNotification> {
+        @Override
+        public EntityNotification deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            EntityNotification     ret              = null;
+            ObjectMapper           mapper           = (ObjectMapper) parser.getCodec();
+            ObjectNode             root             = (ObjectNode) mapper.readTree(parser);
+            JsonNode               typeNode         = root != null ? root.get("type") : null;
+            String                 strType          = typeNode != null ? typeNode.asText() : null;
+            EntityNotificationType notificationType = strType != null ? EntityNotificationType.valueOf(strType) : EntityNotificationType.ENTITY_NOTIFICATION_V1;
+
+            if (root != null) {
+                switch (notificationType) {
+                    case ENTITY_NOTIFICATION_V1:
+                        ret = mapper.readValue(root, EntityNotificationV1.class);
                         break;
                 }
             }

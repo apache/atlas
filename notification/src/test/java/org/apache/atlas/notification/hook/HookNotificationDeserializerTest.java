@@ -18,12 +18,12 @@
 
 package org.apache.atlas.notification.hook;
 
+import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.entity.EntityNotificationTest;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.v1.model.notification.HookNotification.EntityUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotification.HookNotificationMessage;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
@@ -39,19 +39,18 @@ import static org.testng.Assert.assertTrue;
 /**
  * HookMessageDeserializer tests.
  */
-public class HookMessageDeserializerTest {
+public class HookNotificationDeserializerTest {
     private HookMessageDeserializer deserializer = new HookMessageDeserializer();
 
     @Test
     public void testDeserialize() throws Exception {
-        Referenceable       entity  = generateEntityWithTrait();
-        EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
-
-        List<String> jsonMsgList = new ArrayList<>();
+        Referenceable       entity      = generateEntityWithTrait();
+        EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
+        List<String>        jsonMsgList = new ArrayList<>();
 
         AbstractNotification.createNotificationMessages(message, jsonMsgList);
 
-        HookNotificationMessage deserializedMessage = deserialize(jsonMsgList);
+        HookNotification deserializedMessage = deserialize(jsonMsgList);
 
         assertEqualMessage(deserializedMessage, message);
     }
@@ -59,21 +58,19 @@ public class HookMessageDeserializerTest {
     // validate deserialization of legacy message, which doesn't use MessageVersion
     @Test
     public void testDeserializeLegacyMessage() throws Exception {
-        Referenceable       entity  = generateEntityWithTrait();
-        EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
-
-        String                  jsonMsg             = AtlasType.toV1Json(message);
-        HookNotificationMessage deserializedMessage = deserialize(Collections.singletonList(jsonMsg));
+        Referenceable       entity              = generateEntityWithTrait();
+        EntityUpdateRequest message             = new EntityUpdateRequest("user1", entity);
+        String              jsonMsg             = AtlasType.toV1Json(message);
+        HookNotification    deserializedMessage = deserialize(Collections.singletonList(jsonMsg));
 
         assertEqualMessage(deserializedMessage, message);
     }
 
     @Test
     public void testDeserializeCompressedMessage() throws Exception {
-        Referenceable       entity  = generateLargeEntityWithTrait();
-        EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
-
-        List<String> jsonMsgList = new ArrayList<>();
+        Referenceable       entity     = generateLargeEntityWithTrait();
+        EntityUpdateRequest message    = new EntityUpdateRequest("user1", entity);
+        List<String>       jsonMsgList = new ArrayList<>();
 
         AbstractNotification.createNotificationMessages(message, jsonMsgList);
 
@@ -84,23 +81,22 @@ public class HookMessageDeserializerTest {
 
         assertTrue(compressedMsg.length() < uncompressedMsg.length(), "Compressed message (" + compressedMsg.length() + ") should be shorter than uncompressed message (" + uncompressedMsg.length() + ")");
 
-        HookNotificationMessage deserializedMessage = deserialize(jsonMsgList);
+        HookNotification deserializedMessage = deserialize(jsonMsgList);
 
         assertEqualMessage(deserializedMessage, message);
     }
 
     @Test
     public void testDeserializeSplitMessage() throws Exception {
-        Referenceable       entity  = generateVeryLargeEntityWithTrait();
-        EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
-
-        List<String> jsonMsgList = new ArrayList<>();
+        Referenceable       entity      = generateVeryLargeEntityWithTrait();
+        EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
+        List<String>        jsonMsgList = new ArrayList<>();
 
         AbstractNotification.createNotificationMessages(message, jsonMsgList);
 
         assertTrue(jsonMsgList.size() > 1);
 
-        HookNotificationMessage deserializedMessage = deserialize(jsonMsgList);
+        HookNotification deserializedMessage = deserialize(jsonMsgList);
 
         assertEqualMessage(deserializedMessage, message);
     }
@@ -111,8 +107,8 @@ public class HookMessageDeserializerTest {
         return ret;
     }
 
-    private HookNotificationMessage deserialize(List<String> jsonMsgList) {
-        HookNotificationMessage deserializedMessage = null;
+    private HookNotification deserialize(List<String> jsonMsgList) {
+        HookNotification deserializedMessage = null;
 
         for (String jsonMsg : jsonMsgList) {
             deserializedMessage = deserializer.deserialize(jsonMsg);
@@ -125,7 +121,7 @@ public class HookMessageDeserializerTest {
         return deserializedMessage;
     }
 
-    private void assertEqualMessage(HookNotificationMessage deserializedMessage, EntityUpdateRequest message) throws Exception {
+    private void assertEqualMessage(HookNotification deserializedMessage, EntityUpdateRequest message) throws Exception {
         assertNotNull(deserializedMessage);
         assertEquals(deserializedMessage.getType(), message.getType());
         assertEquals(deserializedMessage.getUser(), message.getUser());

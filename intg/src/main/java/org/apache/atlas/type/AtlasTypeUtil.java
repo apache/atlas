@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.type;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -208,19 +207,19 @@ public class AtlasTypeUtil {
         return new AtlasEnumDef(name, description, "1.0", Arrays.asList(enumValues));
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createTraitTypeDef(name, null, superTypes, attrDefs);
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, String description, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, String description, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createTraitTypeDef(name, description, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasClassificationDef createTraitTypeDef(String name, String description, String version, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createTraitTypeDef(String name, String description, String version, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
-    public static AtlasClassificationDef createAtlasClassificationDef(String name, String description, String version, ImmutableSet<String> superTypes, ImmutableSet<String> entityTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasClassificationDef createAtlasClassificationDef(String name, String description, String version, Set<String> superTypes, Set<String> entityTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes, entityTypes, null);
     }
 
@@ -232,18 +231,15 @@ public class AtlasTypeUtil {
         return new AtlasStructDef(name, description, "1.0", Arrays.asList(attrDefs));
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createClassTypeDef(name, null, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name, String description,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, String description, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return createClassTypeDef(name, description, "1.0", superTypes, attrDefs);
     }
 
-    public static AtlasEntityDef createClassTypeDef(String name, String description, String version,
-        ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
+    public static AtlasEntityDef createClassTypeDef(String name, String description, String version, Set<String> superTypes, AtlasAttributeDef... attrDefs) {
         return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 

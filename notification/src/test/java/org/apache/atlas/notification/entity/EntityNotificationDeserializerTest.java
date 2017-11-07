@@ -18,37 +18,33 @@
 
 package org.apache.atlas.notification.entity;
 
+import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
-import org.apache.atlas.v1.model.notification.EntityNotification;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * EntityMessageDeserializer tests.
  */
-public class EntityMessageDeserializerTest {
+public class EntityNotificationDeserializerTest {
     private EntityMessageDeserializer deserializer = new EntityMessageDeserializer();
 
     @Test
     public void testDeserialize() throws Exception {
-        Referenceable entity = EntityNotificationTest.getEntity("id");
-        String traitName = "MyTrait";
-        List<Struct> traitInfo = new LinkedList<>();
-        Struct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
-        traitInfo.add(trait);
-
-        EntityNotification notification =
-            new EntityNotification(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
-
-        List<String> jsonMsgList = new ArrayList<>();
+        Referenceable        entity       = EntityNotificationTest.getEntity("id");
+        String               traitName    = "MyTrait";
+        List<Struct>         traits       = Collections.singletonList(new Struct(traitName, Collections.<String, Object>emptyMap()));
+        EntityNotificationV1 notification = new EntityNotificationV1(entity, EntityNotificationV1.OperationType.TRAIT_ADD, traits);
+        List<String>         jsonMsgList  = new ArrayList<>();
 
         AbstractNotification.createNotificationMessages(notification, jsonMsgList);
 
@@ -62,11 +58,14 @@ public class EntityMessageDeserializerTest {
             }
         }
 
-        assertEquals(deserializedNotification.getOperationType(), notification.getOperationType());
-        assertEquals(deserializedNotification.getEntity().getId(), notification.getEntity().getId());
-        assertEquals(deserializedNotification.getEntity().getTypeName(), notification.getEntity().getTypeName());
-        assertEquals(deserializedNotification.getEntity().getTraits(), notification.getEntity().getTraits());
-        assertEquals(deserializedNotification.getEntity().getTrait(traitName),
-            notification.getEntity().getTrait(traitName));
+        assertTrue(deserializedNotification instanceof EntityNotificationV1);
+
+        EntityNotificationV1 entityNotificationV1 = (EntityNotificationV1)deserializedNotification;
+
+        assertEquals(entityNotificationV1.getOperationType(), notification.getOperationType());
+        assertEquals(entityNotificationV1.getEntity().getId(), notification.getEntity().getId());
+        assertEquals(entityNotificationV1.getEntity().getTypeName(), notification.getEntity().getTypeName());
+        assertEquals(entityNotificationV1.getEntity().getTraits(), notification.getEntity().getTraits());
+        assertEquals(entityNotificationV1.getEntity().getTrait(traitName), notification.getEntity().getTrait(traitName));
     }
 }

@@ -21,9 +21,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.v1.model.notification.EntityNotification;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1;
+import org.apache.atlas.v1.model.notification.EntityNotificationV1.OperationType;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -69,32 +71,32 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
 
     @Override
     public void onEntitiesAdded(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_CREATE);
+        notifyOfEntityEvent(entities, OperationType.ENTITY_CREATE);
     }
 
     @Override
     public void onEntitiesUpdated(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_UPDATE);
+        notifyOfEntityEvent(entities, OperationType.ENTITY_UPDATE);
     }
 
     @Override
     public void onTraitsAdded(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_ADD);
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_ADD);
     }
 
     @Override
     public void onTraitsDeleted(Referenceable entity, Collection<String> traitNames) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_DELETE);
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_DELETE);
     }
 
     @Override
     public void onTraitsUpdated(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_UPDATE);
+        notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_UPDATE);
     }
 
     @Override
     public void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
-        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_DELETE);
+        notifyOfEntityEvent(entities, OperationType.ENTITY_DELETE);
     }
 
 
@@ -145,8 +147,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
 
     // send notification of entity change
     private void notifyOfEntityEvent(Collection<Referenceable> entityDefinitions,
-                                     EntityNotification.OperationType operationType) throws AtlasException {
-        List<EntityNotification> messages = new LinkedList<>();
+                                     OperationType             operationType) throws AtlasException {
+        List<EntityNotificationV1> messages = new ArrayList<>();
 
         for (Referenceable entityDefinition : entityDefinitions) {
             if(GraphHelper.isInternalType(entityDefinition.getTypeName())) {
@@ -165,13 +167,13 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                 }
             }
 
-            EntityNotification notification = new EntityNotification(entity, operationType, getAllTraits(entity, typeRegistry));
+            EntityNotificationV1 notification = new EntityNotificationV1(entity, operationType, getAllTraits(entity, typeRegistry));
 
             messages.add(notification);
         }
 
         if (!messages.isEmpty()) {
-            notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
+            notificationInterface.send(NotificationType.ENTITIES, messages);
         }
     }
 

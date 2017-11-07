@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.v1.model.notification;
 
+import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
@@ -51,7 +52,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class EntityNotification implements Serializable {
+public class EntityNotificationV1 extends EntityNotification implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum OperationType {
@@ -73,30 +74,30 @@ public class EntityNotification implements Serializable {
     /**
      * No-arg constructor for serialization.
      */
-    public EntityNotification() {
+    public EntityNotificationV1() {
     }
 
     /**
-     * Construct an EntityNotification.
+     * Construct an EntityNotificationV1.
      *
      * @param entity            the entity subject of the notification
      * @param operationType     the type of operation that caused the notification
      * @param traits            the traits for the given entity
      */
-    public EntityNotification(Referenceable entity, OperationType operationType, List<Struct> traits) {
+    public EntityNotificationV1(Referenceable entity, OperationType operationType, List<Struct> traits) {
         this.entity        = entity;
         this.operationType = operationType;
         this.traits        = traits;
     }
 
     /**
-     * Construct an EntityNotification.
+     * Construct an EntityNotificationV1.
      *
      * @param entity         the entity subject of the notification
      * @param operationType  the type of operation that caused the notification
      * @param typeRegistry     the Atlas type system
      */
-    public EntityNotification(Referenceable entity, OperationType operationType, AtlasTypeRegistry typeRegistry) {
+    public EntityNotificationV1(Referenceable entity, OperationType operationType, AtlasTypeRegistry typeRegistry) {
         this(entity, operationType, getAllTraits(entity, typeRegistry));
     }
 
@@ -130,6 +131,8 @@ public class EntityNotification implements Serializable {
     }
 
     public void normalize() {
+        super.normalize();
+
         if (entity != null) {
             entity.normailze();
         }
@@ -149,7 +152,7 @@ public class EntityNotification implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        EntityNotification that = (EntityNotification) o;
+        EntityNotificationV1 that = (EntityNotificationV1) o;
         return Objects.equals(entity, that.entity) &&
                 operationType == that.operationType &&
                 Objects.equals(traits, that.traits);
@@ -161,17 +164,14 @@ public class EntityNotification implements Serializable {
     }
 
     @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
-    }
-
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
         }
 
-        sb.append("EntityNotification{");
-        sb.append("entity=");
+        sb.append("EntityNotificationV1{");
+        super.toString(sb);
+        sb.append(", entity=");
         if (entity != null) {
             entity.toString(sb);
         } else {
