@@ -42,7 +42,7 @@
     <link rel="stylesheet" href="js/libs/backgrid-paginator/css/backgrid-paginator.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/backgrid-orderable-columns/css/backgrid-orderable-columns.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/backgrid-sizeable-columns/css/backgrid-sizeable-columns.css?bust=<%- bust %>">
-    <link rel="stylesheet" href="js/libs/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>">
+    <link rel="stylesheet" href="js/external_lib/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/select2/css/select2.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/bootstrap/css/bootstrap.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.min.css?bust=<%- bust %>">
