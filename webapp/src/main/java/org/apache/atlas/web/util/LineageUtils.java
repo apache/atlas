@@ -23,11 +23,11 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Struct;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,15 +40,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class LineageUtils {
     private LineageUtils() {}
 
-    private static final String VERTICES_ATTR_NAME    = "vertices";
-    private static final String EDGES_ATTR_NAME       = "edges";
     private static final String VERTEX_ID_ATTR_NAME   = "vertexId";
     private static final String TEMP_STRUCT_ID_RESULT = "__IdType";
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
 
-    public static String toLineageStruct(AtlasLineageInfo lineageInfo, AtlasTypeRegistry registry) throws AtlasBaseException {
-        String ret = null;
+    public static Struct toLineageStruct(AtlasLineageInfo lineageInfo, AtlasTypeRegistry registry) throws AtlasBaseException {
+        Struct ret = new Struct();
+
+        ret.setTypeName(Constants.TEMP_STRUCT_NAME_PREFIX + COUNTER.getAndIncrement());
 
         if (lineageInfo != null) {
             Map<String, AtlasEntityHeader>        entities    = lineageInfo.getGuidEntityMap();
@@ -101,11 +101,8 @@ public final class LineageUtils {
                 }
             }
 
-            Map<String, Object> map = new HashMap<>();
-            map.put(VERTICES_ATTR_NAME, verticesMap);
-            map.put(EDGES_ATTR_NAME, edgesMap);
-
-            ret = AtlasType.toV1Json(constructResultStruct(map, false));
+            ret.set("vertices", verticesMap);
+            ret.set("edges", edgesMap);
         }
 
         return ret;

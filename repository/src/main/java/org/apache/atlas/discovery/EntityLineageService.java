@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,11 @@ package org.apache.atlas.discovery;
 
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -36,6 +38,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -48,18 +52,24 @@ import java.util.Set;
 
 @Service
 public class EntityLineageService implements AtlasLineageService {
-    private static final String INPUT_PROCESS_EDGE      =  "__Process.inputs";
-    private static final String OUTPUT_PROCESS_EDGE     =  "__Process.outputs";
+    private static final String INPUT_PROCESS_EDGE  = "__Process.inputs";
+    private static final String OUTPUT_PROCESS_EDGE = "__Process.outputs";
+
+    public static final String DATASET_SCHEMA_QUERY_PREFIX = "atlas.lineage.schema.query.";
 
     private final AtlasGraph                graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever      entityRetriever;
+    private final AtlasDiscoveryService     atlasDiscoveryService;
+    private final Configuration             atlasConfiguration;
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) throws DiscoveryException {
-        this.graph                = atlasGraph;
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, final AtlasDiscoveryService atlasDiscoveryService, final Configuration atlasConfiguration) throws DiscoveryException {
+        this.graph = atlasGraph;
+        this.atlasDiscoveryService = atlasDiscoveryService;
+        this.atlasConfiguration = atlasConfiguration;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
+        this.entityRetriever = new EntityGraphRetriever(typeRegistry);
     }
 
     @Override
@@ -88,6 +98,46 @@ public class EntityLineageService implements AtlasLineageService {
         return lineageInfo;
     }
 
+    @Override
+    @GraphTransaction
+    public String getSchema(final String datasetName) throws AtlasBaseException {
+        if (StringUtils.isEmpty(datasetName)) {
+            // TODO: Complete error handling here
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
+        }
+        Iterator<AtlasVertex> vertices = graph.query().has("Referenceable.qualifiedName", datasetName)
+                                              .has(Constants.STATE_PROPERTY_KEY, "ACTIVE")
+                                              .has(Constants.SUPER_TYPES_PROPERTY_KEY, "DataSet")
+                                              .vertices().iterator();
+
+        if (vertices.hasNext()) {
+            AtlasVertex vertex   = vertices.next();
+            String      typeName = GraphHelper.getTypeName(vertex);
+            String      guid     = GraphHelper.getGuid(vertex);
+            return getSchemaForId(typeName, guid);
+        }
+        return null;
+    }
+
+    @Override
+    @GraphTransaction
+    public String getSchemaForEntity(final String guid) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
+        }
+        Iterator<AtlasVertex> vertices = graph.query().has(Constants.GUID_PROPERTY_KEY, guid)
+                                              .has(Constants.SUPER_TYPES_PROPERTY_KEY, AtlasClient.DATA_SET_SUPER_TYPE)
+                                              .vertices().iterator();
+
+        if (vertices.hasNext()) {
+            AtlasVertex vertex = vertices.next();
+            String      typeName = GraphHelper.getTypeName(vertex);
+            return getSchemaForId(typeName, guid);
+
+        }
+        return null;
+    }
+
     private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
         Map<String, AtlasEntityHeader> entities     = new HashMap<>();
         Set<LineageRelation>           relations    = new HashSet<>();
@@ -108,7 +158,7 @@ public class EntityLineageService implements AtlasLineageService {
                                 continue;
                             }
 
-                            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex)vertex);
+                            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex) vertex);
 
                             if (!entities.containsKey(entity.getGuid())) {
                                 entities.put(entity.getGuid(), entity);
@@ -169,10 +219,10 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean entityExists(String guid) {
-        boolean               ret     = false;
+        boolean ret = false;
         Iterator<AtlasVertex> results = graph.query()
-                                        .has(Constants.GUID_PROPERTY_KEY, guid)
-                                        .vertices().iterator();
+                                             .has(Constants.GUID_PROPERTY_KEY, guid)
+                                             .vertices().iterator();
 
         while (results.hasNext()) {
             AtlasVertex  entityVertex = results.next();
@@ -182,5 +232,18 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         return ret;
+    }
+
+    private String getSchemaForId(String typeName, String guid) throws AtlasBaseException {
+        String configName     = DATASET_SCHEMA_QUERY_PREFIX + typeName;
+        String schemaTemplate = atlasConfiguration.getString(configName);
+        if (schemaTemplate != null) {
+            final String      schemaQuery  = String.format(schemaTemplate, guid);
+            int               limit        = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+            AtlasSearchResult searchResult = atlasDiscoveryService.searchUsingDslQuery(schemaQuery, limit, 0);
+            // TODO: Fix the return there
+            return null;
+        }
+        throw new AtlasBaseException("Schema is not configured for type " + typeName + ". Configure " + configName);
     }
 }

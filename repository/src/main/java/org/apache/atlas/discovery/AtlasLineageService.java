@@ -32,4 +32,19 @@ public interface AtlasLineageService {
      */
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
 
+    /**
+     * Return the schema for the given datasetName.
+     *
+     * @param datasetName datasetName
+     * @return Schema as JSON
+     */
+    String getSchema(String datasetName) throws AtlasBaseException;
+
+    /**
+     * Return the schema for the given entity id.
+     *
+     * @param guid tableName
+     * @return Schema as JSON
+     */
+    String getSchemaForEntity(String guid) throws AtlasBaseException;
 }
