@@ -652,9 +652,9 @@
             <properties>
                 <!-- Define graph dependency type/version -->
                 <graphGroup>org.apache.atlas</graphGroup>
-                <graphArtifact>atlas-graphdb-titan0</graphArtifact>
+                <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <skipDocs>false</skipDocs>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
             </properties>
         </profile>
 
