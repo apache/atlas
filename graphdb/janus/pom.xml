@@ -121,10 +121,11 @@
             <version>${janus.version}</version>
         </dependency>
 
+        <!-- JanusGraph 0.1.1 is dependent on solr-solrj 5.2.1 -->
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>6.1.0</version>
+            <version>5.2.1</version>
         </dependency>
 
         <dependency>
@@ -191,47 +192,6 @@
                 <configuration>
                     <skip>${skipUTs}</skip>
                 </configuration>
-            </plugin>
-
-            <!--
-                 Create 'uber' jar that contains all of the dependencies (except those whose scope is provided)
-                 janus and its dependencies are included.  The other dependencies are bundled in the war file.
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <shadedArtifactAttached>false</shadedArtifactAttached>
-                            <artifactSet>
-                                <excludes>
-                                    <!-- these are bundled with Atlas -->
-                                    <exclude>org.slf4j:*</exclude>
-                                </excludes>
-                            </artifactSet>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>
