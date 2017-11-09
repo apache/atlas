@@ -40,7 +40,7 @@ atlas.graph.storage.hostname=
 atlas.graph.storage.hbase.regions-per-server=1
 atlas.graph.storage.lock.wait-time=10000
         </graph.storage.properties>
-        <graph.index.backend>solr5</graph.index.backend>
+        <graph.index.backend>solr</graph.index.backend>
         <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
