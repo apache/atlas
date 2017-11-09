@@ -38,8 +38,8 @@ import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import scala.actors.threadpool.Arrays;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 

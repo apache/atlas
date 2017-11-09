@@ -18,7 +18,6 @@
 
 package org.apache.atlas.notification;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
@@ -32,9 +31,8 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.testng.annotations.BeforeClass;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+
+import java.util.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -181,7 +179,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     // ----- helper methods ---------------------------------------------------
 
     private void createTrait(String traitName, String ... superTraitNames) throws Exception {
-        TraitTypeDefinition traitDef = TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.copyOf(superTraitNames));
+        TraitTypeDefinition traitDef = TypesUtil.createTraitTypeDef(traitName, null, new HashSet<>(Arrays.asList(superTraitNames)));
         TypesDef            typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(),
                                                     Collections.<StructTypeDefinition>emptyList(),
                                                     Collections.singletonList(traitDef),

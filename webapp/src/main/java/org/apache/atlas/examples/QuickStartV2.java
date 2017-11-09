@@ -19,8 +19,6 @@
 package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -53,11 +51,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
 
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
@@ -218,7 +212,7 @@ public class QuickStartV2 {
 
         colType.setOptions(new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }});
 
-        AtlasEntityDef tblType  = AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE, "1.0", ImmutableSet.of("DataSet"),
+        AtlasEntityDef tblType  = AtlasTypeUtil.createClassTypeDef(TABLE_TYPE, TABLE_TYPE, "1.0", Collections.singleton("DataSet"),
                                   AtlasTypeUtil.createRequiredAttrDef("db", DATABASE_TYPE),
                                   AtlasTypeUtil.createRequiredAttrDefWithConstraint("sd", STORAGE_DESC_TYPE, CONSTRAINT_TYPE_OWNED_REF, null),
                                   AtlasTypeUtil.createOptionalAttrDef("owner", "string"),
@@ -234,7 +228,7 @@ public class QuickStartV2 {
 
         tblType.setOptions(new HashMap<String, String>() {{ put("schemaElementsAttribute", "columns"); }});
 
-        AtlasEntityDef procType = AtlasTypeUtil.createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, "1.0", ImmutableSet.of("Process"),
+        AtlasEntityDef procType = AtlasTypeUtil.createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, "1.0", Collections.singleton("Process"),
                                   AtlasTypeUtil.createOptionalAttrDef("userName", "string"),
                                   AtlasTypeUtil.createOptionalAttrDef("startTime", "long"),
                                   AtlasTypeUtil.createOptionalAttrDef("endTime", "long"),
@@ -243,22 +237,22 @@ public class QuickStartV2 {
                                   AtlasTypeUtil.createRequiredAttrDef("queryId", "string"),
                                   AtlasTypeUtil.createRequiredAttrDef("queryGraph", "string"));
 
-        AtlasEntityDef viewType = AtlasTypeUtil.createClassTypeDef(VIEW_TYPE, VIEW_TYPE, "1.0", ImmutableSet.of("DataSet"),
+        AtlasEntityDef viewType = AtlasTypeUtil.createClassTypeDef(VIEW_TYPE, VIEW_TYPE, "1.0", Collections.singleton("DataSet"),
                                   AtlasTypeUtil.createRequiredAttrDef("db", DATABASE_TYPE),
                                   AtlasTypeUtil.createOptionalListAttrDef("inputTables", AtlasBaseTypeDef.getArrayTypeName(TABLE_TYPE)));
 
-        AtlasClassificationDef dimClassifDef    = AtlasTypeUtil.createTraitTypeDef(DIMENSION_CLASSIFICATION,  "Dimension Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef factClassifDef   = AtlasTypeUtil.createTraitTypeDef(FACT_CLASSIFICATION, "Fact Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef piiClassifDef    = AtlasTypeUtil.createTraitTypeDef(PII_CLASSIFICATION, "PII Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef metricClassifDef = AtlasTypeUtil.createTraitTypeDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef etlClassifDef    = AtlasTypeUtil.createTraitTypeDef(ETL_CLASSIFICATION, "ETL Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef jdbcClassifDef   = AtlasTypeUtil.createTraitTypeDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0", ImmutableSet.<String>of());
-        AtlasClassificationDef logClassifDef    = AtlasTypeUtil.createTraitTypeDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0", ImmutableSet.<String>of());
+        AtlasClassificationDef dimClassifDef    = AtlasTypeUtil.createTraitTypeDef(DIMENSION_CLASSIFICATION,  "Dimension Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef factClassifDef   = AtlasTypeUtil.createTraitTypeDef(FACT_CLASSIFICATION, "Fact Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef piiClassifDef    = AtlasTypeUtil.createTraitTypeDef(PII_CLASSIFICATION, "PII Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef metricClassifDef = AtlasTypeUtil.createTraitTypeDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef etlClassifDef    = AtlasTypeUtil.createTraitTypeDef(ETL_CLASSIFICATION, "ETL Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef jdbcClassifDef   = AtlasTypeUtil.createTraitTypeDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0", Collections.<String>emptySet());
+        AtlasClassificationDef logClassifDef    = AtlasTypeUtil.createTraitTypeDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0", Collections.<String>emptySet());
 
-        return AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
-                                         ImmutableList.<AtlasStructDef>of(),
-                                         ImmutableList.of(dimClassifDef, factClassifDef, piiClassifDef, metricClassifDef, etlClassifDef, jdbcClassifDef, logClassifDef),
-                                         ImmutableList.of(dbType, sdType, colType, tblType, procType, viewType));
+        return AtlasTypeUtil.getTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                                         Collections.<AtlasStructDef>emptyList(),
+                                         Arrays.asList(dimClassifDef, factClassifDef, piiClassifDef, metricClassifDef, etlClassifDef, jdbcClassifDef, logClassifDef),
+                                         Arrays.asList(dbType, sdType, colType, tblType, procType, viewType));
     }
 
     void createEntities() throws Exception {
@@ -273,25 +267,25 @@ public class QuickStartV2 {
         AtlasEntity storageDesc = createStorageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true);
 
         // Column entities
-        List<AtlasEntity> salesFactColumns   = ImmutableList.of(createColumn(TIME_ID_COLUMN, "int", "time id"),
+        List<AtlasEntity> salesFactColumns   = Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
                                                                 createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
                                                                 createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
                                                                 createColumn(SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION));
 
-        List<AtlasEntity> logFactColumns     = ImmutableList.of(createColumn(TIME_ID_COLUMN, "int", "time id"),
+        List<AtlasEntity> logFactColumns     = Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
                                                                 createColumn(APP_ID_COLUMN, "int", "app id"),
                                                                 createColumn(MACHINE_ID_COLUMN, "int", "machine id"),
                                                                 createColumn(LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION));
 
-        List<AtlasEntity> productDimColumns  = ImmutableList.of(createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
+        List<AtlasEntity> productDimColumns  = Arrays.asList(createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
                                                                 createColumn(PRODUCT_NAME_COLUMN, "string", "product name"),
                                                                 createColumn(BRAND_NAME_COLUMN, "int", "brand name"));
 
-        List<AtlasEntity> timeDimColumns     = ImmutableList.of(createColumn(TIME_ID_COLUMN, "int", "time id"),
+        List<AtlasEntity> timeDimColumns     = Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
                                                                 createColumn(DAY_OF_YEAR_COLUMN, "int", "day Of Year"),
                                                                 createColumn(WEEKDAY_COLUMN, "int", "week Day"));
 
-        List<AtlasEntity> customerDimColumns = ImmutableList.of(createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+        List<AtlasEntity> customerDimColumns = Arrays.asList(createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
                                                                 createColumn(NAME_COLUMN, "string", "customer name", PII_CLASSIFICATION),
                                                                 createColumn(ADDRESS_COLUMN, "string", "customer address", PII_CLASSIFICATION));
 
@@ -314,23 +308,23 @@ public class QuickStartV2 {
                                                      storageDesc, "Jane BI", "Managed", salesFactColumns, METRIC_CLASSIFICATION);
 
         // View entities
-        createView(PRODUCT_DIM_VIEW, reportingDB, ImmutableList.of(productDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
-        createView(CUSTOMER_DIM_VIEW, reportingDB, ImmutableList.of(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
+        createView(PRODUCT_DIM_VIEW, reportingDB, Collections.singletonList(productDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
+        createView(CUSTOMER_DIM_VIEW, reportingDB, Collections.singletonList(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
 
         // Process entities
         createProcess(LOAD_SALES_DAILY_PROCESS, "hive query for daily summary", "John ETL",
-                      ImmutableList.of(salesFact, timeDim),
-                      ImmutableList.of(salesFactDaily),
+                      Arrays.asList(salesFact, timeDim),
+                      Collections.singletonList(salesFactDaily),
                       "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
         createProcess(LOAD_SALES_MONTHLY_PROCESS, "hive query for monthly summary", "John ETL",
-                      ImmutableList.of(salesFactDaily),
-                      ImmutableList.of(salesFactMonthly),
+                      Collections.singletonList(salesFactDaily),
+                      Collections.singletonList(salesFactMonthly),
                       "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
         createProcess(LOAD_LOGS_MONTHLY_PROCESS, "hive query for monthly summary", "Tim ETL",
-                      ImmutableList.of(loggingFactDaily),
-                      ImmutableList.of(loggingFactMonthly),
+                      Collections.singletonList(loggingFactDaily),
+                      Collections.singletonList(loggingFactMonthly),
                       "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
     }
 
@@ -364,7 +358,7 @@ public class QuickStartV2 {
 
     private List<AtlasClassification> toAtlasClassifications(String[] traitNames) {
         List<AtlasClassification> ret    = new ArrayList<>();
-        ImmutableList<String>     traits = ImmutableList.copyOf(traitNames);
+        List<String>              traits = Arrays.asList(traitNames);
 
         if (CollectionUtils.isNotEmpty(traits)) {
             for (String trait : traits) {

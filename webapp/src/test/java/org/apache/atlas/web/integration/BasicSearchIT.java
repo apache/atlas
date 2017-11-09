@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
@@ -39,6 +38,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -61,7 +61,7 @@ public class BasicSearchIT extends BaseResourceIT {
 
         // Create a test tag
         if (!atlasClientV2.typeWithNameExists("fooTag")) {
-            AtlasClassificationDef testClassificationDef = AtlasTypeUtil.createTraitTypeDef("fooTag", "Test tag", "1.0", ImmutableSet.<String>of());
+            AtlasClassificationDef testClassificationDef = AtlasTypeUtil.createTraitTypeDef("fooTag", "Test tag", "1.0", Collections.<String>emptySet());
             AtlasTypesDef          typesDef              = new AtlasTypesDef();
             typesDef.getClassificationDefs().add(testClassificationDef);
             atlasClientV2.createAtlasTypeDefs(typesDef);

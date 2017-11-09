@@ -31,18 +31,13 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-            <classifier>tests</classifier>
-            <scope>test</scope>
+            <artifactId>atlas-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

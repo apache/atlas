@@ -20,8 +20,6 @@ package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
@@ -161,7 +159,7 @@ public class QuickStart {
                         attrDef("dataType", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("comment", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
         ClassTypeDefinition tblClsDef = TypesUtil
-                .createClassTypeDef(TABLE_TYPE, TABLE_TYPE, ImmutableSet.of("DataSet"),
+                .createClassTypeDef(TABLE_TYPE, TABLE_TYPE, Collections.singleton("DataSet"),
                         new AttributeDefinition(DB_ATTRIBUTE, DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true, null),
                         attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
@@ -173,7 +171,7 @@ public class QuickStart {
                                 Multiplicity.COLLECTION, true, null));
 
         ClassTypeDefinition loadProcessClsDef = TypesUtil
-                .createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, ImmutableSet.of("Process"),
+                .createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, Collections.singleton("Process"),
                         attrDef("userName", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("startTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("endTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("queryText", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
@@ -182,7 +180,7 @@ public class QuickStart {
                         attrDef("queryGraph", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED));
 
         ClassTypeDefinition viewClsDef = TypesUtil
-            .createClassTypeDef(VIEW_TYPE, VIEW_TYPE, ImmutableSet.of("DataSet"),
+            .createClassTypeDef(VIEW_TYPE, VIEW_TYPE, Collections.singleton("DataSet"),
                 new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("inputTables", AtlasBaseTypeDef.getArrayTypeName(TABLE_TYPE),
                     Multiplicity.COLLECTION, false, null));
@@ -229,35 +227,31 @@ public class QuickStart {
                 rawStorageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat",
                         true);
 
-        List<Referenceable> salesFactColumns = ImmutableList
-                .of(rawColumn(TIME_ID_COLUMN, "int", "time id"), rawColumn("product_id", "int", "product id"),
+        List<Referenceable> salesFactColumns = Arrays.asList(rawColumn(TIME_ID_COLUMN, "int", "time id"), rawColumn("product_id", "int", "product id"),
                         rawColumn("customer_id", "int", "customer id", "PII_v1"),
                         rawColumn("sales", "double", "product id", "Metric_v1"));
 
-        List<Referenceable> logFactColumns = ImmutableList
-                .of(rawColumn("time_id", "int", "time id"), rawColumn("app_id", "int", "app id"),
+        List<Referenceable> logFactColumns = Arrays.asList(rawColumn("time_id", "int", "time id"), rawColumn("app_id", "int", "app id"),
                         rawColumn("machine_id", "int", "machine id"), rawColumn("log", "string", "log data", "Log Data_v1"));
 
         Id salesFact = table(SALES_FACT_TABLE, SALES_FACT_TABLE_DESCRIPTION, salesDB, sd, "Joe", "Managed",
                 salesFactColumns, FACT_TRAIT);
 
-        List<Referenceable> productDimColumns = ImmutableList
-                .of(rawColumn("product_id", "int", "product id"), rawColumn("product_name", "string", "product name"),
+        List<Referenceable> productDimColumns = Arrays.asList(rawColumn("product_id", "int", "product id"), rawColumn("product_name", "string", "product name"),
                         rawColumn("brand_name", "int", "brand name"));
 
         Id productDim =
                 table(PRODUCT_DIM_TABLE, "product dimension table", salesDB, sd, "John Doe", "Managed",
                         productDimColumns, "Dimension_v1");
 
-        List<Referenceable> timeDimColumns = ImmutableList
-                .of(rawColumn("time_id", "int", "time id"), rawColumn("dayOfYear", "int", "day Of Year"),
+        List<Referenceable> timeDimColumns = Arrays.asList(rawColumn("time_id", "int", "time id"), rawColumn("dayOfYear", "int", "day Of Year"),
                         rawColumn("weekDay", "int", "week Day"));
 
         Id timeDim = table(TIME_DIM_TABLE, "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
                 "Dimension_v1");
 
 
-        List<Referenceable> customerDimColumns = ImmutableList.of(rawColumn("customer_id", "int", "customer id", "PII_v1"),
+        List<Referenceable> customerDimColumns = Arrays.asList(rawColumn("customer_id", "int", "customer id", "PII_v1"),
                 rawColumn("name", "string", "customer name", "PII_v1"),
                 rawColumn("address", "string", "customer address", "PII_v1"));
 
@@ -280,26 +274,26 @@ public class QuickStart {
                         logFactColumns, "Log Data_v1");
 
         loadProcess(LOAD_SALES_DAILY_PROCESS, LOAD_SALES_DAILY_PROCESS_DESCRIPTION, "John ETL",
-                ImmutableList.of(salesFact, timeDim),
-                ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL_v1");
+                Arrays.asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL_v1");
 
-        view(PRODUCT_DIM_VIEW, reportingDB, ImmutableList.of(productDim), "Dimension_v1", "JdbcAccess_v1");
+        view(PRODUCT_DIM_VIEW, reportingDB, Collections.singletonList(productDim), "Dimension_v1", "JdbcAccess_v1");
 
-        view("customer_dim_view", reportingDB, ImmutableList.of(customerDim), "Dimension_v1", "JdbcAccess_v1");
+        view("customer_dim_view", reportingDB, Collections.singletonList(customerDim), "Dimension_v1", "JdbcAccess_v1");
 
         Id salesFactMonthly =
                 table("sales_fact_monthly_mv", "sales fact monthly materialized view", reportingDB, sd, "Jane BI",
                         "Managed", salesFactColumns, "Metric_v1");
 
-        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
-                ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
+        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
 
         Id loggingFactMonthly =
                 table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL",
                         "Managed", logFactColumns, "Log Data_v1");
 
-        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", ImmutableList.of(loggingFactDaily),
-                ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
+        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", Collections.singletonList(loggingFactDaily),
+                Collections.singletonList(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL_v1");
     }
 
     private Id createInstance(Referenceable referenceable) throws Exception {

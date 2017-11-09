@@ -88,11 +88,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-repository</artifactId>
         </dependency>
 
@@ -262,11 +257,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jsp</artifactId>
         </dependency>
@@ -385,13 +375,6 @@
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
             <version>3.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
 
@@ -638,7 +621,7 @@
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../typesystem/target/test-classes</value>
+                            <value>${project.build.directory}/../../intg/target/test-classes</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
@@ -664,11 +647,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
             </plugin>
            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

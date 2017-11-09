@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.v1.model.instance.Id;
@@ -34,6 +32,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -186,31 +186,25 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     private void setupInstances() throws Exception {
-        TraitTypeDefinition factTrait =
-                TypesUtil.createTraitTypeDef(FACT, null, ImmutableSet.<String>of());
-        TraitTypeDefinition etlTrait =
-                TypesUtil.createTraitTypeDef(ETL, null, ImmutableSet.<String>of());
-        TraitTypeDefinition dimensionTrait =
-                TypesUtil.createTraitTypeDef(DIMENSION, null, ImmutableSet.<String>of());
-        TraitTypeDefinition metricTrait =
-                TypesUtil.createTraitTypeDef(METRIC, null, ImmutableSet.<String>of());
-        createType(getTypesDef(null, null,
-                        ImmutableList.of(factTrait, etlTrait, dimensionTrait, metricTrait), null));
+        TraitTypeDefinition factTrait      = TypesUtil.createTraitTypeDef(FACT, null, Collections.<String>emptySet());
+        TraitTypeDefinition etlTrait       = TypesUtil.createTraitTypeDef(ETL, null, Collections.<String>emptySet());
+        TraitTypeDefinition dimensionTrait = TypesUtil.createTraitTypeDef(DIMENSION, null, Collections.<String>emptySet());
+        TraitTypeDefinition metricTrait    = TypesUtil.createTraitTypeDef(METRIC, null, Collections.<String>emptySet());
+
+        createType(getTypesDef(null, null, Arrays.asList(factTrait, etlTrait, dimensionTrait, metricTrait), null));
 
         salesDBName = "Sales" + randomString();
         Id salesDB = database(salesDBName, "Sales Database", "John ETL",
                 "hdfs://host:8000/apps/warehouse/sales");
 
-        List<Referenceable> salesFactColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
+        List<Referenceable> salesFactColumns = Arrays.asList(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
                         column("customer_id", "int", "customer id", PII),
                         column("sales", "double", "product id", METRIC));
 
         salesFactTable = "sales_fact" + randomString();
         Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns, FACT);
 
-        List<Referenceable> timeDimColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
+        List<Referenceable> timeDimColumns = Arrays.asList(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
                         column("weekDay", "int", "week Day"));
 
         Id timeDim =
@@ -225,16 +219,16 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns, METRIC);
 
-        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
-                ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL);
+        loadProcess("loadSalesDaily" + randomString(), "John ETL", Arrays.asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL);
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
         Id salesFactMonthly =
                 table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
                         "MANAGED", salesFactColumns, METRIC);
 
-        loadProcess("loadSalesMonthly" + randomString(), "John ETL", ImmutableList.of(salesFactDaily),
-                ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", ETL);
+        loadProcess("loadSalesMonthly" + randomString(), "John ETL", Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph", ETL);
     }
 
     Id database(String name, String description, String owner, String locationUri, String... traitNames)

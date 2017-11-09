@@ -19,11 +19,11 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.query.Expressions.Expression;
 import org.apache.atlas.query.Expressions.SelectExpression;
-import scala.Option;
+
 
 public class SelectExpressionHelper {
-    public static Option<SelectExpression> extractSelectExpression(Expression expr) {
-        Option<SelectExpression> ret = null;
+    public static SelectExpression extractSelectExpression(Expression expr) {
+        SelectExpression ret = null;
 
         return ret;
     }

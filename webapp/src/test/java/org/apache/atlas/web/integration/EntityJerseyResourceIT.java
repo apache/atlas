@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
@@ -49,12 +47,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -237,7 +230,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testEntityDefinitionAcrossTypeUpdate() throws Exception {
         //create type
         ClassTypeDefinition typeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), null, ImmutableSet.<String>of(),
+                .createClassTypeDef(randomString(), null, Collections.<String>emptySet(),
                         TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         atlasClientV1.createType(AtlasType.toV1Json(typeDefinition));
 
@@ -247,12 +240,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String guid = atlasClientV1.createEntity(instance).get(0);
 
         //update type - add attribute
-        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, ImmutableSet.<String>of(),
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, Collections.<String>emptySet(),
                 TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                 TypesUtil.createOptionalAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef typeDef = new TypesDef(ImmutableList.<EnumTypeDefinition>of(),
-                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<TraitTypeDefinition>of(),
-                ImmutableList.of(typeDefinition));
+        TypesDef typeDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(),
+                Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(),
+                Arrays.asList(typeDefinition));
         atlasClientV1.updateType(typeDef);
 
         //Get definition after type update - new attributes should be null
@@ -530,7 +523,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private String addNewType() throws Exception {
         String typeName = "test" + randomString();
         ClassTypeDefinition testTypeDefinition = TypesUtil
-                .createClassTypeDef(typeName, null, ImmutableSet.<String>of(),
+                .createClassTypeDef(typeName, null, Collections.<String>emptySet(),
                         TypesUtil.createRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
@@ -578,7 +571,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
@@ -607,7 +600,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
@@ -641,7 +634,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
@@ -675,7 +668,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, null, ImmutableSet.<String>of(),
+                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
                         TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
@@ -698,7 +691,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testAddTraitWithNoRegistration() throws Exception {
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
@@ -727,7 +720,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, ImmutableSet.<String>of());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(traitDefinitionAsJSON);
@@ -787,7 +780,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, null, ImmutableSet.<String>of(),
+                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
                         TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         createType(traitDefinitionAsJSON);
@@ -814,11 +807,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String attrValue = random();
 
         ClassTypeDefinition classTypeDefinition = TypesUtil
-                .createClassTypeDef(classType, null, ImmutableSet.<String>of(),
+                .createClassTypeDef(classType, null, Collections.<String>emptySet(),
                         TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef typesDef = new TypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<TraitTypeDefinition>of(),
-                ImmutableList.of(classTypeDefinition));
+        TypesDef typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
+                Collections.<TraitTypeDefinition>emptyList(),
+                Collections.singletonList(classTypeDefinition));
         createType(typesDef);
 
         Referenceable instance = new Referenceable(classType);

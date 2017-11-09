@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
@@ -42,7 +41,9 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import static org.apache.atlas.type.AtlasTypeUtil.createClassTypeDef;
@@ -104,7 +105,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDuplicateCreate() throws Exception {
         AtlasEntityDef type = createClassTypeDef(randomString(),
-                ImmutableSet.<String>of(), AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"));
+                Collections.<String>emptySet(), AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"));
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.getEntityDefs().add(type);
 
@@ -123,7 +124,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     public void testUpdate() throws Exception {
         String entityType = randomString();
         AtlasEntityDef typeDefinition =
-                createClassTypeDef(entityType, ImmutableSet.<String>of(),
+                createClassTypeDef(entityType, Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"));
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
@@ -135,7 +136,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
         //Add attribute description
         typeDefinition = createClassTypeDef(typeDefinition.getName(),
-                ImmutableSet.<String>of(),
+                Collections.<String>emptySet(),
                 AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("description", "string"));
 
@@ -262,10 +263,10 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testListTypesByFilter() throws Exception {
         AtlasAttributeDef attr = AtlasTypeUtil.createOptionalAttrDef("attr", "string");
-        AtlasEntityDef classDefA = AtlasTypeUtil.createClassTypeDef("A" + randomString(), ImmutableSet.<String>of(), attr);
-        AtlasEntityDef classDefA1 = AtlasTypeUtil.createClassTypeDef("A1" + randomString(), ImmutableSet.of(classDefA.getName()), attr);
-        AtlasEntityDef classDefB = AtlasTypeUtil.createClassTypeDef("B" + randomString(), ImmutableSet.<String>of(), attr);
-        AtlasEntityDef classDefC = AtlasTypeUtil.createClassTypeDef("C" + randomString(), ImmutableSet.of(classDefB.getName(), classDefA.getName()), attr);
+        AtlasEntityDef classDefA = AtlasTypeUtil.createClassTypeDef("A" + randomString(), Collections.<String>emptySet(), attr);
+        AtlasEntityDef classDefA1 = AtlasTypeUtil.createClassTypeDef("A1" + randomString(), Collections.singleton(classDefA.getName()), attr);
+        AtlasEntityDef classDefB = AtlasTypeUtil.createClassTypeDef("B" + randomString(), Collections.<String>emptySet(), attr);
+        AtlasEntityDef classDefC = AtlasTypeUtil.createClassTypeDef("C" + randomString(), new HashSet<>(Arrays.asList(classDefB.getName(), classDefA.getName())), attr);
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
         atlasTypesDef.getEntityDefs().add(classDefA);
@@ -296,13 +297,13 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
 
         AtlasEntityDef databaseTypeDefinition =
-                createClassTypeDef("database", ImmutableSet.<String>of(),
+                createClassTypeDef("database", Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"));
         atlasTypesDef.getEntityDefs().add(databaseTypeDefinition);
 
         AtlasEntityDef tableTypeDefinition =
-                createClassTypeDef("table", ImmutableSet.<String>of(),
+                createClassTypeDef("table", Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("description", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("columnNames", AtlasBaseTypeDef.getArrayTypeName("string")),
@@ -318,7 +319,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         atlasTypesDef.getEntityDefs().add(tableTypeDefinition);
 
         AtlasClassificationDef fetlTypeDefinition = AtlasTypeUtil
-                .createTraitTypeDef("fetl", ImmutableSet.<String>of(),
+                .createTraitTypeDef("fetl", Collections.<String>emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("level", "int"));
         atlasTypesDef.getClassificationDefs().add(fetlTypeDefinition);
 

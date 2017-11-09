@@ -68,9 +68,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import scala.Option;
-import scala.util.Either;
-import scala.util.parsing.combinator.Parsers.NoSuccess;
 
 import javax.inject.Inject;
 import javax.script.Bindings;
@@ -681,13 +678,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private GremlinQuery toGremlinQuery(String query, int limit, int offset) throws AtlasBaseException {
         QueryParams params = validateSearchParams(limit, offset);
-        Either<NoSuccess, Expression> either = QueryParser.apply(query, params);
+        Expression expression = QueryParser.apply(query, params);
 
-        if (either.isLeft()) {
+        if (expression == null) {
             throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, query);
         }
 
-        Expression   expression      = either.right().get();
         Expression   validExpression = QueryProcessor.validate(expression);
         GremlinQuery gremlinQuery    = new GremlinTranslator(validExpression).translate();
 
@@ -726,9 +722,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         List<List<Object>> values = new ArrayList<>();
 
         // extract select attributes from gremlin query
-        Option<SelectExpression> selectExpr = SelectExpressionHelper.extractSelectExpression(query.expr());
-        if (selectExpr.isDefined()) {
-            List<AliasExpression> aliases = selectExpr.get().toJavaList();
+        SelectExpression selectExpr = SelectExpressionHelper.extractSelectExpression(query.expr());
+        if (selectExpr != null) {
+            List<AliasExpression> aliases = selectExpr.toJavaList();
 
             if (CollectionUtils.isNotEmpty(aliases)) {
                 for (AliasExpression alias : aliases) {

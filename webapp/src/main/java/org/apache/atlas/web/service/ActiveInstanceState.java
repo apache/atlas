@@ -33,10 +33,10 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 
 /**

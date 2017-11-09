@@ -20,16 +20,14 @@ package org.apache.atlas.query;
 import org.apache.atlas.query.Expressions.Expression;
 
 
-import scala.util.Either;
-import scala.util.parsing.combinator.Parsers.NoSuccess;
 
 public class QueryParser {
     public static boolean isKeyword(String word) {
         return false; // TODO:
     }
 
-    public static Either<NoSuccess, Expression> apply(String queryStr, QueryParams params) {
-        Either<NoSuccess, Expression> ret = null;
+    public static Expression apply(String queryStr, QueryParams params) {
+        Expression ret = null;
 
         return ret;
     }

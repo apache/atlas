@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -34,6 +32,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -192,15 +191,15 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     private void createTypes() throws Exception {
         ClassTypeDefinition dslTestTypeDefinition = TypesUtil
-                .createClassTypeDef("dsl_test_type", null, ImmutableSet.<String>of(),
+                .createClassTypeDef("dsl_test_type", null, Collections.<String>emptySet(),
                         TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
         TraitTypeDefinition classificationTraitDefinition = TypesUtil
-                .createTraitTypeDef("Classification", null, ImmutableSet.<String>of(),
+                .createTraitTypeDef("Classification", null, Collections.<String>emptySet(),
                         TypesUtil.createRequiredAttrDef("tag", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef typesDef = new TypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(classificationTraitDefinition), ImmutableList.of(dslTestTypeDefinition));
+        TypesDef typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
+                Collections.singletonList(classificationTraitDefinition), Collections.singletonList(dslTestTypeDefinition));
         createType(typesDef);
     }
 }

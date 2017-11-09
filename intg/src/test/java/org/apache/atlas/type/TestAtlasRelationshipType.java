@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.type;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -33,10 +32,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.testng.Assert.fail;
 
@@ -195,22 +191,22 @@ public class TestAtlasRelationshipType {
     }
 
     private void createEmployeeTypes() throws AtlasBaseException {
-        AtlasEntityDef phoneDef      = AtlasTypeUtil.createClassTypeDef(PHONE_TYPE, getDescription(PHONE_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef phoneDef      = AtlasTypeUtil.createClassTypeDef(PHONE_TYPE, getDescription(PHONE_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("phone_number", "int"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("area_code", "int"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("owner", EMPLOYEE_TYPE));
 
-        AtlasEntityDef employeeDef   = AtlasTypeUtil.createClassTypeDef(EMPLOYEE_TYPE, getDescription(EMPLOYEE_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef employeeDef   = AtlasTypeUtil.createClassTypeDef(EMPLOYEE_TYPE, getDescription(EMPLOYEE_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("dob", "date"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("age", "int"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("phone_no", PHONE_TYPE));
 
-        AtlasEntityDef departmentDef = AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, getDescription(DEPARTMENT_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef departmentDef = AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, getDescription(DEPARTMENT_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("count", "int"));
 
-        AtlasEntityDef addressDef    = AtlasTypeUtil.createClassTypeDef(ADDRESS_TYPE, getDescription(ADDRESS_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef addressDef    = AtlasTypeUtil.createClassTypeDef(ADDRESS_TYPE, getDescription(ADDRESS_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createOptionalAttrDef("street", "string"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("city", "string"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("state", "string"),
