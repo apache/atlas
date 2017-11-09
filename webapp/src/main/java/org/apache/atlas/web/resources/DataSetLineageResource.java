@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -30,10 +29,10 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.lineage.DataSetLineageResponse;
+import org.apache.atlas.v1.model.lineage.SchemaResponse;
 import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,6 +50,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
 /**
  * Jersey Resource for Hive Table Lineage.
@@ -172,26 +173,25 @@ public class DataSetLineageResource {
     @Path("table/{tableName}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
+    public SchemaResponse schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> DataSetLineageResource.schema({})", tableName);
         }
 
         AtlasPerfTracer perf = null;
+        SchemaResponse  ret  = new SchemaResponse();
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataSetLineageResource.schema(tableName=" + tableName + ")");
             }
 
-            final String jsonResult = ""; // TODO-typeSystem-removal: lineageService.getSchema(tableName);
+            SchemaDetails schemaDetails = atlasLineageService.getSchema(tableName);
 
-            JSONObject response = new JSONObject();
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
-            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
-
-            return Response.ok(response).build();
+            ret.setRequestId(Servlets.getRequestId());
+            ret.setTableName(tableName);
+            ret.setResults(schemaDetails);
+            return ret;
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));

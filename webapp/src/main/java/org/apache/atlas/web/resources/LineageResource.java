@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
@@ -26,9 +25,9 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.lineage.LineageResponse;
+import org.apache.atlas.v1.model.lineage.SchemaResponse;
 import org.apache.atlas.web.util.LineageUtils;
 import org.apache.atlas.web.util.Servlets;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -159,24 +158,25 @@ public class LineageResource {
     @Path("{guid}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response schema(@PathParam("guid") String guid) {
+    public SchemaResponse schema(@PathParam("guid") String guid) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> LineageResource.schema({})", guid);
         }
 
         AtlasPerfTracer perf = null;
+        SchemaResponse  ret  = new SchemaResponse();
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.schema(" + guid + ")");
             }
 
-            final String jsonResult = atlasLineageService.getSchemaForEntity(guid);
+            SchemaResponse.SchemaDetails schemaDetails = atlasLineageService.getSchemaForEntity(guid);
 
-            JSONObject response = new JSONObject();
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
-            return Response.ok(response).build();
+            ret.setRequestId(Servlets.getRequestId());
+            ret.setResults(schemaDetails);
+            return ret;
 //        } catch (SchemaNotFoundException e) {
 //            LOG.error("schema not found for {}", guid);
 //            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));

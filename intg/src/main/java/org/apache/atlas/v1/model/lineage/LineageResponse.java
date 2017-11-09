@@ -29,7 +29,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LineageResponse {
-    private String      requestId;
+    private String requestId;
     private Struct results;
 
     public LineageResponse() {

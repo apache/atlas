@@ -48,6 +48,8 @@ public class AttributeDefinition implements Serializable {
     private boolean      isUnique;
     private boolean      isIndexable;
     private String       reverseAttributeName; // If this is a reference attribute, then the name of the attribute on the Class that this refers to.
+    private String       defaultValue;
+    private String       description;
 
 
 
@@ -130,6 +132,21 @@ public class AttributeDefinition implements Serializable {
         this.reverseAttributeName = reverseAttributeName;
     }
 
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(final String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(final String description) {
+        this.description = description;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -149,11 +166,14 @@ public class AttributeDefinition implements Serializable {
                Objects.equals(name, that.name) &&
                Objects.equals(dataTypeName, that.dataTypeName) &&
                Objects.equals(multiplicity, that.multiplicity) &&
+               Objects.equals(defaultValue, that.defaultValue) &&
+               Objects.equals(description, that.description) &&
                Objects.equals(reverseAttributeName, that.reverseAttributeName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable, reverseAttributeName);
+        return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,
+                            reverseAttributeName, defaultValue, description);
     }
 }

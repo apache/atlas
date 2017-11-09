@@ -20,11 +20,10 @@ package org.apache.atlas.discovery;
 
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -33,12 +32,16 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
+import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -49,27 +52,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class EntityLineageService implements AtlasLineageService {
     private static final String INPUT_PROCESS_EDGE  = "__Process.inputs";
     private static final String OUTPUT_PROCESS_EDGE = "__Process.outputs";
 
-    public static final String DATASET_SCHEMA_QUERY_PREFIX = "atlas.lineage.schema.query.";
-
     private final AtlasGraph                graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever      entityRetriever;
-    private final AtlasDiscoveryService     atlasDiscoveryService;
-    private final Configuration             atlasConfiguration;
+    private final AtlasTypeRegistry         atlasTypeRegistry;
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, final AtlasDiscoveryService atlasDiscoveryService, final Configuration atlasConfiguration) throws DiscoveryException {
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
         this.graph = atlasGraph;
-        this.atlasDiscoveryService = atlasDiscoveryService;
-        this.atlasConfiguration = atlasConfiguration;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(typeRegistry);
+        this.atlasTypeRegistry = typeRegistry;
     }
 
     @Override
@@ -100,42 +100,51 @@ public class EntityLineageService implements AtlasLineageService {
 
     @Override
     @GraphTransaction
-    public String getSchema(final String datasetName) throws AtlasBaseException {
+    public SchemaDetails getSchema(final String datasetName) throws AtlasBaseException {
         if (StringUtils.isEmpty(datasetName)) {
             // TODO: Complete error handling here
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
         }
-        Iterator<AtlasVertex> vertices = graph.query().has("Referenceable.qualifiedName", datasetName)
-                                              .has(Constants.STATE_PROPERTY_KEY, "ACTIVE")
-                                              .has(Constants.SUPER_TYPES_PROPERTY_KEY, "DataSet")
-                                              .vertices().iterator();
 
-        if (vertices.hasNext()) {
-            AtlasVertex vertex   = vertices.next();
-            String      typeName = GraphHelper.getTypeName(vertex);
-            String      guid     = GraphHelper.getGuid(vertex);
-            return getSchemaForId(typeName, guid);
-        }
-        return null;
+        AtlasEntityType hive_table = atlasTypeRegistry.getEntityTypeByName("hive_table");
+
+        Map<String, Object> lookupAttributes = new HashMap<>();
+        lookupAttributes.put("qualifiedName", datasetName);
+        String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(hive_table, lookupAttributes);
+
+        return getSchemaForEntity(guid);
     }
 
     @Override
     @GraphTransaction
-    public String getSchemaForEntity(final String guid) throws AtlasBaseException {
+    public SchemaDetails getSchemaForEntity(final String guid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
         }
-        Iterator<AtlasVertex> vertices = graph.query().has(Constants.GUID_PROPERTY_KEY, guid)
-                                              .has(Constants.SUPER_TYPES_PROPERTY_KEY, AtlasClient.DATA_SET_SUPER_TYPE)
-                                              .vertices().iterator();
+        SchemaDetails ret = new SchemaDetails();
+        AtlasEntityType hive_column = atlasTypeRegistry.getEntityTypeByName("hive_column");
 
-        if (vertices.hasNext()) {
-            AtlasVertex vertex = vertices.next();
-            String      typeName = GraphHelper.getTypeName(vertex);
-            return getSchemaForId(typeName, guid);
+        // TODO: Form and set the query, might not even be needed if DSL is gone forever
+        ret.setQuery("");
+        ret.setDataType(AtlasTypeUtil.toClassTypeDefinition(hive_column));
 
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
+        Map<String, AtlasEntity>           referredEntities  = entityWithExtInfo.getReferredEntities();
+
+        if (MapUtils.isNotEmpty(referredEntities)) {
+            List<Map<String, Object>> rows = referredEntities.entrySet()
+                                                                .stream()
+                                                                .filter(EntityLineageService::isHiveColumn)
+                                                                .map(e -> AtlasTypeUtil.toMap(e.getValue()))
+                                                                .collect(Collectors.toList());
+            ret.setRows(rows);
         }
-        return null;
+
+        return ret;
+    }
+
+    private static boolean isHiveColumn(Map.Entry<String, AtlasEntity> e) {
+        return StringUtils.equals("hive_column", e.getValue().getTypeName());
     }
 
     private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
@@ -193,7 +202,7 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException {
+    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth) {
         String lineageQuery = null;
 
         if (direction.equals(LineageDirection.INPUT)) {
@@ -228,22 +237,10 @@ public class EntityLineageService implements AtlasLineageService {
             AtlasVertex  entityVertex = results.next();
             List<String> superTypes   = GraphHelper.getSuperTypeNames(entityVertex);
 
-            ret = (CollectionUtils.isNotEmpty(superTypes)) ? superTypes.contains(AtlasClient.DATA_SET_SUPER_TYPE) : false;
+            ret = (CollectionUtils.isNotEmpty(superTypes)) && superTypes.contains(AtlasClient.DATA_SET_SUPER_TYPE);
         }
 
         return ret;
     }
 
-    private String getSchemaForId(String typeName, String guid) throws AtlasBaseException {
-        String configName     = DATASET_SCHEMA_QUERY_PREFIX + typeName;
-        String schemaTemplate = atlasConfiguration.getString(configName);
-        if (schemaTemplate != null) {
-            final String      schemaQuery  = String.format(schemaTemplate, guid);
-            int               limit        = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
-            AtlasSearchResult searchResult = atlasDiscoveryService.searchUsingDslQuery(schemaQuery, limit, 0);
-            // TODO: Fix the return there
-            return null;
-        }
-        throw new AtlasBaseException("Schema is not configured for type " + typeName + ". Configure " + configName);
-    }
 }

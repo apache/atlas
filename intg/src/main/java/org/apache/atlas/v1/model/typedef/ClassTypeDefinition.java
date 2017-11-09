@@ -40,12 +40,18 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class ClassTypeDefinition extends HierarchicalTypeDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
+    private static final String META_TYPE_NAME = "org.apache.atlas.typesystem.types.ClassType";
 
 
     public ClassTypeDefinition() {
     }
 
     public ClassTypeDefinition(String typeName, String typeDescription, String typeVersion, List<AttributeDefinition> attributeDefinitions, Set<String> superTypes) {
-        super(typeName, typeDescription, typeVersion, attributeDefinitions, "org.apache.atlas.typesystem.types.ClassType", superTypes);
+        super(typeName, typeDescription, typeVersion, attributeDefinitions, META_TYPE_NAME, superTypes);
+    }
+
+    @Override
+    public String getHierarchicalMetaTypeName() {
+        return META_TYPE_NAME;
     }
 }

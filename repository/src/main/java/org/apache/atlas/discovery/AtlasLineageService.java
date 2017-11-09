@@ -22,6 +22,7 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
 public interface AtlasLineageService {
     /**
@@ -38,7 +39,7 @@ public interface AtlasLineageService {
      * @param datasetName datasetName
      * @return Schema as JSON
      */
-    String getSchema(String datasetName) throws AtlasBaseException;
+    SchemaDetails getSchema(String datasetName) throws AtlasBaseException;
 
     /**
      * Return the schema for the given entity id.
@@ -46,5 +47,5 @@ public interface AtlasLineageService {
      * @param guid tableName
      * @return Schema as JSON
      */
-    String getSchemaForEntity(String guid) throws AtlasBaseException;
+    SchemaDetails getSchemaForEntity(String guid) throws AtlasBaseException;
 }
