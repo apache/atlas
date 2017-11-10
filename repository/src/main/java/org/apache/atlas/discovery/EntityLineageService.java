@@ -124,8 +124,6 @@ public class EntityLineageService implements AtlasLineageService {
         SchemaDetails ret = new SchemaDetails();
         AtlasEntityType hive_column = atlasTypeRegistry.getEntityTypeByName("hive_column");
 
-        // TODO: Form and set the query, might not even be needed if DSL is gone forever
-        ret.setQuery("");
         ret.setDataType(AtlasTypeUtil.toClassTypeDefinition(hive_column));
 
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);

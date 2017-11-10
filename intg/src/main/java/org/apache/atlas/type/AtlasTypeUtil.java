@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.type;
 
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -509,7 +510,7 @@ public class AtlasTypeUtil {
             if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
                 Map<String, HashMap> traitDetails = entity.getClassifications()
                                                           .stream()
-                                                          .collect(Collectors.toMap(AtlasStruct::getTypeName, c -> getNestedTraitDetails(c.getTypeName())));
+                                                          .collect(Collectors.toMap(AtlasStruct::getTypeName, AtlasTypeUtil::getNestedTraitDetails));
                 ret.put("$traits$", traitDetails);
             }
 
@@ -534,9 +535,10 @@ public class AtlasTypeUtil {
         return ret;
     }
 
-    private static HashMap getNestedTraitDetails(final Object typeName) {
-        return new HashMap() {{
-            put("$typeName$", typeName);
+    private static HashMap getNestedTraitDetails(final AtlasClassification atlasClassification) {
+        return new HashMap<String, Object>() {{
+            put("$typeName$", atlasClassification.getTypeName());
+            putAll(atlasClassification.getAttributes());
         }};
     }
 

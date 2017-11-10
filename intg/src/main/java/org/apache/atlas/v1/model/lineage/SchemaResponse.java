@@ -70,19 +70,10 @@ public class SchemaResponse {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SchemaDetails {
-        private String                    query;      // The DSL query representation for obtaining schema
         private ClassTypeDefinition       dataType;   // Data type of the (hive) columns
         private List<Map<String, Object>> rows;       // Column instances for the given table
 
         public SchemaDetails() {
-        }
-
-        public String getQuery() {
-            return query;
-        }
-
-        public void setQuery(final String query) {
-            this.query = query;
         }
 
         public ClassTypeDefinition getDataType() {
