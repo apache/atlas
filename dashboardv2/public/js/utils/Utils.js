@@ -448,7 +448,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         titleBoxEl.fadeIn();
     }
     Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
-        var megeObject = function(obj) {
+        var mergeObject = function(obj) {
             if (obj) {
                 if (obj.attributes) {
                     Utils.findAndMergeRefEntity(obj.attributes, referredEntities);
@@ -462,10 +462,10 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 if (_.isObject(obj)) {
                     if (_.isArray(obj)) {
                         _.each(obj, function(value) {
-                            megeObject(value);
+                            mergeObject(value);
                         });
                     } else {
-                        megeObject(obj);
+                        mergeObject(obj);
                     }
                 }
             });

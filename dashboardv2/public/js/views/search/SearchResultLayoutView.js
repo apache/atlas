@@ -18,6 +18,7 @@
 
 define(['require',
     'backbone',
+    'table-dragger',
     'hbs!tmpl/search/SearchResultLayoutView_tmpl',
     'modules/Modal',
     'models/VEntity',
@@ -29,7 +30,7 @@ define(['require',
     'utils/Messages',
     'utils/Enums',
     'utils/UrlLinks'
-], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks) {
+], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -129,6 +130,7 @@ define(['require',
                 this.bradCrumbList = [];
                 this.arr = [];
                 this.searchType = 'Basic Search';
+                this.columnOrder = null;
                 if (this.value) {
                     if (this.value.searchType && this.value.searchType == 'dsl') {
                         this.searchType = 'Advanced Search';
@@ -239,7 +241,7 @@ define(['require',
                     },
                     gridOpts: {
                         emptyText: 'No Record found!',
-                        className: 'table table-hover backgrid table-quickMenu'
+                        className: 'table table-hover backgrid table-quickMenu colSort'
                     },
                     filterOpts: {},
                     paginatorOpts: {}
@@ -494,7 +496,7 @@ define(['require',
                         },
                         setPositions: function() {
                             _.each(this.models, function(model, index) {
-                                model.set("displayOrder", index + 1, { silent: true });
+                                model.set("displayOrder", (that.columnOrder == null ? index : that.columnOrder[model.get('label')]) + 1, { silent: true });
                             });
                             return this;
                         }
@@ -511,8 +513,18 @@ define(['require',
                         that.ui.containerCheckBox.hide();
                     }
                     that.$(".ellipsis .inputAssignTag").hide();
+                    tableDragger(document.querySelector(".colSort")).on('drop', function(from, to, el) {
+                        that.columnOrder = that.getColumnOrder(el.querySelectorAll('th'));
+                    });
                     that.checkTableFetch();
                 });
+            },
+            getColumnOrder: function(arr) {
+                var obj = {};
+                for (var i = 0; i < arr.length; ++i) {
+                    obj[(arr[i].innerText == "" ? 'Select' : arr[i].innerText)] = i;
+                }
+                return obj;
             },
             checkTableFetch: function() {
                 if (this.asyncFetchCounter <= 0) {

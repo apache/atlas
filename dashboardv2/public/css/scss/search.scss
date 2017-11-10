@@ -103,3 +103,22 @@ $color_celeste_approx: #1D1F2B;
         display: block;
     }
 }
+
+.gu-mirror {
+    .table-quickMenu {
+        border: none;
+        td {
+            height: 54px;
+        }
+    }
+}
+
+.sindu_dragger {
+    @extend .gu-mirror;
+    .gu-transit {
+        box-shadow: 0px 1px 15px inset;
+    }
+    table {
+        background: rgba(0, 0, 0, 0.18) !important;
+    }
+}
