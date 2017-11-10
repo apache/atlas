@@ -159,7 +159,8 @@ require.config({
         'query-builder': 'libs/jQueryQueryBuilder/js/query-builder.standalone.min',
         'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
         'nvd3': 'libs/nvd3/nv.d3.min',
-        'sparkline': 'libs/sparkline/jquery.sparkline.min'
+        'sparkline': 'libs/sparkline/jquery.sparkline.min',
+        'table-dragger' : 'libs/table-dragger/table-dragger'
     },
 
     /**

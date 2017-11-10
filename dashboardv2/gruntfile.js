@@ -103,7 +103,8 @@ module.exports = function(grunt) {
                     'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
                     'daterangepicker.js': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/js' },
                     'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
-                    'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' }
+                    'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
+                    'table-dragger.js': { 'table-dragger/dist': 'table-dragger' }
                 }
 
             },
@@ -164,6 +165,7 @@ module.exports = function(grunt) {
                         { 'nvd3': 'nvd3/' }
                     ],
                     'license.txt': [{ 'backbone.marionette': 'backbone-marionette' }],
+                    'license': [{ 'table-dragger': 'table-dragger' }],
                     'LICENSE-MIT': [{ 'backbone.paginator': 'backbone-paginator' },
                         { 'backgrid': 'backgrid' },
                         { 'backgrid-filter': 'backgrid-filter' },
