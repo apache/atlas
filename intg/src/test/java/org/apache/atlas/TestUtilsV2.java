@@ -836,6 +836,10 @@ public final class TestUtilsV2 {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
+    public static final String randomString(int count) {
+        return RandomStringUtils.randomAlphanumeric(count);
+    }
+
     public static AtlasEntity createDBEntity() {
         String dbName = RandomStringUtils.randomAlphanumeric(10);
         return createDBEntity(dbName);
