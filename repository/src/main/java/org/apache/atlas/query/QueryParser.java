@@ -19,11 +19,20 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.query.Expressions.Expression;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class QueryParser {
+    private static final Set<String> RESERVED_KEYWORDS =
+            new HashSet<>(Arrays.asList("[", "]", "(", ")", "=", "<", ">", "!=", "<=", ">=", ",", "and", "or", "+", "-",
+                                        "*", "/", ".", "select", "from", "where", "groupby", "loop", "isa", "is", "has",
+                                        "as", "times", "withPath", "limit", "offset", "orderby", "count", "max", "min",
+                                        "sum", "by", "order", "like"));
+
     public static boolean isKeyword(String word) {
-        return false; // TODO:
+        return RESERVED_KEYWORDS.contains(word);
     }
 
     public static Expression apply(String queryStr, QueryParams params) {
