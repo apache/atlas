@@ -24,6 +24,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -76,6 +77,11 @@ public class SchemaResponse {
         public SchemaDetails() {
         }
 
+        public SchemaDetails(final SchemaDetails other) {
+            this.dataType = other.dataType;
+            this.rows = other.rows;
+        }
+
         public ClassTypeDefinition getDataType() {
             return dataType;
         }
@@ -90,6 +96,21 @@ public class SchemaResponse {
 
         public void setRows(final List<Map<String, Object>> rows) {
             this.rows = rows;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final SchemaDetails that = (SchemaDetails) o;
+            return Objects.equals(dataType, that.dataType) &&
+                    Objects.equals(rows, that.rows);
+        }
+
+        @Override
+        public int hashCode() {
+
+            return Objects.hash(dataType, rows);
         }
     }
 }

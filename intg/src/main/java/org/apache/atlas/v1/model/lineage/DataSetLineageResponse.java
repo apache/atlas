@@ -21,6 +21,8 @@ import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import java.util.Objects;
+
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
@@ -33,11 +35,31 @@ public class DataSetLineageResponse extends LineageResponse {
     public DataSetLineageResponse() {
     }
 
+    public DataSetLineageResponse(final DataSetLineageResponse other) {
+        super(other);
+        this.tableName = other.tableName;
+    }
+
     public String getTableName() {
         return tableName;
     }
 
     public void setTableName(final String tableName) {
         this.tableName = tableName;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        final DataSetLineageResponse that = (DataSetLineageResponse) o;
+        return Objects.equals(tableName, that.tableName);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(super.hashCode(), tableName);
     }
 }

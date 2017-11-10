@@ -22,6 +22,8 @@ import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import java.util.Objects;
+
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
@@ -33,6 +35,11 @@ public class LineageResponse {
     private Struct results;
 
     public LineageResponse() {
+    }
+
+    public LineageResponse(final LineageResponse other) {
+        this.requestId = other.requestId;
+        this.results = other.results;
     }
 
     public Struct getResults() {
@@ -49,5 +56,20 @@ public class LineageResponse {
 
     public void setRequestId(final String requestId) {
         this.requestId = requestId;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final LineageResponse that = (LineageResponse) o;
+        return Objects.equals(requestId, that.requestId) &&
+                Objects.equals(results, that.results);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(requestId, results);
     }
 }
