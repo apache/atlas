@@ -66,10 +66,14 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
 
                     entity.setGuid(entRef.getId().getId());
                     entity.setStatus(convertState(entRef.getId().getState()));
-                    entity.setCreatedBy(entRef.getSystemAttributes().getCreatedBy());
-                    entity.setCreateTime(entRef.getSystemAttributes().getCreatedTime());
-                    entity.setUpdatedBy(entRef.getSystemAttributes().getModifiedBy());
-                    entity.setUpdateTime(entRef.getSystemAttributes().getModifiedTime());
+
+                    if (entRef.getSystemAttributes() != null) {
+                        entity.setCreatedBy(entRef.getSystemAttributes().getCreatedBy());
+                        entity.setCreateTime(entRef.getSystemAttributes().getCreatedTime());
+                        entity.setUpdatedBy(entRef.getSystemAttributes().getModifiedBy());
+                        entity.setUpdateTime(entRef.getSystemAttributes().getModifiedTime());
+                    }
+
                     entity.setVersion((long) entRef.getId().getVersion());
 
                     if (CollectionUtils.isNotEmpty(entRef.getTraitNames())) {
