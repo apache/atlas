@@ -70,7 +70,8 @@
           "isIndexable": true,
           "isOptional": true,
           "isUnique": false
-        },
+        }
+      ]
     }
   ]
 }
