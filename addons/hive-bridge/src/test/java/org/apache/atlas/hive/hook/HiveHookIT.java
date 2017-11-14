@@ -1376,8 +1376,7 @@ public class HiveHookIT extends HiveITBase {
                                                List<String> bucketColNames,
                                                List<String>  sortcolNames) throws Exception {
         Referenceable sdRef = (Referenceable) tableRef.get(HiveMetaStoreBridge.STORAGE_DESC);
-        Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveMetaStoreBridge.STORAGE_NUM_BUCKETS)).intValue(),
-            numBuckets);
+        Assert.assertEquals((sdRef.get(HiveMetaStoreBridge.STORAGE_NUM_BUCKETS)), numBuckets);
         Assert.assertEquals(sdRef.get("bucketCols"), bucketColNames);
 
         List<Struct> hiveOrderStructList = (List<Struct>) sdRef.get("sortCols");
@@ -1386,7 +1385,7 @@ public class HiveHookIT extends HiveITBase {
 
         for (int i = 0; i < sortcolNames.size(); i++) {
             Assert.assertEquals(hiveOrderStructList.get(i).get("col"), sortcolNames.get(i));
-            Assert.assertEquals(((scala.math.BigInt) hiveOrderStructList.get(i).get("order")).intValue(), 1);
+            Assert.assertEquals(hiveOrderStructList.get(i).get("order"), 1);
         }
     }
 
@@ -1474,7 +1473,7 @@ public class HiveHookIT extends HiveITBase {
         String dbName = "db" + random();
         runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1')");
 
-        final int numTables = 10;
+        final int numTables = 5;
         String[] tableNames = new String[numTables];
         for(int i = 0; i < numTables; i++) {
             tableNames[i] = createTable(true, true, false);
@@ -1486,7 +1485,19 @@ public class HiveHookIT extends HiveITBase {
         final String query = String.format("drop database %s", dbName);
         runCommand(query);
 
-        assertDBIsNotRegistered(dbName);
+        String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(CLUSTER_NAME, dbName);
+
+        Thread.sleep(5000);
+
+        try {
+            atlasClient.getEntity(HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbQualifiedName);
+        } catch (AtlasServiceException e) {
+            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                return;
+            }
+        }
+
+        fail(String.format("Entity was not supposed to exist for typeName = %s, attributeName = %s, attributeValue = %s", HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbQualifiedName));
     }
 
     @Test

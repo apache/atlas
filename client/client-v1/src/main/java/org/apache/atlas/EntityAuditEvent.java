@@ -21,13 +21,29 @@ package org.apache.atlas;
 
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.Objects;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Structure of entity audit event
  */
-public class EntityAuditEvent {
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class EntityAuditEvent implements Serializable {
     public enum EntityAuditAction {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE, TAG_UPDATE,
         ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE,
@@ -76,10 +92,6 @@ public class EntityAuditEvent {
     @Override
     public String toString() {
         return AtlasType.toV1Json(this);
-    }
-
-    public static EntityAuditEvent fromString(String eventString) {
-        return AtlasType.fromV1Json(eventString, EntityAuditEvent.class);
     }
 
     public String getEntityId() {
@@ -134,6 +146,11 @@ public class EntityAuditEvent {
         return entityDefinition;
     }
 
+    public void setEntityDefinition(Referenceable entityDefinition) {
+        this.entityDefinition = entityDefinition;
+    }
+
+    @JsonIgnore
     public String getEntityDefinitionString() {
         if (entityDefinition != null) {
             return AtlasType.toV1Json(entityDefinition);
@@ -141,7 +158,13 @@ public class EntityAuditEvent {
         return null;
     }
 
+    @JsonIgnore
     public void setEntityDefinition(String entityDefinition) {
         this.entityDefinition = AtlasType.fromV1Json(entityDefinition, Referenceable.class);
+    }
+
+    @JsonIgnore
+    public static EntityAuditEvent fromString(String eventString) {
+        return AtlasType.fromV1Json(eventString, EntityAuditEvent.class);
     }
 }

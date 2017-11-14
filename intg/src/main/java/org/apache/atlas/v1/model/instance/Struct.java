@@ -79,7 +79,7 @@ public class Struct implements Serializable {
             this.typeName = Id.asString(map.get("typeName"));
             this.values   = Id.asMap(map.get("values"));
 
-            this.normailze();
+            this.normalize();
         }
     }
 
@@ -130,7 +130,7 @@ public class Struct implements Serializable {
         }
     }
 
-    public void normailze() {
+    public void normalize() {
         if (MapUtils.isEmpty(values)) {
             return;
         }

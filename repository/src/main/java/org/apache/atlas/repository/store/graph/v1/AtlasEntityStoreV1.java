@@ -82,7 +82,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             LOG.debug("==> getEntityGUIDS({})", typename);
         }
 
-        if (StringUtils.isEmpty(typename)) {
+        if (StringUtils.isEmpty(typename) || !typeRegistry.isRegisteredType(typename)) {
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME);
         }
 

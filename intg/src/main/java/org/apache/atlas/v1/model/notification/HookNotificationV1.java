@@ -132,7 +132,7 @@ public class HookNotificationV1 {
             if (entities != null) {
                 for (Referenceable entity : entities) {
                     if (entity != null) {
-                        entity.normailze();
+                        entity.normalize();
                     }
                 }
             }
@@ -259,7 +259,7 @@ public class HookNotificationV1 {
             super.normalize();
 
             if (entity != null) {
-                entity.normailze();
+                entity.normalize();
             }
         }
 

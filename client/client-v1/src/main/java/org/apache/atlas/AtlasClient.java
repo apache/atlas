@@ -282,12 +282,13 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<String> createTraitType(String traitName, Set<String> superTraits, AttributeDefinition... attributeDefinitions) throws AtlasServiceException {
-        TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, superTraits, Arrays.asList(attributeDefinitions));
+        TraitTypeDefinition piiTrait = TypesUtil.createTraitTypeDef(traitName, null, superTraits, Arrays.asList(attributeDefinitions));
+        TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.singletonList(piiTrait),
+                Collections.emptyList());
 
-        String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
-        LOG.debug("Creating trait type {} {}", traitName, traitDefinitionAsJSON);
-        return createType(traitDefinitionAsJSON);
+        LOG.debug("Creating trait type {} {}", traitName, AtlasType.toV1Json(piiTrait));
+
+        return createType(AtlasType.toV1Json(typesDef));
     }
 
     /**

@@ -106,6 +106,10 @@ public class Referenceable extends Struct implements Serializable {
         this(new Id(guid, 0, typeName), typeName, values, systemAttributes, null, null);
     }
 
+    public Referenceable(String guid, String typeName, String state, Map<String, Object> values, AtlasSystemAttributes systemAttributes) {
+        this(new Id(guid, 0, typeName, state), typeName, values, systemAttributes, null, null);
+    }
+
     public Referenceable(String guid, String typeName, Map<String, Object> values, AtlasSystemAttributes systemAttributes, List<String> traitNames, Map<String, Struct> traits) {
         this(new Id(guid, 0, typeName), typeName, values, systemAttributes, traitNames, traits);
     }

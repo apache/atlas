@@ -53,7 +53,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         createInstance(createHiveDBInstanceBuiltIn(dbName));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testSearchByDSL() throws Exception {
         String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
 
@@ -75,7 +75,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertNull(searchResult.getFullTextResult());
     }
 
-    @Test
+    @Test(enabled = false)
     public void testSearchDSLLimits() throws Exception {
         String dslQuery = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
         AtlasSearchResult searchResult = atlasClientV2.dslSearch(dslQuery);
@@ -116,7 +116,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         atlasClientV2.dslSearch(dslQuery);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testSearchUsingDSL() throws Exception {
         String query = "from "+ DATABASE_TYPE_BUILTIN + " " + QUALIFIED_NAME + "=\"" + dbName + "\"";
         AtlasSearchResult searchResult = atlasClientV2.dslSearch(query);

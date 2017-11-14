@@ -25,6 +25,7 @@ import org.apache.atlas.model.notification.EntityNotification.EntityNotification
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
@@ -175,6 +176,10 @@ public abstract class AtlasType {
         T ret;
         try {
             ret =  mapperV1.readValue(jsonStr, type);
+
+            if (ret instanceof Struct) {
+                ((Struct) ret).normalize();
+            }
         }catch (IOException e){
             LOG.error("AtlasType.fromV1Json()", e);
 

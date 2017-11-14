@@ -63,7 +63,9 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/inputs/graph");
+
         Assert.assertNotNull(response);
         System.out.println("inputs graph = " + response);
 
@@ -88,9 +90,20 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
-        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        resultsInstance.normalize();
+
+        Map<String, Object> vertices = (Map<String, Object>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 4);
-        Struct vertex = vertices.get(tableId);
+
+        Object verticesObject = vertices.get(tableId);
+        Struct vertex         = null;
+
+        if (verticesObject instanceof Map) {
+            vertex  = new Struct ((Map)verticesObject);
+        } else if (verticesObject instanceof Struct) {
+            vertex = (Struct)verticesObject;
+        }
+
         assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
         Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
@@ -99,7 +112,9 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/outputs/graph");
+
         Assert.assertNotNull(response);
         System.out.println("outputs graph= " + response);
 
@@ -118,15 +133,23 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraphForEntity() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                salesFactTable).getId()._getId();
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
         JSONObject results = atlasClientV1.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
-        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Map<String, Object> vertices = (Map<String, Object>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 3);
-        Struct vertex = vertices.get(tableId);
+
+        Object verticesObject = vertices.get(tableId);
+        Struct vertex         = null;
+
+        if (verticesObject instanceof Map) {
+            vertex  = new Struct ((Map)verticesObject);
+        } else if (verticesObject instanceof Struct) {
+            vertex = (Struct)verticesObject;
+        }
+
         assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
         Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
@@ -135,44 +158,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
-
-        Assert.assertNotNull(response);
-        System.out.println("schema = " + response);
-
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertEquals(rows.length(), 4);
-
-        for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            LOG.info("JsonRow - {}", row);
-            Assert.assertNotNull(row.getString("name"));
-            Assert.assertNotNull(row.getString("comment"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
-        }
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        JSONObject response = atlasClientV1.getSchemaForEntity(tableId);
     }
 
     @Test
     public void testSchemaForEntity() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        String     tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
         JSONObject results = atlasClientV1.getSchemaForEntity(tableId);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertEquals(rows.length(), 4);
-
-        for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            LOG.info("JsonRow - {}", row);
-            Assert.assertNotNull(row.getString("name"));
-            Assert.assertNotNull(row.getString("comment"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
-        }
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)

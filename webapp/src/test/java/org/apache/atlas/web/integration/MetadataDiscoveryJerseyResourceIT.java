@@ -58,7 +58,8 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         createInstance( createHiveDBInstanceV1(dbName) );
     }
 
-    @Test
+    // Disabling DSL tests
+    @Test (enabled = false)
     public void testSearchByDSL() throws Exception {
         String dslQuery = "from "+ DATABASE_TYPE + " name=\"" + dbName + "\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
@@ -79,7 +80,8 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(numRows, 1);
     }
 
-    @Test
+    // Disabling DSL tests, will be enabled when new implementation is ready
+    @Test (enabled = false)
     public void testSearchDSLLimits() throws Exception {
 
         //search without new parameters of limit and offset should work
@@ -153,7 +155,8 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(response.getString("queryType"), "gremlin");
     }
 
-    @Test
+    // Disabling DSL tests
+    @Test (enabled = false)
     public void testSearchUsingDSL() throws Exception {
         //String query = "from dsl_test_type";
         String query = "from "+ DATABASE_TYPE + " name=\"" + dbName +"\"";
@@ -168,7 +171,8 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(response.getString("queryType"), "dsl");
     }
 
-    @Test
+    // Disabling DSL tests
+    @Test (enabled = false)
     public void testSearchFullTextOnDSLFailure() throws Exception {
         String query = "*";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
@@ -182,7 +186,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(response.getString("queryType"), "full-text");
     }
 
-    @Test(dependsOnMethods = "testSearchDSLLimits")
+    @Test(enabled = false, dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
         JSONObject response = atlasClientV1.searchByFullText(dbName, 10, 0);
         assertNotNull(response.get(AtlasClient.REQUEST_ID));

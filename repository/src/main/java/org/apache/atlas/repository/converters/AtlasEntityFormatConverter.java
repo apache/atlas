@@ -125,8 +125,13 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
                 }
             } else if (v2Obj instanceof AtlasEntity) {
                 AtlasEntity entity = (AtlasEntity) v2Obj;
+                Status      status = entity.getStatus();
 
-                Referenceable referenceable = new Referenceable(entity.getGuid(), entity.getTypeName(),
+                if (status == null) {
+                    status = Status.ACTIVE;
+                }
+
+                Referenceable referenceable = new Referenceable(entity.getGuid(), entity.getTypeName(), status.name(),
                                                                 fromV2ToV1(entityType, entity.getAttributes(), context),
                                                                 new AtlasSystemAttributes(entity.getCreatedBy(), entity.getUpdatedBy(), entity.getCreateTime(), entity.getUpdateTime()));
 

@@ -699,6 +699,9 @@ public class EntityResource {
         } catch (WebApplicationException e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw e;
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get entity list for type {}", entityType, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -1151,7 +1154,7 @@ public class EntityResource {
     private <T> JSONArray getJSONArray(Collection<T> elements) throws JSONException {
         JSONArray jsonArray = new JSONArray();
         for(T element : elements) {
-            jsonArray.put(new JSONObject(element.toString()));
+            jsonArray.put(new JSONObject(AtlasType.toV1Json(element)));
         }
         return jsonArray;
     }

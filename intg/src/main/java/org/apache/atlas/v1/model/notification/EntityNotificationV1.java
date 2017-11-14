@@ -134,13 +134,13 @@ public class EntityNotificationV1 extends EntityNotification implements Serializ
         super.normalize();
 
         if (entity != null) {
-            entity.normailze();
+            entity.normalize();
         }
 
         if (traits != null) {
             for (Struct trait : traits) {
                 if (trait != null) {
-                    trait.normailze();
+                    trait.normalize();
                 }
             }
         }
