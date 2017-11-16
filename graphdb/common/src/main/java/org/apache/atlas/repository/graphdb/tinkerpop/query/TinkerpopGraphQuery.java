@@ -35,15 +35,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * TODO!! - update comment
- * Abstract implementation of AtlasGraphQuery that is used by both Titan 0.5.4
- * and Titan 1.0.0.
+ *
+ * Abstract implementation of AtlasGraphQuery that is used by Titan 0.5.4,
+ * Titan 1.0.0 and JanusGraph
  * <p>
  * Represents a graph query as an OrConditions which consists of
  * 1 or more AndConditions.  The query is executed by converting
  * the AndConditions to native GraphQuery instances that can be executed
- * directly against Titan.  The overall result is obtained by unioning together
- * the results from those individual GraphQueries.
+ * directly against Tinkerpop GraphDB.  The overall result is obtained by
+ * unioning together the results from those individual GraphQueries.
  * <p>
  * Here is a pictoral view of what is going on here.  Conceptually,
  * the query being executed can be though of as the where clause
