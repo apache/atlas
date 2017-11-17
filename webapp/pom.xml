@@ -392,7 +392,7 @@
             <scope>test</scope>
         </dependency>
 
-	    <dependency>
+        <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-repository</artifactId>
             <classifier>tests</classifier>
@@ -681,10 +681,13 @@
             <plugin>
                 <groupId>com.webcohesion.enunciate</groupId>
                 <artifactId>enunciate-maven-plugin</artifactId>
+                <version>${enunciate-maven-plugin.version}</version>
                 <configuration>
                     <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
                     <enunciateArtifactId/>
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
                 </configuration>
             </plugin>
