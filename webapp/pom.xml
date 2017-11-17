@@ -690,8 +690,6 @@
                     <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
                     <enunciateArtifactId/>
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
-                    <source>1.7</source>
-                    <target>1.7</target>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
                 </configuration>
             </plugin>
