@@ -161,7 +161,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
 
         try {
-            JanusGraphCleanup.clear(getGraphInstance());
+            JanusGraphFactory.drop(getGraphInstance());
         } catch (Throwable t) {
             LOG.warn("Could not clear test JanusGraph", t);
             t.printStackTrace();

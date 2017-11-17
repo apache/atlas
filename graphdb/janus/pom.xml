@@ -35,7 +35,7 @@
 
     <properties>
         <tinkerpop.version>3.2.6</tinkerpop.version>
-        <janus.version>0.1.1</janus.version>
+        <janus.version>0.2.0</janus.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
     </properties>
 
@@ -63,6 +63,12 @@
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
             <version>${janus.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.codahale.metrics</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -121,11 +127,11 @@
             <version>${janus.version}</version>
         </dependency>
 
-        <!-- JanusGraph 0.1.1 is dependent on solr-solrj 5.2.1 -->
+        <!-- JanusGraph 0.2.0 is dependent on solr-solrj 7.0.0 -->
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>5.2.1</version>
+            <version>7.0.0</version>
         </dependency>
 
         <dependency>
@@ -155,6 +161,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-common</artifactId>
+            <type>test-jar</type>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -188,10 +201,36 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>${surefire.version}</version>
                 <configuration>
                     <skip>${skipUTs}</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.atlas</groupId>
+                                    <artifactId>atlas-common</artifactId>
+                                    <type>test-jar</type>
+                                    <version>${project.version}</version>
+                                    <excludes>org/**, META-INF/**</excludes>
+                                    <outputDirectory>${project.build.directory}/local_solr</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>

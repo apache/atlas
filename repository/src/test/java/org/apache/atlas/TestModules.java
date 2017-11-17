@@ -48,6 +48,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -57,6 +58,8 @@ import org.apache.commons.configuration.Configuration;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 public class TestModules {
 
@@ -93,6 +96,13 @@ public class TestModules {
 
         @Override
         protected void configure() {
+            if (useLocalSolr()) {
+                try {
+                    LocalSolrRunner.start();
+                } catch (Exception e) {
+                    //ignore
+                }
+            }
 
             GraphSandboxUtil.create();
 

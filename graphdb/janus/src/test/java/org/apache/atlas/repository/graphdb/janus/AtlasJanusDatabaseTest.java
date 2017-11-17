@@ -30,8 +30,10 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
@@ -41,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.*;
 
 /**
@@ -72,11 +75,22 @@ public class AtlasJanusDatabaseTest {
         return (AtlasGraph<V, E>) atlasGraph;
     }
 
+    @BeforeClass
+    public void start() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
+    }
+
     @AfterClass
-    public void cleanup() {
+    public void cleanup() throws Exception {
         if (atlasGraph != null) {
             atlasGraph.clear();
             atlasGraph = null;
+        }
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
         }
     }
 

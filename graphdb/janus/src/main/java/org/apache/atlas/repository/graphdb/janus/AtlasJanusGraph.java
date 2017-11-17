@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.atlas.type.AtlasType;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.JanusGraph;
@@ -55,6 +56,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.janusgraph.diskstorage.BackendException;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
@@ -277,7 +279,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             // only a shut down graph can be cleared
             graph.close();
         }
-        JanusGraphCleanup.clear(graph);
+
+        try {
+            JanusGraphFactory.drop(graph);
+        } catch (BackendException ignoreEx) {}
     }
 
     private JanusGraph getGraph() {

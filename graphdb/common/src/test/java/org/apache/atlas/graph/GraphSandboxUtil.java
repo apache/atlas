@@ -58,4 +58,20 @@ public class GraphSandboxUtil {
         UUID uuid = UUID.randomUUID();
         create(uuid.toString());
     }
+
+    // Need to start local Solr Cloud for JanusGraph 0.2.0
+    public static boolean useLocalSolr() {
+        boolean ret = false;
+        
+        try {
+            Configuration conf     = ApplicationProperties.get();
+            Object        property = conf.getProperty("atlas.graph.index.search.solr.embedded");
+
+            if (property != null && property instanceof String) {
+                ret = Boolean.valueOf((String) property);
+            }
+        } catch (AtlasException ignored) {}
+
+        return ret;
+    }
 }

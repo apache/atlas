@@ -527,7 +527,7 @@
         <node.version>v0.10.30</node.version>
         <node-for-v2.version>v4.4.2</node-for-v2.version>
         <slf4j.version>1.7.21</slf4j.version>
-        <jetty.version>9.4.0.v20161208</jetty.version>
+        <jetty.version>9.3.14.v20161028</jetty.version>
         <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
         <jersey.version>1.19</jersey.version>
 
@@ -582,13 +582,13 @@
              resources in intg and each of the graph profiles. They do not affect packaging
              which is handled by defaults and profiles set in atlas-distro POM -->
         <graph.storage.backend>berkeleyje</graph.storage.backend>
-        <graph.index.backend>elasticsearch</graph.index.backend>
+        <graph.index.backend>solr</graph.index.backend>
 
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
 
-        <surefire.version>2.18.1</surefire.version>
+        <surefire.version>2.20.1</surefire.version>
         <surefire.forkCount>2C</surefire.forkCount>
-        <failsafe.version>2.18.1</failsafe.version>
+        <failsafe.version>2.20.1</failsafe.version>
         <atlas.surefire.options></atlas.surefire.options>
 
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
@@ -652,6 +652,8 @@
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <graph.index.backend>solr</graph.index.backend>
+                <solr.embedded>true</solr.embedded>
             </properties>
         </profile>
 
@@ -670,6 +672,8 @@
                 <graphArtifact>atlas-graphdb-titan0</graphArtifact>
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <solr.embedded>false</solr.embedded>
             </properties>
         </profile>
 
@@ -688,6 +692,8 @@
                 <graphArtifact>atlas-graphdb-titan1</graphArtifact>
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase</graphdb.backend.impl>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <solr.embedded>false</solr.embedded>
             </properties>
         </profile>
 
@@ -706,6 +712,8 @@
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <graph.index.backend>solr</graph.index.backend>
+                <solr.embedded>true</solr.embedded>
             </properties>
         </profile>
 
@@ -1211,38 +1219,6 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-core</artifactId>
-                <version>${solr.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty.orbit</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.restlet.jee</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.ow2.asm</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.lucene</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1931,7 +1907,7 @@
                         <exclude>**/.cache-main</exclude>
                         <exclude>**/.cache-tests</exclude>
                         <exclude>**/.checkstyle</exclude>
-                        <exclude>*.txt</exclude>
+                        <exclude>**/*.txt</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>.pc/**</exclude>
                         <exclude>debian/**</exclude>

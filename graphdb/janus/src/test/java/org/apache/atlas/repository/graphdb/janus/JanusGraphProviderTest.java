@@ -21,11 +21,14 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.configuration.Configuration;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 @Test
 public class JanusGraphProviderTest {
@@ -34,13 +37,16 @@ public class JanusGraphProviderTest {
     private AtlasGraph<?, ?> graph;
 
     @BeforeTest
-    public void setUp() throws AtlasException {
+    public void setUp() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
+
         GraphSandboxUtil.create();
 
         //First get Instance
-        graph = new AtlasJanusGraph();
-        configuration = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(),
-                AtlasJanusGraphDatabase.GRAPH_PREFIX);
+        graph         = new AtlasJanusGraph();
+        configuration = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(), AtlasJanusGraphDatabase.GRAPH_PREFIX);
     }
 
     @AfterClass
@@ -55,6 +61,10 @@ public class JanusGraphProviderTest {
             graph.clear();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
         }
     }
 
@@ -74,7 +84,7 @@ public class JanusGraphProviderTest {
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(),
                     "Configured Index Backend lucene differs from earlier configured "
-                    + "Index Backend elasticsearch. Aborting!");
+                    + "Index Backend solr. Aborting!");
         }
     }
 }

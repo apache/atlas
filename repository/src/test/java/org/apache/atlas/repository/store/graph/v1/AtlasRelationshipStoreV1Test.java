@@ -35,6 +35,7 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -57,6 +58,7 @@ import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeInst
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
 import static org.apache.atlas.TestRelationshipUtilsV2.getInverseReferenceTestTypes;
 import static org.apache.atlas.TestUtilsV2.NAME;
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -120,8 +122,12 @@ public abstract class AtlasRelationshipStoreV1Test {
     }
 
     @AfterClass
-    public void clear() {
+    public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     @Test

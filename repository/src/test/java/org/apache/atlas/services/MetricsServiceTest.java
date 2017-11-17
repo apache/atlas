@@ -20,10 +20,12 @@ package org.apache.atlas.services;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -33,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -49,7 +52,11 @@ public class MetricsServiceTest {
     private Number mockCount = 10;
 
     @BeforeClass
-    public void init() throws AtlasBaseException {
+    public void init() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
+
         Map<String, Object> mockMap = new HashMap<>();
         mockMap.put("a", 1);
         mockMap.put("b", 2);
@@ -64,6 +71,13 @@ public class MetricsServiceTest {
         setupMockGraph();
 
         metricsService = new MetricsService(mockConfig, mockGraph);
+    }
+
+    @AfterClass
+    public void cleanup() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     private void setupMockGraph() throws AtlasBaseException {

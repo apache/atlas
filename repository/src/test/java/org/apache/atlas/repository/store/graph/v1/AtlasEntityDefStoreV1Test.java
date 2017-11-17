@@ -25,6 +25,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -33,6 +34,8 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
+
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 /**
  * Tests for AtlasEntityStoreV1
@@ -67,7 +70,11 @@ public class AtlasEntityDefStoreV1Test {
     }
 
     @AfterClass
-    public void clear(){
+    public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 }

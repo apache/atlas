@@ -29,7 +29,6 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-
 public class AuditRepositoryTestBase {
     protected EntityAuditRepository eventRepository;
 

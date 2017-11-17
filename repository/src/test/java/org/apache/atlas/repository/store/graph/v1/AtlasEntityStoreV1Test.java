@@ -44,6 +44,7 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
@@ -74,8 +75,8 @@ import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.TestUtilsV2.randomString;
-import static org.apache.atlas.TestUtilsV2.STORAGE_DESC_TYPE;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -139,8 +140,12 @@ public class AtlasEntityStoreV1Test {
     }
 
     @AfterClass
-    public void clear() {
+    public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     @BeforeTest

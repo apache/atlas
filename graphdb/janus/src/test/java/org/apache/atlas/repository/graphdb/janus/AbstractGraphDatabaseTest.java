@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -32,6 +33,8 @@ import org.testng.annotations.BeforeClass;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 /**
  *
@@ -48,7 +51,11 @@ public abstract class AbstractGraphDatabaseTest {
     private AtlasGraph<?, ?> graph = null;
 
     @BeforeClass
-    public static void createIndices() {
+    public static void createIndices() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
+
         GraphSandboxUtil.create();
 
         AtlasJanusGraphDatabase db = new AtlasJanusGraphDatabase();
@@ -79,10 +86,13 @@ public abstract class AbstractGraphDatabaseTest {
     }
 
     @AfterClass
-    public static void cleanUp() {
+    public static void cleanUp() throws Exception {
         AtlasJanusGraph graph = new AtlasJanusGraph();
         graph.clear();
 
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     protected <V, E> void pushChangesAndFlushCache() {

@@ -25,11 +25,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -41,6 +43,7 @@ import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Date;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -55,6 +58,13 @@ public class AtlasTypeDefGraphStoreTest {
     public void setupTest() {
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+    }
+
+    @AfterClass
+    public void cleanup() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     @Test
