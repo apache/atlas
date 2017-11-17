@@ -18,6 +18,10 @@
 package org.apache.atlas.type;
 
 
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.notification.EntityNotification;
@@ -32,11 +36,6 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteReq
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.TypeRequest;
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.map.*;
-import org.codehaus.jackson.map.module.SimpleModule;
-import org.codehaus.jackson.node.ObjectNode;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +53,10 @@ public abstract class AtlasType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructType.class);
 
     private static final ObjectMapper mapper = new ObjectMapper()
-                                            .configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+                                            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
     private static final ObjectMapper mapperV1 = new ObjectMapper()
-                                            .configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+                                            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
     static {
         SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
@@ -231,9 +230,9 @@ public abstract class AtlasType {
         @Override
         public HookNotification deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             HookNotification     ret              = null;
-            ObjectMapper         mapper           = (ObjectMapper) parser.getCodec();
-            ObjectNode           root             = (ObjectNode) mapper.readTree(parser);
-            JsonNode             typeNode         = root != null ? root.get("type") : null;
+            ObjectCodec          mapper           = parser.getCodec();
+            TreeNode             root             = mapper.readTree(parser);
+            JsonNode             typeNode         = root != null ? (JsonNode) root.get("type") : null;
             String               strType          = typeNode != null ? typeNode.asText() : null;
             HookNotificationType notificationType = strType != null ? HookNotificationType.valueOf(strType) : null;
 
@@ -241,23 +240,23 @@ public abstract class AtlasType {
                 switch (notificationType) {
                     case TYPE_CREATE:
                     case TYPE_UPDATE:
-                        ret = mapper.readValue(root, TypeRequest.class);
+                        ret = mapper.treeToValue(root, TypeRequest.class);
                         break;
 
                     case ENTITY_CREATE:
-                        ret = mapper.readValue(root, EntityCreateRequest.class);
+                        ret = mapper.treeToValue(root, EntityCreateRequest.class);
                         break;
 
                     case ENTITY_PARTIAL_UPDATE:
-                        ret = mapper.readValue(root, EntityPartialUpdateRequest.class);
+                        ret = mapper.treeToValue(root, EntityPartialUpdateRequest.class);
                         break;
 
                     case ENTITY_FULL_UPDATE:
-                        ret = mapper.readValue(root, EntityUpdateRequest.class);
+                        ret = mapper.treeToValue(root, EntityUpdateRequest.class);
                         break;
 
                     case ENTITY_DELETE:
-                        ret = mapper.readValue(root, EntityDeleteRequest.class);
+                        ret = mapper.treeToValue(root, EntityDeleteRequest.class);
                         break;
                 }
             }
@@ -270,16 +269,16 @@ public abstract class AtlasType {
         @Override
         public EntityNotification deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             EntityNotification     ret              = null;
-            ObjectMapper           mapper           = (ObjectMapper) parser.getCodec();
-            ObjectNode             root             = (ObjectNode) mapper.readTree(parser);
-            JsonNode               typeNode         = root != null ? root.get("type") : null;
+            ObjectCodec            mapper           = parser.getCodec();
+            TreeNode               root             = mapper.readTree(parser);
+            JsonNode               typeNode         = root != null ? (JsonNode) root.get("type") : null;
             String                 strType          = typeNode != null ? typeNode.asText() : null;
             EntityNotificationType notificationType = strType != null ? EntityNotificationType.valueOf(strType) : EntityNotificationType.ENTITY_NOTIFICATION_V1;
 
             if (root != null) {
                 switch (notificationType) {
                     case ENTITY_NOTIFICATION_V1:
-                        ret = mapper.readValue(root, EntityNotificationV1.class);
+                        ret = mapper.treeToValue(root, EntityNotificationV1.class);
                         break;
                 }
             }

@@ -63,6 +63,7 @@
                                 <excludes>
                                     <!-- these are bundled with Atlas -->
                                     <exclude>org.slf4j:*</exclude>
+                                    <exclude>org.codehaus.jackson:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <relocations>

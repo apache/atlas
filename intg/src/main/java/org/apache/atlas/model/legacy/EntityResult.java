@@ -17,27 +17,26 @@
  */
 package org.apache.atlas.model.legacy;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.apache.atlas.type.AtlasType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class EntityResult {
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
     public static final String OP_CREATED = "created";
     public static final String OP_UPDATED = "updated";
     public static final String OP_DELETED = "deleted";
@@ -92,9 +91,9 @@ public class EntityResult {
     }
 
     @Override
-    public String toString() { return gson.toJson(this); }
+    public String toString() { return AtlasType.toV1Json(this); }
 
     public static EntityResult fromString(String json) {
-        return gson.fromJson(json, EntityResult.class);
+        return AtlasType.fromV1Json(json, EntityResult.class);
     }
 }

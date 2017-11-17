@@ -18,11 +18,11 @@
 
 package org.apache.atlas.notification.entity;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.notification.AbstractMessageDeserializer;
 import org.apache.atlas.notification.AbstractNotification;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

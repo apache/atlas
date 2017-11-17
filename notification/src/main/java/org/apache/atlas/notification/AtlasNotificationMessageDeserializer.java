@@ -18,6 +18,7 @@
 
 package org.apache.atlas.notification;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
@@ -26,7 +27,6 @@ import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     public static final String VERSION_MISMATCH_MSG =
         "Notification message version mismatch. Expected %s but recieved %s. Message %s";
 
-    private final TypeReference<T>                           messageType;
+    private final TypeReference<T> messageType;
     private final TypeReference<AtlasNotificationMessage<T>> notificationMessageType;
     private final MessageVersion                             expectedVersion;
     private final Logger                                     notificationLogger;

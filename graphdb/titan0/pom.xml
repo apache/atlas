@@ -268,6 +268,16 @@
                                         <exclude>com/thinkaurelius/titan/graphdb/query/graph/GraphCentricQueryBuilder.class</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>org/codehaus/jackson/map/**</exclude>
+                                        <exclude>com/fasterxml/jackson/**</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                             <relocations>
                                 <!-- guava has incompatibilities across its versions. Titan requires different version of guava than the version that atlas needs.

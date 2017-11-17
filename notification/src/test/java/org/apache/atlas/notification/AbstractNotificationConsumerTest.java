@@ -18,11 +18,11 @@
 
 package org.apache.atlas.notification;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
