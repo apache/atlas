@@ -305,6 +305,10 @@ public final class EntityGraphRetriever {
         return getClassifications(instanceVertex, null);
     }
 
+    public List<AtlasClassification> getClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
+        return getClassifications(instanceVertex, null);
+    }
+
     public AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException {
 
         AtlasVertex instanceVertex = AtlasGraphUtilsV1.findByGuid(guid);

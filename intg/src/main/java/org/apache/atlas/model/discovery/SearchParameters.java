@@ -44,6 +44,7 @@ public class SearchParameters implements Serializable {
     private String  typeName;
     private String  classification;
     private boolean excludeDeletedEntities;
+    private boolean includeClassificationAttributes;
     private int     limit;
     private int     offset;
 
@@ -110,6 +111,21 @@ public class SearchParameters implements Serializable {
      */
     public void setExcludeDeletedEntities(boolean excludeDeletedEntities) {
         this.excludeDeletedEntities = excludeDeletedEntities;
+    }
+
+    /**
+     * @return True if classification attributes are included in search result.
+     */
+    public boolean getIncludeClassificationAttributes() {
+        return includeClassificationAttributes;
+    }
+
+    /**
+     * Include classificatio attributes in search result.
+     * @param includeClassificationAttributes boolean flag
+     */
+    public void setIncludeClassificationAttributes(boolean includeClassificationAttributes) {
+        this.includeClassificationAttributes = includeClassificationAttributes;
     }
 
     /**
@@ -195,6 +211,7 @@ public class SearchParameters implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         SearchParameters that = (SearchParameters) o;
         return excludeDeletedEntities == that.excludeDeletedEntities &&
+                includeClassificationAttributes == that.includeClassificationAttributes &&
                 limit == that.limit &&
                 offset == that.offset &&
                 Objects.equals(query, that.query) &&
@@ -207,7 +224,8 @@ public class SearchParameters implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, classification, excludeDeletedEntities, limit, offset, entityFilters, tagFilters, attributes);
+        return Objects.hash(query, typeName, classification, excludeDeletedEntities, includeClassificationAttributes, 
+                            limit, offset, entityFilters, tagFilters, attributes);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -220,6 +238,7 @@ public class SearchParameters implements Serializable {
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
+        sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
         sb.append(", limit=").append(limit);
         sb.append(", offset=").append(offset);
         sb.append(", entityFilters=").append(entityFilters);

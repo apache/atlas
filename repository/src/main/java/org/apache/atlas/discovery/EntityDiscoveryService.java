@@ -476,6 +476,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             for (AtlasVertex atlasVertex : resultList) {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
+                if(searchParameters.getIncludeClassificationAttributes()) {
+                    entity.setClassifications(entityRetriever.getClassifications(atlasVertex));
+                }
+
                 ret.addEntity(entity);
 
                 // populate ret.referredEntities

@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
+
 
 public class ClassificationSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(ClassificationSearchProcessor.class);
@@ -77,7 +79,10 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         processSearchAttributes(classificationType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
         // for classification search, if any attribute can't be handled by index query - switch to all filter by Graph query
-        boolean useIndexSearch = typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS && CollectionUtils.isEmpty(graphAttributes) && canApplyIndexFilter(classificationType, filterCriteria, false);
+        boolean useIndexSearch = classificationType != SearchContext.MATCH_ALL_CLASSIFICATION &&
+                                 typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS &&
+                                 CollectionUtils.isEmpty(graphAttributes) &&
+                                 canApplyIndexFilter(classificationType, filterCriteria, false);
 
         AtlasGraph graph = context.getGraph();
 
@@ -136,7 +141,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             }
         } else {
             tagGraphQueryWithAttributes = null;
-            entityGraphQueryTraitNames  = graph.query().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes);
+
+            if (classificationType != SearchContext.MATCH_ALL_CLASSIFICATION) {
+                entityGraphQueryTraitNames = graph.query().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes);
+            } else {
+                entityGraphQueryTraitNames = graph.query().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null);
+            }
+
             entityPredicateTraitNames   = SearchPredicateUtil.getContainsAnyPredicateGenerator()
                                                              .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
 
