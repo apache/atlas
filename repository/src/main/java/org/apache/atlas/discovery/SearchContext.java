@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -49,14 +50,18 @@ public class SearchContext {
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
 
+    public final static AtlasClassificationType MATCH_ALL_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef("*"));
+
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
+        String classificationName = searchParameters.getClassification();
+
         this.searchParameters   = searchParameters;
         this.typeRegistry       = typeRegistry;
         this.graph              = graph;
         this.indexedKeys        = indexedKeys;
-        entityAttributes        = new HashSet<>();
-        entityType              = typeRegistry.getEntityTypeByName(searchParameters.getTypeName());
-        classificationType      = typeRegistry.getClassificationTypeByName(searchParameters.getClassification());
+        this.entityAttributes   = new HashSet<>();
+        this.entityType         = typeRegistry.getEntityTypeByName(searchParameters.getTypeName());
+        this.classificationType = getClassificationType(classificationName);
 
         // Validate if the type name exists
         if (StringUtils.isNotEmpty(searchParameters.getTypeName()) && entityType == null) {
@@ -64,8 +69,8 @@ public class SearchContext {
         }
 
         // Validate if the classification exists
-        if (StringUtils.isNotEmpty(searchParameters.getClassification()) && classificationType == null) {
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, searchParameters.getClassification());
+        if (StringUtils.isNotEmpty(classificationName) && classificationType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, classificationName);
         }
 
         // Invalid attributes will raise an exception with 400 error code
@@ -167,5 +172,17 @@ public class SearchContext {
         } else {
             searchProcessor.addProcessor(processor);
         }
+    }
+
+    private AtlasClassificationType getClassificationType(String classificationName) {
+        AtlasClassificationType ret;
+
+        if (StringUtils.equals(classificationName, MATCH_ALL_CLASSIFICATION.getTypeName())) {
+            ret = MATCH_ALL_CLASSIFICATION;
+        } else {
+            ret = typeRegistry.getClassificationTypeByName(classificationName);
+        }
+
+        return ret;
     }
 }
