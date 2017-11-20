@@ -101,21 +101,29 @@ public class TestAtlasTypeRegistry {
         assertNull(failureMsg);
 
 
-        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
-        validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
-        validateSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
-        validateSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
-        validateSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
-        validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
-        validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
+        validateAllSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateAllSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
+        validateAllSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
+        validateAllSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateAllSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateAllSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
+        validateAllSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
 
-        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2")));
         validateSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
         validateSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
         validateSubTypes(typeRegistry, "L2-1", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-2", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-3", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-4", new HashSet<String>());
+
+        validateAllSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateAllSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
+        validateAllSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
+        validateAllSubTypes(typeRegistry, "L2-1", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-2", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-3", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-4", new HashSet<String>());
 
         validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
         validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
@@ -273,21 +281,29 @@ public class TestAtlasTypeRegistry {
         }
         assertNull(failureMsg);
 
-        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
-        validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
-        validateSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
-        validateSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
-        validateSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
-        validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
-        validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
+        validateAllSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateAllSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
+        validateAllSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
+        validateAllSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateAllSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateAllSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
+        validateAllSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
 
-        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2")));
         validateSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
         validateSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
         validateSubTypes(typeRegistry, "L2-1", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-2", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-3", new HashSet<String>());
         validateSubTypes(typeRegistry, "L2-4", new HashSet<String>());
+
+        validateAllSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1-1", "L1-2", "L2-1", "L2-2", "L2-3", "L2-4")));
+        validateAllSubTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L2-1", "L2-2", "L2-3")));
+        validateAllSubTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L2-3", "L2-4")));
+        validateAllSubTypes(typeRegistry, "L2-1", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-2", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-3", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L2-4", new HashSet<String>());
 
         validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
         validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
@@ -519,11 +535,11 @@ public class TestAtlasTypeRegistry {
         }
         assertNull(failureMsg);
 
-        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
-        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
+        validateAllSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
 
-        validateSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
-        validateSubTypes(typeRegistry, "L1", new HashSet<String>());
+        validateAllSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
+        validateAllSubTypes(typeRegistry, "L1", new HashSet<String>());
 
 
         // create a circular reference
@@ -552,11 +568,11 @@ public class TestAtlasTypeRegistry {
 
         assertNull(typeRegistry.getEntityTypeByName("L2"));
 
-        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
-        validateSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
+        validateAllSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateAllSubTypes(typeRegistry, "L0", new HashSet<>(Arrays.asList("L1")));
 
-        validateSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
-        validateSubTypes(typeRegistry, "L1", new HashSet<String>());
+        validateAllSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
+        validateAllSubTypes(typeRegistry, "L1", new HashSet<String>());
     }
 
     private boolean addType(AtlasTypeRegistry typeRegistry, AtlasBaseTypeDef typeDef) {
@@ -578,7 +594,7 @@ public class TestAtlasTypeRegistry {
         return ret;
     }
 
-    private void validateSuperTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSuperTypes) {
+    private void validateAllSuperTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSuperTypes) {
         AtlasType type = null;
 
         try {
@@ -599,7 +615,7 @@ public class TestAtlasTypeRegistry {
         assertEquals(superTypes, expectedSuperTypes);
     }
 
-    private void validateSubTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSubTypes) {
+    private void validateAllSubTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSubTypes) {
         AtlasType type = null;
 
         try {
@@ -614,6 +630,27 @@ public class TestAtlasTypeRegistry {
                 subTypes = ((AtlasEntityType) type).getAllSubTypes();
             } else if (type instanceof AtlasClassificationType) {
                 subTypes = ((AtlasClassificationType) type).getAllSubTypes();
+            }
+        }
+
+        assertEquals(subTypes, expectedSubTypes);
+    }
+
+    private void validateSubTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSubTypes) {
+        AtlasType type = null;
+
+        try {
+            type = typeRegistry.getType(typeName);
+        } catch (AtlasBaseException excp) {
+        }
+
+        Set<String> subTypes = null;
+
+        if (type != null) {
+            if (type instanceof AtlasEntityType) {
+                subTypes = ((AtlasEntityType) type).getSubTypes();
+            } else if (type instanceof AtlasClassificationType) {
+                subTypes = ((AtlasClassificationType) type).getSubTypes();
             }
         }
 

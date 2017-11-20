@@ -52,6 +52,10 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
     private Set<String> superTypes;
 
+    // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
+    // this value is ignored during create & update operations
+    private Set<String> subTypes;
+
 
     public AtlasClassificationDef() {
         this(null, null, null, null, null, null);
@@ -107,6 +111,14 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         } else {
             this.superTypes = new HashSet<>(superTypes);
         }
+    }
+
+    public Set<String> getSubTypes() {
+        return subTypes;
+    }
+
+    public void setSubTypes(Set<String> subTypes) {
+        this.subTypes = subTypes;
     }
 
     public boolean hasSuperType(String typeName) {
