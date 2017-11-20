@@ -51,12 +51,14 @@ public class AtlasEntityType extends AtlasStructType {
 
     private List<AtlasEntityType>                    superTypes                 = Collections.emptyList();
     private Set<String>                              allSuperTypes              = Collections.emptySet();
+    private Set<String>                              subTypes                   = Collections.emptySet();
     private Set<String>                              allSubTypes                = Collections.emptySet();
     private Set<String>                              typeAndAllSubTypes         = Collections.emptySet();
     private Set<String>                              typeAndAllSuperTypes       = Collections.emptySet();
     private Map<String, AtlasAttribute>              relationshipAttributes     = Collections.emptyMap();
     private Map<String, List<AtlasRelationshipType>> relationshipAttributesType = Collections.emptyMap();
     private String                                   typeAndAllSubTypesQryStr   = "";
+
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -98,6 +100,7 @@ public class AtlasEntityType extends AtlasStructType {
         this.allSuperTypes              = Collections.unmodifiableSet(allS);
         this.allAttributes              = Collections.unmodifiableMap(allA);
         this.uniqAttributes             = getUniqueAttributes(this.allAttributes);
+        this.subTypes                   = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.allSubTypes                = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.typeAndAllSubTypes         = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.relationshipAttributes     = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
@@ -114,9 +117,13 @@ public class AtlasEntityType extends AtlasStructType {
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
+        for (AtlasEntityType superType : superTypes) {
+            superType.addSubType(this);
+        }
+
         for (String superTypeName : allSuperTypes) {
             AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
-            superType.addSubType(this);
+            superType.addToAllSubTypes(this);
         }
     }
 
@@ -150,11 +157,14 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
+        subTypes                   = Collections.unmodifiableSet(subTypes);
         allSubTypes                = Collections.unmodifiableSet(allSubTypes);
         typeAndAllSubTypes         = Collections.unmodifiableSet(typeAndAllSubTypes);
         typeAndAllSubTypesQryStr   = ""; // will be computed on next access
         relationshipAttributes     = Collections.unmodifiableMap(relationshipAttributes);
         relationshipAttributesType = Collections.unmodifiableMap(relationshipAttributesType);
+
+        entityDef.setSubTypes(subTypes);
     }
 
     public Set<String> getSuperTypes() {
@@ -164,6 +174,8 @@ public class AtlasEntityType extends AtlasStructType {
     public Set<String> getAllSuperTypes() {
         return allSuperTypes;
     }
+
+    public Set<String> getSubTypes() { return subTypes; }
 
     public Set<String> getAllSubTypes() { return allSubTypes; }
 
@@ -435,6 +447,10 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     private void addSubType(AtlasEntityType subType) {
+        subTypes.add(subType.getTypeName());
+    }
+
+    private void addToAllSubTypes(AtlasEntityType subType) {
         allSubTypes.add(subType.getTypeName());
         typeAndAllSubTypes.add(subType.getTypeName());
     }

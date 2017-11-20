@@ -41,6 +41,7 @@ public class AtlasClassificationType extends AtlasStructType {
 
     private List<AtlasClassificationType> superTypes               = Collections.emptyList();
     private Set<String>                   allSuperTypes            = Collections.emptySet();
+    private Set<String>                   subTypes                 = Collections.emptySet();
     private Set<String>                   allSubTypes              = Collections.emptySet();
     private Set<String>                   typeAndAllSubTypes       = Collections.emptySet();
     private String                        typeAndAllSubTypesQryStr = "";
@@ -103,6 +104,7 @@ public class AtlasClassificationType extends AtlasStructType {
         this.allSuperTypes      = Collections.unmodifiableSet(allS);
         this.allAttributes      = Collections.unmodifiableMap(allA);
         this.uniqAttributes     = getUniqueAttributes(this.allAttributes);
+        this.subTypes           = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.allSubTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.typeAndAllSubTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.entityTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase3()
@@ -114,9 +116,13 @@ public class AtlasClassificationType extends AtlasStructType {
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
+        for (AtlasClassificationType superType : superTypes) {
+            superType.addSubType(this);
+        }
+
         for (String superTypeName : allSuperTypes) {
             AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
-            superType.addSubType(this);
+            superType.addToAllSubTypes(this);
         }
     }
 
@@ -139,6 +145,7 @@ public class AtlasClassificationType extends AtlasStructType {
      */
     @Override
     void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        subTypes                 = Collections.unmodifiableSet(subTypes);
         allSubTypes              = Collections.unmodifiableSet(allSubTypes);
         typeAndAllSubTypes       = Collections.unmodifiableSet(typeAndAllSubTypes);
         typeAndAllSubTypesQryStr = ""; // will be computed on next access
@@ -206,9 +213,15 @@ public class AtlasClassificationType extends AtlasStructType {
                 }
             }
         }
+
+        classificationDef.setSubTypes(subTypes);
     }
 
     private void addSubType(AtlasClassificationType subType) {
+        subTypes.add(subType.getTypeName());
+    }
+
+    private void addToAllSubTypes(AtlasClassificationType subType) {
         allSubTypes.add(subType.getTypeName());
         typeAndAllSubTypes.add(subType.getTypeName());
     }
@@ -218,6 +231,8 @@ public class AtlasClassificationType extends AtlasStructType {
     }
 
     public Set<String> getAllSuperTypes() { return allSuperTypes; }
+
+    public Set<String> getSubTypes() { return subTypes; }
 
     public Set<String> getAllSubTypes() { return allSubTypes; }
 

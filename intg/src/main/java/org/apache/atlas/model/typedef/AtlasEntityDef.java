@@ -54,6 +54,10 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     private Set<String> superTypes;
 
+    // subTypes field below is derived from 'superTypes' specified in all AtlasEntityDef
+    // this value is ignored during create & update operations
+    private Set<String> subTypes;
+
 
     public AtlasEntityDef() {
         this(null, null, null, null, null, null);
@@ -107,6 +111,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         } else {
             this.superTypes = new HashSet<>(superTypes);
         }
+    }
+
+    public Set<String> getSubTypes() {
+        return subTypes;
+    }
+
+    public void setSubTypes(Set<String> subTypes) {
+        this.subTypes = subTypes;
     }
 
     public boolean hasSuperType(String typeName) {
