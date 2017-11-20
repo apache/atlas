@@ -21,7 +21,7 @@
     },
     {
       "name": "CloudPlatform",
-      "descriptiojn":"If the cloud provider is offering platform as a service (PaaS), an application may deploy server capability onto the cloud platform.",
+      "description":"If the cloud provider is offering platform as a service (PaaS), an application may deploy server capability onto the cloud platform.",
       "superTypes": [],
       "entityTypes":["Server"],
       "typeVersion": "1.0",

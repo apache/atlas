@@ -289,7 +289,7 @@
       "typeVersion": "1.0",
       "description": "Translation is a relationship that defines that the related terms represent the same meaning, but each are written in a different language. Hence one is a translation of the other. The language of each term is defined in the Glossary object that anchors the term.",
       "endDef1": {
-        "name": "TransatedTerms",
+        "name": "TranslatedTerms",
         "type": "GlossaryTerm",
         "cardinality": "SET"
       },

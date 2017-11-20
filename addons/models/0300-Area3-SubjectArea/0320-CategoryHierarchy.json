@@ -86,7 +86,6 @@
     },
     {
       "name": "LibraryCategoryReference",
-      "superTypes": [],
       "typeVersion": "1.0",
       "description": "LibraryCategoryReference provides reference information for how this category corresponds to a category in an external glossary.",
       "endDef1": {

@@ -142,8 +142,7 @@
         "isContainer": false,
         "cardinality": "SET",
         "isLegacyAttribute": false
-      },
-      "relationshipLabel": "r:SemanticAssignment"
+      }
     }
   ]
 }
