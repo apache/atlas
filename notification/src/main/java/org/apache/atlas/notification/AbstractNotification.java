@@ -28,6 +28,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.typesystem.IReferenceableInstance;
+import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
@@ -85,6 +86,7 @@ public abstract class AbstractNotification implements NotificationInterface {
     public static final Gson GSON = new GsonBuilder().
         registerTypeAdapter(IReferenceableInstance.class, new ReferenceableSerializer()).
         registerTypeAdapter(Referenceable.class, new ReferenceableSerializer()).
+        registerTypeAdapter(IStruct.class, new StructSerializer()).
         registerTypeAdapter(JSONArray.class, new JSONArraySerializer()).
         create();
 
@@ -267,6 +269,17 @@ public abstract class AbstractNotification implements NotificationInterface {
     public static final class ReferenceableSerializer implements JsonSerializer<IReferenceableInstance> {
         @Override
         public JsonElement serialize(IReferenceableInstance src, Type typeOfSrc, JsonSerializationContext context) {
+            String instanceJson = InstanceSerialization.toJson(src, true);
+            return new JsonParser().parse(instanceJson).getAsJsonObject();
+        }
+    }
+
+    /**
+     * Serializer for IStruct.
+     */
+    public static final class StructSerializer implements JsonSerializer<IStruct> {
+        @Override
+        public JsonElement serialize(IStruct src, Type typeOfSrc, JsonSerializationContext context) {
             String instanceJson = InstanceSerialization.toJson(src, true);
             return new JsonParser().parse(instanceJson).getAsJsonObject();
         }
