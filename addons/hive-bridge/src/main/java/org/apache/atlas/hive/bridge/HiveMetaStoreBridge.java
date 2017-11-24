@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import static org.apache.atlas.hive.hook.HiveHook.CONF_PREFIX;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store
@@ -96,13 +97,19 @@ public class HiveMetaStoreBridge {
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
-    public final Hive hiveClient;
-    private AtlasClient atlasClient = null;
+    public  final Hive        hiveClient;
+    private final AtlasClient atlasClient;
+    private final boolean     convertHdfsPathToLowerCase;
 
     HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient) {
-        this.clusterName = clusterName;
-        this.hiveClient = hiveClient;
-        this.atlasClient = atlasClient;
+        this(clusterName, hiveClient, atlasClient, true);
+    }
+
+    HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient, boolean convertHdfsPathToLowerCase) {
+        this.clusterName                = clusterName;
+        this.hiveClient                 = hiveClient;
+        this.atlasClient                = atlasClient;
+        this.convertHdfsPathToLowerCase = convertHdfsPathToLowerCase;
     }
 
     public String getClusterName() {
@@ -122,11 +129,15 @@ public class HiveMetaStoreBridge {
      * @param hiveConf {@link HiveConf} for Hive component in the cluster
      */
     public HiveMetaStoreBridge(Configuration atlasProperties, HiveConf hiveConf, AtlasClient atlasClient) throws Exception {
-        this(atlasProperties.getString(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClient);
+        this(atlasProperties.getString(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClient, atlasProperties.getBoolean(CONF_PREFIX + "hdfs_path.convert_to_lowercase", true));
     }
 
     AtlasClient getAtlasClient() {
         return atlasClient;
+    }
+
+    public boolean isConvertHdfsPathToLowerCase() {
+        return convertHdfsPathToLowerCase;
     }
 
     void importHiveMetadata(boolean failOnError) throws Exception {
@@ -295,7 +306,7 @@ public class HiveMetaStoreBridge {
                     Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
                     ArrayList<Referenceable> sourceList = new ArrayList<>();
                     ArrayList<Referenceable> targetList = new ArrayList<>();
-                    String tableLocation = table.getDataLocation().toString();
+                    String tableLocation = isConvertHdfsPathToLowerCase() ? HiveHook.lower(table.getDataLocation().toString()) : table.getDataLocation().toString();
                     Referenceable path = fillHDFSDataSet(tableLocation);
                     String query = getCreateTableString(table, tableLocation);
                     sourceList.add(path);
