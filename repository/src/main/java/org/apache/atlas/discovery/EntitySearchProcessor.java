@@ -39,6 +39,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
+
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
@@ -66,10 +68,15 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         final Predicate typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator()
                                                                .generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
-        final Predicate traitPredicate    = SearchPredicateUtil.getContainsAnyPredicateGenerator()
-                                                               .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class);
         final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
+        final Predicate traitPredicate;
+
+        if (classificationType == SearchContext.MATCH_ALL_CLASSIFICATION) {
+            traitPredicate = SearchPredicateUtil.getNotNullPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
+        } else {
+            traitPredicate = SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class);
+        }
 
         processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
@@ -122,7 +129,11 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             // If we need to filter on the trait names then we need to build the query and equivalent in-memory predicate
             if (filterClassification) {
-                query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes);
+                if (classificationType == SearchContext.MATCH_ALL_CLASSIFICATION) {
+                    query.has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null);
+                } else {
+                    query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes);
+                }
 
                 // Construct a parallel in-memory predicate
                 if (graphQueryPredicate != null) {
