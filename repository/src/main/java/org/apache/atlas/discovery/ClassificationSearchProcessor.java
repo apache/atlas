@@ -58,7 +58,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     private final AtlasIndexQuery indexQuery;
     private final AtlasGraphQuery tagGraphQueryWithAttributes;
     private final AtlasGraphQuery entityGraphQueryTraitNames;
-    private final Predicate       entityPredicateTraitNames;
+    private       Predicate       entityPredicateTraitNames;
 
     private final String              gremlinTagFilterQuery;
     private final Map<String, Object> gremlinQueryBindings;
@@ -144,12 +144,19 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
             if (classificationType != SearchContext.MATCH_ALL_CLASSIFICATION) {
                 entityGraphQueryTraitNames = graph.query().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes);
+                entityPredicateTraitNames  = SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
             } else {
                 entityGraphQueryTraitNames = graph.query().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null);
+                entityPredicateTraitNames = SearchPredicateUtil.getNotNullPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
             }
 
-            entityPredicateTraitNames   = SearchPredicateUtil.getContainsAnyPredicateGenerator()
-                                                             .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
+            if (context.getSearchParameters().getExcludeDeletedEntities()) {
+                entityGraphQueryTraitNames.has(Constants.STATE_PROPERTY_KEY, "ACTIVE");
+
+                final Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator().generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
+
+                entityPredicateTraitNames = PredicateUtils.andPredicate(entityPredicateTraitNames, activePredicate);
+            }
 
             gremlinTagFilterQuery = null;
             gremlinQueryBindings  = null;
