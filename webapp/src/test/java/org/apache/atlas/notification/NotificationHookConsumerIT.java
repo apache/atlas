@@ -19,7 +19,6 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -46,18 +45,18 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     public static final String QUALIFIED_NAME = "qualifiedName";
     public static final String CLUSTER_NAME   = "clusterName";
 
-    private final NotificationInterface notificationInterface = NotificationProvider.get();
-
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
+
+        initNotificationService();
 
         createTypeDefinitionsV1();
     }
 
     @AfterClass
     public void teardown() throws Exception {
-        notificationInterface.close();
+        cleanUpNotificationService();
     }
 
     private void sendHookMessage(HookNotification message) throws NotificationException, InterruptedException {

@@ -35,22 +35,17 @@ import java.util.List;
 import static org.testng.Assert.assertEquals;
 
 public class KafkaNotificationTest {
+    private EmbeddedKafkaServer kafkaServer;
     private KafkaNotification kafkaNotification;
 
     @BeforeClass
     public void setup() throws Exception {
-        Configuration properties = ApplicationProperties.get();
-
-        properties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
-
-        kafkaNotification = new KafkaNotification(properties);
-        kafkaNotification.start();
+        initNotificationService();
     }
 
     @AfterClass
     public void shutdown() throws Exception {
-        kafkaNotification.close();
-        kafkaNotification.stop();
+        cleanUpNotificationService();
     }
 
     @Test
@@ -80,5 +75,30 @@ public class KafkaNotificationTest {
         }
 
         consumer.close();
+    }
+
+    void initNotificationService() throws Exception {
+        Configuration applicationProperties = ApplicationProperties.get();
+
+        applicationProperties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
+
+        kafkaServer       = new EmbeddedKafkaServer(applicationProperties);
+        kafkaNotification = new KafkaNotification(applicationProperties);
+
+        kafkaServer.start();
+        kafkaNotification.start();
+
+        Thread.sleep(2000);
+    }
+
+    void cleanUpNotificationService() throws Exception {
+        if (kafkaNotification != null) {
+            kafkaNotification.close();
+            kafkaNotification.stop();
+        }
+
+        if (kafkaServer != null) {
+            kafkaServer.stop();
+        }
     }
 }

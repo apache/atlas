@@ -34,6 +34,7 @@ import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
@@ -94,6 +95,11 @@ public abstract class BaseResourceIT {
     protected AtlasClient   atlasClientV1;
     protected AtlasClientV2 atlasClientV2;
     protected String[]      atlasUrls;
+
+
+    protected NotificationInterface notificationInterface = null;
+    protected EmbeddedKafkaServer   kafkaServer           = null;
+    protected KafkaNotification     kafkaNotification     = null;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -674,5 +680,31 @@ public abstract class BaseResourceIT {
 
     protected JSONArray searchByDSL(String dslQuery) throws AtlasServiceException {
         return atlasClientV1.searchByDSL(dslQuery, 10, 0);
+    }
+
+    protected void initNotificationService() throws Exception {
+        Configuration applicationProperties = ApplicationProperties.get();
+
+        applicationProperties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
+
+        kafkaServer           = new EmbeddedKafkaServer(applicationProperties);
+        kafkaNotification     = new KafkaNotification(applicationProperties);
+        notificationInterface = kafkaNotification;
+
+        kafkaServer.start();
+        kafkaNotification.start();
+
+        Thread.sleep(2000);
+    }
+
+    protected void cleanUpNotificationService() {
+        if (kafkaNotification != null) {
+            kafkaNotification.close();
+            kafkaNotification.stop();
+        }
+
+        if (kafkaServer != null) {
+            kafkaServer.stop();
+        }
     }
 }

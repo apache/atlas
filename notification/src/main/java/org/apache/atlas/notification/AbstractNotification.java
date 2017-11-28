@@ -18,26 +18,18 @@
 package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
-import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Type;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -63,8 +55,6 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public static final MessageVersion CURRENT_MESSAGE_VERSION = new MessageVersion("1.0.0");
 
-    public static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
-
     public static final int MAX_BYTES_PER_CHAR = 4;  // each char can encode upto 4 bytes in UTF-8
 
     /**
@@ -77,20 +67,13 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     private static String currentUser = "";
 
-    private final boolean embedded;
-    private final boolean isHAEnabled;
-
     // ----- Constructors ----------------------------------------------------
 
     public AbstractNotification(Configuration applicationProperties) throws AtlasException {
-        this.embedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
-        this.isHAEnabled = HAConfiguration.isHAEnabled(applicationProperties);
     }
 
     @VisibleForTesting
     protected AbstractNotification() {
-        embedded = false;
-        isHAEnabled = false;
     }
 
     // ----- NotificationInterface -------------------------------------------
@@ -117,25 +100,6 @@ public abstract class AbstractNotification implements NotificationInterface {
     }
 
     // ----- AbstractNotification --------------------------------------------
-
-    /**
-     * Determine whether or not the notification service embedded in Atlas server.
-     *
-     * @return true if the the notification service embedded in Atlas server.
-     */
-    protected final boolean isEmbedded() {
-        return embedded;
-    }
-
-    /**
-     * Determine whether or not the high availability feature is enabled.
-     *
-     * @return true if the high availability feature is enabled.
-     */
-    protected final boolean isHAEnabled() {
-        return isHAEnabled;
-    }
-
     /**
      * Send the given messages.
      *
@@ -247,30 +211,6 @@ public abstract class AbstractNotification implements NotificationInterface {
 
         if (!msgLengthExceedsLimit) {
             msgJsonList.add(msgJson);
-        }
-    }
-
-
-    // ----- serializers -----------------------------------------------------
-
-    /**
-     * Serializer for Referenceable.
-     */
-    public static final class ReferenceableSerializer implements JsonSerializer<Referenceable> {
-        @Override
-        public JsonElement serialize(Referenceable src, Type typeOfSrc, JsonSerializationContext context) {
-            String instanceJson = AtlasType.toV1Json(src);
-            return new JsonParser().parse(instanceJson).getAsJsonObject();
-        }
-    }
-
-    /**
-     * Serializer for JSONArray.
-     */
-    public static final class JSONArraySerializer implements JsonSerializer<JSONArray> {
-        @Override
-        public JsonElement serialize(JSONArray src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonParser().parse(src.toString()).getAsJsonArray();
         }
     }
 

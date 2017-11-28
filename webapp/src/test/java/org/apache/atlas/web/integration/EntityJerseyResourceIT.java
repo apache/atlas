@@ -63,8 +63,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private static final String TRAITS = "traits";
 
-    private NotificationInterface notificationInterface = NotificationProvider.get();
-
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
