@@ -40,10 +40,10 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.kafka.*;
 import org.apache.atlas.notification.entity.EntityNotification;
-import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -101,6 +101,11 @@ public abstract class BaseResourceIT {
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
     protected static final int MAX_WAIT_TIME = 60000;
     protected String[] atlasUrls;
+
+
+    protected NotificationInterface notificationInterface = null;
+    protected EmbeddedKafkaServer   kafkaServer           = null;
+    protected KafkaNotification     kafkaNotification     = null;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -680,5 +685,31 @@ public abstract class BaseResourceIT {
 
     protected JSONArray searchByDSL(String dslQuery) throws AtlasServiceException {
         return atlasClientV1.searchByDSL(dslQuery, 10, 0);
+    }
+
+    protected void initNotificationService() throws Exception {
+        Configuration applicationProperties = ApplicationProperties.get();
+
+        applicationProperties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
+
+        kafkaServer           = new EmbeddedKafkaServer(applicationProperties);
+        kafkaNotification     = new KafkaNotification(applicationProperties);
+        notificationInterface = kafkaNotification;
+
+        kafkaServer.start();
+        kafkaNotification.start();
+
+        Thread.sleep(2000);
+    }
+
+    protected void cleanUpNotificationService() {
+        if (kafkaNotification != null) {
+            kafkaNotification.close();
+            kafkaNotification.stop();
+        }
+
+        if (kafkaServer != null) {
+            kafkaServer.stop();
+        }
     }
 }

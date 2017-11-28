@@ -25,7 +25,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -63,8 +62,6 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public static final MessageVersion CURRENT_MESSAGE_VERSION = new MessageVersion("1.0.0");
 
-    public static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
-
     public static final int MAX_BYTES_PER_CHAR = 4;  // each char can encode upto 4 bytes in UTF-8
 
     /**
@@ -77,8 +74,6 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     private static String currentUser = "";
 
-    private final boolean embedded;
-    private final boolean isHAEnabled;
 
     /**
      * Used for message serialization.
@@ -93,14 +88,10 @@ public abstract class AbstractNotification implements NotificationInterface {
     // ----- Constructors ----------------------------------------------------
 
     public AbstractNotification(Configuration applicationProperties) throws AtlasException {
-        this.embedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
-        this.isHAEnabled = HAConfiguration.isHAEnabled(applicationProperties);
     }
 
     @VisibleForTesting
     protected AbstractNotification() {
-        embedded = false;
-        isHAEnabled = false;
     }
 
     // ----- NotificationInterface -------------------------------------------
@@ -127,25 +118,6 @@ public abstract class AbstractNotification implements NotificationInterface {
     }
 
     // ----- AbstractNotification --------------------------------------------
-
-    /**
-     * Determine whether or not the notification service embedded in Atlas server.
-     *
-     * @return true if the the notification service embedded in Atlas server.
-     */
-    protected final boolean isEmbedded() {
-        return embedded;
-    }
-
-    /**
-     * Determine whether or not the high availability feature is enabled.
-     *
-     * @return true if the high availability feature is enabled.
-     */
-    protected final boolean isHAEnabled() {
-        return isHAEnabled;
-    }
-
     /**
      * Send the given messages.
      *

@@ -51,6 +51,7 @@ public class Services {
             try {
                 for (Service service : services) {
                     LOG.info("Starting service {}", service.getClass().getName());
+
                     service.start();
                 }
             } catch (Exception e) {
@@ -61,12 +62,17 @@ public class Services {
 
     @PreDestroy
     public void stop() {
-        for (Service service : services) {
-            LOG.info("Stopping service {}", service.getClass().getName());
-            try {
-                service.stop();
-            } catch (Throwable e) {
-                LOG.warn("Error stopping service {}", service.getClass().getName(), e);
+        if (configuration.getBoolean("atlas.services.enabled", true)) {
+            for (int idx = services.size() - 1; idx >= 0; idx--) {
+                Service service = services.get(idx);
+
+                LOG.info("Stopping service {}", service.getClass().getName());
+
+                try {
+                    service.stop();
+                } catch (Throwable e) {
+                    LOG.warn("Error stopping service {}", service.getClass().getName(), e);
+                }
             }
         }
     }

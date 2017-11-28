@@ -33,6 +33,7 @@ import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -46,7 +47,6 @@ import static org.testng.Assert.assertTrue;
  * Entity Notification Integration Tests.
  */
 public class EntityNotificationIT extends BaseResourceIT {
-
     private final String DATABASE_NAME = "db" + randomString();
     private final String TABLE_NAME = "table" + randomString();
     private NotificationInterface notificationInterface = NotificationProvider.get();
@@ -58,11 +58,19 @@ public class EntityNotificationIT extends BaseResourceIT {
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
+
+        initNotificationService();
+
         createTypeDefinitionsV1();
         Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(DATABASE_NAME);
         dbId = createInstance(HiveDBInstance);
 
         notificationConsumer = notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1).get(0);
+    }
+
+    @AfterClass
+    public void teardown() throws Exception {
+        cleanUpNotificationService();
     }
 
     public void testCreateEntity() throws Exception {

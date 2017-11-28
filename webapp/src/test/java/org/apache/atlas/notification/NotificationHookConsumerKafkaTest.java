@@ -24,9 +24,9 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.kafka.KafkaNotification;
-import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.kafka.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
@@ -44,7 +44,6 @@ import org.testng.annotations.Test;
 import static org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
 import java.util.List;
 
-import org.apache.atlas.kafka.AtlasKafkaConsumer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -61,7 +60,9 @@ public class NotificationHookConsumerKafkaTest {
     public static final String NAME = "name";
     public static final String DESCRIPTION = "description";
     public static final String QUALIFIED_NAME = "qualifiedName";
-    private NotificationInterface notificationInterface = NotificationProvider.get();
+    private NotificationInterface notificationInterface = null;
+    private EmbeddedKafkaServer   kafkaServer           = null;
+    private KafkaNotification     kafkaNotification     = null;
 
 
     @Mock
@@ -76,8 +77,6 @@ public class NotificationHookConsumerKafkaTest {
     @Mock
     private AtlasTypeRegistry typeRegistry;
 
-    private KafkaNotification kafkaNotification;
-
     @BeforeTest
     public void setup() throws AtlasException, InterruptedException, AtlasBaseException {
         MockitoAnnotations.initMocks(this);
@@ -85,65 +84,54 @@ public class NotificationHookConsumerKafkaTest {
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
         AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = mock(AtlasEntity.AtlasEntitiesWithExtInfo.class);
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
-        kafkaNotification = startKafkaServer();
+
+        initNotificationService();
     }
 
     @AfterTest
     public void shutdown() {
-        kafkaNotification.close();
-        kafkaNotification.stop();
+        cleanUpNotificationService();
     }
 
     @Test
     public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException, AtlasBaseException {
-        try {
-            produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
+        produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
 
-            NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, false);
-            NotificationHookConsumer notificationHookConsumer =
-                    new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
-            NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, false);
+        NotificationHookConsumer notificationHookConsumer =
+                new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
+        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
 
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
+        consumeOneMessage(consumer, hookConsumer);
+        verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
-            // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-            produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
-            reset(atlasEntityStore);
-        }
-        finally {
-            kafkaNotification.close();
-        }
+        // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
+        produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
+        consumeOneMessage(consumer, hookConsumer);
+        verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
+        reset(atlasEntityStore);
     }
 
     @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
     public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
-        try {
-            produceMessage(new HookNotification.EntityCreateRequest("test_user3", createEntity()));
+        produceMessage(new HookNotification.EntityCreateRequest("test_user3", createEntity()));
 
-            NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, true);
+        NotificationConsumer<HookNotificationMessage> consumer = createNewConsumer(kafkaNotification, true);
 
-            assertNotNull (consumer);
+        assertNotNull (consumer);
 
-            NotificationHookConsumer notificationHookConsumer =
-                    new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
-            NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer notificationHookConsumer =
+                new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
+        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
 
+        consumeOneMessage(consumer, hookConsumer);
+        verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
+        // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
+        produceMessage(new HookNotification.EntityCreateRequest("test_user4", createEntity()));
 
-            // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
-            produceMessage(new HookNotification.EntityCreateRequest("test_user4", createEntity()));
-
-            consumeOneMessage(consumer, hookConsumer);
-            verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
-        }
-        finally {
-            kafkaNotification.close();
-        }
+        consumeOneMessage(consumer, hookConsumer);
+        verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
     }
 
     AtlasKafkaConsumer<HookNotificationMessage> createNewConsumer(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
@@ -178,22 +166,35 @@ public class NotificationHookConsumerKafkaTest {
         return entity;
     }
 
-    KafkaNotification startKafkaServer() throws AtlasException, InterruptedException {
+    protected String randomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
+    }
+
+    private void produceMessage(HookNotification message) throws NotificationException {
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
+    }
+
+    void initNotificationService() throws AtlasException, InterruptedException {
         Configuration applicationProperties = ApplicationProperties.get();
         applicationProperties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
 
-        kafkaNotification = new KafkaNotification(applicationProperties);
+        kafkaServer           = new EmbeddedKafkaServer(applicationProperties);
+        kafkaNotification     = new KafkaNotification(applicationProperties);
+        notificationInterface = kafkaNotification;
+
+        kafkaServer.start();
         kafkaNotification.start();
         Thread.sleep(2000);
-        return kafkaNotification;
     }
 
-    protected String randomString() {
-        return RandomStringUtils.randomAlphanumeric(10);
+    void cleanUpNotificationService() {
+        if (kafkaNotification != null) {
+            kafkaNotification.close();
+            kafkaNotification.stop();
+        }
     }
 
     private void produceMessage(HookNotificationMessage message) throws NotificationException {
         kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
     }
-
 }
