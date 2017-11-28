@@ -240,6 +240,11 @@
                                             <artifactId>kafka-clients</artifactId>
                                             <version>${kafka.version}</version>
                                         </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey.contribs</groupId>
+                                            <artifactId>jersey-multipart</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
                                     </artifactItems>
                                 </configuration>
                             </execution>
