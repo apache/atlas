@@ -428,6 +428,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     return "ends_with";
                 } else if (oper == "contains") {
                     return "contains";
+                } else if (oper == "notNull") {
+                    return "not_null";
+                } else if (oper == "isNull") {
+                    return "is_null";
                 }
                 return oper;
             }
@@ -492,6 +496,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     return "endsWith";
                 } else if (oper == "contains") {
                     return "contains";
+                } else if (oper == "not_null") {
+                    return "notNull";
+                } else if (oper == "is_null") {
+                    return "isNull";
                 }
                 return oper;
             }
