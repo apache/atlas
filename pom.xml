@@ -634,7 +634,6 @@
         The settings for GRAPH-PROVIDER have the following effects:
         * If GRAPH-PROVIDER is not specified, the graph-provider-default profile is activated.
         * If GRAPH-PROVIDER is set to titan0, the graph-provider-titan0 profile is activated.
-        * If GRAPH-PROVIDER is set to titan1, the graph-provider-titan1 profile is activated.
         * If GRAPH-PROVIDER is set to anything else, the build will fail.
         Do not activate the graph-provider selection profiles using -P.
         -->
@@ -654,7 +653,8 @@
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>solr</graph.index.backend>
-                <solr.embedded>true</solr.embedded>
+                <tests.solr.embedded>true</tests.solr.embedded>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -674,27 +674,8 @@
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>elasticsearch</graph.index.backend>
-                <solr.embedded>false</solr.embedded>
-            </properties>
-        </profile>
-
-        <profile>
-            <!-- Explicitly activate by setting -DGRAPH-PROVIDER=titan1 -->
-            <id>graph-provider-titan1</id>
-            <activation>
-                <property>
-                    <name>GRAPH-PROVIDER</name>
-                    <value>titan1</value>
-                </property>
-            </activation>
-            <properties>
-                <!-- Define graph dependency type/version -->
-                <graphGroup>org.apache.atlas</graphGroup>
-                <graphArtifact>atlas-graphdb-titan1</graphArtifact>
-                <skipDocs>false</skipDocs>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan1.Titan1GraphDatabase</graphdb.backend.impl>
-                <graph.index.backend>elasticsearch</graph.index.backend>
-                <solr.embedded>false</solr.embedded>
+                <tests.solr.embedded>false</tests.solr.embedded>
+                <distro.exclude.packages>WEB-INF/lib/titan-*.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/lucene-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -714,7 +695,8 @@
                 <skipDocs>false</skipDocs>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>solr</graph.index.backend>
-                <solr.embedded>true</solr.embedded>
+                <tests.solr.embedded>true</tests.solr.embedded>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 

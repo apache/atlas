@@ -47,6 +47,7 @@ atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=
 atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=true
 
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http
@@ -170,6 +171,7 @@ atlas.graph.index.search.solr.mode=cloud
 atlas.graph.index.search.solr.zookeeper-url=localhost:2181
 atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=true
 
 #Solr http mode properties
 #atlas.graph.index.search.solr.mode=http

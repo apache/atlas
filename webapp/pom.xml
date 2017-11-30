@@ -35,18 +35,16 @@
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
         <debug.jetty.daemon>true</debug.jetty.daemon>
         <log4j.configuration.url>file:///${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
-        <packages.to.exclude />
     </properties>
 
     <profiles>
         <profile>
-            <!-- default profile is for external HBase and Solr - hence not packaging those jars -->
             <id>dist</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/titan-*.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/lucene-*.jar</packages.to.exclude>
+                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
             </properties>
         </profile>
 
