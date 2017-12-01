@@ -147,7 +147,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(searchResult.getQueryType(), AtlasQueryType.FULL_TEXT);
     }
 
-    @Test(dependsOnMethods = "testSearchDSLLimits")
+    @Test(enabled = false, dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
         AtlasSearchResult searchResult = atlasClientV2.fullTextSearchWithParams(dbName, 10, 0);
         assertNotNull(searchResult);
