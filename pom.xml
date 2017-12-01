@@ -1186,6 +1186,7 @@
                 <groupId>org.apache.hbase</groupId>
                 <artifactId>hbase-server</artifactId>
                 <version>${hbase.version}</version>
+                <scope>provided</scope>
                 <exclusions>
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
@@ -1379,6 +1380,7 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-hbase-server-shaded</artifactId>
                 <version>${project.version}</version>
+                <scope>provided</scope>
                 <exclusions>
                     <exclusion>
                         <groupId>junit</groupId>
