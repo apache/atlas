@@ -18,6 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
@@ -41,8 +43,6 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -381,8 +381,8 @@ public class HiveHookIT extends HiveITBase {
 
         //Check lineage which includes table1
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
-        JSONObject response = atlasClient.getInputGraph(datasetName);
-        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        ObjectNode response = atlasClient.getInputGraph(datasetName);
+        JsonNode   vertices = response.get("values").get("vertices");
         assertTrue(vertices.has(viewId));
         assertTrue(vertices.has(table1Id));
 
@@ -398,7 +398,7 @@ public class HiveHookIT extends HiveITBase {
 
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
         response = atlasClient.getInputGraph(datasetName);
-        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        vertices = response.get("values").get("vertices");
         assertTrue(vertices.has(viewId));
 
         //This is through the alter view process
@@ -409,8 +409,8 @@ public class HiveHookIT extends HiveITBase {
 
         //Outputs dont exist
         response = atlasClient.getOutputGraph(datasetName);
-        vertices = response.getJSONObject("values").getJSONObject("vertices");
-        Assert.assertEquals(vertices.length(), 0);
+        vertices = response.get("values").get("vertices");
+        Assert.assertEquals(vertices.size(), 0);
     }
 
     private String createTestDFSFile(String path) throws Exception {
@@ -938,7 +938,7 @@ public class HiveHookIT extends HiveITBase {
     }
 
 
-    private String createTrait(String guid) throws AtlasServiceException, JSONException {
+    private String createTrait(String guid) throws AtlasServiceException {
         //add trait
         //valid type names in v2 must consist of a letter followed by a sequence of letter, number, or _ characters
         String traitName = "PII_Trait" + random();
@@ -949,7 +949,7 @@ public class HiveHookIT extends HiveITBase {
         return traitName;
     }
 
-    private void assertTrait(String guid, String traitName) throws AtlasServiceException, JSONException {
+    private void assertTrait(String guid, String traitName) throws AtlasServiceException {
         List<String> traits = atlasClient.listTraits(guid);
         Assert.assertEquals(traits.get(0), traitName);
     }
@@ -1166,20 +1166,20 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertEquals(bProcessInputsAsString, bLineageInputs);
 
         //Test lineage API response
-        JSONObject response = atlasClient.getInputGraphForEntity(dest_a_guid);
-        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
-        JSONObject dest_a_val = (JSONObject) vertices.get(dest_a_guid);
-        JSONObject src_a_val = (JSONObject) vertices.get(a_guid);
-        JSONObject src_b_val = (JSONObject) vertices.get(b_guid);
+        ObjectNode response   = atlasClient.getInputGraphForEntity(dest_a_guid);
+        JsonNode   vertices   = response.get("values").get("vertices");
+        JsonNode   dest_a_val = vertices.get(dest_a_guid);
+        JsonNode   src_a_val  = vertices.get(a_guid);
+        JsonNode   src_b_val  = vertices.get(b_guid);
         Assert.assertNotNull(dest_a_val);
         Assert.assertNotNull(src_a_val);
         Assert.assertNotNull(src_b_val);
 
 
-        JSONObject b_response = atlasClient.getInputGraphForEntity(dest_b_guid);
-        JSONObject b_vertices = b_response.getJSONObject("values").getJSONObject("vertices");
-        JSONObject b_val = (JSONObject) b_vertices.get(dest_b_guid);
-        JSONObject src_tbl_val = (JSONObject) b_vertices.get(sourceTableGUID);
+        ObjectNode b_response  = atlasClient.getInputGraphForEntity(dest_b_guid);
+        JsonNode   b_vertices  = b_response.get("values").get("vertices");
+        JsonNode   b_val       = b_vertices.get(dest_b_guid);
+        JsonNode   src_tbl_val = b_vertices.get(sourceTableGUID);
         Assert.assertNotNull(b_val);
         Assert.assertNotNull(src_tbl_val);
     }
@@ -1197,8 +1197,8 @@ public class HiveHookIT extends HiveITBase {
 
         //Check lineage
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
-        JSONObject response = atlasClient.getInputGraph(datasetName);
-        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        ObjectNode response = atlasClient.getInputGraph(datasetName);
+        JsonNode   vertices = response.get("values").get("vertices");
         //Below should be assertTrue - Fix https://issues.apache.org/jira/browse/ATLAS-653
         Assert.assertFalse(vertices.has(tableId));
     }
@@ -1841,14 +1841,14 @@ public class HiveHookIT extends HiveITBase {
         String table2Id = assertTableIsRegistered(db2, table2);
 
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, db2, table2);
-        JSONObject response = atlasClient.getInputGraph(datasetName);
-        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        ObjectNode response = atlasClient.getInputGraph(datasetName);
+        JsonNode vertices = response.get("values").get("vertices");
         assertTrue(vertices.has(table1Id));
         assertTrue(vertices.has(table2Id));
 
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, table1);
         response = atlasClient.getOutputGraph(datasetName);
-        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        vertices = response.get("values").get("vertices");
         assertTrue(vertices.has(table1Id));
         assertTrue(vertices.has(table2Id));
     }

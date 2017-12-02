@@ -18,9 +18,9 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -37,13 +37,13 @@ public class AdminJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetVersion() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.VERSION, null, (String[]) null);
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.VERSION, null, (String[]) null);
         Assert.assertNotNull(response);
 
         PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("atlas-buildinfo.properties");
 
-        Assert.assertEquals(response.get("Version"), buildConfiguration.getString("build.version"));
-        Assert.assertEquals(response.get("Name"), buildConfiguration.getString("project.name"));
-        Assert.assertEquals(response.get("Description"), buildConfiguration.getString("project.description"));
+        Assert.assertEquals(response.get("Version").asText(), buildConfiguration.getString("build.version"));
+        Assert.assertEquals(response.get("Name").asText(), buildConfiguration.getString("project.name"));
+        Assert.assertEquals(response.get("Description").asText(), buildConfiguration.getString("project.description"));
     }
 }

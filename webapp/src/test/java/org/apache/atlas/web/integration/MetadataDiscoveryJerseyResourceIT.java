@@ -18,6 +18,9 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
@@ -28,8 +31,6 @@ import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.typedef.*;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -64,19 +65,19 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         String dslQuery = "from "+ DATABASE_TYPE + " name=\"" + dbName + "\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", dslQuery);
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_DSL, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_DSL, queryParams);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        assertEquals(response.getString("query"), dslQuery);
-        assertEquals(response.getString("queryType"), "dsl");
+        assertEquals(response.get("query").asText(), dslQuery);
+        assertEquals(response.get("queryType").asText(), "dsl");
 
-        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
+        ArrayNode results = (ArrayNode) response.get(AtlasClient.RESULTS);
         assertNotNull(results);
-        assertEquals(results.length(), 1);
+        assertEquals(results.size(), 1);
 
-        int numRows = response.getInt(AtlasClient.COUNT);
+        int numRows = response.get(AtlasClient.COUNT).asInt();
         assertEquals(numRows, 1);
     }
 
@@ -88,24 +89,24 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         String dslQuery = "from "+ DATABASE_TYPE + " name=\"" + dbName + "\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", dslQuery);
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_DSL, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_DSL, queryParams);
         assertNotNull(response);
 
         //higher limit, all results returned
-        JSONArray results = atlasClientV1.searchByDSL(dslQuery, 10, 0);
-        assertEquals(results.length(), 1);
+        ArrayNode results = atlasClientV1.searchByDSL(dslQuery, 10, 0);
+        assertEquals(results.size(), 1);
 
         //default limit and offset -1, all results returned
         results = atlasClientV1.searchByDSL(dslQuery, -1, -1);
-        assertEquals(results.length(), 1);
+        assertEquals(results.size(), 1);
 
         //uses the limit parameter passed
         results = atlasClientV1.searchByDSL(dslQuery, 1, 0);
-        assertEquals(results.length(), 1);
+        assertEquals(results.size(), 1);
 
         //uses the offset parameter passed
         results = atlasClientV1.searchByDSL(dslQuery, 10, 1);
-        assertEquals(results.length(), 0);
+        assertEquals(results.size(), 0);
 
         //limit > 0
         try {
@@ -146,13 +147,13 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GREMLIN_SEARCH, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GREMLIN_SEARCH, queryParams);
 
         assertNotNull(response);
         assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        assertEquals(response.getString("query"), query);
-        assertEquals(response.getString("queryType"), "gremlin");
+        assertEquals(response.get("query").asText(), query);
+        assertEquals(response.get("queryType").asText(), "gremlin");
     }
 
     // Disabling DSL tests
@@ -162,13 +163,13 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         String query = "from "+ DATABASE_TYPE + " name=\"" + dbName +"\"";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH, queryParams);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        assertEquals(response.getString("query"), query);
-        assertEquals(response.getString("queryType"), "dsl");
+        assertEquals(response.get("query").asText(), query);
+        assertEquals(response.get("queryType").asText(), "dsl");
     }
 
     // Disabling DSL tests
@@ -177,32 +178,32 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         String query = "*";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH, queryParams);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        assertEquals(response.getString("query"), query);
-        assertEquals(response.getString("queryType"), "full-text");
+        assertEquals(response.get("query").asText(), query);
+        assertEquals(response.get("queryType").asText(), "full-text");
     }
 
     @Test(enabled = false, dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
-        JSONObject response = atlasClientV1.searchByFullText(dbName, 10, 0);
+        ObjectNode response = atlasClientV1.searchByFullText(dbName, 10, 0);
         assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        assertEquals(response.getString("query"), dbName);
-        assertEquals(response.getString("queryType"), "full-text");
+        assertEquals(response.get("query").asText(), dbName);
+        assertEquals(response.get("queryType").asText(), "full-text");
 
-        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 1, "Results: " + results);
+        ArrayNode results = (ArrayNode) response.get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 1, "Results: " + results);
 
-        JSONObject row = results.getJSONObject(0);
+        JsonNode row = results.get(0);
         assertNotNull(row.get("guid"));
-        assertEquals(row.getString("typeName"), DATABASE_TYPE);
+        assertEquals(row.get("typeName").asText(), DATABASE_TYPE);
         assertNotNull(row.get("score"));
 
-        int numRows = response.getInt(AtlasClient.COUNT);
+        int numRows = response.get(AtlasClient.COUNT).asInt();
         assertEquals(numRows, 1);
 
         //API works without limit and offset
@@ -210,25 +211,25 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", query);
         response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_FULL_TEXT, queryParams);
-        results = response.getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 1);
+        results = (ArrayNode) response.get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 1);
 
         //verify passed in limits and offsets are used
         //higher limit and 0 offset returns all results
-        results = atlasClientV1.searchByFullText(query, 10, 0).getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 1);
+        results = (ArrayNode) atlasClientV1.searchByFullText(query, 10, 0).get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 1);
 
         //offset is used
-        results = atlasClientV1.searchByFullText(query, 10, 1).getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 0);
+        results = (ArrayNode) atlasClientV1.searchByFullText(query, 10, 1).get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 0);
 
         //limit is used
-        results = atlasClientV1.searchByFullText(query, 1, 0).getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 1);
+        results = (ArrayNode) atlasClientV1.searchByFullText(query, 1, 0).get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 1);
 
         //higher offset returns 0 results
-        results = atlasClientV1.searchByFullText(query, 1, 2).getJSONArray(AtlasClient.RESULTS);
-        assertEquals(results.length(), 0);
+        results = (ArrayNode) atlasClientV1.searchByFullText(query, 1, 2).get(AtlasClient.RESULTS);
+        assertEquals(results.size(), 0);
     }
 
     private void createTypes() throws Exception {

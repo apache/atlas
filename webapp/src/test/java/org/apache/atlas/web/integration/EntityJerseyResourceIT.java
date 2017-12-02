@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
@@ -35,8 +37,6 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.lang.RandomStringUtils;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,7 +173,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("parameters", Collections.EMPTY_MAP);
         databaseInstance.set("location", "/tmp");
 
-        JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_ENTITY, AtlasType.toV1Json(databaseInstance));
+        ObjectNode response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_ENTITY, AtlasType.toV1Json(databaseInstance));
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -322,7 +322,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String description = "bar table - new desc";
         addProperty(guid, "description", description);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid);
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
         referenceable.set("description", description);
@@ -460,7 +460,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetInvalidEntityDefinition() throws Exception {
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, "blah");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, "blah");
 
         Assert.assertNotNull(response);
 
@@ -493,7 +493,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", "blah");
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
     }
@@ -506,12 +506,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", typeName);
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
-        Assert.assertEquals(list.length(), 0);
+        final ArrayNode list = (ArrayNode) response.get(AtlasClient.RESULTS);
+        Assert.assertEquals(list.size(), 0);
     }
 
     private String addNewType() throws Exception {
@@ -827,8 +827,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         instance.set(attrName, attrValue);
         Id guid = createInstance(instance);
 
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
-        Referenceable getReferenceable = AtlasType.fromV1Json(response.getString(AtlasClient.DEFINITION), Referenceable.class);
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
+        Referenceable getReferenceable = AtlasType.fromV1Json(response.get(AtlasClient.DEFINITION).asText(), Referenceable.class);
         Assert.assertEquals(getReferenceable.get(attrName), attrValue);
     }
 
@@ -1026,7 +1026,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         queryParams.add(AtlasClient.GUID.toLowerCase(), db1Id._getId());
         queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.DELETE_ENTITIES, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.DELETE_ENTITIES, queryParams);
         List<String> deletedGuidsList = EntityResult.fromString(response.toString()).getDeletedEntities();
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
         Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));

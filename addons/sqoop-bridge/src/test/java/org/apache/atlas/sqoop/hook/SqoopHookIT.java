@@ -18,6 +18,8 @@
 
 package org.apache.atlas.sqoop.hook;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
@@ -26,8 +28,6 @@ import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.sqoop.SqoopJobDataPublisher;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -110,15 +110,15 @@ public class SqoopHookIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = atlasClient.search(query, 10, 0);
-                return results.length() > 0;
+                ArrayNode results = atlasClient.search(query, 10, 0);
+                return results.size() > 0;
             }
         });
 
-        JSONArray results = atlasClient.search(query, 10, 0);
-        JSONObject row = results.getJSONObject(0).getJSONObject("t");
+        ArrayNode results = atlasClient.search(query, 10, 0);
+        JsonNode row = results.get(0).get("t");
 
-        return row.getString("id");
+        return row.get("id").asText();
     }
 
     protected void waitFor(int timeout, Predicate predicate) throws Exception {

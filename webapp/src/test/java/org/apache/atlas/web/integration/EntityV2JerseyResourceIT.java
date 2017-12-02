@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
@@ -37,7 +38,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
-import org.codehaus.jettison.json.JSONArray;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,13 +147,13 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testEntityDeduping() throws Exception {
-        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
-        assertEquals(results.length(), 1);
+        ArrayNode results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
+        assertEquals(results.size(), 1);
 
         final AtlasEntity hiveDBInstanceV2 = createHiveDB();
 
         results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
-        assertEquals(results.length(), 1);
+        assertEquals(results.size(), 1);
 
         //Test the same across references
         final String tableName = randomString();
@@ -164,7 +164,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertNotNull(entity);
         assertNotNull(entity.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE));
         results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_V2, DATABASE_NAME));
-        assertEquals(results.length(), 1);
+        assertEquals(results.size(), 1);
     }
 
     private void assertEntityAudit(String dbid, EntityAuditEvent.EntityAuditAction auditAction)

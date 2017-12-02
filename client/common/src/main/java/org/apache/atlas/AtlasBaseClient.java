@@ -17,6 +17,8 @@
  */
 package org.apache.atlas;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -35,12 +37,11 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +164,7 @@ public abstract class AtlasBaseClient {
     public boolean isServerReady() throws AtlasServiceException {
         WebResource resource   = getResource(API_VERSION.getNormalizedPath());
         try {
-            callAPIWithResource(API_VERSION, resource, null, JSONObject.class);
+            callAPIWithResource(API_VERSION, resource, null, ObjectNode.class);
             return true;
         } catch (ClientHandlerException che) {
             return false;
@@ -186,12 +187,10 @@ public abstract class AtlasBaseClient {
     public String getAdminStatus() throws AtlasServiceException {
         String      result    = AtlasBaseClient.UNKNOWN_STATUS;
         WebResource resource  = getResource(service, API_STATUS.getNormalizedPath());
-        JSONObject  response  = callAPIWithResource(API_STATUS, resource, null, JSONObject.class);
-        try {
-            result = response.getString("Status");
-        } catch (JSONException e) {
-            LOG.error("Exception while parsing admin status response. Returned response {}", response.toString(), e);
-        }
+        ObjectNode  response  = callAPIWithResource(API_STATUS, resource, null, ObjectNode.class);
+
+        result = response.get("Status").asText();
+
         return result;
     }
 
@@ -355,14 +354,14 @@ public abstract class AtlasBaseClient {
                     return null;
                 }
                 try {
-                    if (responseType.getRawClass().equals(JSONObject.class)) {
+                    if (responseType.getRawClass().equals(ObjectNode.class)) {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
-                            JSONObject jsonObject = new JSONObject(stringEntity);
+                            JsonNode jsonObject = AtlasJson.parseToV1JsonNode(stringEntity);
                             LOG.debug("Response = {}", jsonObject);
                             LOG.info("------------------------------------------------------");
                             return (T) jsonObject;
-                        } catch (JSONException e) {
+                        } catch (IOException e) {
                             throw new AtlasServiceException(api, e);
                         }
                     } else {
@@ -462,13 +461,13 @@ public abstract class AtlasBaseClient {
     }
 
     @VisibleForTesting
-    JSONObject callAPIWithRetries(API api, Object requestObject, ResourceCreator resourceCreator)
+    ObjectNode callAPIWithRetries(API api, Object requestObject, ResourceCreator resourceCreator)
             throws AtlasServiceException {
         for (int i = 0; i < getNumberOfRetries(); i++) {
             WebResource resource = resourceCreator.createResource();
             try {
                 LOG.debug("Using resource {} for {} times", resource.getURI(), i + 1);
-                return callAPIWithResource(api, resource, requestObject, JSONObject.class);
+                return callAPIWithResource(api, resource, requestObject, ObjectNode.class);
             } catch (ClientHandlerException che) {
                 if (i == (getNumberOfRetries() - 1)) {
                     throw che;

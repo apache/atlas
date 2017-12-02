@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasClient;
@@ -26,7 +27,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -67,7 +67,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, INPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
         Assert.assertNotNull(response);
         System.out.println("input lineage info = " + response
         );
@@ -95,7 +95,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, OUTPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("output lineage info = " + response);
@@ -123,7 +123,7 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, BOTH_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("both lineage info = " + response);

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.notification;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.v1.model.instance.Id;
@@ -27,7 +28,6 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUp
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.web.integration.BaseResourceIT;
-import org.codehaus.jettison.json.JSONArray;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -84,9 +84,9 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_BUILTIN, entity.get(NAME)));
+                ArrayNode results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE_BUILTIN, entity.get(NAME)));
 
-                return results.length() == 1;
+                return results.size() == 1;
             }
         });
     }
@@ -106,9 +106,9 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, entity.get(QUALIFIED_NAME)));
+                ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, entity.get(QUALIFIED_NAME)));
 
-                return results.length() == 1;
+                return results.size() == 1;
             }
         });
 
@@ -175,16 +175,16 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, newName));
+                ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, newName));
 
-                return results.length() == 1;
+                return results.size() == 1;
             }
         });
 
         //no entity with the old qualified name
-        JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, dbName));
+        ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, dbName));
 
-        assertEquals(results.length(), 0);
+        assertEquals(results.size(), 0);
     }
 
     @Test
@@ -237,9 +237,9 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, newEntity.get(QUALIFIED_NAME)));
+                ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, newEntity.get(QUALIFIED_NAME)));
 
-                return results.length() == 1;
+                return results.size() == 1;
             }
         });
 

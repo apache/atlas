@@ -18,6 +18,7 @@
 
 package org.apache.atlas.examples;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
@@ -33,7 +34,6 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
-import org.codehaus.jettison.json.JSONArray;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -478,9 +478,9 @@ public class QuickStart {
     private void search() throws AtlasBaseException {
         try {
             for (String dslQuery : getDSLQueries()) {
-                JSONArray results = metadataServiceClient.search(dslQuery, 10, 0);
+                ArrayNode results = metadataServiceClient.search(dslQuery, 10, 0);
                 if (results != null) {
-                    System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
+                    System.out.println("query [" + dslQuery + "] returned [" + results.size() + "] rows");
                 } else {
                     System.out.println("query [" + dslQuery + "] failed, results:" + results);
                 }

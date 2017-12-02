@@ -19,21 +19,12 @@
 package org.apache.atlas;
 
 import com.sun.jersey.api.client.ClientResponse;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-
-import javax.ws.rs.WebApplicationException;
 
 public class AtlasServiceException extends Exception {
     private ClientResponse.Status status;
 
     public AtlasServiceException(AtlasBaseClient.API api, Exception e) {
         super("Metadata service API " + api.getMethod() + " : " + api.getNormalizedPath() + " failed", e);
-    }
-
-    public AtlasServiceException(AtlasBaseClient.API api, WebApplicationException e) throws JSONException {
-        this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
-             ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
     }
 
     private AtlasServiceException(AtlasBaseClient.API api, ClientResponse.Status status, String response) {

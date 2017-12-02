@@ -98,6 +98,10 @@
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>org.codehaus.jackson</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>info.ganglia.gmetric4j</groupId>
                     <artifactId>gmetric4j</artifactId>
                 </exclusion>

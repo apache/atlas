@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -26,8 +28,6 @@ import org.apache.atlas.v1.model.typedef.*;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -81,13 +81,13 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
                 System.out.println("typesAsJSON = " + typesAsJSON);
 
-                JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_TYPE, typesAsJSON);
+                ObjectNode response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_TYPE, typesAsJSON);
                 Assert.assertNotNull(response);
 
 
-                JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
-                assertEquals(typesAdded.length(), 1);
-                assertEquals(typesAdded.getJSONObject(0).getString(NAME), typeDefinition.getTypeName());
+                ArrayNode typesAdded = (ArrayNode) response.get(AtlasClient.TYPES);
+                assertEquals(typesAdded.size(), 1);
+                assertEquals(typesAdded.get(0).get(NAME).asText(), typeDefinition.getTypeName());
                 Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));}
         }
     }
@@ -143,13 +143,13 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
             System.out.println("typeName = " + typeDefinition.getTypeName());
 
-            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, typeDefinition.getTypeName());
+            ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, typeDefinition.getTypeName());
 
             Assert.assertNotNull(response);
             Assert.assertNotNull(response.get(AtlasClient.DEFINITION));
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-            TypesDef typesDef = AtlasType.fromV1Json(response.getString(AtlasClient.DEFINITION), TypesDef.class);
+            TypesDef typesDef = AtlasType.fromV1Json(response.get(AtlasClient.DEFINITION).asText(), TypesDef.class);
 
             List<? extends HierarchicalTypeDefinition> hierarchicalTypeDefs = Collections.emptyList();
 
@@ -172,21 +172,21 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetDefinitionForNonexistentType() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, "blah");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, "blah");
     }
 
     @Test(dependsOnMethods = "testSubmit")
     public void testGetTypeNames() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, (String[]) null);
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LIST_TYPES, null, (String[]) null);
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
+        final ArrayNode list = (ArrayNode) response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
 
         //Verify that primitive and core types are not returned
-        String typesString = list.join(" ");
+        String typesString = list.toString();
         Assert.assertFalse(typesString.contains(" \"__IdType\" "));
         Assert.assertFalse(typesString.contains(" \"string\" "));
     }
@@ -198,14 +198,14 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", DataTypes.TypeCategory.TRAIT.name());
 
-        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.LIST_TYPES, queryParams);
+        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.LIST_TYPES, queryParams);
         Assert.assertNotNull(response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
+        final ArrayNode list = (ArrayNode) response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
-        Assert.assertTrue(list.length() >= traitsAdded.length);
+        Assert.assertTrue(list.size() >= traitsAdded.length);
     }
 
     @Test

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -39,6 +40,7 @@ import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -46,8 +48,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -186,7 +186,7 @@ public class AdminResource {
             try {
                 PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
 
-                JSONObject response = new JSONObject();
+                ObjectNode response = AtlasJson.createV1ObjectNode();
                 response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
                 response.put("Name", configProperties.getString("project.name", "apache-atlas"));
                 response.put("Description", configProperties.getString("project.description",
@@ -195,7 +195,7 @@ public class AdminResource {
                 // todo: add hadoop version?
                 // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
                 version = Response.ok(response).build();
-            } catch (JSONException | ConfigurationException e) {
+            } catch (ConfigurationException e) {
                 throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
         }
@@ -215,15 +215,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getStatus()");
         }
 
-        Response response;
-
-        try {
-            JSONObject responseData = new JSONObject();
-            responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
-            response = Response.ok(responseData).build();
-        } catch (JSONException e) {
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        }
+        ObjectNode responseData = AtlasJson.createV1ObjectNode(AtlasClient.STATUS, serviceState.getState().toString());
+        Response   response     = Response.ok(responseData).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getStatus()");
@@ -241,41 +234,38 @@ public class AdminResource {
         }
 
         Response response;
-        try {
-            boolean isEntityUpdateAccessAllowed = false;
-            boolean isEntityCreateAccessAllowed = false;
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userName = null;
-            Set<String> groups = new HashSet<>();
-            if (auth != null) {
-                userName = auth.getName();
-                Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-                for (GrantedAuthority c : authorities) {
-                    groups.add(c.getAuthority());
-                }
 
-                isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.UPDATE, userName, groups, httpServletRequest);
-                isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
+        boolean isEntityUpdateAccessAllowed = false;
+        boolean isEntityCreateAccessAllowed = false;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userName = null;
+        Set<String> groups = new HashSet<>();
+        if (auth != null) {
+            userName = auth.getName();
+            Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+            for (GrantedAuthority c : authorities) {
+                groups.add(c.getAuthority());
             }
 
-            JSONObject responseData = new JSONObject();
-
-            responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
-            responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
-            responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
-            responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
-            responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
-            responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
-            responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
-            responseData.put("userName", userName);
-            responseData.put("groups", groups);
-
-            response = Response.ok(responseData).build();
-        } catch (JSONException e) {
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
+                    AtlasActionTypes.UPDATE, userName, groups, httpServletRequest);
+            isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
+                    AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
         }
+
+        ObjectNode responseData = AtlasJson.createV1ObjectNode();
+
+        responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
+        responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
+        responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
+        responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
+        responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
+        responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
+        responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
+        responseData.put("userName", userName);
+        responseData.put("groups", AtlasJson.createV1ArrayNode(groups));
+
+        response = Response.ok(responseData).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getUserProfile()");

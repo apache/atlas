@@ -18,11 +18,13 @@
 
 package org.apache.atlas.web.util;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.LocalServletRequest;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.IOUtils;
@@ -30,8 +32,6 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,15 +153,10 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {
-        JSONObject errorJson = new JSONObject();
-        Object errorEntity = escapeJsonString(message);
-        try {
-            errorJson.put(AtlasClient.ERROR, errorEntity);
-            errorEntity = errorJson;
-        } catch (JSONException jsonE) {
-            LOG.warn("Could not construct error Json rensponse", jsonE);
-        }
-        return Response.status(status).entity(errorEntity).type(JSON_MEDIA_TYPE).build();
+        Object     errorEntity = escapeJsonString(message);
+        ObjectNode errorJson   = AtlasJson.createV1ObjectNode(AtlasClient.ERROR, errorEntity);
+
+        return Response.status(status).entity(errorJson).type(JSON_MEDIA_TYPE).build();
     }
 
     public static String getRequestPayload(HttpServletRequest request) throws IOException {

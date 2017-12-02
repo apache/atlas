@@ -18,9 +18,8 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.web.service.ServiceState;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -44,27 +43,27 @@ public class AdminResourceTest {
     }
 
     @Test
-    public void testStatusOfActiveServerIsReturned() throws JSONException {
+    public void testStatusOfActiveServerIsReturned() {
 
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
 
         AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
         Response response = adminResource.getStatus();
         assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
-        JSONObject entity = (JSONObject) response.getEntity();
-        assertEquals(entity.get("Status"), "ACTIVE");
+        ObjectNode entity = (ObjectNode) response.getEntity();
+        assertEquals(entity.get("Status").asText(), "ACTIVE");
     }
 
     @Test
-    public void testResourceGetsValueFromServiceState() throws JSONException {
+    public void testResourceGetsValueFromServiceState() {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
 
         AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
         Response response = adminResource.getStatus();
 
         verify(serviceState).getState();
-        JSONObject entity = (JSONObject) response.getEntity();
-        assertEquals(entity.get("Status"), "PASSIVE");
+        ObjectNode entity = (ObjectNode) response.getEntity();
+        assertEquals(entity.get("Status").asText(), "PASSIVE");
 
     }
 }

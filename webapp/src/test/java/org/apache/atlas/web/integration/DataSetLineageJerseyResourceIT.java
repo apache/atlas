@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.v1.model.instance.Id;
@@ -26,8 +28,6 @@ import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -64,14 +64,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testInputsGraph() throws Exception {
         String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/inputs/graph");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/inputs/graph");
 
         Assert.assertNotNull(response);
         System.out.println("inputs graph = " + response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        JsonNode results = response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
@@ -86,7 +86,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     public void testInputsGraphForEntity() throws Exception {
         String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 salesMonthlyTable).getId()._getId();
-        JSONObject results = atlasClientV1.getInputGraphForEntity(tableId);
+        ObjectNode results = atlasClientV1.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
@@ -113,14 +113,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testOutputsGraph() throws Exception {
         String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/outputs/graph");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/outputs/graph");
 
         Assert.assertNotNull(response);
         System.out.println("outputs graph= " + response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        JsonNode results = response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
@@ -134,7 +134,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testOutputsGraphForEntity() throws Exception {
         String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject results = atlasClientV1.getOutputGraphForEntity(tableId);
+        ObjectNode results = atlasClientV1.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
@@ -159,23 +159,23 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSchema() throws Exception {
         String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject response = atlasClientV1.getSchemaForEntity(tableId);
+        ObjectNode response = atlasClientV1.getSchemaForEntity(tableId);
     }
 
     @Test
     public void testSchemaForEntity() throws Exception {
         String     tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject results = atlasClientV1.getSchemaForEntity(tableId);
+        ObjectNode results = atlasClientV1.getSchemaForEntity(tableId);
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForInvalidTable() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForDB() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
     }
 
     private void setupInstances() throws Exception {

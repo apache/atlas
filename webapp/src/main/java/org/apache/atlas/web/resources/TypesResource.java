@@ -18,22 +18,21 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.rest.TypesREST;
 import org.apache.atlas.web.util.Servlets;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -102,7 +101,7 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
         }
 
-        JSONArray typesResponse = new JSONArray();
+        ArrayNode typesResponse = AtlasJson.createV1ArrayNode();
 
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
@@ -116,13 +115,12 @@ public class TypesResource {
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
-                final String name = typeNames.get(i);
-                typesResponse.put(new JSONObject() {{
-                    put(AtlasClient.NAME, name);
-                }});
+                ObjectNode typeNode = AtlasJson.createV1ObjectNode(AtlasClient.NAME, typeNames.get(i));
+
+                typesResponse.add(typeNode);
             }
 
-            JSONObject response = new JSONObject();
+            ObjectNode response = AtlasJson.createV1ObjectNode();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
@@ -170,7 +168,7 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
         }
 
-        JSONArray typesResponse = new JSONArray();
+        ArrayNode typesResponse = AtlasJson.createV1ArrayNode();
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
 
@@ -183,13 +181,12 @@ public class TypesResource {
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
 
             for (int i = 0; i < typeNames.size(); i++) {
-                final String name = typeNames.get(i);
-                typesResponse.put(new JSONObject() {{
-                    put(AtlasClient.NAME, name);
-                }});
+                ObjectNode typeNode = AtlasJson.createV1ObjectNode(AtlasClient.NAME, typeNames.get(i));
+
+                typesResponse.add(typeNode);
             }
 
-            JSONObject response = new JSONObject();
+            ObjectNode response = AtlasJson.createV1ObjectNode();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
             return Response.ok().entity(response).build();
@@ -233,21 +230,20 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
         }
 
-        JSONObject response = new JSONObject();
+        ObjectNode response = AtlasJson.createV1ObjectNode();
 
         try {
-            TypesDef typesDef       = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
-            String   typeDefinition = AtlasType.toV1Json(typesDef);
+            TypesDef typesDef = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
 
             response.put(AtlasClient.TYPENAME, typeName);
-            response.put(AtlasClient.DEFINITION, new JSONObject(typeDefinition));
+            response.putPOJO(AtlasClient.DEFINITION, typesDef);
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
-        } catch (JSONException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -292,11 +288,11 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + typeCategory + ", " + supertype + ", " + notsupertype + ")");
         }
 
-        JSONObject response  = new JSONObject();
+        ObjectNode response = AtlasJson.createV1ObjectNode();
         try {
             List<String> result = TypeConverterUtil.getTypeNames(typesREST.getTypeDefHeaders(request));
 
-            response.put(AtlasClient.RESULTS, new JSONArray(result));
+            response.putPOJO(AtlasClient.RESULTS, result);
             response.put(AtlasClient.COUNT, result.size());
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 

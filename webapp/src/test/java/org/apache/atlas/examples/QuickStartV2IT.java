@@ -27,7 +27,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.web.integration.BaseResourceIT;
-import org.codehaus.jettison.json.JSONException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -57,7 +56,7 @@ public class QuickStartV2IT extends BaseResourceIT {
         assertEquals("sales database", dbAttributes.get("description"));
     }
 
-    private AtlasEntity getDB(String dbName) throws AtlasServiceException, JSONException {
+    private AtlasEntity getDB(String dbName) throws AtlasServiceException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("name", dbName);
         AtlasEntity dbEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.DATABASE_TYPE, attributes).getEntity();
@@ -65,7 +64,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     }
 
     @Test
-    public void testTablesAreAdded() throws AtlasServiceException, JSONException {
+    public void testTablesAreAdded() throws AtlasServiceException {
         AtlasEntity table = getTable(QuickStart.SALES_FACT_TABLE);
         verifySimpleTableAttributes(table);
 
@@ -97,7 +96,7 @@ public class QuickStartV2IT extends BaseResourceIT {
         assertNotNull(traits.get(0).getTypeName());
     }
 
-    private void verifyColumnsAreAddedToTable(AtlasEntity table) throws JSONException {
+    private void verifyColumnsAreAddedToTable(AtlasEntity table) {
         Map<String, Object> tableAttributes = table.getAttributes();
         List<Map> columns = (List<Map>) tableAttributes.get("columns");
         assertEquals(4, columns.size());
@@ -108,21 +107,21 @@ public class QuickStartV2IT extends BaseResourceIT {
         }
     }
 
-    private void verifyDBIsLinkedToTable(AtlasEntity table) throws AtlasServiceException, JSONException {
+    private void verifyDBIsLinkedToTable(AtlasEntity table) throws AtlasServiceException {
         AtlasEntity db = getDB(QuickStartV2.SALES_DB);
         Map<String, Object> tableAttributes = table.getAttributes();
         Map dbFromTable = (Map) tableAttributes.get("db");
         assertEquals(db.getGuid(), dbFromTable.get("guid"));
     }
 
-    private void verifySimpleTableAttributes(AtlasEntity table) throws JSONException {
+    private void verifySimpleTableAttributes(AtlasEntity table) {
         Map<String, Object> tableAttributes = table.getAttributes();
         assertEquals(QuickStartV2.SALES_FACT_TABLE, tableAttributes.get("name"));
         assertEquals("sales fact table", tableAttributes.get("description"));
     }
 
     @Test
-    public void testProcessIsAdded() throws AtlasServiceException, JSONException {
+    public void testProcessIsAdded() throws AtlasServiceException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.LOAD_SALES_DAILY_PROCESS);
         AtlasEntity loadProcess = atlasClientV2.getEntityByAttribute(QuickStartV2.LOAD_PROCESS_TYPE, attributes).getEntity();
@@ -153,7 +152,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     }
 
     @Test
-    public void testLineageIsMaintained() throws AtlasServiceException, JSONException {
+    public void testLineageIsMaintained() throws AtlasServiceException {
         String salesFactTableId      = getTableId(QuickStartV2.SALES_FACT_TABLE);
         String timeDimTableId        = getTableId(QuickStartV2.TIME_DIM_TABLE);
         String salesFactDailyMVId    = getTableId(QuickStartV2.SALES_FACT_DAILY_MV_TABLE);
@@ -177,7 +176,7 @@ public class QuickStartV2IT extends BaseResourceIT {
     }
 
     @Test
-    public void testViewIsAdded() throws AtlasServiceException, JSONException {
+    public void testViewIsAdded() throws AtlasServiceException {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStartV2.PRODUCT_DIM_VIEW);
         AtlasEntity view = atlasClientV2.getEntityByAttribute(QuickStartV2.VIEW_TYPE, attributes).getEntity();

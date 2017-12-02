@@ -18,18 +18,18 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.query.QueryParams;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,6 +44,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +151,7 @@ public class MetadataDiscoveryResource {
             QueryParams queryParams = validateQueryParams(limit, offset);
             final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByDSL(dslQuery, queryParams);
 
-            JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
+            ObjectNode response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
 
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
@@ -222,17 +223,13 @@ public class MetadataDiscoveryResource {
             gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
             final List<Map<String, String>> results = new ArrayList<>(); // TODO-typeSystem-removal: discoveryService.searchByGremlin(gremlinQuery);
 
-            JSONObject response = new JSONObject();
+            ObjectNode response = AtlasJson.createV1ObjectNode();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.QUERY, gremlinQuery);
             response.put(AtlasClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
 
-            JSONArray list = new JSONArray();
-            for (Map<String, String> result : results) {
-                list.put(new JSONObject(result));
-            }
-            response.put(AtlasClient.RESULTS, list);
-            response.put(AtlasClient.COUNT, list.length());
+            response.putPOJO(AtlasClient.RESULTS, results);
+            response.put(AtlasClient.COUNT, results.size());
 
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
@@ -281,9 +278,9 @@ public class MetadataDiscoveryResource {
             query = ParamChecker.notEmpty(query, "query cannot be null or empty");
             QueryParams queryParams = validateQueryParams(limit, offset);
             final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByFullText(query, queryParams);
-            JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
+            ArrayNode rowsJsonArr = AtlasJson.parseToV1ArrayNode(jsonResultStr);
 
-            JSONObject response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
+            ObjectNode response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
@@ -308,10 +305,10 @@ public class MetadataDiscoveryResource {
         protected int count = 0;
         protected String query;
         protected String queryType;
-        protected JSONObject response;
+        protected ObjectNode response;
 
         JsonResponseBuilder() {
-            this.response = new JSONObject();
+            this.response = AtlasJson.createV1ObjectNode();
         }
 
         protected JsonResponseBuilder count(int count) {
@@ -329,7 +326,7 @@ public class MetadataDiscoveryResource {
             return this;
         }
 
-        protected JSONObject build() throws JSONException {
+        protected ObjectNode build() {
 
             Preconditions.checkNotNull(query, "Query cannot be null");
             Preconditions.checkNotNull(queryType, "Query Type must be specified");
@@ -349,25 +346,24 @@ public class MetadataDiscoveryResource {
             super();
         }
 
-        private JSONObject dslResults;
+        private ArrayNode dslResults;
 
-        public DSLJSONResponseBuilder results(JSONObject dslResults) {
+        public DSLJSONResponseBuilder results(ArrayNode dslResults) {
             this.dslResults = dslResults;
             return this;
         }
 
-        public DSLJSONResponseBuilder results(String dslResults) throws JSONException {
-            return results(new JSONObject(dslResults));
+        public DSLJSONResponseBuilder results(String dslResults) throws IOException {
+            return results(AtlasJson.parseToV1ArrayNode(dslResults));
         }
 
         @Override
-        public JSONObject build() throws JSONException {
+        public ObjectNode build()  {
             Preconditions.checkNotNull(dslResults);
-            JSONArray rowsJsonArr = dslResults.getJSONArray(AtlasClient.ROWS);
-            count(rowsJsonArr.length());
+            count(dslResults.size());
             queryType(QUERY_TYPE_DSL);
-            JSONObject response = super.build();
-            response.put(AtlasClient.RESULTS, rowsJsonArr);
+            ObjectNode response = super.build();
+            response.putPOJO(AtlasClient.RESULTS, dslResults);
             response.put(AtlasClient.DATATYPE, dslResults.get(AtlasClient.DATATYPE));
             return response;
         }
@@ -376,15 +372,15 @@ public class MetadataDiscoveryResource {
 
     private class FullTextJSonResponseBuilder extends JsonResponseBuilder {
 
-        private JSONArray fullTextResults;
+        private ArrayNode fullTextResults;
 
-        public FullTextJSonResponseBuilder results(JSONArray fullTextResults) {
+        public FullTextJSonResponseBuilder results(ArrayNode fullTextResults) {
             this.fullTextResults = fullTextResults;
             return this;
         }
 
-        public FullTextJSonResponseBuilder results(String dslResults) throws JSONException {
-            return results(new JSONArray(dslResults));
+        public FullTextJSonResponseBuilder results(String dslResults) throws IOException {
+            return results(AtlasJson.parseToV1ArrayNode(dslResults));
         }
 
         public FullTextJSonResponseBuilder() {
@@ -392,12 +388,12 @@ public class MetadataDiscoveryResource {
         }
 
         @Override
-        public JSONObject build() throws JSONException {
+        public ObjectNode build() {
             Preconditions.checkNotNull(fullTextResults);
-            count(fullTextResults.length());
+            count(fullTextResults.size());
             queryType(QUERY_TYPE_FULLTEXT);
 
-            JSONObject response = super.build();
+            ObjectNode response = super.build();
             response.put(AtlasClient.RESULTS, fullTextResults);
             return response;
         }

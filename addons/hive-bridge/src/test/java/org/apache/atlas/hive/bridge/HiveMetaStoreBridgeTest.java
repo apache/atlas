@@ -31,7 +31,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.mapred.TextInputFormat;
-import org.codehaus.jettison.json.JSONException;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -113,7 +112,7 @@ public class HiveMetaStoreBridgeTest {
     }
 
     private void returnExistingDatabase(String databaseName, AtlasClient atlasClient, String clusterName)
-            throws AtlasServiceException, JSONException {
+            throws AtlasServiceException {
         when(atlasClient.getEntity(
             HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             HiveMetaStoreBridge.getDBQualifiedName(clusterName, databaseName))).thenReturn(
@@ -219,7 +218,7 @@ public class HiveMetaStoreBridgeTest {
         }
     }
 
-    private Referenceable getEntityReference(String typeName, String id) throws JSONException {
+    private Referenceable getEntityReference(String typeName, String id) {
         return new Referenceable(id, typeName, null);
     }
 

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.integration;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -50,7 +51,6 @@ import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
-import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -678,7 +678,7 @@ public abstract class BaseResourceIT {
         };
     }
 
-    protected JSONArray searchByDSL(String dslQuery) throws AtlasServiceException {
+    protected ArrayNode searchByDSL(String dslQuery) throws AtlasServiceException {
         return atlasClientV1.searchByDSL(dslQuery, 10, 0);
     }
 
