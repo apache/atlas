@@ -126,7 +126,7 @@ public class AtlasRelationshipEndDef implements Serializable {
      *   - whether this is a legacy attribute
      */
     public AtlasRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer, boolean isLegacyAttribute) {
-        this(typeName, name, cardinality, isContainer, isLegacyAttribute,"");
+        this(typeName, name, cardinality, isContainer, isLegacyAttribute, null);
     }
     /**
      *
