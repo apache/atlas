@@ -45,6 +45,8 @@ public class SearchParameters implements Serializable {
     private String  classification;
     private boolean excludeDeletedEntities;
     private boolean includeClassificationAttributes;
+    private boolean includeSubTypes                 = true;
+    private boolean includeSubClassifications       = true;
     private int     limit;
     private int     offset;
 
@@ -126,6 +128,36 @@ public class SearchParameters implements Serializable {
      */
     public void setIncludeClassificationAttributes(boolean includeClassificationAttributes) {
         this.includeClassificationAttributes = includeClassificationAttributes;
+    }
+
+    /**
+     * @return True iff sub-type entities are to be included
+     */
+    public boolean getIncludeSubTypes() {
+        return includeSubTypes;
+    }
+
+    /**
+     * Include sub-type entities in search
+     * @param includeSubTypes boolean flag
+     */
+    public void setIncludeSubTypes(boolean includeSubTypes) {
+        this.includeSubTypes = includeSubTypes;
+    }
+
+    /**
+     * @return True iff sub-classifications are to be included
+     */
+    public boolean getIncludeSubClassifications() {
+        return includeSubClassifications;
+    }
+
+    /**
+     * Include sub-classifications in search
+     * @param includeSubClassifications boolean flag
+     */
+    public void setIncludeSubClassifications(boolean includeSubClassifications) {
+        this.includeSubClassifications = includeSubClassifications;
     }
 
     /**

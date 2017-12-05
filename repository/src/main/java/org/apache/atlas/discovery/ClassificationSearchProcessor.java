@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -67,14 +68,21 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasClassificationType classificationType    = context.getClassificationType();
-        final FilterCriteria          filterCriteria        = context.getSearchParameters().getTagFilters();
-        final Set<String>             typeAndSubTypes       = classificationType.getTypeAndAllSubTypes();
-        final String                  typeAndSubTypesQryStr = classificationType.getTypeAndAllSubTypesQryStr();
-        final Set<String>             indexAttributes       = new HashSet<>();
-        final Set<String>             graphAttributes       = new HashSet<>();
-        final Set<String>             allAttributes         = new HashSet<>();
+        final AtlasClassificationType classificationType = context.getClassificationType();
+        final FilterCriteria          filterCriteria     = context.getSearchParameters().getTagFilters();
+        final Set<String>             indexAttributes    = new HashSet<>();
+        final Set<String>             graphAttributes    = new HashSet<>();
+        final Set<String>             allAttributes      = new HashSet<>();
+        final Set<String>             typeAndSubTypes;
+        final String                  typeAndSubTypesQryStr;
 
+        if (context.getSearchParameters().getIncludeSubClassifications()) {
+            typeAndSubTypes       = classificationType.getTypeAndAllSubTypes();
+            typeAndSubTypesQryStr = classificationType.getTypeAndAllSubTypesQryStr();
+        } else {
+            typeAndSubTypes       = Collections.singleton(classificationType.getTypeName());
+            typeAndSubTypesQryStr = classificationType.getTypeQryStr();
+        }
 
         processSearchAttributes(classificationType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
