@@ -53,18 +53,38 @@ public class EntitySearchProcessor extends SearchProcessor {
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasEntityType entityType            = context.getEntityType();
-        final FilterCriteria  filterCriteria        = context.getSearchParameters().getEntityFilters();
-        final Set<String>     typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
-        final String          typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
-        final Set<String>     indexAttributes       = new HashSet<>();
-        final Set<String>     graphAttributes       = new HashSet<>();
-        final Set<String>     allAttributes         = new HashSet<>();
+        final AtlasEntityType entityType      = context.getEntityType();
+        final FilterCriteria  filterCriteria  = context.getSearchParameters().getEntityFilters();
+        final Set<String>     indexAttributes = new HashSet<>();
+        final Set<String>     graphAttributes = new HashSet<>();
+        final Set<String>     allAttributes   = new HashSet<>();
+        final Set<String>     typeAndSubTypes;
+        final String          typeAndSubTypesQryStr;
 
-        final AtlasClassificationType classificationType            = context.getClassificationType();
-        final boolean                 filterClassification          = classificationType != null && !context.needClassificationProcessor();
-        final Set<String>             classificationTypeAndSubTypes = classificationType != null ? classificationType.getTypeAndAllSubTypes() : Collections.EMPTY_SET;
+        if (context.getSearchParameters().getIncludeSubTypes()) {
+            typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
+            typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
+        } else {
+            typeAndSubTypes       = Collections.singleton(entityType.getTypeName());
+            typeAndSubTypesQryStr = entityType.getTypeQryStr();
+        }
 
+        final AtlasClassificationType classificationType = context.getClassificationType();
+        final boolean                 filterClassification;
+        final Set<String>             classificationTypeAndSubTypes;
+
+        if (classificationType != null) {
+            filterClassification = !context.needClassificationProcessor();
+
+            if (context.getSearchParameters().getIncludeSubClassifications()) {
+                classificationTypeAndSubTypes = classificationType.getTypeAndAllSubTypes();
+            } else {
+                classificationTypeAndSubTypes = Collections.singleton(classificationType.getTypeName());
+            }
+        } else {
+            filterClassification          = false;
+            classificationTypeAndSubTypes = Collections.emptySet();
+        }
 
         final Predicate typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator()
                                                                .generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);

@@ -38,6 +38,7 @@ public class AtlasClassificationType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationType.class);
 
     private final AtlasClassificationDef classificationDef;
+    private final String                 typeQryStr;
 
     private List<AtlasClassificationType> superTypes               = Collections.emptyList();
     private Set<String>                   allSuperTypes            = Collections.emptySet();
@@ -58,6 +59,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
     }
 
     /**
@@ -73,6 +75,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
 
         resolveReferences(typeRegistry);
     }
@@ -237,6 +240,8 @@ public class AtlasClassificationType extends AtlasStructType {
     public Set<String> getAllSubTypes() { return allSubTypes; }
 
     public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
+
+    public String getTypeQryStr() { return typeQryStr; }
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {

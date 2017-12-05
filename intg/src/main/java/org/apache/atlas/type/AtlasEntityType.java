@@ -48,6 +48,7 @@ public class AtlasEntityType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
 
     private final AtlasEntityDef entityDef;
+    private final String         typeQryStr;
 
     private List<AtlasEntityType>                    superTypes                 = Collections.emptyList();
     private Set<String>                              allSuperTypes              = Collections.emptySet();
@@ -63,13 +64,15 @@ public class AtlasEntityType extends AtlasStructType {
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
 
-        this.entityDef = entityDef;
+        this.entityDef  = entityDef;
+        this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
     }
 
     public AtlasEntityType(AtlasEntityDef entityDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super(entityDef);
 
-        this.entityDef = entityDef;
+        this.entityDef  = entityDef;
+        this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
 
         resolveReferences(typeRegistry);
     }
@@ -239,6 +242,8 @@ public class AtlasEntityType extends AtlasStructType {
 
         return typeAndAllSubTypesQryStr;
     }
+
+    public String getTypeQryStr() { return typeQryStr; }
 
     public boolean hasRelationshipAttribute(String attributeName) {
         return relationshipAttributes.containsKey(attributeName);
