@@ -137,7 +137,7 @@ define(['require',
                 var that = this,
                     filters = [];
                 if (this.value) {
-                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl(this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)]);
+                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                 }
                 _.each(this.attrObj, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets);
