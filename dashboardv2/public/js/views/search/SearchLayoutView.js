@@ -396,7 +396,7 @@ define(['require',
                     var rule = queryBuilderRef.queryBuilder('getRules');
                 }
                 if (rule) {
-                    var ruleUrl = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
+                    var ruleUrl = CommonViewFunction.attributeFilter.generateUrl({ "value": rule.rules, "formatedDateToLong": true });
                     this.searchTableFilters[filtertype][(isTag ? this.value.tag : this.value.type)] = ruleUrl;
                     this.makeFilterButtonActive(filtertype);
                     if (!isTag && this.value && this.value.type && this.searchTableColumns) {
