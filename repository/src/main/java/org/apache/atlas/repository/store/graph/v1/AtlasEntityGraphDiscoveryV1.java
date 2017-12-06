@@ -345,6 +345,10 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
 
         AtlasEntityType type = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
+        if (type == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, entity.getTypeName());
+        }
+
         recordObjectReference(entity.getGuid());
 
         visitEntity(type, entity);
