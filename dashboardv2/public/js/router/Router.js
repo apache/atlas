@@ -139,7 +139,8 @@ define([
                     }
                     App.rSideNav.show(new SideNavLayoutView(
                         _.extend({
-                            'tag': tagName
+                            'tag': tagName,
+                            'value': paramObj
                         }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
@@ -150,7 +151,7 @@ define([
                             updateTabState: true
                         });
                     }
-                    App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
+                    App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(_.extend({}, paramObj, { 'tagName': tagName }));
                     App.rSideNav.currentView.selectTab();
                 }
                 if (tagName) {

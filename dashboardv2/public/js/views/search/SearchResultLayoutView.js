@@ -120,14 +120,13 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
                 this.bindEvents();
-                this.bradCrumbList = [];
                 this.arr = [];
                 this.searchType = 'Basic Search';
                 this.columnOrder = null;
@@ -501,7 +500,6 @@ define(['require',
                             return this;
                         }
                     });
-                    that.bradCrumbList = [];
                     var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                     columns.setPositions().sort();
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
@@ -791,6 +789,7 @@ define(['require',
                         tagList: that.getTagList(guid, multiple),
                         showLoader: that.showLoader.bind(that),
                         hideLoader: that.hideLoader.bind(that),
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
                 });

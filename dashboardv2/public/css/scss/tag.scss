@@ -23,64 +23,111 @@
         height: 150px;
         overflow-y: auto;
     }
+    .child>li,
     >li {
         list-style: none;
         cursor: pointer;
         &.parent-node {
             position: relative;
-            margin-top: 5px;
-            /* margin-bottom: 5px; */
-            border-radius: 4px;
-            &:hover {
-                background-color: $color_star_dust_approx;
-            }
             &.active {
-                background-color: $color_jungle_green_approx;
-                border: none;
-                .tools {
-                    display: block
+                &>div {
+                    background-color: $color_jungle_green_approx;
+                    border: none;
+                    .tools {
+                        display: block
+                    }
+                    &:hover {
+                        background-color: $color_jungle_green_approx;
+                    }
+                }
+                ul.child {
+                    &:after {
+                        height: 4px;
+                        top: -5px;
+                    }
                 }
             }
-            >ul>li {
-                line-height: 30px;
-                margin-left: -20px;
-                text-indent: 20px;
+            &>div {
+                position: relative;
+                margin-top: 5px;
+                /* margin-bottom: 5px; */
+                border-radius: 4px;
                 &:hover {
-                    background-color: $color_keppel_approx;
+                    background-color: $color_star_dust_approx;
                 }
-                &.selected {
-                    background-color: $color_keppel_approx;
+                >.fa.toggleArrow {
+                    position: absolute;
+                    left: 0;
+                    padding: 8px;
+                    cursor: pointer;
+                } // >ul>li {
+                //     line-height: 30px;
+                //     margin-left: -20px;
+                //     text-indent: 20px;
+                //     &:hover {
+                //         background-color: $color_keppel_approx;
+                //     }
+                //     &.selected {
+                //         background-color: $color_keppel_approx;
+                //     }
+                // }
+                .tools {
+                    display: none;
+                    position: absolute;
+                    right: 0;
+                    color: $white;
+                    padding: 5px 10px;
+                }
+                >a,
+                >div>a {
+                    display: block;
+                    color: $white !important;
+                    white-space: nowrap;
+                    padding: 5px 10px;
+                    max-width: 91%;
+                    @include ellipsis();
+                    font-size: 14px;
+                    &:hover {
+                        color: $white !important;
+                        text-decoration: none !important;
+                    }
+                }
+                >i+a {
+                    padding: 5px 25px;
                 }
             }
-            .tools {
-                display: none;
-                position: absolute;
-                right: 0;
-                color: $white;
-                padding: 5px 10px;
+            >ul.child {
+                margin-left: 11px;
+                padding-left: 10px;
+                border-left: 1px dotted gray;
+                position: relative;
+                &:after {
+                    position: absolute;
+                    content: "";
+                    height: 13px;
+                    width: 11px;
+                    top: -14px;
+                    left: -1px;
+                    border-left: 1px dotted gray;
+                }
+                li {
+                    &.parent-node {
+                        &:after {
+                            position: absolute;
+                            content: "";
+                            height: 2px;
+                            width: 14px;
+                            top: 16px;
+                            left: -9px;
+                            border-top: 1px dotted gray;
+                        }
+                        &.active:after {
+                            width: 9px;
+                        }
+                    }
+                }
             }
         }
-        >a,
-        >div>a {
-            display: block;
-            color: $white !important;
-            white-space: nowrap;
-            padding: 5px 10px;
-            max-width: 91%;
-            @include ellipsis();
-            font-size: 14px;
-            &:hover {
-                color: $white !important;
-                text-decoration: none !important;
-            }
-        }
-    }
-    >ul {
-        padding-left: 20px;
-        li {}
-    }
-    .tagAsset {
-        display: none;
     }
 }
 

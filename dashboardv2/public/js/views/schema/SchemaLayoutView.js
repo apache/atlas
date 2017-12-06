@@ -73,7 +73,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'attribute', 'fetchCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'guid', 'classificationDefCollection', 'entityDefCollection', 'attribute', 'fetchCollection', 'enumDefCollection'));
                 this.schemaCollection = new VSchemaList([], {});
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
@@ -274,6 +274,7 @@ define(['require',
                         },
                         hideLoader: that.hideLoader.bind(that),
                         showLoader: that.showLoader.bind(that),
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
                 });

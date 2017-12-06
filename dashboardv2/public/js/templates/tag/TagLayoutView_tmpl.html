@@ -14,10 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="clearfix add-seperator">
-    <button type="button" class="btn btn-action btn-md pull-left" data-id="createTag" type="button"><i class="fa fa-plus"></i> Create Tag</button>
-    <button type="button" class="btn btn-action btn-md pull-right" title="Refresh" data-id="refreshTag" onclick="this.blur();" type="button"><i class="fa fa-refresh"></i></button>
+<div class="col-sm-12 add-seperator">
+    <div class="row">
+        <div class="col-sm-6 no-padding" style="margin-top: 5px;">
+            <span class="pull-left">Flat</span>
+            <label class="switch pull-left">
+                <input type="checkbox" class="switch-input" name="tagView" value="text" />
+                <span class="switch-slider"></span>
+            </label>
+            <span class="pull-left">Tree</span>
+        </div>
+        <div class="col-sm-6 no-padding-right">
+            <button type="button" class="btn btn-action btn-md pull-right" title="Refresh" data-id="refreshTag" onclick="this.blur();" type="button"><i class="fa fa-refresh"></i></button>
+            <button type="button" class="btn btn-action btn-md pull-right" data-id="createTag" type="button"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
 </div>
-<input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Tags">
-<ul class="tag-tree" data-id="tagsParent">
-</ul>
+<!-- <div class="clearfix add-seperator">
+    <button type="button" class="btn btn-action btn-md pull-left" data-id="createTag" type="button"><i class="fa fa-plus"></i> Create Tag</button>
+</div> -->
+<div class="row">
+    <div class="list-view col-sm-12">
+        <input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Tags">
+        <ul class="tag-tree" data-id="tagsList">
+        </ul>
+    </div>
+    <div class="tree-view col-sm-12" style="display: none;">
+        <div class="treeLov">
+            <select class="form-control" data-id="treeLov"></select>
+        </div>
+        <ul class="tag-tree" data-id="tagsParent">
+        </ul>
+    </div>
+</div>

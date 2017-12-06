@@ -76,7 +76,8 @@ define(['require',
                     if (that.RTagAttributeDetailLayoutView) {
                         that.RTagAttributeDetailLayoutView.show(new TagAttributeDetailLayoutView({
                             tag: that.tag,
-                            collection: that.collection
+                            collection: that.collection,
+                            enumDefCollection: that.enumDefCollection
                         }));
                     }
                 });

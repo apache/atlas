@@ -28,9 +28,8 @@ define(['require',
         template: tmpl,
 
         regions: {
-            RBusinessCatalogLayoutView: "#r_businessCatalogLayoutView",
             RTagLayoutView: "#r_tagLayoutView",
-            RSearchLayoutView: "#r_searchLayoutView",
+            RSearchLayoutView: "#r_searchLayoutView"
         },
         ui: {
             tabs: '.tabs li a',
@@ -92,6 +91,7 @@ define(['require',
                     collection: that.classificationDefCollection,
                     tag: that.tag,
                     value: that.value,
+                    enumDefCollection: that.enumDefCollection,
                     typeHeaders: that.typeHeaders
                 }));
             });

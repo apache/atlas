@@ -18,13 +18,23 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="tagDetail clearfix form-horizontal col-md-12">
+    <div class="tagDetail clearfix form-horizontal col-sm-12">
         <h1 class="form-group"><span data-id="title"></span></h1>
         <button type="button" data-id="editButton" class="btn btn-sm btn-action pull-right"><i class="fa fa-pencil"></i></button>
         <p class="form-group" data-id="description"></p>
         <div class="superType form-group" style="display:none">
-            <label class="control-label-sm-pr pull-left">Derived From:</label>
-            <div data-id="showSuperType" class="btn-inline">
+            <label class="control-label-sm-pr pull-left">Direct super-tags:</label>
+            <div data-id="superType" class="btn-inline">
+            </div>
+        </div>
+        <div class="subType form-group" style="display:none">
+            <label class="control-label-sm-pr pull-left">Direct sub-tags:</label>
+            <div data-id="subType" class="btn-inline">
+            </div>
+        </div>
+        <div class="entityType form-group cursor-default" style="display:none">
+            <label class="control-label-sm-pr pull-left">Entity-types:</label>
+            <div data-id="entityType" class="btn-inline">
             </div>
         </div>
         <div class="attributes form-group">
