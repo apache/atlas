@@ -281,7 +281,8 @@ define(['require',
                     modal.on('ok', function() {
                         that.deleteTagData({
                             'tagName': tagName,
-                            'guid': that.id
+                            'guid': that.id,
+                            'el' : $(e.currentTarget)
                         });
                     });
                     modal.on('closeModal', function() {
@@ -291,7 +292,7 @@ define(['require',
             },
             deleteTagData: function(options) {
                 var that = this,
-                    tagName = $(e.currentTarget).text();
+                    tagName = options.el.text();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 CommonViewFunction.deleteTag(_.extend({}, options, {
                     callback: function() {
