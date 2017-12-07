@@ -20,7 +20,7 @@
   "entityDefs": [
     {
       "name": "Server",
-      "description": "Servers describe the middleware servers (such as application servers, data movement engines and database servers) that run on the Hosts. Within the Server model, we capture its userid. Most metadata repositories are run in a secure mode requiring incoming requests to incluye the requester's security credentials. Therefore we have an identifier for each unique logged on security identity (aka userId). This identity is recorded within specific entities and relationships when they are created or updated. By storing the user identifier for the server, it is possible to correlate the server with the changes to the metadata (and related data assets) that it makes.",
+      "description": "Software Servers describe the middleware software servers (such as application servers, data movement engines and database servers) that run on the Hosts. Within the Software Server model, we capture the userid that it runs under. Most metadata repositories are run in a secure mode requiring incoming requests to incluye the requester's security credentials. Therefore we have an identifier for each unique logged on security identity (aka userId). This identity is recorded within specific entities and relationships when they are created or updated. By storing the user identifier for the server, it is possible to correlate the server with the changes to the metadata (and related data assets) that it makes.",
       "superTypes": [
         "Infrastructure"
       ],

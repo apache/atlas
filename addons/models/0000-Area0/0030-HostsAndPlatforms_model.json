@@ -21,7 +21,7 @@
   "entityDefs": [
     {
       "name": "Host",
-      "description":"",
+      "description":"A Host is an IT Infrastructure concept associated with the hardware running the systems. It provides a mechanism for describing a unit of hardware that provides the ability to host software servers.",
       "superTypes": [
         "Infrastructure"
       ],

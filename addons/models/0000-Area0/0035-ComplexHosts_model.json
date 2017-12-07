@@ -15,7 +15,7 @@
     },
     {
       "name": "Virtualcontainer",
-      "description":"A Virtual Container or a Server Container, provides the services of a host to the servers deployed on it. Docker is an example of a virtual container. When the server makes requests for storage, network access etc, the VirtualContainer delegates the requests to the equivalent services of the actual host it is deployed on. VirtualContainers can be hosted on other VirtualContainers, but to actually run they need to ultimately be deployed on to a real physical Host.",
+      "description":"A Virtual Container or a Server Container, provides the services of a host to the software servers deployed on it. Docker is an example of a virtual container. When the server makes requests for storage, network access etc, the VirtualContainer delegates the requests to the equivalent services of the actual host it is deployed on. VirtualContainers can be hosted on other VirtualContainers, but to actually run they need to ultimately be deployed on to a real physical Host.",
       "superTypes": [
         "Host"
       ],
