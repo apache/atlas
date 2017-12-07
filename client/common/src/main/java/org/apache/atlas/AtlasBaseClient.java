@@ -72,6 +72,7 @@ public abstract class AtlasBaseClient {
     public static final String QUERY = "query";
     public static final String LIMIT = "limit";
     public static final String OFFSET = "offset";
+    public static final String STATUS = "Status";
 
     public static final API API_STATUS  = new API(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK);;
     public static final API API_VERSION = new API(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK);;
@@ -189,7 +190,9 @@ public abstract class AtlasBaseClient {
         WebResource resource  = getResource(service, API_STATUS.getNormalizedPath());
         ObjectNode  response  = callAPIWithResource(API_STATUS, resource, null, ObjectNode.class);
 
-        result = response.get("Status").asText();
+        if (response.has(STATUS)) {
+            result = response.get(STATUS).asText();
+        }
 
         return result;
     }

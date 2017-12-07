@@ -17,15 +17,13 @@
 
 package org.apache.atlas;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.legacy.EntityResult;
-import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.mockito.Matchers;
@@ -96,6 +94,10 @@ public class AtlasClientTest {
         WebResource.Builder builder = setupBuilder(AtlasClient.API_V1.CREATE_ENTITY, service);
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.CREATED.getStatusCode());
+
+        String jsonResponse = AtlasType.toV1Json(new EntityResult(Arrays.asList("id"), null, null));
+        when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
+        when(response.getLength()).thenReturn(jsonResponse.length());
 
         String entityJson = AtlasType.toV1Json(new Referenceable("type"));
         when(builder.method(anyString(), Matchers.<Class>any(), anyString())).thenReturn(response);
