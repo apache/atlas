@@ -160,10 +160,10 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
             List<String>        entityNotificationAttrs = getNotificationAttributes(entity.getTypeName());
 
             if (MapUtils.isNotEmpty(attributesMap) && CollectionUtils.isNotEmpty(entityNotificationAttrs)) {
-                for (String entityAttr : attributesMap.keySet()) {
-                    if (!entityNotificationAttrs.contains(entityAttr)) {
-                        entity.setNull(entityAttr);
-                    }
+                Collection<String> attributesToRemove = CollectionUtils.subtract(attributesMap.keySet(), entityNotificationAttrs);
+
+                for (String attributeToRemove : attributesToRemove) {
+                    attributesMap.remove(attributeToRemove);
                 }
             }
 

@@ -158,34 +158,16 @@ public class EntityAuditListener implements EntityChangeListener {
 
             Map<String, Object> attrValues = entity.getValuesMap();
 
-            clearAttributeValues(entity);
+            entity.setValues(null);
 
             auditString = auditPrefix + AtlasType.toV1Json(entity);
 
-            addAttributeValues(entity, attrValues);
+            entity.setValues(attrValues);
         }
 
         restoreEntityAttributes(entity, prunedAttributes);
 
         return auditString;
-    }
-
-    private void clearAttributeValues(Referenceable entity) throws AtlasException {
-        Map<String, Object> attributesMap = entity.getValuesMap();
-
-        if (MapUtils.isNotEmpty(attributesMap)) {
-            for (String attribute : attributesMap.keySet()) {
-                entity.setNull(attribute);
-            }
-        }
-    }
-
-    private void addAttributeValues(Referenceable entity, Map<String, Object> attributesMap) throws AtlasException {
-        if (MapUtils.isNotEmpty(attributesMap)) {
-            for (String attr : attributesMap.keySet()) {
-                entity.set(attr, attributesMap.get(attr));
-            }
-        }
     }
 
     private Map<String, Object> pruneEntityAttributesForAudit(Referenceable entity) throws AtlasException {
@@ -205,7 +187,7 @@ public class EntityAuditListener implements EntityChangeListener {
                     }
 
                     ret.put(attrName, attrValue);
-                    entity.setNull(attrName);
+                    entityAttributes.remove(attrName);
                 } else if (attribute.isOwnedRef()) {
                     if (attrValue instanceof Collection) {
                         for (Object arrElem : (Collection) attrValue) {

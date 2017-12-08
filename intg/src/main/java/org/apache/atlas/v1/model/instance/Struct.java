@@ -123,13 +123,6 @@ public class Struct implements Serializable {
         return values != null ? values.get(attrName) : null;
     }
 
-    @JsonIgnore
-    public void setNull(String attrName) {
-        if (values != null) {
-            values.remove(attrName);
-        }
-    }
-
     public void normalize() {
         if (MapUtils.isEmpty(values)) {
             return;
