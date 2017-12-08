@@ -608,11 +608,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             if (ret.getEntities() == null) {
-                ret.setEntities(new ArrayList<AtlasEntityHeader>());
+                ret.setEntities(new ArrayList<>());
             }
         } catch (ScriptException e) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Gremlin script execution failed for relationship search query: " + e);
+                LOG.debug("Gremlin script execution failed for relationship search query: {}", relatedEntitiesQuery, e);
             }
 
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Relationship search query failed");
