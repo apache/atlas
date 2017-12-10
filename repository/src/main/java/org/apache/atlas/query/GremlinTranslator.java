@@ -19,16 +19,23 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.query.Expressions.Expression;
 
-public class GremlinTranslator {
-    private Expression expression;
 
-    public GremlinTranslator(Expression expression) {
-        this.expression = expression;
+public class GremlinTranslator {
+    private final QueryProcessor queryProcessor;
+    private       Expression     expression;
+
+    public GremlinTranslator(QueryProcessor queryProcessor, Expression expression) {
+        this.expression     = expression;
+        this.queryProcessor = queryProcessor;
     }
 
     public GremlinQuery translate() {
-        GremlinQuery ret = null;
+        DSLVisitor qv = new DSLVisitor(queryProcessor);
 
+        expression.accept(qv);
+        queryProcessor.close();
+
+        GremlinQuery ret = new GremlinQuery(queryProcessor.getText(), queryProcessor.hasSelect());
         return ret;
     }
 }

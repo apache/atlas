@@ -471,7 +471,7 @@ public class QuickStartV2 {
                 "DB where DB.name=\"Reporting\" select name, owner",
                 "DB has name",
                 "DB where DB has name",
-                "DB, Table",
+//--TODO: Fix   "DB, Table",    // Table, db; Table db works
                 "DB is JdbcAccess",
                 "from Table",
                 "Table",
@@ -483,12 +483,12 @@ public class QuickStartV2 {
                 "Column where Column.name=\"customer_id\"",
                 "from Table select Table.name",
                 "DB where (name = \"Reporting\")",
-                "DB where (name = \"Reporting\") select name as _col_0, owner as _col_1",
+//--TODO: Fix   "DB where (name = \"Reporting\") select name as _col_0, owner as _col_1",
                 "DB where DB is JdbcAccess",
                 "DB where DB has name",
-                "DB Table",
+//--TODO: Fix   "DB Table",
                 "DB as db1 Table where (db1.name = \"Reporting\")",
-                "DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ",
+//--TODO: Fix   "DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", // N
                 DIMENSION_CLASSIFICATION,
                 JDBC_CLASSIFICATION,
                 ETL_CLASSIFICATION,
@@ -505,22 +505,26 @@ public class QuickStartV2 {
         System.out.println("\nSample DSL Queries: ");
 
         for (String dslQuery : getDSLQueries()) {
-            AtlasSearchResult results = atlasClientV2.dslSearchWithParams(dslQuery, 10, 0);
+            try {
+                AtlasSearchResult results = atlasClientV2.dslSearchWithParams(dslQuery, 10, 0);
 
-            if (results != null) {
-                List<AtlasEntityHeader>   entitiesResult  = results.getEntities();
-                List<AtlasFullTextResult> fullTextResults = results.getFullTextResult();
-                AttributeSearchResult     attribResult    = results.getAttributes();
+                if (results != null) {
+                    List<AtlasEntityHeader> entitiesResult = results.getEntities();
+                    List<AtlasFullTextResult> fullTextResults = results.getFullTextResult();
+                    AttributeSearchResult attribResult = results.getAttributes();
 
-                if (CollectionUtils.isNotEmpty(entitiesResult)) {
-                    System.out.println("query [" + dslQuery + "] returned [" + entitiesResult.size() + "] rows.");
-                } else if (CollectionUtils.isNotEmpty(fullTextResults)) {
-                    System.out.println("query [" + dslQuery + "] returned [" + fullTextResults.size() + "] rows.");
-                } else if (attribResult != null) {
-                    System.out.println("query [" + dslQuery + "] returned [" + attribResult.getValues().size() + "] rows.");
+                    if (CollectionUtils.isNotEmpty(entitiesResult)) {
+                        System.out.println("query [" + dslQuery + "] returned [" + entitiesResult.size() + "] rows.");
+                    } else if (CollectionUtils.isNotEmpty(fullTextResults)) {
+                        System.out.println("query [" + dslQuery + "] returned [" + fullTextResults.size() + "] rows.");
+                    } else if (attribResult != null) {
+                        System.out.println("query [" + dslQuery + "] returned [" + attribResult.getValues().size() + "] rows.");
+                    }
+                } else {
+                    System.out.println("query [" + dslQuery + "] failed, results:" + results);
                 }
-            } else {
-                System.out.println("query [" + dslQuery + "] failed, results:" + results);
+            } catch (Exception e) {
+                System.out.println("query [" + dslQuery + "] execution failed!");
             }
         }
     }

@@ -18,28 +18,24 @@
 package org.apache.atlas.query;
 
 
-import java.util.List;
+import org.apache.atlas.query.antlr4.AtlasDSLParser.QueryContext;
+
 
 public class Expressions {
     public static class Expression {
+        private final QueryContext parsedQuery;
 
-    }
 
-    public static class AliasExpression {
-        public String alias() {
-            String ret = null;
-
-            return ret;
+        public Expression(QueryContext q) {
+            parsedQuery = q;
         }
 
-    }
-
-    public static class SelectExpression {
-        public List<AliasExpression> toJavaList() {
-            List<AliasExpression> ret = null;
-
-            return ret;
+        public Expression isReady() {
+            return (parsedQuery != null ? this : null);
         }
 
+        public void accept(DSLVisitor qv) {
+            qv.visit(parsedQuery);
+        }
     }
 }

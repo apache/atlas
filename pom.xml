@@ -552,6 +552,7 @@
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <guava.version>19.0</guava.version>
         <scala.version>2.11.8</scala.version>
+        <antlr4.version>4.7</antlr4.version>
 
         <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
@@ -565,6 +566,7 @@
         <paranamer.version>2.7</paranamer.version>
         <zkclient.version>0.8</zkclient.version>
         <enunciate-maven-plugin.version>2.10.1</enunciate-maven-plugin.version>
+        <antlr4.plugin.version>4.5</antlr4.plugin.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
@@ -790,6 +792,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>${antlr4.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -1609,6 +1617,26 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-maven-plugin</artifactId>
+                    <version>${antlr4.plugin.version}</version>
+                    <configuration>
+                        <listener>false</listener>
+                        <visitor>true</visitor>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>antlr4</goal>
+                            </goals>
+                            <phase>generate-sources</phase>
+                            <configuration>
+                                <outputDirectory>src/main/java</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
                     <version>1.4</version>
@@ -1871,6 +1899,7 @@
                     <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
+                        <exclude>**/antlr4/**</exclude>
                         <exclude>**/dependency-reduced-pom.xml</exclude>
                         <exclude>**/javax.script.ScriptEngineFactory</exclude>
                         <exclude>.reviewboardrc</exclude>
