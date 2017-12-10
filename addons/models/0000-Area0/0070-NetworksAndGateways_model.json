@@ -6,7 +6,7 @@
     {
       "name": "Network",
       "superTypes": [
-        "Infrastructure"
+        "ITInfrastructure"
       ],
       "typeVersion": "1.0",
       "attributeDefs": []
@@ -14,7 +14,7 @@
     {
       "name": "NetworkGateway",
       "superTypes": [
-        "ServerCapability"
+        "SoftwareServerCapability"
       ],
       "typeVersion": "1.0",
       "attributeDefs": []

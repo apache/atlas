@@ -23,7 +23,7 @@
       "name": "CloudPlatform",
       "description":"If the cloud provider is offering platform as a service (PaaS), an application may deploy server capability onto the cloud platform.",
       "superTypes": [],
-      "entityTypes":["Server"],
+      "entityTypes":["SoftwareServer"],
       "typeVersion": "1.0",
       "attributeDefs": [
         {
@@ -40,7 +40,7 @@
       "name": "CloudService",
       "description":"If the cloud provider is offering Software as a Service (SaaS) then it has provided APIs backed by pre-deployed server capability that an organization can call as a cloud service.",
       "superTypes": [],
-      "entityTypes":["ServerCapability"],
+      "entityTypes":["SoftwareServerCapability"],
       "typeVersion": "1.0",
       "attributeDefs": [
         {

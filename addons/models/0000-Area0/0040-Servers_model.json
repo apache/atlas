@@ -19,10 +19,10 @@
   "classificationDefs": [],
   "entityDefs": [
     {
-      "name": "Server",
+      "name": "SoftwareServer",
       "description": "Software Servers describe the middleware software servers (such as application servers, data movement engines and database servers) that run on the Hosts. Within the Software Server model, we capture the userid that it runs under. Most metadata repositories are run in a secure mode requiring incoming requests to incluye the requester's security credentials. Therefore we have an identifier for each unique logged on security identity (aka userId). This identity is recorded within specific entities and relationships when they are created or updated. By storing the user identifier for the server, it is possible to correlate the server with the changes to the metadata (and related data assets) that it makes.",
       "superTypes": [
-        "Infrastructure"
+        "ITInfrastructure"
       ],
       "typeVersion": "1.0",
       "attributeDefs": [
@@ -109,7 +109,7 @@
       ]
     },
     {
-      "name": "ServerCapability",
+      "name": "SoftwareServerCapability",
       "description": "Within the server are many capabilities. These range from full applications to security plugins to logging and encryption libraries. Different organizations and tools can choose the granularity in which the capabilities are captured in order to provide appropriate context to data assets and the decisions made around them.",
       "superTypes": [
         "Infrastructure"
@@ -179,7 +179,7 @@
       "typeVersion": "1.0",
       "endDef1": {
         "name": "endpoints",
-        "type": "Server",
+        "type": "SoftwareServer",
         "cardinality": "SET"
       },
       "endDef2": {
@@ -194,13 +194,13 @@
       "typeVersion": "1.0",
       "endDef1": {
         "name": "capabilities",
-        "type": "Server",
+        "type": "SoftwareServer",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
         "name": "servers",
-        "type": "ServerCapability",
+        "type": "SoftwareServerCapability",
         "cardinality": "SET"
       },
       "relationshipCategory": "AGGREGATION",
@@ -242,7 +242,7 @@
       },
       "endDef2": {
         "name": "host",
-        "type": "Server",
+        "type": "SoftwareServer",
         "cardinality": "SINGLE"
 
       },

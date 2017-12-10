@@ -66,6 +66,7 @@
         },
         {
             "name": "Infrastructure",
+            "description":"Infrastructure can be IT infrastructure, which contains hosts and servers. Infrastructure might not be IT orientated, such as 'Car' for IoT applications.",
             "superTypes": [
                 "Referenceable",
                 "Asset"
