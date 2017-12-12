@@ -53,8 +53,7 @@ define(['require',
          * @constructs
          */
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
-            this.collection = new VTagList();
+            _.extend(this, _.pick(options, 'collection', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
             this.commonCollection = new VTagList();
             var that = this,
                 modalObj = {
@@ -184,17 +183,12 @@ define(['require',
 
         onRender: function() {
             var that = this;
-            $.extend(this.collection.queryParams, { type: 'classification' });
             this.hideAttributeBox();
-            this.collection.fetch({
-                reset: true,
-                complete: function() {
-                    if (that.tagModel) {
-                        that.fetchTagSubData(that.tagModel.typeName);
-                    }
-                    that.showAttributeBox();
-                },
-            });
+            this.tagsCollection();
+            if (this.tagModel) {
+                this.fetchTagSubData(that.tagModel.typeName);
+            }
+            that.showAttributeBox();
         },
         bindEvents: function() {
             var that = this;
@@ -207,20 +201,16 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
-            var that = this;
-            this.collection.fullCollection.comparator = function(model) {
-                return Utils.getName(model.toJSON(), 'name').toLowerCase();
-            }
-
-            var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
-            this.collection.fullCollection.sort().each(function(obj, key) {
-                var name = Utils.getName(obj.toJSON(), 'name');
-                if (name === "TaxonomyTerm") {
-                    return;
-                }
-                // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
-                if (_.indexOf(that.tagList, obj.get('name')) === -1) {
-                    str += '<option ' + (that.tagModel && that.tagModel.typeName === name ? 'selected' : '') + '>' + name + '</option>';
+            var that = this,
+                str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
+            this.collection.fullCollection.each(function(obj, key) {
+                var name = Utils.getName(obj.toJSON(), 'name'),
+                    checkTagOrTerm = Utils.checkTagOrTerm(name);
+                if (checkTagOrTerm && checkTagOrTerm.tag) {
+                    // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
+                    if (_.indexOf(that.tagList, obj.get('name')) === -1) {
+                        str += '<option ' + (that.tagModel && that.tagModel.typeName === name ? 'selected' : '') + '>' + name + '</option>';
+                    }
                 }
             });
             this.ui.addTagOptions.html(str);

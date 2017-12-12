@@ -60,8 +60,8 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
-                _.each(this.parentView.typeEnum.models, function(objValue) {
-                    that.ui.dataTypeSelector.append("<option>" + objValue.attributes.name + "</option>");
+                this.parentView.enumDefCollection.fullCollection.each(function(model) {
+                    that.ui.dataTypeSelector.append("<option>" + model.get('name') + "</option>");
                 });
             },
             onCloseButton: function() {

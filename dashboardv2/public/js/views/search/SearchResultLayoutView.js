@@ -146,7 +146,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -860,6 +860,7 @@ define(['require',
                         tagList: that.getTagList(guid, multiple),
                         showLoader: that.showLoader.bind(that),
                         hideLoader: that.hideLoader.bind(that),
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
                 });
@@ -884,13 +885,13 @@ define(['require',
                 }
             },
             showLoader: function() {
-                this.$('.fontLoader:not(.for-ignore)').show();
-                this.$('.tableOverlay').show();
+                this.$('.fontLoader:not(.for-ignore)').addClass('show');
+                this.$('.tableOverlay').addClass('show');
             },
             hideLoader: function() {
-                this.$('.fontLoader:not(.for-ignore)').hide();
+                this.$('.fontLoader:not(.for-ignore)').removeClass('show');
                 this.$('.ellipsis,.pagination-box').show(); // only for first time
-                this.$('.tableOverlay').hide();
+                this.$('.tableOverlay').removeClass('show');
             },
             checkedValue: function(e) {
                 var guid = "",

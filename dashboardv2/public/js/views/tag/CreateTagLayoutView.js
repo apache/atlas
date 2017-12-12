@@ -74,7 +74,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection', 'model', 'tag', 'termCollection', 'descriptionData'));
+                _.extend(this, _.pick(options, 'tagCollection', 'enumDefCollection', 'model', 'tag', 'termCollection', 'descriptionData', 'selectedTag'));
                 if (this.model) {
                     this.description = this.model.get('description');
                 } else if (this.termCollection) {
@@ -83,9 +83,6 @@ define(['require',
                     this.create = true;
                 }
                 this.collection = new Backbone.Collection();
-                this.typeEnum = new VTagList();
-                this.typeEnum.url = UrlLinks.typedefsUrl().defs;
-                this.typeEnum.modelAttrName = "enumDefs";
             },
             bindEvents: function() {},
             onRender: function() {
@@ -99,12 +96,7 @@ define(['require',
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.createTagForm.find('input,textarea').placeholder();
                 }
-                that.typeEnum.fetch({
-                    reset: true,
-                    complete: function(model, response) {
-                        that.hideLoader();
-                    }
-                });
+                that.hideLoader();
             },
             tagCollectionList: function() {
                 var str = '',
@@ -114,7 +106,7 @@ define(['require',
                     var name = Utils.getName(val.toJSON()),
                         checkTagOrTerm = Utils.checkTagOrTerm(name);
                     if (checkTagOrTerm.tag) {
-                        str += '<option>' + (name) + '</option>';
+                        str += '<option ' + (name == that.selectedTag ? 'selected' : '') + '>' + (name) + '</option>';
                     }
                 });
                 that.ui.parentTag.html(str);

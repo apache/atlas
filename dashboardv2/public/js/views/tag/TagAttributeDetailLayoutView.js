@@ -44,7 +44,9 @@ define(['require',
                 addAttribute: '[data-id="addAttribute"]',
                 description: '[data-id="description"]',
                 publishButton: '[data-id="publishButton"]',
-                showSuperType: "[data-id='showSuperType']"
+                superType: "[data-id='superType']",
+                subType: "[data-id='subType']",
+                entityType: "[data-id='entityType']"
             },
             /** ui events hash */
             events: function() {
@@ -58,7 +60,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'enumDefCollection'));
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
@@ -98,10 +100,21 @@ define(['require',
                 this.ui.publishButton.prop('disabled', true);
             },
             renderTagDetail: function() {
-                var attributeData = "",
-                    supertypeData = "",
+                var that = this,
+                    attributeData = "",
                     attributeDefs = this.model.get("attributeDefs"),
-                    superTypeArr = this.model.get('superTypes');
+                    genrateType = function(options) {
+                        var data = options.data;
+                        _.each(data, function(value, key) {
+                            var str = "",
+                                el = that.ui[key];
+                            _.each(value, function(name) {
+                                el.parents("." + key).show();
+                                str += ' <a class="btn btn-action btn-sm" href="' + (key === "entityType" ? "javascript:void(0)" : "#!/tag/tagAttribute/" + name) + '">' + name + '</a>';
+                            });
+                            el.html(str);
+                        });
+                    }
                 this.ui.title.html('<span>' + (Utils.getName(this.model.toJSON())) + '</span>');
                 if (this.model.get("description")) {
                     this.ui.description.text(this.model.get("description"));
@@ -115,13 +128,14 @@ define(['require',
                     });
                     this.ui.showAttribute.html(attributeData);
                 }
-                if (superTypeArr.length > 0) {
-                    this.$(".superType").show();
-                    _.each(superTypeArr, function(value, key) {
-                        supertypeData += ' <a class="btn btn-action btn-sm" href="#!/tag/tagAttribute/' + value + '">' + value + '</a>';
-                    });
-                    this.ui.showSuperType.html(supertypeData);
-                }
+
+                genrateType({
+                    data: {
+                        superType: this.model.get('superTypes'),
+                        subType: this.model.get('subTypes'),
+                        entityType: this.model.get('entityTypes'),
+                    }
+                });
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.$('.tagDetail'));
             },
             onSaveButton: function(saveObject, message) {
@@ -174,7 +188,9 @@ define(['require',
                         'modules/Modal'
                     ],
                     function(AddTagAttributeView, Modal) {
-                        var view = new AddTagAttributeView();
+                        var view = new AddTagAttributeView({
+                            "enumDefCollection": that.enumDefCollection
+                        });
                         that.modal = new Modal({
                             title: 'Add Attribute',
                             content: view,
@@ -274,7 +290,7 @@ define(['require',
                     'views/tag/CreateTagLayoutView',
                     'modules/Modal'
                 ], function(CreateTagLayoutView, Modal) {
-                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag });
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag, 'enumDefCollection': enumDefCollection });
                     that.modal = new Modal({
                         title: 'Edit Tag',
                         content: view,

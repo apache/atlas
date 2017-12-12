@@ -190,18 +190,14 @@ define(['require',
             },
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
-                    this.renderTypeTagList();
-                    this.setValues();
-                    this.ui.typeLov.select2({
-                        placeholder: "Select",
-                        allowClear: true
-                    });
-                    this.ui.tagLov.select2({
-                        placeholder: "Select",
-                        allowClear: true
-                    });
-                    this.checkForButtonVisiblity();
+                    this.initializeValues();
                 }, this);
+            },
+            initializeValues: function() {
+                this.renderTypeTagList();
+                this.setValues();
+                this.checkForButtonVisiblity();
+                this.renderSaveSearch();
             },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
@@ -312,17 +308,7 @@ define(['require',
             },
             onRender: function() {
                 // array of tags which is coming from url
-                this.renderTypeTagList();
-                this.setValues();
-                this.ui.typeLov.select2({
-                    placeholder: "Select",
-                    allowClear: true
-                });
-                this.ui.tagLov.select2({
-                    placeholder: "Select",
-                    allowClear: true
-                });
-                this.renderSaveSearch();
+                this.initializeValues();
             },
             updateQueryObject: function(param) {
                 if (param && param.searchType) {
@@ -351,7 +337,7 @@ define(['require',
             },
             onRefreshButton: function() {
                 this.fetchCollection();
-                //to check url query param contain type or not 
+                //to check url query param contain type or not
                 var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
                 if (this.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
                     this.searchVent.trigger('search:refresh');
@@ -426,10 +412,7 @@ define(['require',
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
                     tagStr = typeStr;
-                this.typeHeaders.fullCollection.comparator = function(model) {
-                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
-                }
-                this.typeHeaders.fullCollection.sort().each(function(model) {
+                this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY') {
                         typeStr += '<option>' + (name) + '</option>';
@@ -443,6 +426,14 @@ define(['require',
                 });
                 that.ui.typeLov.html(typeStr);
                 that.ui.tagLov.html(tagStr);
+                this.ui.typeLov.select2({
+                    placeholder: "Select",
+                    allowClear: true
+                });
+                this.ui.tagLov.select2({
+                    placeholder: "Select",
+                    allowClear: true
+                });
             },
             setValues: function(paramObj) {
                 var arr = [],

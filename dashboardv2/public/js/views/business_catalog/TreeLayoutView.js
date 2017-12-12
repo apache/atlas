@@ -88,7 +88,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'url', 'viewBased'));
+                _.extend(this, _.pick(options, 'url', 'viewBased', 'classificationDefCollection'));
                 this.parentCollection = new VCatalogList();
                 this.childCollection = new VCatalogList();
                 this.taxanomy = new VCatalogList();
@@ -120,6 +120,10 @@ define(['require',
                 this.listenTo(this.parentCollection, 'error', function(model, response) {
                     this.hideLoader();
                 }, this);
+                $('body').on('click', '.termPopoverOptions li', function(e) {
+                    that.$('.termPopover').popover('hide');
+                    that[$(this).find('a').data('fn')](e);
+                });
             },
             onRender: function() {
                 var that = this;
@@ -400,11 +404,9 @@ define(['require',
                 }
                 this.hideLoader();
                 if (this.viewBased) {
-
-
                     Utils.generatePopover({
                         el: this.$('.termPopover'),
-                        container: this.$el,
+                        contentClass: 'termPopoverOptions',
                         popoverOptions: {
                             content: function() {
                                 var lis = "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Create Subterm</a></li>";
@@ -416,10 +418,6 @@ define(['require',
                                 return "<ul>" + lis + "</ul>";
                             }
                         }
-                    }).parent('.tools').off('click').on('click', 'li', function(e) {
-                        e.stopPropagation();
-                        that.$('.termPopover').popover('hide');
-                        that[$(this).find('a').data('fn')](e);
                     });
                 }
             },
@@ -470,6 +468,7 @@ define(['require',
                 view.model.set({ description: view.ui.termDetail.val() }).save(null, {
                     success: function(model, response) {
                         that.create = true;
+                        that.classificationDefCollection.fetch({reset:true});
                         that.fetchTaxanomyCollections();
                         that.fetchCollection(url, true);
                         Utils.notifySuccess({
@@ -520,6 +519,7 @@ define(['require',
                                     updateTabState: true
                                 });
                             }
+                            that.classificationDefCollection.fetch({reset:true});
                             that.fetchCollection(termURL, true);
                         },
                         cust_error: function(model, response) {

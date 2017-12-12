@@ -185,6 +185,7 @@ define(['require',
                     var view = new AddTagModalView({
                         guid: that.guid,
                         modalCollection: that.collection,
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
                     // view.saveTagData = function() {
@@ -249,10 +250,11 @@ define(['require',
                 ], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         'tagModel': tagModel,
-                        callback: function() {
+                        'callback': function() {
                             that.fetchCollection();
                         },
-                        guid: that.guid,
+                        'guid': that.guid,
+                        'collection': that.classificationDefCollection,
                         'enumDefCollection': that.enumDefCollection
                     });
                 });

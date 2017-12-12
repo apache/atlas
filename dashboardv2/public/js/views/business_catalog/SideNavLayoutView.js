@@ -103,7 +103,8 @@ define(['require',
             var that = this;
             require(['views/business_catalog/BusinessCatalogLayoutView'], function(BusinessCatalogLayoutView) {
                 that.RBusinessCatalogLayoutView.show(new BusinessCatalogLayoutView({
-                    url: that.url
+                    url: that.url,
+                    classificationDefCollection: that.classificationDefCollection,
                 }));
             });
         },
@@ -114,6 +115,7 @@ define(['require',
                     collection: that.classificationDefCollection,
                     tag: that.tag,
                     value: that.value,
+                    enumDefCollection: that.enumDefCollection,
                     typeHeaders: that.typeHeaders
                 }));
             });

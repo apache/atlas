@@ -42,7 +42,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'url'));
+                _.extend(this, _.pick(options, 'url', 'classificationDefCollection'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -53,7 +53,8 @@ define(['require',
                 require(['views/business_catalog/TreeLayoutView'], function(TreeLayoutView) {
                     that.RTreeLayoutView.show(new TreeLayoutView({
                         url: that.url,
-                        viewBased: true
+                        viewBased: true,
+                        classificationDefCollection: that.classificationDefCollection,
                     }));
                 });
             },

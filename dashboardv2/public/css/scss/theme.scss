@@ -145,6 +145,11 @@ a {
     }
 }
 
+.cursor-default,
+.cursor-default a {
+    cursor: default;
+}
+
 .blue-link {
     color: $color_havelock_blue_approx;
     &:focus {

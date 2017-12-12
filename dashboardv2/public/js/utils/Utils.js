@@ -306,19 +306,20 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         },
         isInitial: function() {
-            return this.getQueryUrl().firstValue == undefined ? true : false;
+            return this.getQueryUrl().firstValue == undefined;
         },
         isTagTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "tag" ? true : false;
+            var quey = this.getQueryUrl(url);
+            return quey.firstValue == "tag" || quey.queyParams[0] == "#!/tag";
         },
         isTaxonomyTab: function(url) {
             return this.getQueryUrl(url).firstValue == "taxonomy" ? true : false;
         },
         isSearchTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "search" ? true : false;
+            return this.getQueryUrl(url).firstValue == "search";
         },
         isDetailPage: function(url) {
-            return this.getQueryUrl(url).firstValue == "detailPage" ? true : false;
+            return this.getQueryUrl(url).firstValue == "detailPage";
         },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;

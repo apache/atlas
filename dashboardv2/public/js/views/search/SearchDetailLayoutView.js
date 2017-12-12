@@ -43,7 +43,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'searchTableColumns'));
             },
             bindEvents: function() {},
             onRender: function() {

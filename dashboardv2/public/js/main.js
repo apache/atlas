@@ -160,7 +160,7 @@ require.config({
         'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
         'nvd3': 'libs/nvd3/nv.d3.min',
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
-        'table-dragger' : 'libs/table-dragger/table-dragger'
+        'table-dragger': 'libs/table-dragger/table-dragger'
     },
 
     /**
@@ -240,6 +240,10 @@ require(['App',
     this.entityDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.entityDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.entityDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
@@ -247,6 +251,10 @@ require(['App',
     this.typeHeaders.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.typeHeaders.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            }
+            that.typeHeaders.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
@@ -254,6 +262,10 @@ require(['App',
     this.enumDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.enumDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.enumDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
@@ -261,6 +273,10 @@ require(['App',
     this.classificationDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.classificationDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.classificationDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }

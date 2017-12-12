@@ -361,6 +361,7 @@ define(['require',
                         },
                         showLoader: that.showLoader.bind(that),
                         hideLoader: that.hideLoader.bind(that),
+                        collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
                     });
                     view.modal.on('ok', function() {

@@ -234,10 +234,7 @@ define(['require',
                     }
                 } else {
                     var str = '<option disabled="disabled" selected>--Select entity-type--</option>';
-                    this.entityDefCollection.fullCollection.comparator = function(model) {
-                        return model.get('name');
-                    }
-                    this.entityDefCollection.fullCollection.sort().each(function(val) {
+                    this.entityDefCollection.fullCollection.each(function(val) {
                         var name = Utils.getName(val.toJSON());
                         if (Globals.entityTypeConfList) {
                             if (_.isEmptyArray(Globals.entityTypeConfList)) {
@@ -400,9 +397,9 @@ define(['require',
             },
             getContainer: function(value) {
                 var entityLabel = this.capitalize(value.name);
-                return '<div class="row form-group ' + value.isOptional + '"><span class="col-md-3">' +
+                return '<div class="row form-group ' + value.isOptional + '"><span class="col-sm-3">' +
                     '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
-                    '<span class="col-md-9">' + (this.getElement(value)) +
+                    '<span class="col-sm-9">' + (this.getElement(value)) +
                     '</input></span></div>';
             },
             getFieldSet: function(name, alloptional, attributeInput) {
