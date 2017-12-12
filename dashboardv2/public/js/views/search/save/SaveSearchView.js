@@ -78,7 +78,7 @@ define(['require',
         },
         bindEvents: function() {
             var that = this;
-            this.listenTo(this.collection, "add reset error", function(model, collection) {
+            this.listenTo(this.collection, "add reset error remove", function(model, collection) {
                 this.$('.fontLoader-relative').hide();
                 if (this.collection && this.collection.length) {
                     this.$(".noFavoriteSearch").hide();
@@ -192,7 +192,7 @@ define(['require',
                 wait: true,
                 success: function(model, data) {
                     if (that.collection) {
-                        that.collection.remove(data);
+                        that.collection.remove(model);
                     }
                     Utils.notifySuccess({
                         content: options.model.get('name') + Messages.deleteSuccessMessage

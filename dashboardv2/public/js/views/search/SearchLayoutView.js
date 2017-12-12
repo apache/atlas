@@ -125,6 +125,12 @@ define(['require',
                         saveSearchAdvanceCollection = new VSearchList(),
                         saveSearchCollection = new VSearchList();
                     saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+                    saveSearchBaiscCollection.fullCollection.comparator = function(model) {
+                        return model.get('name').toLowerCase();
+                    }
+                    saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                        return model.get('name').toLowerCase();
+                    }
                     var obj = {
                         value: that.value,
                         searchVent: that.searchVent,
@@ -163,18 +169,18 @@ define(['require',
                     }
                     that.RSaveSearchBasic.show(new SaveSearchView(_.extend(obj, {
                         isBasic: true,
-                        collection: saveSearchBaiscCollection
+                        collection: saveSearchBaiscCollection.fullCollection
                     })));
                     that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
                         isBasic: false,
-                        collection: saveSearchAdvanceCollection
+                        collection: saveSearchAdvanceCollection.fullCollection
                     })));
 
                     function fetchSaveSearchCollection() {
                         saveSearchCollection.fetch({
                             success: function(collection, data) {
-                                saveSearchAdvanceCollection.reset(_.where(data, { "searchType": "ADVANCED" }));
-                                saveSearchBaiscCollection.reset(_.where(data, { "searchType": "BASIC" }));
+                                saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { "searchType": "ADVANCED" }));
+                                saveSearchBaiscCollection.fullCollection.reset(_.where(data, { "searchType": "BASIC" }));
                             },
                             silent: true
                         });

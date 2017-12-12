@@ -543,8 +543,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (attrObj) {
                 _.each(attrObj, function(obj) {
                     var type = (obj.type || obj.attributeType),
-                        value = _.trim(obj.value || obj.attributeValue),
-                        url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong ? Date.parse(value) : value)];
+                        //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
+                        value = (_.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
+                        url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
                     if (type) {
                         url.push(type);
                     }
@@ -597,7 +598,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (temp[3]) {
                         finalObj['type'] = temp[3];
                     }
-                    finalObj.value = finalObj.type === 'date' && formatDate ? moment(parseInt(finalObj.value)).format('MM/DD/YYYY h:mm A') : finalObj.value;
+                    finalObj.value = finalObj.type === 'date' && formatDate && finalObj.value.length ? moment(parseInt(finalObj.value)).format('MM/DD/YYYY h:mm A') : finalObj.value;
                     attrObj.push(finalObj);
                 });
                 return attrObj;
