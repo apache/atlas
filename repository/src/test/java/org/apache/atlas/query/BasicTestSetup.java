@@ -23,17 +23,18 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,17 +47,24 @@ public abstract class BasicTestSetup {
     protected static final String HIVE_TABLE_TYPE   = "hive_table";
     private static final   String COLUMN_TYPE       = "hive_column";
     private static final   String HIVE_PROCESS_TYPE = "hive_process";
-    private static final   String STORAGE_DESC_TYPE = "StorageDesc";
-    private static final   String VIEW_TYPE         = "View";
-    private static final   String PARTITION_TYPE    = "hive_partition";
-    protected static final String DATASET_SUBTYPE   = "dataset_subtype";
+    private static final   String STORAGE_DESC_TYPE = "hive_storagedesc";
+    private static final   String VIEW_TYPE         = "hive_process";
+    protected static final String DATASET_SUBTYPE   = "Asset";
+
+    public static final String DIMENSION_CLASSIFICATION    = "Dimension";
+    public static final String FACT_CLASSIFICATION         = "Fact";
+    public static final String PII_CLASSIFICATION          = "PII";
+    public static final String METRIC_CLASSIFICATION       = "Metric";
+    public static final String ETL_CLASSIFICATION          = "ETL";
+    public static final String JDBC_CLASSIFICATION         = "JdbcAccess";
+    public static final String LOGDATA_CLASSIFICATION      = "Log Data";
 
     @Inject
-    protected AtlasTypeRegistry atlasTypeRegistry;
+    protected AtlasTypeRegistry typeRegistry;
     @Inject
-    protected AtlasTypeDefStore atlasTypeDefStore;
+    protected AtlasTypeDefStore typeDefStore;
     @Inject
-    protected AtlasEntityStore  atlasEntityStore;
+    protected AtlasEntityStore entityStore;
 
     private boolean baseLoaded = false;
 
@@ -67,9 +75,8 @@ public abstract class BasicTestSetup {
     }
 
     private void loadBaseModels() {
-        // Load all base models
         try {
-            loadModelFromJson("0000-Area0/0010-base_model.json", atlasTypeDefStore, atlasTypeRegistry);
+            loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
             baseLoaded = true;
         } catch (IOException | AtlasBaseException e) {
             fail("Base model setup is required for test to run");
@@ -82,7 +89,7 @@ public abstract class BasicTestSetup {
         }
 
         try {
-            loadModelFromJson("1000-Hadoop/1030-hive_model.json", atlasTypeDefStore, atlasTypeRegistry);
+            loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
         } catch (IOException | AtlasBaseException e) {
             fail("Hive model setup is required for test to run");
         }
@@ -90,7 +97,7 @@ public abstract class BasicTestSetup {
         AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities = hiveTestEntities();
 
         try {
-            atlasEntityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
+            entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
         } catch (AtlasBaseException e) {
             fail("Hive instance setup is needed for test to run");
         }
@@ -105,7 +112,7 @@ public abstract class BasicTestSetup {
         AtlasTypesDef employeeTypes = TestUtilsV2.defineDeptEmployeeTypes();
 
         try {
-            atlasTypeDefStore.createTypesDef(employeeTypes);
+            typeDefStore.createTypesDef(employeeTypes);
         } catch (AtlasBaseException e) {
             fail("Employee Type setup is required");
         }
@@ -114,7 +121,7 @@ public abstract class BasicTestSetup {
         AtlasEntity.AtlasEntitiesWithExtInfo deptEg2 = TestUtilsV2.createDeptEg2();
 
         try {
-            atlasEntityStore.createOrUpdate(new AtlasEntityStream(deptEg2), false);
+            entityStore.createOrUpdate(new AtlasEntityStream(deptEg2), false);
         } catch (AtlasBaseException e) {
             fail("Employee entity setup should've passed");
         }
@@ -122,9 +129,10 @@ public abstract class BasicTestSetup {
 
     public AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities() {
         List<AtlasEntity> entities = new ArrayList<>();
+        
+        createClassificationTypes();
 
         AtlasEntity salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
-
         entities.add(salesDB);
 
         AtlasEntity sd =
@@ -133,18 +141,20 @@ public abstract class BasicTestSetup {
         entities.add(sd);
 
         List<AtlasEntity> salesFactColumns = ImmutableList
-                                                     .of(column("time_id", "int", "time id"),
-                                                         column("product_id", "int", "product id"),
-                                                         column("customer_id", "int", "customer id", "PII"),
-                                                         column("sales", "double", "product id", "Metric"));
+                .of(column("time_id", "int", "time id"),
+                        column("product_id", "int", "product id"),
+                        column("customer_id", "int", "customer id", "PII"),
+                        column("sales", "double", "product id", "Metric"));
         entities.addAll(salesFactColumns);
 
         AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
         entities.add(salesFact);
 
         List<AtlasEntity> logFactColumns = ImmutableList
-                                                   .of(column("time_id", "int", "time id"), column("app_id", "int", "app id"),
-                                                       column("machine_id", "int", "machine id"), column("log", "string", "log data", "Log Data"));
+                    .of(column("time_id", "int", "time id"),
+                        column("app_id", "int", "app id"),
+                        column("machine_id", "int", "machine id"),
+                        column("log", "string", "log data", "Log Data"));
         entities.addAll(logFactColumns);
 
         List<AtlasEntity> timeDimColumns = ImmutableList
@@ -193,9 +203,9 @@ public abstract class BasicTestSetup {
         entities.add(loggingFactDaily);
 
         List<AtlasEntity> productDimColumns = ImmutableList
-                                                      .of(column("product_id", "int", "product id"),
-                                                          column("product_name", "string", "product name"),
-                                                          column("brand_name", "int", "brand name"));
+                    .of(column("product_id", "int", "product id"),
+                        column("product_name", "string", "product name"),
+                        column("brand_name", "int", "brand name"));
         entities.addAll(productDimColumns);
 
         AtlasEntity productDim =
@@ -238,24 +248,46 @@ public abstract class BasicTestSetup {
                                          ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
         entities.add(loadLogsMonthly);
 
-        AtlasEntity partition = partition(new ArrayList() {{
-            add("2015-01-01");
-        }}, salesFactDaily);
-        entities.add(partition);
-
         AtlasEntity datasetSubType = datasetSubType("dataSetSubTypeInst1", "testOwner");
         entities.add(datasetSubType);
 
         return new AtlasEntity.AtlasEntitiesWithExtInfo(entities);
     }
 
+    protected void createClassificationTypes() {
+        List<AtlasClassificationDef> cds =  Arrays.asList(new AtlasClassificationDef(DIMENSION_CLASSIFICATION, "Dimension Classification", "1.0"),
+                new AtlasClassificationDef(FACT_CLASSIFICATION, "Fact Classification", "1.0"),
+                new AtlasClassificationDef(PII_CLASSIFICATION, "PII Classification", "1.0"),
+                new AtlasClassificationDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0"),
+                new AtlasClassificationDef(ETL_CLASSIFICATION, "ETL Classification", "1.0"),
+                new AtlasClassificationDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0"),
+                new AtlasClassificationDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0"));
+
+        AtlasTypesDef tds = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                cds,
+                Collections.<AtlasEntityDef>emptyList());
+        createUpdateClassificationDef(tds);
+    }
+
+    private void createUpdateClassificationDef(AtlasTypesDef td) {
+        try {
+            typeDefStore.createTypesDef(td);
+        }
+        catch(Exception e) {
+            fail("Error creating classifications definitions.");
+        }
+    }
+
     AtlasEntity database(String name, String description, String owner, String locationUri, String... traitNames) {
         AtlasEntity database = new AtlasEntity(DATABASE_TYPE);
         database.setAttribute("name", name);
+        database.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
         database.setAttribute("description", description);
         database.setAttribute("owner", owner);
         database.setAttribute("locationUri", locationUri);
         database.setAttribute("createTime", System.currentTimeMillis());
+        database.setAttribute("clusterName", "cl1");
         database.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
 
         return database;
@@ -264,10 +296,11 @@ public abstract class BasicTestSetup {
     protected AtlasEntity storageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed, List<AtlasEntity> columns) {
         AtlasEntity storageDescriptor = new AtlasEntity(STORAGE_DESC_TYPE);
         storageDescriptor.setAttribute("location", location);
+        storageDescriptor.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + location);
         storageDescriptor.setAttribute("inputFormat", inputFormat);
         storageDescriptor.setAttribute("outputFormat", outputFormat);
         storageDescriptor.setAttribute("compressed", compressed);
-        storageDescriptor.setAttribute("cols", columns);
+        storageDescriptor.setAttribute("cols", getAtlasObjectIds(columns));
 
         return storageDescriptor;
     }
@@ -275,7 +308,8 @@ public abstract class BasicTestSetup {
     protected AtlasEntity column(String name, String dataType, String comment, String... traitNames) {
         AtlasEntity column = new AtlasEntity(COLUMN_TYPE);
         column.setAttribute("name", name);
-        column.setAttribute("dataType", dataType);
+        column.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
+        column.setAttribute("type", dataType);
         column.setAttribute("comment", comment);
         column.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
 
@@ -295,27 +329,42 @@ public abstract class BasicTestSetup {
         table.setAttribute("lastAccessTime", System.currentTimeMillis());
         table.setAttribute("retention", System.currentTimeMillis());
 
-        table.setAttribute("db", db);
-        // todo - uncomment this, something is broken
-        table.setAttribute("sd", sd);
-        table.setAttribute("columns", columns);
+        table.setAttribute("db", getAtlasObjectId(db));
+        table.setAttribute("sd", getAtlasObjectId(sd));
+
+        table.setAttribute("columns", getAtlasObjectIds(columns));
         table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
 
         return table;
     }
 
-    protected AtlasEntity loadProcess(String name, String description, String user, List<AtlasEntity> inputTables, List<AtlasEntity> outputTables,
+    private List<AtlasObjectId> getAtlasObjectIds(List<AtlasEntity> columns) {
+        List<AtlasObjectId> objIds = new ArrayList<>();
+        for (AtlasEntity e : columns) {
+            AtlasObjectId oid = getAtlasObjectId(e);
+            objIds.add(oid);
+        }
+        return objIds;
+    }
+
+    private AtlasObjectId getAtlasObjectId(AtlasEntity e) {
+        return new AtlasObjectId(e.getGuid(), e.getTypeName());
+    }
+
+    protected AtlasEntity loadProcess(String name, String description, String user,
+                                      List<AtlasEntity> inputTables, List<AtlasEntity> outputTables,
                                       String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames) {
         AtlasEntity process = new AtlasEntity(HIVE_PROCESS_TYPE);
         process.setAttribute("name", name);
         process.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         process.setAttribute("description", description);
-        process.setAttribute("user", user);
+        process.setAttribute("userName", user);
         process.setAttribute("startTime", System.currentTimeMillis());
         process.setAttribute("endTime", System.currentTimeMillis() + 10000);
 
-        process.setAttribute("inputs", inputTables);
-        process.setAttribute("outputs", outputTables);
+        process.setAttribute("operationType", "load");
+        process.setAttribute("inputs", getAtlasObjectIds(inputTables));
+        process.setAttribute("outputs", getAtlasObjectIds(outputTables));
 
         process.setAttribute("queryText", queryText);
         process.setAttribute("queryPlan", queryPlan);
@@ -331,20 +380,20 @@ public abstract class BasicTestSetup {
         AtlasEntity view = new AtlasEntity(VIEW_TYPE);
         view.setAttribute("name", name);
         view.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        view.setAttribute("db", dbId);
+        view.setAttribute("userName", "testUser");
+        view.setAttribute("startTime", System.currentTimeMillis());
+        view.setAttribute("endTime", System.currentTimeMillis() + 10000);
 
-        view.setAttribute("inputTables", inputTables);
+        view.setAttribute("operationType", "view");
+        view.setAttribute("query", "create table as select");
+        view.setAttribute("queryText", "create table as select");
+        view.setAttribute("queryPlan", "viewPlan");
+        view.setAttribute("queryId", "view1");
+        view.setAttribute("db", getAtlasObjectId(dbId));
+        view.setAttribute("inputs", getAtlasObjectIds(inputTables));
         view.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
 
         return view;
-    }
-
-    AtlasEntity partition(List<String> values, AtlasEntity table, String... traitNames) {
-        AtlasEntity partition = new AtlasEntity(PARTITION_TYPE);
-        partition.setAttribute("values", values);
-        partition.setAttribute("table", table);
-        partition.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
-        return partition;
     }
 
     AtlasEntity datasetSubType(final String name, String owner) {

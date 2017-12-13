@@ -1,4 +1,4 @@
-// Generated from AtlasDSLLexer.g4 by ANTLR 4.7
+// Generated from repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLLexer.g4 by ANTLR 4.7
 package org.apache.atlas.query.antlr4;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;

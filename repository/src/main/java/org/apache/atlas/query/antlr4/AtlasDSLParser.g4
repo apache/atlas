@@ -20,8 +20,6 @@ parser grammar AtlasDSLParser;
 
 options { tokenVocab=AtlasDSLLexer; }
 
-// Start of rules, bottom-up (rules at the end are built using the core rules)
-
 // Core rules
 identifier: ID ;
 
@@ -98,8 +96,6 @@ selectClause: K_SELECT selectExpr ;
 
 singleQrySrc: fromClause | whereClause | fromExpression | expr ;
 
-loopExpression: K_LOOP K_LPAREN query K_RPAREN NUMBER? (K_AS identifier)? ;
-
 groupByExpression: K_GROUPBY K_LPAREN selectExpr K_RPAREN ;
 
 commaDelimitedQueries: singleQrySrc (K_COMMA singleQrySrc)* ;
@@ -108,10 +104,7 @@ spaceDelimitedQueries: singleQrySrc singleQrySrc* ;
 
 querySrc: commaDelimitedQueries | spaceDelimitedQueries ;
 
-query: querySrc loopExpression?
-                groupByExpression?
+query: querySrc groupByExpression?
                 selectClause?
                 orderByExpr?
                 limitOffset? ;
-
-queryWithPath: query (K_WITHPATH)? ;

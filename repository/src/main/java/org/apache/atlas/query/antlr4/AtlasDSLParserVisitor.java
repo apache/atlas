@@ -1,4 +1,4 @@
-// Generated from AtlasDSLParser.g4 by ANTLR 4.7
+// Generated from repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4 by ANTLR 4.7
 package org.apache.atlas.query.antlr4;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -209,12 +209,6 @@ public interface AtlasDSLParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSingleQrySrc(AtlasDSLParser.SingleQrySrcContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link AtlasDSLParser#loopExpression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLoopExpression(AtlasDSLParser.LoopExpressionContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link AtlasDSLParser#groupByExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -244,10 +238,4 @@ public interface AtlasDSLParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitQuery(AtlasDSLParser.QueryContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link AtlasDSLParser#queryWithPath}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitQueryWithPath(AtlasDSLParser.QueryWithPathContext ctx);
 }

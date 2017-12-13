@@ -24,7 +24,10 @@ import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.classification.InterfaceAudience;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.query.QueryParams;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
@@ -68,6 +71,7 @@ public class MetadataDiscoveryResource {
     private final  boolean       gremlinSearchEnabled;
     private static Configuration applicationProperties          = null;
     private static final String  ENABLE_GREMLIN_SEARCH_PROPERTY = "atlas.search.gremlin.enable";
+    private final AtlasDiscoveryService atlasDiscoveryService;
 
     /**
      * Created by the Guice ServletModule and injected with the
@@ -76,7 +80,8 @@ public class MetadataDiscoveryResource {
      * @param configuration configuration
      */
     @Inject
-    public MetadataDiscoveryResource(Configuration configuration) {
+    public MetadataDiscoveryResource(AtlasDiscoveryService atlasDiscoveryService, Configuration configuration) {
+        this.atlasDiscoveryService = atlasDiscoveryService;
         applicationProperties  = configuration;
         gremlinSearchEnabled   = applicationProperties != null && applicationProperties.getBoolean(ENABLE_GREMLIN_SEARCH_PROPERTY, false);
     }
@@ -149,7 +154,8 @@ public class MetadataDiscoveryResource {
 
             dslQuery = ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByDSL(dslQuery, queryParams);
+            AtlasSearchResult result = atlasDiscoveryService.searchUsingDslQuery(dslQuery, queryParams.limit(), queryParams.offset());
+            final String jsonResultStr = AtlasType.toJson(result.getEntities());
 
             ObjectNode response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
 
@@ -195,62 +201,6 @@ public class MetadataDiscoveryResource {
     }
 
     /**
-     * Search using raw gremlin query format.
-     *
-     * @param gremlinQuery search query in raw gremlin format.
-     * @return JSON representing the type and results.
-     */
-    @GET
-    @Path("search/gremlin")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    @InterfaceAudience.Private
-    public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingGremlinQuery({})", gremlinQuery);
-        }
-
-        AtlasPerfTracer perf = null;
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingGremlinQuery(" + gremlinQuery + ")");
-            }
-
-            if (!gremlinSearchEnabled) {
-                throw new Exception("Gremlin search is not enabled.");
-            }
-
-            gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
-            final List<Map<String, String>> results = new ArrayList<>(); // TODO-typeSystem-removal: discoveryService.searchByGremlin(gremlinQuery);
-
-            ObjectNode response = AtlasJson.createV1ObjectNode();
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.QUERY, gremlinQuery);
-            response.put(AtlasClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
-
-            response.putPOJO(AtlasClient.RESULTS, results);
-            response.put(AtlasClient.COUNT, results.size());
-
-            return Response.ok(response).build();
-        } catch (IllegalArgumentException e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (WebApplicationException e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw e;
-        } catch (Throwable e) {
-            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingGremlinQuery({})", gremlinQuery);
-            }
-        }
-    }
-
-    /**
      * Search using full text search.
      *
      * @param query search query.
@@ -277,7 +227,8 @@ public class MetadataDiscoveryResource {
 
             query = ParamChecker.notEmpty(query, "query cannot be null or empty");
             QueryParams queryParams = validateQueryParams(limit, offset);
-            final String jsonResultStr = ""; // TODO-typeSystem-removal: discoveryService.searchByFullText(query, queryParams);
+            AtlasSearchResult result = atlasDiscoveryService.searchUsingFullTextQuery(query, false, queryParams.limit(), queryParams.offset());
+            final String jsonResultStr = AtlasType.toJson(result.getEntities());
             ArrayNode rowsJsonArr = AtlasJson.parseToV1ArrayNode(jsonResultStr);
 
             ObjectNode response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();

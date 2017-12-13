@@ -1,4 +1,4 @@
-// Generated from AtlasDSLParser.g4 by ANTLR 4.7
+// Generated from repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4 by ANTLR 4.7
 package org.apache.atlas.query.antlr4;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -34,9 +34,9 @@ public class AtlasDSLParser extends Parser {
 		RULE_compE = 20, RULE_expr = 21, RULE_limitOffset = 22, RULE_selectExpression = 23, 
 		RULE_selectExpr = 24, RULE_aliasExpr = 25, RULE_orderByExpr = 26, RULE_fromSrc = 27, 
 		RULE_whereClause = 28, RULE_fromExpression = 29, RULE_fromClause = 30, 
-		RULE_selectClause = 31, RULE_singleQrySrc = 32, RULE_loopExpression = 33, 
-		RULE_groupByExpression = 34, RULE_commaDelimitedQueries = 35, RULE_spaceDelimitedQueries = 36, 
-		RULE_querySrc = 37, RULE_query = 38, RULE_queryWithPath = 39;
+		RULE_selectClause = 31, RULE_singleQrySrc = 32, RULE_groupByExpression = 33, 
+		RULE_commaDelimitedQueries = 34, RULE_spaceDelimitedQueries = 35, RULE_querySrc = 36, 
+		RULE_query = 37;
 	public static final String[] ruleNames = {
 		"identifier", "operator", "sortOrder", "valueArray", "literal", "limitClause", 
 		"offsetClause", "atomE", "multiERight", "multiE", "arithERight", "arithE", 
@@ -44,8 +44,8 @@ public class AtlasDSLParser extends Parser {
 		"minClause", "sumClause", "exprRight", "compE", "expr", "limitOffset", 
 		"selectExpression", "selectExpr", "aliasExpr", "orderByExpr", "fromSrc", 
 		"whereClause", "fromExpression", "fromClause", "selectClause", "singleQrySrc", 
-		"loopExpression", "groupByExpression", "commaDelimitedQueries", "spaceDelimitedQueries", 
-		"querySrc", "query", "queryWithPath"
+		"groupByExpression", "commaDelimitedQueries", "spaceDelimitedQueries", 
+		"querySrc", "query"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
@@ -129,7 +129,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(80);
+			setState(76);
 			match(ID);
 			}
 		}
@@ -170,7 +170,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(82);
+			setState(78);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << K_LIKE) | (1L << K_LT) | (1L << K_LTE) | (1L << K_EQ) | (1L << K_NEQ) | (1L << K_GT) | (1L << K_GTE))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -214,7 +214,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(84);
+			setState(80);
 			_la = _input.LA(1);
 			if ( !(_la==K_ASC || _la==K_DESC) ) {
 			_errHandler.recoverInline(this);
@@ -266,27 +266,27 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(86);
+			setState(82);
 			match(K_LBRACKET);
-			setState(87);
+			setState(83);
 			match(STRING);
-			setState(92);
+			setState(88);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_COMMA) {
 				{
 				{
-				setState(88);
+				setState(84);
 				match(K_COMMA);
-				setState(89);
+				setState(85);
 				match(STRING);
 				}
 				}
-				setState(94);
+				setState(90);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(95);
+			setState(91);
 			match(K_RBRACKET);
 			}
 		}
@@ -324,27 +324,27 @@ public class AtlasDSLParser extends Parser {
 		LiteralContext _localctx = new LiteralContext(_ctx, getState());
 		enterRule(_localctx, 8, RULE_literal);
 		try {
-			setState(104);
+			setState(100);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case BOOL:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(97);
+				setState(93);
 				match(BOOL);
 				}
 				break;
 			case NUMBER:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(98);
+				setState(94);
 				match(NUMBER);
 				}
 				break;
 			case FLOATING_NUMBER:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(99);
+				setState(95);
 				match(FLOATING_NUMBER);
 				}
 				break;
@@ -352,18 +352,18 @@ public class AtlasDSLParser extends Parser {
 			case STRING:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(102);
+				setState(98);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case STRING:
 					{
-					setState(100);
+					setState(96);
 					match(STRING);
 					}
 					break;
 				case K_LBRACKET:
 					{
-					setState(101);
+					setState(97);
 					valueArray();
 					}
 					break;
@@ -407,9 +407,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(106);
+			setState(102);
 			match(K_LIMIT);
-			setState(107);
+			setState(103);
 			match(NUMBER);
 			}
 		}
@@ -444,9 +444,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(109);
+			setState(105);
 			match(K_OFFSET);
-			setState(110);
+			setState(106);
 			match(NUMBER);
 			}
 		}
@@ -488,7 +488,7 @@ public class AtlasDSLParser extends Parser {
 		AtomEContext _localctx = new AtomEContext(_ctx, getState());
 		enterRule(_localctx, 14, RULE_atomE);
 		try {
-			setState(120);
+			setState(116);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case NUMBER:
@@ -499,12 +499,12 @@ public class AtlasDSLParser extends Parser {
 			case STRING:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(114);
+				setState(110);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case ID:
 					{
-					setState(112);
+					setState(108);
 					identifier();
 					}
 					break;
@@ -514,7 +514,7 @@ public class AtlasDSLParser extends Parser {
 				case K_LBRACKET:
 				case STRING:
 					{
-					setState(113);
+					setState(109);
 					literal();
 					}
 					break;
@@ -526,11 +526,11 @@ public class AtlasDSLParser extends Parser {
 			case K_LPAREN:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(116);
+				setState(112);
 				match(K_LPAREN);
-				setState(117);
+				setState(113);
 				expr();
-				setState(118);
+				setState(114);
 				match(K_RPAREN);
 				}
 				break;
@@ -573,7 +573,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(122);
+			setState(118);
 			_la = _input.LA(1);
 			if ( !(_la==K_STAR || _la==K_DIV) ) {
 			_errHandler.recoverInline(this);
@@ -583,7 +583,7 @@ public class AtlasDSLParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(123);
+			setState(119);
 			atomE();
 			}
 		}
@@ -626,19 +626,19 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(125);
+			setState(121);
 			atomE();
-			setState(129);
+			setState(125);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_STAR || _la==K_DIV) {
 				{
 				{
-				setState(126);
+				setState(122);
 				multiERight();
 				}
 				}
-				setState(131);
+				setState(127);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -679,7 +679,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(132);
+			setState(128);
 			_la = _input.LA(1);
 			if ( !(_la==K_PLUS || _la==K_MINUS) ) {
 			_errHandler.recoverInline(this);
@@ -689,7 +689,7 @@ public class AtlasDSLParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(133);
+			setState(129);
 			multiE();
 			}
 		}
@@ -732,19 +732,19 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(135);
+			setState(131);
 			multiE();
-			setState(139);
+			setState(135);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_PLUS || _la==K_MINUS) {
 				{
 				{
-				setState(136);
+				setState(132);
 				arithERight();
 				}
 				}
-				setState(141);
+				setState(137);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -788,11 +788,11 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(142);
+			setState(138);
 			arithE();
-			setState(143);
+			setState(139);
 			operator();
-			setState(144);
+			setState(140);
 			arithE();
 			}
 		}
@@ -834,9 +834,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(146);
+			setState(142);
 			arithE();
-			setState(147);
+			setState(143);
 			_la = _input.LA(1);
 			if ( !(_la==K_ISA || _la==K_IS) ) {
 			_errHandler.recoverInline(this);
@@ -846,7 +846,7 @@ public class AtlasDSLParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(148);
+			setState(144);
 			identifier();
 			}
 		}
@@ -886,11 +886,11 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(150);
+			setState(146);
 			arithE();
-			setState(151);
+			setState(147);
 			match(K_HAS);
-			setState(152);
+			setState(148);
 			identifier();
 			}
 		}
@@ -926,11 +926,11 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(154);
+			setState(150);
 			match(K_COUNT);
-			setState(155);
+			setState(151);
 			match(K_LPAREN);
-			setState(156);
+			setState(152);
 			match(K_RPAREN);
 			}
 		}
@@ -969,13 +969,13 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(158);
+			setState(154);
 			match(K_MAX);
-			setState(159);
+			setState(155);
 			match(K_LPAREN);
-			setState(160);
+			setState(156);
 			expr();
-			setState(161);
+			setState(157);
 			match(K_RPAREN);
 			}
 		}
@@ -1014,13 +1014,13 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(163);
+			setState(159);
 			match(K_MIN);
-			setState(164);
+			setState(160);
 			match(K_LPAREN);
-			setState(165);
+			setState(161);
 			expr();
-			setState(166);
+			setState(162);
 			match(K_RPAREN);
 			}
 		}
@@ -1059,13 +1059,13 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(168);
+			setState(164);
 			match(K_SUM);
-			setState(169);
+			setState(165);
 			match(K_LPAREN);
-			setState(170);
+			setState(166);
 			expr();
-			setState(171);
+			setState(167);
 			match(K_RPAREN);
 			}
 		}
@@ -1104,7 +1104,7 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(173);
+			setState(169);
 			_la = _input.LA(1);
 			if ( !(_la==K_AND || _la==K_OR) ) {
 			_errHandler.recoverInline(this);
@@ -1114,7 +1114,7 @@ public class AtlasDSLParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(174);
+			setState(170);
 			compE();
 			}
 		}
@@ -1169,62 +1169,62 @@ public class AtlasDSLParser extends Parser {
 		CompEContext _localctx = new CompEContext(_ctx, getState());
 		enterRule(_localctx, 40, RULE_compE);
 		try {
-			setState(184);
+			setState(180);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,7,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(176);
+				setState(172);
 				comparisonClause();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(177);
+				setState(173);
 				isClause();
 				}
 				break;
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(178);
+				setState(174);
 				hasClause();
 				}
 				break;
 			case 4:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(179);
+				setState(175);
 				arithE();
 				}
 				break;
 			case 5:
 				enterOuterAlt(_localctx, 5);
 				{
-				setState(180);
+				setState(176);
 				countClause();
 				}
 				break;
 			case 6:
 				enterOuterAlt(_localctx, 6);
 				{
-				setState(181);
+				setState(177);
 				maxClause();
 				}
 				break;
 			case 7:
 				enterOuterAlt(_localctx, 7);
 				{
-				setState(182);
+				setState(178);
 				minClause();
 				}
 				break;
 			case 8:
 				enterOuterAlt(_localctx, 8);
 				{
-				setState(183);
+				setState(179);
 				sumClause();
 				}
 				break;
@@ -1269,19 +1269,19 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(186);
+			setState(182);
 			compE();
-			setState(190);
+			setState(186);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_AND || _la==K_OR) {
 				{
 				{
-				setState(187);
+				setState(183);
 				exprRight();
 				}
 				}
-				setState(192);
+				setState(188);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1323,14 +1323,14 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(193);
+			setState(189);
 			limitClause();
-			setState(195);
+			setState(191);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_OFFSET) {
 				{
-				setState(194);
+				setState(190);
 				offsetClause();
 				}
 			}
@@ -1374,16 +1374,16 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(197);
+			setState(193);
 			expr();
-			setState(200);
+			setState(196);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_AS) {
 				{
-				setState(198);
+				setState(194);
 				match(K_AS);
-				setState(199);
+				setState(195);
 				identifier();
 				}
 			}
@@ -1430,21 +1430,21 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(202);
+			setState(198);
 			selectExpression();
-			setState(207);
+			setState(203);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_COMMA) {
 				{
 				{
-				setState(203);
+				setState(199);
 				match(K_COMMA);
-				setState(204);
+				setState(200);
 				selectExpression();
 				}
 				}
-				setState(209);
+				setState(205);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1489,12 +1489,12 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(212);
+			setState(208);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case ID:
 				{
-				setState(210);
+				setState(206);
 				identifier();
 				}
 				break;
@@ -1504,16 +1504,16 @@ public class AtlasDSLParser extends Parser {
 			case K_LBRACKET:
 			case STRING:
 				{
-				setState(211);
+				setState(207);
 				literal();
 				}
 				break;
 			default:
 				throw new NoViableAltException(this);
 			}
-			setState(214);
+			setState(210);
 			match(K_AS);
-			setState(215);
+			setState(211);
 			identifier();
 			}
 		}
@@ -1554,16 +1554,16 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(217);
+			setState(213);
 			match(K_ORDERBY);
-			setState(218);
+			setState(214);
 			expr();
-			setState(220);
+			setState(216);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_ASC || _la==K_DESC) {
 				{
-				setState(219);
+				setState(215);
 				sortOrder();
 				}
 			}
@@ -1606,25 +1606,25 @@ public class AtlasDSLParser extends Parser {
 		FromSrcContext _localctx = new FromSrcContext(_ctx, getState());
 		enterRule(_localctx, 54, RULE_fromSrc);
 		try {
-			setState(227);
+			setState(223);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,15,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(222);
+				setState(218);
 				aliasExpr();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(225);
+				setState(221);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case ID:
 					{
-					setState(223);
+					setState(219);
 					identifier();
 					}
 					break;
@@ -1634,7 +1634,7 @@ public class AtlasDSLParser extends Parser {
 				case K_LBRACKET:
 				case STRING:
 					{
-					setState(224);
+					setState(220);
 					literal();
 					}
 					break;
@@ -1678,9 +1678,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(229);
+			setState(225);
 			match(K_WHERE);
-			setState(230);
+			setState(226);
 			expr();
 			}
 		}
@@ -1719,14 +1719,14 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(232);
+			setState(228);
 			fromSrc();
-			setState(234);
+			setState(230);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,16,_ctx) ) {
 			case 1:
 				{
-				setState(233);
+				setState(229);
 				whereClause();
 				}
 				break;
@@ -1766,9 +1766,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(236);
+			setState(232);
 			match(K_FROM);
-			setState(237);
+			setState(233);
 			fromExpression();
 			}
 		}
@@ -1805,9 +1805,9 @@ public class AtlasDSLParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(239);
+			setState(235);
 			match(K_SELECT);
-			setState(240);
+			setState(236);
 			selectExpr();
 			}
 		}
@@ -1850,110 +1850,37 @@ public class AtlasDSLParser extends Parser {
 		SingleQrySrcContext _localctx = new SingleQrySrcContext(_ctx, getState());
 		enterRule(_localctx, 64, RULE_singleQrySrc);
 		try {
-			setState(246);
+			setState(242);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,17,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(242);
+				setState(238);
 				fromClause();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(243);
+				setState(239);
 				whereClause();
 				}
 				break;
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(244);
+				setState(240);
 				fromExpression();
 				}
 				break;
 			case 4:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(245);
+				setState(241);
 				expr();
 				}
 				break;
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public static class LoopExpressionContext extends ParserRuleContext {
-		public TerminalNode K_LOOP() { return getToken(AtlasDSLParser.K_LOOP, 0); }
-		public TerminalNode K_LPAREN() { return getToken(AtlasDSLParser.K_LPAREN, 0); }
-		public QueryContext query() {
-			return getRuleContext(QueryContext.class,0);
-		}
-		public TerminalNode K_RPAREN() { return getToken(AtlasDSLParser.K_RPAREN, 0); }
-		public TerminalNode NUMBER() { return getToken(AtlasDSLParser.NUMBER, 0); }
-		public TerminalNode K_AS() { return getToken(AtlasDSLParser.K_AS, 0); }
-		public IdentifierContext identifier() {
-			return getRuleContext(IdentifierContext.class,0);
-		}
-		public LoopExpressionContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_loopExpression; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof AtlasDSLParserVisitor ) return ((AtlasDSLParserVisitor<? extends T>)visitor).visitLoopExpression(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final LoopExpressionContext loopExpression() throws RecognitionException {
-		LoopExpressionContext _localctx = new LoopExpressionContext(_ctx, getState());
-		enterRule(_localctx, 66, RULE_loopExpression);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(248);
-			match(K_LOOP);
-			setState(249);
-			match(K_LPAREN);
-			setState(250);
-			query();
-			setState(251);
-			match(K_RPAREN);
-			setState(253);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==NUMBER) {
-				{
-				setState(252);
-				match(NUMBER);
-				}
-			}
-
-			setState(257);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==K_AS) {
-				{
-				setState(255);
-				match(K_AS);
-				setState(256);
-				identifier();
-				}
-			}
-
 			}
 		}
 		catch (RecognitionException re) {
@@ -1987,17 +1914,17 @@ public class AtlasDSLParser extends Parser {
 
 	public final GroupByExpressionContext groupByExpression() throws RecognitionException {
 		GroupByExpressionContext _localctx = new GroupByExpressionContext(_ctx, getState());
-		enterRule(_localctx, 68, RULE_groupByExpression);
+		enterRule(_localctx, 66, RULE_groupByExpression);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(259);
+			setState(244);
 			match(K_GROUPBY);
-			setState(260);
+			setState(245);
 			match(K_LPAREN);
-			setState(261);
+			setState(246);
 			selectExpr();
-			setState(262);
+			setState(247);
 			match(K_RPAREN);
 			}
 		}
@@ -2036,26 +1963,26 @@ public class AtlasDSLParser extends Parser {
 
 	public final CommaDelimitedQueriesContext commaDelimitedQueries() throws RecognitionException {
 		CommaDelimitedQueriesContext _localctx = new CommaDelimitedQueriesContext(_ctx, getState());
-		enterRule(_localctx, 70, RULE_commaDelimitedQueries);
+		enterRule(_localctx, 68, RULE_commaDelimitedQueries);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(264);
+			setState(249);
 			singleQrySrc();
-			setState(269);
+			setState(254);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==K_COMMA) {
 				{
 				{
-				setState(265);
+				setState(250);
 				match(K_COMMA);
-				setState(266);
+				setState(251);
 				singleQrySrc();
 				}
 				}
-				setState(271);
+				setState(256);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -2092,24 +2019,24 @@ public class AtlasDSLParser extends Parser {
 
 	public final SpaceDelimitedQueriesContext spaceDelimitedQueries() throws RecognitionException {
 		SpaceDelimitedQueriesContext _localctx = new SpaceDelimitedQueriesContext(_ctx, getState());
-		enterRule(_localctx, 72, RULE_spaceDelimitedQueries);
+		enterRule(_localctx, 70, RULE_spaceDelimitedQueries);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(272);
+			setState(257);
 			singleQrySrc();
-			setState(276);
+			setState(261);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NUMBER) | (1L << FLOATING_NUMBER) | (1L << BOOL) | (1L << K_LPAREN) | (1L << K_LBRACKET) | (1L << K_FROM) | (1L << K_WHERE) | (1L << K_MAX) | (1L << K_MIN) | (1L << K_SUM) | (1L << K_COUNT) | (1L << ID) | (1L << STRING))) != 0)) {
 				{
 				{
-				setState(273);
+				setState(258);
 				singleQrySrc();
 				}
 				}
-				setState(278);
+				setState(263);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -2146,22 +2073,22 @@ public class AtlasDSLParser extends Parser {
 
 	public final QuerySrcContext querySrc() throws RecognitionException {
 		QuerySrcContext _localctx = new QuerySrcContext(_ctx, getState());
-		enterRule(_localctx, 74, RULE_querySrc);
+		enterRule(_localctx, 72, RULE_querySrc);
 		try {
-			setState(281);
+			setState(266);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,22,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,20,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(279);
+				setState(264);
 				commaDelimitedQueries();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(280);
+				setState(265);
 				spaceDelimitedQueries();
 				}
 				break;
@@ -2181,9 +2108,6 @@ public class AtlasDSLParser extends Parser {
 	public static class QueryContext extends ParserRuleContext {
 		public QuerySrcContext querySrc() {
 			return getRuleContext(QuerySrcContext.class,0);
-		}
-		public LoopExpressionContext loopExpression() {
-			return getRuleContext(LoopExpressionContext.class,0);
 		}
 		public GroupByExpressionContext groupByExpression() {
 			return getRuleContext(GroupByExpressionContext.class,0);
@@ -2210,59 +2134,49 @@ public class AtlasDSLParser extends Parser {
 
 	public final QueryContext query() throws RecognitionException {
 		QueryContext _localctx = new QueryContext(_ctx, getState());
-		enterRule(_localctx, 76, RULE_query);
+		enterRule(_localctx, 74, RULE_query);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(283);
+			setState(268);
 			querySrc();
-			setState(285);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==K_LOOP) {
-				{
-				setState(284);
-				loopExpression();
-				}
-			}
-
-			setState(288);
+			setState(270);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_GROUPBY) {
 				{
-				setState(287);
+				setState(269);
 				groupByExpression();
 				}
 			}
 
-			setState(291);
+			setState(273);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_SELECT) {
 				{
-				setState(290);
+				setState(272);
 				selectClause();
 				}
 			}
 
-			setState(294);
+			setState(276);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_ORDERBY) {
 				{
-				setState(293);
+				setState(275);
 				orderByExpr();
 				}
 			}
 
-			setState(297);
+			setState(279);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==K_LIMIT) {
 				{
-				setState(296);
+				setState(278);
 				limitOffset();
 				}
 			}
@@ -2280,156 +2194,99 @@ public class AtlasDSLParser extends Parser {
 		return _localctx;
 	}
 
-	public static class QueryWithPathContext extends ParserRuleContext {
-		public QueryContext query() {
-			return getRuleContext(QueryContext.class,0);
-		}
-		public TerminalNode K_WITHPATH() { return getToken(AtlasDSLParser.K_WITHPATH, 0); }
-		public QueryWithPathContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_queryWithPath; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof AtlasDSLParserVisitor ) return ((AtlasDSLParserVisitor<? extends T>)visitor).visitQueryWithPath(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final QueryWithPathContext queryWithPath() throws RecognitionException {
-		QueryWithPathContext _localctx = new QueryWithPathContext(_ctx, getState());
-		enterRule(_localctx, 78, RULE_queryWithPath);
-		int _la;
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(299);
-			query();
-			setState(301);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			if (_la==K_WITHPATH) {
-				{
-				setState(300);
-				match(K_WITHPATH);
-				}
-			}
-
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\63\u0132\4\2\t\2"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\63\u011c\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
 		"\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36\4\37\t\37\4 \t \4!"+
-		"\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t&\4\'\t\'\4(\t(\4)\t)\3\2\3\2\3\3\3"+
-		"\3\3\4\3\4\3\5\3\5\3\5\3\5\7\5]\n\5\f\5\16\5`\13\5\3\5\3\5\3\6\3\6\3\6"+
-		"\3\6\3\6\5\6i\n\6\5\6k\n\6\3\7\3\7\3\7\3\b\3\b\3\b\3\t\3\t\5\tu\n\t\3"+
-		"\t\3\t\3\t\3\t\5\t{\n\t\3\n\3\n\3\n\3\13\3\13\7\13\u0082\n\13\f\13\16"+
-		"\13\u0085\13\13\3\f\3\f\3\f\3\r\3\r\7\r\u008c\n\r\f\r\16\r\u008f\13\r"+
-		"\3\16\3\16\3\16\3\16\3\17\3\17\3\17\3\17\3\20\3\20\3\20\3\20\3\21\3\21"+
-		"\3\21\3\21\3\22\3\22\3\22\3\22\3\22\3\23\3\23\3\23\3\23\3\23\3\24\3\24"+
-		"\3\24\3\24\3\24\3\25\3\25\3\25\3\26\3\26\3\26\3\26\3\26\3\26\3\26\3\26"+
-		"\5\26\u00bb\n\26\3\27\3\27\7\27\u00bf\n\27\f\27\16\27\u00c2\13\27\3\30"+
-		"\3\30\5\30\u00c6\n\30\3\31\3\31\3\31\5\31\u00cb\n\31\3\32\3\32\3\32\7"+
-		"\32\u00d0\n\32\f\32\16\32\u00d3\13\32\3\33\3\33\5\33\u00d7\n\33\3\33\3"+
-		"\33\3\33\3\34\3\34\3\34\5\34\u00df\n\34\3\35\3\35\3\35\5\35\u00e4\n\35"+
-		"\5\35\u00e6\n\35\3\36\3\36\3\36\3\37\3\37\5\37\u00ed\n\37\3 \3 \3 \3!"+
-		"\3!\3!\3\"\3\"\3\"\3\"\5\"\u00f9\n\"\3#\3#\3#\3#\3#\5#\u0100\n#\3#\3#"+
-		"\5#\u0104\n#\3$\3$\3$\3$\3$\3%\3%\3%\7%\u010e\n%\f%\16%\u0111\13%\3&\3"+
-		"&\7&\u0115\n&\f&\16&\u0118\13&\3\'\3\'\5\'\u011c\n\'\3(\3(\5(\u0120\n"+
-		"(\3(\5(\u0123\n(\3(\5(\u0126\n(\3(\5(\u0129\n(\3(\5(\u012c\n(\3)\3)\5"+
-		")\u0130\n)\3)\2\2*\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60"+
-		"\62\64\668:<>@BDFHJLNP\2\b\4\2\17\17\26\33\3\2,-\3\2\f\r\3\2\n\13\3\2"+
-		")*\3\2\20\21\2\u0130\2R\3\2\2\2\4T\3\2\2\2\6V\3\2\2\2\bX\3\2\2\2\nj\3"+
-		"\2\2\2\fl\3\2\2\2\16o\3\2\2\2\20z\3\2\2\2\22|\3\2\2\2\24\177\3\2\2\2\26"+
-		"\u0086\3\2\2\2\30\u0089\3\2\2\2\32\u0090\3\2\2\2\34\u0094\3\2\2\2\36\u0098"+
-		"\3\2\2\2 \u009c\3\2\2\2\"\u00a0\3\2\2\2$\u00a5\3\2\2\2&\u00aa\3\2\2\2"+
-		"(\u00af\3\2\2\2*\u00ba\3\2\2\2,\u00bc\3\2\2\2.\u00c3\3\2\2\2\60\u00c7"+
-		"\3\2\2\2\62\u00cc\3\2\2\2\64\u00d6\3\2\2\2\66\u00db\3\2\2\28\u00e5\3\2"+
-		"\2\2:\u00e7\3\2\2\2<\u00ea\3\2\2\2>\u00ee\3\2\2\2@\u00f1\3\2\2\2B\u00f8"+
-		"\3\2\2\2D\u00fa\3\2\2\2F\u0105\3\2\2\2H\u010a\3\2\2\2J\u0112\3\2\2\2L"+
-		"\u011b\3\2\2\2N\u011d\3\2\2\2P\u012d\3\2\2\2RS\7\62\2\2S\3\3\2\2\2TU\t"+
-		"\2\2\2U\5\3\2\2\2VW\t\3\2\2W\7\3\2\2\2XY\7\23\2\2Y^\7\63\2\2Z[\7\t\2\2"+
-		"[]\7\63\2\2\\Z\3\2\2\2]`\3\2\2\2^\\\3\2\2\2^_\3\2\2\2_a\3\2\2\2`^\3\2"+
-		"\2\2ab\7\25\2\2b\t\3\2\2\2ck\7\b\2\2dk\7\6\2\2ek\7\7\2\2fi\7\63\2\2gi"+
-		"\5\b\5\2hf\3\2\2\2hg\3\2\2\2ik\3\2\2\2jc\3\2\2\2jd\3\2\2\2je\3\2\2\2j"+
-		"h\3\2\2\2k\13\3\2\2\2lm\7 \2\2mn\7\6\2\2n\r\3\2\2\2op\7\'\2\2pq\7\6\2"+
-		"\2q\17\3\2\2\2ru\5\2\2\2su\5\n\6\2tr\3\2\2\2ts\3\2\2\2u{\3\2\2\2vw\7\22"+
-		"\2\2wx\5,\27\2xy\7\24\2\2y{\3\2\2\2zt\3\2\2\2zv\3\2\2\2{\21\3\2\2\2|}"+
-		"\t\4\2\2}~\5\20\t\2~\23\3\2\2\2\177\u0083\5\20\t\2\u0080\u0082\5\22\n"+
-		"\2\u0081\u0080\3\2\2\2\u0082\u0085\3\2\2\2\u0083\u0081\3\2\2\2\u0083\u0084"+
-		"\3\2\2\2\u0084\25\3\2\2\2\u0085\u0083\3\2\2\2\u0086\u0087\t\5\2\2\u0087"+
-		"\u0088\5\24\13\2\u0088\27\3\2\2\2\u0089\u008d\5\24\13\2\u008a\u008c\5"+
-		"\26\f\2\u008b\u008a\3\2\2\2\u008c\u008f\3\2\2\2\u008d\u008b\3\2\2\2\u008d"+
-		"\u008e\3\2\2\2\u008e\31\3\2\2\2\u008f\u008d\3\2\2\2\u0090\u0091\5\30\r"+
-		"\2\u0091\u0092\5\4\3\2\u0092\u0093\5\30\r\2\u0093\33\3\2\2\2\u0094\u0095"+
-		"\5\30\r\2\u0095\u0096\t\6\2\2\u0096\u0097\5\2\2\2\u0097\35\3\2\2\2\u0098"+
-		"\u0099\5\30\r\2\u0099\u009a\7+\2\2\u009a\u009b\5\2\2\2\u009b\37\3\2\2"+
-		"\2\u009c\u009d\7%\2\2\u009d\u009e\7\22\2\2\u009e\u009f\7\24\2\2\u009f"+
-		"!\3\2\2\2\u00a0\u00a1\7\"\2\2\u00a1\u00a2\7\22\2\2\u00a2\u00a3\5,\27\2"+
-		"\u00a3\u00a4\7\24\2\2\u00a4#\3\2\2\2\u00a5\u00a6\7#\2\2\u00a6\u00a7\7"+
-		"\22\2\2\u00a7\u00a8\5,\27\2\u00a8\u00a9\7\24\2\2\u00a9%\3\2\2\2\u00aa"+
-		"\u00ab\7$\2\2\u00ab\u00ac\7\22\2\2\u00ac\u00ad\5,\27\2\u00ad\u00ae\7\24"+
-		"\2\2\u00ae\'\3\2\2\2\u00af\u00b0\t\7\2\2\u00b0\u00b1\5*\26\2\u00b1)\3"+
-		"\2\2\2\u00b2\u00bb\5\32\16\2\u00b3\u00bb\5\34\17\2\u00b4\u00bb\5\36\20"+
-		"\2\u00b5\u00bb\5\30\r\2\u00b6\u00bb\5 \21\2\u00b7\u00bb\5\"\22\2\u00b8"+
-		"\u00bb\5$\23\2\u00b9\u00bb\5&\24\2\u00ba\u00b2\3\2\2\2\u00ba\u00b3\3\2"+
-		"\2\2\u00ba\u00b4\3\2\2\2\u00ba\u00b5\3\2\2\2\u00ba\u00b6\3\2\2\2\u00ba"+
-		"\u00b7\3\2\2\2\u00ba\u00b8\3\2\2\2\u00ba\u00b9\3\2\2\2\u00bb+\3\2\2\2"+
-		"\u00bc\u00c0\5*\26\2\u00bd\u00bf\5(\25\2\u00be\u00bd\3\2\2\2\u00bf\u00c2"+
-		"\3\2\2\2\u00c0\u00be\3\2\2\2\u00c0\u00c1\3\2\2\2\u00c1-\3\2\2\2\u00c2"+
-		"\u00c0\3\2\2\2\u00c3\u00c5\5\f\7\2\u00c4\u00c6\5\16\b\2\u00c5\u00c4\3"+
-		"\2\2\2\u00c5\u00c6\3\2\2\2\u00c6/\3\2\2\2\u00c7\u00ca\5,\27\2\u00c8\u00c9"+
-		"\7(\2\2\u00c9\u00cb\5\2\2\2\u00ca\u00c8\3\2\2\2\u00ca\u00cb\3\2\2\2\u00cb"+
-		"\61\3\2\2\2\u00cc\u00d1\5\60\31\2\u00cd\u00ce\7\t\2\2\u00ce\u00d0\5\60"+
-		"\31\2\u00cf\u00cd\3\2\2\2\u00d0\u00d3\3\2\2\2\u00d1\u00cf\3\2\2\2\u00d1"+
-		"\u00d2\3\2\2\2\u00d2\63\3\2\2\2\u00d3\u00d1\3\2\2\2\u00d4\u00d7\5\2\2"+
-		"\2\u00d5\u00d7\5\n\6\2\u00d6\u00d4\3\2\2\2\u00d6\u00d5\3\2\2\2\u00d7\u00d8"+
-		"\3\2\2\2\u00d8\u00d9\7(\2\2\u00d9\u00da\5\2\2\2\u00da\65\3\2\2\2\u00db"+
-		"\u00dc\7\36\2\2\u00dc\u00de\5,\27\2\u00dd\u00df\5\6\4\2\u00de\u00dd\3"+
-		"\2\2\2\u00de\u00df\3\2\2\2\u00df\67\3\2\2\2\u00e0\u00e6\5\64\33\2\u00e1"+
-		"\u00e4\5\2\2\2\u00e2\u00e4\5\n\6\2\u00e3\u00e1\3\2\2\2\u00e3\u00e2\3\2"+
-		"\2\2\u00e4\u00e6\3\2\2\2\u00e5\u00e0\3\2\2\2\u00e5\u00e3\3\2\2\2\u00e6"+
-		"9\3\2\2\2\u00e7\u00e8\7\35\2\2\u00e8\u00e9\5,\27\2\u00e9;\3\2\2\2\u00ea"+
-		"\u00ec\58\35\2\u00eb\u00ed\5:\36\2\u00ec\u00eb\3\2\2\2\u00ec\u00ed\3\2"+
-		"\2\2\u00ed=\3\2\2\2\u00ee\u00ef\7\34\2\2\u00ef\u00f0\5<\37\2\u00f0?\3"+
-		"\2\2\2\u00f1\u00f2\7!\2\2\u00f2\u00f3\5\62\32\2\u00f3A\3\2\2\2\u00f4\u00f9"+
-		"\5> \2\u00f5\u00f9\5:\36\2\u00f6\u00f9\5<\37\2\u00f7\u00f9\5,\27\2\u00f8"+
-		"\u00f4\3\2\2\2\u00f8\u00f5\3\2\2\2\u00f8\u00f6\3\2\2\2\u00f8\u00f7\3\2"+
-		"\2\2\u00f9C\3\2\2\2\u00fa\u00fb\7&\2\2\u00fb\u00fc\7\22\2\2\u00fc\u00fd"+
-		"\5N(\2\u00fd\u00ff\7\24\2\2\u00fe\u0100\7\6\2\2\u00ff\u00fe\3\2\2\2\u00ff"+
-		"\u0100\3\2\2\2\u0100\u0103\3\2\2\2\u0101\u0102\7(\2\2\u0102\u0104\5\2"+
-		"\2\2\u0103\u0101\3\2\2\2\u0103\u0104\3\2\2\2\u0104E\3\2\2\2\u0105\u0106"+
-		"\7\37\2\2\u0106\u0107\7\22\2\2\u0107\u0108\5\62\32\2\u0108\u0109\7\24"+
-		"\2\2\u0109G\3\2\2\2\u010a\u010f\5B\"\2\u010b\u010c\7\t\2\2\u010c\u010e"+
-		"\5B\"\2\u010d\u010b\3\2\2\2\u010e\u0111\3\2\2\2\u010f\u010d\3\2\2\2\u010f"+
-		"\u0110\3\2\2\2\u0110I\3\2\2\2\u0111\u010f\3\2\2\2\u0112\u0116\5B\"\2\u0113"+
-		"\u0115\5B\"\2\u0114\u0113\3\2\2\2\u0115\u0118\3\2\2\2\u0116\u0114\3\2"+
-		"\2\2\u0116\u0117\3\2\2\2\u0117K\3\2\2\2\u0118\u0116\3\2\2\2\u0119\u011c"+
-		"\5H%\2\u011a\u011c\5J&\2\u011b\u0119\3\2\2\2\u011b\u011a\3\2\2\2\u011c"+
-		"M\3\2\2\2\u011d\u011f\5L\'\2\u011e\u0120\5D#\2\u011f\u011e\3\2\2\2\u011f"+
-		"\u0120\3\2\2\2\u0120\u0122\3\2\2\2\u0121\u0123\5F$\2\u0122\u0121\3\2\2"+
-		"\2\u0122\u0123\3\2\2\2\u0123\u0125\3\2\2\2\u0124\u0126\5@!\2\u0125\u0124"+
-		"\3\2\2\2\u0125\u0126\3\2\2\2\u0126\u0128\3\2\2\2\u0127\u0129\5\66\34\2"+
-		"\u0128\u0127\3\2\2\2\u0128\u0129\3\2\2\2\u0129\u012b\3\2\2\2\u012a\u012c"+
-		"\5.\30\2\u012b\u012a\3\2\2\2\u012b\u012c\3\2\2\2\u012cO\3\2\2\2\u012d"+
-		"\u012f\5N(\2\u012e\u0130\7.\2\2\u012f\u012e\3\2\2\2\u012f\u0130\3\2\2"+
-		"\2\u0130Q\3\2\2\2\37^hjtz\u0083\u008d\u00ba\u00c0\u00c5\u00ca\u00d1\u00d6"+
-		"\u00de\u00e3\u00e5\u00ec\u00f8\u00ff\u0103\u010f\u0116\u011b\u011f\u0122"+
-		"\u0125\u0128\u012b\u012f";
+		"\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t&\4\'\t\'\3\2\3\2\3\3\3\3\3\4\3\4\3"+
+		"\5\3\5\3\5\3\5\7\5Y\n\5\f\5\16\5\\\13\5\3\5\3\5\3\6\3\6\3\6\3\6\3\6\5"+
+		"\6e\n\6\5\6g\n\6\3\7\3\7\3\7\3\b\3\b\3\b\3\t\3\t\5\tq\n\t\3\t\3\t\3\t"+
+		"\3\t\5\tw\n\t\3\n\3\n\3\n\3\13\3\13\7\13~\n\13\f\13\16\13\u0081\13\13"+
+		"\3\f\3\f\3\f\3\r\3\r\7\r\u0088\n\r\f\r\16\r\u008b\13\r\3\16\3\16\3\16"+
+		"\3\16\3\17\3\17\3\17\3\17\3\20\3\20\3\20\3\20\3\21\3\21\3\21\3\21\3\22"+
+		"\3\22\3\22\3\22\3\22\3\23\3\23\3\23\3\23\3\23\3\24\3\24\3\24\3\24\3\24"+
+		"\3\25\3\25\3\25\3\26\3\26\3\26\3\26\3\26\3\26\3\26\3\26\5\26\u00b7\n\26"+
+		"\3\27\3\27\7\27\u00bb\n\27\f\27\16\27\u00be\13\27\3\30\3\30\5\30\u00c2"+
+		"\n\30\3\31\3\31\3\31\5\31\u00c7\n\31\3\32\3\32\3\32\7\32\u00cc\n\32\f"+
+		"\32\16\32\u00cf\13\32\3\33\3\33\5\33\u00d3\n\33\3\33\3\33\3\33\3\34\3"+
+		"\34\3\34\5\34\u00db\n\34\3\35\3\35\3\35\5\35\u00e0\n\35\5\35\u00e2\n\35"+
+		"\3\36\3\36\3\36\3\37\3\37\5\37\u00e9\n\37\3 \3 \3 \3!\3!\3!\3\"\3\"\3"+
+		"\"\3\"\5\"\u00f5\n\"\3#\3#\3#\3#\3#\3$\3$\3$\7$\u00ff\n$\f$\16$\u0102"+
+		"\13$\3%\3%\7%\u0106\n%\f%\16%\u0109\13%\3&\3&\5&\u010d\n&\3\'\3\'\5\'"+
+		"\u0111\n\'\3\'\5\'\u0114\n\'\3\'\5\'\u0117\n\'\3\'\5\'\u011a\n\'\3\'\2"+
+		"\2(\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64\668:<>@B"+
+		"DFHJL\2\b\4\2\17\17\26\33\3\2,-\3\2\f\r\3\2\n\13\3\2)*\3\2\20\21\2\u0118"+
+		"\2N\3\2\2\2\4P\3\2\2\2\6R\3\2\2\2\bT\3\2\2\2\nf\3\2\2\2\fh\3\2\2\2\16"+
+		"k\3\2\2\2\20v\3\2\2\2\22x\3\2\2\2\24{\3\2\2\2\26\u0082\3\2\2\2\30\u0085"+
+		"\3\2\2\2\32\u008c\3\2\2\2\34\u0090\3\2\2\2\36\u0094\3\2\2\2 \u0098\3\2"+
+		"\2\2\"\u009c\3\2\2\2$\u00a1\3\2\2\2&\u00a6\3\2\2\2(\u00ab\3\2\2\2*\u00b6"+
+		"\3\2\2\2,\u00b8\3\2\2\2.\u00bf\3\2\2\2\60\u00c3\3\2\2\2\62\u00c8\3\2\2"+
+		"\2\64\u00d2\3\2\2\2\66\u00d7\3\2\2\28\u00e1\3\2\2\2:\u00e3\3\2\2\2<\u00e6"+
+		"\3\2\2\2>\u00ea\3\2\2\2@\u00ed\3\2\2\2B\u00f4\3\2\2\2D\u00f6\3\2\2\2F"+
+		"\u00fb\3\2\2\2H\u0103\3\2\2\2J\u010c\3\2\2\2L\u010e\3\2\2\2NO\7\62\2\2"+
+		"O\3\3\2\2\2PQ\t\2\2\2Q\5\3\2\2\2RS\t\3\2\2S\7\3\2\2\2TU\7\23\2\2UZ\7\63"+
+		"\2\2VW\7\t\2\2WY\7\63\2\2XV\3\2\2\2Y\\\3\2\2\2ZX\3\2\2\2Z[\3\2\2\2[]\3"+
+		"\2\2\2\\Z\3\2\2\2]^\7\25\2\2^\t\3\2\2\2_g\7\b\2\2`g\7\6\2\2ag\7\7\2\2"+
+		"be\7\63\2\2ce\5\b\5\2db\3\2\2\2dc\3\2\2\2eg\3\2\2\2f_\3\2\2\2f`\3\2\2"+
+		"\2fa\3\2\2\2fd\3\2\2\2g\13\3\2\2\2hi\7 \2\2ij\7\6\2\2j\r\3\2\2\2kl\7\'"+
+		"\2\2lm\7\6\2\2m\17\3\2\2\2nq\5\2\2\2oq\5\n\6\2pn\3\2\2\2po\3\2\2\2qw\3"+
+		"\2\2\2rs\7\22\2\2st\5,\27\2tu\7\24\2\2uw\3\2\2\2vp\3\2\2\2vr\3\2\2\2w"+
+		"\21\3\2\2\2xy\t\4\2\2yz\5\20\t\2z\23\3\2\2\2{\177\5\20\t\2|~\5\22\n\2"+
+		"}|\3\2\2\2~\u0081\3\2\2\2\177}\3\2\2\2\177\u0080\3\2\2\2\u0080\25\3\2"+
+		"\2\2\u0081\177\3\2\2\2\u0082\u0083\t\5\2\2\u0083\u0084\5\24\13\2\u0084"+
+		"\27\3\2\2\2\u0085\u0089\5\24\13\2\u0086\u0088\5\26\f\2\u0087\u0086\3\2"+
+		"\2\2\u0088\u008b\3\2\2\2\u0089\u0087\3\2\2\2\u0089\u008a\3\2\2\2\u008a"+
+		"\31\3\2\2\2\u008b\u0089\3\2\2\2\u008c\u008d\5\30\r\2\u008d\u008e\5\4\3"+
+		"\2\u008e\u008f\5\30\r\2\u008f\33\3\2\2\2\u0090\u0091\5\30\r\2\u0091\u0092"+
+		"\t\6\2\2\u0092\u0093\5\2\2\2\u0093\35\3\2\2\2\u0094\u0095\5\30\r\2\u0095"+
+		"\u0096\7+\2\2\u0096\u0097\5\2\2\2\u0097\37\3\2\2\2\u0098\u0099\7%\2\2"+
+		"\u0099\u009a\7\22\2\2\u009a\u009b\7\24\2\2\u009b!\3\2\2\2\u009c\u009d"+
+		"\7\"\2\2\u009d\u009e\7\22\2\2\u009e\u009f\5,\27\2\u009f\u00a0\7\24\2\2"+
+		"\u00a0#\3\2\2\2\u00a1\u00a2\7#\2\2\u00a2\u00a3\7\22\2\2\u00a3\u00a4\5"+
+		",\27\2\u00a4\u00a5\7\24\2\2\u00a5%\3\2\2\2\u00a6\u00a7\7$\2\2\u00a7\u00a8"+
+		"\7\22\2\2\u00a8\u00a9\5,\27\2\u00a9\u00aa\7\24\2\2\u00aa\'\3\2\2\2\u00ab"+
+		"\u00ac\t\7\2\2\u00ac\u00ad\5*\26\2\u00ad)\3\2\2\2\u00ae\u00b7\5\32\16"+
+		"\2\u00af\u00b7\5\34\17\2\u00b0\u00b7\5\36\20\2\u00b1\u00b7\5\30\r\2\u00b2"+
+		"\u00b7\5 \21\2\u00b3\u00b7\5\"\22\2\u00b4\u00b7\5$\23\2\u00b5\u00b7\5"+
+		"&\24\2\u00b6\u00ae\3\2\2\2\u00b6\u00af\3\2\2\2\u00b6\u00b0\3\2\2\2\u00b6"+
+		"\u00b1\3\2\2\2\u00b6\u00b2\3\2\2\2\u00b6\u00b3\3\2\2\2\u00b6\u00b4\3\2"+
+		"\2\2\u00b6\u00b5\3\2\2\2\u00b7+\3\2\2\2\u00b8\u00bc\5*\26\2\u00b9\u00bb"+
+		"\5(\25\2\u00ba\u00b9\3\2\2\2\u00bb\u00be\3\2\2\2\u00bc\u00ba\3\2\2\2\u00bc"+
+		"\u00bd\3\2\2\2\u00bd-\3\2\2\2\u00be\u00bc\3\2\2\2\u00bf\u00c1\5\f\7\2"+
+		"\u00c0\u00c2\5\16\b\2\u00c1\u00c0\3\2\2\2\u00c1\u00c2\3\2\2\2\u00c2/\3"+
+		"\2\2\2\u00c3\u00c6\5,\27\2\u00c4\u00c5\7(\2\2\u00c5\u00c7\5\2\2\2\u00c6"+
+		"\u00c4\3\2\2\2\u00c6\u00c7\3\2\2\2\u00c7\61\3\2\2\2\u00c8\u00cd\5\60\31"+
+		"\2\u00c9\u00ca\7\t\2\2\u00ca\u00cc\5\60\31\2\u00cb\u00c9\3\2\2\2\u00cc"+
+		"\u00cf\3\2\2\2\u00cd\u00cb\3\2\2\2\u00cd\u00ce\3\2\2\2\u00ce\63\3\2\2"+
+		"\2\u00cf\u00cd\3\2\2\2\u00d0\u00d3\5\2\2\2\u00d1\u00d3\5\n\6\2\u00d2\u00d0"+
+		"\3\2\2\2\u00d2\u00d1\3\2\2\2\u00d3\u00d4\3\2\2\2\u00d4\u00d5\7(\2\2\u00d5"+
+		"\u00d6\5\2\2\2\u00d6\65\3\2\2\2\u00d7\u00d8\7\36\2\2\u00d8\u00da\5,\27"+
+		"\2\u00d9\u00db\5\6\4\2\u00da\u00d9\3\2\2\2\u00da\u00db\3\2\2\2\u00db\67"+
+		"\3\2\2\2\u00dc\u00e2\5\64\33\2\u00dd\u00e0\5\2\2\2\u00de\u00e0\5\n\6\2"+
+		"\u00df\u00dd\3\2\2\2\u00df\u00de\3\2\2\2\u00e0\u00e2\3\2\2\2\u00e1\u00dc"+
+		"\3\2\2\2\u00e1\u00df\3\2\2\2\u00e29\3\2\2\2\u00e3\u00e4\7\35\2\2\u00e4"+
+		"\u00e5\5,\27\2\u00e5;\3\2\2\2\u00e6\u00e8\58\35\2\u00e7\u00e9\5:\36\2"+
+		"\u00e8\u00e7\3\2\2\2\u00e8\u00e9\3\2\2\2\u00e9=\3\2\2\2\u00ea\u00eb\7"+
+		"\34\2\2\u00eb\u00ec\5<\37\2\u00ec?\3\2\2\2\u00ed\u00ee\7!\2\2\u00ee\u00ef"+
+		"\5\62\32\2\u00efA\3\2\2\2\u00f0\u00f5\5> \2\u00f1\u00f5\5:\36\2\u00f2"+
+		"\u00f5\5<\37\2\u00f3\u00f5\5,\27\2\u00f4\u00f0\3\2\2\2\u00f4\u00f1\3\2"+
+		"\2\2\u00f4\u00f2\3\2\2\2\u00f4\u00f3\3\2\2\2\u00f5C\3\2\2\2\u00f6\u00f7"+
+		"\7\37\2\2\u00f7\u00f8\7\22\2\2\u00f8\u00f9\5\62\32\2\u00f9\u00fa\7\24"+
+		"\2\2\u00faE\3\2\2\2\u00fb\u0100\5B\"\2\u00fc\u00fd\7\t\2\2\u00fd\u00ff"+
+		"\5B\"\2\u00fe\u00fc\3\2\2\2\u00ff\u0102\3\2\2\2\u0100\u00fe\3\2\2\2\u0100"+
+		"\u0101\3\2\2\2\u0101G\3\2\2\2\u0102\u0100\3\2\2\2\u0103\u0107\5B\"\2\u0104"+
+		"\u0106\5B\"\2\u0105\u0104\3\2\2\2\u0106\u0109\3\2\2\2\u0107\u0105\3\2"+
+		"\2\2\u0107\u0108\3\2\2\2\u0108I\3\2\2\2\u0109\u0107\3\2\2\2\u010a\u010d"+
+		"\5F$\2\u010b\u010d\5H%\2\u010c\u010a\3\2\2\2\u010c\u010b\3\2\2\2\u010d"+
+		"K\3\2\2\2\u010e\u0110\5J&\2\u010f\u0111\5D#\2\u0110\u010f\3\2\2\2\u0110"+
+		"\u0111\3\2\2\2\u0111\u0113\3\2\2\2\u0112\u0114\5@!\2\u0113\u0112\3\2\2"+
+		"\2\u0113\u0114\3\2\2\2\u0114\u0116\3\2\2\2\u0115\u0117\5\66\34\2\u0116"+
+		"\u0115\3\2\2\2\u0116\u0117\3\2\2\2\u0117\u0119\3\2\2\2\u0118\u011a\5."+
+		"\30\2\u0119\u0118\3\2\2\2\u0119\u011a\3\2\2\2\u011aM\3\2\2\2\33Zdfpv\177"+
+		"\u0089\u00b6\u00bc\u00c1\u00c6\u00cd\u00d2\u00da\u00df\u00e1\u00e8\u00f4"+
+		"\u0100\u0107\u010c\u0110\u0113\u0116\u0119";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
