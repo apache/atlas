@@ -306,19 +306,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (!_.isUndefinedNull(val)) {
                     if (k == "attributes") {
                         val = val.split(',');
-                    } else if (k == "tagFilters") {
+                    } else if (_.contains(["tagFilters","entityFilters"],k)) {
                         val = CommonViewFunction.attributeFilter.generateAPIObj(val);
-                    } else if (k == "entityFilters") {
-                        val = CommonViewFunction.attributeFilter.generateAPIObj(val);
-                    } else if (k == "includeDE") {
-                        if (val) {
-                            val = false;
-                        } else {
-                            val = true;
-                        }
+                    } else if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
+                        val = val ? false : true;
                     }
                 }
-                if (k == "includeDE") {
+                if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
                     val = _.isUndefinedNull(val) ? true : val;
                 }
                 obj.searchParameters[v] = val;
@@ -371,12 +365,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             });
                         }
                         val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
-                    } else if (k == "includeDE") {
-                        if (val) {
-                            val = false;
-                        } else {
-                            val = true;
-                        }
+                    } else if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
+                        val = val ? false : true;
                     }
                 }
                 obj[k] = val;

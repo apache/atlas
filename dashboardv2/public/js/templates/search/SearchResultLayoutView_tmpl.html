@@ -24,16 +24,26 @@
     </div>
     <div class="searchTable">
         <div class="row well">
-            <div class="row form-group pagination-box" style="display: none;">
-                <div class="col-sm-4">
+            <div class="row form-group pagination-box filter-box" style="display: none;">
+                <div class="col-sm-3">
                     <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
                 </div>
-                <div class="col-sm-8 inline-content-fr">
+                <div class="col-sm-9 inline-content-fr no-padding-left">
                     <div class="inline" data-id="colManager"></div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" id="inputLabel" name="queryType" name="check" data-id="checkDeletedEntity" />
+                            <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" />
                             <b>Show historical entities</b></label>
+                    </div>
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="inputLabel">
+                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC"/>
+                            <b>Exclude sub-classification</b></label>
+                    </div>
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="inputLabel">
+                            <input type="checkbox" data-id="checkSubType"  data-value="excludeST"/>
+                            <b>Exclude sub-type</b></label>
                     </div>
                     <div class="inline">
                         <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>

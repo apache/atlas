@@ -63,6 +63,8 @@ define(['require'], function(require) {
         "query": "query",
         "pageOffset": "offset",
         "includeDE": "excludeDeletedEntities",
+        "excludeST": "includeSubTypes",
+        "excludeSC": "includeSubClassifications",
         "tagFilters": "tagFilters",
         "entityFilters": "entityFilters",
         "attributes": "attributes"

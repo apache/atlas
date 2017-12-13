@@ -105,7 +105,9 @@ define(['require',
                         pageOffset: null,
                         pageLimit: null,
                         entityFilters: null,
-                        includeDE: null
+                        includeDE: null,
+                        excludeST:null,
+                        excludeSC : null
                     }
                 };
                 if (!this.value) {
@@ -145,11 +147,9 @@ define(['require',
                                 urlObj = Utils.getUrlState.getQueryParams();
                             if (urlObj) {
                                 // includeDE value in because we need to send "true","false" to the server.
-                                if (urlObj.includeDE == "true") {
-                                    urlObj.includeDE = true;
-                                } else {
-                                    urlObj.includeDE = false;
-                                }
+                                urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
+                                urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
+                                urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
                             }
                             return _.extend({}, queryObj, urlObj, {
                                 'entityFilters': entityObj ? entityObj[queryObj.type] : null,
@@ -501,11 +501,9 @@ define(['require',
                     if (columnList) {
                         params['attributes'] = columnList.join(',');
                     }
-                    if (_.isUndefinedNull(this.value.includeDE)) {
-                        params['includeDE'] = false;
-                    } else {
-                        params['includeDE'] = this.value.includeDE;
-                    }
+                    params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
+                    params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
+                    params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;
                 }
                 if (!_.isUndefinedNull(this.value.pageLimit)) {
                     params['pageLimit'] = this.value.pageLimit;
