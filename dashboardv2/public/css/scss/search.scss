@@ -122,3 +122,11 @@ $color_celeste_approx: #1D1F2B;
         background: rgba(0, 0, 0, 0.18) !important;
     }
 }
+
+.filter-box {
+    .inline-content-fr {
+        .inline {
+            margin: 0px;
+        }
+    }
+}
