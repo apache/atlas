@@ -132,6 +132,14 @@
 
         <!-- addons/hbase -->
         <fileSet>
+            <directory>../addons/hbase-bridge/src/bin</directory>
+            <outputDirectory>hook-bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
+        <!-- addons/hbase -->
+        <fileSet>
             <directory>../addons/hbase-bridge/target/dependency/bridge</directory>
             <outputDirectory>bridge</outputDirectory>
         </fileSet>
