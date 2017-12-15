@@ -1,0 +1,304 @@
+{
+  "enumDefs": [
+    {
+      "name": "CommentType",
+      "description":"Types of comments.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "GENERAL_COMMENT"
+        },
+        {
+          "ordinal": 1,
+          "value": "QUESTION"
+        },
+        {
+          "ordinal": 2,
+          "value": "ANSWER"
+        },
+        {
+          "ordinal": 3,
+          "value": "SUGGESTION"
+        },
+        {
+          "ordinal": 4,
+          "value": "EXPERIENCE"
+        }
+      ]
+    },
+    {
+      "name": "StarRating",
+      "description":"Start rating values.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "NOT_RECOMMENDED"
+        },
+        {
+          "ordinal": 1,
+          "value": "ONE_STAR"
+        },
+        {
+          "ordinal": 2,
+          "value": "TWO_STAR"
+        },
+        {
+          "ordinal": 3,
+          "value": "THREE_STAR"
+        },
+        {
+          "ordinal": 4,
+          "value": "FOUR_STAR"
+        },
+        {
+          "ordinal": 5,
+          "value": "FIVE_STAR"
+        }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name": "Comment",
+      "description": "An important principle of good metadata it to be continually capturing the experience of subject matter experts. Comments are a key mechanism for providing text feedback on the metadata definitions by any user. ",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "comment",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "user",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "commentType",
+          "typeName": "CommentType",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "Rating",
+      "description": "An important principle of good metadata it to be continually capturing the experience of subject matter experts. Ratings are a key mechanism for providing simple feedback on the metadata definitions by any user.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "stars",
+          "typeName": "StarRating",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "user",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "review",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "Like",
+      "description": "Expression of Like by a user.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "user",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "InformalTag",
+      "description": "A user attaches an informal tag to an entity to make the entity more meaningful for the user, by associating it with a meaningful/useful tag Name."  ,
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "user",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "tagName",
+          "description":"A name that is meaningful to the user.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "tagDescription",
+          "description":"The description of the informal tag gives more information about how it is useful.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "PrivateTag",
+      "description": "A Private tag is an informal tag that can only be seen by it's author.",
+      "superTypes": [
+        "InformalTag"
+      ],
+      "typeVersion": "1.0"
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name": "AttachedLike",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "likes",
+        "type": "Referenceable",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "likedObject",
+        "type": "Like",
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE",
+      "relationshipCategory": "COMPOSITION"
+    },
+    {
+      "name": "AttachedTag",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "tags",
+        "type": "Referenceable",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "taggedObject",
+        "type": "InformalTag",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "AttachedRating",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "starRatings",
+        "type": "Referenceable",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "RatedObject",
+        "type": "Rating",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "AttachedFeedback",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "supportingResources",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectUse",
+        "type": "Collection",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "resourceUse",
+          "description": "Role in the team.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ProjectScope",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "projectScope",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectImpactingAssets",
+        "type": "Collection",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "scopeDescription",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "enumDefs": [
+    {
+      "name": "CrowdSourcingRole",
+      "description": "An Actor Profile makes a contribution in a crowdsourcing role.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "PROPOSER",
+          "description": "A proposed contribution."
+        },
+        {
+          "ordinal": 1,
+          "value": "REVIEWER",
+          "description": "A reviewer contribution."
+        },
+        {
+          "ordinal": 2,
+          "value": "SUPPORTER",
+          "description": "A supporter contribution."
+        },
+        {
+          "ordinal": 3,
+          "value": "APPROVER",
+          "description": "An approver contribution."
+        },
+        {
+          "ordinal": 99,
+          "value": "OTHER",
+          "description": "Another contribution."
+        }
+      ]
+    },
+    {
+      "name": "ContactMethodType",
+      "description": "Types of contact method.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "EMAIL"
+        },
+        {
+          "ordinal": 1,
+          "value": "PHONE"
+        },
+        {
+          "ordinal": 99,
+          "value": "OTHER"
+        }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name": "ContactDetail",
+      "description": "The contact details describe the contact method and its associated value.",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "contactMethodType",
+          "typeName": "ContactMethodType",
+          "description": "Contact method type",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "contactMethodValue",
+          "typeName": "string",
+          "description": "The value associated with the contact method. For example emails have the email address.",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ActorProfile",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "description": "Actors are associated with the new metadata that they create and comment on via their user identities. This separation is maintained because the user identity is the only information available on calls to the metadata repository. The ActorProfile is used to aggregate the activity of the individual or team. More information about the person behind the user identity is available through the ActorProfile. It describes the actual person, or possibly team if group users are being used, that is working either with the data assets or with the metadata directly. The profile is a record to add additional information about the person or engine that is making the requests. They may have more than one UserIdentity.  The userId is recorded with specific entities and relationships when they are created or updated. The userId for a Software Server is also captured in the metadata model, so it is possible to correlate the actions of a data processing Software Server with changes to the metadata.",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "name": "Team",
+      "description": "An team participating in the collaboration around open metadata.",
+      "superTypes": [
+        "ActorProfile"
+      ],
+      "description": "A team",
+      "typeVersion": "1.0"
+    },
+    {
+      "name": "Person",
+      "description": "An individual participating in the collaboration around open metadata.",
+      "superTypes": [
+        "ActorProfile"
+      ],
+      "description": "",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "karmaPoints",
+          "description": "Open metadata supports KarmaPoints. These are awarded for participation in the collaboration around open metadata.",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "UserIdentity",
+      "superTypes": [],
+      "description": "UserIdentity provides a structure for storing the security authentication information about a person. We have a simple string for the userId - but this could be extended to include more sophisticated identification information. The user identity is the only information available on calls to the metadata repository. Most metadata repositories are run in a secure mode requiring incoming requests to be authenticated. There is a userIdentifier for each unique logged on security identity; in this model it is called the userId.",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "userId",
+          "description": "The unique logged on security identity.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name": "Leadership",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "leads",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "follows",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags": "NONE",
+      "attributeDefs": []
+    },
+    {
+      "name": "Peer",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "peer",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "peer",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags": "NONE",
+      "attributeDefs": []
+    },
+    {
+      "name": "ProfileIdentities",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "profile",
+        "type": "UserIdentity",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "userIdentities",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags": "NONE",
+      "attributeDefs": []
+    },
+    {
+      "name": "Contributor",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "contributor",
+        "type": "Referenceable",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "contribution",
+        "type": "ActorProfile",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "roleType",
+          "typeName": "CrowdSourcingRole",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ActorContactDetail",
+      "description": "The contact details are all the ways that can be used to contact the actor. Mostly contact details are owned by only one Actor. It is also possible to define shared contact details.",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "contacts",
+        "type": "ActorProfile",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "actorProfile",
+        "type": "ContactDetail",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags": "NONE"
+    }
+  ]
+}

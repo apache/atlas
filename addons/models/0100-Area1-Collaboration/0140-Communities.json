@@ -1,0 +1,112 @@
+{
+  "enumDefs": [
+    {
+      "name": "CommunityMembershipType",
+      "description": "The type of community membership.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "MEMBER",
+          "description": "Member of the community."
+        },
+        {
+          "ordinal": 1,
+          "value": "ADMINISTRATOR",
+          "description": "Administrator of the community."
+        },
+        {
+          "ordinal": 2,
+          "value": "LEADER",
+          "description": "Leader of the community."
+        }
+
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name": "Community",
+      "description": "Communities are groups of people related by a common interest or skill. People tend to stay in communities for the long term. Conversely people are are associated with projects just for the lifetime of the project and then they move on to another.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "mission",
+          "description": "The goal, task and/or duty of this community.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name": "CommunityMembership",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "Community",
+        "type": "Person",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "members",
+        "type": "Community",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "relationshipType",
+          "typeName": "CommunityMembershipType",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "CommunityResources",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "supportingResources",
+        "type": "Community",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectFocus",
+        "type": "Collection",
+        "cardinality": "SET"
+      },
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags": "NONE"
+    }
+  ]
+}

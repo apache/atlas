@@ -1,0 +1,208 @@
+{
+  "enumDefs": [],
+  "structDefs": [],
+  "classificationDefs": [
+    {
+      "name": "Campaign",
+      "superTypes": [],
+      "description": "Related projects can be organized into campaigns. The Campaign classification indicates that the project is working as a campaign. Projects that depend on the Campaign project as part of that project.",
+      "typeVersion": "1.0",
+      "entityTypes": [
+        "Project"
+      ]
+    },
+    {
+      "name": "Task",
+      "superTypes": [],
+      "description": "Small items of work, typically performed by a single person, can be defined as tasks for a project.",
+      "typeVersion": "1.0",
+      "entityTypes": [
+        "Project"
+      ]
+    }
+  ],
+  "entityDefs": [
+    {
+      "name": "Project",
+      "description": "Projects are used to organize a specific activity. The project is used to control the use of resources and associated costs so they are used appropriately in order to successfully achieve the project's goals. Notice that the project acts as an anchor for collections of resources that the project is using. Since it is a Referenceable, it can have links to external URLs, such as the project home page, project plan or APIs as well as images.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "startDate",
+          "description":"Project start date",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "plannedEndDate",
+          "description":"Planned project end date.",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "status",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name": "ProjectHierarchy",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "managedProjects",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "managingProject",
+        "type": "Project",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "ProjectDependency",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "dependentProjects",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "dependsOnProject",
+        "type": "Project",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "dependencySummary",
+          "description": "Summary description of the dependency.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ProjectTeam",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "supportingTeams",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectFocus",
+        "type": "Team",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "teamRole",
+          "description": "Role in the team.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ProjectResources",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "supportingResources",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectUse",
+        "type": "Collection",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "resourceUse",
+          "description": "Role in the team.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "ProjectScope",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "projectScope",
+        "type": "Project",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "projectImpactingAssets",
+        "type": "Collection",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "attributeDefs": [
+        {
+          "name": "scopeDescription",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}

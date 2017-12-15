@@ -429,8 +429,13 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
     public static void setVertexPropertiesFromRelationshipDef(AtlasRelationshipDef relationshipDef, AtlasVertex vertex) {
         vertex.setProperty(Constants.RELATIONSHIPTYPE_END1_KEY, AtlasType.toJson(relationshipDef.getEndDef1()));
         vertex.setProperty(Constants.RELATIONSHIPTYPE_END2_KEY, AtlasType.toJson(relationshipDef.getEndDef2()));
+        // default the relationship category to association if it has not been specified.
+        String relationshipCategory = RelationshipCategory.ASSOCIATION.name();
+        if (relationshipDef.getRelationshipCategory()!=null) {
+            relationshipCategory =relationshipDef.getRelationshipCategory().name();
+        }
         // Update RelationshipCategory
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipDef.getRelationshipCategory().name());
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipCategory);
 
         if (relationshipDef.getPropagateTags() == null) {
             vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, AtlasRelationshipDef.PropagateTags.NONE.name());

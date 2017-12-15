@@ -1,0 +1,171 @@
+{
+  "enumDefs": [
+    {
+      "name": "OrderBy",
+      "description": "The criteria by which this collection is ordered.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "NAME",
+          "description": "Order by name alphabetically."
+        },
+        {
+          "ordinal": 1,
+          "value": "OWNER",
+          "description": "Order by owner alphabetically."
+        },
+        {
+          "ordinal": 2,
+          "value": "DATE_ADDED",
+          "description": "Order by date added."
+        },
+        {
+          "ordinal": 3,
+          "value": "DATE_UPDATED",
+          "description": "Order by date updated."
+        },
+        {
+          "ordinal": 99,
+          "value": "OTHER",
+          "description": "Other order."
+        }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [
+    {
+      "name": "Set",
+      "superTypes": [],
+      "description": "Classifying a Collection with Set indicates it is an unordered collection.",
+      "typeVersion": "1.0",
+      "entityTypes": [
+        "Collection"
+      ]
+    },
+    {
+      "name": "Folder",
+      "superTypes": [],
+      "description": "Classifying a Collection with Folder indicates it is an ordered collection.",
+      "typeVersion": "1.0",
+      "entityTypes": [
+        "Collection"
+      ],
+      "attributeDefs": [
+        {
+          "name": "orderBy",
+          "description": "The criteria by which this folder is ordered.",
+          "typeName": "OrderBy",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "otherPropertyName",
+          "description": "The property name whose values the folder is ordered on.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "entityDefs": [
+    {
+      "name": "Collection",
+      "description": "Collections provide a general mechanism for grouping resources together. They are typically associated with Actors, Projects or Communities.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "owner",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ],
+      "relationshipDefs": [
+        {
+          "name": "ActorCollections",
+          "typeVersion": "1.0",
+          "endDef1": {
+            "name": "consumingActor",
+            "type": "Collection",
+            "cardinality": "SET",
+            "isContainer": true
+          },
+          "endDef2": {
+            "name": "actorCollections",
+            "type": "ActorProfile",
+            "cardinality": "SET"
+          },
+          "relationshipCategory": "AGGREGATION",
+          "propagateTags": "NONE",
+          "attributeDefs": [
+            {
+              "name": "collectionUse",
+              "description": "This is how the collection is used by the consuming actor.",
+              "typeName": "string",
+              "cardinality": "SINGLE",
+              "isIndexable": true,
+              "isOptional": true,
+              "isUnique": false
+            }
+          ]
+        },
+        {
+          "name": "CollectionMembership",
+          "typeVersion": "1.0",
+          "endDef1": {
+            "name": "member",
+            "type": "Collection",
+            "cardinality": "SET",
+            "isContainer": true
+          },
+          "endDef2": {
+            "name": "organisatedBy",
+            "type": "Referenceable",
+            "cardinality": "SET"
+          },
+          "relationshipCategory": "AGGREGATION",
+          "propagateTags": "NONE",
+          "attributeDefs": [
+            {
+              "name": "dateAdded",
+              "description": "This is the date that the collection was added as a member.",
+              "typeName": "date",
+              "cardinality": "SINGLE",
+              "isIndexable": true,
+              "isOptional": true,
+              "isUnique": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
