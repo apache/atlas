@@ -61,6 +61,11 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client-v2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>
         </dependency>
 
@@ -247,6 +252,11 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v2</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-intg</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
@@ -274,6 +284,41 @@
                                             <groupId>org.apache.kafka</groupId>
                                             <artifactId>kafka-clients</artifactId>
                                             <version>${kafka.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey.contribs</groupId>
+                                            <artifactId>jersey-multipart</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.scala-lang</groupId>
+                                            <artifactId>scala-library</artifactId>
+                                            <version>${scala.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-databind</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-core</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-configuration</groupId>
+                                            <artifactId>commons-configuration</artifactId>
+                                            <version>${commons-conf.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hbase</groupId>
+                                            <artifactId>hbase-common</artifactId>
+                                            <version>${hbase.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
