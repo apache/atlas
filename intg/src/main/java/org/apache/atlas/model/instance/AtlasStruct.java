@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -55,6 +56,7 @@ public class AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
+    @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     private String              typeName;
@@ -255,7 +257,7 @@ public class AtlasStruct implements Serializable {
         if (value == null) {
             sb.append(value);
         } else {
-            sb.append(DATE_FORMATTER.format(value));
+            sb.append(AtlasBaseTypeDef.getDateFormatter().format(value));
         }
 
         return sb;

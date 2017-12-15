@@ -479,7 +479,7 @@ public class AtlasBuiltInTypes {
                     return new Date(((Number) obj).longValue());
                 } else {
                     try {
-                        return AtlasBaseTypeDef.DATE_FORMATTER.parse(obj.toString());
+                        return AtlasBaseTypeDef.getDateFormatter().parse(obj.toString());
                     } catch (ParseException excp) {
                         try { // try to read it as a number
                             long longDate = Long.valueOf(obj.toString());

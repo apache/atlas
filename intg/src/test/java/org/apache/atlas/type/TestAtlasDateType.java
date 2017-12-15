@@ -46,7 +46,7 @@ public class TestAtlasDateType {
     private final Object[] invalidValues  = { "12ab", "abcd", "-12ab", };
 
     private final Date   now    = new Date();
-    private final String strNow = AtlasBaseTypeDef.DATE_FORMATTER.format(now);
+    private final String strNow = AtlasBaseTypeDef.getDateFormatter().format(now);
 
     @Test
     public void testDateTypeDefaultValue() {

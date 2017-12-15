@@ -108,12 +108,30 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         ATLAS_TYPE_OBJECT_ID,
     };
 
+
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
+    @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     static {
         DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
+
+    public static DateFormat getDateFormatter() {
+        return THREAD_LOCAL_DATE_FORMAT.get();
+    }
+
+    private static final ThreadLocal<DateFormat> THREAD_LOCAL_DATE_FORMAT = new ThreadLocal<DateFormat>() {
+        @Override
+        public DateFormat initialValue() {
+            DateFormat ret = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+
+            ret.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            return ret;
+        }
+    };
 
     private final TypeCategory category;
     private String  guid       = null;
@@ -375,7 +393,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         if (value == null) {
             sb.append(value);
         } else {
-            sb.append(DATE_FORMATTER.format(value));
+            sb.append(getDateFormatter().format(value));
         }
 
         return sb;
