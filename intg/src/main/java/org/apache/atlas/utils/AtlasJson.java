@@ -39,8 +39,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 
 public class AtlasJson {
@@ -187,7 +185,7 @@ public class AtlasJson {
         @Override
         public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             if (value != null) {
-                jgen.writeString(AtlasBaseTypeDef.DATE_FORMATTER.format(value));
+                jgen.writeString(AtlasBaseTypeDef.getDateFormatter().format(value));
             }
         }
     }
@@ -201,7 +199,7 @@ public class AtlasJson {
 
             if (value != null) {
                 try {
-                    ret = AtlasBaseTypeDef.DATE_FORMATTER.parse(value);
+                    ret = AtlasBaseTypeDef.getDateFormatter().parse(value);
                 } catch (ParseException excp) {
                 }
             }

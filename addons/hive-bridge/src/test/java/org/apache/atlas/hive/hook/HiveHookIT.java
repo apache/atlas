@@ -180,7 +180,7 @@ public class HiveHookIT extends HiveITBase {
     private void verifyTimestamps(Referenceable ref, String property, long expectedTime) throws ParseException {
         //Verify timestamps.
         String createTimeStr = (String) ref.get(property);
-        Date createDate = AtlasBaseTypeDef.DATE_FORMATTER.parse(createTimeStr);
+        Date createDate = AtlasBaseTypeDef.getDateFormatter().parse(createTimeStr);
         Assert.assertNotNull(createTimeStr);
 
         if (expectedTime > 0) {

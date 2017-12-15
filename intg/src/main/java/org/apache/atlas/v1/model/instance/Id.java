@@ -236,7 +236,7 @@ public class Id implements Serializable {
             }
 
             try {
-                return AtlasBaseTypeDef.DATE_FORMATTER.parse(val.toString());
+                return AtlasBaseTypeDef.getDateFormatter().parse(val.toString());
             } catch (ParseException excp) {
                 // ignore
             }
