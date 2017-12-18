@@ -70,15 +70,13 @@
       "endDef1": {
         "name": "Community",
         "type": "Person",
-        "cardinality": "SET",
-        "isContainer": true
+        "cardinality": "SET"
       },
       "endDef2": {
         "name": "members",
         "type": "Community",
         "cardinality": "SET"
       },
-      "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE",
       "attributeDefs": [
         {

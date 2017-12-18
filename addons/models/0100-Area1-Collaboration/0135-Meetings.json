@@ -1,0 +1,205 @@
+{
+  "enumDefs": [
+    {
+      "name": "ToDoStatus",
+      "description": "The status of the ToDo allows it to be tracked through to resolution.",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "OPEN",
+          "description": "An Open Todo means something needs to be done i.e. an action needs to be taken."
+        },
+        {
+          "ordinal": 1,
+          "value": "IN_PROGRESS",
+          "description": "An in progress ToDo indicates it is being worked on."
+        },
+        {
+          "ordinal": 2,
+          "value": "WAITING",
+          "description": "The ToDo is waiting / blocked on something."
+        },
+        {
+          "ordinal": 3,
+          "value": "COMPLETE",
+          "description": "The work associated with the ToDo is complete."
+        },
+        {
+          "ordinal": 99,
+          "value": "ABANDONED",
+          "description": "The ToDo is no longer required."
+        }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name": "ToDo",
+      "description": "A Todo is a documented event, task, activity, or action that needs to take place.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "owner",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "creationTime",
+          "description":"The date and time that the ToDo was created",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "completionTime",
+          "description":"The date and time that the ToDo was completed.",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "toDoStatus",
+          "description": "The status indicates how far the ToDo is through to resolution.",
+          "typeName": "ToDoStatus",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "Meeting",
+      "description": "A meeting is a gathering (physically and/or virtually) of two or more participants that has been convened over a period of time, to achieve an objective through communication exchanges.",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "title",
+          "description" : "Meeting title. A meaningful name for the meeting.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "startTime",
+          "description":"The date and time that the Meeting started",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "endTime",
+          "description":"The date and time that the Meeting ended.",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "objective",
+          "description":"The intended outcome of the meeting.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "minutes",
+          "description":"The minutes of the meeting.",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name": "ProjectMeeting",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "relatedProjects",
+        "type": "Meeting",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "meetings",
+        "type": "Project",
+        "cardinality": "SET"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "MeetingOnReferencable",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "meetings",
+        "type": "Referenceable",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "relatedReferenceables",
+        "type": "Meeting",
+        "cardinality": "SET"
+      },
+      "propagateTags": "NONE",
+      "attributeDefs": []
+    },
+    {
+      "name": "ToDoOnReferencable",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "todos",
+        "type": "Referenceable",
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "name": "relatedReferenceables",
+        "type": "ToDo",
+        "cardinality": "SET"
+      },
+      "propagateTags": "NONE",
+      "attributeDefs": []
+    }
+  ]
+}

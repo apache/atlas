@@ -1,0 +1,17 @@
+{
+  "enumDefs": [],
+  "structDefs": [],
+  "classificationDefs": [
+    {
+      "name": "GlossaryProject",
+      "superTypes": [],
+      "description": "A glossary project is used to develop new elements for the glossary.",
+      "typeVersion": "1.0",
+      "entityTypes": [
+        "Project"
+      ]
+    }
+  ],
+  "entityDefs": [],
+  "relationshipDefs": []
+}

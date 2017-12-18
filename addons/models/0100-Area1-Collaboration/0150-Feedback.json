@@ -209,7 +209,7 @@
         "cardinality": "SINGLE"
       },
       "propagateTags": "NONE",
-      "relationshipCategory": "COMPOSITION"
+      "relationshipCategory": "AGGREGATION"
     },
     {
       "name": "AttachedTag",
@@ -225,7 +225,7 @@
         "type": "InformalTag",
         "cardinality": "SINGLE"
       },
-      "relationshipCategory": "COMPOSITION",
+      "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE"
     },
     {
@@ -242,7 +242,7 @@
         "type": "Rating",
         "cardinality": "SINGLE"
       },
-      "relationshipCategory": "COMPOSITION",
+      "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE"
     },
     {
@@ -259,7 +259,7 @@
         "type": "Collection",
         "cardinality": "SINGLE"
       },
-      "relationshipCategory": "COMPOSITION",
+      "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE",
       "attributeDefs": [
         {
@@ -299,6 +299,24 @@
           "isUnique": false
         }
       ]
+    },
+    {
+      "name": "CommentReply",
+      "typeVersion": "1.0",
+      "endDef1": {
+        "name": "commentReplies",
+        "type": "Comment",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "name": "commentsOn",
+        "type": "Comment",
+        "cardinality": "SINGLE"
+      },
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags": "NONE",
+      "attributeDefs": []
     }
   ]
 }
