@@ -191,7 +191,15 @@ public class EntityMutationResponse {
         return getFirstEntityByType(getEntitiesByOperation(EntityOperation.UPDATE), typeName);
     }
 
+    @JsonIgnore
     public void addEntity(EntityOperation op, AtlasEntityHeader header) {
+        // if an entity is already included in CREATE, ignore subsequent UPDATE, PARTIAL_UPDATE
+        if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {
+            if (entityHeaderExists(getCreatedEntities(), header)) {
+                return;
+            }
+        }
+
         if (mutatedEntities == null) {
             mutatedEntities = new HashMap<>();
         }

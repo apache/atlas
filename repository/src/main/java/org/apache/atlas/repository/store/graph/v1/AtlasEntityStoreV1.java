@@ -39,6 +39,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,11 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
@@ -172,6 +169,34 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         // Create/Update entities
         EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+
+        // for existing entities, skip update if incoming entity doesn't have any change
+        if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
+            EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+
+            List<AtlasEntity> entitiesToSkipUpdate = null;
+            for (AtlasEntity entity : context.getUpdatedEntities()) {
+                String          guid          = entity.getGuid();
+                AtlasVertex     vertex        = context.getVertex(guid);
+                AtlasEntity     entityInStore = entityRetriever.toAtlasEntity(vertex);
+                AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                if (!AtlasEntityUtil.hasAnyAttributeUpdate(entityType, entity, entityInStore)) {
+                    // if classifications are to be replaced as well, then skip updates only when no change in classifications as well
+                    if (!replaceClassifications || Objects.equals(entity.getClassifications(), entityInStore.getClassifications())) {
+                        if (entitiesToSkipUpdate == null) {
+                            entitiesToSkipUpdate = new ArrayList<>();
+                        }
+
+                        entitiesToSkipUpdate.add(entity);
+                    }
+                }
+            }
+
+            if (entitiesToSkipUpdate != null) {
+                context.getUpdatedEntities().removeAll(entitiesToSkipUpdate);
+            }
+        }
 
         EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
 
