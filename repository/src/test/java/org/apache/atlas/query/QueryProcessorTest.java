@@ -32,9 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,8 +70,8 @@ public class QueryProcessorTest {
     @Test
     public void DBHasName() {
         String expected = "g.V().has('__typeName', 'DB').has('DB.name').limit(25).toList()";
-  //      verify("DB has name", expected);
-          verify("DB where DB has name", expected);
+        verify("DB has name", expected);
+        verify("DB where DB has name", expected);
     }
 
     @Test
@@ -83,15 +81,19 @@ public class QueryProcessorTest {
 
     @Test
     public void DBasDSelect() {
-        String expected = "g.V().has('__typeName', 'DB').as('d').valueMap('DB.name','DB.owner')";
-        verify("DB as d select d.name, d.owner", expected + ".limit(25).toList()");
-        verify("DB as d select d.name, d.owner limit 10", expected + ".limit(10).toList()");
+        String expected = "def f(r){ return [['d.name','d.owner']].plus(r.collect({[it.value('DB.name'),it.value('DB.owner')]})).unique(); }; f(g.V().has('__typeName', 'DB').as('d')";
+        verify("DB as d select d.name, d.owner", expected + ".limit(25).toList())");
+        verify("DB as d select d.name, d.owner limit 10", expected + ".limit(10).toList())");
     }
 
     @Test
     public void tableSelectColumns() {
-        verify("Table select columns limit 10", "g.V().has('__typeName', 'Table').out('__Table.columns').as('s0').select('s0').limit(10).toList()");
-        verify("Table select db.name", "g.V().has('__typeName', 'Table').out('__DB.Table').as('s0').select('s0').limit(25).toList()");
+        String exMain = "g.V().has('__typeName', 'Table').out('__Table.columns').limit(10).toList()";
+        String exSel = "def f(r){ r }";
+        verify("Table select columns limit 10", getExpected(exSel, exMain));
+
+        String exMain2 = "g.V().has('__typeName', 'Table').out('__Table.db').limit(25).toList()";
+        verify("Table select db.name", getExpected(exSel, exMain2));
     }
 
     @Test(enabled = false)
@@ -112,9 +114,16 @@ public class QueryProcessorTest {
         verify("from DB orderby name", expected);
         verify("from DB as d orderby d.owner limit 3", "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').limit(3).toList()");
         verify("DB as d orderby d.owner limit 3", "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').limit(3).toList()");
-        verify("DB as d select name, owner orderby d.owner limit 3", "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').valueMap('DB.name','DB.owner').limit(3).toList()");
+
+
+        String exSel = "def f(r){ return [['d.name','d.owner']].plus(r.collect({[it.value('DB.name'),it.value('DB.owner')]})).unique(); }";
+        String exMain = "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner)').limit(25).toList()";
+        verify("DB as d select d.name, d.owner orderby (d.owner) limit 25", getExpected(exSel, exMain));
+
+        String exMain2 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1388563200000'))).order().by('Table.createTime').limit(25).toList()";
+        String exSel2 = "def f(r){ return [['_col_0','_col_1']].plus(r.collect({[it.value('Table.name'),it.value('Table.createTime')]})).unique(); }";
         verify("Table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
-                "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1388563200000'))).order().by('Table.createTime').valueMap('Table.name','Table.createTime').limit(25).toList()");
+                getExpected(exSel2, exMain2));
     }
 
     @Test
@@ -124,47 +133,55 @@ public class QueryProcessorTest {
 
     @Test
     public void fromDBSelect() {
-        verify("from DB select DB.name, DB.owner", "g.V().has('__typeName', 'DB').valueMap('DB.name','DB.owner').limit(25).toList()");
+        String expected = "def f(r){ return [['DB.name','DB.owner']].plus(r.collect({[it.value('DB.name'),it.value('DB.owner')]})).unique(); }; f(g.V().has('__typeName', 'DB').limit(25).toList())";
+        verify("from DB select DB.name, DB.owner", expected);
     }
 
     @Test
-    public void fromDBSelectGroupBy() {
+    public void fromDBGroupBy() {
         verify("from DB groupby (DB.owner)", "g.V().has('__typeName', 'DB').group().by('DB.owner').limit(25).toList()");
     }
 
     @Test
     public void whereClauseTextContains() {
-        String expected = "g.V().has('__typeName', 'DB').has('DB.name', eq(\"Reporting\")).valueMap('DB.name','DB.owner').limit(25).toList()";
-        verify("from DB where name = \"Reporting\" select name, owner", expected);
+        String exMain = "g.V().has('__typeName', 'DB').has('DB.name', eq(\"Reporting\")).limit(25).toList()";
+        String exSel = "def f(r){ return [['name','owner']].plus(r.collect({[it.value('DB.name'),it.value('DB.owner')]})).unique(); }";
+        verify("from DB where name = \"Reporting\" select name, owner", getExpected(exSel, exMain));
+        verify("from DB where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
         verify("Table where Asset.name like \"Tab*\"",
                 "g.V().has('__typeName', 'Table').has('Table.name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).limit(25).toList()");
-        verify("from DB where (name = \"Reporting\") select name, owner", expected);
         verify("from Table where (db.name = \"Reporting\")",
-                "g.V().has('__typeName', 'Table').out('__DB.Table').has('DB.name', eq(\"Reporting\")).in('__DB.Table').limit(25).toList()");
+                "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).in('__Table.db').limit(25).toList()");
     }
 
     @Test
     public void whereClauseWithAsTextContains() {
-        verify("Table as t where t.name = \"testtable_1\" select t.name, t.owner)",
-                "g.V().has('__typeName', 'Table').as('t').has('Table.name', eq(\"testtable_1\")).valueMap('Table.name','Table.owner').limit(25).toList()");
+        String exSel = "def f(r){ return [['t.name','t.owner']].plus(r.collect({[it.value('Table.name'),it.value('Table.owner')]})).unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.name', eq(\"testtable_1\")).limit(25).toList()";
+        verify("Table as t where t.name = \"testtable_1\" select t.name, t.owner)", getExpected(exSel, exMain));
     }
 
     @Test
     public void whereClauseWithDateCompare() {
-        verify("Table as t where t.createdTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)",
-                "g.V().has('__typeName', 'Table').as('t').has('Table.createdTime', eq('1513046158440')).valueMap('Table.name','Table.owner').limit(25).toList()");
+        String exSel = "def f(r){ return [['t.name','t.owner']].plus(r.collect({[it.value('Table.name'),it.value('Table.owner')]})).unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createdTime', eq('1513046158440')).limit(25).toList()";
+        verify("Table as t where t.createdTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
     }
 
     @Test
     public void multipleWhereClauses() {
-        verify("Table where name=\"sales_fact\", columns as c select c.owner, c.name, c.dataType",
-                "g.V().has('__typeName', 'Table').has('Table.name', eq(\"sales_fact\")).out('__Table.columns').as('c').valueMap('Column.owner','Column.name','Column.dataType').limit(25).toList()");
+        String exSel = "def f(r){ return [['c.owner','c.name','c.dataType']].plus(r.collect({[it.value('Column.owner'),it.value('Column.name'),it.value('Column.dataType')]})).unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').has('Table.name', eq(\"sales_fact\")).out('__Table.columns').as('c').limit(25).toList()";
+        verify("Table where name=\"sales_fact\", columns as c select c.owner, c.name, c.dataType", getExpected(exSel, exMain));
+                ;
     }
 
     @Test
     public void subType() {
-        verify("Asset select name, owner",
-                "g.V().has('__typeName', within('Asset','Table')).valueMap('Asset.name','Asset.owner').limit(25).toList()");
+        String exMain = "g.V().has('__typeName', within('Asset','Table')).limit(25).toList()";
+        String exSel = "def f(r){ return [['name','owner']].plus(r.collect({[it.value('Asset.name'),it.value('Asset.owner')]})).unique(); }";
+
+        verify("Asset select name, owner", getExpected(exSel, exMain));
     }
 
     @Test
@@ -236,13 +253,17 @@ public class QueryProcessorTest {
         verify("hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
                 "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).limit(25).toList()");
         verify("Table where db.name='Sales' and db.clusterName='cl1'",
-                "g.V().has('__typeName', 'Table').and(__.out('__DB.Table').has('DB.name', eq('Sales')).in('__DB.Table'),__.out('__DB.Table').has('DB.clusterName', eq('cl1')).in('__DB.Table')).limit(25).toList()");
+                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).in('__Table.db')).limit(25).toList()");
     }
 
     private void verify(String dsl, String expectedGremlin) {
         AtlasDSLParser.QueryContext queryContext = getParsedQuery(dsl);
         String actualGremlin = getGremlinQuery(queryContext);
         assertEquals(actualGremlin, expectedGremlin);
+    }
+
+    private String getExpected(String select, String main) {
+        return String.format("%s; f(%s)", select, main);
     }
 
     private AtlasDSLParser.QueryContext getParsedQuery(String query) {
@@ -276,8 +297,9 @@ public class QueryProcessorTest {
         qv.visit(queryContext);
         queryProcessor.close();
 
-        assertTrue(StringUtils.isNotEmpty(queryProcessor.getText()));
-        return queryProcessor.getText();
+        String s = queryProcessor.getText();
+        assertTrue(StringUtils.isNotEmpty(s));
+        return s;
     }
 
     private static class TestLookup implements org.apache.atlas.query.Lookup {
@@ -324,6 +346,8 @@ public class QueryProcessorTest {
         public String getRelationshipEdgeLabel(QueryProcessor.Context context, String attributeName) {
             if (attributeName.equalsIgnoreCase("columns"))
                 return "__Table.columns";
+            if (attributeName.equalsIgnoreCase("db"))
+                return "__Table.db";
             else
                 return "__DB.Table";
         }

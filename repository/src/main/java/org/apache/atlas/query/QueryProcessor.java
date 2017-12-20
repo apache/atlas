@@ -21,20 +21,29 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.query.Expressions.Expression;
-import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBuiltInTypes;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 public class QueryProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(QueryProcessor.class);
@@ -42,13 +51,18 @@ public class QueryProcessor {
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
 
-    private final boolean isNestedQuery;
-    private final List<String>      errorList    = new ArrayList<>();
-    private final GremlinClauseList queryClauses = new GremlinClauseList();
-    private int providedLimit = DEFAULT_QUERY_RESULT_LIMIT;
-    private int providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
-    private int currentStep;
+    private final List<String>      errorList      = new ArrayList<>();
+    private final GremlinClauseList queryClauses   = new GremlinClauseList();
+
+    private int     providedLimit  = DEFAULT_QUERY_RESULT_LIMIT;
+    private int     providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
+    private boolean hasSelect      = false;
+    private boolean isSelectNoop   = false;
+    private boolean hasGrpBy       = false;
+
     private final org.apache.atlas.query.Lookup lookup;
+    private final boolean isNestedQuery;
+    private int currentStep;
     private Context context;
 
     @Inject
@@ -83,15 +97,6 @@ public class QueryProcessor {
         return expression.isReady();
     }
 
-    private void init() {
-        if (!isNestedQuery) {
-            add(GremlinClause.G);
-            add(GremlinClause.V);
-        } else {
-            add(GremlinClause.NESTED_START);
-        }
-    }
-
     public void addFrom(String typeName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("addFrom(typeName={})", typeName);
@@ -115,17 +120,6 @@ public class QueryProcessor {
             IdentifierHelper.Advice ia = getAdvice(ta.get());
             introduceType(ia);
         }
-    }
-
-    private void introduceType(IdentifierHelper.Advice ia) {
-        if (!ia.isPrimitive() && ia.getIntroduceType()) {
-            add(GremlinClause.OUT, ia.getEdgeLabel());
-            context.registerActive(ia.getTypeName());
-        }
-    }
-
-    private IdentifierHelper.Advice getAdvice(String actualTypeName) {
-        return IdentifierHelper.create(context, lookup, actualTypeName);
     }
 
     public void addFromProperty(String typeName, String attribute) {
@@ -202,65 +196,66 @@ public class QueryProcessor {
         queryClauses.add(GremlinClause.OR, StringUtils.join(clauses, ','));
     }
 
-    public void addSelect(List<Pair<String, String>> items) {
+    public void addSelect(SelectExprMetadata selectExprMetadata) {
+        String[] items  = selectExprMetadata.getItems();
+        String[] labels = selectExprMetadata.getLabels();
         if (LOG.isDebugEnabled()) {
-            LOG.debug("addSelect(items.length={})", items != null ? items.size() : -1);
+            LOG.debug("addSelect(items.length={})", items != null ? items.length : 0);
         }
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < items.size(); i++) {
-            IdentifierHelper.Advice ia = getAdvice(items.get(i).getLeft());
-            if(StringUtils.isNotEmpty(items.get(i).getRight())) {
-                context.aliasMap.put(items.get(i).getRight(), ia.getQualifiedName());
+        if (items != null) {
+            for (int i = 0; i < items.length; i++) {
+                IdentifierHelper.Advice ia = getAdvice(items[i]);
+
+                if(!labels[i].equals(items[i])) {
+                    context.aliasMap.put(labels[i], ia.getQualifiedName());
+                }
+
+                if (i == selectExprMetadata.getCountIdx()) {
+                    items[i] = GremlinClause.INLINE_COUNT.get();
+                } else if (i == selectExprMetadata.getMinIdx()) {
+                    items[i] = GremlinClause.INLINE_MIN.get(ia.getQualifiedName(), ia.getQualifiedName());
+                } else if (i == selectExprMetadata.getMaxIdx()) {
+                    items[i] = GremlinClause.INLINE_MAX.get(ia.getQualifiedName(), ia.getQualifiedName());
+                } else if (i == selectExprMetadata.getSumIdx()) {
+                    items[i] = GremlinClause.INLINE_SUM.get(ia.getQualifiedName(), ia.getQualifiedName());
+                } else {
+                    if (!ia.isPrimitive() && ia.getIntroduceType()) {
+                        add(GremlinClause.OUT, ia.getEdgeLabel());
+                        context.registerActive(ia.getTypeName());
+
+                        int dotIdx = ia.get().indexOf(".");
+                        if (dotIdx != -1) {
+                            IdentifierHelper.Advice iax = getAdvice(ia.get());
+                            items[i] = GremlinClause.INLINE_GET_PROPERTY.get(iax.getQualifiedName());
+                        } else {
+                            isSelectNoop = true;
+                        }
+                    } else {
+                        items[i] = GremlinClause.INLINE_GET_PROPERTY.get(ia.getQualifiedName());
+                    }
+                }
             }
 
-            if(!ia.isPrimitive() && ia.getIntroduceType()) {
-                add(GremlinClause.OUT, ia.getEdgeLabel());
-                add(GremlinClause.AS, getCurrentStep());
-                addSelectClause(getCurrentStep());
-                incrementCurrentStep();
-            }  else {
-                sb.append(quoted(ia.getQualifiedName()));
+            // If GroupBy clause exists then the query spits out a List<Map<String, List<AtlasVertex>>> otherwise the query returns List<AtlasVertex>
+            // Different transformations are needed for DSLs with groupby and w/o groupby
+            GremlinClause transformationFn;
+            if (isSelectNoop) {
+                transformationFn = GremlinClause.SELECT_EXPR_NOOP_FN;
+            } else {
+                transformationFn = hasGrpBy ? GremlinClause.SELECT_WITH_GRPBY_HELPER_FN : GremlinClause.SELECT_EXPR_HELPER_FN;
             }
+            queryClauses.add(0, transformationFn, getJoinedQuotedStr(labels), String.join(",", items));
+            queryClauses.add(GremlinClause.INLINE_TRANSFORM_CALL);
 
-            if (i != items.size() - 1) {
-                sb.append(",");
-            }
+            hasSelect = true;
         }
-
-        if (!StringUtils.isEmpty(sb.toString())) {
-            addValueMapClause(sb.toString());
-        }
-    }
-
-    private void addSelectClause(String s) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addSelectClause(s={})", s);
-        }
-
-        add(GremlinClause.SELECT, s);
-    }
-
-    private String getCurrentStep() {
-        return String.format("s%d", currentStep);
-    }
-
-    private void incrementCurrentStep() {
-        currentStep++;
     }
 
     public QueryProcessor createNestedProcessor() {
         QueryProcessor qp = new QueryProcessor(lookup, true);
         qp.context = this.context;
         return qp;
-    }
-
-    private void addValueMapClause(String s) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addValueMapClause(s={})", s);
-        }
-
-        add(GremlinClause.VALUE_MAP, s);
     }
 
     public void addFromAlias(String typeName, String alias) {
@@ -281,19 +276,6 @@ public class QueryProcessor {
         add(GremlinClause.AS, stepName);
     }
 
-    private void add(GremlinClause clause, String... args) {
-        queryClauses.add(new GremlinClauseValue(clause, clause.get(args)));
-    }
-
-    private void addRangeClause(String startIndex, String endIndex) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addRangeClause(startIndex={}, endIndex={})", startIndex, endIndex);
-        }
-
-        add(GremlinClause.RANGE, startIndex, startIndex, endIndex);
-    }
-
-
     public void addGroupBy(String item) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("addGroupBy(item={})", item);
@@ -301,16 +283,7 @@ public class QueryProcessor {
 
         add(GremlinClause.GROUP);
         addByClause(item, false);
-    }
-
-    private void addByClause(String name, boolean descr) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addByClause(name={})", name, descr);
-        }
-
-        IdentifierHelper.Advice ia = getAdvice(name);
-        add((!descr) ? GremlinClause.BY : GremlinClause.BY_DESC,
-                ia.getQualifiedName());
+        hasGrpBy = true;
     }
 
     public void addLimit(String limit, String offset) {
@@ -335,27 +308,38 @@ public class QueryProcessor {
             addLimit(Integer.toString(providedLimit), Integer.toString(providedOffset));
         }
 
+        updatePosition(GremlinClause.LIMIT);
         add(GremlinClause.TO_LIST);
+        updatePosition(GremlinClause.INLINE_TRANSFORM_CALL);
     }
 
     public String getText() {
+        String ret;
         String[] items = new String[queryClauses.size()];
 
-        for (int i = 0; i < queryClauses.size(); i++) {
+        int startIdx = hasSelect ? 1 : 0;
+        int endIdx = hasSelect ? queryClauses.size() - 1 : queryClauses.size();
+        for (int i = startIdx; i < endIdx; i++) {
             items[i] = queryClauses.getValue(i);
         }
 
-        String ret = StringUtils.join(items, ".");
+        if (hasSelect) {
+            String body = StringUtils.join(Stream.of(items).filter(Objects::nonNull).toArray(), ".");
+            String inlineFn = queryClauses.getValue(queryClauses.size() - 1);
+            String funCall = String.format(inlineFn, body);
+            ret = queryClauses.getValue(0) + funCall;
+        } else {
+            ret = String.join(".", items);
+        }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("getText() => {}", ret);
         }
-
         return ret;
     }
 
     public boolean hasSelect() {
-        return (queryClauses.hasClause(GremlinClause.VALUE_MAP) != -1);
+        return hasSelect;
     }
 
     public void addOrderBy(String name, boolean isDesc) {
@@ -365,17 +349,71 @@ public class QueryProcessor {
 
         add(GremlinClause.ORDER);
         addByClause(name, isDesc);
-        updateSelectClausePosition();
     }
 
-    private void updateSelectClausePosition() {
-        int selectClauseIndex = queryClauses.hasClause(GremlinClause.VALUE_MAP);
-        if(-1 == selectClauseIndex) {
+    private void updatePosition(GremlinClause clause) {
+        int index = queryClauses.hasClause(clause);
+        if(-1 == index) {
             return;
         }
 
-        GremlinClauseValue gcv = queryClauses.remove(selectClauseIndex);
+        GremlinClauseValue gcv = queryClauses.remove(index);
         queryClauses.add(gcv);
+    }
+
+    private void init() {
+        if (!isNestedQuery) {
+            add(GremlinClause.G);
+            add(GremlinClause.V);
+        } else {
+            add(GremlinClause.NESTED_START);
+        }
+    }
+
+    private void introduceType(IdentifierHelper.Advice ia) {
+        if (!ia.isPrimitive() && ia.getIntroduceType()) {
+            add(GremlinClause.OUT, ia.getEdgeLabel());
+            context.registerActive(ia.getTypeName());
+        }
+    }
+
+    private IdentifierHelper.Advice getAdvice(String actualTypeName) {
+        return IdentifierHelper.create(context, lookup, actualTypeName);
+    }
+
+    private String getJoinedQuotedStr(String[] elements) {
+        StringJoiner joiner = new StringJoiner(",");
+        Arrays.stream(elements).map(x -> "'" + x + "'").forEach(joiner::add);
+        return joiner.toString();
+    }
+
+    private void add(GremlinClause clause, String... args) {
+        queryClauses.add(new GremlinClauseValue(clause, clause.get(args)));
+    }
+
+    private void add(int idx, GremlinClause clause, String... args) {
+        queryClauses.add(idx, new GremlinClauseValue(clause, clause.get(args)));
+    }
+
+    private void addRangeClause(String startIndex, String endIndex) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("addRangeClause(startIndex={}, endIndex={})", startIndex, endIndex);
+        }
+
+        if (hasSelect) {
+            add(queryClauses.size() - 1, GremlinClause.RANGE, startIndex, startIndex, endIndex);
+        } else {
+            add(GremlinClause.RANGE, startIndex, startIndex, endIndex);
+        }
+    }
+
+    private void addByClause(String name, boolean descr) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("addByClause(name={})", name, descr);
+        }
+
+        IdentifierHelper.Advice ia = getAdvice(name);
+        add((!descr) ? GremlinClause.BY : GremlinClause.BY_DESC, ia.getQualifiedName());
     }
 
     private enum GremlinClause {
@@ -407,6 +445,17 @@ public class QueryProcessor {
         TEXT_PREFIX("has('%s', org.janusgraph.core.attribute.Text.textPrefix(%s))"),
         TEXT_SUFFIX("has('%s', org.janusgraph.core.attribute.Text.textRegex(\".*\" + %s))"),
         TRAIT("has('__traitNames', within('%s'))"),
+        SELECT_EXPR_NOOP_FN("def f(r){ r }; "),
+        SELECT_EXPR_HELPER_FN("def f(r){ return [[%s]].plus(r.collect({[%s]})).unique(); }; "),
+        SELECT_WITH_GRPBY_HELPER_FN("def f(r){ return [[%s]].plus(r.collect({it.values()}).flatten().collect({[%s]})).unique(); }; "),
+        INLINE_COUNT("r.size()"),
+        INLINE_SUM("r.sum({it.value('%s')}).value('%s')"),
+        INLINE_MAX("r.max({it.value('%s')}).value('%s')"),
+        INLINE_MIN("r.min({it.value('%s')}).value('%s')"),
+        INLINE_GET_PROPERTY("it.value('%s')"),
+        INLINE_OUT_VERTEX("it.out('%s')"),
+        INLINE_OUT_VERTEX_VALUE("it.out('%s').value('%s')"), // This might require more closure introduction :(
+        INLINE_TRANSFORM_CALL("f(%s)"),
         V("V()"),
         VALUE_MAP("valueMap(%s)");
 
@@ -452,12 +501,28 @@ public class QueryProcessor {
             list.add(g);
         }
 
+        public void add(int idx, GremlinClauseValue g) {
+            list.add(idx, g);
+        }
+
         public void add(GremlinClauseValue g, AtlasEntityType t) {
             add(g);
         }
 
+        public void add(int idx, GremlinClauseValue g, AtlasEntityType t) {
+            add(idx, g);
+        }
+
         public void add(GremlinClause clause, String... args) {
             list.add(new GremlinClauseValue(clause, clause.get(args)));
+        }
+
+        public void add(int i, GremlinClause clause, String... args) {
+            list.add(i, new GremlinClauseValue(clause, clause.get(args)));
+        }
+
+        public GremlinClauseValue getAt(int i) {
+            return list.get(i);
         }
 
         public String getValue(int i) {
@@ -500,8 +565,8 @@ public class QueryProcessor {
     static class Context {
         private final List<String> errorList;
         org.apache.atlas.query.Lookup lookup;
-        private AtlasType activeType;
         Map<String, String> aliasMap = new HashMap<>();
+        private AtlasType activeType;
 
         public Context(List<String> errorList, org.apache.atlas.query.Lookup lookup) {
             this.lookup = lookup;
@@ -682,16 +747,71 @@ public class QueryProcessor {
         @Override
         public boolean isDate(Context context, String attributeName) {
             AtlasEntityType et = context.getActiveEntityType();
-            if(et == null) {
+            if (et == null) {
                 return false;
             }
 
             AtlasType attr = et.getAttributeType(attributeName);
-            if(attr == null) {
-                return false;
-            }
+            return attr != null && attr.getTypeName().equals(AtlasBaseTypeDef.ATLAS_TYPE_DATE);
 
-            return attr.getTypeName().equals("date");
+        }
+    }
+
+    static class SelectExprMetadata {
+        private String[] items;
+        private String[] labels;
+
+        private int countIdx = -1;
+        private int sumIdx   = -1;
+        private int maxIdx   = -1;
+        private int minIdx   = -1;
+
+        public String[] getItems() {
+            return items;
+        }
+
+        public int getCountIdx() {
+            return countIdx;
+        }
+
+        public void setCountIdx(final int countIdx) {
+            this.countIdx = countIdx;
+        }
+
+        public int getSumIdx() {
+            return sumIdx;
+        }
+
+        public void setSumIdx(final int sumIdx) {
+            this.sumIdx = sumIdx;
+        }
+
+        public int getMaxIdx() {
+            return maxIdx;
+        }
+
+        public void setMaxIdx(final int maxIdx) {
+            this.maxIdx = maxIdx;
+        }
+
+        public int getMinIdx() {
+            return minIdx;
+        }
+
+        public void setMinIdx(final int minIdx) {
+            this.minIdx = minIdx;
+        }
+
+        public String[] getLabels() {
+            return labels;
+        }
+
+        public void setItems(final String[] items) {
+            this.items = items;
+        }
+
+        public void setLabels(final String[] labels) {
+            this.labels = labels;
         }
     }
 }

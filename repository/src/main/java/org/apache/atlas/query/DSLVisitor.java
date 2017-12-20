@@ -21,13 +21,12 @@ package org.apache.atlas.query;
 import org.apache.atlas.query.antlr4.AtlasDSLParser.*;
 import org.apache.atlas.query.antlr4.AtlasDSLParserBaseVisitor;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class DSLVisitor extends AtlasDSLParserBaseVisitor<String> {
     private static final Logger LOG = LoggerFactory.getLogger(DSLVisitor.class);
@@ -68,7 +67,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<String> {
         }
 
         queryProcessor.addLimit(ctx.limitClause().NUMBER().toString(),
-                (ctx.offsetClause() == null ? "0" : ctx.offsetClause().NUMBER().getText()));
+                                (ctx.offsetClause() == null ? "0" : ctx.offsetClause().NUMBER().getText()));
         return super.visitLimitOffset(ctx);
     }
 
@@ -78,17 +77,46 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<String> {
             LOG.debug("=> DSLVisitor.visitSelectExpr({})", ctx);
         }
 
-        if (!(ctx.getParent() instanceof GroupByExpressionContext)) {
-            List<Pair<String, String>> items = new ArrayList<>();
-            for (int i = 0; i < ctx.selectExpression().size(); i++) {
-                String idf = ctx.selectExpression(i).expr().getText();
-                String alias = (ctx.selectExpression(i).K_AS() != null) ?
-                        ctx.selectExpression(i).identifier().getText() : "";
+        // Select can have only attributes, aliased attributes or aggregate functions
 
-                items.add(new MutablePair<String, String>(idf, alias));
+        // Groupby attr also represent select expr, no processing is needed in that case
+        // visit groupBy would handle the select expr appropriately
+        if (!(ctx.getParent() instanceof GroupByExpressionContext)) {
+            String[] items  = new String[ctx.selectExpression().size()];
+            String[] labels = new String[ctx.selectExpression().size()];
+
+            QueryProcessor.SelectExprMetadata selectExprMetadata = new QueryProcessor.SelectExprMetadata();
+
+            for (int i = 0; i < ctx.selectExpression().size(); i++) {
+                SelectExpressionContext selectExpression = ctx.selectExpression(i);
+                CountClauseContext      countClause      = selectExpression.expr().compE().countClause();
+                SumClauseContext        sumClause        = selectExpression.expr().compE().sumClause();
+                MinClauseContext        minClause        = selectExpression.expr().compE().minClause();
+                MaxClauseContext        maxClause        = selectExpression.expr().compE().maxClause();
+                IdentifierContext       identifier       = selectExpression.identifier();
+
+                labels[i] = identifier != null ? identifier.getText() : selectExpression.getText();
+
+                if (Objects.nonNull(countClause)) {
+                    items[i] = "count";
+                    selectExprMetadata.setCountIdx(i);
+                } else if (Objects.nonNull(sumClause)) {
+                    items[i] = sumClause.expr().getText();
+                    selectExprMetadata.setSumIdx(i);
+                } else if (Objects.nonNull(minClause)) {
+                    items[i] = minClause.expr().getText();
+                    selectExprMetadata.setMinIdx(i);
+                } else if (Objects.nonNull(maxClause)) {
+                    items[i] = maxClause.expr().getText();
+                    selectExprMetadata.setMaxIdx(i);
+                } else {
+                    items[i] = selectExpression.expr().getText();
+                }
             }
 
-            queryProcessor.addSelect(items);
+            selectExprMetadata.setItems(items);
+            selectExprMetadata.setLabels(labels);
+            queryProcessor.addSelect(selectExprMetadata);
         }
         return super.visitSelectExpr(ctx);
     }

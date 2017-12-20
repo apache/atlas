@@ -720,8 +720,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private AttributeSearchResult toAttributesResult(List results, GremlinQuery query) {
         AttributeSearchResult ret = new AttributeSearchResult();
-        List<String> names = extractNames(results);
-        List<List<Object>> values = extractValues(results);
+//        List<String> names = extractNames(results);
+//        List<List<Object>> values = extractValues(results);
+        List<String> names = (List<String>) results.get(0);
+        List<List<Object>> values = extractValues(results.subList(1, results.size()));
 
         ret.setName(names);
         ret.setValues(values);

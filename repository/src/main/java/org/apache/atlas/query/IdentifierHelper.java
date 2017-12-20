@@ -189,6 +189,14 @@ public class IdentifierHelper {
             return isPrimitive;
         }
 
+        public boolean isAttribute() {
+            return isAttribute;
+        }
+
+        public String getAttributeName() {
+            return attributeName;
+        }
+
         public String getEdgeLabel() {
             return edgeLabel;
         }
