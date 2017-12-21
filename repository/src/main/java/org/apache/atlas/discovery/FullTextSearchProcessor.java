@@ -61,7 +61,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
-        if (context.getClassificationType() != null) {
+        if (context.getClassificationType() != null && context.getClassificationType() != SearchContext.MATCH_ALL_CLASSIFICATION) {
             String typeAndSubTypeNamesStr = context.getClassificationType().getTypeAndAllSubTypesQryStr();
 
             if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {

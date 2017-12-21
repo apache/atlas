@@ -93,7 +93,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         final Predicate traitPredicate;
 
         if (classificationType == SearchContext.MATCH_ALL_CLASSIFICATION) {
-            traitPredicate = SearchPredicateUtil.getNotNullPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
+            traitPredicate = SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
         } else {
             traitPredicate = SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class);
         }
