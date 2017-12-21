@@ -21,6 +21,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -600,6 +601,50 @@ public class SearchPredicateUtil {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getNotNullPredicateGenerator");
+        }
+
+        return ret;
+    }
+
+    public static VertexAttributePredicateGenerator getNotEmptyPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getNotEmptyPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null) {
+                    ret = ALWAYS_FALSE;
+                } else {
+                    ret = new VertexAttributePredicate(attrName, attrClass, true) {
+                        @Override
+                        protected boolean compareValue(final Object vertexAttrVal) {
+                            boolean ret = false;
+
+                            if (vertexAttrVal != null) {
+                                if (vertexAttrVal instanceof Collection) {
+                                    ret = CollectionUtils.isNotEmpty((Collection) vertexAttrVal);
+                                } else if (vertexAttrVal instanceof String) {
+                                    ret = StringUtils.isNotEmpty((String) vertexAttrVal);
+                                } else {
+                                    ret = true; // for other datatypes, a non-null is treated as non-empty
+                                }
+                            }
+
+                            return ret;
+                        }
+                    };
+                }
+
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getNotEmptyPredicateGenerator");
         }
 
         return ret;

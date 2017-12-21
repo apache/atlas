@@ -155,7 +155,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 entityPredicateTraitNames  = SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
             } else {
                 entityGraphQueryTraitNames = graph.query().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null);
-                entityPredicateTraitNames = SearchPredicateUtil.getNotNullPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
+                entityPredicateTraitNames = SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
             }
 
             if (context.getSearchParameters().getExcludeDeletedEntities()) {
