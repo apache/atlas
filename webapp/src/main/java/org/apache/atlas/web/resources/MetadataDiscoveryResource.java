@@ -33,6 +33,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -305,7 +306,7 @@ public class MetadataDiscoveryResource {
         }
 
         public DSLJSONResponseBuilder results(String dslResults) throws IOException {
-            return results(AtlasJson.parseToV1ArrayNode(dslResults));
+            return results(StringUtils.isEmpty(dslResults) ? AtlasJson.createV1ArrayNode() : AtlasJson.parseToV1ArrayNode(dslResults));
         }
 
         @Override
