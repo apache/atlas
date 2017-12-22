@@ -86,12 +86,6 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
-        },
-        {
-          "name": "media",
-          "typeName": "array<EmbeddedMedia>",
-          "cardinality": "SINGLE",
-          "isOptional": true
         }
       ]
     }
