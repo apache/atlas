@@ -281,8 +281,7 @@ public class QueryProcessor {
             LOG.debug("addGroupBy(item={})", item);
         }
 
-        add(GremlinClause.GROUP);
-        addByClause(item, false);
+        addGroupByClause(item);
         hasGrpBy = true;
     }
 
@@ -347,8 +346,7 @@ public class QueryProcessor {
             LOG.debug("addOrderBy(name={}, isDesc={})", name, isDesc);
         }
 
-        add(GremlinClause.ORDER);
-        addByClause(name, isDesc);
+        addOrderByClause(name, isDesc);
     }
 
     private void updatePosition(GremlinClause clause) {
@@ -407,22 +405,29 @@ public class QueryProcessor {
         }
     }
 
-    private void addByClause(String name, boolean descr) {
+    private void addOrderByClause(String name, boolean descr) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("addByClause(name={})", name, descr);
+            LOG.debug("addOrderByClause(name={})", name, descr);
         }
 
         IdentifierHelper.Advice ia = getAdvice(name);
-        add((!descr) ? GremlinClause.BY : GremlinClause.BY_DESC, ia.getQualifiedName());
+        add((!descr) ? GremlinClause.ORDER_BY : GremlinClause.ORDER_BY_DESC, ia.getQualifiedName());
+    }
+
+    private void addGroupByClause(String name) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("addGroupByClause(name={})", name);
+        }
+
+        IdentifierHelper.Advice ia = getAdvice(name);
+        add(GremlinClause.GROUP_BY, ia.getQualifiedName());
     }
 
     private enum GremlinClause {
         AS("as('%s')"),
-        BY("by('%s')"),
-        BY_DESC("by('%s', decr)"),
         DEDUP("dedup()"),
         G("g"),
-        GROUP("group()"),
+        GROUP_BY("group().by('%')"),
         HAS("has('%s', %s)"),
         HAS_OPERATOR("has('%s', %s(%s))"),
         HAS_PROPERTY("has('%s')"),
@@ -436,7 +441,8 @@ public class QueryProcessor {
         NESTED_START("__"),
         NESTED_HAS_OPERATOR("has('%s', %s(%s))"),
         LIMIT("limit(%s)"),
-        ORDER("order()"),
+        ORDER_BY("order().by('%s')"),
+        ORDER_BY_DESC("order().by('%s', decr)"),
         OUT("out('%s')"),
         RANGE("range(%s, %s + %s)"),
         SELECT("select('%s')"),

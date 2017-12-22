@@ -22,6 +22,7 @@ import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.runner.LocalSolrRunner;
+import org.apache.commons.collections.CollectionUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -116,11 +117,11 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table", 10},
                 {"hive_table isa Dimension", 3},
                 {"hive_column where hive_column isa PII", 4},
-                {"hive_column where hive_column isa PII select hive_column.name", 4},
-                {"hive_column select hive_column.name", 17},
-                {"hive_column select name", 17},
+                {"hive_column where hive_column isa PII select hive_column.qualifiedName", 4},
+                {"hive_column select hive_column.qualifiedName", 17},
+                {"hive_column select qualifiedName", 17},
                 {"hive_column where hive_column.name=\"customer_id\"", 2},
-                {"from hive_table select hive_table.name", 10},
+                {"from hive_table select hive_table.qualifiedName", 10},
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
                 {"hive_db where hive_db is JdbcAccess", 0},
@@ -154,8 +155,8 @@ public class DSLQueriesTest extends BasicTestSetup {
         return new Object[][]{
                 {"hive_column", 17, 40, 0},
                 {"hive_column limit 10", 10, 50, 0},
-                {"hive_column select hive_column.name limit 10", 10, 5, 0},
-                {"hive_column select hive_column.name limit 40 offset 10", 7, 40, 0},
+                {"hive_column select hive_column.qualifiedName limit 10", 10, 5, 0},
+                {"hive_column select hive_column.qualifiedName limit 40 offset 10", 7, 40, 0},
                 {"hive_db where name = 'Reporting' limit 10 offset 0", 1, 40, 0},
                 {"hive_table where db.name = 'Reporting' limit 10", 4, 1, 0},
         };
@@ -171,7 +172,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     private Object[][] syntaxVerifierQueries() {
         return new Object[][]{
                 {"hive_column  limit 10 ", 10},
-                {"hive_column select hive_column.name limit 10 ", 10},
+                {"hive_column select hive_column.qualifiedName limit 10 ", 10},
                 {"from hive_db", 3},
                 {"from hive_db limit 2", 2},
                 {"from hive_db limit 2 offset 0", 2},
@@ -210,13 +211,13 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_column where hive_column isa PII limit 5 offset 1", 3},
                 {"hive_column where hive_column isa PII limit 5 offset 5", 0},
 
-                {"hive_column select hive_column.name", 17},
-                {"hive_column select hive_column.name limit 5", 5},
-                {"hive_column select hive_column.name limit 5 offset 36", 0},
+                {"hive_column select hive_column.qualifiedName", 17},
+                {"hive_column select hive_column.qualifiedName limit 5", 5},
+                {"hive_column select hive_column.qualifiedName limit 5 offset 36", 0},
 
-                {"hive_column select name", 17},
-                {"hive_column select name limit 5", 5},
-                {"hive_column select name limit 5 offset 36 ", 0},
+                {"hive_column select qualifiedName", 17},
+                {"hive_column select qualifiedName limit 5", 5},
+                {"hive_column select qualifiedName limit 5 offset 36 ", 0},
 
                 {"hive_column where hive_column.name=\"customer_id\"", 2},
                 {"hive_column where hive_column.name=\"customer_id\" limit 2", 2},
@@ -269,19 +270,19 @@ public class DSLQueriesTest extends BasicTestSetup {
     private Object[][] orderByQueries() {
         return new Object[][]{
                 {"from hive_db as h orderby h.owner limit 3", 3, "owner", true},
-                {"hive_column as c select c.name orderby hive_column.name ", 17, "c.name", true},
-                {"hive_column as c select c.name orderby hive_column.name limit 5", 5, "c.name", true},
-                {"hive_column as c select c.name orderby hive_column.name desc limit 5", 5, "c.name", false},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 17, "c.qualifiedName", true},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "c.qualifiedName", true},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "c.qualifiedName", false},
 
                 {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.name orderby hive_column.name ", 17, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby hive_column.name limit 5", 5, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby hive_column.name desc limit 5", 5, "hive_column.name", false},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
 
                 {"from hive_db orderby owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.name orderby name ", 17, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby name limit 5", 5, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby name desc limit 5", 5, "hive_column.name", false},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 17, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
 
                 {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
                 {"hive_db where hive_db.name=\"Reporting\" orderby 'owner'", 1, "owner", true},
@@ -291,7 +292,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db has name orderby hive_db.owner limit 10 offset 0", 3, "owner", true},
 
                 {"from hive_table select hive_table.owner orderby hive_table.owner", 10, "hive_table.owner", true},
-                {"from hive_table select hive_table.owner  orderby hive_table.owner limit 8", 8, "hive_table.owner", true},
+                {"from hive_table select hive_table.owner orderby hive_table.owner limit 8", 8, "hive_table.owner", true},
 
                 {"hive_table orderby hive_table.name", 10, "name", true},
 
@@ -300,15 +301,15 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table orderby hive_table.owner limit 8 offset 0", 8, "owner", true},
                 {"hive_table orderby hive_table.owner desc limit 8 offset 0", 8, "owner", false},
 
-                {"hive_column select hive_column.name orderby hive_column.name ", 17, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby hive_column.name limit 5", 5, "hive_column.name", true},
-                {"hive_column select hive_column.name orderby hive_column.name desc limit 5", 5, "hive_column.name", false},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
 
-                {"hive_column select hive_column.name orderby hive_column.name limit 5 offset 2", 5, "hive_column.name", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2", 5, "hive_column.qualifiedName", true},
 
-                {"hive_column select name orderby hive_column.name", 17, "name", true},
-                {"hive_column select name orderby hive_column.name limit 5", 5, "name", true},
-                {"hive_column select name orderby hive_column.name desc", 17, "name", false},
+                {"hive_column select qualifiedName orderby hive_column.qualifiedName", 17, "qualifiedName", true},
+                {"hive_column select qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
+                {"hive_column select qualifiedName orderby hive_column.qualifiedName desc", 17, "qualifiedName", false},
 
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name", 2, "name", true},
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2", 2, "name", true},
@@ -368,7 +369,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     private void assertSearchResult(AtlasSearchResult searchResult, int expected) {
         assertNotNull(searchResult);
         if(expected == 0) {
-            assertNull(searchResult.getAttributes());
+            assertTrue(searchResult.getAttributes() == null || CollectionUtils.isEmpty(searchResult.getAttributes().getValues()));
             assertNull(searchResult.getEntities());
         } else if(searchResult.getEntities() != null) {
             assertEquals(searchResult.getEntities().size(), expected);

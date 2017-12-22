@@ -148,6 +148,7 @@ public abstract class BasicTestSetup {
         entities.addAll(salesFactColumns);
 
         AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
+        salesFact.setAttribute("createTime", new Date(2018, 01, 01));
         entities.add(salesFact);
 
         List<AtlasEntity> logFactColumns = ImmutableList
@@ -179,7 +180,7 @@ public abstract class BasicTestSetup {
         AtlasEntity circularLineageTable1 = table("table1", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
         entities.add(circularLineageTable1);
 
-        AtlasEntity circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
+        AtlasEntity circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal 2", "Managed", salesFactColumns, "Metric");
         entities.add(circularLineageTable2);
 
         AtlasEntity circularLineage1Process = loadProcess("circularLineage1", "hive query for daily summary", "John ETL", ImmutableList.of(circularLineageTable1),
@@ -209,7 +210,7 @@ public abstract class BasicTestSetup {
         entities.addAll(productDimColumns);
 
         AtlasEntity productDim =
-                table("product_dim", "product dimension table", salesDB, sd, "John Doe", "Managed", productDimColumns,
+                table("product_dim", "product dimension table", salesDB, sd, "John Doe 2", "Managed", productDimColumns,
                       "Dimension");
         entities.add(productDim);
 
@@ -240,7 +241,7 @@ public abstract class BasicTestSetup {
         entities.add(loadSalesMonthly);
 
         AtlasEntity loggingFactMonthly =
-                table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL",
+                table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL 2",
                       "Managed", logFactColumns, "Log Data");
         entities.add(loggingFactMonthly);
 
@@ -318,9 +319,12 @@ public abstract class BasicTestSetup {
 
     protected AtlasEntity table(String name, String description, AtlasEntity db, AtlasEntity sd, String owner, String tableType,
                                 List<AtlasEntity> columns, String... traitNames) {
+        String dbName      = db.getAttribute(AtlasClient.NAME).toString();
+        String clusterName = db.getAttribute("clusterName").toString();
+
         AtlasEntity table = new AtlasEntity(HIVE_TABLE_TYPE);
         table.setAttribute("name", name);
-        table.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
+        table.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name);
         table.setAttribute("description", description);
         table.setAttribute("owner", owner);
         table.setAttribute("tableType", tableType);
@@ -334,6 +338,12 @@ public abstract class BasicTestSetup {
 
         table.setAttribute("columns", getAtlasObjectIds(columns));
         table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+
+        sd.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName + "_storage");
+
+        for (AtlasEntity column : columns) {
+            column.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "." + column.getAttribute(AtlasClient.NAME).toString() + "@" + clusterName);
+        }
 
         return table;
     }
