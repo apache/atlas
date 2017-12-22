@@ -25,17 +25,27 @@ import java.util.regex.Pattern;
 
 public class IdentifierHelper {
 
-    public static String stripQuotes(String quotedIdentifier) {
-        String ret = quotedIdentifier;
+    private static final Pattern SINGLE_QUOTED_IDENTIFIER   = Pattern.compile("'(\\w[\\w\\d\\.\\s]*)'");
+    private static final Pattern DOUBLE_QUOTED_IDENTIFIER   = Pattern.compile("\"(\\w[\\w\\d\\.\\s]*)\"");
+    private static final Pattern BACKTICK_QUOTED_IDENTIFIER = Pattern.compile("`(\\w[\\w\\d\\.\\s]*)`");
 
-        if (isQuoted(quotedIdentifier)) {
-            ret = quotedIdentifier.substring(1, quotedIdentifier.length() - 1);
+    public static String get(String quotedIdentifier) {
+        String ret;
+
+        if (quotedIdentifier.charAt(0) == '`') {
+            ret = extract(BACKTICK_QUOTED_IDENTIFIER, quotedIdentifier);
+        } else if (quotedIdentifier.charAt(0) == '\'') {
+            ret = extract(SINGLE_QUOTED_IDENTIFIER, quotedIdentifier);
+        } else if (quotedIdentifier.charAt(0) == '"') {
+            ret = extract(DOUBLE_QUOTED_IDENTIFIER, quotedIdentifier);
+        } else {
+            ret = quotedIdentifier;
         }
 
         return ret;
     }
 
-    public static Advice create(QueryProcessor.Context context,
+    public static Advice create(GremlinQueryComposer.Context context,
                                 org.apache.atlas.query.Lookup lookup,
                                 String identifier) {
         Advice ia = new Advice(identifier);
@@ -49,7 +59,7 @@ public class IdentifierHelper {
     }
 
     public static String getQualifiedName(org.apache.atlas.query.Lookup lookup,
-                                          QueryProcessor.Context context,
+                                          GremlinQueryComposer.Context context,
                                           String name) {
         return lookup.getQualifiedName(context, name);
     }
@@ -70,7 +80,9 @@ public class IdentifierHelper {
     }
 
     public static String removeQuotes(String rhs) {
-        return rhs.replace("\"", "").replace("'", "");
+        return rhs.replace("\"", "")
+                  .replace("'", "")
+                  .replace("`", "");
     }
 
     public static String getQuoted(String s) {
@@ -97,10 +109,10 @@ public class IdentifierHelper {
 
         public Advice(String s) {
             this.raw = removeQuotes(s);
-            this.actual = IdentifierHelper.stripQuotes(raw);
+            this.actual = IdentifierHelper.get(raw);
         }
 
-        private void update(org.apache.atlas.query.Lookup lookup, QueryProcessor.Context context) {
+        private void update(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             newContext = context.isEmpty();
             if(!newContext) {
                 if(context.aliasMap.containsKey(this.raw)) {
@@ -116,7 +128,7 @@ public class IdentifierHelper {
             }
         }
 
-        private void updateSubTypes(org.apache.atlas.query.Lookup lookup, QueryProcessor.Context context) {
+        private void updateSubTypes(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if(isTrait) {
                 return;
             }
@@ -127,7 +139,7 @@ public class IdentifierHelper {
             }
         }
 
-        private void updateEdgeInfo(org.apache.atlas.query.Lookup lookup, QueryProcessor.Context context) {
+        private void updateEdgeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if(isPrimitive == false && isTrait == false) {
                 edgeLabel = lookup.getRelationshipEdgeLabel(context, attributeName);
                 edgeDirection = "OUT";
@@ -135,7 +147,7 @@ public class IdentifierHelper {
             }
         }
 
-        private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, QueryProcessor.Context context) {
+        private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if(parts.length == 1) {
                 typeName = context.getActiveTypeName();
                 attributeName = parts[0];
@@ -171,7 +183,7 @@ public class IdentifierHelper {
             }
         }
 
-        private void setIsDate(Lookup lookup, QueryProcessor.Context context) {
+        private void setIsDate(Lookup lookup, GremlinQueryComposer.Context context) {
             if(isPrimitive) {
                 isDate = lookup.isDate(context, attributeName);
             }

@@ -23,7 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.query.QueryParser;
+import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -64,7 +64,7 @@ import java.util.regex.Pattern;
             if (!allowReservedKeywords && typeDef instanceof AtlasStructDef) {
                 final List<AtlasStructDef.AtlasAttributeDef> attributeDefs = ((AtlasStructDef) typeDef).getAttributeDefs();
                 for (AtlasStructDef.AtlasAttributeDef attrDef : attributeDefs) {
-                    if (QueryParser.isKeyword(attrDef.getName())) {
+                    if (AtlasDSL.Parser.isKeyword(attrDef.getName())) {
                         throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID, attrDef.getName(), typeDef.getCategory().name());
                     }
                 }

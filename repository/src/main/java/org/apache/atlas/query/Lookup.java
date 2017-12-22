@@ -23,21 +23,21 @@ import org.apache.atlas.type.AtlasType;
 public interface Lookup {
     AtlasType getType(String typeName);
 
-    String getQualifiedName(QueryProcessor.Context context, String name);
+    String getQualifiedName(GremlinQueryComposer.Context context, String name);
 
-    boolean isPrimitive(QueryProcessor.Context context, String attributeName);
+    boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName);
 
-    String getRelationshipEdgeLabel(QueryProcessor.Context context, String attributeName);
+    String getRelationshipEdgeLabel(GremlinQueryComposer.Context context, String attributeName);
 
-    boolean hasAttribute(QueryProcessor.Context context, String typeName);
+    boolean hasAttribute(GremlinQueryComposer.Context context, String typeName);
 
-    boolean doesTypeHaveSubTypes(QueryProcessor.Context context);
+    boolean doesTypeHaveSubTypes(GremlinQueryComposer.Context context);
 
-    String getTypeAndSubTypes(QueryProcessor.Context context);
+    String getTypeAndSubTypes(GremlinQueryComposer.Context context);
 
-    boolean isTraitType(QueryProcessor.Context context);
+    boolean isTraitType(GremlinQueryComposer.Context context);
 
-    String getTypeFromEdge(QueryProcessor.Context context, String item);
+    String getTypeFromEdge(GremlinQueryComposer.Context context, String item);
 
-    boolean isDate(QueryProcessor.Context context, String attributeName);
+    boolean isDate(GremlinQueryComposer.Context context, String attributeName);
 }

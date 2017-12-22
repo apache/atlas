@@ -33,12 +33,9 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
-import org.apache.atlas.query.Expressions.Expression;
+import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.query.GremlinQuery;
-import org.apache.atlas.query.GremlinTranslator;
 import org.apache.atlas.query.QueryParams;
-import org.apache.atlas.query.QueryParser;
-import org.apache.atlas.query.QueryProcessor;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -678,16 +675,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private GremlinQuery toGremlinQuery(String query, int limit, int offset) throws AtlasBaseException {
-        QueryParams params     = validateSearchParams(limit, offset);
-        Expression  expression = QueryParser.apply(query, params);
-
-        if (expression == null) {
-            throw new AtlasBaseException(DISCOVERY_QUERY_FAILED, query);
-        }
-
-        QueryProcessor queryProcessor  = new QueryProcessor(typeRegistry, limit, offset);
-        Expression     validExpression = queryProcessor.validate(expression);
-        GremlinQuery   gremlinQuery    = new GremlinTranslator(queryProcessor, validExpression).translate();
+        QueryParams  params       = validateSearchParams(limit, offset);
+        GremlinQuery gremlinQuery = new AtlasDSL.Translator(AtlasDSL.Parser.parse(query), typeRegistry, params.offset(), params.limit()).translate();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Translated Gremlin Query: {}", gremlinQuery.queryStr());

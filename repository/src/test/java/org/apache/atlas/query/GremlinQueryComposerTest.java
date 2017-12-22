@@ -41,7 +41,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-public class QueryProcessorTest {
+public class GremlinQueryComposerTest {
     private List<String> errorList = new ArrayList<>();
 
     @Test
@@ -56,8 +56,9 @@ public class QueryProcessorTest {
         verify("Table isa Dimension", expected);
         verify("Table is Dimension", expected);
         verify("Table where Table is Dimension", expected);
-        verify("Table isa Dimension where name = 'sales'",
-                "g.V().has('__typeName', 'Table').has('__traitNames', within('Dimension')).has('Table.name', eq('sales')).limit(25).toList()");
+        // Not supported since it requires two singleSrcQuery, one for isa clause other for where clause
+//        verify("Table isa Dimension where name = 'sales'",
+//                "g.V().has('__typeName', 'Table').has('__traitNames', within('Dimension')).has('Table.name', eq('sales')).limit(25).toList()");
     }
 
     @Test
@@ -90,10 +91,15 @@ public class QueryProcessorTest {
     public void tableSelectColumns() {
         String exMain = "g.V().has('__typeName', 'Table').out('__Table.columns').limit(10).toList()";
         String exSel = "def f(r){ r }";
+        String exSel1 = "def f(r){ return [['db.name']].plus(r.collect({[it.value('DB.name')]})).unique(); }";
         verify("Table select columns limit 10", getExpected(exSel, exMain));
 
         String exMain2 = "g.V().has('__typeName', 'Table').out('__Table.db').limit(25).toList()";
-        verify("Table select db.name", getExpected(exSel, exMain2));
+        verify("Table select db", getExpected(exSel, exMain2));
+
+        String exMain3 = "g.V().has('__typeName', 'Table').out('__Table.db').limit(25).toList()";
+        verify("Table select db.name", getExpected(exSel1, exMain3));
+
     }
 
     @Test(enabled = false)
@@ -117,7 +123,7 @@ public class QueryProcessorTest {
 
 
         String exSel = "def f(r){ return [['d.name','d.owner']].plus(r.collect({[it.value('DB.name'),it.value('DB.owner')]})).unique(); }";
-        String exMain = "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner)').limit(25).toList()";
+        String exMain = "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').limit(25).toList()";
         verify("DB as d select d.name, d.owner orderby (d.owner) limit 25", getExpected(exSel, exMain));
 
         String exMain2 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1388563200000'))).order().by('Table.createTime').limit(25).toList()";
@@ -151,7 +157,7 @@ public class QueryProcessorTest {
         verify("Table where Asset.name like \"Tab*\"",
                 "g.V().has('__typeName', 'Table').has('Table.name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
-                "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).in('__Table.db').limit(25).toList()");
+                "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').limit(25).toList()");
     }
 
     @Test
@@ -166,14 +172,6 @@ public class QueryProcessorTest {
         String exSel = "def f(r){ return [['t.name','t.owner']].plus(r.collect({[it.value('Table.name'),it.value('Table.owner')]})).unique(); }";
         String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createdTime', eq('1513046158440')).limit(25).toList()";
         verify("Table as t where t.createdTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
-    }
-
-    @Test
-    public void multipleWhereClauses() {
-        String exSel = "def f(r){ return [['c.owner','c.name','c.dataType']].plus(r.collect({[it.value('Column.owner'),it.value('Column.name'),it.value('Column.dataType')]})).unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').has('Table.name', eq(\"sales_fact\")).out('__Table.columns').as('c').limit(25).toList()";
-        verify("Table where name=\"sales_fact\", columns as c select c.owner, c.name, c.dataType", getExpected(exSel, exMain));
-                ;
     }
 
     @Test
@@ -253,7 +251,7 @@ public class QueryProcessorTest {
         verify("hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
                 "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).limit(25).toList()");
         verify("Table where db.name='Sales' and db.clusterName='cl1'",
-                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).in('__Table.db')).limit(25).toList()");
+                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup().in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup().in('__Table.db')).limit(25).toList()");
     }
 
     private void verify(String dsl, String expectedGremlin) {
@@ -288,16 +286,15 @@ public class QueryProcessorTest {
     }
 
     private String getGremlinQuery(AtlasDSLParser.QueryContext queryContext) {
-        AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
-        org.apache.atlas.query.Lookup lookup = new TestLookup(errorList, registry);
-        QueryProcessor.Context context = new QueryProcessor.Context(errorList, lookup);
+        AtlasTypeRegistry             registry = mock(AtlasTypeRegistry.class);
+        org.apache.atlas.query.Lookup lookup   = new TestLookup(errorList, registry);
+        GremlinQueryComposer.Context  context  = new GremlinQueryComposer.Context(errorList, lookup);
 
-        QueryProcessor queryProcessor = new QueryProcessor(lookup, context);
-        DSLVisitor qv = new DSLVisitor(queryProcessor);
+        GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(lookup, context);
+        DSLVisitor           qv                   = new DSLVisitor(gremlinQueryComposer);
         qv.visit(queryContext);
-        queryProcessor.close();
 
-        String s = queryProcessor.getText();
+        String s = gremlinQueryComposer.get();
         assertTrue(StringUtils.isNotEmpty(s));
         return s;
     }
@@ -326,7 +323,7 @@ public class QueryProcessorTest {
         }
 
         @Override
-        public String getQualifiedName(QueryProcessor.Context context, String name) {
+        public String getQualifiedName(GremlinQueryComposer.Context context, String name) {
             if(name.contains("."))
                 return name;
 
@@ -334,7 +331,7 @@ public class QueryProcessorTest {
         }
 
         @Override
-        public boolean isPrimitive(QueryProcessor.Context context, String attributeName) {
+        public boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName) {
             return attributeName.equals("name") ||
                     attributeName.equals("owner") ||
                     attributeName.equals("createdTime") ||
@@ -343,7 +340,7 @@ public class QueryProcessorTest {
         }
 
         @Override
-        public String getRelationshipEdgeLabel(QueryProcessor.Context context, String attributeName) {
+        public String getRelationshipEdgeLabel(GremlinQueryComposer.Context context, String attributeName) {
             if (attributeName.equalsIgnoreCase("columns"))
                 return "__Table.columns";
             if (attributeName.equalsIgnoreCase("db"))
@@ -353,29 +350,29 @@ public class QueryProcessorTest {
         }
 
         @Override
-        public boolean hasAttribute(QueryProcessor.Context context, String typeName) {
+        public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
             return (context.getActiveTypeName().equals("Table") && typeName.equals("db")) ||
                     (context.getActiveTypeName().equals("Table") && typeName.equals("columns"));
         }
 
         @Override
-        public boolean doesTypeHaveSubTypes(QueryProcessor.Context context) {
+        public boolean doesTypeHaveSubTypes(GremlinQueryComposer.Context context) {
             return context.getActiveTypeName().equalsIgnoreCase("Asset");
         }
 
         @Override
-        public String getTypeAndSubTypes(QueryProcessor.Context context) {
+        public String getTypeAndSubTypes(GremlinQueryComposer.Context context) {
             String[] str = new String[]{"'Asset'", "'Table'"};
             return StringUtils.join(str, ",");
         }
 
         @Override
-        public boolean isTraitType(QueryProcessor.Context context) {
+        public boolean isTraitType(GremlinQueryComposer.Context context) {
             return context.getActiveTypeName().equals("PII") || context.getActiveTypeName().equals("Dimension");
         }
 
         @Override
-        public String getTypeFromEdge(QueryProcessor.Context context, String item) {
+        public String getTypeFromEdge(GremlinQueryComposer.Context context, String item) {
             if(context.getActiveTypeName().equals("DB") && item.equals("Table")) {
                 return "Table";
             } else if(context.getActiveTypeName().equals("Table") && item.equals("Column")) {
@@ -389,7 +386,7 @@ public class QueryProcessorTest {
         }
 
         @Override
-        public boolean isDate(QueryProcessor.Context context, String attributeName) {
+        public boolean isDate(GremlinQueryComposer.Context context, String attributeName) {
             return attributeName.equals("createdTime") ||
                     attributeName.equals("createTime");
         }

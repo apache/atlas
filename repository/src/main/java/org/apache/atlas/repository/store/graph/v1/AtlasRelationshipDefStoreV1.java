@@ -25,7 +25,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.query.QueryParser;
+import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -354,11 +354,11 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
         }
 
         if (!allowReservedKeywords) {
-            if (QueryParser.isKeyword(end1.getName())) {
+            if (AtlasDSL.Parser.isKeyword(end1.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END1_NAME_INVALID, end1.getName());
             }
 
-            if (QueryParser.isKeyword(end2.getName())) {
+            if (AtlasDSL.Parser.isKeyword(end2.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END2_NAME_INVALID, end2.getName());
             }
         }
