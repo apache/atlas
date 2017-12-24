@@ -83,7 +83,7 @@ define(['require',
             },
             bindEvents: function() {
                 var that = this;
-                this.listenTo(this.collection, "reset add remove", function() {
+                this.listenTo(this.collection.fullCollection, "reset add remove", function() {
                     this.tagsGenerator();
                 }, this);
                 this.ui.tagsList.on('click', 'li.parent-node a', function() {
@@ -587,7 +587,7 @@ define(['require',
                         if (urlObj && urlObj.tag && urlObj.tag === that.tag) {
                             Globals.saveApplicationState.tabState.searchUrl = "#!/search";
                         }
-                        that.collection.remove(deleteTagData);
+                        that.collection.fullCollection.remove(deleteTagData);
                         // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
                     }
