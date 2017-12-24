@@ -517,6 +517,7 @@ define(['require',
                 });
             },
             onTagList: function(e, toggle) {
+                e.stopPropagation();
                 if (e.target.nodeName === "A") {
                     $(e.currentTarget).parents('ul.tag-tree').find('li.active').removeClass("active");
                     $(e.currentTarget).addClass("active");
