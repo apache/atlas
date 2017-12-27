@@ -49,6 +49,7 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
     private String           name;
     private SavedSearchType  searchType;
     private SearchParameters searchParameters;
+    private String uiParameters;
 
 
     public AtlasUserSavedSearch() {
@@ -68,6 +69,11 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         setName(name);
         setSearchType(savedSearchType);
         setSearchParameters(searchParameters);
+    }
+
+    public AtlasUserSavedSearch(String ownerName, String name, SavedSearchType searchType, SearchParameters searchParameters, String uiParameters) {
+        this(ownerName, name, searchType, searchParameters);
+        setUiParameters(uiParameters);
     }
 
 
@@ -103,6 +109,14 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         this.searchParameters = searchParameters;
     }
 
+    public String getUiParameters() {
+        return uiParameters;
+    }
+
+    public void setUiParameters(String uiParameters) {
+        this.uiParameters = uiParameters;
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         sb.append(", ownerName=").append(ownerName);
@@ -114,6 +128,8 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         } else {
             searchParameters.toString(sb);
         }
+
+        sb.append(", uiParameters=").append(uiParameters);
 
         return sb;
     }
