@@ -36,6 +36,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     private static final String PROPERTY_SEARCH_PARAMETERS = "searchParameters";
     private static final String PROPERTY_UNIQUE_NAME       = "uniqueName";
     private static final String PROPERTY_SEARCH_TYPE       = "searchType";
+    private static final String PROPERTY_UI_PARAMETERS       = "uiParameters";
 
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
         super(typeRegistry, AtlasUserSavedSearch.class);
@@ -55,6 +56,8 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
         if (StringUtils.isNotEmpty(jsonSearchParams)) {
             savedSearch.setSearchParameters(AtlasType.fromJson(jsonSearchParams, SearchParameters.class));
         }
+
+        savedSearch.setUiParameters((String) entity.getAttribute(PROPERTY_UI_PARAMETERS));
 
         return savedSearch;
     }
@@ -76,6 +79,8 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
         if (obj.getSearchParameters() != null) {
             entity.setAttribute(PROPERTY_SEARCH_PARAMETERS, AtlasType.toJson(obj.getSearchParameters()));
         }
+
+        entity.setAttribute(PROPERTY_UI_PARAMETERS, obj.getUiParameters());
 
         return entity;
     }
