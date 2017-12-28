@@ -141,24 +141,24 @@ public class EntityResource {
             String entities = Servlets.getRequestPayload(request);
 
             //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
-            ArrayNode jsonEntities = null;
+            String[] jsonStrings;
 
             try {
-                jsonEntities = AtlasJson.parseToV1ArrayNode(entities);
+                ArrayNode jsonEntities = AtlasJson.parseToV1ArrayNode(entities);
+
+                jsonStrings = new String[jsonEntities.size()];
+
+                for (int i = 0; i < jsonEntities.size(); i++) {
+                    jsonStrings[i] = AtlasJson.toV1Json(jsonEntities.get(i));
+                }
             } catch (IOException e) {
-                jsonEntities = AtlasJson.createV1ArrayNode();
+                jsonStrings = new String[1];
 
-                jsonEntities.add(entities);
-            }
-
-            String[] jsonStrings = new String[jsonEntities.size()];
-
-            for (int i = 0; i < jsonEntities.size(); i++) {
-                jsonStrings[i] = jsonEntities.get(i).asText();
+                jsonStrings[0] = entities;
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("submitting entities {} ", jsonEntities);
+                LOG.debug("submitting entities: count={}; entities-json={}", jsonStrings.length, entities);
             }
 
             AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
@@ -265,11 +265,15 @@ public class EntityResource {
             String[]  jsonStrings = new String[jsonEntities.size()];
 
             for (int i = 0; i < jsonEntities.size(); i++) {
-                jsonStrings[i] = jsonEntities.get(i).asText();
+                jsonStrings[i] = AtlasJson.toV1Json(jsonEntities.get(i));
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.info("updating entities {} ", entityJson);
+                LOG.debug("updateEntities(): count={}, entityJson={} ", jsonEntities.size(), entityJson);
+
+                for (int i = 0; i < jsonStrings.length; i++) {
+                    LOG.debug("updateEntities(): entity[{}]={}", i, jsonStrings[i]);
+                }
             }
 
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
