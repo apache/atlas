@@ -147,7 +147,7 @@ define(['require',
             if (options && options.model) {
                 var searchParameters = options.model.toJSON().searchParameters,
                     params = CommonViewFunction.generateUrlFromSaveSearchObject({
-                        value: searchParameters,
+                        value: {"searchParameters" : searchParameters, "uiParameters": options.model.get('uiParameters')},
                         classificationDefCollection: this.classificationDefCollection,
                         entityDefCollection: this.entityDefCollection
                     });

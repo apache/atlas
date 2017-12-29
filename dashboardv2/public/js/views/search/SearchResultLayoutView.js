@@ -245,6 +245,7 @@ define(['require',
                                 this.ui.columnEmptyInfo.hide();
                             }
                         }
+                        this.columnOrder = this.getColumnOrder(this.REntityTableLayoutView.$el.find('.colSort th.renderable'));
                         this.triggerUrl();
                         var attributes = this.searchCollection.filterObj.attributes;
                         if ((excludeDefaultColumn && attributes) && (excludeDefaultColumn.length > attributes.length || _.difference(excludeDefaultColumn, attributes).length)) {
@@ -331,10 +332,16 @@ define(['require',
                     }
                 }
             },
+            getColumnOrderWithPosition : function() {
+                var that = this;
+                return _.map(that.columnOrder, function(value, key) {
+                    return key + "::" + value;
+                }).join(",");
+            },
             triggerUrl: function(options) {
                 Utils.setUrl(_.extend({
                     url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                    urlParams: this.value,
+                    urlParams: this.columnOrder ? _.extend(this.value, { 'uiParameters': this.getColumnOrderWithPosition() }) : this.value,
                     mergeBrowserUrl: false,
                     trigger: false,
                     updateTabState: true
@@ -517,7 +524,7 @@ define(['require',
                     } else {
                         apiObj.data = null;
                         if (this.value.profileDBView) {
-                            _.extend(this.searchCollection.queryParams, checkBoxValue);
+                            _.extend(this.searchCollection.queryParams,checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
@@ -536,6 +543,11 @@ define(['require',
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
                     // displayOrder added for column manager
+                    if (that.value.uiParameters) {
+                        var savedColumnOrder = _.object(that.value.uiParameters.split(',').map(function(a) {
+                            return a.split('::');
+                        })); // get Column position from string to object
+                    }
                     var columnCollection = Backgrid.Columns.extend({
                         sortKey: "displayOrder",
                         comparator: function(item) {
@@ -543,7 +555,7 @@ define(['require',
                         },
                         setPositions: function() {
                             _.each(this.models, function(model, index) {
-                                model.set("displayOrder", (that.columnOrder == null ? index : that.columnOrder[model.get('label')]) + 1, { silent: true });
+                                model.set("displayOrder", (savedColumnOrder == null ? index : parseInt(savedColumnOrder[model.get('label')])) + 1, { silent: true });
                             });
                             return this;
                         }
@@ -551,9 +563,10 @@ define(['require',
                     that.bradCrumbList = [];
                     var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                     columns.setPositions().sort();
-                    that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                    var table = new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
-                    })));
+                    }));
+                    that.REntityTableLayoutView.show(table);
                     if (that.value.searchType !== "dsl") {
                         that.ui.containerCheckBox.show();
                     } else {
@@ -561,8 +574,11 @@ define(['require',
                     }
                     that.$(".ellipsis .inputAssignTag").hide();
                     that.renderBreadcrumb();
+                    table.trigger("grid:refresh"); /*Event fire when table rendered*/
                     tableDragger(document.querySelector(".colSort")).on('drop', function(from, to, el) {
-                        that.columnOrder = that.getColumnOrder(el.querySelectorAll('th'));
+                        that.columnOrder = that.getColumnOrder(el.querySelectorAll('th.renderable'));
+                        table.trigger("grid:refresh:update");
+                        that.triggerUrl();
                     });
                     that.checkTableFetch();
                 });

@@ -447,26 +447,34 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     CommonViewFunction.generateObjectForSaveSearchApi = function(options) {
         var obj = {
             name: options.name,
-            guid: options.guid,
-            searchParameters: {}
+            guid: options.guid
         };
         var value = options.value;
         if (value) {
-            _.each(Enums.extractFromUrlForSearch, function(v, k) {
-                var val = value[k];
-                if (!_.isUndefinedNull(val)) {
-                    if (k == "attributes") {
-                        val = val.split(',');
-                    } else if (_.contains(["tagFilters","entityFilters"],k)) {
-                        val = CommonViewFunction.attributeFilter.generateAPIObj(val);
-                    } else if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
-                        val = val ? false : true;
-                    }
+            _.each(Enums.extractFromUrlForSearch, function(svalue, skey) {
+                if (_.isObject(svalue)) {
+                    _.each(svalue, function(v, k) {
+                        var val = value[k];
+                        if (!_.isUndefinedNull(val)) {
+                            if (k == "attributes") {
+                                val = val.split(',');
+                            } else if (_.contains(["tagFilters", "entityFilters"], k)) {
+                                val = CommonViewFunction.attributeFilter.generateAPIObj(val);
+                            } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                                val = val ? false : true;
+                            }
+                        }
+                        if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                            val = _.isUndefinedNull(val) ? true : val;
+                        }
+                        if (!obj[skey]) {
+                            obj[skey] = {};
+                        }
+                        obj[skey][v] = val;
+                    });
+                } else {
+                    obj[skey] = value[skey];
                 }
-                if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
-                    val = _.isUndefinedNull(val) ? true : val;
-                }
-                obj.searchParameters[v] = val;
             });
             return obj;
         }
@@ -477,50 +485,56 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityDefCollection = options.entityDefCollection,
             obj = {};
         if (value) {
-            _.each(Enums.extractFromUrlForSearch, function(v, k) {
-                var val = value[v];
-                if (!_.isUndefinedNull(val)) {
-                    if (k == "attributes") {
-                        val = val.join(',');
-                    } else if (k == "tagFilters") {
-                        if (classificationDefCollection) {
-                            var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value.classification })
-                            attributeDefs = Utils.getNestedSuperTypeObj({
-                                collection: classificationDefCollection,
-                                attrMerge: true,
-                                data: classificationDef.toJSON()
-                            });
-                            _.each(val.criterion, function(obj) {
-                                var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
-                                if (attributeDef) {
-                                    obj.attributeValue = obj.attributeValue;
-                                    obj['attributeType'] = attributeDef.typeName;
+            _.each(Enums.extractFromUrlForSearch, function(svalue, skey) {
+                if(_.isObject(svalue)) {
+                    _.each(svalue, function(v, k) {
+                        var val = value[skey][v];
+                        if (!_.isUndefinedNull(val)) {
+                            if (k == "attributes") {
+                                val = val.join(',');
+                            } else if (k == "tagFilters") {
+                                if (classificationDefCollection) {
+                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification })
+                                    attributeDefs = Utils.getNestedSuperTypeObj({
+                                        collection: classificationDefCollection,
+                                        attrMerge: true,
+                                        data: classificationDef.toJSON()
+                                    });
+                                    _.each(val.criterion, function(obj) {
+                                        var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
+                                        if (attributeDef) {
+                                            obj.attributeValue = obj.attributeValue;
+                                            obj['attributeType'] = attributeDef.typeName;
+                                        }
+                                    });
                                 }
-                            });
-                        }
-                        val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
-                    } else if (k == "entityFilters") {
-                        if (entityDefCollection) {
-                            var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value.typeName }),
-                                attributeDefs = Utils.getNestedSuperTypeObj({
-                                    collection: entityDefCollection,
-                                    attrMerge: true,
-                                    data: entityDef.toJSON()
-                                });
-                            _.each(val.criterion, function(obj) {
-                                var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
-                                if (attributeDef) {
-                                    obj.attributeValue = obj.attributeValue;
-                                    obj['attributeType'] = attributeDef.typeName;
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
+                            } else if (k == "entityFilters") {
+                                if (entityDefCollection) {
+                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
+                                            collection: entityDefCollection,
+                                            attrMerge: true,
+                                            data: entityDef.toJSON()
+                                        });
+                                    _.each(val.criterion, function(obj) {
+                                        var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
+                                        if (attributeDef) {
+                                            obj.attributeValue = obj.attributeValue;
+                                            obj['attributeType'] = attributeDef.typeName;
+                                        }
+                                    });
                                 }
-                            });
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
+                            } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
+                                val = val ? false : true;
+                            }
                         }
-                        val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
-                    } else if (_.contains(["includeDE","excludeST","excludeSC"],k)) {
-                        val = val ? false : true;
-                    }
+                        obj[k] = val;
+                    });
+                }else{
+                    obj[skey] = value[skey];
                 }
-                obj[k] = val;
             });
             return obj;
         }

@@ -112,9 +112,18 @@ $color_celeste_approx: #1D1F2B;
         }
     }
 }
+.table-responsive{
+    position: relative;
+}
 
 .sindu_dragger {
     @extend .gu-mirror;
+    &.sindu_column {
+        li {
+            float: none !important;
+            display: table-cell !important;
+        }
+    }
     .gu-transit {
         box-shadow: 0px 1px 15px inset;
     }
