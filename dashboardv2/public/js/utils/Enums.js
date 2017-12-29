@@ -57,17 +57,20 @@ define(['require'], function(require) {
         'annual': "Annual Distribution"
     }
     Enums.extractFromUrlForSearch = {
-        "pageLimit": "limit",
-        "type": "typeName",
-        "tag": "classification",
-        "query": "query",
-        "pageOffset": "offset",
-        "includeDE": "excludeDeletedEntities",
-        "excludeST": "includeSubTypes",
-        "excludeSC": "includeSubClassifications",
-        "tagFilters": "tagFilters",
-        "entityFilters": "entityFilters",
-        "attributes": "attributes"
+        "searchParameters": {
+            "pageLimit": "limit",
+            "type": "typeName",
+            "tag": "classification",
+            "query": "query",
+            "pageOffset": "offset",
+            "includeDE": "excludeDeletedEntities",
+            "excludeST": "includeSubTypes",
+            "excludeSC": "includeSubClassifications",
+            "tagFilters": "tagFilters",
+            "entityFilters": "entityFilters",
+            "attributes": "attributes"
+        },
+        "uiParameters": "uiParameters"
     }
 
     return Enums;

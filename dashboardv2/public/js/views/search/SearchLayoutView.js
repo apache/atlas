@@ -161,7 +161,7 @@ define(['require',
                         },
                         applyValue: function(model, searchType) {
                             that.manualRender(_.extend(searchType, CommonViewFunction.generateUrlFromSaveSearchObject({
-                                value: model.get('searchParameters'),
+                                value: { "searchParameters": model.get('searchParameters'), 'uiParameters': model.get('uiParameters') },
                                 classificationDefCollection: that.classificationDefCollection,
                                 entityDefCollection: that.entityDefCollection
                             })));
