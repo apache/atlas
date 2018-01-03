@@ -1,4 +1,3 @@
-// Generated from repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4 by ANTLR 4.7
 package org.apache.atlas.query.antlr4;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -239,9 +238,9 @@ public class AtlasDSLParser extends Parser {
 
 	public static class ValueArrayContext extends ParserRuleContext {
 		public TerminalNode K_LBRACKET() { return getToken(AtlasDSLParser.K_LBRACKET, 0); }
-		public List<TerminalNode> STRING() { return getTokens(AtlasDSLParser.STRING); }
-		public TerminalNode STRING(int i) {
-			return getToken(AtlasDSLParser.STRING, i);
+		public List<TerminalNode> ID() { return getTokens(AtlasDSLParser.ID); }
+		public TerminalNode ID(int i) {
+			return getToken(AtlasDSLParser.ID, i);
 		}
 		public TerminalNode K_RBRACKET() { return getToken(AtlasDSLParser.K_RBRACKET, 0); }
 		public List<TerminalNode> K_COMMA() { return getTokens(AtlasDSLParser.K_COMMA); }
@@ -269,7 +268,7 @@ public class AtlasDSLParser extends Parser {
 			setState(82);
 			match(K_LBRACKET);
 			setState(83);
-			match(STRING);
+			match(ID);
 			setState(88);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -279,7 +278,7 @@ public class AtlasDSLParser extends Parser {
 				setState(84);
 				match(K_COMMA);
 				setState(85);
-				match(STRING);
+				match(ID);
 				}
 				}
 				setState(90);
@@ -305,7 +304,7 @@ public class AtlasDSLParser extends Parser {
 		public TerminalNode BOOL() { return getToken(AtlasDSLParser.BOOL, 0); }
 		public TerminalNode NUMBER() { return getToken(AtlasDSLParser.NUMBER, 0); }
 		public TerminalNode FLOATING_NUMBER() { return getToken(AtlasDSLParser.FLOATING_NUMBER, 0); }
-		public TerminalNode STRING() { return getToken(AtlasDSLParser.STRING, 0); }
+		public TerminalNode ID() { return getToken(AtlasDSLParser.ID, 0); }
 		public ValueArrayContext valueArray() {
 			return getRuleContext(ValueArrayContext.class,0);
 		}
@@ -349,16 +348,16 @@ public class AtlasDSLParser extends Parser {
 				}
 				break;
 			case K_LBRACKET:
-			case STRING:
+			case ID:
 				enterOuterAlt(_localctx, 4);
 				{
 				setState(98);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
-				case STRING:
+				case ID:
 					{
 					setState(96);
-					match(STRING);
+					match(ID);
 					}
 					break;
 				case K_LBRACKET:
@@ -496,30 +495,23 @@ public class AtlasDSLParser extends Parser {
 			case BOOL:
 			case K_LBRACKET:
 			case ID:
-			case STRING:
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(110);
 				_errHandler.sync(this);
-				switch (_input.LA(1)) {
-				case ID:
+				switch ( getInterpreter().adaptivePredict(_input,3,_ctx) ) {
+				case 1:
 					{
 					setState(108);
 					identifier();
 					}
 					break;
-				case NUMBER:
-				case FLOATING_NUMBER:
-				case BOOL:
-				case K_LBRACKET:
-				case STRING:
+				case 2:
 					{
 					setState(109);
 					literal();
 					}
 					break;
-				default:
-					throw new NoViableAltException(this);
 				}
 				}
 				break;
@@ -1491,25 +1483,19 @@ public class AtlasDSLParser extends Parser {
 			{
 			setState(208);
 			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case ID:
+			switch ( getInterpreter().adaptivePredict(_input,12,_ctx) ) {
+			case 1:
 				{
 				setState(206);
 				identifier();
 				}
 				break;
-			case NUMBER:
-			case FLOATING_NUMBER:
-			case BOOL:
-			case K_LBRACKET:
-			case STRING:
+			case 2:
 				{
 				setState(207);
 				literal();
 				}
 				break;
-			default:
-				throw new NoViableAltException(this);
 			}
 			setState(210);
 			match(K_AS);
@@ -1621,25 +1607,19 @@ public class AtlasDSLParser extends Parser {
 				{
 				setState(221);
 				_errHandler.sync(this);
-				switch (_input.LA(1)) {
-				case ID:
+				switch ( getInterpreter().adaptivePredict(_input,14,_ctx) ) {
+				case 1:
 					{
 					setState(219);
 					identifier();
 					}
 					break;
-				case NUMBER:
-				case FLOATING_NUMBER:
-				case BOOL:
-				case K_LBRACKET:
-				case STRING:
+				case 2:
 					{
 					setState(220);
 					literal();
 					}
 					break;
-				default:
-					throw new NoViableAltException(this);
 				}
 				}
 				break;
@@ -2029,7 +2009,7 @@ public class AtlasDSLParser extends Parser {
 			setState(261);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NUMBER) | (1L << FLOATING_NUMBER) | (1L << BOOL) | (1L << K_LPAREN) | (1L << K_LBRACKET) | (1L << K_FROM) | (1L << K_WHERE) | (1L << K_MAX) | (1L << K_MIN) | (1L << K_SUM) | (1L << K_COUNT) | (1L << ID) | (1L << STRING))) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NUMBER) | (1L << FLOATING_NUMBER) | (1L << BOOL) | (1L << K_LPAREN) | (1L << K_LBRACKET) | (1L << K_FROM) | (1L << K_WHERE) | (1L << K_MAX) | (1L << K_MIN) | (1L << K_SUM) | (1L << K_COUNT) | (1L << ID))) != 0)) {
 				{
 				{
 				setState(258);
@@ -2226,10 +2206,10 @@ public class AtlasDSLParser extends Parser {
 		"\2\64\u00d2\3\2\2\2\66\u00d7\3\2\2\28\u00e1\3\2\2\2:\u00e3\3\2\2\2<\u00e6"+
 		"\3\2\2\2>\u00ea\3\2\2\2@\u00ed\3\2\2\2B\u00f4\3\2\2\2D\u00f6\3\2\2\2F"+
 		"\u00fb\3\2\2\2H\u0103\3\2\2\2J\u010c\3\2\2\2L\u010e\3\2\2\2NO\7\62\2\2"+
-		"O\3\3\2\2\2PQ\t\2\2\2Q\5\3\2\2\2RS\t\3\2\2S\7\3\2\2\2TU\7\23\2\2UZ\7\63"+
-		"\2\2VW\7\t\2\2WY\7\63\2\2XV\3\2\2\2Y\\\3\2\2\2ZX\3\2\2\2Z[\3\2\2\2[]\3"+
+		"O\3\3\2\2\2PQ\t\2\2\2Q\5\3\2\2\2RS\t\3\2\2S\7\3\2\2\2TU\7\23\2\2UZ\7\62"+
+		"\2\2VW\7\t\2\2WY\7\62\2\2XV\3\2\2\2Y\\\3\2\2\2ZX\3\2\2\2Z[\3\2\2\2[]\3"+
 		"\2\2\2\\Z\3\2\2\2]^\7\25\2\2^\t\3\2\2\2_g\7\b\2\2`g\7\6\2\2ag\7\7\2\2"+
-		"be\7\63\2\2ce\5\b\5\2db\3\2\2\2dc\3\2\2\2eg\3\2\2\2f_\3\2\2\2f`\3\2\2"+
+		"be\7\62\2\2ce\5\b\5\2db\3\2\2\2dc\3\2\2\2eg\3\2\2\2f_\3\2\2\2f`\3\2\2"+
 		"\2fa\3\2\2\2fd\3\2\2\2g\13\3\2\2\2hi\7 \2\2ij\7\6\2\2j\r\3\2\2\2kl\7\'"+
 		"\2\2lm\7\6\2\2m\17\3\2\2\2nq\5\2\2\2oq\5\n\6\2pn\3\2\2\2po\3\2\2\2qw\3"+
 		"\2\2\2rs\7\22\2\2st\5,\27\2tu\7\24\2\2uw\3\2\2\2vp\3\2\2\2vr\3\2\2\2w"+

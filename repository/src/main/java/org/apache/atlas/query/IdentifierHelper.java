@@ -89,6 +89,10 @@ public class IdentifierHelper {
         return String.format("'%s'", s);
     }
 
+    public static boolean isTrueOrFalse(String rhs) {
+        return rhs.equalsIgnoreCase("true") || rhs.equalsIgnoreCase("false");
+    }
+
     public static class Advice {
         private String raw;
         private String actual;
@@ -123,7 +127,7 @@ public class IdentifierHelper {
                 updateTypeInfo(lookup, context);
                 isTrait = lookup.isTraitType(context);
                 updateEdgeInfo(lookup, context);
-                introduceType = !context.hasAlias(parts[0]);
+                introduceType = !isPrimitive() && !context.hasAlias(parts[0]);
                 updateSubTypes(lookup, context);
             }
         }
@@ -237,12 +241,12 @@ public class IdentifierHelper {
             return actual;
         }
 
-        public boolean isNewContext() {
-            return newContext;
-        }
-
         public boolean isDate() {
             return isDate;
         }
-    }
+
+        public boolean hasParts() {
+            return parts.length > 1;
+        }
+     }
 }

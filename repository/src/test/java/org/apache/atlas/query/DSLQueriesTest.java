@@ -17,12 +17,18 @@
  */
 package org.apache.atlas.query;
 
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.TokenStream;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.query.antlr4.AtlasDSLLexer;
+import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -31,7 +37,22 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static org.testng.Assert.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DSLQueriesTest extends BasicTestSetup {
@@ -257,6 +278,11 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table where name='sales_fact', db where name='Reporting'", 0},
                 {"hive_table where name='sales_fact', db where name='Reporting' limit 10", 0},
                 {"hive_table where name='sales_fact', db where name='Reporting' limit 10 offset 1", 0},
+
+                {"hive_db as d where owner = ['John ETL', 'Jane BI']", 2},
+                {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10", 2},
+                {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10 offset 1", 1},
+
         };
     }
 
@@ -360,11 +386,388 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
+    @DataProvider(name = "minMaxCountProvider")
+    private Object[][] minMaxCountQueries() {
+        return new Object[][]{
+                {"from hive_db groupby (owner) select count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("count()")
+                                .withExpectedValues(1)
+                                .withExpectedValues(1)
+                                .withExpectedValues(1) },
+                                     // FIXME
+//                { "from hive_db groupby (owner, name) select Asset.owner, Asset.name, count()",
+//                        new FieldValueValidator()
+//                                .withFieldNames("Asset.owner", "Asset.name", "count()")
+//                                .withExpectedValues("Jane BI", "Reporting", 1)
+//                                .withExpectedValues("Tim ETL", "Logging", 1)
+//                                .withExpectedValues("John ETL", "Sales", 1) },
+                { "from hive_db groupby (owner) select count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("count()").
+                                withExpectedValues(1).
+                                withExpectedValues(1).
+                                withExpectedValues(1) },
+                { "from hive_db groupby (owner) select Asset.owner, count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("Asset.owner", "count()")
+                                .withExpectedValues("Jane BI", 1)
+                                .withExpectedValues("Tim ETL", 1)
+                                .withExpectedValues("John ETL", 1) },
+                { "from hive_db groupby (owner) select count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("count()")
+                                .withExpectedValues(1)
+                                .withExpectedValues(1)
+                                .withExpectedValues(1) },
+
+                { "from hive_db groupby (owner) select Asset.owner, count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("Asset.owner", "count()")
+                                .withExpectedValues("Jane BI", 1)
+                                .withExpectedValues("Tim ETL", 1)
+                                .withExpectedValues("John ETL", 1) },
+
+                { "from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
+                        new FieldValueValidator()
+                                .withFieldNames("Asset.owner", "max(Asset.name)")
+                                .withExpectedValues("Tim ETL", "Logging")
+                                .withExpectedValues("Jane BI", "Reporting")
+                                .withExpectedValues("John ETL", "Sales") },
+
+                { "from hive_db groupby (owner) select max(Asset.name) ",
+                        new FieldValueValidator()
+                                .withFieldNames("max(Asset.name)")
+                                .withExpectedValues("Logging")
+                                .withExpectedValues("Reporting")
+                                .withExpectedValues("Sales") },
+
+                { "from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
+                        new FieldValueValidator()
+                                .withFieldNames("owner", "Asset.name", "min(Asset.name)")
+                                .withExpectedValues("Tim ETL", "Logging", "Logging")
+                                .withExpectedValues("Jane BI", "Reporting", "Reporting")
+                                .withExpectedValues("John ETL", "Sales", "Sales") },
+
+                { "from hive_db groupby (owner) select owner, min(Asset.name)  ",
+                        new FieldValueValidator()
+                                .withFieldNames("owner", "min(Asset.name)")
+                                .withExpectedValues("Tim ETL", "Logging")
+                                .withExpectedValues("Jane BI", "Reporting")
+                                .withExpectedValues("John ETL", "Sales") },
+
+                { "from hive_db groupby (owner) select min(name)  ",
+                        new FieldValueValidator()
+                                .withFieldNames("min(name)")
+                                .withExpectedValues("Reporting")
+                                .withExpectedValues("Logging")
+                                .withExpectedValues("Sales") },
+                { "from hive_db groupby (owner) select min('name') ",
+                        new FieldValueValidator()
+                                .withFieldNames("min('name')")
+                                .withExpectedValues("name")
+                                .withExpectedValues("name")
+                                .withExpectedValues("name") },
+                { "from hive_db select count() ",
+                        new FieldValueValidator()
+                                .withFieldNames("count()")
+                                .withExpectedValues(3) },
+                { "from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
+                        new FieldValueValidator()
+                                .withFieldNames("'count'", "'max'", "'min'")
+                                .withExpectedValues(50, 0, 4) },
+                { "from Person select count() as 'count', sum(Person.age) as 'sum'",
+                        new FieldValueValidator()
+                                .withFieldNames("'count'", "'sum'")
+                                .withExpectedValues(4, 86) },
+                // tests to ensure that group by works with order by and limit
+                                     // FIXME:
+//                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
+//                        new FieldValueValidator()
+//                                .withFieldNames("min(name)")
+//                                .withExpectedValues("Logging")
+//                                .withExpectedValues("Reporting") },
+//                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
+//                        new FieldValueValidator()
+//                                .withFieldNames("min(name)")
+//                                .withExpectedValues("Reporting")
+//                                .withExpectedValues("Sales") }
+        };
+    }
+
+    @Test(dataProvider = "minMaxCountProvider")
+    public void minMaxCount(String query, FieldValueValidator fv) throws AtlasBaseException {
+        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, 25, 0);
+        assertSearchResult(searchResult, fv);
+    }
+
     @Test(dataProvider = "likeQueriesProvider")
     public void likeQueries(String query, int expected) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, 25, 0);
         assertSearchResult(searchResult, expected);
     }
+
+    @Test
+    public void classification() {
+        String expected = "g.V().has('__traitNames', within('PII')).limit(25).toList()";
+        verify("PII", expected);
+    }
+
+    @Test
+    public void dimension() {
+        String expected = "g.V().has('__typeName', 'hive_table').has('__traitNames', within('Dimension')).limit(25).toList()";
+        verify("hive_table isa Dimension", expected);
+        verify("hive_table is Dimension", expected);
+        verify("hive_table where hive_table is Dimension", expected);
+        // Not supported since it requires two singleSrcQuery, one for isa clause other for where clause
+//        verify("Table isa Dimension where name = 'sales'",
+//                "g.V().has('__typeName', 'Table').has('__traitNames', within('Dimension')).has('Table.name', eq('sales')).limit(25).toList()");
+    }
+
+    @Test
+    public void fromDB() {
+        verify("from hive_db", "g.V().has('__typeName', 'hive_db').limit(25).toList()");
+        verify("from hive_db limit 10", "g.V().has('__typeName', 'hive_db').limit(10).toList()");
+        verify("hive_db limit 10", "g.V().has('__typeName', 'hive_db').limit(10).toList()");
+    }
+
+    @Test
+    public void hasName() {
+        String expected = "g.V().has('__typeName', within('DataSet','hive_column_lineage','Infrastructure','Asset','Process','hive_table','hive_column','hive_db','hive_process')).has('Asset.name').limit(25).toList()";
+        verify("Asset has name", expected);
+        verify("Asset where Asset has name", expected);
+    }
+
+    @Test
+    public void simpleAlias() {
+        verify("Asset as a", "g.V().has('__typeName', within('DataSet','hive_column_lineage','Infrastructure','Asset','Process','hive_table','hive_column','hive_db','hive_process')).as('a').limit(25).toList()");
+    }
+
+    @Test
+    public void selectQueries() {
+        String expected = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); }; " +
+                                  "f(g.V().has('__typeName', within('DataSet','hive_column_lineage','Infrastructure','Asset','Process','hive_table','hive_column','hive_db','hive_process')).as('d')";
+        verify("Asset as d select d.name, d.owner", expected + ".limit(25).toList())");
+        verify("Asset as d select d.name, d.owner limit 10", expected + ".limit(10).toList())");
+    }
+
+    @Test
+    public void tableSelectColumns() {
+        String exMain = "g.V().has('__typeName', 'hive_table').out('__hive_table.columns').limit(10).toList()";
+        String exSel = "def f(r){ r };";
+        String exSel1 = "def f(r){ t=[['db.name']];  r.each({t.add([it.value('Asset.name')])}); t.unique(); };";
+        verify("hive_table select columns limit 10", getExpected(exSel, exMain));
+
+        String exMain2 = "g.V().has('__typeName', 'hive_table').out('__hive_table.db').limit(25).toList()";
+        verify("hive_table select db", getExpected(exSel, exMain2));
+
+        String exMain3 = "g.V().has('__typeName', 'hive_table').out('__hive_table.db').limit(25).toList()";
+        verify("hive_table select db.name", getExpected(exSel1, exMain3));
+
+    }
+
+    @Test(enabled = false)
+    public void SelectLimit() {
+        verify("from hive_db limit 5", "g.V().has('__typeName', 'hive_db').limit(5).toList()");
+        verify("from hive_db limit 5 offset 2", "g.V().has('__typeName', 'hive_db').range(2, 7).toList()");
+    }
+
+    @Test
+    public void orderBy() {
+        String expected = "g.V().has('__typeName', 'hive_db').order().by('Asset.name').limit(25).toList()";
+        verify("hive_db orderby name", expected);
+        verify("from hive_db orderby name", expected);
+        verify("from hive_db as d orderby d.owner limit 3", "g.V().has('__typeName', 'hive_db').as('d').order().by('Asset.owner').limit(3).toList()");
+        verify("hive_db as d orderby d.owner limit 3", "g.V().has('__typeName', 'hive_db').as('d').order().by('Asset.owner').limit(3).toList()");
+
+
+        String exSel = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };";
+        String exMain = "g.V().has('__typeName', 'hive_db').as('d').order().by('Asset.owner').limit(25).toList()";
+        verify("hive_db as d select d.name, d.owner orderby (d.owner) limit 25", getExpected(exSel, exMain));
+
+        String exMain2 = "g.V().has('__typeName', 'hive_table').and(__.has('Asset.name', eq(\"sales_fact\")),__.has('hive_table.createTime', gt('1388563200000'))).order().by('hive_table.createTime').limit(25).toList()";
+        String exSel2 = "def f(r){ t=[['_col_0','_col_1']];  r.each({t.add([it.value('Asset.name'),it.value('hive_table.createTime')])}); t.unique(); };";
+        verify("hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
+               getExpected(exSel2, exMain2));
+    }
+
+    @Test
+    public void fromDBOrderByNameDesc() {
+        verify("from hive_db orderby name DESC", "g.V().has('__typeName', 'hive_db').order().by('Asset.name', decr).limit(25).toList()");
+    }
+
+    @Test
+    public void fromDBSelect() {
+        String expected = "def f(r){ t=[['Asset.name','Asset.owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };" +
+                                  " f(g.V().has('__typeName', 'hive_db').limit(25).toList())";
+        verify("from hive_db select Asset.name, Asset.owner", expected);
+        expected = "def f(r){ t=[['min(name)','max(owner)']]; " +
+                           "def min=r.min({it.value('Asset.name')}).value('Asset.name'); " +
+                           "def max=r.max({it.value('Asset.owner')}).value('Asset.owner'); " +
+                           "t.add([min,max]); t;}; " +
+                           "f(g.V().has('__typeName', 'hive_db').limit(25).toList())";
+        verify("hive_db select min(name), max(owner)", expected);
+        expected = "def f(r){ t=[['owner','min(name)','max(owner)']]; " +
+                           "def min=r.min({it.value('Asset.name')}).value('Asset.name'); " +
+                           "def max=r.max({it.value('Asset.owner')}).value('Asset.owner'); " +
+                           "r.each({t.add([it.value('Asset.owner'),min,max])}); t.unique(); }; " +
+                           "f(g.V().has('__typeName', 'hive_db').limit(25).toList())";
+        verify("hive_db select owner, min(name), max(owner)", expected);
+    }
+
+    @Test
+    public void fromDBGroupBy() {
+        verify("from hive_db groupby (Asset.owner)", "g.V().has('__typeName', 'hive_db').group().by('Asset.owner').limit(25).toList()");
+    }
+
+    @Test
+    public void whereClauseTextContains() {
+        String exMain = "g.V().has('__typeName', 'hive_db').has('Asset.name', eq(\"Reporting\")).limit(25).toList()";
+        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };";
+        verify("from hive_db where name = \"Reporting\" select name, owner", getExpected(exSel, exMain));
+        verify("from hive_db where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
+        verify("hive_table where Asset.name like \"Tab*\"",
+               "g.V().has('__typeName', 'hive_table').has('Asset.name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).limit(25).toList()");
+        verify("from hive_table where (db.name = \"Reporting\")",
+               "g.V().has('__typeName', 'hive_table').out('__hive_table.db').has('Asset.name', eq(\"Reporting\")).dedup().in('__hive_table.db').limit(25).toList()");
+    }
+
+    @Test
+    public void whereClauseWithAsTextContains() {
+        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };";
+        String exMain = "g.V().has('__typeName', 'hive_table').as('t').has('Asset.name', eq(\"testtable_1\")).limit(25).toList()";
+        verify("hive_table as t where t.name = \"testtable_1\" select t.name, t.owner)", getExpected(exSel, exMain));
+    }
+
+    @Test
+    public void whereClauseWithDateCompare() {
+        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };";
+        String exMain = "g.V().has('__typeName', 'hive_table').as('t').has('hive_table.createTime', eq('1513046158440')).limit(25).toList()";
+        verify("hive_table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
+    }
+
+    @Test
+    public void subType() {
+        String exMain = "g.V().has('__typeName', within('DataSet','hive_column_lineage','Infrastructure','Asset','Process','hive_table','hive_column','hive_db','hive_process')).limit(25).toList()";
+        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); };";
+
+        verify("Asset select name, owner", getExpected(exSel, exMain));
+    }
+
+    @Test
+    public void TraitWithSpace() {
+        verify("`Log Data`", "g.V().has('__traitNames', within('Log Data')).limit(25).toList()");
+    }
+
+    @Test
+    public void nestedQueries() {
+        verify("hive_table where name=\"sales_fact\" or name=\"testtable_1\"",
+               "g.V().has('__typeName', 'hive_table').or(__.has('Asset.name', eq(\"sales_fact\")),__.has('Asset.name', eq(\"testtable_1\"))).limit(25).toList()");
+        verify("hive_table where name=\"sales_fact\" and name=\"testtable_1\"",
+               "g.V().has('__typeName', 'hive_table').and(__.has('Asset.name', eq(\"sales_fact\")),__.has('Asset.name', eq(\"testtable_1\"))).limit(25).toList()");
+        verify("hive_table where name=\"sales_fact\" or name=\"testtable_1\" or name=\"testtable_2\"",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".or(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.has('Asset.name', eq(\"testtable_1\"))," +
+                       "__.has('Asset.name', eq(\"testtable_2\"))" +
+                       ").limit(25).toList()");
+        verify("hive_table where name=\"sales_fact\" and name=\"testtable_1\" and name=\"testtable_2\"",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".and(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.has('Asset.name', eq(\"testtable_1\"))," +
+                       "__.has('Asset.name', eq(\"testtable_2\"))" +
+                       ").limit(25).toList()");
+        verify("hive_table where (name=\"sales_fact\" or name=\"testtable_1\") and name=\"testtable_2\"",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".and(" +
+                       "__.or(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.has('Asset.name', eq(\"testtable_1\"))" +
+                       ")," +
+                       "__.has('Asset.name', eq(\"testtable_2\")))" +
+                       ".limit(25).toList()");
+        verify("hive_table where name=\"sales_fact\" or (name=\"testtable_1\" and name=\"testtable_2\")",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".or(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.and(" +
+                       "__.has('Asset.name', eq(\"testtable_1\"))," +
+                       "__.has('Asset.name', eq(\"testtable_2\")))" +
+                       ")" +
+                       ".limit(25).toList()");
+        verify("hive_table where name=\"sales_fact\" or name=\"testtable_1\" and name=\"testtable_2\"",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".and(" +
+                       "__.or(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.has('Asset.name', eq(\"testtable_1\"))" +
+                       ")," +
+                       "__.has('Asset.name', eq(\"testtable_2\")))" +
+                       ".limit(25).toList()");
+        verify("hive_table where (name=\"sales_fact\" and owner=\"Joe\") OR (name=\"sales_fact_daily_mv\" and owner=\"Joe BI\")",
+               "g.V().has('__typeName', 'hive_table')" +
+                       ".or(" +
+                       "__.and(" +
+                       "__.has('Asset.name', eq(\"sales_fact\"))," +
+                       "__.has('Asset.owner', eq(\"Joe\"))" +
+                       ")," +
+                       "__.and(" +
+                       "__.has('Asset.name', eq(\"sales_fact_daily_mv\"))," +
+                       "__.has('Asset.owner', eq(\"Joe BI\"))" +
+                       "))" +
+                       ".limit(25).toList()");
+        verify("hive_table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createTime < \"2017-12-12T02:35:58.440Z\")",
+               "g.V().has('__typeName', 'hive_table').or(__.has('Asset.owner', eq(\"hdfs\")),__.and(__.or(__.has('Asset.name', eq(\"testtable_1\")),__.has('Asset.name', eq(\"testtable_2\"))),__.has('hive_table.createTime', lt('1513046158440')))).limit(25).toList()");
+        verify("hive_table where hive_table.name='Reporting' and hive_table.createTime < '2017-12-12T02:35:58.440Z'",
+               "g.V().has('__typeName', 'hive_table').and(__.has('Asset.name', eq('Reporting')),__.has('hive_table.createTime', lt('1513046158440'))).limit(25).toList()");
+        verify("hive_table where db.name='Sales' and db.clusterName='cl1'",
+               "g.V().has('__typeName', 'hive_table').and(__.out('__hive_table.db').has('Asset.name', eq('Sales')).dedup().in('__hive_table.db'),__.out('__hive_table.db').has('hive_db.clusterName', eq('cl1')).dedup().in('__hive_table.db')).limit(25).toList()");
+    }
+
+    private void verify(String dsl, String expectedGremlin) {
+        AtlasDSLParser.QueryContext queryContext = getParsedQuery(dsl);
+        String actualGremlin = getGremlinQuery(queryContext);
+        assertEquals(actualGremlin, expectedGremlin);
+    }
+
+    private String getExpected(String select, String main) {
+        return String.format("%s f(%s)", select, main);
+    }
+
+    private AtlasDSLParser.QueryContext getParsedQuery(String query) {
+        AtlasDSLParser.QueryContext queryContext = null;
+        InputStream                 stream       = new ByteArrayInputStream(query.getBytes());
+        AtlasDSLLexer               lexer        = null;
+
+        try {
+            lexer = new AtlasDSLLexer(CharStreams.fromStream(stream));
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        TokenStream    inputTokenStream = new CommonTokenStream(lexer);
+        AtlasDSLParser parser           = new AtlasDSLParser(inputTokenStream);
+        queryContext = parser.query();
+
+        assertNotNull(queryContext);
+        assertNull(queryContext.exception);
+
+        return queryContext;
+    }
+
+    private String getGremlinQuery(AtlasDSLParser.QueryContext queryContext) {
+        GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(typeRegistry, new AtlasDSL.QueryMetadata(queryContext));
+        DSLVisitor           qv                   = new DSLVisitor(gremlinQueryComposer);
+        qv.visit(queryContext);
+
+        String s = gremlinQueryComposer.get();
+        assertTrue(StringUtils.isNotEmpty(s));
+        return s;
+    }
+
+
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected) {
         assertNotNull(searchResult);
@@ -377,6 +780,51 @@ public class DSLQueriesTest extends BasicTestSetup {
             assertNotNull(searchResult.getAttributes());
             assertNotNull(searchResult.getAttributes().getValues());
             assertEquals(searchResult.getAttributes().getValues().size(), expected);
+        }
+    }
+
+    private void assertSearchResult(AtlasSearchResult searchResult, FieldValueValidator expected) {
+        assertNotNull(searchResult);
+        assertNull(searchResult.getEntities());
+
+        assertEquals(searchResult.getAttributes().getName().size(), expected.getFieldNamesCount());
+        for (int i = 0; i < searchResult.getAttributes().getName().size(); i++) {
+            String s = searchResult.getAttributes().getName().get(i);
+            assertEquals(s, expected.fieldNames[i]);
+        }
+
+        assertEquals(searchResult.getAttributes().getValues().size(), expected.values.size());
+    }
+
+    private class FieldValueValidator {
+        class ResultObject {
+            Map<String, Object> fieldValues = new HashMap<>();
+
+            public void setFieldValue(String string, Object object) {
+                fieldValues.put(string, object);
+            }
+        }
+
+        private String[] fieldNames;
+        private List<ResultObject> values = new ArrayList<>();
+
+        public FieldValueValidator withFieldNames(String... fieldNames) {
+            this.fieldNames = fieldNames;
+            return this;
+        }
+
+        public FieldValueValidator withExpectedValues(Object... values) {
+            ResultObject obj = new ResultObject();
+            for (int i = 0; i < fieldNames.length; i++) {
+                obj.setFieldValue(fieldNames[i], values[i]);
+            }
+
+            this.values.add(obj);
+            return this;
+        }
+
+        public int getFieldNamesCount() {
+            return (fieldNames != null) ? fieldNames.length : 0;
         }
     }
 }

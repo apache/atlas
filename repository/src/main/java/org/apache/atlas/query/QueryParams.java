@@ -18,6 +18,8 @@
 package org.apache.atlas.query;
 
 
+import org.apache.atlas.AtlasConfiguration;
+
 public class QueryParams {
     private int limit;
     private int offset;
@@ -46,5 +48,22 @@ public class QueryParams {
 
     public void offset(int offset) {
         this.offset = offset;
+    }
+
+    public static QueryParams getNormalizedParams(int suppliedLimit, int suppliedOffset) {
+        int defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
+        int maxLimit     = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+
+        int limit = defaultLimit;
+        if (suppliedLimit > 0 && suppliedLimit <= maxLimit) {
+            limit = suppliedLimit;
+        }
+
+        int offset = 0;
+        if (suppliedOffset > 0) {
+            offset = suppliedOffset;
+        }
+
+        return new QueryParams(limit, offset);
     }
 }

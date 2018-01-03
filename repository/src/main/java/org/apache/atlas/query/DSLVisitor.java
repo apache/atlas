@@ -66,7 +66,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             LOG.debug("=> DSLVisitor.visitLimitOffset({})", ctx);
         }
 
-        gremlinQueryComposer.addLimit(ctx.limitClause().NUMBER().toString(),
+        gremlinQueryComposer.addLimit(ctx.limitClause().NUMBER().getText(),
                                       (ctx.offsetClause() == null ? "0" : ctx.offsetClause().NUMBER().getText()));
         return super.visitLimitOffset(ctx);
     }
@@ -85,7 +85,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             String[] items  = new String[ctx.selectExpression().size()];
             String[] labels = new String[ctx.selectExpression().size()];
 
-            GremlinQueryComposer.SelectExprMetadata selectExprMetadata = new GremlinQueryComposer.SelectExprMetadata();
+            SelectClauseComposer selectClauseComposer = new SelectClauseComposer();
 
             for (int i = 0; i < ctx.selectExpression().size(); i++) {
                 SelectExpressionContext selectExpression = ctx.selectExpression(i);
@@ -99,24 +99,24 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
 
                 if (Objects.nonNull(countClause)) {
                     items[i] = "count";
-                    selectExprMetadata.setCountIdx(i);
+                    selectClauseComposer.setCountIdx(i);
                 } else if (Objects.nonNull(sumClause)) {
                     items[i] = sumClause.expr().getText();
-                    selectExprMetadata.setSumIdx(i);
+                    selectClauseComposer.setSumIdx(i);
                 } else if (Objects.nonNull(minClause)) {
                     items[i] = minClause.expr().getText();
-                    selectExprMetadata.setMinIdx(i);
+                    selectClauseComposer.setMinIdx(i);
                 } else if (Objects.nonNull(maxClause)) {
                     items[i] = maxClause.expr().getText();
-                    selectExprMetadata.setMaxIdx(i);
+                    selectClauseComposer.setMaxIdx(i);
                 } else {
                     items[i] = selectExpression.expr().getText();
                 }
             }
 
-            selectExprMetadata.setItems(items);
-            selectExprMetadata.setLabels(labels);
-            gremlinQueryComposer.addSelect(selectExprMetadata);
+            selectClauseComposer.setItems(items);
+            selectClauseComposer.setLabels(labels);
+            gremlinQueryComposer.addSelect(selectClauseComposer);
         }
         return super.visitSelectExpr(ctx);
     }
@@ -251,13 +251,33 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
 
             if (comparisonClause != null) {
                 String lhs = comparisonClause.arithE(0).getText();
-                String op  = comparisonClause.operator().getText().toUpperCase();
-                String rhs = comparisonClause.arithE(1).getText();
+                String op, rhs;
+                AtomEContext atomECtx = comparisonClause.arithE(1).multiE().atomE();
+                if(atomECtx.literal() == null ||
+                        (atomECtx.literal() != null && atomECtx.literal().valueArray() == null)) {
+                    op = comparisonClause.operator().getText().toUpperCase();
+                    rhs = comparisonClause.arithE(1).getText();
+                } else {
+                    op = "in";
+                    rhs = getInClause(atomECtx);
+                }
 
                 gremlinQueryComposer.addWhere(lhs, op, rhs);
             } else {
                 processExpr(compE.arithE().multiE().atomE().expr(), gremlinQueryComposer);
             }
         }
+    }
+
+    private String getInClause(AtomEContext atomEContext) {
+        StringBuilder sb = new StringBuilder();
+        ValueArrayContext valueArrayContext = atomEContext.literal().valueArray();
+        int startIdx = 1;
+        int endIdx = valueArrayContext.children.size() - 1;
+        for (int i = startIdx; i < endIdx; i++) {
+            sb.append(valueArrayContext.getChild(i));
+        }
+
+        return sb.toString();
     }
 }

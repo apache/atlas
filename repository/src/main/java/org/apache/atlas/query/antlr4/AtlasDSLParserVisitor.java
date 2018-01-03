@@ -1,4 +1,3 @@
-// Generated from repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4 by ANTLR 4.7
 package org.apache.atlas.query.antlr4;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

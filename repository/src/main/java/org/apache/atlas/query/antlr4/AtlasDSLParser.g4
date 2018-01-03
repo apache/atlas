@@ -27,9 +27,9 @@ operator: (K_LT | K_LTE | K_EQ | K_NEQ | K_GT | K_GTE | K_LIKE) ;
 
 sortOrder: K_ASC | K_DESC ;
 
-valueArray: K_LBRACKET STRING (K_COMMA STRING)* K_RBRACKET ;
+valueArray: K_LBRACKET ID (K_COMMA ID)* K_RBRACKET ;
 
-literal: BOOL | NUMBER | FLOATING_NUMBER | (STRING | valueArray) ;
+literal: BOOL | NUMBER | FLOATING_NUMBER | (ID | valueArray) ;
 
 // Composite rules
 limitClause: K_LIMIT NUMBER ;
