@@ -1028,7 +1028,7 @@ public final class GraphHelper {
             return instanceVertex.getProperty(actualPropertyName, AtlasEdge.class);
         }
         else {
-            return instanceVertex.getProperty(actualPropertyName, Object.class).toString();
+            return instanceVertex.getProperty(actualPropertyName, Object.class);
         }
     }
 
@@ -1038,7 +1038,7 @@ public final class GraphHelper {
         if (AtlasGraphUtilsV1.isReference(elementType)) {
             return instanceVertex.getProperty(vertexPropertyName, AtlasEdge.class);
         } else {
-            return instanceVertex.getProperty(vertexPropertyName, Object.class).toString();
+            return instanceVertex.getProperty(vertexPropertyName, Object.class);
         }
     }
 

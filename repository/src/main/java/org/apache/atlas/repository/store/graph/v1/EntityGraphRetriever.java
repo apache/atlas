@@ -479,11 +479,11 @@ public final class EntityGraphRetriever {
         switch (arrayElement.getTypeCategory()) {
             case PRIMITIVE:
             case ENUM:
+            case ARRAY:
+            case MAP:
                 ret = value;
                 break;
 
-            case ARRAY:
-            case MAP:
             case CLASSIFICATION:
                 break;
 

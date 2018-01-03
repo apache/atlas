@@ -273,10 +273,10 @@ public final class GraphToTypedInstanceMapper {
         switch (elementType.getTypeCategory()) {
         case PRIMITIVE:
         case ENUM:
-            return value;
-
         case ARRAY:
         case MAP:
+            return value;
+
         case TRAIT:
             // do nothing
             break;

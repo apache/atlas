@@ -30,9 +30,11 @@ public class TypeUtils {
 
     public static final String NAME_REGEX = "[a-zA-z][a-zA-Z0-9_]*";
     public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
-    public static final Pattern ARRAY_TYPE_NAME_PATTERN = Pattern.compile(String.format("array<(%s)>", NAME_REGEX));
-    public static final Pattern MAP_TYPE_NAME_PATTERN =
-            Pattern.compile(String.format("map<(%s),(%s)>", NAME_REGEX, NAME_REGEX));
+    private static final String ARRAY_TYPE_NAME_PREFIX = "array<";
+    private static final String ARRAY_TYPE_NAME_SUFFIX = ">";
+    private static final String MAP_TYPE_NAME_PREFIX   = "map<";
+    private static final String MAP_TYPE_NAME_SUFFIX   = ">";
+    private static final String MAP_TYPE_KEY_VAL_SEP   = ",";
 
     public static void outputVal(String val, Appendable buf, String prefix) throws AtlasException {
         try {
@@ -43,13 +45,33 @@ public class TypeUtils {
     }
 
     public static String parseAsArrayType(String typeName) {
-        Matcher m = ARRAY_TYPE_NAME_PATTERN.matcher(typeName);
-        return m.matches() ? m.group(1) : null;
+        String ret = null;
+
+        if (typeName.startsWith(ARRAY_TYPE_NAME_PREFIX) && typeName.endsWith(ARRAY_TYPE_NAME_SUFFIX)) {
+            int    startIdx        = ARRAY_TYPE_NAME_PREFIX.length();
+            int    endIdx          = typeName.length() - ARRAY_TYPE_NAME_SUFFIX.length();
+            String elementTypeName = typeName.substring(startIdx, endIdx);
+
+            ret = elementTypeName;
+        }
+
+        return ret;
     }
 
     public static String[] parseAsMapType(String typeName) {
-        Matcher m = MAP_TYPE_NAME_PATTERN.matcher(typeName);
-        return m.matches() ? new String[]{m.group(1), m.group(2)} : null;
+        String[] ret = null;
+
+        if (typeName.startsWith(MAP_TYPE_NAME_PREFIX) && typeName.endsWith(MAP_TYPE_NAME_SUFFIX)) {
+            int      startIdx      = MAP_TYPE_NAME_PREFIX.length();
+            int      endIdx        = typeName.length() - MAP_TYPE_NAME_SUFFIX.length();
+            String[] keyValueTypes = typeName.substring(startIdx, endIdx).split(MAP_TYPE_KEY_VAL_SEP, 2);
+            String   keyTypeName   = keyValueTypes.length > 0 ? keyValueTypes[0] : null;
+            String   valueTypeName = keyValueTypes.length > 1 ? keyValueTypes[1] : null;
+
+            ret = new String[] { keyTypeName, valueTypeName };
+        }
+
+        return ret;
     }
 
     public static Map<AttributeInfo, List<String>> buildAttrInfoToNameMap(FieldMapping f) {

@@ -73,6 +73,21 @@ public class TypedStructHandler {
                 return ts;
             } else if (val instanceof StructInstance && Objects.equals(((StructInstance) val).getTypeName(), structType.getName())) {
                 return (StructInstance) val;
+            } else if (val instanceof Map) {
+                Map s = (Map) val;
+
+                ITypedStruct ts = createInstance();
+                for (Map.Entry<String, AttributeInfo> e : fieldMapping.fields.entrySet()) {
+                    String attrKey = e.getKey();
+                    AttributeInfo i = e.getValue();
+                    Object aVal = s.get(attrKey);
+                    try {
+                        ts.set(attrKey, aVal);
+                    } catch (ValueConversionException ve) {
+                        throw new ValueConversionException(structType, val, ve);
+                    }
+                }
+                return ts;
             } else {
                 throw new ValueConversionException(structType, val);
             }

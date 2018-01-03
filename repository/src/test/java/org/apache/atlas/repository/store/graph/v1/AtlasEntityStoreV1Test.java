@@ -103,6 +103,7 @@ public class AtlasEntityStoreV1Test {
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
     private AtlasEntityWithExtInfo   tblEntity;
+    private AtlasEntityWithExtInfo   nestedCollectionAttrEntity;
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     @Inject
@@ -118,7 +119,8 @@ public class AtlasEntityStoreV1Test {
         new GraphBackedSearchIndexer(typeRegistry);
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
-                                                              TestUtilsV2.defineHiveTypes()
+                                                              TestUtilsV2.defineHiveTypes(),
+                                                              TestUtilsV2.defineTypeWithNestedCollectionAttributes(),
                                                             };
 
         for (AtlasTypesDef typesDef : testTypesDefs) {
@@ -132,6 +134,7 @@ public class AtlasEntityStoreV1Test {
         deptEntity = TestUtilsV2.createDeptEg2();
         dbEntity   = TestUtilsV2.createDBEntityV2();
         tblEntity  = TestUtilsV2.createTableEntityV2(dbEntity.getEntity());
+        nestedCollectionAttrEntity = TestUtilsV2.createNestedCollectionAttrEntity();
     }
 
     @AfterClass
@@ -187,6 +190,14 @@ public class AtlasEntityStoreV1Test {
 
         AtlasEntityHeader tableEntity = tableCreationResponse.getFirstCreatedEntityByTypeName(TABLE_TYPE);
         validateEntity(tblEntity, getEntityFromStore(tableEntity));
+
+        //Create nested-collection attribute entity
+        init();
+        EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(nestedCollectionAttrEntity), false);
+        validateMutationResponse(entityMutationResponse, EntityOperation.CREATE, 1);
+
+        AtlasEntityHeader createdEntity = entityMutationResponse.getFirstCreatedEntityByTypeName(TestUtilsV2.ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR);
+        validateEntity(nestedCollectionAttrEntity, getEntityFromStore(createdEntity));
     }
 
     @Test(dependsOnMethods = "testCreate")

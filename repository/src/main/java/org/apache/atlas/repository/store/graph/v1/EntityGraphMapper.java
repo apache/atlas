@@ -647,6 +647,8 @@ public class EntityGraphMapper {
         switch(ctx.getAttrType().getTypeCategory()) {
         case PRIMITIVE:
         case ENUM:
+        case MAP:
+        case ARRAY:
             return ctx.getValue();
 
         case STRUCT:
@@ -657,8 +659,6 @@ public class EntityGraphMapper {
             ctx.setElementType(instanceType);
             return mapObjectIdValue(ctx, context);
 
-        case MAP:
-        case ARRAY:
         default:
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, ctx.getAttrType().getTypeCategory().name());
         }
@@ -726,6 +726,10 @@ public class EntityGraphMapper {
     public static Object getMapValueProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName) {
         if (AtlasGraphUtilsV1.isReference(elementType)) {
             return vertex.getProperty(vertexPropertyName, AtlasEdge.class);
+        } else if (elementType instanceof AtlasArrayType) {
+            return vertex.getProperty(vertexPropertyName, List.class);
+        } else if (elementType instanceof AtlasMapType) {
+            return vertex.getProperty(vertexPropertyName, Map.class);
         }
         else {
             return vertex.getProperty(vertexPropertyName, String.class).toString();
