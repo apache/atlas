@@ -509,8 +509,10 @@ define(['require',
                 });
             },
             onTagList: function(e, toggle) {
+                var that = this;
                 e.stopPropagation();
                 if (e.target.nodeName === "A") {
+                    that.$('.tagPopover').popover('hide');
                     $(e.currentTarget).parents('ul.tag-tree').find('li.active').removeClass("active");
                     $(e.currentTarget).addClass("active");
                 }
