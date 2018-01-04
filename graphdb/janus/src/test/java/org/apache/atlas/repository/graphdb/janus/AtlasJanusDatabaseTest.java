@@ -75,22 +75,11 @@ public class AtlasJanusDatabaseTest {
         return (AtlasGraph<V, E>) atlasGraph;
     }
 
-    @BeforeClass
-    public void start() throws Exception {
-        if (useLocalSolr()) {
-            LocalSolrRunner.start();
-        }
-    }
-
     @AfterClass
-    public void cleanup() throws Exception {
+    public void cleanup() {
         if (atlasGraph != null) {
             atlasGraph.clear();
             atlasGraph = null;
-        }
-
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
         }
     }
 

@@ -18,10 +18,6 @@
 
 package org.apache.atlas.repository.graphdb.janus;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -30,18 +26,20 @@ import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.StringListSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.groovy.loaders.SugarLoader;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.util.JanusGraphCleanup;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
 
 /**
  * Default implementation for Graph Provider that doles out Titan Graph.
@@ -53,13 +51,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    public static final String GRAPH_PREFIX = "atlas.graph";
-
-    public static final String INDEX_BACKEND_CONF = "index.search.backend";
-
+    public static final String GRAPH_PREFIX         = "atlas.graph";
+    public static final String INDEX_BACKEND_CONF   = "index.search.backend";
+    public static final String SOLR_ZOOKEEPER_URL   = "atlas.graph.index.search.solr.zookeeper-url";
     public static final String INDEX_BACKEND_LUCENE = "lucene";
-
-    public static final String INDEX_BACKEND_ES = "elasticsearch";
+    public static final String INDEX_BACKEND_ES     = "elasticsearch";
 
     private static volatile AtlasJanusGraph atlasGraphInstance = null;
     private static volatile JanusGraph graphInstance;
@@ -71,6 +67,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     public static Configuration getConfiguration() throws AtlasException {
+        startLocalSolr();
+
         Configuration configProperties = ApplicationProperties.get();
 
         Configuration janusConfig = ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
@@ -166,11 +164,46 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             LOG.warn("Could not clear test JanusGraph", t);
             t.printStackTrace();
         }
+
+        try {
+            LocalSolrRunner.stop();
+        } catch (Throwable t) {
+            LOG.warn("Could not stop local solr server", t);
+        }
     }
 
     @Override
     public AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> getGraph() {
         getGraphInstance();
         return atlasGraphInstance;
+    }
+
+    private static void startLocalSolr() {
+        if (isEmbeddedSolr()) {
+            try {
+                LocalSolrRunner.start();
+
+                Configuration configuration = ApplicationProperties.get();
+                configuration.clearProperty(SOLR_ZOOKEEPER_URL);
+                configuration.setProperty(SOLR_ZOOKEEPER_URL, LocalSolrRunner.getZookeeperUrls());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to start embedded solr cloud server. Aborting!", e);
+            }
+        }
+    }
+
+    public static boolean isEmbeddedSolr() {
+        boolean ret = false;
+
+        try {
+            Configuration conf     = ApplicationProperties.get();
+            Object        property = conf.getProperty("atlas.graph.index.search.solr.embedded");
+
+            if (property != null && property instanceof String) {
+                ret = Boolean.valueOf((String) property);
+            }
+        } catch (AtlasException ignored) { }
+
+        return ret;
     }
 }

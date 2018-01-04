@@ -590,9 +590,9 @@
 
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
 
-        <surefire.version>2.20.1</surefire.version>
+        <surefire.version>2.18.1</surefire.version>
         <surefire.forkCount>2C</surefire.forkCount>
-        <failsafe.version>2.20.1</failsafe.version>
+        <failsafe.version>2.18.1</failsafe.version>
         <atlas.surefire.options></atlas.surefire.options>
 
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
@@ -657,7 +657,7 @@
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>solr</graph.index.backend>
                 <tests.solr.embedded>true</tests.solr.embedded>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar</distro.exclude.packages>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/solr-test-framework-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -712,6 +712,7 @@
 
     <modules>
         <module>build-tools</module>
+        <module>test-tools</module>
         <module>intg</module>
         <module>common</module>
         <module>server-api</module>
@@ -2122,6 +2123,27 @@
                 <configuration>
                     <skipAssembly>true</skipAssembly>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/test-tools/src/main/resources/solr</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

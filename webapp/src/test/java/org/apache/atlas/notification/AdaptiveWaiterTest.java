@@ -42,7 +42,7 @@ public class AdaptiveWaiterTest {
             waiter.pause(new IllegalStateException());
         }
 
-        assertEquals(waiter.waitDuration, Math.min((pauseCount + 1) * minDuration, maxDuration)); // waiter.waitDuration will be set to wait time for next pause()
+        assertEquals(waiter.waitDuration, Math.min((pauseCount - 1) * minDuration, maxDuration)); // waiter.waitDuration will be set to wait time for next pause()
     }
 
     @Test

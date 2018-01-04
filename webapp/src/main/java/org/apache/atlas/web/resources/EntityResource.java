@@ -149,7 +149,7 @@ public class EntityResource {
                 jsonStrings = new String[jsonEntities.size()];
 
                 for (int i = 0; i < jsonEntities.size(); i++) {
-                    jsonStrings[i] = AtlasJson.toV1Json(jsonEntities.get(i));
+                    jsonStrings[i] = jsonEntities.get(i).textValue();
                 }
             } catch (IOException e) {
                 jsonStrings = new String[1];
