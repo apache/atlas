@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -132,24 +133,24 @@ public class LocalSolrRunner {
 
     public static void main(String[] args) {
         if (ArrayUtils.isEmpty(args)) {
-            System.out.println("No arguments!");
+            System.out.println("No argument!");
         } else if (args[0].equals("start")) {
             try {
                 start();
                 System.out.println("Started Local Solr Server: "+ getZookeeperUrls());
 
             } catch (Exception e) {
-               //do nothing
+                System.out.println("Error starting Local Solr Server: " + e);
             }
         } else if (args[0].equals("stop")) {
             try {
+                System.out.println("Stopping Local Solr Server.");
                 stop();
-                System.out.println("Shutting Local Solr Server.");
             } catch (Exception e) {
-                //do nothing
+                System.out.println("Error stopping Local Solr Server: " + e);
             }
         } else {
-            System.out.println("Bad arguments!");
+            System.out.println("Bad first argument: " + Arrays.toString(args));
         }
     }
 }
