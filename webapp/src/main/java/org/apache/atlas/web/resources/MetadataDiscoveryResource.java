@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.query.QueryParams;
@@ -49,9 +48,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Jersey Resource for metadata operations.
@@ -65,13 +61,9 @@ public class MetadataDiscoveryResource {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
     private static final String QUERY_TYPE_DSL = "dsl";
-    private static final String QUERY_TYPE_GREMLIN = "gremlin";
     private static final String QUERY_TYPE_FULLTEXT = "full-text";
     private static final String LIMIT_OFFSET_DEFAULT = "-1";
 
-    private final  boolean       gremlinSearchEnabled;
-    private static Configuration applicationProperties          = null;
-    private static final String  ENABLE_GREMLIN_SEARCH_PROPERTY = "atlas.search.gremlin.enable";
     private final AtlasDiscoveryService atlasDiscoveryService;
 
     /**
@@ -83,8 +75,6 @@ public class MetadataDiscoveryResource {
     @Inject
     public MetadataDiscoveryResource(AtlasDiscoveryService atlasDiscoveryService, Configuration configuration) {
         this.atlasDiscoveryService = atlasDiscoveryService;
-        applicationProperties  = configuration;
-        gremlinSearchEnabled   = applicationProperties != null && applicationProperties.getBoolean(ENABLE_GREMLIN_SEARCH_PROPERTY, false);
     }
 
     /**
@@ -156,7 +146,7 @@ public class MetadataDiscoveryResource {
             dslQuery = ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             QueryParams queryParams = validateQueryParams(limit, offset);
             AtlasSearchResult result = atlasDiscoveryService.searchUsingDslQuery(dslQuery, queryParams.limit(), queryParams.offset());
-            final String jsonResultStr = AtlasType.toJson(result.getEntities());
+            final String jsonResultStr = result.getEntities() == null ? null : AtlasType.toJson(result.getEntities());
 
             ObjectNode response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
 
@@ -229,10 +219,9 @@ public class MetadataDiscoveryResource {
             query = ParamChecker.notEmpty(query, "query cannot be null or empty");
             QueryParams queryParams = validateQueryParams(limit, offset);
             AtlasSearchResult result = atlasDiscoveryService.searchUsingFullTextQuery(query, false, queryParams.limit(), queryParams.offset());
-            final String jsonResultStr = AtlasType.toJson(result.getEntities());
-            ArrayNode rowsJsonArr = AtlasJson.parseToV1ArrayNode(jsonResultStr);
+            final String jsonResultStr = result.getFullTextResult() == null ? null : AtlasType.toJson(result.getFullTextResult());
 
-            ObjectNode response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
+            ObjectNode response = new FullTextJSonResponseBuilder().results(jsonResultStr).query(query).build();
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
@@ -332,7 +321,7 @@ public class MetadataDiscoveryResource {
         }
 
         public FullTextJSonResponseBuilder results(String dslResults) throws IOException {
-            return results(AtlasJson.parseToV1ArrayNode(dslResults));
+            return results(StringUtils.isEmpty(dslResults) ? AtlasJson.createV1ArrayNode() : AtlasJson.parseToV1ArrayNode(dslResults));
         }
 
         public FullTextJSonResponseBuilder() {
