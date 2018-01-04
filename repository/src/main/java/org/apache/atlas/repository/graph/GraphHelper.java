@@ -1070,7 +1070,7 @@ public final class GraphHelper {
         if (AtlasGraphUtilsV1.isReference(elementType)) {
             return instanceVertex.getProperty(vertexPropertyName, AtlasEdge.class);
         } else {
-            return instanceVertex.getProperty(vertexPropertyName, Object.class).toString();
+            return instanceVertex.getProperty(vertexPropertyName, Object.class);
         }
     }
 

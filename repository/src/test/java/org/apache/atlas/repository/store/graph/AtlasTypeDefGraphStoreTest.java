@@ -333,6 +333,21 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateWithNestedContainerAttributes() {
+        AtlasTypesDef typesDef = TestUtilsV2.defineTypeWithNestedCollectionAttributes();
+
+        try {
+            AtlasTypesDef createdTypes = typeDefStore.createTypesDef(typesDef);
+            assertEquals(typesDef.getEnumDefs(), createdTypes.getEnumDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getStructDefs(), createdTypes.getStructDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getClassificationDefs(), createdTypes.getClassificationDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getEntityDefs(), createdTypes.getEntityDefs(), "Data integrity issue while persisting");
+        } catch (AtlasBaseException e) {
+            fail("creation of type with nested-container attributes should've succeeded");
+        }
+    }
+
     @Test(enabled = false)
     public void testCreateWithInvalidAttributes(){
     }

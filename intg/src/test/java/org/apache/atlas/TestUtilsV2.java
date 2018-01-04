@@ -541,6 +541,7 @@ public final class TestUtilsV2 {
     public static final String SERDE_TYPE = "serdeType";
     public static final String COLUMNS_MAP = "columnsMap";
     public static final String COLUMNS_ATTR_NAME = "columns";
+    public static final String ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR = "entity_with_nested_collection_attr";
 
     public static final String NAME = "name";
 
@@ -830,6 +831,150 @@ public final class TestUtilsV2 {
         populateSystemAttributes(ret);
 
         return ret;
+    }
+
+    public static AtlasTypesDef defineTypeWithNestedCollectionAttributes() {
+        AtlasEntityDef nestedCollectionAttributesEntityType =
+                AtlasTypeUtil.createClassTypeDef(ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR, ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR + "_description", null,
+                        AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
+
+                        new AtlasAttributeDef("mapOfArrayOfStrings", "map<string,array<string>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfArrayOfBooleans", "map<string,array<boolean>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfArrayOfInts", "map<string,array<int>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfArrayOfFloats", "map<string,array<float>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfArrayOfDates", "map<string,array<date>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+
+                        new AtlasAttributeDef("mapOfMapOfStrings", "map<string,map<string,string>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfMapOfBooleans", "map<string,map<string,boolean>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfMapOfInts", "map<string,map<string,int>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfMapOfFloats", "map<string,map<string,float>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("mapOfMapOfDates", "map<string,map<string,date>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+
+                        new AtlasAttributeDef("arrayOfArrayOfStrings", "array<array<string>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfArrayOfBooleans", "array<array<boolean>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfArrayOfInts", "array<array<int>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfArrayOfFloats", "array<array<float>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfArrayOfDates", "array<array<date>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+
+                        new AtlasAttributeDef("arrayOfMapOfStrings", "array<map<string,string>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfMapOfBooleans", "array<map<string,boolean>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfMapOfInts", "array<map<string,int>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfMapOfFloats", "array<map<string,float>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList()),
+                        new AtlasAttributeDef("arrayOfMapOfDates", "array<map<string,date>>", false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
+                                false, false,
+                                Collections.<AtlasConstraintDef>emptyList())
+                );
+
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.emptyList(),
+                                                      Collections.emptyList(),
+                                                      Collections.emptyList(),
+                                                      Arrays.asList(nestedCollectionAttributesEntityType));
+
+        populateSystemAttributes(ret);
+
+        return ret;
+    }
+
+    public static AtlasEntityWithExtInfo createNestedCollectionAttrEntity() {
+        AtlasEntity entity = new AtlasEntity(ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR);
+
+        String[]  arrayOfStrings  = new String[] { "one", "two", "three" };
+        boolean[] arrayOfBooleans = new boolean[] { false, true };
+        int[]     arrayOfInts     = new int[] { 1, 2, 3 };
+        float[]   arrayOfFloats   = new float[] { 1.1f, 2.2f, 3.3f };
+        Date[]    arrayOfDates    = new Date[] { new Date() };
+
+        Map<String, String>  mapOfStrings  = Collections.singletonMap("one", "one");
+        Map<String, Boolean> mapOfBooleans = Collections.singletonMap("one", true);
+        Map<String, Integer> mapOfInts     = Collections.singletonMap("one", 1);
+        Map<String, Float>   mapOfFloats   = Collections.singletonMap("one", 1.1f);
+        Map<String, Date>    mapOfDates    = Collections.singletonMap("now", new Date());
+
+        entity.setAttribute("name", randomString() + "_" + System.currentTimeMillis());
+
+        entity.setAttribute("mapOfArrayOfStrings", Collections.singletonMap("one", arrayOfStrings));
+        entity.setAttribute("mapOfArrayOfBooleans", Collections.singletonMap("one", arrayOfBooleans));
+        entity.setAttribute("mapOfArrayOfInts", Collections.singletonMap("one", arrayOfInts));
+        entity.setAttribute("mapOfArrayOfFloats", Collections.singletonMap("one", arrayOfFloats));
+        entity.setAttribute("mapOfArrayOfDates", Collections.singletonMap("one", arrayOfDates));
+
+        entity.setAttribute("mapOfMapOfStrings", Collections.singletonMap("one", mapOfStrings));
+        entity.setAttribute("mapOfMapOfBooleans", Collections.singletonMap("one", mapOfBooleans));
+        entity.setAttribute("mapOfMapOfInts", Collections.singletonMap("one", mapOfInts));
+        entity.setAttribute("mapOfMapOfFloats", Collections.singletonMap("one", mapOfFloats));
+        entity.setAttribute("mapOfMapOfDates", Collections.singletonMap("one", mapOfDates));
+
+        entity.setAttribute("arrayOfArrayOfStrings", Collections.singletonList(arrayOfStrings));
+        entity.setAttribute("arrayOfArrayOfBooleans", Collections.singletonList(arrayOfBooleans));
+        entity.setAttribute("arrayOfArrayOfInts", Collections.singletonList(arrayOfInts));
+        entity.setAttribute("arrayOfArrayOfFloats", Collections.singletonList(arrayOfFloats));
+        entity.setAttribute("arrayOfArrayOfDates", Collections.singletonList(arrayOfDates));
+
+        entity.setAttribute("arrayOfMapOfStrings", Collections.singletonList(mapOfStrings));
+        entity.setAttribute("arrayOfMapOfBooleans", Collections.singletonList(mapOfBooleans));
+        entity.setAttribute("arrayOfMapOfInts", Collections.singletonList(mapOfInts));
+        entity.setAttribute("arrayOfMapOfFloats", Collections.singletonList(mapOfFloats));
+        entity.setAttribute("arrayOfMapOfDates", Collections.singletonList(mapOfDates));
+
+        return new AtlasEntityWithExtInfo(entity);
     }
 
     public static final String randomString() {

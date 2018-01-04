@@ -24,12 +24,16 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
-import org.apache.atlas.repository.graphdb.janus.serializer.StringListSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -81,7 +85,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
         //not ideal, but avoids making large changes to Atlas
         janusConfig.addProperty("attributes.custom.attribute2.attribute-class", ArrayList.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute2.serializer-class", StringListSerializer.class.getName());
+        janusConfig.addProperty("attributes.custom.attribute2.serializer-class", SerializableSerializer.class.getName());
 
         janusConfig.addProperty("attributes.custom.attribute3.attribute-class", BigInteger.class.getName());
         janusConfig.addProperty("attributes.custom.attribute3.serializer-class", BigIntegerSerializer.class.getName());
