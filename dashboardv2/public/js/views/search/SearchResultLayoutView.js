@@ -620,7 +620,7 @@ define(['require',
                     nameCheck = 0,
                     columnToShow = null,
                     col = {};
-                if (this.value && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
+                if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
                 col['Check'] = {
