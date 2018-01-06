@@ -360,7 +360,7 @@ public final class TypeConverterUtil {
             for (AtlasAttributeDef attrDef : attrDefs) {
                 AtlasAttribute attribute = structType.getAttribute(attrDef.getName());
 
-                AttributeDefinition oldAttrDef = AtlasStructDefStoreV1.toAttributeDefintion(attribute);
+                AttributeDefinition oldAttrDef = AtlasStructDefStoreV1.toAttributeDefinition(attribute);
 
                 ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName()));
             }

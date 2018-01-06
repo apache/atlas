@@ -33,6 +33,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -544,10 +545,43 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         return ret;
     }
 
-    public static AttributeDefinition toAttributeDefintion(AtlasAttribute attribute) {
-        String jsonString = toJsonFromAttribute(attribute);
+    public static Multiplicity getMultiplicity(AtlasAttributeDef attributeDef) {
+        final int     lower;
+        final int     upper;
+        final boolean isUnique = AtlasAttributeDef.Cardinality.SET.equals(attributeDef.getCardinality());
 
-        AttributeDefinition ret = AtlasType.fromV1Json(jsonString, AttributeDefinition.class);
+        if (attributeDef.getCardinality() == AtlasAttributeDef.Cardinality.SINGLE) {
+            lower = attributeDef.getIsOptional() ? 0 : 1;
+            upper = 1;
+        } else {
+            if(attributeDef.getIsOptional()) {
+                lower = 0;
+            } else {
+                lower = attributeDef.getValuesMinCount() < 1 ? 1 : attributeDef.getValuesMinCount();
+            }
+
+            upper = attributeDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attributeDef.getValuesMaxCount();
+        }
+
+        Multiplicity ret = new Multiplicity(lower, upper, isUnique);
+
+        return ret;
+    }
+
+    public static AttributeDefinition toAttributeDefinition(AtlasAttribute attribute) {
+        final AtlasAttributeDef attrDef = attribute.getAttributeDef();
+
+        AttributeDefinition ret = new AttributeDefinition();
+
+        ret.setName(attrDef.getName());
+        ret.setDataTypeName(attrDef.getTypeName());
+        ret.setMultiplicity(getMultiplicity(attrDef));
+        ret.setIsComposite(attribute.isOwnedRef());
+        ret.setIsUnique(attrDef.getIsUnique());
+        ret.setIsIndexable(attrDef.getIsIndexable());
+        ret.setReverseAttributeName(attribute.getInverseRefAttributeName());
+        ret.setDescription(attrDef.getDescription());
+        ret.setDefaultValue(attrDef.getDefaultValue());
 
         return ret;
     }
