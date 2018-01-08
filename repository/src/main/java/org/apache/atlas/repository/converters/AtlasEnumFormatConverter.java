@@ -25,13 +25,58 @@ import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEnumFormatConverter.class);
+
 
     public AtlasEnumFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         super(registry, typeRegistry, TypeCategory.ENUM);
+    }
+
+    @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = false;
+
+        if (v1Obj == null) {
+            ret = true;
+        } else if (type instanceof AtlasEnumType) {
+            final AtlasEnumType enumType = (AtlasEnumType) type;
+
+            if (v1Obj instanceof EnumValue) {
+                Object enumValue = ((EnumValue)v1Obj).getValue();
+
+                if (enumValue != null) {
+                    ret = enumType.getEnumDef().hasElement(enumValue.toString());
+                }
+            } else if (v1Obj instanceof Map) {
+                Object enumValue = ((Map)v1Obj).get("value");
+
+                if (enumValue != null) {
+                    ret = enumType.getEnumDef().hasElement(enumValue.toString());
+                } else {
+                    Object enumOrdinal = ((Map)v1Obj).get("ordinal");
+
+                    if (enumOrdinal != null) {
+                        ret = enumType.getEnumElementDef((Number) enumOrdinal) != null;
+                    }
+                }
+            } else if (v1Obj instanceof Number) {
+                ret = enumType.getEnumElementDef((Number) v1Obj) != null;
+            } else {
+                ret = enumType.getEnumElementDef(v1Obj.toString()) != null;
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasEnumFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
     }
 
     @Override

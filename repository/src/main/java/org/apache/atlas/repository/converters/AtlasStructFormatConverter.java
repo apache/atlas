@@ -52,6 +52,17 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = (v1Obj == null) || v1Obj instanceof Map || v1Obj instanceof Struct;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasStructFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
     public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext converterContext) throws AtlasBaseException {
         AtlasStruct ret = null;
 
@@ -248,7 +259,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
                 Object               v1Value       = attributes.get(attrName);
 
-                if (attrType.isValidValue(v1Value)) {
+                if (attrConverter.isValidValueV1(v1Value, attrType)) {
                     Object v2Value = attrConverter.fromV1ToV2(v1Value, attrType, context);
 
                     ret.put(attrName, v2Value);

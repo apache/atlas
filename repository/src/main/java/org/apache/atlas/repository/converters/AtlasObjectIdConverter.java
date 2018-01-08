@@ -23,17 +23,21 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.v1.model.instance.Id;
-import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasObjectIdConverter.class);
+
 
     public AtlasObjectIdConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         this(registry, typeRegistry, TypeCategory.OBJECT_ID_TYPE);
@@ -41,6 +45,17 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
 
     protected AtlasObjectIdConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry, TypeCategory typeCategory) {
         super(registry, typeRegistry, typeCategory);
+    }
+
+    @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = (v1Obj == null) || v1Obj instanceof Id || v1Obj instanceof Referenceable;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasObjectIdConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
     }
 
     @Override

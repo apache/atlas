@@ -26,6 +26,8 @@ import org.apache.atlas.type.AtlasType;
 
 
 public interface AtlasFormatConverter {
+    boolean isValidValueV1(Object v1Ob, AtlasType typej);
+
     Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException;
 
     Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext context) throws AtlasBaseException;

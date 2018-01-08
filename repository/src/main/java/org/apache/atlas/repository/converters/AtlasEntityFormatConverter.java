@@ -50,6 +50,17 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
     }
 
     @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = (v1Obj == null) || v1Obj instanceof Id || v1Obj instanceof Referenceable;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasEntityFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
     public AtlasEntity fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext context) throws AtlasBaseException {
         AtlasEntity entity = null;
 
