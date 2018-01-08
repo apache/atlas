@@ -138,13 +138,13 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.submit()");
             }
 
-            String entities = Servlets.getRequestPayload(request);
+            entityJson = Servlets.getRequestPayload(request);
 
             //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
             String[] jsonStrings;
 
             try {
-                ArrayNode jsonEntities = AtlasJson.parseToV1ArrayNode(entities);
+                ArrayNode jsonEntities = AtlasJson.parseToV1ArrayNode(entityJson);
 
                 jsonStrings = new String[jsonEntities.size()];
 
@@ -154,11 +154,11 @@ public class EntityResource {
             } catch (IOException e) {
                 jsonStrings = new String[1];
 
-                jsonStrings[0] = entities;
+                jsonStrings[0] = entityJson;
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("submitting entities: count={}; entities-json={}", jsonStrings.length, entities);
+                LOG.debug("submitting entities: count={}; entities-json={}", jsonStrings.length, entityJson);
             }
 
             AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);

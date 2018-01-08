@@ -246,10 +246,15 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
                 AtlasType            attrType      = attr.getAttributeType();
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
-                Object               v1Value       = attributes.get(attr.getName());
-                Object               v2Value       = attrConverter.fromV1ToV2(v1Value, attrType, context);
+                Object               v1Value       = attributes.get(attrName);
 
-                ret.put(attr.getAttributeDef().getName(), v2Value);
+                if (attrType.isValidValue(v1Value)) {
+                    Object v2Value = attrConverter.fromV1ToV2(v1Value, attrType, context);
+
+                    ret.put(attrName, v2Value);
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, attrName + "=" + v1Value);
+                }
             }
         }
 
