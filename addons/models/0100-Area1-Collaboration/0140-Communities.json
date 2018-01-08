@@ -80,7 +80,7 @@
       "propagateTags": "NONE",
       "attributeDefs": [
         {
-          "name": "relationshipType",
+          "name": "communityMembershipType",
           "typeName": "CommunityMembershipType",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -93,7 +93,7 @@
       "name": "CommunityResources",
       "typeVersion": "1.0",
       "endDef1": {
-        "name": "supportingResources",
+        "name": "communityResources",
         "type": "Community",
         "cardinality": "SET",
         "isContainer": true

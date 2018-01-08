@@ -163,7 +163,7 @@
         "cardinality": "SET"
       },
       "endDef2": {
-        "name": "meetings",
+        "name": "projectMeetings",
         "type": "Project",
         "cardinality": "SET"
       },

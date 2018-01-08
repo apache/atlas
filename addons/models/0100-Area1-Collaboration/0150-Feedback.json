@@ -190,7 +190,8 @@
       "superTypes": [
         "InformalTag"
       ],
-      "typeVersion": "1.0"
+      "typeVersion": "1.0",
+      "attributeDefs": []
     }
   ],
   "relationshipDefs": [
@@ -249,56 +250,19 @@
       "name": "AttachedFeedback",
       "typeVersion": "1.0",
       "endDef1": {
-        "name": "supportingResources",
-        "type": "Project",
+        "name": "comments",
+        "type": "Referenceable",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
-        "name": "projectUse",
-        "type": "Collection",
+        "name": "commentsOn",
+        "type": "Comment",
         "cardinality": "SINGLE"
       },
       "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE",
-      "attributeDefs": [
-        {
-          "name": "resourceUse",
-          "description": "Role in the team.",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": true,
-          "isUnique": false
-        }
-      ]
-    },
-    {
-      "name": "ProjectScope",
-      "typeVersion": "1.0",
-      "endDef1": {
-        "name": "projectScope",
-        "type": "Project",
-        "cardinality": "SET",
-        "isContainer": true
-      },
-      "endDef2": {
-        "name": "projectImpactingAssets",
-        "type": "Collection",
-        "cardinality": "SINGLE"
-      },
-      "relationshipCategory": "COMPOSITION",
-      "propagateTags": "NONE",
-      "attributeDefs": [
-        {
-          "name": "scopeDescription",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": true,
-          "isUnique": false
-        }
-      ]
+      "attributeDefs": []
     },
     {
       "name": "CommentReply",
