@@ -24,14 +24,15 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.type.*;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class RegistryBasedLookup implements Lookup {
     private final List<String> errorList;
     private final AtlasTypeRegistry typeRegistry;
 
-    public RegistryBasedLookup(List<String> errorList, AtlasTypeRegistry typeRegistry) {
-        this.errorList = errorList;
+    public RegistryBasedLookup(AtlasTypeRegistry typeRegistry) {
+        this.errorList = new ArrayList<>();
         this.typeRegistry = typeRegistry;
     }
 

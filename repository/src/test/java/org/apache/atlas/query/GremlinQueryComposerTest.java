@@ -137,9 +137,9 @@ public class GremlinQueryComposerTest {
         String exMain = "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').limit(25).toList()";
         verify("DB as d select d.name, d.owner orderby (d.owner) limit 25", getExpected(exSel, exMain));
 
-        String exMain2 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1388563200000'))).order().by('Table.createTime').limit(25).toList()";
+        String exMain2 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1418265300000'))).order().by('Table.createTime').limit(25).toList()";
         String exSel2 = "def f(r){ t=[['_col_0','_col_1']];  r.each({t.add([it.value('Table.name'),it.value('Table.createTime')])}); t.unique(); }";
-        verify("Table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
+        verify("Table where (name = \"sales_fact\" and createTime > \"2014-12-11T02:35:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
                 getExpected(exSel2, exMain2));
     }
 

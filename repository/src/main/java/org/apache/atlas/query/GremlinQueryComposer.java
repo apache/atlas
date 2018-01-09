@@ -28,18 +28,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GremlinQueryComposer {
     private static final Logger LOG = LoggerFactory.getLogger(GremlinQueryComposer.class);
 
+    private final String DATE_FORMAT_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
 
@@ -51,19 +50,19 @@ public class GremlinQueryComposer {
     private       int                    providedLimit  = DEFAULT_QUERY_RESULT_LIMIT;
     private       int                    providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
     private       Context                context;
+    private final DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_ISO8601_FORMAT);
 
-    @Inject
-    public GremlinQueryComposer(AtlasTypeRegistry typeRegistry, final AtlasDSL.QueryMetadata qmd) {
-        isNestedQuery = false;
-        lookup        = new RegistryBasedLookup(errorList, typeRegistry);
-        this.context  = new Context(errorList, lookup);
-        queryMetadata = qmd;
+    public GremlinQueryComposer(Lookup registryLookup, final AtlasDSL.QueryMetadata qmd, boolean isNestedQuery) {
+        this.isNestedQuery = isNestedQuery;
+        this.lookup        = registryLookup;
+        this.queryMetadata = qmd;
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         init();
     }
-
-    public GremlinQueryComposer(AtlasTypeRegistry typeRegistry, final AtlasDSL.QueryMetadata queryMetadata, int limit, int offset) {
-        this(typeRegistry, queryMetadata);
+    public GremlinQueryComposer(AtlasTypeRegistry typeRegistry, final AtlasDSL.QueryMetadata qmd, int limit, int offset) {
+        this(new RegistryBasedLookup(typeRegistry), qmd, false);
+        this.context  = new Context(errorList, lookup);
 
         providedLimit = limit;
         providedOffset = offset < 0 ? DEFAULT_QUERY_RESULT_OFFSET : offset;
@@ -75,14 +74,7 @@ public class GremlinQueryComposer {
         this.lookup        = lookup;
         this.context       = context;
         this.queryMetadata = qmd;
-
-        init();
-    }
-
-    public GremlinQueryComposer(Lookup registryLookup, final AtlasDSL.QueryMetadata qmd, boolean isNestedQuery) {
-        this.isNestedQuery = isNestedQuery;
-        this.lookup        = registryLookup;
-        this.queryMetadata = qmd;
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         init();
     }
@@ -267,9 +259,15 @@ public class GremlinQueryComposer {
         close();
 
         String items[] = getFormattedClauses(queryMetadata.needTransformation());
-        return queryMetadata.needTransformation() ?
+        String s = queryMetadata.needTransformation() ?
                 getTransformedClauses(items) :
                 String.join(".", items);
+
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("Gremlin: {}", s);
+        }
+
+        return s;
     }
 
     private String getTransformedClauses(String[] items) {
@@ -315,10 +313,6 @@ public class GremlinQueryComposer {
         }
     }
 
-    private static String quoted(String rhs) {
-        return IdentifierHelper.getQuoted(rhs);
-    }
-
     private void addSelectTransformation(final SelectClauseComposer selectClauseComposer) {
         GremlinClause fn;
         if (selectClauseComposer.isSelectNoop) {
@@ -343,14 +337,26 @@ public class GremlinQueryComposer {
     private String addQuotesIfNecessary(String rhs) {
         if(IdentifierHelper.isTrueOrFalse(rhs)) return rhs;
         if(IdentifierHelper.isQuoted(rhs)) return rhs;
-        return quoted(rhs);
+        return IdentifierHelper.getQuoted(rhs);
     }
 
     private String parseDate(String rhs) {
         String s = IdentifierHelper.isQuoted(rhs) ?
                 IdentifierHelper.removeQuotes(rhs) :
                 rhs;
-        return String.format("'%d'", DateTime.parse(s).getMillis());
+
+
+        return String.format("'%d'", getDateFormat(s));
+    }
+
+    public long getDateFormat(String s) {
+        try {
+            return dateFormat.parse(s).getTime();
+        } catch (ParseException ex) {
+            errorList.add(ex.getMessage());
+        }
+
+        return -1;
     }
 
     private void close() {
