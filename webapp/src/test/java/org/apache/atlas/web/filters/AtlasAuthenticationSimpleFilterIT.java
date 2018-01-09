@@ -63,7 +63,7 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
     public void testSimpleLoginAndAuthorizationWithValidCrendentialsAndInvalidAccessToResource()
             throws Exception {
         try {
-            URL url = new URL("http://localhost:31000/api/atlas/v1/taxonomies");
+            URL url = new URL("http://localhost:31000/api/atlas/admin/stack");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             String userpassword = "rangertagsync:rangertagsync"; //right password with no policy for taxonomies api
