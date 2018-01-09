@@ -24,21 +24,30 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationType;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.*;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class AtlasJson {
@@ -50,6 +59,9 @@ public class AtlasJson {
     private static final ObjectMapper mapperV1 = new ObjectMapper()
                                             .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
+    private static final ObjectMapper mapperV1Search = new ObjectMapper()
+            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
     static {
         SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
 
@@ -59,6 +71,17 @@ public class AtlasJson {
         atlasSerDeModule.addDeserializer(EntityNotification.class, new EntityNotificationDeserializer());
 
         mapperV1.registerModule(atlasSerDeModule);
+
+        SimpleModule searchResultV1SerDeModule = new SimpleModule("SearchResultV1SerDe", new Version(1, 0, 0, null));
+
+        searchResultV1SerDeModule.addSerializer(Referenceable.class, new V1SearchReferenceableSerializer());
+        searchResultV1SerDeModule.addSerializer(Struct.class, new V1SearchStructSerializer());
+        searchResultV1SerDeModule.addSerializer(Id.class, new V1SearchIdSerializer());
+        searchResultV1SerDeModule.addSerializer(AtlasSystemAttributes.class, new V1SearchSystemAttributesSerializer());
+        searchResultV1SerDeModule.addSerializer(AtlasFullTextResult.class, new V1SearchFullTextResultSerializer());
+        searchResultV1SerDeModule.addSerializer(Date.class, new DateSerializer());
+
+        mapperV1Search.registerModule(searchResultV1SerDeModule);
     }
 
     public static String toJson(Object obj) {
@@ -117,6 +140,18 @@ public class AtlasJson {
         T ret;
         try {
             ret =  mapperV1.readValue(jsonStr, type);
+        }catch (IOException e){
+            LOG.error("AtlasType.toV1Json()", e);
+
+            ret = null;
+        }
+        return ret;
+    }
+
+    public static String toV1SearchJson(Object obj) {
+        String ret;
+        try {
+            ret = mapperV1Search.writeValueAsString(obj);
         }catch (IOException e){
             LOG.error("AtlasType.toV1Json()", e);
 
@@ -266,6 +301,126 @@ public class AtlasJson {
             }
 
             return ret;
+        }
+    }
+
+    private static final String V1_KEY_$TYPENAME          = "$typeName$";
+    private static final String V1_KEY_$ID                = "$id$";
+    private static final String V1_KEY_$SYSTEM_ATTRIBUTES = "$systemAttributes$";
+    private static final String V1_KEY_$TRAITS            = "$traits$";
+    private static final String V1_KEY_TYPENAME           = "typeName";
+    private static final String V1_KEY_ID                 = "id";
+    private static final String V1_KEY_GUID               = "guid";
+    private static final String V1_KEY_SCORE              = "score";
+    private static final String V1_KEY_VERSION            = "version";
+    private static final String V1_KEY_STATE              = "state";
+    private static final String V1_KEY_CREATED_BY         = "createdBy";
+    private static final String V1_KEY_MODIFIED_BY        = "modifiedBy";
+    private static final String V1_KEY_CREATED_TIME       = "createdTime";
+    private static final String V1_KEY_MODIFIED_TIME      = "modifiedTime";
+
+    static class V1SearchReferenceableSerializer extends JsonSerializer<Referenceable> {
+        @Override
+        public void serialize(Referenceable entity, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (entity != null) {
+                Map<String, Object> valueMap = entity.getValues() != null ? new HashMap<>(entity.getValues()) : new HashMap<>();
+
+                if (entity.getTypeName() != null) {
+                    valueMap.put(V1_KEY_$TYPENAME, entity.getTypeName());
+                }
+
+                if (entity.getId() != null) {
+                    valueMap.put(V1_KEY_$ID, entity.getId());
+                }
+
+                if (entity.getSystemAttributes() != null) {
+                    valueMap.put(V1_KEY_$SYSTEM_ATTRIBUTES, entity.getSystemAttributes());
+                }
+
+                if (MapUtils.isNotEmpty(entity.getTraits())) {
+                    valueMap.put(V1_KEY_$TRAITS, entity.getTraits());
+                }
+
+                jgen.writeObject(valueMap);
+            }
+        }
+    }
+
+    static class V1SearchStructSerializer extends JsonSerializer<Struct> {
+        @Override
+        public void serialize(Struct struct, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (struct != null) {
+                Map<String, Object> valueMap = struct.getValues() != null ? new HashMap<>(struct.getValues()) : new HashMap<>();
+
+                valueMap.put(V1_KEY_$TYPENAME, struct.getTypeName());
+
+                jgen.writeObject(valueMap);
+            }
+        }
+    }
+
+    static class V1SearchIdSerializer extends JsonSerializer<Id> {
+        @Override
+        public void serialize(Id id, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (id != null) {
+                Map<String, Object> valueMap = new HashMap<>();
+
+                valueMap.put(V1_KEY_ID, id._getId());
+                valueMap.put(V1_KEY_$TYPENAME, id.getTypeName());
+                valueMap.put(V1_KEY_VERSION, id.getVersion());
+
+                if (id.getState() != null) {
+                    valueMap.put(V1_KEY_STATE, id.getState().toString());
+                }
+
+                jgen.writeObject(valueMap);
+            }
+        }
+    }
+
+    static class V1SearchSystemAttributesSerializer extends JsonSerializer<AtlasSystemAttributes> {
+        private static final ThreadLocal<DateFormat> V1_SEARCH_RESULT_DATE_FORMAT = new ThreadLocal<DateFormat>() {
+            @Override
+            public DateFormat initialValue() {
+                DateFormat ret = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
+
+                return ret;
+            }
+        };
+
+        @Override
+        public void serialize(AtlasSystemAttributes systemAttributes, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (systemAttributes != null) {
+                Map<String, Object> valueMap = new HashMap<>();
+
+                valueMap.put(V1_KEY_CREATED_BY, systemAttributes.getCreatedBy());
+                valueMap.put(V1_KEY_MODIFIED_BY, systemAttributes.getModifiedBy());
+
+                if (systemAttributes.getCreatedTime() != null) {
+                    valueMap.put(V1_KEY_CREATED_TIME, V1_SEARCH_RESULT_DATE_FORMAT.get().format(systemAttributes.getCreatedTime()));
+                }
+
+                if (systemAttributes.getModifiedTime() != null) {
+                    valueMap.put(V1_KEY_MODIFIED_TIME, V1_SEARCH_RESULT_DATE_FORMAT.get().format(systemAttributes.getModifiedTime()));
+                }
+
+                jgen.writeObject(valueMap);
+            }
+        }
+    }
+
+    static class V1SearchFullTextResultSerializer extends JsonSerializer<AtlasFullTextResult> {
+        @Override
+        public void serialize(AtlasFullTextResult result, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (result != null && result.getEntity() != null) {
+                Map<String, Object> valueMap = new HashMap<>();
+
+                valueMap.put(V1_KEY_GUID, result.getEntity().getGuid());
+                valueMap.put(V1_KEY_TYPENAME, result.getEntity().getTypeName());
+                valueMap.put(V1_KEY_SCORE, result.getScore());
+
+                jgen.writeObject(valueMap);
+            }
         }
     }
 }

@@ -117,14 +117,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingDslQuery(String dslQuery, int limit, int offset) throws AtlasBaseException {
-        AtlasSearchResult ret = new AtlasSearchResult(dslQuery, AtlasQueryType.DSL);
-        GremlinQuery gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
+        AtlasSearchResult ret          = new AtlasSearchResult(dslQuery, AtlasQueryType.DSL);
+        GremlinQuery      gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
+        String            queryStr     = gremlinQuery.queryStr();
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing DSL query: {}", dslQuery);
+            LOG.debug("Executing DSL: query={}, gremlinQuery={}", dslQuery, queryStr);
         }
 
-        Object result = graph.executeGremlinScript(gremlinQuery.queryStr(), false);
+        Object result = graph.executeGremlinScript(queryStr, false);
 
         if (result instanceof List && CollectionUtils.isNotEmpty((List)result)) {
             List   queryResult  = (List) result;
