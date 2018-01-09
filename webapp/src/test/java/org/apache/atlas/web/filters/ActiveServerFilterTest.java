@@ -150,12 +150,12 @@ public class ActiveServerFilterTest {
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
         when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
         when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
-        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&classification=ETL&_=1500969656054");
+        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&spaceParam=firstpart secondpart&_=1500969656054&listParam=value1,value2");
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
         verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
-                "api/atlas/v2/search/basic?limit%3D25%26excludeDeletedEntities%3Dtrue%26classification%3DETL%26_%3D1500969656054");
+                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
 
     }
 
