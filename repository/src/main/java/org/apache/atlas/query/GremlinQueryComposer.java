@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 public class GremlinQueryComposer {
     private static final Logger LOG = LoggerFactory.getLogger(GremlinQueryComposer.class);
 
-    private final String DATE_FORMAT_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
 
@@ -50,13 +50,22 @@ public class GremlinQueryComposer {
     private       int                    providedLimit  = DEFAULT_QUERY_RESULT_LIMIT;
     private       int                    providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
     private       Context                context;
-    private final DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_ISO8601_FORMAT);
+
+    private static final ThreadLocal<DateFormat> DSL_DATE_FORMAT = new ThreadLocal<DateFormat>() {
+        @Override
+        public DateFormat initialValue() {
+            DateFormat ret = new SimpleDateFormat(ISO8601_FORMAT);
+
+            ret.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            return ret;
+        }
+    };
 
     public GremlinQueryComposer(Lookup registryLookup, final AtlasDSL.QueryMetadata qmd, boolean isNestedQuery) {
         this.isNestedQuery = isNestedQuery;
         this.lookup        = registryLookup;
         this.queryMetadata = qmd;
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         init();
     }
@@ -74,7 +83,6 @@ public class GremlinQueryComposer {
         this.lookup        = lookup;
         this.context       = context;
         this.queryMetadata = qmd;
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         init();
     }
@@ -351,7 +359,7 @@ public class GremlinQueryComposer {
 
     public long getDateFormat(String s) {
         try {
-            return dateFormat.parse(s).getTime();
+            return DSL_DATE_FORMAT.get().parse(s).getTime();
         } catch (ParseException ex) {
             errorList.add(ex.getMessage());
         }

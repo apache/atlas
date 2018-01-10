@@ -68,6 +68,7 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
@@ -897,9 +898,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     public String getDslQueryUsingTypeNameClassification(String query, String typeName, String classification) {
         final String whereDSLKeyword = "where";
-        final String isaDSLKeyword = "isa";
-        final String isDSLKeyword = "is";
-        final String limitDSLKeyword = "limit";
+        final String[] keywords = new String[]{whereDSLKeyword, "isa", "is", "limit", "orderby", "has"};
         final String whereFormat = whereDSLKeyword + " %s";
 
         String queryStr = query == null ? "" : query;
@@ -907,10 +906,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (StringUtils.isNotEmpty(typeName)) {
             if(StringUtils.isNotEmpty(query)) {
                 String s = query.toLowerCase();
-                if(!s.startsWith(whereDSLKeyword) &&
-                        !s.startsWith(limitDSLKeyword) &&
-                        !s.startsWith(isaDSLKeyword) &&
-                        !s.startsWith(isDSLKeyword)) {
+                if(!Stream.of(keywords).anyMatch(x -> s.startsWith(x))) {
                     queryStr = String.format(whereFormat, query);
                 }
             }
@@ -921,7 +917,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (StringUtils.isNotEmpty(classification)) {
             // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
             if (StringUtils.isEmpty(query)) {
-                queryStr += String.format("%s %s %s", queryStr, isaDSLKeyword, classification);
+                queryStr += String.format("%s %s %s", queryStr, "isa", classification);
             }
         }
         return queryStr;

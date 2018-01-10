@@ -121,8 +121,6 @@ K_SUM: S U M ;
 
 K_COUNT: C O U N T ;
 
-K_LOOP: L O O P ;
-
 K_OFFSET: O F F S E T ;
 
 K_AS: A S ;
@@ -136,8 +134,6 @@ K_HAS: H A S ;
 K_ASC: A S C ;
 
 K_DESC: D E S C ;
-
-K_WITHPATH: W I T H P A T H ;
 
 K_TRUE: T R U E ;
 
@@ -158,12 +154,10 @@ KEYWORD: K_LIKE
         | K_OR
         | K_GROUPBY
         | K_ORDERBY
-        | K_WITHPATH
         | K_SUM
         | K_MIN
         | K_MAX
         | K_OFFSET
-        | K_LOOP
         | K_FROM
         | K_DESC
         | K_ASC
