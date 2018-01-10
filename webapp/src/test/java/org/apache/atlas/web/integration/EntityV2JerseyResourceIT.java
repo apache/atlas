@@ -298,7 +298,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 //        }
 
         //non-string property, update
-        Object currentTime = new DateTime();
+        Object currentTime = new Date(System.currentTimeMillis());
         addProperty(createHiveTable().getGuid(), "createTime", currentTime);
 
         entityByGuid = getEntityByGuid(createHiveTable().getGuid());

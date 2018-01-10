@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
@@ -337,8 +338,8 @@ public class AtlasClient extends AtlasBaseClient {
      * @throws AtlasServiceException
      */
     public List<String> listTypes() throws AtlasServiceException {
-        final ObjectNode jsonObject = callAPIWithQueryParams(API_V1.LIST_TYPES, null);
-        return extractResults(jsonObject, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+        final ObjectNode jsonResponse = callAPIWithQueryParams(API_V1.LIST_TYPES, null);
+        return extractStringList(jsonResponse);
     }
 
     /**
@@ -385,12 +386,12 @@ public class AtlasClient extends AtlasBaseClient {
                 return resource;
             }
         });
-        return extractResults(response, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+        return extractStringList(response);
     }
 
     public TypesDef getType(String typeName) throws AtlasServiceException {
         ObjectNode response = callAPIWithBodyAndParams(API_V1.GET_TYPE, null, typeName);
-        String     typeJson = response.get(DEFINITION).asText();
+        String     typeJson = AtlasType.toJson(response.get(DEFINITION));
         return AtlasType.fromV1Json(typeJson, TypesDef.class);
     }
 
@@ -613,7 +614,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public Referenceable getEntity(String guid) throws AtlasServiceException {
         ObjectNode jsonResponse = callAPIWithBodyAndParams(API_V1.GET_ENTITY, null, guid);
-        String entityInstanceDefinition = jsonResponse.get(AtlasClient.DEFINITION).asText();
+        String entityInstanceDefinition = AtlasType.toJson(jsonResponse.get(AtlasClient.DEFINITION));
         return AtlasType.fromV1Json(entityInstanceDefinition, Referenceable.class);
     }
 
@@ -646,7 +647,7 @@ public class AtlasClient extends AtlasBaseClient {
                 return resource;
             }
         });
-        String entityInstanceDefinition = jsonResponse.get(AtlasClient.DEFINITION).asText();
+        String entityInstanceDefinition =  AtlasType.toJson(jsonResponse.get(AtlasClient.DEFINITION));
         return AtlasType.fromV1Json(entityInstanceDefinition, Referenceable.class);
     }
 
@@ -665,7 +666,7 @@ public class AtlasClient extends AtlasBaseClient {
                 return resource;
             }
         });
-        return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+        return extractStringList(jsonResponse);
     }
 
     /**
@@ -676,7 +677,7 @@ public class AtlasClient extends AtlasBaseClient {
      */
     public List<String> listTraits(final String guid) throws AtlasServiceException {
         ObjectNode jsonResponse = callAPIWithBodyAndParams(API_V1.LIST_TRAITS, null, guid, URI_TRAITS);
-        return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+        return extractStringList(jsonResponse);
     }
 
     /**
@@ -706,7 +707,7 @@ public class AtlasClient extends AtlasBaseClient {
     public Struct getTraitDefinition(final String guid, final String traitName) throws AtlasServiceException {
         ObjectNode jsonResponse = callAPIWithBodyAndParams(API_V1.GET_TRAIT_DEFINITION, null, guid, TRAIT_DEFINITIONS, traitName);
 
-        return AtlasType.fromV1Json(jsonResponse.get(AtlasClient.RESULTS).asText(), Struct.class);
+        return AtlasType.fromV1Json(AtlasType.toJson(jsonResponse.get(AtlasClient.RESULTS)), Struct.class);
     }
 
     protected class ExtractOperation<T, U> {
@@ -772,7 +773,7 @@ public class AtlasClient extends AtlasBaseClient {
      * @return Query results
      * @throws AtlasServiceException
      */
-    public ArrayNode search(final String searchQuery, final int limit, final int offset) throws AtlasServiceException {
+    public JsonNode search(final String searchQuery, final int limit, final int offset) throws AtlasServiceException {
         final API api = API_V1.SEARCH;
         ObjectNode result = callAPIWithRetries(api, null, new ResourceCreator() {
             @Override
@@ -784,7 +785,7 @@ public class AtlasClient extends AtlasBaseClient {
                 return resource;
             }
         });
-        return (ArrayNode)result.get(RESULTS);
+        return result.get(RESULTS);
     }
 
     /**
@@ -856,6 +857,19 @@ public class AtlasClient extends AtlasBaseClient {
     public ObjectNode getSchemaForEntity(String datasetId) throws AtlasServiceException {
         ObjectNode response = callAPIWithBodyAndParams(API_V1.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/schema");
         return (ObjectNode) response.get(AtlasClient.RESULTS);
+    }
+
+    private List<String> extractStringList(ObjectNode response) {
+        List<String> ret     = new ArrayList<>();
+        JsonNode     results = (response != null) ? response.get(AtlasClient.RESULTS) : null;
+
+        if (results != null && results instanceof ArrayNode) {
+            for (JsonNode node : results) {
+                ret.add(node.asText());
+            }
+        }
+
+        return ret;
     }
 
     // Wrapper methods for compatibility

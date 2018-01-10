@@ -538,7 +538,10 @@ public class AtlasTypeUtil {
     private static HashMap getNestedTraitDetails(final AtlasClassification atlasClassification) {
         return new HashMap<String, Object>() {{
             put("$typeName$", atlasClassification.getTypeName());
-            putAll(atlasClassification.getAttributes());
+
+            if (MapUtils.isNotEmpty(atlasClassification.getAttributes())) {
+                putAll(atlasClassification.getAttributes());
+            }
         }};
     }
 

@@ -149,7 +149,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(response.get(AtlasClient.DEFINITION));
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-            TypesDef typesDef = AtlasType.fromV1Json(response.get(AtlasClient.DEFINITION).asText(), TypesDef.class);
+            TypesDef typesDef = AtlasType.fromV1Json(AtlasType.toJson(response.get(AtlasClient.DEFINITION)), TypesDef.class);
 
             List<? extends HierarchicalTypeDefinition> hierarchicalTypeDefs = Collections.emptyList();
 

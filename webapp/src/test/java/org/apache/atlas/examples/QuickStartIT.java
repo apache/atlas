@@ -18,6 +18,7 @@
 
 package org.apache.atlas.examples;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
@@ -122,9 +123,9 @@ public class QuickStartIT extends BaseResourceIT {
         String timeDimTableId = getTableId(QuickStart.TIME_DIM_TABLE);
         String salesFactDailyMVId = getTableId(QuickStart.SALES_FACT_DAILY_MV_TABLE);
 
-        ObjectNode inputGraph = atlasClientV1.getInputGraph(QuickStart.SALES_FACT_DAILY_MV_TABLE);
-        ArrayNode vertices = (ArrayNode) inputGraph.get("values").get("vertices");
-        ArrayNode edges = (ArrayNode) inputGraph.get("values").get("edges");
+        ObjectNode inputGraph = atlasClientV1.getInputGraphForEntity(salesFactDailyMVId);
+        JsonNode   vertices   = inputGraph.get("values").get("vertices");
+        JsonNode   edges      = inputGraph.get("values").get("edges");
 
         assertTrue(vertices.has(salesFactTableId));
         assertTrue(vertices.has(timeDimTableId));

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.examples;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -431,7 +432,9 @@ public class QuickStart {
         return new String[]{"from DB_v1", "DB_v1", "DB_v1 where name=\"Reporting\"", "DB_v1 where DB_v1.name=\"Reporting\"",
                 "DB_v1 name = \"Reporting\"", "DB_v1 DB_v1.name = \"Reporting\"",
                 "DB_v1 where name=\"Reporting\" select name, owner", "DB_v1 where DB_v1.name=\"Reporting\" select name, owner",
-                "DB_v1 has name", "DB_v1 where DB_v1 has name", "DB_v1, Table_v1", "DB_v1 is JdbcAccess",
+                "DB_v1 has name", "DB_v1 where DB_v1 has name",
+                // "DB_v1, Table_v1", TODO: Fix "DB, Table", Table, db; Table db works
+                "DB_v1 is JdbcAccess",
             /*
             "DB, hive_process has name",
             "DB as db1, Table where db1.name = \"Reporting\"",
@@ -478,8 +481,8 @@ public class QuickStart {
     private void search() throws AtlasBaseException {
         try {
             for (String dslQuery : getDSLQueries()) {
-                ArrayNode results = metadataServiceClient.search(dslQuery, 10, 0);
-                if (results != null) {
+                JsonNode results = metadataServiceClient.search(dslQuery, 10, 0);
+                if (results != null && results instanceof ArrayNode) {
                     System.out.println("query [" + dslQuery + "] returned [" + results.size() + "] rows");
                 } else {
                     System.out.println("query [" + dslQuery + "] failed, results:" + results);
