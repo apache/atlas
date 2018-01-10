@@ -26,6 +26,7 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.TypeSystem;
@@ -47,6 +48,14 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     private Id id;
     private AtlasSystemAttributes systemAttributes;
 
+    private static final boolean[]                          EMPTY_BOOL_ARRAY    = new boolean[0];
+    private static final ImmutableMap<String, ITypedStruct> EMPTY_TRAITS_MAP    = ImmutableMap.of();
+    private static final FieldMapping                       EMPTY_FIELD_MAPPING = new FieldMapping(ImmutableMap.<String, AttributeInfo>of(), ImmutableMap.<String, Integer>of(), ImmutableMap.<String, Integer>of(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    public ReferenceableInstance(String guid, String typeName) {
+        this(new Id(guid, 0, typeName), typeName, null, EMPTY_FIELD_MAPPING, EMPTY_BOOL_ARRAY, EMPTY_BOOL_ARRAY,
+             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, EMPTY_TRAITS_MAP);
+    }
 
     public ReferenceableInstance(Id id, String dataTypeName, AtlasSystemAttributes systemAttributes, FieldMapping fieldMapping, boolean[] nullFlags,
             boolean[] explicitSets, boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,

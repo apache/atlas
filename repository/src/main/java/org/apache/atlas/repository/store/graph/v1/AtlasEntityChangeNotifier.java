@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -155,7 +156,7 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        List<ITypedReferenceableInstance> typedRefInsts = toITypedReferenceable(entityHeaders);
+        List<ITypedReferenceableInstance> typedRefInsts = toITypedReferenceable(entityHeaders, operation);
 
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
@@ -177,11 +178,19 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
-    private List<ITypedReferenceableInstance> toITypedReferenceable(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+    private List<ITypedReferenceableInstance> toITypedReferenceable(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
         List<ITypedReferenceableInstance> ret = new ArrayList<>(entityHeaders.size());
 
-        for (AtlasEntityHeader entityHeader : entityHeaders) {
-            ret.add(instanceConverter.getITypedReferenceable(entityHeader.getGuid()));
+        // delete notifications need only entity-guid. In case of hard-delete, getITypedReferenceable() call below will
+        // fail, since the entity vertex would already be gone. Hence the special handling for delete operation
+        if (operation == EntityOperation.DELETE) {
+            for (AtlasEntityHeader entity : entityHeaders) {
+                ret.add(new ReferenceableInstance(entity.getGuid(), entity.getTypeName()));
+            }
+        } else {
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                ret.add(instanceConverter.getITypedReferenceable(entityHeader.getGuid()));
+            }
         }
 
         return ret;
