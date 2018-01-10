@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
@@ -52,7 +50,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides RESTful API for Types.
@@ -101,8 +103,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
         }
 
-        ArrayNode typesResponse = AtlasJson.createV1ArrayNode();
-
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
 
@@ -113,17 +113,16 @@ public class TypesResource {
             AtlasTypesDef createTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef createdTypesDef = typesREST.createAtlasTypeDefs(createTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
+            List<Map<String, Object>> typesResponse = new ArrayList<>(typeNames.size());
 
-            for (int i = 0; i < typeNames.size(); i++) {
-                ObjectNode typeNode = AtlasJson.createV1ObjectNode(AtlasClient.NAME, typeNames.get(i));
-
-                typesResponse.add(typeNode);
+            for (String typeName : typeNames) {
+                typesResponse.add(Collections.singletonMap(AtlasClient.NAME, typeName));
             }
 
-            ObjectNode response = AtlasJson.createV1ObjectNode();
+            Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
-            return Response.status(ClientResponse.Status.CREATED).entity(response).build();
+            return Response.status(ClientResponse.Status.CREATED).entity(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Type creation failed", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
@@ -168,7 +167,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
         }
 
-        ArrayNode typesResponse = AtlasJson.createV1ArrayNode();
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
 
@@ -179,17 +177,16 @@ public class TypesResource {
             AtlasTypesDef updateTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef updatedTypesDef = typeDefStore.createUpdateTypesDef(updateTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
+            List<Map<String, Object>> typesResponse = new ArrayList<>(typeNames.size());
 
-            for (int i = 0; i < typeNames.size(); i++) {
-                ObjectNode typeNode = AtlasJson.createV1ObjectNode(AtlasClient.NAME, typeNames.get(i));
-
-                typesResponse.add(typeNode);
+            for (String typeName : typeNames) {
+                typesResponse.add(Collections.singletonMap(AtlasClient.NAME, typeName));
             }
 
-            ObjectNode response = AtlasJson.createV1ObjectNode();
+            Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
-            return Response.ok().entity(response).build();
+            return Response.ok().entity(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
@@ -230,16 +227,16 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
         }
 
-        ObjectNode response = AtlasJson.createV1ObjectNode();
+        Map<String, Object> response = new HashMap<>();
 
         try {
             TypesDef typesDef = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
 
             response.put(AtlasClient.TYPENAME, typeName);
-            response.putPOJO(AtlasClient.DEFINITION, typesDef);
+            response.put(AtlasClient.DEFINITION, typesDef);
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
-            return Response.ok(response).build();
+            return Response.ok(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
@@ -288,15 +285,15 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + typeCategory + ", " + supertype + ", " + notsupertype + ")");
         }
 
-        ObjectNode response = AtlasJson.createV1ObjectNode();
+        Map<String, Object> response = new HashMap<>();
         try {
             List<String> result = TypeConverterUtil.getTypeNames(typesREST.getTypeDefHeaders(request));
 
-            response.putPOJO(AtlasClient.RESULTS, result);
+            response.put(AtlasClient.RESULTS, result);
             response.put(AtlasClient.COUNT, result.size());
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
-            return Response.ok(response).build();
+            return Response.ok(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.warn("TypesREST exception: {} {}", e.getClass().getSimpleName(), e.getMessage());
             throw new WebApplicationException(Servlets.getErrorResponse(e));

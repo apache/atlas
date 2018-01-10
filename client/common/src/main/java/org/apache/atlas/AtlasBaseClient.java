@@ -348,9 +348,7 @@ public abstract class AtlasBaseClient {
 
             clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("API {} returned status {}", resource.getURI(), clientResponse.getStatus());
-            }
+            LOG.info("HTTP Status  : {}", clientResponse.getStatus());
 
             if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
                 if (responseType == null) {
@@ -361,7 +359,7 @@ public abstract class AtlasBaseClient {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
                             JsonNode jsonObject = AtlasJson.parseToV1JsonNode(stringEntity);
-                            LOG.debug("Response = {}", jsonObject);
+                            LOG.info("Response     : {}", jsonObject);
                             LOG.info("------------------------------------------------------");
                             return (T) jsonObject;
                         } catch (IOException e) {
@@ -369,7 +367,7 @@ public abstract class AtlasBaseClient {
                         }
                     } else {
                         T entity = clientResponse.getEntity(responseType);
-                        LOG.debug("Response = {}", entity);
+                        LOG.info("Response     : {}", entity);
                         LOG.info("------------------------------------------------------");
                         return entity;
                     }

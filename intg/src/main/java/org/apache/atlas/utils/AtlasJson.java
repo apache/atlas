@@ -97,14 +97,18 @@ public class AtlasJson {
     }
 
     public static <T> T fromJson(String jsonStr, Class<T> type) {
-        T ret;
-        try {
-            ret =  mapper.readValue(jsonStr, type);
-        }catch (IOException e){
-            LOG.error("AtlasType.fromJson()", e);
+        T ret = null;
 
-            ret = null;
+        if (jsonStr != null) {
+            try {
+                ret = mapper.readValue(jsonStr, type);
+            } catch (IOException e) {
+                LOG.error("AtlasType.fromJson()", e);
+
+                ret = null;
+            }
         }
+
         return ret;
     }
 
@@ -121,30 +125,38 @@ public class AtlasJson {
     }
 
     public static <T> T fromV1Json(String jsonStr, Class<T> type) {
-        T ret;
-        try {
-            ret =  mapperV1.readValue(jsonStr, type);
+        T ret = null;
 
-            if (ret instanceof Struct) {
-                ((Struct) ret).normalize();
+        if (jsonStr != null) {
+            try {
+                ret = mapperV1.readValue(jsonStr, type);
+
+                if (ret instanceof Struct) {
+                    ((Struct) ret).normalize();
+                }
+            } catch (IOException e) {
+                LOG.error("AtlasType.fromV1Json()", e);
+
+                ret = null;
             }
-        }catch (IOException e){
-            LOG.error("AtlasType.fromV1Json()", e);
-
-            ret = null;
         }
+
         return ret;
     }
 
     public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
-        T ret;
-        try {
-            ret =  mapperV1.readValue(jsonStr, type);
-        }catch (IOException e){
-            LOG.error("AtlasType.toV1Json()", e);
+        T ret = null;
 
-            ret = null;
+        if (jsonStr != null) {
+            try {
+                ret = mapperV1.readValue(jsonStr, type);
+            } catch (IOException e) {
+                LOG.error("AtlasType.toV1Json()", e);
+
+                ret = null;
+            }
         }
+
         return ret;
     }
 

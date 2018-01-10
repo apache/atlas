@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -75,7 +74,10 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -186,7 +188,7 @@ public class AdminResource {
             try {
                 PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
 
-                ObjectNode response = AtlasJson.createV1ObjectNode();
+                Map<String, Object> response = new HashMap<String, Object>();
                 response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
                 response.put("Name", configProperties.getString("project.name", "apache-atlas"));
                 response.put("Description", configProperties.getString("project.description",
@@ -194,7 +196,7 @@ public class AdminResource {
 
                 // todo: add hadoop version?
                 // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
-                version = Response.ok(response).build();
+                version = Response.ok(AtlasJson.toV1Json(response)).build();
             } catch (ConfigurationException e) {
                 throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
@@ -215,8 +217,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getStatus()");
         }
 
-        ObjectNode responseData = AtlasJson.createV1ObjectNode(AtlasClient.STATUS, serviceState.getState().toString());
-        Response   response     = Response.ok(responseData).build();
+        Map<String, Object> responseData = Collections.singletonMap(AtlasClient.STATUS, serviceState.getState().toString());
+        Response            response     = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getStatus()");
@@ -253,7 +255,7 @@ public class AdminResource {
                     AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
         }
 
-        ObjectNode responseData = AtlasJson.createV1ObjectNode();
+        Map<String, Object> responseData = new HashMap<>();
 
         responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
         responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
@@ -263,9 +265,9 @@ public class AdminResource {
         responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
         responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
         responseData.put("userName", userName);
-        responseData.put("groups", AtlasJson.createV1ArrayNode(groups));
+        responseData.put("groups", groups);
 
-        response = Response.ok(responseData).build();
+        response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getUserProfile()");
