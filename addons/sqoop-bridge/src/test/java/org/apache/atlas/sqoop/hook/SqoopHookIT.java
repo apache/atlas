@@ -110,12 +110,12 @@ public class SqoopHookIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                ArrayNode results = atlasClient.search(query, 10, 0);
+                JsonNode results = atlasClient.search(query, 10, 0);
                 return results.size() > 0;
             }
         });
 
-        ArrayNode results = atlasClient.search(query, 10, 0);
+        JsonNode results = atlasClient.search(query, 10, 0);
         JsonNode row = results.get(0).get("t");
 
         return row.get("id").asText();

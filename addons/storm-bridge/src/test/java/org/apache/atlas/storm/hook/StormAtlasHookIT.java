@@ -89,8 +89,8 @@ public class StormAtlasHookIT {
         String query = String.format("from %s where name = \"%s\"",
                 StormDataTypes.STORM_TOPOLOGY.getName(), TOPOLOGY_NAME);
 
-        ArrayNode results = atlasClient.search(query, 10, 0);
-        JsonNode  row     = results.get(0);
+        JsonNode results = atlasClient.search(query, 10, 0);
+        JsonNode  row    = results.get(0);
 
         return row.has("$id$") ? row.get("$id$").get("id").asText() : null;
     }
