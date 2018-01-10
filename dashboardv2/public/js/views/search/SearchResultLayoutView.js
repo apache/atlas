@@ -184,19 +184,14 @@ define(['require',
                     }
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
-                    this.$('.fontLoader').hide();
-                    this.$('.tableOverlay').hide();
-                    var responseJSON = response && response.responseJSON ? response.responseJSON : null;
-                    if (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
+                    this.hideLoader({ type: 'error' });
+                    var responseJSON = response && response.responseJSON ? response.responseJSON : null,
+                    errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error ))|| 'Invalid Expression';
+                    if (errorText) {
                         Utils.notifyError({
-                            content: responseJSON.errorMessage || responseJSON.message || responseJSON.error
+                            content: errorText
                         });
-                    } else {
-                        if (response.statusText !== "abort") {
-                            Utils.notifyError({
-                                content: "Invalid Expression"
-                            });
-                        }
+                        this.$('.searchTable > .well').html('<center>' + errorText + '</center>')
                     }
                 }, this);
                 this.listenTo(this.searchCollection, "state-changed", function(state) {
@@ -847,9 +842,9 @@ define(['require',
                 this.$('.fontLoader:not(.for-ignore)').addClass('show');
                 this.$('.tableOverlay').addClass('show');
             },
-            hideLoader: function() {
+            hideLoader: function(options) {
                 this.$('.fontLoader:not(.for-ignore)').removeClass('show');
-                this.$('.ellipsis,.pagination-box').show(); // only for first time
+                options && options.type === 'error' ? this.$('.ellipsis,.pagination-box').hide() : this.$('.ellipsis,.pagination-box').show(); // only show for first time and hide when type is error
                 this.$('.tableOverlay').removeClass('show');
             },
             checkedValue: function(e) {
