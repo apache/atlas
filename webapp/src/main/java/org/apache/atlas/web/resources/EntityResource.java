@@ -655,6 +655,9 @@ public class EntityResource {
         } catch (IllegalArgumentException e) {
             LOG.error("Bad GUID={} ", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get instance definition for GUID {}", guid, e);
+            throw toWebApplicationException(e);
         } catch (WebApplicationException e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw e;
