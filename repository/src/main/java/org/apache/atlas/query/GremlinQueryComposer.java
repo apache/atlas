@@ -56,16 +56,13 @@ public class GremlinQueryComposer {
     private       int                    providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
     private       Context                context;
 
-    private static final ThreadLocal<DateFormat> DSL_DATE_FORMAT = new ThreadLocal<DateFormat>() {
-        @Override
-        public DateFormat initialValue() {
-            DateFormat ret = new SimpleDateFormat(ISO8601_FORMAT);
+    private static final ThreadLocal<DateFormat> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
+        DateFormat ret = new SimpleDateFormat(ISO8601_FORMAT);
 
-            ret.setTimeZone(TimeZone.getTimeZone("UTC"));
+        ret.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            return ret;
-        }
-    };
+        return ret;
+    });
 
     public GremlinQueryComposer(Lookup registryLookup, final AtlasDSL.QueryMetadata qmd, boolean isNestedQuery) {
         this.isNestedQuery = isNestedQuery;
@@ -124,13 +121,19 @@ public class GremlinQueryComposer {
             LOG.debug("addFromProperty(typeName={}, attribute={})", typeName, attribute);
         }
 
-        addFrom(typeName);
+        if(!isNestedQuery) {
+            addFrom(typeName);
+        }
+
         add(GremlinClause.HAS_PROPERTY,
             IdentifierHelper.getQualifiedName(lookup, context, attribute));
     }
 
     public void addFromIsA(String typeName, String traitName) {
-        addFrom(typeName);
+        if (!isNestedQuery) {
+            addFrom(typeName);
+        }
+
         add(GremlinClause.TRAIT, traitName);
     }
 
@@ -284,6 +287,15 @@ public class GremlinQueryComposer {
         return s;
     }
 
+    public List<String> getErrorList() {
+        combineErrorLists();
+        return errorList;
+    }
+
+    private void combineErrorLists() {
+        errorList.addAll(context.getErrorList());
+    }
+
     private String getTransformedClauses(String[] items) {
         String ret;
         String body = String.join(".", Stream.of(items).filter(Objects::nonNull).collect(Collectors.toList()));
@@ -406,7 +418,7 @@ public class GremlinQueryComposer {
     }
 
     private void moveToLast(GremlinClause clause) {
-        int index = queryClauses.hasClause(clause);
+        int index = queryClauses.contains(clause);
         if (-1 == index) {
             return;
         }
@@ -475,6 +487,11 @@ public class GremlinQueryComposer {
         add(GremlinClause.GROUP_BY, ia.getQualifiedName());
     }
 
+    public boolean hasFromClause() {
+        return queryClauses.contains(GremlinClause.HAS_TYPE) != -1 ||
+                queryClauses.contains(GremlinClause.HAS_TYPE_WITHIN) != -1;
+    }
+
     private static class GremlinClauseValue {
         private final GremlinClause clause;
         private final String value;
@@ -540,7 +557,7 @@ public class GremlinQueryComposer {
             return list.size();
         }
 
-        public int hasClause(GremlinClause clause) {
+        public int contains(GremlinClause clause) {
             for (int i = 0; i < list.size(); i++) {
                 if (list.get(i).getClause() == clause)
                     return i;
@@ -639,6 +656,11 @@ public class GremlinQueryComposer {
             }
 
             aliasMap.put(alias, typeName);
+        }
+
+        public List<String> getErrorList() {
+            errorList.addAll(lookup.getErrorList());
+            return errorList;
         }
     }
 }

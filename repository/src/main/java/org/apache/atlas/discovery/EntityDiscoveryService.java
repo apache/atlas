@@ -35,7 +35,6 @@ import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.QueryParams;
-import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -68,7 +67,6 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
@@ -897,27 +895,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public String getDslQueryUsingTypeNameClassification(String query, String typeName, String classification) {
-        final String whereDSLKeyword = "where";
-        final String[] keywords = new String[]{whereDSLKeyword, "isa", "is", "limit", "orderby", "has"};
-        final String whereFormat = whereDSLKeyword + " %s";
-
         String queryStr = query == null ? "" : query;
 
         if (StringUtils.isNotEmpty(typeName)) {
-            if(StringUtils.isNotEmpty(query)) {
-                String s = query.toLowerCase();
-                if(!Stream.of(keywords).anyMatch(x -> s.startsWith(x))) {
-                    queryStr = String.format(whereFormat, query);
-                }
-            }
-
             queryStr = escapeTypeName(typeName) + " " + queryStr;
         }
 
         if (StringUtils.isNotEmpty(classification)) {
             // isa works with a type name only - like hive_column isa PII; it doesn't work with more complex query
             if (StringUtils.isEmpty(query)) {
-                queryStr += String.format("%s %s %s", queryStr, "isa", classification);
+                queryStr += (" isa " + classification);
             }
         }
         return queryStr;

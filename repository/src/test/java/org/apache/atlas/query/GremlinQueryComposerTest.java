@@ -17,29 +17,22 @@
  */
 package org.apache.atlas.query;
 
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.TokenStream;
-import org.apache.atlas.query.antlr4.AtlasDSLLexer;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 
 public class GremlinQueryComposerTest {
     private List<String> errorList = new ArrayList<>();
@@ -103,6 +96,8 @@ public class GremlinQueryComposerTest {
     @Test
     public void valueArray() {
         verify("DB where owner = ['hdfs', 'anon']", "g.V().has('__typeName', 'DB').has('DB.owner', within('hdfs','anon')).limit(25).toList()");
+        verify("DB owner = ['hdfs', 'anon']", "g.V().has('__typeName', 'DB').has('DB.owner', within('hdfs','anon')).limit(25).toList()");
+        verify("hive_db as d owner = ['hdfs', 'anon']", "g.V().has('__typeName', 'hive_db').as('d').has('hive_db.owner', within('hdfs','anon')).limit(25).toList()");
     }
     @Test
     public void groupByMin() {
@@ -222,71 +217,90 @@ public class GremlinQueryComposerTest {
         verify(String.format(queryFormat, "FALSE"), String.format(expectedFormat, "FALSE"));
     }
 
+    @DataProvider(name = "nestedQueriesProvider")
+    private Object[][] nestedQueriesSource() {
+        return new Object[][]{
+                {"Table where name=\"sales_fact\" or name=\"testtable_1\"",
+                        "g.V().has('__typeName', 'Table').or(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.name', eq(\"testtable_1\"))).limit(25).toList()"},
+                {"Table where name=\"sales_fact\" and name=\"testtable_1\"",
+                        "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.name', eq(\"testtable_1\"))).limit(25).toList()"},
+                {"Table where name=\"sales_fact\" or name=\"testtable_1\" or name=\"testtable_2\"",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".or(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.has('Table.name', eq(\"testtable_1\"))," +
+                                "__.has('Table.name', eq(\"testtable_2\"))" +
+                                ").limit(25).toList()"},
+                {"Table where name=\"sales_fact\" and name=\"testtable_1\" and name=\"testtable_2\"",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".and(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.has('Table.name', eq(\"testtable_1\"))," +
+                                "__.has('Table.name', eq(\"testtable_2\"))" +
+                                ").limit(25).toList()"},
+                {"Table where (name=\"sales_fact\" or name=\"testtable_1\") and name=\"testtable_2\"",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".and(" +
+                                "__.or(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.has('Table.name', eq(\"testtable_1\"))" +
+                                ")," +
+                                "__.has('Table.name', eq(\"testtable_2\")))" +
+                                ".limit(25).toList()"},
+                {"Table where name=\"sales_fact\" or (name=\"testtable_1\" and name=\"testtable_2\")",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".or(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.and(" +
+                                "__.has('Table.name', eq(\"testtable_1\"))," +
+                                "__.has('Table.name', eq(\"testtable_2\")))" +
+                                ")" +
+                                ".limit(25).toList()"},
+                {"Table where name=\"sales_fact\" or name=\"testtable_1\" and name=\"testtable_2\"",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".and(" +
+                                "__.or(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.has('Table.name', eq(\"testtable_1\"))" +
+                                ")," +
+                                "__.has('Table.name', eq(\"testtable_2\")))" +
+                                ".limit(25).toList()"},
+                {"Table where (name=\"sales_fact\" and owner=\"Joe\") OR (name=\"sales_fact_daily_mv\" and owner=\"Joe BI\")",
+                        "g.V().has('__typeName', 'Table')" +
+                                ".or(" +
+                                "__.and(" +
+                                "__.has('Table.name', eq(\"sales_fact\"))," +
+                                "__.has('Table.owner', eq(\"Joe\"))" +
+                                ")," +
+                                "__.and(" +
+                                "__.has('Table.name', eq(\"sales_fact_daily_mv\"))," +
+                                "__.has('Table.owner', eq(\"Joe BI\"))" +
+                                "))" +
+                                ".limit(25).toList()"},
+                {"Table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createdTime < \"2017-12-12T02:35:58.440Z\")",
+                        "g.V().has('__typeName', 'Table').or(__.has('Table.owner', eq(\"hdfs\")),__.and(__.or(__.has('Table.name', eq(\"testtable_1\")),__.has('Table.name', eq(\"testtable_2\"))),__.has('Table.createdTime', lt('1513046158440')))).limit(25).toList()"},
+                {"hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
+                        "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).limit(25).toList()"},
+                {"Table where db.name='Sales' and db.clusterName='cl1'",
+                        "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup().in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup().in('__Table.db')).limit(25).toList()"},
+        };
+    }
+
+    @Test(dataProvider = "nestedQueriesProvider")
+    public void nestedQueries(String query, String expectedGremlin) {
+        verify(query, expectedGremlin);
+        verify(query.replace("where", " "), expectedGremlin);
+    }
+
     @Test
-    public void nestedQueries() {
-        verify("Table where name=\"sales_fact\" or name=\"testtable_1\"",
-                "g.V().has('__typeName', 'Table').or(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.name', eq(\"testtable_1\"))).limit(25).toList()");
-        verify("Table where name=\"sales_fact\" and name=\"testtable_1\"",
-                "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.name', eq(\"testtable_1\"))).limit(25).toList()");
-        verify("Table where name=\"sales_fact\" or name=\"testtable_1\" or name=\"testtable_2\"",
-                "g.V().has('__typeName', 'Table')" +
-                        ".or(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.has('Table.name', eq(\"testtable_1\"))," +
-                        "__.has('Table.name', eq(\"testtable_2\"))" +
-                        ").limit(25).toList()");
-        verify("Table where name=\"sales_fact\" and name=\"testtable_1\" and name=\"testtable_2\"",
-                "g.V().has('__typeName', 'Table')" +
-                        ".and(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.has('Table.name', eq(\"testtable_1\"))," +
-                        "__.has('Table.name', eq(\"testtable_2\"))" +
-                        ").limit(25).toList()");
-        verify("Table where (name=\"sales_fact\" or name=\"testtable_1\") and name=\"testtable_2\"",
-                "g.V().has('__typeName', 'Table')" +
-                        ".and(" +
-                        "__.or(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.has('Table.name', eq(\"testtable_1\"))" +
-                        ")," +
-                        "__.has('Table.name', eq(\"testtable_2\")))" +
-                        ".limit(25).toList()");
-        verify("Table where name=\"sales_fact\" or (name=\"testtable_1\" and name=\"testtable_2\")",
-                "g.V().has('__typeName', 'Table')" +
-                        ".or(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.and(" +
-                        "__.has('Table.name', eq(\"testtable_1\"))," +
-                        "__.has('Table.name', eq(\"testtable_2\")))" +
-                        ")" +
-                        ".limit(25).toList()");
-        verify("Table where name=\"sales_fact\" or name=\"testtable_1\" and name=\"testtable_2\"",
-                "g.V().has('__typeName', 'Table')" +
-                        ".and(" +
-                        "__.or(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.has('Table.name', eq(\"testtable_1\"))" +
-                        ")," +
-                        "__.has('Table.name', eq(\"testtable_2\")))" +
-                        ".limit(25).toList()");
-        verify("Table where (name=\"sales_fact\" and owner=\"Joe\") OR (name=\"sales_fact_daily_mv\" and owner=\"Joe BI\")",
-                "g.V().has('__typeName', 'Table')" +
-                        ".or(" +
-                        "__.and(" +
-                        "__.has('Table.name', eq(\"sales_fact\"))," +
-                        "__.has('Table.owner', eq(\"Joe\"))" +
-                        ")," +
-                        "__.and(" +
-                        "__.has('Table.name', eq(\"sales_fact_daily_mv\"))," +
-                        "__.has('Table.owner', eq(\"Joe BI\"))" +
-                        "))" +
-                        ".limit(25).toList()");
-        verify("Table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createdTime < \"2017-12-12T02:35:58.440Z\")",
-                "g.V().has('__typeName', 'Table').or(__.has('Table.owner', eq(\"hdfs\")),__.and(__.or(__.has('Table.name', eq(\"testtable_1\")),__.has('Table.name', eq(\"testtable_2\"))),__.has('Table.createdTime', lt('1513046158440')))).limit(25).toList()");
-        verify("hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
-                "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).limit(25).toList()");
-        verify("Table where db.name='Sales' and db.clusterName='cl1'",
-                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup().in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup().in('__Table.db')).limit(25).toList()");
+    public void hasInWhereClause() {
+        verify("Table as t where t has name and t isa Dimension",
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('__traitNames', within('Dimension'))).limit(25).toList()");
+        verify("Table as t where t has name and t.name = 'sales_fact'",
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).limit(25).toList()");
+        verify("Table as t where t is Dimension and t.name = 'sales_fact'",
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('__traitNames', within('Dimension')),__.has('Table.name', eq('sales_fact'))).limit(25).toList()");
+        verify("Table isa 'Dimension' and t.name = 'sales_fact'", "g.V().has('__typeName', 'Table').has('__traitNames', within(''Dimension'')).limit(25).toList()");
     }
 
     @Test
@@ -305,23 +319,13 @@ public class GremlinQueryComposerTest {
     }
 
     private AtlasDSLParser.QueryContext getParsedQuery(String query) {
+        AtlasDSL.Parser parser = new AtlasDSL.Parser();
         AtlasDSLParser.QueryContext queryContext = null;
-        InputStream stream = new ByteArrayInputStream(query.getBytes());
-        AtlasDSLLexer lexer = null;
-
         try {
-            lexer = new AtlasDSLLexer(CharStreams.fromStream(stream));
-        } catch (IOException e) {
-            assertTrue(false);
+            queryContext = parser.parse(query);
+        } catch (AtlasBaseException e) {
+            assertFalse(e != null, e.getMessage());
         }
-
-        TokenStream inputTokenStream = new CommonTokenStream(lexer);
-        AtlasDSLParser parser = new AtlasDSLParser(inputTokenStream);
-        queryContext = parser.query();
-
-        assertNotNull(queryContext);
-        assertNull(queryContext.exception);
-
         return queryContext;
     }
 
@@ -429,6 +433,11 @@ public class GremlinQueryComposerTest {
         public boolean isDate(GremlinQueryComposer.Context context, String attributeName) {
             return attributeName.equals("createdTime") ||
                     attributeName.equals("createTime");
+        }
+
+        @Override
+        public List<String> getErrorList() {
+            return errorList;
         }
     }
 }

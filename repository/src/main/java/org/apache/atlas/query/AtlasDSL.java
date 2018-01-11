@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.query;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -53,7 +54,8 @@ public class AtlasDSL {
             return RESERVED_KEYWORDS.contains(word);
         }
 
-        private static AtlasDSLParser.QueryContext parse(String queryStr) throws AtlasBaseException {
+        @VisibleForTesting
+        static AtlasDSLParser.QueryContext parse(String queryStr) throws AtlasBaseException {
             AtlasDSLParser.QueryContext ret;
             try {
 

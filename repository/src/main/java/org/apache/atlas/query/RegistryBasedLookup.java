@@ -159,4 +159,9 @@ class RegistryBasedLookup implements Lookup {
     protected void addError(String s) {
         errorList.add(s);
     }
+
+    @Override
+    public List<String> getErrorList() {
+        return errorList;
+    }
 }

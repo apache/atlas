@@ -20,6 +20,9 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.type.AtlasType;
 
+import java.util.Collection;
+import java.util.List;
+
 public interface Lookup {
     AtlasType getType(String typeName);
 
@@ -40,4 +43,6 @@ public interface Lookup {
     String getTypeFromEdge(GremlinQueryComposer.Context context, String item);
 
     boolean isDate(GremlinQueryComposer.Context context, String attributeName);
+
+    List<String> getErrorList();
 }

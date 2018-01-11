@@ -24,9 +24,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+
+import static org.apache.atlas.query.antlr4.AtlasDSLParser.RULE_whereClause;
 
 public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
     private static final Logger LOG = LoggerFactory.getLogger(DSLVisitor.class);
@@ -34,10 +34,23 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
     private static final String AND = "AND";
     private static final String OR  = "OR";
 
+    private Set<Integer> visitedRuleIndexes = new HashSet<>();
     private final GremlinQueryComposer gremlinQueryComposer;
 
     public DSLVisitor(GremlinQueryComposer gremlinQueryComposer) {
         this.gremlinQueryComposer = gremlinQueryComposer;
+    }
+
+    @Override
+    public Void visitSpaceDelimitedQueries(SpaceDelimitedQueriesContext ctx) {
+        addVisitedRule(ctx.getRuleIndex());
+        return super.visitSpaceDelimitedQueries(ctx);
+    }
+
+    @Override
+    public Void visitCommaDelimitedQueries(CommaDelimitedQueriesContext ctx) {
+        addVisitedRule(ctx.getRuleIndex());
+        return super.visitCommaDelimitedQueries(ctx);
     }
 
     @Override
@@ -46,7 +59,10 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             LOG.debug("=> DSLVisitor.visitIsClause({})", ctx);
         }
 
-        gremlinQueryComposer.addFromIsA(ctx.arithE().getText(), ctx.identifier().getText());
+        if(!hasVisitedRule(RULE_whereClause)) {
+            gremlinQueryComposer.addFromIsA(ctx.arithE().getText(), ctx.identifier().getText());
+        }
+
         return super.visitIsClause(ctx);
     }
 
@@ -56,7 +72,10 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             LOG.debug("=> DSLVisitor.visitHasClause({})", ctx);
         }
 
-        gremlinQueryComposer.addFromProperty(ctx.arithE().getText(), ctx.identifier().getText());
+        if(!hasVisitedRule(RULE_whereClause)) {
+            gremlinQueryComposer.addFromProperty(ctx.arithE().getText(), ctx.identifier().getText());
+        }
+
         return super.visitHasClause(ctx);
     }
 
@@ -140,10 +159,8 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             LOG.debug("=> DSLVisitor.visitWhereClause({})", ctx);
         }
 
-
-        // The first expr shouldn't be processed if there are following exprs
+        addVisitedRule(ctx.getRuleIndex());
         ExprContext expr = ctx.expr();
-
         processExpr(expr, gremlinQueryComposer);
         return super.visitWhereClause(ctx);
     }
@@ -167,6 +184,19 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             }
         }
         return super.visitFromExpression(ctx);
+    }
+
+    @Override
+    public Void visitSingleQrySrc(SingleQrySrcContext ctx) {
+        if (!hasVisitedRule(RULE_whereClause)) {
+            if (ctx.fromExpression() == null) {
+                if (ctx.expr() != null && gremlinQueryComposer.hasFromClause()) {
+                    processExpr(ctx.expr(), gremlinQueryComposer);
+                }
+            }
+        }
+
+        return super.visitSingleQrySrc(ctx);
     }
 
     @Override
@@ -238,11 +268,11 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
     }
 
     private void processExpr(final CompEContext compE, final GremlinQueryComposer gremlinQueryComposer) {
-        if (compE != null && compE.isClause() == null && compE.hasClause() == null && compE.isClause() == null) {
+        if (compE != null && compE.isClause() == null && compE.hasClause() == null) {
             ComparisonClauseContext comparisonClause = compE.comparisonClause();
 
             // The nested expression might have ANDs/ORs
-            if(comparisonClause == null) {
+            if (comparisonClause == null) {
                 ExprContext exprContext = compE.arithE().multiE().atomE().expr();
                 // Only extract comparison clause if there are no nested exprRight clauses
                 if (CollectionUtils.isEmpty(exprContext.exprRight())) {
@@ -254,7 +284,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
                 String lhs = comparisonClause.arithE(0).getText();
                 String op, rhs;
                 AtomEContext atomECtx = comparisonClause.arithE(1).multiE().atomE();
-                if(atomECtx.literal() == null ||
+                if (atomECtx.literal() == null ||
                         (atomECtx.literal() != null && atomECtx.literal().valueArray() == null)) {
                     op = comparisonClause.operator().getText().toUpperCase();
                     rhs = comparisonClause.arithE(1).getText();
@@ -268,6 +298,14 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
                 processExpr(compE.arithE().multiE().atomE().expr(), gremlinQueryComposer);
             }
         }
+
+        if (compE != null && compE.isClause() != null) {
+            gremlinQueryComposer.addFromIsA(compE.isClause().arithE().getText(), compE.isClause().identifier().getText());
+        }
+
+        if (compE != null && compE.hasClause() != null) {
+            gremlinQueryComposer.addFromProperty(compE.hasClause().arithE().getText(), compE.hasClause().identifier().getText());
+        }
     }
 
     private String getInClause(AtomEContext atomEContext) {
@@ -280,5 +318,13 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
         }
 
         return sb.toString();
+    }
+
+    private void addVisitedRule(int ruleIndex) {
+        visitedRuleIndexes.add(ruleIndex);
+    }
+
+    private boolean hasVisitedRule(int ruleIndex) {
+        return visitedRuleIndexes.contains(ruleIndex);
     }
 }
