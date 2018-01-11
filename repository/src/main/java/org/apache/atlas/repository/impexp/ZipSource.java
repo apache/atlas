@@ -135,12 +135,18 @@ public class ZipSource implements EntityImportStream {
     }
 
     private <T> T convertFromJson(Class<T> clazz, String jsonData) throws AtlasBaseException {
+        T t;
         try {
-            return AtlasType.fromJson(jsonData, clazz);
+            t = AtlasType.fromJson(jsonData, clazz);
+            if(t == null) {
+                throw new AtlasBaseException("Error converting file to JSON.");
+            }
 
         } catch (Exception e) {
             throw new AtlasBaseException("Error converting file to JSON.", e);
         }
+
+        return t;
     }
 
     private String getFromCache(String entryName) {
