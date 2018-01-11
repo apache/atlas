@@ -65,6 +65,7 @@ Also following properties should be set.
 atlas.authentication.method.kerberos.principal=<principal>/<fqdn>@EXAMPLE.COM
 atlas.authentication.method.kerberos.keytab = /<key tab filepath>.keytab
 atlas.authentication.method.kerberos.name.rules = RULE:[2:$1@$0](atlas@EXAMPLE.COM)s/.*/atlas/
+atlas.authentication.method.kerberos.token.validity = 3600 [ in Seconds (optional)]
 </verbatim>
 
 
