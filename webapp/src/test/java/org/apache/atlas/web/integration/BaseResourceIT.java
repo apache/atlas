@@ -100,7 +100,6 @@ public abstract class BaseResourceIT {
 
 
     protected NotificationInterface notificationInterface = null;
-    protected EmbeddedKafkaServer   kafkaServer           = null;
     protected KafkaNotification     kafkaNotification     = null;
 
     @BeforeClass
@@ -689,13 +688,10 @@ public abstract class BaseResourceIT {
 
         applicationProperties.setProperty("atlas.kafka.data", "target/" + RandomStringUtils.randomAlphanumeric(5));
 
-        kafkaServer           = new EmbeddedKafkaServer(applicationProperties);
         kafkaNotification     = new KafkaNotification(applicationProperties);
         notificationInterface = kafkaNotification;
 
-        kafkaServer.start();
         kafkaNotification.start();
-
         Thread.sleep(2000);
     }
 
@@ -705,8 +701,5 @@ public abstract class BaseResourceIT {
             kafkaNotification.stop();
         }
 
-        if (kafkaServer != null) {
-            kafkaServer.stop();
-        }
     }
 }

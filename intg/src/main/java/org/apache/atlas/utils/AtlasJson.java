@@ -87,7 +87,11 @@ public class AtlasJson {
     public static String toJson(Object obj) {
         String ret;
         try {
-            ret = mapper.writeValueAsString(obj);
+            if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
+                ret = ((JsonNode) obj).textValue();
+            } else {
+                ret = mapperV1.writeValueAsString(obj);
+            }
         }catch (IOException e){
             LOG.error("AtlasJson.toJson()", e);
 
@@ -115,8 +119,12 @@ public class AtlasJson {
     public static String toV1Json(Object obj) {
         String ret;
         try {
-            ret = mapperV1.writeValueAsString(obj);
-        }catch (IOException e){
+            if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
+                ret = ((JsonNode) obj).textValue();
+            } else {
+                ret = mapperV1.writeValueAsString(obj);
+            }
+        } catch (IOException e) {
             LOG.error("AtlasType.toV1Json()", e);
 
             ret = null;

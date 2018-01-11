@@ -878,8 +878,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         LOG.debug("Updating entity= {}", tableUpdated);
         EntityResult entityResult = atlasClientV1.updateEntity(guid, tableUpdated);
-        assertEquals(entityResult.getUpdateEntities().size(), 2);
-        assertEquals(entityResult.getUpdateEntities().get(1), guid);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
         Referenceable entity = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
@@ -935,8 +935,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("Updating entity= {}", tableUpdated);
         EntityResult entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 (String) hiveTableInstance.get(QUALIFIED_NAME), tableUpdated);
-        assertEquals(entityResult.getUpdateEntities().size(), 2);
-        assertEquals(entityResult.getUpdateEntities().get(1), guid);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
         Referenceable entity = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) entity.get("columns");

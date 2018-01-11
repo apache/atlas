@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -264,19 +265,25 @@ public class EntityResource {
 
             entityJson = Servlets.getRequestPayload(request);
 
-            ArrayNode jsonEntities = AtlasJson.parseToV1ArrayNode(entityJson);
-            String[]  jsonStrings = new String[jsonEntities.size()];
+            //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
+            String[] jsonStrings;
 
-            for (int i = 0; i < jsonEntities.size(); i++) {
-                jsonStrings[i] = AtlasJson.toV1Json(jsonEntities.get(i));
+            try {
+                ArrayNode jsonEntities = AtlasJson.parseToV1ArrayNode(entityJson);
+
+                jsonStrings = new String[jsonEntities.size()];
+
+                for (int i = 0; i < jsonEntities.size(); i++) {
+                    jsonStrings[i] = AtlasJson.toV1Json(jsonEntities.get(i));
+                }
+            } catch (IOException e) {
+                jsonStrings = new String[1];
+
+                jsonStrings[0] = entityJson;
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("updateEntities(): count={}, entityJson={} ", jsonEntities.size(), entityJson);
-
-                for (int i = 0; i < jsonStrings.length; i++) {
-                    LOG.debug("updateEntities(): entity[{}]={}", i, jsonStrings[i]);
-                }
+                LOG.debug("Updating entities: count={}; entities-json={}", jsonStrings.length, entityJson);
             }
 
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);

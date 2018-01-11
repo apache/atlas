@@ -74,9 +74,19 @@
       "limit": 50,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "name",
-        "operator": "neq",
-        "attributeValue": "dummy /Table_1@0"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "name",
+            "operator": "neq",
+            "attributeValue": "dummy /Table_1@0"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -96,9 +106,19 @@
       "limit": 25,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "temporary",
-        "operator": "eq",
-        "attributeValue": "false"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "temporary",
+            "operator": "eq",
+            "attributeValue": "false"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -118,9 +138,19 @@
       "limit": 50,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "temporary",
-        "operator": "neq",
-        "attributeValue": "true"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "temporary",
+            "operator": "neq",
+            "attributeValue": "true"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -162,9 +192,19 @@
       "limit": 25,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "name",
-        "operator": "endsWith",
-        "attributeValue": "0"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "name",
+            "operator": "endsWith",
+            "attributeValue": "0"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -184,9 +224,19 @@
       "limit": 25,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "name",
-        "operator": "endsWith",
-        "attributeValue": "8"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "name",
+            "operator": "endsWith",
+            "attributeValue": "8"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -206,9 +256,19 @@
       "limit": 25,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "createTime",
-        "operator": "lte",
-        "attributeValue": "1491250084794"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "createTime",
+            "operator": "lte",
+            "attributeValue": "1491250084794"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [
@@ -228,9 +288,19 @@
       "limit": 25,
       "offset": 0,
       "entityFilters": {
-        "attributeName": "lastAccessTime",
-        "operator": "gte",
-        "attributeValue": "1491248907000"
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "lastAccessTime",
+            "operator": "gte",
+            "attributeValue": "1491248907000"
+          },
+          {
+            "attributeName": "description",
+            "operator": "isNull",
+            "attributeValue": ""
+          }
+        ]
       },
       "tagFilters": null,
       "attributes": [

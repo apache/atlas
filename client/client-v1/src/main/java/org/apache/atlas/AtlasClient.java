@@ -799,7 +799,7 @@ public class AtlasClient extends AtlasBaseClient {
     public ArrayNode searchByDSL(final String query, final int limit, final int offset) throws AtlasServiceException {
         LOG.debug("DSL query: {}", query);
         final API api = API_V1.SEARCH_DSL;
-        ObjectNode result = callAPIWithRetries(api, null, new ResourceCreator() {
+        ObjectNode response = callAPIWithRetries(api, null, new ResourceCreator() {
             @Override
             public WebResource createResource() {
                 WebResource resource = getResource(api);
@@ -809,7 +809,10 @@ public class AtlasClient extends AtlasBaseClient {
                 return resource;
             }
         });
-        return (ArrayNode)result.get(RESULTS);
+
+        JsonNode results = response.get(RESULTS);
+
+        return (results.isNull()) ? AtlasJson.createV1ArrayNode(): (ArrayNode) response.get(RESULTS);
     }
 
     /**

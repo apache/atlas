@@ -18,7 +18,9 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.service.ServiceState;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -27,6 +29,8 @@ import org.testng.annotations.Test;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
+
+import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,26 +47,26 @@ public class AdminResourceTest {
     }
 
     @Test
-    public void testStatusOfActiveServerIsReturned() {
+    public void testStatusOfActiveServerIsReturned() throws IOException {
 
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
 
         AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
         Response response = adminResource.getStatus();
         assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
-        ObjectNode entity = (ObjectNode) response.getEntity();
+        JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
         assertEquals(entity.get("Status").asText(), "ACTIVE");
     }
 
     @Test
-    public void testResourceGetsValueFromServiceState() {
+    public void testResourceGetsValueFromServiceState() throws IOException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
 
         AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
         Response response = adminResource.getStatus();
 
         verify(serviceState).getState();
-        ObjectNode entity = (ObjectNode) response.getEntity();
+        JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
         assertEquals(entity.get("Status").asText(), "PASSIVE");
 
     }
