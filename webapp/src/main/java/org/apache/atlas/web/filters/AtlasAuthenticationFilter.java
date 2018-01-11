@@ -83,6 +83,7 @@ import java.util.regex.Pattern;
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
 
+    private   static final String         CONFIG_KERBEROS_TOKEN_VALIDITY = "atlas.authentication.method.kerberos.token.validity";
     private   static final String         CONFIG_PROXY_USERS  = "atlas.proxyusers";
     private   static final String         PREFIX              = "atlas.authentication.method";
     private   static final String[]       DEFAULT_PROXY_USERS = new String[] { "knox" };
@@ -129,6 +130,22 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         if (configuration != null) {
             headerProperties = ConfigurationConverter.getProperties(configuration.subset("atlas.headers"));
+        }
+
+        String tokenValidityStr = configuration.getString(CONFIG_KERBEROS_TOKEN_VALIDITY);
+
+        if (StringUtils.isNotBlank(tokenValidityStr)) {
+            try {
+                Long tokenValidity = Long.parseLong(tokenValidityStr);
+
+                if (tokenValidity > 0) {
+                    params.put(AuthenticationFilter.AUTH_TOKEN_VALIDITY, tokenValidity.toString());
+                } else {
+                    throw new ServletException(tokenValidity + ": invalid value for property '" + CONFIG_KERBEROS_TOKEN_VALIDITY + "'. Must be a positive integer");
+                }
+            } catch (NumberFormatException e) {
+                throw new ServletException(tokenValidityStr + ": invalid value for property '" + CONFIG_KERBEROS_TOKEN_VALIDITY + "'. Must be a positive integer", e);
+            }
         }
 
         FilterConfig filterConfig1 = new FilterConfig() {
