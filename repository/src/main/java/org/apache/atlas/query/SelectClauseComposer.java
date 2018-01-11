@@ -202,6 +202,10 @@ class SelectClauseComposer {
         aggCount++;
     }
 
+    public boolean isAggregatorIdx(int idx) {
+        return getMinIdx() == idx || getMaxIdx() == idx || getCountIdx() == idx || getSumIdx() == idx;
+    }
+
     private String getJoinedQuotedStr(String[] elements) {
         StringJoiner joiner = new StringJoiner(",");
         Arrays.stream(elements)

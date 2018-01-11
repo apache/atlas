@@ -226,6 +226,9 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
         processExpr(expr.compE(), nestedProcessor);
         nestedQueries.add(nestedProcessor.get());
 
+        // Record all processed attributes
+        gremlinQueryComposer.addProcessedAttributes(nestedProcessor.getAttributesProcessed());
+
         for (ExprRightContext exprRight : expr.exprRight()) {
             nestedProcessor = gremlinQueryComposer.createNestedProcessor();
 
@@ -238,6 +241,9 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
                     orClause.addOrClauses(nestedQueries);
                     nestedQueries.clear();
                     nestedQueries.add(orClause.get());
+
+                    // Record all processed attributes
+                    gremlinQueryComposer.addProcessedAttributes(orClause.getAttributesProcessed());
                 }
                 prev = AND;
             }
@@ -250,11 +256,17 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
                     andClause.addAndClauses(nestedQueries);
                     nestedQueries.clear();
                     nestedQueries.add(andClause.get());
+
+                    // Record all processed attributes
+                    gremlinQueryComposer.addProcessedAttributes(andClause.getAttributesProcessed());
                 }
                 prev = OR;
             }
             processExpr(exprRight.compE(), nestedProcessor);
             nestedQueries.add(nestedProcessor.get());
+
+            // Record all processed attributes
+            gremlinQueryComposer.addProcessedAttributes(nestedProcessor.getAttributesProcessed());
         }
         if (AND.equalsIgnoreCase(prev)) {
             gremlinQueryComposer.addAndClauses(nestedQueries);

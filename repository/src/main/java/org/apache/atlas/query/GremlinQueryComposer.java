@@ -27,6 +27,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,14 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,7 +54,8 @@ public class GremlinQueryComposer {
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
 
-    private final GremlinClauseList      queryClauses   = new GremlinClauseList();
+
+    private final GremlinClauseList      queryClauses   = new GremlinClauseList();private final Set<String>       attributesProcessed = new HashSet<>();
     private final Lookup                 lookup;
     private final boolean                isNestedQuery;
     private final AtlasDSL.QueryMetadata queryMetadata;
@@ -164,6 +173,8 @@ public class GremlinQueryComposer {
         } else {
             add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), op.getSymbols()[1], rhs);
         }
+        // record that the attribute has been processed so that the select clause doesn't add a attr presence check
+        attributesProcessed.add(lhsI.getQualifiedName());
 
         if (org != null && org.isReferredType()) {
             add(GremlinClause.DEDUP);
@@ -185,12 +196,49 @@ public class GremlinQueryComposer {
         add(GremlinClause.OR, String.join(",", clauses));
     }
 
+    public Set<String> getAttributesProcessed() {
+        return attributesProcessed;
+    }
+
+    public void addProcessedAttributes(Set<String> attributesProcessed) {
+        this.attributesProcessed.addAll(attributesProcessed);
+    }
+
+    public void addProcessedAttribute(String attribute) {
+        attributesProcessed.add(attribute);
+    }
+
     public void addSelect(SelectClauseComposer selectClauseComposer) {
         process(selectClauseComposer);
+
+        if (CollectionUtils.isEmpty(context.getErrorList())) {
+            addSelectAttrExistsCheck(selectClauseComposer);
+        }
+
+
+        // If the query contains orderBy and groupBy then the transformation determination is deferred to the method processing orderBy
         if (!(queryMetadata.hasOrderBy() && queryMetadata.hasGroupBy())) {
             addSelectTransformation(selectClauseComposer, null, false);
         }
         this.context.setSelectClauseComposer(selectClauseComposer);
+    }
+
+    private void addSelectAttrExistsCheck(final SelectClauseComposer selectClauseComposer) {
+        // For each of the select attributes we need to add a presence check as well, if there's no explicit where for the same
+        // NOTE: One side-effect is that the result table will be empty if any of the attributes is null or empty for the type
+        String[] qualifiedAttributes = selectClauseComposer.getAttributes();
+        if (qualifiedAttributes != null && qualifiedAttributes.length > 0) {
+            for (int i = 0; i < qualifiedAttributes.length; i++) {
+                String                              qualifiedAttribute = qualifiedAttributes[i];
+                IdentifierHelper.IdentifierMetadata idMetadata         = getIdMetadata(qualifiedAttribute);
+                // Only primitive attributes need to be checked
+                if (idMetadata.isPrimitive() && !selectClauseComposer.isAggregatorIdx(i) && !attributesProcessed.contains(qualifiedAttribute)) {
+                    add(GremlinClause.HAS_PROPERTY, qualifiedAttribute);
+                }
+            }
+            // All these checks should be done before the grouping happens (if any)
+            moveToLast(GremlinClause.GROUP_BY);
+        }
     }
 
     private void process(SelectClauseComposer scc) {
