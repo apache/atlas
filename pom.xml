@@ -530,6 +530,7 @@
         <jetty.version>9.3.14.v20161028</jetty.version>
         <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
         <jersey.version>1.19</jersey.version>
+        <jsr.version>1.1</jsr.version>
 
         <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2</hbase.version>

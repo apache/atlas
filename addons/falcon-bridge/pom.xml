@@ -181,6 +181,16 @@
                                             <artifactId>kafka-clients</artifactId>
                                             <version>${kafka.version}</version>
                                         </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-json</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>javax.ws.rs</groupId>
+                                            <artifactId>jsr311-api</artifactId>
+                                            <version>${jsr.version}</version>
+                                        </artifactItem>
                                     </artifactItems>
                                 </configuration>
                             </execution>
