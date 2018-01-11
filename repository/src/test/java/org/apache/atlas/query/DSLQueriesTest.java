@@ -392,13 +392,18 @@ public class DSLQueriesTest extends BasicTestSetup {
                                 .withExpectedValues(1)
                                 .withExpectedValues(1)
                                 .withExpectedValues(1) },
-                                     // FIXME
-//                { "from hive_db groupby (owner, name) select Asset.owner, Asset.name, count()",
-//                        new FieldValueValidator()
-//                                .withFieldNames("Asset.owner", "Asset.name", "count()")
-//                                .withExpectedValues("Jane BI", "Reporting", 1)
-//                                .withExpectedValues("Tim ETL", "Logging", 1)
-//                                .withExpectedValues("John ETL", "Sales", 1) },
+                { "from hive_db groupby (owner) select owner, name orderby owner",
+                        new FieldValueValidator()
+                                .withFieldNames("owner", "name")
+                                .withExpectedValues("Jane BI", "Reporting")
+                                .withExpectedValues("John ETL", "Sales")
+                                .withExpectedValues("Tim ETL", "Logging") },
+                { "from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
+                        new FieldValueValidator()
+                                .withFieldNames("Asset.owner", "Asset.name", "count()")
+                                .withExpectedValues("Jane BI", "Reporting", 1)
+                                .withExpectedValues("Tim ETL", "Logging", 1)
+                                .withExpectedValues("John ETL", "Sales", 1) },
                 { "from hive_db groupby (owner) select count() ",
                         new FieldValueValidator()
                                 .withFieldNames("count()").

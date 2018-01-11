@@ -158,7 +158,7 @@ public class AtlasDSL {
         }
 
         public boolean needTransformation() {
-            return (hasGroupBy && hasSelect && hasOrderBy) || (hasGroupBy && hasOrderBy) || hasSelect;
+            return (hasGroupBy && hasSelect && hasOrderBy) || hasSelect;
         }
     }
 }

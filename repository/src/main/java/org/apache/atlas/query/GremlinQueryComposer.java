@@ -23,21 +23,26 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GremlinQueryComposer {
     private static final Logger LOG = LoggerFactory.getLogger(GremlinQueryComposer.class);
 
+    private final String EMPTY_STRING = "";
     private static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
@@ -179,7 +184,7 @@ public class GremlinQueryComposer {
     public void addSelect(SelectClauseComposer selectClauseComposer) {
         process(selectClauseComposer);
         if (!(queryMetadata.hasOrderBy() && queryMetadata.hasGroupBy())) {
-            addSelectTransformation(selectClauseComposer);
+            addSelectTransformation(selectClauseComposer, null, false);
         }
         this.context.setSelectClauseComposer(selectClauseComposer);
     }
@@ -200,6 +205,7 @@ public class GremlinQueryComposer {
                 context.addAlias(scc.getLabel(i), ia.getQualifiedName());
             }
 
+            // Update the qualifiedNames and the assignment expressions
             if (scc.updateAsApplicable(i, ia.getQualifiedName())) {
                 continue;
             }
@@ -309,10 +315,7 @@ public class GremlinQueryComposer {
 
         IdentifierHelper.Advice ia = getAdvice(name);
         if (queryMetadata.hasSelect() && queryMetadata.hasGroupBy()) {
-            addOrderByClause(ia.getQualifiedName(), isDesc);
-            moveToLast(GremlinClause.GROUP_BY);
-
-            addSelectTransformation(this.context.selectClauseComposer);
+            addSelectTransformation(this.context.selectClauseComposer, ia.getQualifiedName(), isDesc);
         } else if (queryMetadata.hasGroupBy()) {
             addOrderByClause(ia.getQualifiedName(), isDesc);
             moveToLast(GremlinClause.GROUP_BY);
@@ -321,7 +324,9 @@ public class GremlinQueryComposer {
         }
     }
 
-    private void addSelectTransformation(final SelectClauseComposer selectClauseComposer) {
+    private void addSelectTransformation(final SelectClauseComposer selectClauseComposer,
+                                         final String orderByQualifiedAttrName,
+                                         final boolean isDesc) {
         GremlinClause fn;
         if (selectClauseComposer.isSelectNoop) {
             fn = GremlinClause.SELECT_NOOP_FN;
@@ -335,10 +340,25 @@ public class GremlinQueryComposer {
                     GremlinClause.SELECT_ONLY_AGG_FN :
                          GremlinClause.SELECT_FN;
         }
-        queryClauses.add(0, fn,
-                         selectClauseComposer.getLabelHeader(),
-                         selectClauseComposer.hasAssignmentExpr() ? selectClauseComposer.getAssignmentExprString(): "",
-                         selectClauseComposer.getItemsString());
+        if (StringUtils.isEmpty(orderByQualifiedAttrName)) {
+            queryClauses.add(0, fn,
+                             selectClauseComposer.getLabelHeader(),
+                             selectClauseComposer.hasAssignmentExpr() ? selectClauseComposer.getAssignmentExprString(): EMPTY_STRING,
+                             selectClauseComposer.getItemsString(), EMPTY_STRING);
+        } else {
+            int itemIdx = selectClauseComposer.getAttrIndex(orderByQualifiedAttrName);
+            GremlinClause sortClause = GremlinClause.INLINE_DEFAULT_SORT;
+            if (itemIdx != -1) {
+                sortClause = isDesc ? GremlinClause.INLINE_SORT_DESC : GremlinClause.INLINE_SORT_ASC;
+            }
+            String idxStr = String.valueOf(itemIdx);
+            queryClauses.add(0, fn,
+                             selectClauseComposer.getLabelHeader(),
+                             selectClauseComposer.hasAssignmentExpr() ? selectClauseComposer.getAssignmentExprString(): EMPTY_STRING,
+                             selectClauseComposer.getItemsString(),
+                             sortClause.get(idxStr, idxStr)
+                             );
+        }
         queryClauses.add(GremlinClause.INLINE_TRANSFORM_CALL);
     }
 

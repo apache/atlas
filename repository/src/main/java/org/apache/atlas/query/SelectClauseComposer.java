@@ -24,7 +24,10 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 class SelectClauseComposer {
+    public boolean  isSelectNoop;
+
     private String[]            labels;
+    private String[]            attributes; // Qualified names
     private String[]            items;
     private Map<String, String> itemAssignmentExprs;
 
@@ -33,7 +36,6 @@ class SelectClauseComposer {
     private int     maxIdx   = -1;
     private int     minIdx   = -1;
     private int     aggCount = 0;
-    public boolean  isSelectNoop;
 
     public SelectClauseComposer() {}
 
@@ -42,7 +44,7 @@ class SelectClauseComposer {
     }
 
     public void setItems(final String[] items) {
-        this.items = items;
+        this.items = Arrays.copyOf(items, items.length);
     }
 
     public boolean updateAsApplicable(int currentIndex, String qualifiedName) {
@@ -59,8 +61,74 @@ class SelectClauseComposer {
         } else if (currentIndex == getSumIdx()) {
             ret = assign(currentIndex, "sum", qualifiedName,
                     GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_SUM);
+        } else {
+            attributes[currentIndex] = qualifiedName;
         }
 
+        return ret;
+    }
+
+    public String[] getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(final String[] attributes) {
+        this.attributes = Arrays.copyOf(attributes, attributes.length);
+    }
+
+    public boolean assign(int i, String qualifiedName, GremlinClause clause) {
+        items[i] = clause.get(qualifiedName);
+        return true;
+    }
+
+    public String[] getLabels() {
+        return labels;
+    }
+
+    public void setLabels(final String[] labels) {
+        this.labels = labels;
+    }
+
+    public boolean hasAssignmentExpr() {
+        return itemAssignmentExprs != null && !itemAssignmentExprs.isEmpty();
+    }
+
+    public boolean onlyAggregators() {
+        return aggCount > 0 && aggCount == items.length;
+    }
+
+    public String getLabelHeader() {
+        return getJoinedQuotedStr(getLabels());
+    }
+
+    public String getItemsString() {
+        return String.join(",", getItems());
+    }
+
+    public String getAssignmentExprString(){
+        return String.join(" ", itemAssignmentExprs.values());
+    }
+
+    public String getItem(int i) {
+        return items[i];
+    }
+
+    public String getAttribute(int i) {
+        return attributes[i];
+    }
+
+    public String getLabel(int i) {
+        return labels[i];
+    }
+
+    public int getAttrIndex(String attr) {
+        int ret = -1;
+        for (int i = 0; i < attributes.length; i++) {
+            if (attributes[i].equals(attr)) {
+                ret = i;
+                break;
+            }
+        }
         return ret;
     }
 
@@ -70,11 +138,6 @@ class SelectClauseComposer {
         }
 
         itemAssignmentExprs.put(item, assignExpr);
-        return true;
-    }
-
-    public boolean assign(int i, String qualifiedName, GremlinClause clause) {
-        items[i] = clause.get(qualifiedName);
         return true;
     }
 
@@ -125,47 +188,11 @@ class SelectClauseComposer {
         aggCount++;
     }
 
-    public String[] getLabels() {
-        return labels;
-    }
-
-    public void setLabels(final String[] labels) {
-        this.labels = labels;
-    }
-
-    public boolean hasAssignmentExpr() {
-        return itemAssignmentExprs != null && !itemAssignmentExprs.isEmpty();
-    }
-
-    public boolean onlyAggregators() {
-        return aggCount > 0 && aggCount == items.length;
-    }
-
-    public String getLabelHeader() {
-        return getJoinedQuotedStr(getLabels());
-    }
-
-    public String getItemsString() {
-        return String.join(",", getItems());
-    }
-
-    public String getAssignmentExprString(){
-        return String.join(" ", itemAssignmentExprs.values());
-    }
-
     private String getJoinedQuotedStr(String[] elements) {
         StringJoiner joiner = new StringJoiner(",");
         Arrays.stream(elements)
               .map(x -> x.contains("'") ? "\"" + x + "\"" : "'" + x + "'")
               .forEach(joiner::add);
         return joiner.toString();
-    }
-
-    public String getItem(int i) {
-        return items[i];
-    }
-
-    public String getLabel(int i) {
-        return labels[i];
     }
 }

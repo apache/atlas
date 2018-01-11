@@ -115,6 +115,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
             }
 
             selectClauseComposer.setItems(items);
+            selectClauseComposer.setAttributes(items);
             selectClauseComposer.setLabels(labels);
             gremlinQueryComposer.addSelect(selectClauseComposer);
         }

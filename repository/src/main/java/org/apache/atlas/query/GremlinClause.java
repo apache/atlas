@@ -51,7 +51,8 @@ enum GremlinClause {
     SELECT_FN("def f(r){ t=[[%s]]; %s r.each({t.add([%s])}); t.unique(); }; "),
     SELECT_ONLY_AGG_FN("def f(r){ t=[[%s]]; %s t.add([%s]); t;}; "),
     SELECT_ONLY_AGG_GRP_FN("def f(l){ t=[[%s]]; l.get(0).each({k,r -> L:{ %s t.add([%s]); } }); t; }; "),
-    SELECT_MULTI_ATTR_GRP_FN("def f(l){ t=[[%s]]; l.get(0).each({k,r -> L:{ %s r.each({t.add([%s])}) } }); t.unique(); }; "),
+    // Optional sorting required here
+    SELECT_MULTI_ATTR_GRP_FN("def f(l){ h=[[%s]]; t=[]; l.get(0).each({k,r -> L:{ %s r.each({t.add([%s])}) } }); h.plus(t.unique()%s); }; "),
     INLINE_ASSIGNMENT("def %s=%s;"),
     INLINE_LIST_RANGE("[%s..<%s]"),
     INLINE_COUNT("r.size()"),
@@ -60,6 +61,10 @@ enum GremlinClause {
     INLINE_MIN("r.min({it.value('%s')}).value('%s')"),
     INLINE_GET_PROPERTY("it.value('%s')"),
     INLINE_TRANSFORM_CALL("f(%s)"),
+    INLINE_DEFAULT_SORT(".sort{a,b -> a[0] <=> b[0]}"),
+    // idx of the tuple field to be sorted on
+    INLINE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
+    INLINE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
     V("V()"),
     VALUE_MAP("valueMap(%s)");
 

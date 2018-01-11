@@ -108,14 +108,16 @@ public class GremlinQueryComposerTest {
     public void groupByMin() {
         verify("from DB groupby (owner) select min(name) orderby name limit 2",
                 "def f(l){ t=[['min(name)']]; l.get(0).each({k,r -> L:{ def min=r.min({it.value('DB.name')}).value('DB.name'); t.add([min]); } }); t; }; " +
-                        "f(g.V().has('__typeName', 'DB').order().by('DB.name').group().by('DB.owner').limit(2).toList())");
+                        "f(g.V().has('__typeName', 'DB').group().by('DB.owner').limit(2).toList())");
     }
 
     @Test
     public void groupByOrderBy() {
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
-                "def f(l){ t=[['name','owner','clusterName']]; l.get(0).each({k,r -> L:{  r.each({t.add([it.value('Table.name'),it.value('Table.owner'),it.value('Table.clusterName')])}) } }); t.unique(); }; " +
-                        "f(g.V().has('__typeName', 'Table').order().by('Table.name').group().by('Table.owner').limit(25).toList())");
+                "def f(l){ h=[['name','owner','clusterName']]; t=[]; " +
+                        "l.get(0).each({k,r -> L:{  r.each({t.add([it.value('Table.name'),it.value('Table.owner'),it.value('Table.clusterName')])}) } }); " +
+                        "h.plus(t.unique().sort{a,b -> a[0] <=> b[0]}); }; " +
+                        "f(g.V().has('__typeName', 'Table').group().by('Table.owner').limit(25).toList())");
     }
 
     @Test
