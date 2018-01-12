@@ -76,6 +76,7 @@ public class GremlinQueryComposerTest {
                                   "f(g.V().has('__typeName', 'DB').as('d')";
         verify("DB as d select d.name, d.owner", expected + ".limit(25).toList())");
         verify("DB as d select d.name, d.owner limit 10", expected + ".limit(10).toList())");
+        verify("DB as d select d","def f(r){ r }; f(g.V().has('__typeName', 'DB').as('d').limit(25).toList())");
     }
 
     @Test
@@ -178,8 +179,8 @@ public class GremlinQueryComposerTest {
     @Test
     public void whereClauseWithDateCompare() {
         String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createdTime', eq('1513046158440')).limit(25).toList()";
-        verify("Table as t where t.createdTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('1513046158440')).limit(25).toList()";
+        verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
     }
 
     @Test
@@ -277,8 +278,8 @@ public class GremlinQueryComposerTest {
                                 "__.has('Table.owner', eq(\"Joe BI\"))" +
                                 "))" +
                                 ".limit(25).toList()"},
-                {"Table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createdTime < \"2017-12-12T02:35:58.440Z\")",
-                        "g.V().has('__typeName', 'Table').or(__.has('Table.owner', eq(\"hdfs\")),__.and(__.or(__.has('Table.name', eq(\"testtable_1\")),__.has('Table.name', eq(\"testtable_2\"))),__.has('Table.createdTime', lt('1513046158440')))).limit(25).toList()"},
+                {"Table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createTime < \"2017-12-12T02:35:58.440Z\")",
+                        "g.V().has('__typeName', 'Table').or(__.has('Table.owner', eq(\"hdfs\")),__.and(__.or(__.has('Table.name', eq(\"testtable_1\")),__.has('Table.name', eq(\"testtable_2\"))),__.has('Table.createTime', lt('1513046158440')))).limit(25).toList()"},
                 {"hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
                         "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).limit(25).toList()"},
                 {"Table where db.name='Sales' and db.clusterName='cl1'",
@@ -293,9 +294,10 @@ public class GremlinQueryComposerTest {
     }
 
     @Test
-    public void hasInWhereClause() {
+    public void keywordsInWhereClause() {
         verify("Table as t where t has name and t isa Dimension",
                 "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('__traitNames', within('Dimension'))).limit(25).toList()");
+
         verify("Table as t where t has name and t.name = 'sales_fact'",
                 "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).limit(25).toList()");
         verify("Table as t where t is Dimension and t.name = 'sales_fact'",
@@ -306,6 +308,7 @@ public class GremlinQueryComposerTest {
     @Test
     public void invalidQueries() {
         verify("hdfs_path like h1", "");
+//        verify("hdfs_path select xxx", "");
     }
 
     private void verify(String dsl, String expectedGremlin) {
@@ -332,7 +335,7 @@ public class GremlinQueryComposerTest {
     private String getGremlinQuery(AtlasDSLParser.QueryContext queryContext) {
         AtlasTypeRegistry             registry = mock(AtlasTypeRegistry.class);
         org.apache.atlas.query.Lookup lookup   = new TestLookup(errorList, registry);
-        GremlinQueryComposer.Context  context  = new GremlinQueryComposer.Context(errorList, lookup);
+        GremlinQueryComposer.Context  context  = new GremlinQueryComposer.Context(lookup);
         AtlasDSL.QueryMetadata queryMetadata   = new AtlasDSL.QueryMetadata(queryContext);
 
         GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(lookup, context, queryMetadata);
@@ -340,6 +343,7 @@ public class GremlinQueryComposerTest {
         qv.visit(queryContext);
 
         String s = gremlinQueryComposer.get();
+        assertEquals(gremlinQueryComposer.getErrorList().size(), 0);
         return s;
     }
 
@@ -367,18 +371,24 @@ public class GremlinQueryComposerTest {
         }
 
         @Override
-        public String getQualifiedName(GremlinQueryComposer.Context context, String name) {
+        public String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException {
+            if(!hasAttribute(context, name)) {
+                throw new AtlasBaseException("Invalid attribute");
+            }
+
             if(name.contains("."))
                 return name;
 
-            return String.format("%s.%s", context.getActiveTypeName(), name);
+            if(!context.getActiveTypeName().equals(name))
+                return String.format("%s.%s", context.getActiveTypeName(), name);
+            else
+                return name;
         }
 
         @Override
         public boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName) {
             return attributeName.equals("name") ||
                     attributeName.equals("owner") ||
-                    attributeName.equals("createdTime") ||
                     attributeName.equals("createTime") ||
                     attributeName.equals("clusterName");
         }
@@ -394,9 +404,22 @@ public class GremlinQueryComposerTest {
         }
 
         @Override
-        public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
-            return (context.getActiveTypeName().equals("Table") && typeName.equals("db")) ||
-                    (context.getActiveTypeName().equals("Table") && typeName.equals("columns"));
+        public boolean hasAttribute(GremlinQueryComposer.Context context, String attributeName) {
+            return (context.getActiveTypeName().equals("Table") && attributeName.equals("db")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("columns")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("createTime")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("name")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("owner")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("clusterName")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("isFile")) ||
+                    (context.getActiveTypeName().equals("hive_db") && attributeName.equals("name")) ||
+                    (context.getActiveTypeName().equals("hive_db") && attributeName.equals("owner")) ||
+                    (context.getActiveTypeName().equals("hive_db") && attributeName.equals("createTime")) ||
+                    (context.getActiveTypeName().equals("DB") && attributeName.equals("name")) ||
+                    (context.getActiveTypeName().equals("DB") && attributeName.equals("owner")) ||
+                    (context.getActiveTypeName().equals("DB") && attributeName.equals("clusterName")) ||
+                    (context.getActiveTypeName().equals("Asset") && attributeName.equals("name")) ||
+                    (context.getActiveTypeName().equals("Asset") && attributeName.equals("owner"));
         }
 
         @Override
@@ -425,19 +448,15 @@ public class GremlinQueryComposerTest {
                 return "DB";
             } else if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
                 return "Column";
+            } else if(context.getActiveTypeName().equals(item)) {
+                return null;
             }
             return context.getActiveTypeName();
         }
 
         @Override
         public boolean isDate(GremlinQueryComposer.Context context, String attributeName) {
-            return attributeName.equals("createdTime") ||
-                    attributeName.equals("createTime");
-        }
-
-        @Override
-        public List<String> getErrorList() {
-            return errorList;
+            return attributeName.equals("createTime");
         }
     }
 }

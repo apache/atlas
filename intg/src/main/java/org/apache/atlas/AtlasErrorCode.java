@@ -103,7 +103,7 @@ public enum AtlasErrorCode {
     SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}"),
     INVALID_QUERY_PARAM_LENGTH(400, "ATLAS-400-00-057" , "Length of query param {0} exceeds the limit"),
     INVALID_QUERY_LENGTH(400, "ATLAS-400-00-058" , "Invalid query length, update {0} to change the limit" ),
-    INVALID_DSL_QUERY(400, "ATLAS-400-00-059" , "Invalid DSL query: {0} Reason: {1}. Please refer to Atlas DSL grammar for more information" ),
+    INVALID_DSL_QUERY(400, "ATLAS-400-00-059" , "Invalid DSL query: {0} | Reason: {1}. Please refer to Atlas DSL grammar for more information" ),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),

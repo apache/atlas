@@ -29,6 +29,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.query.antlr4.AtlasDSLLexer;
 import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +60,6 @@ public class AtlasDSL {
         static AtlasDSLParser.QueryContext parse(String queryStr) throws AtlasBaseException {
             AtlasDSLParser.QueryContext ret;
             try {
-
                 InputStream    stream           = new ByteArrayInputStream(queryStr.getBytes());
                 AtlasDSLLexer  lexer            = new AtlasDSLLexer(CharStreams.fromStream(stream));
                 Validator      validator        = new Validator();
@@ -81,7 +82,6 @@ public class AtlasDSL {
 
             return ret;
         }
-
     }
 
     static class Validator extends BaseErrorListener {
@@ -108,25 +108,50 @@ public class AtlasDSL {
         private final AtlasTypeRegistry           typeRegistry;
         private final int                         offset;
         private final int                         limit;
+        private final String                      query;
 
         public Translator(String query, AtlasTypeRegistry typeRegistry, int offset, int limit) throws AtlasBaseException {
-            this(Parser.parse(query), typeRegistry, offset, limit);
-        }
-
-        private Translator(final AtlasDSLParser.QueryContext queryContext, AtlasTypeRegistry typeRegistry, int offset, int limit) {
-            this.queryContext = queryContext;
+            this.query = query;
+            this.queryContext = Parser.parse(query);
             this.typeRegistry = typeRegistry;
             this.offset       = offset;
             this.limit        = limit;
         }
 
-        public GremlinQuery translate() {
-            QueryMetadata        queryMetadata        = new QueryMetadata(queryContext);
+        public GremlinQuery translate() throws AtlasBaseException {
+            QueryMetadata queryMetadata = new QueryMetadata(queryContext);
             GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(typeRegistry, queryMetadata, limit, offset);
             DSLVisitor dslVisitor = new DSLVisitor(gremlinQueryComposer);
 
-            queryContext.accept(dslVisitor);
-            return new GremlinQuery(gremlinQueryComposer.get(), queryMetadata.hasSelect());
+            try {
+                queryContext.accept(dslVisitor);
+
+                processErrorList(gremlinQueryComposer, null);
+
+                return new GremlinQuery(gremlinQueryComposer.get(), queryMetadata.hasSelect());
+            } catch (Exception e) {
+                processErrorList(gremlinQueryComposer, e);
+            }
+
+            return null;
+        }
+
+        private void processErrorList(GremlinQueryComposer gremlinQueryComposer, Exception e) throws AtlasBaseException {
+            final String errorMessage;
+
+            if (CollectionUtils.isNotEmpty(gremlinQueryComposer.getErrorList())) {
+                errorMessage = StringUtils.join(gremlinQueryComposer.getErrorList(), ", ");
+            } else {
+                errorMessage = e != null ? (e.getMessage() != null ? e.getMessage() : e.toString()) : null;
+            }
+
+            if (errorMessage != null) {
+                if (e != null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, e, this.query, errorMessage);
+                }
+
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, this.query, errorMessage);
+            }
         }
     }
 

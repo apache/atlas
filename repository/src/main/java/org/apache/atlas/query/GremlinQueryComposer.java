@@ -18,8 +18,11 @@
 package org.apache.atlas.query;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
@@ -29,13 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +44,6 @@ public class GremlinQueryComposer {
     private final int DEFAULT_QUERY_RESULT_LIMIT = 25;
     private final int DEFAULT_QUERY_RESULT_OFFSET = 0;
 
-    private final List<String>           errorList      = new ArrayList<>();
     private final GremlinClauseList      queryClauses   = new GremlinClauseList();
     private final Lookup                 lookup;
     private final boolean                isNestedQuery;
@@ -58,9 +54,7 @@ public class GremlinQueryComposer {
 
     private static final ThreadLocal<DateFormat> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
         DateFormat ret = new SimpleDateFormat(ISO8601_FORMAT);
-
         ret.setTimeZone(TimeZone.getTimeZone("UTC"));
-
         return ret;
     });
 
@@ -73,7 +67,7 @@ public class GremlinQueryComposer {
     }
     public GremlinQueryComposer(AtlasTypeRegistry typeRegistry, final AtlasDSL.QueryMetadata qmd, int limit, int offset) {
         this(new RegistryBasedLookup(typeRegistry), qmd, false);
-        this.context  = new Context(errorList, lookup);
+        this.context  = new Context(lookup);
 
         providedLimit = limit;
         providedOffset = offset < 0 ? DEFAULT_QUERY_RESULT_OFFSET : offset;
@@ -152,24 +146,42 @@ public class GremlinQueryComposer {
             lhsI = getAdvice(lhs);
         }
 
-        if (lhsI.isDate()) {
-            rhs = parseDate(rhs);
-        }
+        if (StringUtils.isEmpty(lhsI.getQualifiedName())) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("unknown identifier '" + lhsI.getRaw() + "'");
+            }
 
-        rhs = addQuotesIfNecessary(rhs);
-        if (op == SearchParameters.Operator.LIKE) {
-            add(GremlinClause.TEXT_CONTAINS, lhsI.getQualifiedName(), getFixedRegEx(rhs));
-        } else if (op == SearchParameters.Operator.IN) {
-            add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), "within", rhs);
+            context.getErrorList().add("unknown identifier '" + lhsI.getRaw() + "'");
         } else {
-            add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), op.getSymbols()[1], rhs);
+            if (lhsI.isDate()) {
+                rhs = parseDate(rhs);
+            }
+
+            rhs = addQuotesIfNecessary(rhs);
+            if (op == SearchParameters.Operator.LIKE) {
+                add(GremlinClause.TEXT_CONTAINS, lhsI.getQualifiedName(), getFixedRegEx(rhs));
+            } else if (op == SearchParameters.Operator.IN) {
+                add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), "within", rhs);
+            } else {
+                add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), op.getSymbols()[1], rhs);
+            }
+
+            if (org != null && org.getIntroduceType()) {
+                add(GremlinClause.DEDUP);
+                add(GremlinClause.IN, org.getEdgeLabel());
+                context.registerActive(currentType);
+            }
+        }
+    }
+
+    private String getQualifiedName(IdentifierHelper.Advice ia) {
+        String s = ia.getQualifiedName();
+        if(StringUtils.isEmpty(s)) {
+            s = ia.getRaw();
+            getErrorList().add(String.format("Error: %s is invalid", ia.getRaw()));
         }
 
-        if (org != null && org.getIntroduceType()) {
-            add(GremlinClause.DEDUP);
-            add(GremlinClause.IN, org.getEdgeLabel());
-            context.registerActive(currentType);
-        }
+        return s;
     }
 
     private String getFixedRegEx(String rhs) {
@@ -205,23 +217,33 @@ public class GremlinQueryComposer {
             IdentifierHelper.Advice ia = getAdvice(scc.getItem(i));
 
             if (!scc.getItem(i).equals(scc.getLabel(i))) {
-                context.addAlias(scc.getLabel(i), ia.getQualifiedName());
+                context.addAlias(scc.getLabel(i), getQualifiedName(ia));
             }
 
-            // Update the qualifiedNames and the assignment expressions
-            if (scc.updateAsApplicable(i, ia.getQualifiedName())) {
+            if (scc.updateAsApplicable(i, getQualifiedName(ia))) {
                 continue;
+            }
+
+            scc.isSelectNoop = hasNoopCondition(ia);
+            if(scc.isSelectNoop) {
+                return;
             }
 
             if (introduceType(ia)) {
                 scc.isSelectNoop = !ia.hasParts();
                 if(ia.hasParts())  {
-                    scc.assign(i, getAdvice(ia.get()).getQualifiedName(), GremlinClause.INLINE_GET_PROPERTY);
+                    scc.assign(i, getQualifiedName(getAdvice(ia.get())), GremlinClause.INLINE_GET_PROPERTY);
                 }
             } else {
-                scc.assign(i, ia.getQualifiedName(), GremlinClause.INLINE_GET_PROPERTY);
+                scc.assign(i, getQualifiedName(ia), GremlinClause.INLINE_GET_PROPERTY);
             }
         }
+    }
+
+    private boolean hasNoopCondition(IdentifierHelper.Advice ia) {
+        return ia.isPrimitive() == false &&
+                ia.isAttribute() == false &&
+                context.hasAlias(ia.getRaw());
     }
 
     public GremlinQueryComposer createNestedProcessor() {
@@ -288,12 +310,7 @@ public class GremlinQueryComposer {
     }
 
     public List<String> getErrorList() {
-        combineErrorLists();
-        return errorList;
-    }
-
-    private void combineErrorLists() {
-        errorList.addAll(context.getErrorList());
+        return context.getErrorList();
     }
 
     private String getTransformedClauses(String[] items) {
@@ -327,12 +344,12 @@ public class GremlinQueryComposer {
 
         IdentifierHelper.Advice ia = getAdvice(name);
         if (queryMetadata.hasSelect() && queryMetadata.hasGroupBy()) {
-            addSelectTransformation(this.context.selectClauseComposer, ia.getQualifiedName(), isDesc);
+            addSelectTransformation(this.context.selectClauseComposer, getQualifiedName(ia), isDesc);
         } else if (queryMetadata.hasGroupBy()) {
-            addOrderByClause(ia.getQualifiedName(), isDesc);
+            addOrderByClause(getQualifiedName(ia), isDesc);
             moveToLast(GremlinClause.GROUP_BY);
         } else {
-            addOrderByClause(ia.getQualifiedName(), isDesc);
+            addOrderByClause(getQualifiedName(ia), isDesc);
         }
     }
 
@@ -393,7 +410,7 @@ public class GremlinQueryComposer {
         try {
             return DSL_DATE_FORMAT.get().parse(s).getTime();
         } catch (ParseException ex) {
-            errorList.add(ex.getMessage());
+            context.errorList.add(ex.getMessage());
         }
 
         return -1;
@@ -439,7 +456,7 @@ public class GremlinQueryComposer {
     private boolean introduceType(IdentifierHelper.Advice ia) {
         if (ia.getIntroduceType()) {
             add(GremlinClause.OUT, ia.getEdgeLabel());
-            context.registerActive(ia.getTypeName());
+            context.registerActive(ia);
         }
 
         return ia.getIntroduceType();
@@ -475,7 +492,7 @@ public class GremlinQueryComposer {
         }
 
         IdentifierHelper.Advice ia = getAdvice(name);
-        add((!descr) ? GremlinClause.ORDER_BY : GremlinClause.ORDER_BY_DESC, ia.getQualifiedName());
+        add((!descr) ? GremlinClause.ORDER_BY : GremlinClause.ORDER_BY_DESC, getQualifiedName(ia));
     }
 
     private void addGroupByClause(String name) {
@@ -484,7 +501,7 @@ public class GremlinQueryComposer {
         }
 
         IdentifierHelper.Advice ia = getAdvice(name);
-        add(GremlinClause.GROUP_BY, ia.getQualifiedName());
+        add(GremlinClause.GROUP_BY, getQualifiedName(ia));
     }
 
     public boolean hasFromClause() {
@@ -590,23 +607,38 @@ public class GremlinQueryComposer {
 
     @VisibleForTesting
     static class Context {
-        private final List<String> errorList;
-        Lookup lookup;
-        Map<String, String> aliasMap = new HashMap<>();
-        private AtlasType activeType;
-        private SelectClauseComposer selectClauseComposer;
+        private static final AtlasStructType UNKNOWN_TYPE = new AtlasStructType(new AtlasStructDef());
 
-        public Context(List<String> errorList, Lookup lookup) {
+        private final Lookup               lookup;
+        private final List<String>         errorList = new ArrayList<>();
+        private final Map<String, String>  aliasMap = new HashMap<>();
+        private       AtlasType            activeType;
+        private       SelectClauseComposer selectClauseComposer;
+
+        public Context(Lookup lookup) {
             this.lookup = lookup;
-            this.errorList = errorList;
         }
 
         public void registerActive(String typeName) {
             if(shouldRegister(typeName)) {
-                activeType = lookup.getType(typeName);
-            }
+                try {
+                    activeType = lookup.getType(typeName);
 
-            aliasMap.put(typeName, typeName);
+                    aliasMap.put(typeName, typeName);
+                } catch (AtlasBaseException e) {
+                    errorList.add(e.getMessage());
+                    activeType = UNKNOWN_TYPE;
+                }
+            }
+        }
+
+        public void registerActive(IdentifierHelper.Advice advice) {
+            if (StringUtils.isNotEmpty(advice.getTypeName())) {
+                registerActive(advice.getTypeName());
+            } else {
+                errorList.add("unknown identifier '" + advice.getRaw() + "'");
+                activeType = UNKNOWN_TYPE;
+            }
         }
 
         public AtlasType getActiveType() {
@@ -659,7 +691,6 @@ public class GremlinQueryComposer {
         }
 
         public List<String> getErrorList() {
-            errorList.addAll(lookup.getErrorList());
             return errorList;
         }
     }

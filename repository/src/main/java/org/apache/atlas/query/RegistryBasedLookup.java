@@ -20,6 +20,7 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.type.*;
 import org.apache.commons.lang.StringUtils;
@@ -37,30 +38,18 @@ class RegistryBasedLookup implements Lookup {
     }
 
     @Override
-    public AtlasType getType(String typeName) {
-        try {
-            return typeRegistry.getType(typeName);
-        } catch (AtlasBaseException e) {
-            addError(e.getMessage());
-        }
-
-        return null;
+    public AtlasType getType(String typeName) throws AtlasBaseException {
+        return typeRegistry.getType(typeName);
     }
 
     @Override
-    public String getQualifiedName(GremlinQueryComposer.Context context, String name) {
-        try {
-            AtlasEntityType et = context.getActiveEntityType();
-            if(et == null) {
-                return "";
-            }
-
-            return et.getQualifiedAttributeName(name);
-        } catch (AtlasBaseException e) {
-            addError(e.getMessage());
+    public String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException {
+        AtlasEntityType et = context.getActiveEntityType();
+        if (et == null) {
+            return "";
         }
 
-        return "";
+        return et.getQualifiedAttributeName(name);
     }
 
     @Override
@@ -70,13 +59,29 @@ class RegistryBasedLookup implements Lookup {
             return false;
         }
 
-        AtlasType attr = et.getAttributeType(attributeName);
-        if(attr == null) {
+        AtlasType at = et.getAttributeType(attributeName);
+        if(at == null) {
             return false;
         }
 
-        TypeCategory attrTypeCategory = attr.getTypeCategory();
-        return (attrTypeCategory != null) && (attrTypeCategory == TypeCategory.PRIMITIVE || attrTypeCategory == TypeCategory.ENUM);
+        TypeCategory tc = at.getTypeCategory();
+        if (isPrimitiveUsingTypeCategory(tc)) return true;
+
+        if ((tc != null) && (tc == TypeCategory.ARRAY)) {
+            AtlasArrayType ct = ((AtlasArrayType)at);
+            return isPrimitiveUsingTypeCategory(ct.getElementType().getTypeCategory());
+        }
+
+        if ((tc != null) && (tc == TypeCategory.MAP)) {
+            AtlasMapType ct = ((AtlasMapType)at);
+            return isPrimitiveUsingTypeCategory(ct.getValueType().getTypeCategory());
+        }
+
+        return false;
+    }
+
+    private boolean isPrimitiveUsingTypeCategory(TypeCategory tc) {
+        return ((tc != null) && (tc == TypeCategory.PRIMITIVE || tc == TypeCategory.ENUM));
     }
 
     @Override
@@ -136,12 +141,25 @@ class RegistryBasedLookup implements Lookup {
         }
 
         AtlasType at = attr.getAttributeType();
-        if(at.getTypeCategory() == TypeCategory.ARRAY) {
-            AtlasArrayType arrType = ((AtlasArrayType)at);
-            return ((AtlasBuiltInTypes.AtlasObjectIdType) arrType.getElementType()).getObjectType();
+        switch (at.getTypeCategory()) {
+            case ARRAY:
+                AtlasArrayType arrType = ((AtlasArrayType)at);
+                return getCollectionElementType(arrType.getElementType());
+
+            case MAP:
+                AtlasMapType mapType = ((AtlasMapType)at);
+                return getCollectionElementType(mapType.getValueType());
         }
 
         return context.getActiveEntityType().getAttribute(item).getTypeName();
+    }
+
+    private String getCollectionElementType(AtlasType elemType) {
+        if(elemType.getTypeCategory() == TypeCategory.OBJECT_ID_TYPE) {
+            return ((AtlasBuiltInTypes.AtlasObjectIdType)elemType).getObjectType();
+        } else {
+            return elemType.getTypeName();
+        }
     }
 
     @Override
@@ -154,14 +172,5 @@ class RegistryBasedLookup implements Lookup {
         AtlasType attr = et.getAttributeType(attributeName);
         return attr != null && attr.getTypeName().equals(AtlasBaseTypeDef.ATLAS_TYPE_DATE);
 
-    }
-
-    protected void addError(String s) {
-        errorList.add(s);
-    }
-
-    @Override
-    public List<String> getErrorList() {
-        return errorList;
     }
 }

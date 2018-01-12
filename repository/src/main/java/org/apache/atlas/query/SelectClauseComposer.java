@@ -24,6 +24,11 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 class SelectClauseComposer {
+    private static final String COUNT_STR = "count";
+    private static final String MIN_STR = "min";
+    private static final String MAX_STR = "max";
+    private static final String SUM_STR = "sum";
+
     public boolean  isSelectNoop;
 
     private String[]            labels;
@@ -50,22 +55,29 @@ class SelectClauseComposer {
     public boolean updateAsApplicable(int currentIndex, String qualifiedName) {
         boolean ret = false;
         if (currentIndex == getCountIdx()) {
-            ret = assign(currentIndex, "count",
+            ret = assign(currentIndex, COUNT_STR,
                     GremlinClause.INLINE_COUNT.get(), GremlinClause.INLINE_ASSIGNMENT);
         } else if (currentIndex == getMinIdx()) {
-            ret = assign(currentIndex, "min", qualifiedName,
+            ret = assign(currentIndex, MIN_STR, qualifiedName,
                     GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
         } else if (currentIndex == getMaxIdx()) {
-            ret = assign(currentIndex, "max", qualifiedName,
+            ret = assign(currentIndex, MAX_STR, qualifiedName,
                     GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MAX);
         } else if (currentIndex == getSumIdx()) {
-            ret = assign(currentIndex, "sum", qualifiedName,
+            ret = assign(currentIndex, SUM_STR, qualifiedName,
                     GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_SUM);
         } else {
             attributes[currentIndex] = qualifiedName;
         }
 
         return ret;
+    }
+
+    public static boolean isKeyword(String s) {
+        return COUNT_STR.equals(s) ||
+                MIN_STR.equals(s) ||
+                MAX_STR.equals(s) ||
+                SUM_STR.equals(s);
     }
 
     public String[] getAttributes() {

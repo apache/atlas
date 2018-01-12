@@ -18,15 +18,16 @@
 
 package org.apache.atlas.query;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 
 import java.util.Collection;
 import java.util.List;
 
 public interface Lookup {
-    AtlasType getType(String typeName);
+    AtlasType getType(String typeName) throws AtlasBaseException;
 
-    String getQualifiedName(GremlinQueryComposer.Context context, String name);
+    String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException;
 
     boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName);
 
@@ -43,6 +44,4 @@ public interface Lookup {
     String getTypeFromEdge(GremlinQueryComposer.Context context, String item);
 
     boolean isDate(GremlinQueryComposer.Context context, String attributeName);
-
-    List<String> getErrorList();
 }

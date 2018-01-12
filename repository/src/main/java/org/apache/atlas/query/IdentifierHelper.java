@@ -18,6 +18,7 @@
 
 package org.apache.atlas.query;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.regex.Matcher;
@@ -61,7 +62,13 @@ public class IdentifierHelper {
     public static String getQualifiedName(org.apache.atlas.query.Lookup lookup,
                                           GremlinQueryComposer.Context context,
                                           String name) {
-        return lookup.getQualifiedName(context, name);
+        try {
+            return lookup.getQualifiedName(context, name);
+        } catch (AtlasBaseException e) {
+            context.getErrorList().add(String.format("Error for %s.%s: %s", context.getActiveTypeName(), name, e.getMessage()));
+        }
+
+        return "";
     }
 
     public static boolean isQuoted(String val) {
@@ -101,7 +108,6 @@ public class IdentifierHelper {
         private String attributeName;
         private boolean isPrimitive;
         private String edgeLabel;
-        private String edgeDirection;
         private boolean introduceType;
         private boolean hasSubtypes;
         private String subTypes;
@@ -117,18 +123,22 @@ public class IdentifierHelper {
         }
 
         private void update(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
-            newContext = context.isEmpty();
-            if(!newContext) {
-                if(context.aliasMap.containsKey(this.raw)) {
-                    raw = context.aliasMap.get(this.raw);
-                }
+            try {
+                newContext = context.isEmpty();
+                if (!newContext) {
+                    if (context.hasAlias(this.raw)) {
+                        raw = context.getTypeNameFromAlias(this.raw);
+                    }
 
-                updateParts();
-                updateTypeInfo(lookup, context);
-                isTrait = lookup.isTraitType(context);
-                updateEdgeInfo(lookup, context);
-                introduceType = !isPrimitive() && !context.hasAlias(parts[0]);
-                updateSubTypes(lookup, context);
+                    updateParts();
+                    updateTypeInfo(lookup, context);
+                    isTrait = lookup.isTraitType(context);
+                    updateEdgeInfo(lookup, context);
+                    introduceType = !isPrimitive() && !context.hasAlias(parts[0]);
+                    updateSubTypes(lookup, context);
+                }
+            } catch (NullPointerException ex) {
+                context.getErrorList().add(ex.getMessage());
             }
         }
 
@@ -146,50 +156,65 @@ public class IdentifierHelper {
         private void updateEdgeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if(isPrimitive == false && isTrait == false) {
                 edgeLabel = lookup.getRelationshipEdgeLabel(context, attributeName);
-                edgeDirection = "OUT";
                 typeName = lookup.getTypeFromEdge(context, attributeName);
             }
         }
 
         private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if(parts.length == 1) {
-                typeName = context.getActiveTypeName();
+                typeName = context.hasAlias(parts[0]) ?
+                                context.getTypeNameFromAlias(parts[0]) :
+                                context.getActiveTypeName();
+                qualifiedName = getDefaultQualifiedNameForSinglePartName(context, parts[0]);
                 attributeName = parts[0];
-                isAttribute = lookup.hasAttribute(context, typeName);
-                qualifiedName = lookup.getQualifiedName(context, attributeName);
-                isPrimitive = lookup.isPrimitive(context, attributeName);
-
-                setIsDate(lookup, context);
             }
 
             if(parts.length == 2) {
-                if(context.hasAlias(parts[0])) {
-                    typeName = context.getTypeNameFromAlias(parts[0]);
-                    attributeName = parts[1];
-                    isPrimitive = lookup.isPrimitive(context, attributeName);
-                    setIsDate(lookup, context);
-                }
-                else {
-                    isAttribute = lookup.hasAttribute(context, parts[0]);
-                    if(isAttribute) {
-                        attributeName = parts[0];
-                        isPrimitive = lookup.isPrimitive(context, attributeName);
-                        setIsDate(lookup, context);
-                    } else {
-                        typeName = parts[0];
-                        attributeName = parts[1];
-                        isPrimitive = lookup.isPrimitive(context, attributeName);
-                        setIsDate(lookup, context);
-                    }
-                }
+                boolean isAttrOfActiveType = lookup.hasAttribute(context, parts[0]);
+                if(isAttrOfActiveType) {
+                    attributeName = parts[0];
+                } else {
+                    typeName = context.hasAlias(parts[0]) ?
+                            context.getTypeNameFromAlias(parts[0]) :
+                            parts[0];
 
-                qualifiedName = lookup.getQualifiedName(context, attributeName);
+                    attributeName = parts[1];
+                }
+            }
+
+            isAttribute = lookup.hasAttribute(context, attributeName);
+            isPrimitive = lookup.isPrimitive(context, attributeName);
+            setQualifiedName(lookup, context, isAttribute, attributeName);
+            setIsDate(lookup, context, isPrimitive, attributeName);
+        }
+
+        private String getDefaultQualifiedNameForSinglePartName(GremlinQueryComposer.Context context, String s) {
+            String qn = context.getTypeNameFromAlias(s);
+            if(StringUtils.isEmpty(qn) && SelectClauseComposer.isKeyword(s)) {
+                return s;
+            }
+
+            return qn;
+        }
+
+        private void setQualifiedName(Lookup lookup, GremlinQueryComposer.Context context, boolean isAttribute, String attrName) {
+            if(isAttribute) {
+                qualifiedName = getQualifiedName(lookup, context, attrName);
             }
         }
 
-        private void setIsDate(Lookup lookup, GremlinQueryComposer.Context context) {
+        private String getQualifiedName(Lookup lookup, GremlinQueryComposer.Context context, String name) {
+            try {
+                return lookup.getQualifiedName(context, name);
+            } catch (AtlasBaseException e) {
+                context.getErrorList().add(String.format("Error for %s.%s: %s", context.getActiveTypeName(), name, e.getMessage()));
+                return "";
+            }
+        }
+
+        private void setIsDate(Lookup lookup, GremlinQueryComposer.Context context, boolean isPrimitive, String attrName) {
             if(isPrimitive) {
-                isDate = lookup.isDate(context, attributeName);
+                isDate = lookup.isDate(context, attrName);
             }
         }
 
@@ -248,5 +273,9 @@ public class IdentifierHelper {
         public boolean hasParts() {
             return parts.length > 1;
         }
-     }
+
+        public String getRaw() {
+            return raw;
+        }
+    }
 }
