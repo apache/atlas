@@ -94,6 +94,7 @@ public class HiveMetaStoreBridge {
     public static final String CREATE_TIME = "createTime";
     public static final String LAST_ACCESS_TIME = "lastAccessTime";
     public static final String HDFS_PATH = "hdfs_path";
+    public static final String SEP = ":".intern();
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
@@ -409,7 +410,7 @@ public class HiveMetaStoreBridge {
     public static String getTableProcessQualifiedName(String clusterName, Table table) {
         String tableQualifiedName = getTableQualifiedName(clusterName, table);
         Date createdTime = getTableCreatedTime(table);
-        return tableQualifiedName + HiveHook.SEP + createdTime.getTime();
+        return tableQualifiedName + SEP + createdTime.getTime();
     }
 
     /**

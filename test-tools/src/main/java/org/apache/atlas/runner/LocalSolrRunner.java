@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 public class LocalSolrRunner {
     protected static final String[] COLLECTIONS        = readCollections();
-    private   static final String   TARGET_DIRECTORY   = System.getProperty("user.dir") + File.separator + "target";
+    private   static final String   TARGET_DIRECTORY   = System.getProperty("embedded.solr.directory");
     private   static final String   COLLECTIONS_FILE   = "collections.txt";
     private   static final String   SOLR_XML           = "solr.xml";
     private   static final String   TEMPLATE_DIRECTORY = "core-template";

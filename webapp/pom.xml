@@ -602,7 +602,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.log.dir</name>
-                            <value>${project.build.directory}/logs</value>
+                            <value>${project.basedir}/target/logs</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
@@ -619,15 +619,19 @@
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.home</name>
-                            <value>${project.build.directory}</value>
+                            <value>${project.basedir}/target</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.data</name>
-                            <value>${project.build.directory}/data</value>
+                            <value>${project.basedir}/target/data</value>
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../intg/target/test-classes</value>
+                            <value>${project.basedir}/target/test-classes</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>embedded.solr.directory</key>
+                            <value>${project.basedir}/target</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
@@ -705,6 +709,25 @@
                     <target>1.8</target>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <delete dir="${project.build.directory}/data"/>
+                                <delete dir="${project.build.directory}/logs"/>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

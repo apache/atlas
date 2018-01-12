@@ -1839,6 +1839,7 @@
                         <user.dir>${project.basedir}</user.dir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
                     <forkCount>${surefire.forkCount}</forkCount>
@@ -1868,6 +1869,7 @@
                         <projectBaseDir>${projectBaseDir}</projectBaseDir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
@@ -2124,27 +2126,6 @@
                 <configuration>
                     <skipAssembly>true</skipAssembly>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/solr</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/test-tools/src/main/resources/solr</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

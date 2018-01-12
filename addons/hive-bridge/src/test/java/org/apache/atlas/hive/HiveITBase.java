@@ -127,6 +127,13 @@ public class HiveITBase {
         return "pfile://" + mkdir(path);
     }
 
+    protected String file(String tag) throws Exception {
+        String filename = System.getProperty("user.dir") + "/target/" + tag + "-data-" + random();
+        File file = new File(filename);
+        file.createNewFile();
+        return file.getAbsolutePath();
+    }
+
     protected String mkdir(String tag) throws Exception {
         String filename = "./target/" + tag + "-data-" + random();
         File file = new File(filename);
@@ -155,7 +162,7 @@ public class HiveITBase {
 
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
                                             final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
-        waitFor(2000, new HiveHookIT.Predicate() {
+        waitFor(80000, new HiveHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
                 Referenceable entity = atlasClient.getEntity(typeName, property, value);

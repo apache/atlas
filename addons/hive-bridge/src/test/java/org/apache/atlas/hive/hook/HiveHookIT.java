@@ -720,13 +720,6 @@ public class HiveHookIT extends HiveITBase {
         //TODO -Add update test case
     }
 
-    private String file(String tag) throws Exception {
-        String filename = "./target/" + tag + "-data-" + random();
-        File file = new File(filename);
-        file.createNewFile();
-        return file.getAbsolutePath();
-    }
-
     @Test
     public void testExportImportUnPartitionedTable() throws Exception {
         String tableName = createTable(false);
@@ -1812,7 +1805,7 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private void assertEntityIsNotRegistered(final String typeName, final String property, final String value) throws Exception {
-        waitFor(1000, new Predicate() {
+        waitFor(80000, new Predicate() {
             @Override
             public void evaluate() throws Exception {
                 try {
