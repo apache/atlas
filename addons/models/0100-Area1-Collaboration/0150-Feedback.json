@@ -274,7 +274,7 @@
         "isContainer": true
       },
       "endDef2": {
-        "name": "commentsOn",
+        "name": "repliesOn",
         "type": "Comment",
         "cardinality": "SINGLE"
       },
