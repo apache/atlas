@@ -297,6 +297,20 @@ td {
         }
         .rule-value-container {
             display: inline-block !important;
+            .form-control {
+                width: 220px !important;
+                padding: 6px 12px !important;
+            }
+        }
+        .rule-filter-container {
+            .form-control {
+                width: 200px !important;
+            }
+        }
+        .rule-operator-container {
+            .form-control {
+                width: auto !important;
+            }
         }
     }
     .rules-list>:first-child::before {
@@ -304,9 +318,6 @@ td {
     }
     .rules-group-header .btn-group.group-conditions label {
         display: none;
-    }
-    .rule-value-container input {
-        padding: 6px 12px !important;
     }
     .rules-group-container {
         border: none;
