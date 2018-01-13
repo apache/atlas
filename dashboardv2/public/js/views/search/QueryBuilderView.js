@@ -21,9 +21,10 @@ define(['require',
     'hbs!tmpl/search/QueryBuilder_tmpl',
     'utils/Utils',
     'utils/CommonViewFunction',
+    'utils/Enums',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction) {
+], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction, Enums) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
@@ -112,13 +113,18 @@ define(['require',
                         obj['values'] = ['true', 'false'];
                     }
                     _.extend(obj, this.getOperator(obj.type));
-                    if (obj.type === "long" || obj.type === "float") {
-                        obj.type = "double";
-                    }
-                    if (obj.type === "int" || obj.type === "byte" || obj.type === "short") {
-                        obj.type = "integer";
-                    }
-                    return obj;
+                    if (_.has(Enums.regex.RANGE_CHECK, obj.type)) {
+                        obj.validation = {
+                            min: Enums.regex.RANGE_CHECK[obj.type].min,
+                            max: Enums.regex.RANGE_CHECK[obj.type].max
+                        };
+                        if (obj.type === "double" || obj.type === "float") {
+                            obj.type = "double";
+                        } else if (obj.type === "int" || obj.type === "byte" || obj.type === "short" || obj.type === "long") {
+                            obj.type = "integer"
+                            }
+                        }
+                        return obj;
                 }
                 var enumObj = this.enumDefCollection.fullCollection.find({ name: obj.type });
                 if (enumObj) {

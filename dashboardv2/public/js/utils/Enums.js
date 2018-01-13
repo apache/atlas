@@ -72,6 +72,33 @@ define(['require'], function(require) {
         },
         "uiParameters": "uiParameters"
     }
-
+    Enums.regex = {
+        RANGE_CHECK: {
+        "byte": {
+            min: -128,
+            max: 127
+        },
+        "short": {
+            min: -32768,
+            max: 32767
+        },
+        "int": {
+            min: -2147483648,
+            max: 2147483647
+        },
+        "long": {
+            min: -9223372036854775808,
+            max: 9223372036854775807
+        },
+        "float": {
+            min: 1.4E-45,
+            max: 3.4028235E38
+        },
+        "double": {
+            min: 4.9E-324,
+            max: 1.7976931348623157E308
+        }
+      }
+    }
     return Enums;
 });
