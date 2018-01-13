@@ -673,7 +673,10 @@
                             <resources>
                                 <resource>
                                     <directory>${basedir}/../addons/models/</directory>
-                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>0000-Area0/0010-base_model.json</include>
+                                        <include>1000-Hadoop/**</include>
+                                    </includes>
                                 </resource>
                             </resources>
                         </configuration>

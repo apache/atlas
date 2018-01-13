@@ -338,11 +338,11 @@
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.log.dir</name>
-                            <value>${project.build.directory}/logs</value>
+                            <value>${project.basedir}/target/logs</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.data</name>
-                            <value>${project.build.directory}/data</value>
+                            <value>${project.basedir}/target/data</value>
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.conf</key>
@@ -350,6 +350,10 @@
                         </systemProperty>
                         <systemProperty>
                             <key>atlas.home</key>
+                            <value>${project.basedir}/target</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>embedded.solr.directory</key>
                             <value>${project.basedir}/target</value>
                         </systemProperty>
                     </systemProperties>
@@ -428,7 +432,31 @@
                             <resources>
                                 <resource>
                                     <directory>${basedir}/../models</directory>
-                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>0000-Area0/0010-base_model.json</include>
+                                        <include>1000-Hadoop/**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-solr-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/../../test-tools/src/main/resources/solr</directory>
                                 </resource>
                             </resources>
                         </configuration>

@@ -468,7 +468,10 @@
                             <resources>
                                 <resource>
                                     <directory>${basedir}/../models</directory>
-                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>0000-Area0/0010-base_model.json</include>
+                                        <include>1000-Hadoop/**</include>
+                                    </includes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -491,6 +494,28 @@
                                     <directory>${basedir}/../../test-tools/src/main/resources/solr</directory>
                                 </resource>
                             </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <delete dir="${project.build.directory}/data"/>
+                                <delete dir="${project.build.directory}/logs"/>
+
+                                <delete dir="${basedir}/../../webapp/target/data"/>
+                                <delete dir="${basedir}/../../webapp/target/logs"/>
+                            </tasks>
                         </configuration>
                     </execution>
                 </executions>
