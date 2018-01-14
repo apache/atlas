@@ -19,7 +19,7 @@
 package org.apache.atlas.web.integration;
 
 import com.sun.jersey.core.util.MultivaluedMapImpl;
-import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
@@ -110,7 +110,7 @@ public class EntityDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(searchResult.getEntities().size(), 1);
     }
 
-    @Test(expectedExceptions = AtlasBaseException.class)
+    @Test(expectedExceptions = AtlasServiceException.class)
     public void testSearchByDSLForUnknownType() throws Exception {
         String dslQuery = "from blah";
         AtlasSearchResult searchResult = atlasClientV2.dslSearch(dslQuery);

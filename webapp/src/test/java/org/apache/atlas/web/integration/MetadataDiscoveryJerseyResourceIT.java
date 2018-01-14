@@ -25,7 +25,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -134,7 +133,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test(expectedExceptions = AtlasBaseException.class)
+    @Test(expectedExceptions = AtlasServiceException.class)
     public void testSearchByDSLForUnknownType() throws Exception {
         String dslQuery = "from blah";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
