@@ -25,6 +25,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -133,13 +134,12 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasBaseException.class)
     public void testSearchByDSLForUnknownType() throws Exception {
         String dslQuery = "from blah";
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("query", dslQuery);
         atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.SEARCH_DSL, queryParams);
-        //TODO: Should throw an exception, current v2 DSL doesn't handle search on unknown type
     }
 
     @Test (enabled = false)

@@ -107,4 +107,4 @@ querySrc: commaDelimitedQueries | spaceDelimitedQueries ;
 query: querySrc groupByExpression?
                 selectClause?
                 orderByExpr?
-                limitOffset? ;
+                limitOffset? EOF;

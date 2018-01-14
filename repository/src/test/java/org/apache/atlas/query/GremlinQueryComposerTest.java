@@ -173,14 +173,14 @@ public class GremlinQueryComposerTest {
     public void whereClauseWithAsTextContains() {
         String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
         String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.name', eq(\"testtable_1\")).limit(25).toList()";
-        verify("Table as t where t.name = \"testtable_1\" select t.name, t.owner)", getExpected(exSel, exMain));
+        verify("Table as t where t.name = \"testtable_1\" select t.name, t.owner", getExpected(exSel, exMain));
     }
 
     @Test
     public void whereClauseWithDateCompare() {
         String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
         String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('1513046158440')).limit(25).toList()";
-        verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner)", getExpected(exSel, exMain));
+        verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner", getExpected(exSel, exMain));
     }
 
     @Test
