@@ -26,8 +26,10 @@
         },
         {
             "name": "Asset",
-            "superTypes": [],
-            "typeVersion": "1.0",
+            "superTypes": [
+                "Referenceable"
+            ],
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "name",
@@ -58,29 +60,26 @@
         {
             "name": "DataSet",
             "superTypes": [
-                "Referenceable",
                 "Asset"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": []
         },
         {
             "name": "Infrastructure",
             "description":"Infrastructure can be IT infrastructure, which contains hosts and servers. Infrastructure might not be IT orientated, such as 'Car' for IoT applications.",
             "superTypes": [
-                "Referenceable",
                 "Asset"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": []
         },
         {
             "name": "Process",
             "superTypes": [
-                "Referenceable",
                 "Asset"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "inputs",

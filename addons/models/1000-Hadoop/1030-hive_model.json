@@ -408,10 +408,9 @@
         {
             "name": "hive_db",
             "superTypes": [
-                "Referenceable",
                 "Asset"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "clusterName",
