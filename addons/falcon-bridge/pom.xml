@@ -241,37 +241,41 @@
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
-                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
+                        <force>true</force>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>file://${project.basedir}/../../distro/src/conf/atlas-log4j.xml</value>
+                            <name>atlas.home</name>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>atlas.log.file</name>
-                            <value>application.log</value>
-                        </systemProperty>
-                        <systemProperty>
-                            <name>atlas.log.dir</name>
-                            <value>${project.build.directory}/logs</value>
+                            <key>atlas.conf</key>
+                            <value>${project.build.directory}/test-classes</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../../intg/target/test-classes</value>
+                            <name>atlas.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.home</key>
-                            <value>${project.basedir}/target</value>
+                            <name>atlas.log.file</name>
+                            <value>application.log</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.graphdb.backend</name>
+                            <value>${graphdb.backend.impl}</value>
                         </systemProperty>
                         <systemProperty>
                             <key>embedded.solr.directory</key>
-                            <value>${project.basedir}/target</value>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
