@@ -832,6 +832,7 @@ if [[ $JENKINS == "true" ]] ; then
     exit 100
   fi
 fi
+
 downloadPatch
 verifyPatch
 (( RESULT = RESULT + $? ))
@@ -839,20 +840,14 @@ if [[ $RESULT != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-#prebuildWithoutPatch
-(( RESULT = RESULT + $? ))
-if [[ $RESULT != 0 ]] ; then
-  submitJiraComment 1
-  cleanupAndExit 1
-fi
+
 checkAuthor
 (( RESULT = RESULT + $? ))
 
 if [[ $JENKINS == "true" ]] ; then
   cleanUpXml
 fi
-#checkTests
-(( RESULT = RESULT + $? ))
+
 applyPatch
 APPLY_PATCH_RET=$?
 (( RESULT = RESULT + $APPLY_PATCH_RET ))
@@ -860,28 +855,9 @@ if [[ $APPLY_PATCH_RET != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-#checkJavacWarnings
-JAVAC_RET=$?
-#2 is returned if the code could not compile
-if [[ $JAVAC_RET == 2 ]] ; then
-  submitJiraComment 1
-  cleanupAndExit 1
-fi
-(( RESULT = RESULT + $JAVAC_RET ))
-#checkJavadocWarnings
-(( RESULT = RESULT + $? ))
-#checkStyle
-(( RESULT = RESULT + $? ))
-#checkFindbugsWarnings
-(( RESULT = RESULT + $? ))
-#checkReleaseAuditWarnings
-(( RESULT = RESULT + $? ))
+
 buildAndInstall
-### Run tests for Jenkins or if explictly asked for by a developer
-if [[ $JENKINS == "true" || $RUN_TESTS == "true" ]] ; then
-  #runTests
-  (( RESULT = RESULT + $? ))
-fi
+
 JIRA_COMMENT_FOOTER="Test results: $BUILD_URL/testReport/
 $JIRA_COMMENT_FOOTER"
 
