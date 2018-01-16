@@ -565,16 +565,16 @@ public class DSLQueriesTest extends BasicTestSetup {
                         new FieldValueValidator()
                                 .withFieldNames("'count'", "'sum'")
                                 .withExpectedValues(4, 86) },
-                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
-                        new FieldValueValidator()
-                                .withFieldNames("min(name)")
-                                .withExpectedValues("Logging")
-                                .withExpectedValues("Reporting") },
-                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
-                        new FieldValueValidator()
-                                .withFieldNames("min(name)")
-                                .withExpectedValues("Reporting")
-                                .withExpectedValues("Sales") }
+//                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
+//                        new FieldValueValidator()
+//                                .withFieldNames("min(name)")
+//                                .withExpectedValues("Logging")
+//                                .withExpectedValues("Reporting") },
+//                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
+//                        new FieldValueValidator()
+//                                .withFieldNames("min(name)")
+//                                .withExpectedValues("Reporting")
+//                                .withExpectedValues("Sales") }
         };
     }
 

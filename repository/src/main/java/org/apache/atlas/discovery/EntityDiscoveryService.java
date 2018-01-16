@@ -734,9 +734,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                        Object vals = map.get(key);
                        if(vals instanceof List) {
                            List l = (List) vals;
-                           for(Object o : l) {
-                               list.add(o);
-                           }
+                           list.addAll(l);
                        }
 
                     }

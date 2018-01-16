@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.fail;
 
 public class GremlinQueryComposerTest {
     @Test
@@ -102,7 +102,7 @@ public class GremlinQueryComposerTest {
     public void groupByMin() {
         verify("from DB groupby (owner) select min(name) orderby name limit 2",
                 "def f(l){ t=[['min(name)']]; l.get(0).each({k,r -> L:{ def min=r.min({it.value('DB.name')}).value('DB.name'); t.add([min]); } }); t; }; " +
-                        "f(g.V().has('__typeName', 'DB').group().by('DB.owner').limit(local, 2).limit(2).toList())");
+                        "f(g.V().has('__typeName', 'DB').group().by('DB.owner').toList())");
     }
 
     @Test
@@ -192,13 +192,13 @@ public class GremlinQueryComposerTest {
     @Test
     public void countMinMax() {
         verify("from DB groupby (owner) select count()",
-                "def f(l){ t=[['count()']]; l.get(0).each({k,r -> L:{ def count=r.size(); t.add([count]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').limit(local, 25).limit(25).toList())");
+                "def f(l){ t=[['count()']]; l.get(0).each({k,r -> L:{ def count=r.size(); t.add([count]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').toList())");
         verify("from DB groupby (owner) select max(name)",
-                "def f(l){ t=[['max(name)']]; l.get(0).each({k,r -> L:{ def max=r.max({it.value('DB.name')}).value('DB.name'); t.add([max]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').limit(local, 25).limit(25).toList())");
+                "def f(l){ t=[['max(name)']]; l.get(0).each({k,r -> L:{ def max=r.max({it.value('DB.name')}).value('DB.name'); t.add([max]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').toList())");
         verify("from DB groupby (owner) select min(name)",
-                "def f(l){ t=[['min(name)']]; l.get(0).each({k,r -> L:{ def min=r.min({it.value('DB.name')}).value('DB.name'); t.add([min]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').limit(local, 25).limit(25).toList())");
+                "def f(l){ t=[['min(name)']]; l.get(0).each({k,r -> L:{ def min=r.min({it.value('DB.name')}).value('DB.name'); t.add([min]); } }); t; }; f(g.V().has('__typeName', 'DB').group().by('DB.owner').toList())");
         verify("from Table select sum(createTime)",
-                "def f(r){ t=[['sum(createTime)']]; def sum=r.sum({it.value('Table.createTime')}); t.add([sum]); t;}; f(g.V().has('__typeName', 'Table').limit(local, 25).limit(25).toList())");
+                "def f(r){ t=[['sum(createTime)']]; def sum=r.sum({it.value('Table.createTime')}); t.add([sum]); t;}; f(g.V().has('__typeName', 'Table').toList())");
     }
 
     @Test
@@ -352,12 +352,11 @@ public class GremlinQueryComposerTest {
     }
 
     private AtlasDSLParser.QueryContext getParsedQuery(String query) {
-        AtlasDSL.Parser parser = new AtlasDSL.Parser();
         AtlasDSLParser.QueryContext queryContext = null;
         try {
-            queryContext = parser.parse(query);
+            queryContext = AtlasDSL.Parser.parse(query);
         } catch (AtlasBaseException e) {
-            assertFalse(e != null, e.getMessage());
+            fail(e.getMessage());
         }
         return queryContext;
     }
@@ -381,7 +380,7 @@ public class GremlinQueryComposerTest {
     private static class TestLookup implements org.apache.atlas.query.Lookup {
         AtlasTypeRegistry registry;
 
-        public TestLookup(AtlasTypeRegistry typeRegistry) {
+        TestLookup(AtlasTypeRegistry typeRegistry) {
             this.registry = typeRegistry;
         }
 

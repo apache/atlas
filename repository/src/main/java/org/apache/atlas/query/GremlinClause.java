@@ -61,10 +61,12 @@ enum GremlinClause {
     INLINE_MIN("r.min({it.value('%s')}).value('%s')"),
     INLINE_GET_PROPERTY("it.value('%s')"),
     INLINE_TRANSFORM_CALL("f(%s)"),
-    INLINE_DEFAULT_SORT(".sort{a,b -> a[0] <=> b[0]}"),
+    INLINE_DEFAULT_SORT(".sort()"),
+    INLINE_SORT_DESC(".sort{a,b -> b <=> a}"),
+    INLINE_DEFAULT_TUPLE_SORT(".sort{a,b -> a[0] <=> b[0]}"),
     // idx of the tuple field to be sorted on
-    INLINE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
-    INLINE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
+    INLINE_TUPLE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
+    INLINE_TUPLE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
     V("V()"),
     VALUE_MAP("valueMap(%s)");
 

@@ -108,7 +108,11 @@ class SelectClauseComposer {
     }
 
     public boolean onlyAggregators() {
-        return aggCount > 0 && aggCount == items.length;
+        return hasAggregators() && aggCount == items.length;
+    }
+
+    public boolean hasAggregators() {
+        return aggCount > 0;
     }
 
     public String getLabelHeader() {
