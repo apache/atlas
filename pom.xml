@@ -658,7 +658,7 @@
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>solr</graph.index.backend>
                 <tests.solr.embedded>true</tests.solr.embedded>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/solr-test-framework-*.jar</distro.exclude.packages>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -678,7 +678,7 @@
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
                 <graph.index.backend>solr</graph.index.backend>
                 <tests.solr.embedded>true</tests.solr.embedded>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar</distro.exclude.packages>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/elasticsearch-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
