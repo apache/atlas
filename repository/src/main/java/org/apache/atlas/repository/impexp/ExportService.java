@@ -457,10 +457,14 @@ public class ExportService {
     }
 
     private void removeRelationshipAttributes(AtlasEntityWithExtInfo entity) {
-        entity.getEntity().getRelationshipAttributes().clear();
-        if(entity.getReferredEntities() != null) {
-            for (AtlasEntity e: entity.getReferredEntities().values()) {
-                e.getRelationshipAttributes().clear();
+        if (entity.getEntity().getRelationshipAttributes() != null) {
+            entity.getEntity().getRelationshipAttributes().clear();
+        }
+        if (entity.getReferredEntities() != null) {
+            for (AtlasEntity e : entity.getReferredEntities().values()) {
+                if (e.getRelationshipAttributes() != null) {
+                    e.getRelationshipAttributes().clear();
+                }
             }
         }
     }
