@@ -183,6 +183,9 @@ public class LineageResource {
         } catch (WebApplicationException e) {
             LOG.error("Unable to get schema for entity guid={}", guid, e);
             throw e;
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get schema for entity={}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, e.getAtlasErrorCode().getHttpCode()));
         } catch (Throwable e) {
             LOG.error("Unable to get schema for entity={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
