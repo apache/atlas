@@ -36,11 +36,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class LocalSolrRunner {
-    protected static final String[] COLLECTIONS        = readCollections();
+
     private   static final String   TARGET_DIRECTORY   = System.getProperty("embedded.solr.directory");
     private   static final String   COLLECTIONS_FILE   = "collections.txt";
     private   static final String   SOLR_XML           = "solr.xml";
     private   static final String   TEMPLATE_DIRECTORY = "core-template";
+    protected static final String[] COLLECTIONS        = readCollections();
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalSolrRunner.class);
 
@@ -105,26 +106,32 @@ public class LocalSolrRunner {
     }
 
     private static String[] readCollections() {
-        try (InputStream inputStream = LocalSolrRunner.class.getResourceAsStream("/solr" + File.separator + COLLECTIONS_FILE);
-             BufferedReader buffer = new BufferedReader(new InputStreamReader(inputStream))) {
+        // For the classloader you need the following path: "/solr/collections.txt";
+        // Use explicit '/' separators (not File.separator) because even on Windows you want '/'
+        String resName = "/solr/" + COLLECTIONS_FILE;
+        try {
+            InputStream inputStream = LocalSolrRunner.class.getResourceAsStream(resName);
+            InputStreamReader isr = new InputStreamReader(inputStream);
+            BufferedReader buffer = new BufferedReader(isr);
             return Pattern.compile("\\s+").split(buffer.lines().collect(Collectors.joining("\n")));
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Unable to read collections file", e);
         }
     }
 
     private static String readSolrXml() throws IOException {
-        InputStream inputStream = getClassLoader().getResourceAsStream("solr" + File.separator + SOLR_XML);
+        // For the classloader you need the following path: "/solr/solr.xml";
+        // Use explicit '/' separators (not File.separator) because even on Windows you want '/'
+        String resName = "/solr/" + SOLR_XML;
+        // Use the local classloader rather than the system classloader - i.e. avoid using
+        // Thread.currentThread().getContextClassLoader().getResourceAsStream(resName);
+        InputStream inputStream = LocalSolrRunner.class.getResourceAsStream(resName);
 
         if (inputStream == null) {
             throw new RuntimeException("Unable to read solr xml");
         }
 
         return IOUtils.toString(inputStream, Charset.forName("UTF-8"));
-    }
-
-    private static ClassLoader getClassLoader() {
-        return Thread.currentThread().getContextClassLoader();
     }
 
     private static String getRandomString() {
