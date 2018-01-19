@@ -106,7 +106,7 @@ public class AdminResource {
     private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
     private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
     private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
-    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
+    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic,hbase_namespace";
     private Response version;
 
     private final ServiceState      serviceState;
