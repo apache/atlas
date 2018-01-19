@@ -135,7 +135,6 @@ public class ImportServiceTest {
         return getZipSource("salesNewTypeAttrs-next.zip");
     }
 
-
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
     public void importDB5(ZipSource zipSource) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
@@ -186,7 +185,6 @@ public class ImportServiceTest {
         return getZipSource("hdfs_path1.zip");
     }
 
-
     @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
     public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
         loadBaseModel();
@@ -202,6 +200,19 @@ public class ImportServiceTest {
             assertEquals(tag1.getAllAttributes().size(), 2);
             throw e;
         }
+    }
+
+    @DataProvider(name = "relationship")
+    public static Object[][] getImportWithRelationships(ITestContext context) throws IOException {
+        return getZipSource("stocks-rel-2.zip");
+    }
+
+    @Test(dataProvider = "relationship")
+    public void importDB7(ZipSource zipSource) throws AtlasBaseException, IOException {
+        loadBaseModel();
+        loadHiveModel();
+        AtlasImportRequest request = getDefaultImportRequest();
+        runImportWithParameters(importService, request, zipSource);
     }
 
     @Test

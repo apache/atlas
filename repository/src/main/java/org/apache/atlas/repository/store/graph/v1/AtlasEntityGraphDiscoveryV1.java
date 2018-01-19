@@ -305,16 +305,8 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         List<String> visitedAttributes = new ArrayList<>();
 
         // visit relationship attributes
-        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-            AtlasType attrType = attribute.getAttributeType();
-            String    attrName = attribute.getName();
-            Object    attrVal  = entity.getRelationshipAttribute(attrName);
-
-            if (entity.hasRelationshipAttribute(attrName)) {
-                visitAttribute(attrType, attrVal);
-
-                visitedAttributes.add(attrName);
-            }
+        if(!(this.discoveryContext.getEntityStream() instanceof EntityImportStream)) {
+            visitRelationships(entityType, entity, visitedAttributes);
         }
 
         // visit struct attributes
@@ -325,6 +317,20 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
 
             if (entity.hasAttribute(attrName) && !visitedAttributes.contains(attrName)) {
                 visitAttribute(attrType, attrVal);
+            }
+        }
+    }
+
+    private void visitRelationships(AtlasEntityType entityType, AtlasEntity entity, List<String> visitedAttributes) throws AtlasBaseException {
+        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+            AtlasType attrType = attribute.getAttributeType();
+            String attrName = attribute.getName();
+            Object attrVal = entity.getRelationshipAttribute(attrName);
+
+            if (entity.hasRelationshipAttribute(attrName)) {
+                visitAttribute(attrType, attrVal);
+
+                visitedAttributes.add(attrName);
             }
         }
     }

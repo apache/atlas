@@ -442,7 +442,6 @@ public class ExportService {
             return;
         }
 
-        removeRelationshipAttributes(entity);
         context.sink.add(entity);
 
         context.result.incrementMeticsCounter(String.format("entity:%s", entity.getEntity().getTypeName()));
@@ -454,19 +453,6 @@ public class ExportService {
 
         context.result.incrementMeticsCounter("entity:withExtInfo");
         context.reportProgress();
-    }
-
-    private void removeRelationshipAttributes(AtlasEntityWithExtInfo entity) {
-        if (entity.getEntity().getRelationshipAttributes() != null) {
-            entity.getEntity().getRelationshipAttributes().clear();
-        }
-        if (entity.getReferredEntities() != null) {
-            for (AtlasEntity e : entity.getReferredEntities().values()) {
-                if (e.getRelationshipAttributes() != null) {
-                    e.getRelationshipAttributes().clear();
-                }
-            }
-        }
     }
 
     private void addTypes(AtlasEntity entity, ExportContext context) {

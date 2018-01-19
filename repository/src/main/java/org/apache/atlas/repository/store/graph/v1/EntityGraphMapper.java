@@ -377,7 +377,7 @@ public class EntityGraphMapper {
                 AtlasEdge currentEdge;
 
                 // if relationshipGuid is assigned in AtlasRelatedObjectId use it to fetch existing AtlasEdge
-                if (StringUtils.isNotEmpty(relationshipGuid)) {
+                if (StringUtils.isNotEmpty(relationshipGuid) && !context.isImport()) {
                     currentEdge = graphHelper.getEdgeForGUID(relationshipGuid);
                 } else {
                     currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel, edgeDirection);
@@ -698,6 +698,11 @@ public class EntityGraphMapper {
                     boolean relationshipExists = isRelationshipExists(fromVertex, toVertex, edgeLabel);
 
                     ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, relationshipAttributes);
+
+                    // for import use the relationship guid provided
+                    if (context.isImport()) {
+                        AtlasGraphUtilsV1.setProperty(ret, Constants.GUID_PROPERTY_KEY, getRelationshipGuid(ctx.getValue()));
+                    }
 
                     // if relationship did not exist before and new relationship was created
                     // record entity update on both relationship vertices
