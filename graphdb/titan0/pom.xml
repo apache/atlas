@@ -24,7 +24,7 @@
     <parent>
         <artifactId>atlas-graphdb</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0-alpha</version>
     </parent>
     <artifactId>atlas-graphdb-titan0</artifactId>
     <description>Apache Atlas Titan 0.5.4 Graph DB Impl</description>
