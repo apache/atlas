@@ -15,6 +15,7 @@
 # limitations under the License.
 
 Apache Atlas Overview
+=====================
 
 Apache Atlas framework is an extensible set of core
 foundational governance services – enabling enterprises to effectively and
@@ -30,6 +31,16 @@ each other -- the metadata store is common.
 The metadata veracity is maintained by leveraging Apache Ranger to prevent
 non-authorized access paths to data at runtime.
 Security is both role based (RBAC) and attribute based (ABAC).
+
+
+Apache Atlas 1.0.0-alpha release
+================================
+
+Please note that this is an alpha/technical-preview release and is not
+recommended for production use. There is no support for migration of data
+from earlier version of Apache Atlas. Also, the data generated using this
+alpha release may not migrate to Apache Atlas 1.0 GA release.
+
 
 Build Process
 =============
@@ -51,14 +62,6 @@ Build Process
 
    $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
-
-   # currently few tests might fail in some environments
-   # (timing issue?), the community is reviewing and updating
-   # such tests.
-   #
-   # if you see test failures, please run the following command:
-      $ mvn clean -DskipTests install
-
    $ mvn clean package -Pdist
 
 3. After above build commands successfully complete, you should see the following files
@@ -68,3 +71,5 @@ Build Process
    addons/hive-bridge/target/hive-bridge-<version>.jar
    addons/sqoop-bridge/target/sqoop-bridge-<version>.jar
    addons/storm-bridge/target/storm-bridge-<version>.jar
+
+4. For more details on building and running Apache Atlas, please refer to http://atlas.apache.org/InstallationSteps.html

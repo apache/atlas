@@ -8,8 +8,7 @@
 The components of Atlas can be grouped under the following major categories:
 
 ---+++ Core
-
-This category contains the components that implement the core of Atlas functionality, including:
+Atlas core includes the following components:
 
 *Type System*: Atlas allows users to define a model for the metadata objects they want to manage. The model is composed
 of definitions called ‘types’. Instances of ‘types’ called ‘entities’ represent the actual metadata objects that are
@@ -21,25 +20,18 @@ One key point to note is that the generic nature of the modelling in Atlas allow
 define both technical metadata and business metadata. It is also possible to define rich relationships between the
 two using features of Atlas.
 
+*Graph Engine*: Internally, Atlas persists metadata objects it manages using a Graph model. This approach provides great
+flexibility and enables efficient handling of rich relationships between the metadata objects. Graph engine component is
+responsible for translating between types and entities of the Atlas type system, and the underlying graph persistence model.
+In addition to managing the graph objects, the graph engine also creates the appropriate indices for the metadata
+objects so that they can be searched efficiently. Atlas uses the JanusGraph to store the metadata objects.
+
 *Ingest / Export*: The Ingest component allows metadata to be added to Atlas. Similarly, the Export component exposes
 metadata changes detected by Atlas to be raised as events. Consumers can consume these change events to react to
 metadata changes in real time.
 
-*Graph Engine*: Internally, Atlas represents metadata objects it manages using a Graph model. It does this to
-achieve great flexibility and rich relations between the metadata objects. The Graph Engine is a component that is
-responsible for translating between types and entities of the Type System, and the underlying Graph model.
-In addition to managing the Graph objects, The Graph Engine also creates the appropriate indices for the metadata
-objects so that they can be searched for efficiently.
-
-*Titan*: Currently, Atlas uses the Titan Graph Database to store the metadata objects. Titan is used as a library
-within Atlas. Titan uses two stores: The Metadata store is configured to !HBase by default and the Index store
-is configured to Solr. It is also possible to use the Metadata store as BerkeleyDB and Index store as !ElasticSearch
-by building with corresponding profiles. The Metadata store is used for storing the metadata objects proper, and the
-Index store is used for storing indices of the Metadata properties, that allows efficient search.
-
 
 ---+++ Integration
-
 Users can manage metadata in Atlas using two methods:
 
 *API*: All functionality of Atlas is exposed to end users via a REST API that allows types and entities to be created,
@@ -53,7 +45,6 @@ uses Apache Kafka as a notification server for communication between hooks and d
 notification events. Events are written by the hooks and Atlas to different Kafka topics.
 
 ---+++ Metadata sources
-
 Atlas supports integration with many sources of metadata out of the box. More integrations will be added in future
 as well. Currently, Atlas supports ingesting and managing metadata from the following sources:
 
@@ -61,6 +52,7 @@ as well. Currently, Atlas supports ingesting and managing metadata from the foll
    * [[Bridge-Sqoop][Sqoop]]
    * [[Bridge-Falcon][Falcon]]
    * [[StormAtlasHook][Storm]]
+   * HBase - _documentation work-in-progress_
 
 The integration implies two things:
 There are metadata models that Atlas defines natively to represent objects of these components.
@@ -79,12 +71,6 @@ building its functionality.
 for the Hadoop ecosystem having wide integration with a variety of Hadoop components. By integrating with Atlas,
 Ranger allows security administrators to define metadata driven security policies for effective governance.
 Ranger is a consumer to the metadata change events notified by Atlas.
-
-*Business Taxonomy*: The metadata objects ingested into Atlas from the Metadata sources are primarily a form
-of technical metadata. To enhance the discoverability and governance capabilities, Atlas comes with a Business
-Taxonomy interface that allows users to first, define a hierarchical set of business terms that represent their
-business domain and associate them to the metadata entities Atlas manages. Business Taxonomy is a web application that
-is part of the Atlas Admin UI currently and integrates with Atlas using the REST API.
 
 
 

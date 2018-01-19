@@ -157,9 +157,9 @@ At a high level the following points can be called out:
 
 ---++ Metadata Store
 
-As described above, Atlas uses Titan to store the metadata it manages. By default, Atlas uses a standalone HBase
-instance as the backing store for Titan. In order to provide HA for the metadata store, we recommend that Atlas be
-configured to use distributed HBase as the backing store for Titan.  Doing this implies that you could benefit from the
+As described above, Atlas uses JanusGraph to store the metadata it manages. By default, Atlas uses a standalone HBase
+instance as the backing store for JanusGraph. In order to provide HA for the metadata store, we recommend that Atlas be
+configured to use distributed HBase as the backing store for JanusGraph.  Doing this implies that you could benefit from the
 HA guarantees HBase provides. In order to configure Atlas to use HBase in HA mode, do the following:
 
    * Choose an existing HBase cluster that is set up in HA mode to configure in Atlas (OR) Set up a new HBase cluster in [[http://hbase.apache.org/book.html#quickstart_fully_distributed][HA mode]].
@@ -169,8 +169,8 @@ HA guarantees HBase provides. In order to configure Atlas to use HBase in HA mod
 
 ---++ Index Store
 
-As described above, Atlas indexes metadata through Titan to support full text search queries. In order to provide HA
-for the index store, we recommend that Atlas be configured to use Solr as the backing index store for Titan. In order
+As described above, Atlas indexes metadata through JanusGraph to support full text search queries. In order to provide HA
+for the index store, we recommend that Atlas be configured to use Solr as the backing index store for JanusGraph. In order
 to configure Atlas to use Solr in HA mode, do the following:
 
    * Choose an existing !SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [[https://cwiki.apache.org/confluence/display/solr/SolrCloud][SolrCloud cluster]].
@@ -208,4 +208,4 @@ to configure Atlas to use Kafka in HA mode, do the following:
 
 ---++ Known Issues
 
-   * If the HBase region servers hosting the Atlas ‘titan’ HTable are down, Atlas would not be able to store or retrieve metadata from HBase until they are brought back online.
+   * If the HBase region servers hosting the Atlas table are down, Atlas would not be able to store or retrieve metadata from HBase until they are brought back online.

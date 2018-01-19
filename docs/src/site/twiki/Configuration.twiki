@@ -5,139 +5,42 @@ All configuration in Atlas uses java properties style configuration. The main co
 
 ---++ Graph Configs
 
----+++ Graph persistence engine
-
-This section sets up the graph db - titan - to use a persistence engine. Please refer to
-<a href="http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html">link</a> for more
-details. The example below uses BerkeleyDBJE.
-
-<verbatim>
-atlas.graph.storage.backend=berkeleyje
-atlas.graph.storage.directory=data/berkeley
-</verbatim>
-
----++++ Graph persistence engine - Hbase
-
-Basic configuration
+---+++ Graph Persistence engine - HBase
+Set the following properties to configure JanusGraph to use HBase as the persistence engine. Please refer to
+<a href="http://docs.janusgraph.org/0.2.0/configuration.html#_hbase_caching">link</a> for more details.
 
 <verbatim>
 atlas.graph.storage.backend=hbase
-#For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
 atlas.graph.storage.hostname=<ZooKeeper Quorum>
+atlas.graph.storage.hbase.table=atlas
 </verbatim>
 
-HBASE_CONF_DIR environment variable needs to be set to point to the Hbase client configuration directory which is added to classpath when Atlas starts up.
-hbase-site.xml needs to have the following properties set according to the cluster setup
-<verbatim>
-#Set below to /hbase-secure if the Hbase server is setup in secure mode
-zookeeper.znode.parent=/hbase-unsecure
-</verbatim>
+If any further JanusGraph configuration needs to be setup, please prefix the property name with "atlas.graph.".
 
-Advanced configuration
+In addition to setting up configurations, please ensure that environment variable HBASE_CONF_DIR is setup to point to
+the directory containing HBase configuration file hbase-site.xml.
 
-# If you are planning to use any of the configs mentioned below, they need to be prefixed with "atlas.graph." to take effect in ATLAS
-Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html#_storage_hbase
-
-Permissions
-
-When Atlas is configured with HBase as the storage backend the graph db (titan) needs sufficient user permissions to be able to create and access an HBase table.  In a secure cluster it may be necessary to grant permissions to the 'atlas' user for the 'titan' table.
-
-With Ranger, a policy can be configured for 'titan'.
-
-Without Ranger, HBase shell can be used to set the permissions.
+---+++ Graph Search Index - Solr
+Solr installation in Cloud mode is a prerequisite for Apache Atlas use. Set the following properties to configure JanusGraph to use Solr as the index search engine.
 
 <verbatim>
-   su hbase
-   kinit -k -t <hbase keytab> <hbase principal>
-   echo "grant 'atlas', 'RWXCA', 'titan'" | hbase shell
-</verbatim>
+atlas.graph.index.search.backend=solr5
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.wait-searcher=true
 
-Note that if the embedded-hbase-solr profile is used then HBase is included in the distribution so that a standalone
-instance of HBase can be started as the default storage backend for the graph repository.  Using the embedded-hbase-solr
-profile will configure Atlas so that HBase instance will be started and stopped along with the Atlas server by default.
-To use the embedded-hbase-solr profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
-section.
+# ZK quorum setup for solr as comma separated value. Example: 10.1.6.4:2181,10.1.6.5:2181
+atlas.graph.index.search.solr.zookeeper-url=
 
----+++ Graph Search Index
-This section sets up the graph db - titan - to use an search indexing system. The example
-configuration below sets up to use an embedded Elastic search indexing system.
+# SolrCloud Zookeeper Connection Timeout. Default value is 60000 ms
+atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 
-<verbatim>
-atlas.graph.index.search.backend=elasticsearch
-atlas.graph.index.search.directory=data/es
-atlas.graph.index.search.elasticsearch.client-only=false
-atlas.graph.index.search.elasticsearch.local-mode=true
-atlas.graph.index.search.elasticsearch.create.sleep=2000
-</verbatim>
-
----++++ Graph Search Index - Solr
-Please note that Solr installation in Cloud mode is a prerequisite before configuring Solr as the search indexing backend. Refer InstallationSteps section for Solr installation/configuration.
-
-<verbatim>
- atlas.graph.index.search.backend=solr5
- atlas.graph.index.search.solr.mode=cloud
- atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
- atlas.graph.index.search.solr.zookeeper-connect-timeout=<SolrCloud Zookeeper Connection Timeout>. Default value is 60000 ms
- atlas.graph.index.search.solr.zookeeper-session-timeout=<SolrCloud Zookeeper Session Timeout>. Default value is 60000 ms
-</verbatim>
-
-Also note that if the embedded-hbase-solr profile is used then Solr is included in the distribution so that a standalone
-instance of Solr can be started as the default search indexing backend. Using the embedded-hbase-solr profile will
-configure Atlas so that the standalone Solr instance will be started and stopped along with the Atlas server by default.
-To use the embedded-hbase-solr profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
-section.
-
----+++ Choosing between Persistence and Indexing Backends
-
-Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/bdb.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/hbase.html for choosing between the persistence backends.
-BerkeleyDB is suitable for smaller data sets in the range of upto 10 million vertices with ACID gurantees.
-HBase on the other hand doesnt provide ACID guarantees but is able to scale for larger graphs. HBase also provides HA inherently.
-
----+++ Choosing between Persistence Backends
-
-Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/bdb.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/hbase.html for choosing between the persistence backends.
-BerkeleyDB is suitable for smaller data sets in the range of upto 10 million vertices with ACID gurantees.
-HBase on the other hand doesnt provide ACID guarantees but is able to scale for larger graphs. HBase also provides HA inherently.
-
----+++ Choosing between Indexing Backends
-
-Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/elasticsearch.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.html for choosing between !ElasticSearch and Solr.
-Solr in cloud mode is the recommended setup.
-
----+++ Switching Persistence Backend
-
-For switching the storage backend from BerkeleyDB to HBase and vice versa, refer the documentation for "Graph Persistence Engine" described above and restart ATLAS.
-The data in the indexing backend needs to be cleared else there will be discrepancies between the storage and indexing backend which could result in errors during the search.
-!ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
-For Solr, the collections which were created during ATLAS Installation - vertex_index, edge_index, fulltext_index could be deleted which will cleanup the indexes
-
----+++ Switching Index Backend
-
-Switching the Index backend requires clearing the persistence backend data. Otherwise there will be discrepancies between the persistence and index backends since switching the indexing backend means index data will be lost.
-This leads to "Fulltext" queries not working on the existing data
-For clearing the data for BerkeleyDB, delete the ATLAS_HOME/data/berkeley directory
-For clearing the data for HBase, in Hbase shell, run 'disable titan' and 'drop titan'
-
-
----++ Lineage Configs
-
-The higher layer services like lineage, schema, etc. are driven by the type system and this section encodes the specific types for the hive data model.
-
-# This models reflects the base super types for Data and Process
-<verbatim>
-atlas.lineage.hive.table.type.name=DataSet
-atlas.lineage.hive.process.type.name=Process
-atlas.lineage.hive.process.inputs.name=inputs
-atlas.lineage.hive.process.outputs.name=outputs
-
-## Schema
-atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
+# SolrCloud Zookeeper Session Timeout. Default value is 60000 ms
+atlas.graph.index.search.solr.zookeeper-session-timeout=60000
 </verbatim>
 
 
 ---++ Search Configs
-Search APIs (DSL and full text search) support pagination and have optional limit and offset arguments. Following configs are related to search pagination
+Search APIs (DSL, basic search, full-text search) support pagination and have optional limit and offset arguments. Following configs are related to search pagination
 
 <verbatim>
 # Default limit used when limit is not specified in API
@@ -152,53 +55,36 @@ atlas.search.maxlimit=10000
 Refer http://kafka.apache.org/documentation.html#configuration for Kafka configuration. All Kafka configs should be prefixed with 'atlas.kafka.'
 
 <verbatim>
-atlas.notification.embedded=true
-atlas.kafka.data=${sys:atlas.home}/data/kafka
-atlas.kafka.zookeeper.connect=localhost:9026
-atlas.kafka.bootstrap.servers=localhost:9027
-atlas.kafka.zookeeper.session.timeout.ms=400
-atlas.kafka.zookeeper.sync.time.ms=20
-atlas.kafka.auto.commit.interval.ms=1000
+atlas.kafka.auto.commit.enable=false
+
+# Kafka servers. Example: localhost:6667
+atlas.kafka.bootstrap.servers=
+
 atlas.kafka.hook.group.id=atlas
-</verbatim>
 
-Note that Kafka group ids are specified for a specific topic.  The Kafka group id configuration for entity notifications is 'atlas.kafka.entities.group.id'
+# Zookeeper connect URL for Kafka. Example: localhost:2181
+atlas.kafka.zookeeper.connect=
 
-<verbatim>
-atlas.kafka.entities.group.id=<consumer id>
-</verbatim>
+atlas.kafka.zookeeper.connection.timeout.ms=30000
+atlas.kafka.zookeeper.session.timeout.ms=60000
+atlas.kafka.zookeeper.sync.time.ms=20
 
-These configuration parameters are useful for setting up Kafka topics via Atlas provided scripts, described in the
-[[InstallationSteps][Installation Steps]] page.
+# Setup the following configurations only in test deployments where Kafka is started within Atlas in embedded mode
+# atlas.notification.embedded=true
+# atlas.kafka.data=${sys:atlas.home}/data/kafka
 
-<verbatim>
-# Whether to create the topics automatically, default is true.
-# Comma separated list of topics to be created, default is "ATLAS_HOOK,ATLAS_ENTITES"
-atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES
-# Number of replicas for the Atlas topics, default is 1. Increase for higher resilience to Kafka failures.
-atlas.notification.replicas=1
-# Enable the below two properties if Kafka is running in Kerberized mode.
-# Set this to the service principal representing the Kafka service
-atlas.notification.kafka.service.principal=kafka/_HOST@EXAMPLE.COM
-# Set this to the location of the keytab file for Kafka
-#atlas.notification.kafka.keytab.location=/etc/security/keytabs/kafka.service.keytab
-</verbatim>
-
-These configuration parameters are useful for saving messages in case there are issues in reaching Kafka for
-sending messages.
-
-<verbatim>
-# Whether to save messages that failed to be sent to Kafka, default is true
-atlas.notification.log.failed.messages=true
-# If saving messages is enabled, the file name to save them to. This file will be created under the log directory of the hook's host component - like HiveServer2
-atlas.notification.failed.messages.filename=atlas_hook_failed_messages.log
+# Setup the following two properties if Kafka is running in Kerberized mode.
+# atlas.notification.kafka.service.principal=kafka/_HOST@EXAMPLE.COM
+# atlas.notification.kafka.keytab.location=/etc/security/keytabs/kafka.service.keytab
 </verbatim>
 
 ---++ Client Configs
 <verbatim>
 atlas.client.readTimeoutMSecs=60000
 atlas.client.connectTimeoutMSecs=60000
-atlas.rest.address=<http/https>://<atlas-fqdn>:<atlas port> - default http://localhost:21000
+
+# URL to access Atlas server. For example: http://localhost:21000
+atlas.rest.address=
 </verbatim>
 
 
@@ -212,26 +98,28 @@ atlas.enableTLS=false
 </verbatim>
 
 ---++ High Availability Properties
-
 The following properties describe High Availability related configuration options:
 
 <verbatim>
 # Set the following property to true, to enable High Availability. Default = false.
 atlas.server.ha.enabled=true
 
-# Define a unique set of strings to identify each instance that should run an Atlas Web Service instance as a comma separated list.
+# Specify the list of Atlas instances
 atlas.server.ids=id1,id2
-# For each string defined above, define the host and port on which Atlas server binds to.
+# For each instance defined above, define the host and port on which Atlas server listens.
 atlas.server.address.id1=host1.company.com:21000
 atlas.server.address.id2=host2.company.com:31000
 
 # Specify Zookeeper properties needed for HA.
 # Specify the list of services running Zookeeper servers as a comma separated list.
 atlas.server.ha.zookeeper.connect=zk1.company.com:2181,zk2.company.com:2181,zk3.company.com:2181
+
 # Specify how many times should connection try to be established with a Zookeeper cluster, in case of any connection issues.
 atlas.server.ha.zookeeper.num.retries=3
+
 # Specify how much time should the server wait before attempting connections to Zookeeper, in case of any connection issues.
 atlas.server.ha.zookeeper.retry.sleeptime.ms=1000
+
 # Specify how long a session to Zookeeper should last without inactiviy to be deemed as unreachable.
 atlas.server.ha.zookeeper.session.timeout.ms=20000
 
@@ -239,6 +127,7 @@ atlas.server.ha.zookeeper.session.timeout.ms=20000
 # The format of these options is <scheme>:<identity>. For more information refer to http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
 # The 'acl' option allows to specify a scheme, identity pair to setup an ACL for.
 atlas.server.ha.zookeeper.acl=sasl:client@comany.com
+
 # The 'auth' option specifies the authentication that should be used for connecting to Zookeeper.
 atlas.server.ha.zookeeper.auth=sasl:client@company.com
 
@@ -254,14 +143,12 @@ atlas.client.ha.sleep.interval.ms=5000
 </verbatim>
 
 ---++ Server Properties
-
 <verbatim>
 # Set the following property to true, to enable the setup steps to run on each server start. Default = false.
 atlas.server.run.setup.on.start=false
 </verbatim>
 
 ---++ Performance configuration items
-
 The following properties can be used to tune performance of Atlas under specific circumstances:
 
 <verbatim>
@@ -288,14 +175,19 @@ atlas.webserver.queuesize=100
 </verbatim>
 
 ---+++ Recording performance metrics
-
-Atlas package should be built with '-P perf' to instrument atlas code to collect metrics. The metrics will be recorded in
-<atlas.log.dir>/metric.log, with one log line per API call. The metrics contain the number of times the instrumented methods
-are called and the total time spent in the instrumented method. Logging to metric.log is controlled through log4j configuration
-in atlas-log4j.xml. When the atlas code is instrumented, to disable logging to metric.log at runtime, set log level of METRICS logger to info level:
+To enable performance logs for various Atlas operations (like REST API calls, notification processing), setup the following in atlas-log4j.xml:
 <verbatim>
-<logger name="METRICS" additivity="false">
-    <level value="info"/>
-    <appender-ref ref="METRICS"/>
-</logger>
-</verbatim>
+  <appender name="perf_appender" class="org.apache.log4j.DailyRollingFileAppender">
+    <param name="File" value="/var/log/atlas/atlas_perf.log"/>
+    <param name="datePattern" value="'.'yyyy-MM-dd"/>
+    <param name="append" value="true"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d|%t|%m%n"/>
+    </layout>
+  </appender>
+
+   <logger name="org.apache.atlas.perf" additivity="false">
+     <level value="debug"/>
+     <appender-ref ref="perf_appender"/>
+   </logger>
+ </verbatim>
