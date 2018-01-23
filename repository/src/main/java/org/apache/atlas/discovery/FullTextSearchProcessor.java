@@ -44,7 +44,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
         SearchParameters searchParameters = context.getSearchParameters();
         StringBuilder    queryString      = new StringBuilder();
 
-        queryString.append("v.\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
+        queryString.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
 
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor

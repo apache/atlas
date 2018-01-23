@@ -42,6 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.type.AtlasArrayType;
@@ -95,6 +96,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final int                             maxResultSetSize;
     private final int                             maxTypesLengthInIdxQuery;
     private final int                             maxTagsLengthInIdxQuery;
+    private final String                          indexSearchPrefix;
     private final UserProfileService              userProfileService;
 
     @Inject
@@ -110,6 +112,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.maxResultSetSize         = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
         this.maxTypesLengthInIdxQuery = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
         this.maxTagsLengthInIdxQuery  = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
+        this.indexSearchPrefix        = AtlasGraphUtilsV1.getIndexSearchPrefix();
         this.userProfileService       = userProfileService;
     }
 
@@ -642,7 +645,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             queryText.append(classificationFilter);
         }
 
-        return String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, queryText.toString());
+        return String.format(indexSearchPrefix + "\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, queryText.toString());
     }
 
     private List<AtlasFullTextResult> getIndexQueryResults(AtlasIndexQuery query, QueryParams params, boolean excludeDeletedEntities) throws AtlasBaseException {
@@ -681,7 +684,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private AtlasIndexQuery toAtlasIndexQuery(String fullTextQuery) {
-        String graphQuery = String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, fullTextQuery);
+        String graphQuery = String.format(indexSearchPrefix + "\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, fullTextQuery);
         return graph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery);
     }
 

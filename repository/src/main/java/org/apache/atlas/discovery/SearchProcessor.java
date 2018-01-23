@@ -60,56 +60,57 @@ public abstract class SearchProcessor {
     public static final int     MAX_RESULT_SIZE            = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
     public static final int     MAX_QUERY_STR_LENGTH_TYPES = getApplicationProperty(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
     public static final int     MAX_QUERY_STR_LENGTH_TAGS  = getApplicationProperty(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
-    public static final String  AND_STR         = " AND ";
-    public static final String  EMPTY_STRING    = "";
-    public static final String  SPACE_STRING    = " ";
-    public static final String  BRACE_OPEN_STR  = "(";
-    public static final String  BRACE_CLOSE_STR = ")";
+    public static final String  INDEX_SEARCH_PREFIX        = AtlasGraphUtilsV1.getIndexSearchPrefix();
+    public static final String  AND_STR                    = " AND ";
+    public static final String  EMPTY_STRING               = "";
+    public static final String  SPACE_STRING               = " ";
+    public static final String  BRACE_OPEN_STR             = "(";
+    public static final String  BRACE_CLOSE_STR            = ")";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
     static
     {
-        OPERATOR_MAP.put(SearchParameters.Operator.LT,"v.\"%s\": [* TO %s}");
+        OPERATOR_MAP.put(SearchParameters.Operator.LT, INDEX_SEARCH_PREFIX + "\"%s\": [* TO %s}");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LT, getLTPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.GT,"v.\"%s\": {%s TO *]");
+        OPERATOR_MAP.put(SearchParameters.Operator.GT, INDEX_SEARCH_PREFIX + "\"%s\": {%s TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GT, getGTPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.LTE,"v.\"%s\": [* TO %s]");
+        OPERATOR_MAP.put(SearchParameters.Operator.LTE, INDEX_SEARCH_PREFIX + "\"%s\": [* TO %s]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LTE, getLTEPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.GTE,"v.\"%s\": [%s TO *]");
+        OPERATOR_MAP.put(SearchParameters.Operator.GTE, INDEX_SEARCH_PREFIX + "\"%s\": [%s TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GTE, getGTEPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.EQ,"v.\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.EQ, INDEX_SEARCH_PREFIX + "\"%s\": %s");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.EQ, getEQPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.NEQ,"-" + "v.\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.NEQ, "-" + INDEX_SEARCH_PREFIX + "\"%s\": %s");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NEQ, getNEQPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.IN, "v.\"%s\": (%s)"); // this should be a list of quoted strings
+        OPERATOR_MAP.put(SearchParameters.Operator.IN, INDEX_SEARCH_PREFIX + "\"%s\": (%s)"); // this should be a list of quoted strings
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IN, getINPredicateGenerator()); // this should be a list of quoted strings
 
-        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, "v.\"%s\": (%s)"); // this should be regex pattern
+        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, INDEX_SEARCH_PREFIX + "\"%s\": (%s)"); // this should be regex pattern
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LIKE, getLIKEPredicateGenerator()); // this should be regex pattern
 
-        OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, "v.\"%s\": (%s*)");
+        OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, INDEX_SEARCH_PREFIX + "\"%s\": (%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.STARTS_WITH, getStartsWithPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, "v.\"%s\": (*%s)");
+        OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, INDEX_SEARCH_PREFIX + "\"%s\": (*%s)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.ENDS_WITH, getEndsWithPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, "v.\"%s\": (*%s*)");
+        OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, INDEX_SEARCH_PREFIX + "\"%s\": (*%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
 
         // TODO: Add contains any, contains all mappings here
 
-        OPERATOR_MAP.put(SearchParameters.Operator.IS_NULL, "(*:* NOT v.\"%s\":[* TO *])");
+        OPERATOR_MAP.put(SearchParameters.Operator.IS_NULL, "(*:* NOT " + INDEX_SEARCH_PREFIX + "\"%s\":[* TO *])");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IS_NULL, getIsNullPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, "v.\"%s\":[* TO *]");
+        OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, INDEX_SEARCH_PREFIX + "\"%s\":[* TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
     }
 
@@ -247,7 +248,7 @@ public abstract class SearchProcessor {
                 indexQuery.append(AND_STR);
             }
 
-            indexQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
+            indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
         }
     }
 
@@ -329,7 +330,7 @@ public abstract class SearchProcessor {
             indexQuery.append(AND_STR);
         }
 
-        indexQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+        indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {

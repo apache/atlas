@@ -32,8 +32,7 @@ import org.janusgraph.core.JanusGraphVertex;
  * Janus implementation of AtlasIndexQuery.
  */
 public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
-
-    private AtlasJanusGraph graph;
+    private AtlasJanusGraph      graph;
     private JanusGraphIndexQuery query;
 
     public AtlasJanusIndexQuery(AtlasJanusGraph graph, JanusGraphIndexQuery query) {

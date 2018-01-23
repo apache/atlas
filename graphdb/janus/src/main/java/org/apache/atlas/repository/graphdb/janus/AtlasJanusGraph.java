@@ -21,7 +21,10 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.configuration.Configuration;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.PropertyKey;
@@ -30,7 +33,6 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.util.JanusGraphCleanup;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
@@ -70,12 +72,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+
 /**
  * Janus implementation of AtlasGraph.
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
+
+    private static Configuration APPLICATION_PROPERTIES = null;
 
     private final class ConvertGremlinValueFunction implements Function<Object, Object> {
         @Override
@@ -184,7 +191,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> indexQuery(String fulltextIndex, String graphQuery, int offset) {
-        JanusGraphIndexQuery query = getGraph().indexQuery(fulltextIndex, graphQuery).offset(offset);
+        String               prefix = getIndexQueryPrefix();
+        JanusGraphIndexQuery query  = getGraph().indexQuery(fulltextIndex, graphQuery).setElementIdentifier(prefix).offset(offset);
+
         return new AtlasJanusIndexQuery(this, query);
     }
 
@@ -432,4 +441,27 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         multiProperties.addAll(names);
     }
 
+    public String getIndexQueryPrefix() {
+        String ret;
+
+        initApplicationProperties();
+
+        if (APPLICATION_PROPERTIES == null) {
+            ret = INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+        } else {
+            ret = APPLICATION_PROPERTIES.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
+        }
+
+        return ret;
+    }
+
+    private void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
+        }
+    }
 }
