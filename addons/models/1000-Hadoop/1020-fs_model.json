@@ -159,7 +159,7 @@
             "superTypes": [
                 "fs_path"
             ],
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "clusterName",
@@ -180,6 +180,14 @@
                 {
                     "name": "extendedAttributes",
                     "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "nameServiceId",
+                    "typeName": "string",
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": true,

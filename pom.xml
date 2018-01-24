@@ -2010,6 +2010,7 @@
                         <exclude>**/policy-store.txt</exclude>
                         <exclude>**/*rebel*.xml</exclude>
                         <exclude>**/*rebel*.xml.bak</exclude>
+                        <exclude>**/test/resources/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>

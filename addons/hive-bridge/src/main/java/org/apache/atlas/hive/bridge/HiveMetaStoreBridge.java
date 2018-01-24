@@ -27,17 +27,19 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHookException;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -57,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import static org.apache.atlas.hive.hook.HiveHook.CONF_PREFIX;
 
 /**
@@ -101,6 +104,8 @@ public class HiveMetaStoreBridge {
     public  final Hive        hiveClient;
     private final AtlasClient atlasClient;
     private final boolean     convertHdfsPathToLowerCase;
+
+    private final HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
 
     HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient) {
         this(clusterName, hiveClient, atlasClient, true);
@@ -201,7 +206,8 @@ public class HiveMetaStoreBridge {
         dbRef.set(AtlasClient.NAME, dbName);
         dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         dbRef.set(DESCRIPTION_ATTR, hiveDB.getDescription());
-        dbRef.set(LOCATION, hiveDB.getLocationUri());
+
+        dbRef.set(LOCATION, hdfsNameServiceResolver.getPathWithNameServiceID(hiveDB.getLocationUri()));
         dbRef.set(PARAMETERS, hiveDB.getParameters());
         dbRef.set(AtlasClient.OWNER, hiveDB.getOwnerName());
         if (hiveDB.getOwnerType() != null) {
@@ -574,7 +580,7 @@ public class HiveMetaStoreBridge {
             sdReferenceable.set("sortCols", sortColsStruct);
         }
 
-        sdReferenceable.set(LOCATION, storageDesc.getLocation());
+        sdReferenceable.set(LOCATION, hdfsNameServiceResolver.getPathWithNameServiceID(storageDesc.getLocation()));
         sdReferenceable.set("inputFormat", storageDesc.getInputFormat());
         sdReferenceable.set("outputFormat", storageDesc.getOutputFormat());
         sdReferenceable.set("compressed", storageDesc.isCompressed());
@@ -592,10 +598,25 @@ public class HiveMetaStoreBridge {
 
     public Referenceable fillHDFSDataSet(String pathUri) {
         Referenceable ref = new Referenceable(HDFS_PATH);
-        ref.set("path", pathUri);
+
+        // Get the name service ID for the given HDFS path
+        String nameServiceID = hdfsNameServiceResolver.getNameServiceIDForPath(pathUri);
+
         Path path = new Path(pathUri);
         ref.set(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-        ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
+
+        if (StringUtils.isNotEmpty(nameServiceID)) {
+            // Name service resolution is successful, now get updated HDFS path where the host port info is replaced by
+            // resolved name service
+            String updatedHdfsPath = hdfsNameServiceResolver.getPathWithNameServiceID(pathUri);
+            ref.set("path", updatedHdfsPath);
+            ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, updatedHdfsPath));
+            // Only set name service if it was resolved
+            ref.set("nameServiceId", nameServiceID);
+        } else {
+            ref.set("path", pathUri);
+            ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, pathUri));
+        }
         ref.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         return ref;
     }
@@ -626,6 +647,10 @@ public class HiveMetaStoreBridge {
             colList.add(colReferenceable);
         }
         return colList;
+    }
+
+    public static String getHdfsPathQualifiedName(String clusterName, String hdfsPath) {
+        return String.format("%s@%s", hdfsPath, clusterName);
     }
 
 
