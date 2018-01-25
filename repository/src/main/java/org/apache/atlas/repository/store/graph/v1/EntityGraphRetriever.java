@@ -796,6 +796,7 @@ public final class EntityGraphRetriever {
         relationship.setEnd2(new AtlasObjectId(GraphHelper.getGuid(end2Vertex), GraphHelper.getTypeName(end2Vertex)));
 
         relationship.setLabel(edge.getLabel());
+        relationship.setPropagateTags(GraphHelper.getPropagateTags(edge));
 
         return relationship;
     }

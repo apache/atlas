@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -49,16 +50,17 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasRelationship extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String        guid       = null;
-    private AtlasObjectId end1       = null;
-    private AtlasObjectId end2       = null;
-    private String        label      = null;
-    private Status        status     = Status.ACTIVE;
-    private String        createdBy  = null;
-    private String        updatedBy  = null;
-    private Date          createTime = null;
-    private Date          updateTime = null;
-    private Long          version    = 0L;
+    private String        guid          = null;
+    private AtlasObjectId end1          = null;
+    private AtlasObjectId end2          = null;
+    private String        label         = null;
+    private PropagateTags propagateTags = PropagateTags.NONE;
+    private Status        status        = Status.ACTIVE;
+    private String        createdBy     = null;
+    private String        updatedBy     = null;
+    private Date          createTime    = null;
+    private Date          updateTime    = null;
+    private Long          version       = 0L;
 
     public enum Status { ACTIVE, DELETED }
 
@@ -84,13 +86,13 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2) {
         super(typeName);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L);
     }
 
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L);
     }
 
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
@@ -107,8 +109,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         super(other);
 
         if (other != null) {
-            init(other.guid, other.end1, other.end2, other.label, other.status, other.createdBy, other.updatedBy,
-                 other.createTime, other.updateTime, other.version);
+            init(other.guid, other.end1, other.end2, other.label, other.propagateTags, other.status,
+                 other.createdBy, other.updatedBy, other.createTime, other.updateTime, other.version);
         }
     }
 
@@ -180,21 +182,25 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public void setLabel(String label) { this.label = label; }
 
+    public PropagateTags getPropagateTags() { return propagateTags; }
+
+    public void setPropagateTags(PropagateTags propagateTags) { this.propagateTags = propagateTags; }
+
     private static String nextInternalId() {
         return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 
     private void init() {
-        init(nextInternalId(), null, null, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), null, null, null, null, null,  null, null, null, null, 0L);
     }
 
-    private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label,
-                      Status status, String createdBy, String updatedBy,
-                      Date createTime, Date updateTime, Long version) {
+    private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
+                      Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version) {
         setGuid(guid);
         setEnd1(end1);
         setEnd2(end2);
         setLabel(label);
+        setPropagateTags(propagateTags);
         setStatus(status);
         setCreatedBy(createdBy);
         setUpdatedBy(updatedBy);
@@ -215,6 +221,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append(", end1=").append(end1);
         sb.append(", end2=").append(end2);
         sb.append(", label='").append(label).append('\'');
+        sb.append(", propagateTags=").append(propagateTags);
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');
@@ -233,22 +240,23 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         if (!super.equals(o)) { return false; }
 
         AtlasRelationship that = (AtlasRelationship) o;
-        return Objects.equals(guid, that.guid)             &&
-               Objects.equals(end1, that.end1)             &&
-               Objects.equals(end2, that.end2)             &&
-               Objects.equals(label, that.label)           &&
-               status == that.status                       &&
-               Objects.equals(createdBy, that.createdBy)   &&
-               Objects.equals(updatedBy, that.updatedBy)   &&
-               Objects.equals(createTime, that.createTime) &&
-               Objects.equals(updateTime, that.updateTime) &&
-               Objects.equals(version, that.version);
+        return Objects.equals(guid, that.guid) &&
+                Objects.equals(end1, that.end1) &&
+                Objects.equals(end2, that.end2) &&
+                Objects.equals(label, that.label) &&
+                propagateTags == that.propagateTags &&
+                status == that.status &&
+                Objects.equals(createdBy, that.createdBy) &&
+                Objects.equals(updatedBy, that.updatedBy) &&
+                Objects.equals(createTime, that.createTime) &&
+                Objects.equals(updateTime, that.updateTime) &&
+                Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, end1, end2, label, status, createdBy,
-                            updatedBy, createTime, updateTime, version);
+        return Objects.hash(super.hashCode(), guid, end1, end2, label, propagateTags,
+                status, createdBy, updatedBy, createTime, updateTime, version);
     }
 
     @Override

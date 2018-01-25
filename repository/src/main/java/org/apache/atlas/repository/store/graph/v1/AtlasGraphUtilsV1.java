@@ -103,6 +103,10 @@ public class AtlasGraphUtilsV1 {
         return vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
+    public static String getIdFromEdge(AtlasEdge edge) {
+        return edge.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+    }
+
     public static String getTypeName(AtlasElement element) {
         return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }

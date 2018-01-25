@@ -33,6 +33,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
@@ -720,6 +721,12 @@ public final class GraphHelper {
 
     public static AtlasRelationship.Status getEdgeStatus(AtlasElement element) {
         return (getState(element) == Id.EntityState.DELETED) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.ACTIVE;
+    }
+
+    public static PropagateTags getPropagateTags(AtlasElement element) {
+        String propagateTags = element.getProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class);
+
+        return (propagateTags == null) ? null : PropagateTags.valueOf(propagateTags);
     }
 
     //Added conditions in fetching system attributes to handle test failures in GremlinTest where these properties are not set
