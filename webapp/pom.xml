@@ -595,7 +595,7 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
-                    <skip>${skipITs}</skip>
+                    <skip>${skipTests}</skip>
                     <!--only skip int tests -->
                     <httpConnector>
                         <port>31000</port>
