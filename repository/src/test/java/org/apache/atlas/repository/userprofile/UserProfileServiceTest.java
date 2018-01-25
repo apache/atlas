@@ -192,7 +192,7 @@ public class UserProfileServiceTest {
         }
     }
 
-    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"}, enabled = false)
+    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"})
     public void verifyQueryConversionFromJSON() throws AtlasBaseException {
         List<AtlasUserSavedSearch> list = userProfileService.getSavedSearches("first-0");
 
@@ -203,7 +203,7 @@ public class UserProfileServiceTest {
         }
     }
 
-    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"})
+    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryConversionFromJSON"})
     public void updateSearch() throws AtlasBaseException {
         final String queryName = getIndexBasedQueryName(0);
         String userName = getIndexBasedUserName(0);
