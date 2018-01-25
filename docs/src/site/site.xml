@@ -24,7 +24,7 @@
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
-        <version>1.3.0</version>
+        <version>1.7</version>
     </skin>
 
     <custom>
@@ -55,12 +55,6 @@
     <version position="right"/>
 
     <body>
-        <head>
-            <script type="text/javascript">
-                $( document ).ready( function() { $( '.carousel' ).carousel( { interval: 3500 } ) } );
-            </script>
-        </head>
-
         <breadcrumbs>
             <item name="Apache" href="http://www.apache.org"/>
             <item name="Atlas" title="Apache Atlas" href="index.html"/>
@@ -87,6 +81,8 @@
         </menu>
 
         <menu name="Releases">
+            <item name="1.0.0-alpha"
+                  href="http://www.apache.org/dyn/closer.cgi/atlas/1.0.0-alpha/"/>
             <item name="0.8.1"
                   href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.1/"/>
             <item name="0.8-incubating"
@@ -102,6 +98,7 @@
         </menu>
 
         <menu name="Documentation">
+            <item name="1.0.0-alpha" href="./1.0.0-alpha/index.html"/>
             <item name="0.8.1" href="./0.8.1/index.html"/>
             <item name="0.8-incubating" href="./0.8.0-incubating/index.html"/>
             <item name="0.7.1-incubating" href="./0.7.1-incubating/index.html"/>
@@ -118,9 +115,7 @@
         </menu>
 
         <footer>
-            Â© 2011-2012 The Apache Software Foundation. Apache Atlas, Atlas, Apache,
-            the Apache feather logo, and the Apache Metadata and Governance project logo are
-            trademarks of The Apache Software Foundation.
+            Copyright Â© 2018 The Apache Software Foundation, Licensed under the Apache License, Version 2.0.
         </footer>
     </body>
 </project>

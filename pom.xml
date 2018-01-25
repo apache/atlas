@@ -568,6 +568,8 @@
         <zkclient.version>0.8</zkclient.version>
         <enunciate-maven-plugin.version>2.10.1</enunciate-maven-plugin.version>
         <antlr4.plugin.version>4.5</antlr4.plugin.version>
+		<maven-site-plugin.version>3.7</maven-site-plugin.version>
+		<doxia.version>1.8</doxia.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
@@ -1718,7 +1720,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.4</version>
+                    <version>${maven-site-plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -2082,6 +2084,18 @@
                 <configuration>
                     <skip>${skipSite}</skip>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-twiki</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>

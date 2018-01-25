@@ -67,7 +67,7 @@ capabilities around these data assets for data scientists, analysts and the data
 
    * <a href="api/v2/index.html">REST API Documentation</a>
    * [[Import-Export-API][Export & Import REST API Documentation]]
-   * <a href="api/rest.html">Legacy API Documentation</a>
+   * <a href="../api/rest.html">Legacy API Documentation</a>
 
 ---++ Developer Setup Documentation
    * [[EclipseSetup][Developer Setup: Eclipse]]
