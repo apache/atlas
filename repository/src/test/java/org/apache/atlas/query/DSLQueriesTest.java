@@ -21,8 +21,12 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -35,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -42,6 +47,8 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DSLQueriesTest extends BasicTestSetup {
+    private static final Logger LOG = LoggerFactory.getLogger(DSLQueriesTest.class);
+
     private final int DEFAULT_LIMIT = 25;
     @Inject
     private EntityDiscoveryService discoveryService;
@@ -50,11 +57,77 @@ public class DSLQueriesTest extends BasicTestSetup {
     public void setup() throws Exception {
         LocalSolrRunner.start();
         setupTestData();
+
+        pollForData();
+    }
+
+    private void pollForData() throws InterruptedException {
+        Object[][] basicVerificationQueries = new Object[][] {
+                {"hive_db", 3},
+                {"hive_process", 7},
+                {"hive_table", 10},
+                {"hive_column", 17},
+                {"hive_storagedesc", 1},
+                {"Manager", 2},
+                {"Employee", 4},
+        };
+
+        int pollingAttempts = 5;
+        int pollingBackoff  = 0; // in msecs
+
+        boolean success;
+
+        for (int attempt = 0; attempt < pollingAttempts; attempt++, pollingBackoff += attempt * 5000) {
+            LOG.debug("Polling -- Attempt {}, Backoff {}", attempt, pollingBackoff);
+
+            success = false;
+            for (Object[] verificationQuery : basicVerificationQueries) {
+                String query = (String) verificationQuery[0];
+                int expected = (int) verificationQuery[1];
+
+                try {
+                    AtlasSearchResult result = discoveryService.searchUsingDslQuery(query, 25, 0);
+                    if (result.getEntities() == null || result.getEntities().isEmpty()) {
+                        LOG.warn("DSL {} returned no entities", query);
+                        success = false;
+                    } else if (result.getEntities().size() != expected) {
+                        LOG.warn("DSL {} returned unexpected number of entities. Expected {} Actual {}", query, expected, result.getEntities().size());
+                        success = false;
+                    } else {
+                        success = true;
+                    }
+                } catch (AtlasBaseException e) {
+                    LOG.error("Got exception for DSL {}, errorCode: {}", query, e.getAtlasErrorCode());
+                    waitOrBailout(pollingAttempts, pollingBackoff, attempt);
+                }
+            }
+            // DSL queries were successful
+            if (success) {
+                LOG.info("Polling was success");
+                break;
+            } else {
+                waitOrBailout(pollingAttempts, pollingBackoff, attempt);
+            }
+        }
+    }
+
+    private void waitOrBailout(final int pollingAttempts, final int pollingBackoff, final int attempt) throws InterruptedException {
+        if (attempt == pollingAttempts - 1) {
+            LOG.error("Polling failed after {} attempts", pollingAttempts);
+            throw new SkipException("Polling for test data was unsuccessful");
+        } else {
+            LOG.warn("Waiting for {} before polling again", pollingBackoff);
+            Thread.sleep(pollingBackoff);
+        }
     }
 
     @AfterClass
     public void teardown() throws Exception {
-        LocalSolrRunner.stop();
+        AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     @DataProvider(name = "comparisonQueriesProvider")
@@ -108,6 +181,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "comparisonQueriesProvider")
     public void comparison(String query, int expected) throws AtlasBaseException {
+        LOG.debug(query);
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
         assertSearchResult(searchResult, expected, query);
 
@@ -286,6 +360,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "syntaxProvider")
     public void syntax(String query, int expected) throws AtlasBaseException {
+        LOG.debug(query);
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
         queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
@@ -366,6 +441,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "orderByProvider")
     public void orderBy(String query, int expected, String orderBy, boolean ascending) throws AtlasBaseException {
+        LOG.debug(query);
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
         queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
@@ -385,6 +461,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "likeQueriesProvider")
     public void likeQueries(String query, int expected) throws AtlasBaseException {
+        LOG.debug(query);
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
         queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
@@ -503,6 +580,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "minMaxCountProvider")
     public void minMaxCount(String query, FieldValueValidator fv) throws AtlasBaseException {
+        LOG.debug(query);
         queryAssert(query, fv);
         queryAssert(query.replace("where", " "), fv);
     }
@@ -531,6 +609,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
     public void errorQueries(String query) throws AtlasBaseException {
+        LOG.debug(query);
         discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 

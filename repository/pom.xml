@@ -243,12 +243,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
                 <configuration combine.children="override">
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>org.apache.atlas.DBSandboxer</value>
-                        </property>
-                    </properties>
                 </configuration>
             </plugin>
 

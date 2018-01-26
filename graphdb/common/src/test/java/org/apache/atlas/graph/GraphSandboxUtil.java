@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.SkipException;
 
 import java.io.File;
 import java.util.UUID;
@@ -33,33 +34,28 @@ public class GraphSandboxUtil {
         Configuration configuration;
         try {
             configuration = ApplicationProperties.get();
-
-            String newStorageDir = System.getProperty("atlas.data") +
-                    File.separatorChar + "storage" +
-                    File.separatorChar + sandboxName;
-
-            configuration.setProperty("atlas.graph.storage.directory", newStorageDir);
+            configuration.setProperty("atlas.graph.storage.directory", getStorageDir(sandboxName, "storage"));
+            configuration.setProperty("atlas.graph.index.search.directory", getStorageDir(sandboxName, "index"));
 
 
-            String newIndexerDir = System.getProperty("atlas.data") +
-                    File.separatorChar + "index" +
-                    File.separatorChar + sandboxName;
+            LOG.debug("New Storage dir : {}", configuration.getProperty("atlas.graph.storage.directory"));
+            LOG.debug("New Indexer dir : {}", configuration.getProperty("atlas.graph.index.search.directory"));
+        } catch (AtlasException ignored) {
+            throw new SkipException("Failure to setup Sandbox: " + sandboxName);
+        }
+    }
 
-            configuration.setProperty("atlas.graph.index.search.directory", newIndexerDir);
-
-
-            LOG.debug("New Storage dir : {}", newStorageDir);
-            LOG.debug("New Indexer dir : {}", newIndexerDir);
-        } catch (AtlasException ignored) {}
+    private static String getStorageDir(String sandboxName, String directory) {
+        return System.getProperty("atlas.data") +
+                File.separatorChar + sandboxName +
+                File.separatorChar + directory;
     }
 
     public static void create() {
-        // Append a suffix to isolate the database for each instance
         UUID uuid = UUID.randomUUID();
         create(uuid.toString());
     }
 
-    // Need to start local Solr Cloud for JanusGraph 0.2.0
     public static boolean useLocalSolr() {
         boolean ret = false;
         
@@ -70,7 +66,9 @@ public class GraphSandboxUtil {
             if (property != null && property instanceof String) {
                 ret = Boolean.valueOf((String) property);
             }
-        } catch (AtlasException ignored) {}
+        } catch (AtlasException ignored) {
+            throw new SkipException("useLocalSolr: failed! ", ignored);
+        }
 
         return ret;
     }

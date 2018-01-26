@@ -58,9 +58,11 @@ import org.apache.commons.configuration.Configuration;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.Test;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
+@Test(enabled = false)
 public class TestModules {
 
     static class MockNotifier implements Provider<AtlasEntityChangeNotifier> {
