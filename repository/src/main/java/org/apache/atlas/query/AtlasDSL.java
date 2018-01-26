@@ -104,6 +104,8 @@ public class AtlasDSL {
     }
 
     public static class Translator {
+        private static final Logger LOG = LoggerFactory.getLogger(Translator.class);
+
         private final AtlasDSLParser.QueryContext queryContext;
         private final AtlasTypeRegistry           typeRegistry;
         private final int                         offset;
@@ -123,33 +125,21 @@ public class AtlasDSL {
             GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(typeRegistry, queryMetadata, limit, offset);
             DSLVisitor dslVisitor = new DSLVisitor(gremlinQueryComposer);
 
-            try {
-                queryContext.accept(dslVisitor);
+            queryContext.accept(dslVisitor);
 
-                processErrorList(gremlinQueryComposer, null);
+            processErrorList(gremlinQueryComposer);
 
-                return new GremlinQuery(gremlinQueryComposer.get(), queryMetadata.hasSelect());
-            } catch (Exception e) {
-                processErrorList(gremlinQueryComposer, e);
-            }
+            String gremlinQuery = gremlinQueryComposer.get();
 
-            return null;
+            return new GremlinQuery(gremlinQuery, queryMetadata.hasSelect());
         }
 
-        private void processErrorList(GremlinQueryComposer gremlinQueryComposer, Exception e) throws AtlasBaseException {
+        private void processErrorList(GremlinQueryComposer gremlinQueryComposer) throws AtlasBaseException {
             final String errorMessage;
 
             if (CollectionUtils.isNotEmpty(gremlinQueryComposer.getErrorList())) {
                 errorMessage = StringUtils.join(gremlinQueryComposer.getErrorList(), ", ");
-            } else {
-                errorMessage = e != null ? (e.getMessage() != null ? e.getMessage() : e.toString()) : null;
-            }
-
-            if (errorMessage != null) {
-                if (e != null) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, e, this.query, errorMessage);
-                }
-
+                LOG.warn("DSL Errors: {}", errorMessage);
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, this.query, errorMessage);
             }
         }

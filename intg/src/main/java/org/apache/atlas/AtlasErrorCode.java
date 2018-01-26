@@ -103,7 +103,23 @@ public enum AtlasErrorCode {
     SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}"),
     INVALID_QUERY_PARAM_LENGTH(400, "ATLAS-400-00-057" , "Length of query param {0} exceeds the limit"),
     INVALID_QUERY_LENGTH(400, "ATLAS-400-00-058" , "Invalid query length, update {0} to change the limit" ),
+    // DSL related error codes
     INVALID_DSL_QUERY(400, "ATLAS-400-00-059" , "Invalid DSL query: {0} | Reason: {1}. Please refer to Atlas DSL grammar for more information" ),
+    INVALID_DSL_GROUPBY(400, "ATLAS-400-00-05A", "DSL Semantic Error - GroupBy attribute {0} is non-primitive"),
+    INVALID_DSL_UNKNOWN_TYPE(400, "ATLAS-400-00-05B", "DSL Semantic Error - {0} type not found"),
+    INVALID_DSL_UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-05C", "DSL Semantic Error - {0} classification not found"),
+    INVALID_DSL_UNKNOWN_ATTR_TYPE(400, "ATLAS-400-00-05D", "DSL Semantic Error - {0} attribute not found for type {1}"),
+    INVALID_DSL_ORDERBY(400, "ATLAS-400-00-05E", "DSL Semantic Error - OrderBy attribute {0} is non-primitive"),
+    INVALID_DSL_FROM(400, "ATLAS-400-00-05F", "DSL Semantic Error - From source {0} is not a valid Entity/Classification type"),
+    INVALID_DSL_SELECT_REFERRED_ATTR(400, "ATLAS-400-00-060", "DSL Semantic Error - Select clause has multiple referred attributes {0}"),
+    INVALID_DSL_SELECT_INVALID_AGG(400, "ATLAS-400-00-061", "DSL Semantic Error - Select clause has aggregation on referred attributes {0}"),
+    INVALID_DSL_SELECT_ATTR_MIXING(400, "ATLAS-400-00-062", "DSL Semantic Error - Select clause has simple and referred attributes"),
+    INVALID_DSL_HAS_ATTRIBUTE(400, "ATLAS-400-00-063", "DSL Semantic Error - No attribute {0} exists for type {1}"),
+    INVALID_DSL_QUALIFIED_NAME(400, "ATLAS-400-00-064", "DSL Semantic Error - Qualified name for {0} failed!"),
+    INVALID_DSL_QUALIFIED_NAME2(400, "ATLAS-400-00-065", "DSL Semantic Error - Qualified name for {0} failed for type {1}. Cause: {2}"),
+    INVALID_DSL_DUPLICATE_ALIAS(400, "ATLAS-400-00-066", "DSL Semantic Error - Duplicate alias found: '{0}' for type '{1}' already present."),
+    INVALID_DSL_INVALID_DATE(400, "ATLAS-400-00-067", "DSL Semantic Error - Date format: {0}."),
+    INVALID_DSL_HAS_PROPERTY(400, "ATLAS-400-00-068", "DSL Semantic Error - Property needs to be a primitive type: {0}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),

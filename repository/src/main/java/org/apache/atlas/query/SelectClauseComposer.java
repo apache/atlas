@@ -41,8 +41,17 @@ class SelectClauseComposer {
     private int     maxIdx   = -1;
     private int     minIdx   = -1;
     private int     aggCount = 0;
+    private int     introducedTypesCount = 0;
+    private int     primitiveTypeCount = 0;
 
     public SelectClauseComposer() {}
+
+    public static boolean isKeyword(String s) {
+        return COUNT_STR.equals(s) ||
+                MIN_STR.equals(s) ||
+                MAX_STR.equals(s) ||
+                SUM_STR.equals(s);
+    }
 
     public String[] getItems() {
         return items;
@@ -71,13 +80,6 @@ class SelectClauseComposer {
         }
 
         return ret;
-    }
-
-    public static boolean isKeyword(String s) {
-        return COUNT_STR.equals(s) ||
-                MIN_STR.equals(s) ||
-                MAX_STR.equals(s) ||
-                SUM_STR.equals(s);
     }
 
     public String[] getAttributes() {
@@ -164,7 +166,7 @@ class SelectClauseComposer {
         return assign(items[i], inline.get(s, clause.get(p1, p1)));
     }
 
-    private int getCountIdx() {
+    public int getCountIdx() {
         return countIdx;
     }
 
@@ -173,7 +175,7 @@ class SelectClauseComposer {
         aggCount++;
     }
 
-    private int getSumIdx() {
+    public int getSumIdx() {
         return sumIdx;
     }
 
@@ -182,7 +184,7 @@ class SelectClauseComposer {
         aggCount++;
     }
 
-    private int getMaxIdx() {
+    public int getMaxIdx() {
         return maxIdx;
     }
 
@@ -191,7 +193,7 @@ class SelectClauseComposer {
         aggCount++;
     }
 
-    private int getMinIdx() {
+    public int getMinIdx() {
         return minIdx;
     }
 
@@ -206,5 +208,33 @@ class SelectClauseComposer {
               .map(x -> x.contains("'") ? "\"" + x + "\"" : "'" + x + "'")
               .forEach(joiner::add);
         return joiner.toString();
+    }
+
+    public boolean isAggregatorWithArgument(int i) {
+        return i == getMaxIdx() || i == getMinIdx() || i == getSumIdx();
+    }
+
+    public void incrementTypesIntroduced() {
+        introducedTypesCount++;
+    }
+
+    public int getIntroducedTypesCount() {
+        return introducedTypesCount;
+    }
+
+    public void incrementPrimitiveType() {
+        primitiveTypeCount++;
+    }
+
+    public boolean hasMultipleReferredTypes() {
+        return getIntroducedTypesCount() > 1;
+    }
+
+    public boolean hasMixedAttributes() {
+        return getIntroducedTypesCount() > 0 && getPrimitiveTypeCount() > 0;
+    }
+
+    private int getPrimitiveTypeCount() {
+        return primitiveTypeCount;
     }
 }

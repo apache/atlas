@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,7 @@
 
 package org.apache.atlas.query;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
 
@@ -46,10 +47,10 @@ public class IdentifierHelper {
         return ret;
     }
 
-    public static Advice create(GremlinQueryComposer.Context context,
-                                org.apache.atlas.query.Lookup lookup,
-                                String identifier) {
-        Advice ia = new Advice(identifier);
+    public static IdentifierMetadata create(GremlinQueryComposer.Context context,
+                                            org.apache.atlas.query.Lookup lookup,
+                                            String identifier) {
+        IdentifierMetadata ia = new IdentifierMetadata(identifier);
         ia.update(lookup, context);
         return ia;
     }
@@ -65,7 +66,7 @@ public class IdentifierHelper {
         try {
             return lookup.getQualifiedName(context, name);
         } catch (AtlasBaseException e) {
-            context.getErrorList().add(String.format("Error for %s.%s: %s", context.getActiveTypeName(), name, e.getMessage()));
+            context.error(e, AtlasErrorCode.INVALID_DSL_QUALIFIED_NAME, context.getActiveTypeName(), name);
         }
 
         return "";
@@ -100,24 +101,29 @@ public class IdentifierHelper {
         return rhs.equalsIgnoreCase("true") || rhs.equalsIgnoreCase("false");
     }
 
-    public static class Advice {
-        private String raw;
-        private String actual;
-        private String[] parts;
-        private String typeName;
-        private String attributeName;
-        private boolean isPrimitive;
-        private String edgeLabel;
-        private boolean introduceType;
-        private boolean hasSubtypes;
-        private String subTypes;
-        private boolean isTrait;
-        private boolean newContext;
-        private boolean isAttribute;
-        private String qualifiedName;
-        private boolean isDate;
+    public static String getFixedRegEx(String s) {
+        return s.replace("*", ".*").replace('?', '.');
+    }
 
-        public Advice(String s) {
+
+    public static class IdentifierMetadata {
+        private String   raw;
+        private String   actual;
+        private String[] parts;
+        private String   typeName;
+        private String   attributeName;
+        private boolean  isPrimitive;
+        private String   edgeLabel;
+        private boolean  introduceType;
+        private boolean  hasSubtypes;
+        private String   subTypes;
+        private boolean  isTrait;
+        private boolean  newContext;
+        private boolean  isAttribute;
+        private String   qualifiedName;
+        private boolean  isDate;
+
+        public IdentifierMetadata(String s) {
             this.raw = removeQuotes(s);
             this.actual = IdentifierHelper.get(raw);
         }
@@ -132,7 +138,7 @@ public class IdentifierHelper {
 
                     updateParts();
                     updateTypeInfo(lookup, context);
-                    isTrait = lookup.isTraitType(context);
+                    setIsTrait(context, lookup, attributeName);
                     updateEdgeInfo(lookup, context);
                     introduceType = !isPrimitive() && !context.hasAlias(parts[0]);
                     updateSubTypes(lookup, context);
@@ -142,41 +148,45 @@ public class IdentifierHelper {
             }
         }
 
+        private void setIsTrait(GremlinQueryComposer.Context ctx, Lookup lookup, String s) {
+            isTrait = lookup.isTraitType(s);
+        }
+
         private void updateSubTypes(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
-            if(isTrait) {
+            if (isTrait) {
                 return;
             }
 
             hasSubtypes = lookup.doesTypeHaveSubTypes(context);
-            if(hasSubtypes) {
+            if (hasSubtypes) {
                 subTypes = lookup.getTypeAndSubTypes(context);
             }
         }
 
         private void updateEdgeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
-            if(isPrimitive == false && isTrait == false) {
+            if (!isPrimitive && !isTrait && typeName != attributeName) {
                 edgeLabel = lookup.getRelationshipEdgeLabel(context, attributeName);
                 typeName = lookup.getTypeFromEdge(context, attributeName);
             }
         }
 
         private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
-            if(parts.length == 1) {
+            if (parts.length == 1) {
                 typeName = context.hasAlias(parts[0]) ?
-                                context.getTypeNameFromAlias(parts[0]) :
-                                context.getActiveTypeName();
+                                   context.getTypeNameFromAlias(parts[0]) :
+                                   context.getActiveTypeName();
                 qualifiedName = getDefaultQualifiedNameForSinglePartName(context, parts[0]);
                 attributeName = parts[0];
             }
 
-            if(parts.length == 2) {
+            if (parts.length == 2) {
                 boolean isAttrOfActiveType = lookup.hasAttribute(context, parts[0]);
-                if(isAttrOfActiveType) {
+                if (isAttrOfActiveType) {
                     attributeName = parts[0];
                 } else {
                     typeName = context.hasAlias(parts[0]) ?
-                            context.getTypeNameFromAlias(parts[0]) :
-                            parts[0];
+                                       context.getTypeNameFromAlias(parts[0]) :
+                                       parts[0];
 
                     attributeName = parts[1];
                 }
@@ -190,7 +200,7 @@ public class IdentifierHelper {
 
         private String getDefaultQualifiedNameForSinglePartName(GremlinQueryComposer.Context context, String s) {
             String qn = context.getTypeNameFromAlias(s);
-            if(StringUtils.isEmpty(qn) && SelectClauseComposer.isKeyword(s)) {
+            if (StringUtils.isEmpty(qn) && SelectClauseComposer.isKeyword(s)) {
                 return s;
             }
 
@@ -198,22 +208,17 @@ public class IdentifierHelper {
         }
 
         private void setQualifiedName(Lookup lookup, GremlinQueryComposer.Context context, boolean isAttribute, String attrName) {
-            if(isAttribute) {
+            if (isAttribute) {
                 qualifiedName = getQualifiedName(lookup, context, attrName);
             }
         }
 
         private String getQualifiedName(Lookup lookup, GremlinQueryComposer.Context context, String name) {
-            try {
-                return lookup.getQualifiedName(context, name);
-            } catch (AtlasBaseException e) {
-                context.getErrorList().add(String.format("Error for %s.%s: %s", context.getActiveTypeName(), name, e.getMessage()));
-                return "";
-            }
+            return IdentifierHelper.getQualifiedName(lookup, context, name);
         }
 
         private void setIsDate(Lookup lookup, GremlinQueryComposer.Context context, boolean isPrimitive, String attrName) {
-            if(isPrimitive) {
+            if (isPrimitive) {
                 isDate = lookup.isDate(context, attrName);
             }
         }
@@ -246,7 +251,7 @@ public class IdentifierHelper {
             return typeName;
         }
 
-        public boolean getIntroduceType() {
+        public boolean isReferredType() {
             return introduceType;
         }
 
@@ -277,5 +282,6 @@ public class IdentifierHelper {
         public String getRaw() {
             return raw;
         }
+
     }
 }

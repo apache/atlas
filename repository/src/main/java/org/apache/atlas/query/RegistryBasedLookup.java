@@ -20,20 +20,27 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.*;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 class RegistryBasedLookup implements Lookup {
-    private final List<String> errorList;
+    private static final Set<String> SYSTEM_ATTRIBUTES = new HashSet<>(
+            Arrays.asList(Constants.GUID_PROPERTY_KEY,
+                    Constants.MODIFIED_BY_KEY,
+                    Constants.CREATED_BY_KEY,
+                    Constants.STATE_PROPERTY_KEY,
+                    Constants.TIMESTAMP_PROPERTY_KEY,
+                    Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY));
+
     private final AtlasTypeRegistry typeRegistry;
 
     public RegistryBasedLookup(AtlasTypeRegistry typeRegistry) {
-        this.errorList = new ArrayList<>();
         this.typeRegistry = typeRegistry;
     }
 
@@ -49,7 +56,15 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        return et.getQualifiedAttributeName(name);
+        if(isSystemAttribute(name)) {
+            return name;
+        } else {
+            return et.getQualifiedAttributeName(name);
+        }
+    }
+
+    private boolean isSystemAttribute(String s) {
+        return SYSTEM_ATTRIBUTES.contains(s);
     }
 
     @Override
@@ -57,6 +72,10 @@ class RegistryBasedLookup implements Lookup {
         AtlasEntityType et = context.getActiveEntityType();
         if(et == null) {
             return false;
+        }
+
+        if(isSystemAttribute(attributeName)) {
+            return true;
         }
 
         AtlasType at = et.getAttributeType(attributeName);
@@ -97,7 +116,8 @@ class RegistryBasedLookup implements Lookup {
 
     @Override
     public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
-        return (context.getActiveEntityType() != null) && context.getActiveEntityType().getAttribute(typeName) != null;
+        return (context.getActiveEntityType() != null) &&
+                (isSystemAttribute(typeName) || context.getActiveEntityType().getAttribute(typeName) != null);
     }
 
     @Override
@@ -123,9 +143,19 @@ class RegistryBasedLookup implements Lookup {
     }
 
     @Override
-    public boolean isTraitType(GremlinQueryComposer.Context context) {
-        return (context.getActiveType() != null &&
-                context.getActiveType().getTypeCategory() == TypeCategory.CLASSIFICATION);
+    public boolean isTraitType(String typeName) {
+        AtlasType t = null;
+        try {
+            t = typeRegistry.getType(typeName);
+        } catch (AtlasBaseException e) {
+            return false;
+        }
+
+        return isTraitType(t);
+    }
+
+    private boolean isTraitType(AtlasType t) {
+        return (t != null && t.getTypeCategory() == TypeCategory.CLASSIFICATION);
     }
 
     @Override

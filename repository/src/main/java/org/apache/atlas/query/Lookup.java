@@ -21,9 +21,6 @@ package org.apache.atlas.query;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 
-import java.util.Collection;
-import java.util.List;
-
 public interface Lookup {
     AtlasType getType(String typeName) throws AtlasBaseException;
 
@@ -39,7 +36,7 @@ public interface Lookup {
 
     String getTypeAndSubTypes(GremlinQueryComposer.Context context);
 
-    boolean isTraitType(GremlinQueryComposer.Context context);
+    boolean isTraitType(String s);
 
     String getTypeFromEdge(GremlinQueryComposer.Context context, String item);
 

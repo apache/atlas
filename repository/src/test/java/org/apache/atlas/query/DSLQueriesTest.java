@@ -23,10 +23,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.collections.CollectionUtils;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +42,7 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DSLQueriesTest extends BasicTestSetup {
+    private final int DEFAULT_LIMIT = 25;
     @Inject
     private EntityDiscoveryService discoveryService;
 
@@ -61,7 +65,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (birthday >= \"1975-01-01T02:35:58.440Z\" )", 2},
                 {"Person where (birthday <= \"1950-01-01T02:35:58.440Z\" )", 0},
                 {"Person where (birthday = \"1975-01-01T02:35:58.440Z\" )", 0},
-                {"Person where (birthday != \"1975-01-01T02:35:58.440Z\" )", 0},
+                {"Person where (birthday != \"1975-01-01T02:35:58.440Z\" )", 4},
 
                 {"Person where (hasPets = true)", 2},
                 {"Person where (hasPets = false)", 2},
@@ -74,7 +78,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (numberOfCars < 2)", 3},
                 {"Person where (numberOfCars <= 2)", 4},
                 {"Person where (numberOfCars = 2)", 1},
-                {"Person where (numberOfCars != 2)", 0},
+                {"Person where (numberOfCars != 2)", 3},
 
                 {"Person where (houseNumber > 0)", 2},
                 {"Person where (houseNumber > 17)", 1},
@@ -82,7 +86,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (houseNumber < 153)", 3},
                 {"Person where (houseNumber <= 153)", 4},
                 {"Person where (houseNumber =  17)", 1},
-                {"Person where (houseNumber != 17)", 0},
+                {"Person where (houseNumber != 17)", 3},
 
                 {"Person where (carMileage > 0)", 2},
                 {"Person where (carMileage > 13)", 1},
@@ -90,7 +94,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (carMileage < 13364)", 3},
                 {"Person where (carMileage <= 13364)", 4},
                 {"Person where (carMileage =  13)", 1},
-                {"Person where (carMileage != 13)", 0},
+                {"Person where (carMileage != 13)", 3},
 
                 {"Person where (age > 36)", 1},
                 {"Person where (age > 49)", 1},
@@ -98,17 +102,17 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (age < 50)", 3},
                 {"Person where (age <= 35)", 2},
                 {"Person where (age =  35)", 0},
-                {"Person where (age != 35)", 0}
+                {"Person where (age != 35)", 4}
         };
     }
 
     @Test(dataProvider = "comparisonQueriesProvider")
     public void comparison(String query, int expected) throws AtlasBaseException {
-        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, 25, 0);
-        assertSearchResult(searchResult, expected);
+        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
+        assertSearchResult(searchResult, expected, query);
 
-        AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), 25, 0);
-        assertSearchResult(searchResult2, expected);
+        AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), DEFAULT_LIMIT, 0);
+        assertSearchResult(searchResult2, expected, query);
     }
 
     @DataProvider(name = "basicProvider")
@@ -149,13 +153,29 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "basicProvider")
     public void basic(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected);
-        queryAssert(query.replace("where", " "), expected);
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
 
-    private void queryAssert(String query, int expected) throws AtlasBaseException {
-        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, 25, 0);
-        assertSearchResult(searchResult, expected);
+    @DataProvider(name = "systemAttributesProvider")
+    private Object[][] systemAttributesQueries() {
+        return new Object[][]{
+                {"hive_db has __state", 3},
+                {"hive_db where hive_db has __state", 3},
+                {"hive_db as d where d.__state = 'ACTIVE'", 3},
+                {"hive_db select __guid", 3},
+                {"hive_db where __state = 'ACTIVE' select name, __guid, __state", 3},
+        };
+    }
+
+    @Test(dataProvider = "systemAttributesProvider")
+    public void systemAttributes(String query, int expected) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+    }
+
+    private void queryAssert(String query, final int expected, final int limit, final int offset) throws AtlasBaseException {
+        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, limit, offset);
+        assertSearchResult(searchResult, expected, query);
     }
 
     @DataProvider(name = "limitProvider")
@@ -172,12 +192,12 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "limitProvider")
     public void limit(String query, int expected, int limit, int offset) throws AtlasBaseException {
-        queryAssert(query, expected);
-        queryAssert(query.replace("where", " "), expected);
+        queryAssert(query, expected, limit, offset);
+        queryAssert(query.replace("where", " "), expected, limit, offset);
     }
 
-    @DataProvider(name = "syntaxVerifierProvider")
-    private Object[][] syntaxVerifierQueries() {
+    @DataProvider(name = "syntaxProvider")
+    private Object[][] syntaxQueries() {
         return new Object[][]{
                 {"hive_column  limit 10 ", 10},
                 {"hive_column select hive_column.qualifiedName limit 10 ", 10},
@@ -264,10 +284,10 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "syntaxVerifierProvider")
+    @Test(dataProvider = "syntaxProvider")
     public void syntax(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected);
-        queryAssert(query.replace("where", " "), expected);
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
 
     @DataProvider(name = "orderByProvider")
@@ -346,8 +366,8 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "orderByProvider")
     public void orderBy(String query, int expected, String orderBy, boolean ascending) throws AtlasBaseException {
-        queryAssert(query, expected);
-        queryAssert(query.replace("where", " "), expected);
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
 
     @DataProvider(name = "likeQueriesProvider")
@@ -365,8 +385,8 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "likeQueriesProvider")
     public void likeQueries(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected);
-        queryAssert(query.replace("where", " "), expected);
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
 
     @DataProvider(name = "minMaxCountProvider")
@@ -468,16 +488,16 @@ public class DSLQueriesTest extends BasicTestSetup {
                         new FieldValueValidator()
                                 .withFieldNames("'count'", "'sum'")
                                 .withExpectedValues(4, 86) },
-//                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
-//                        new FieldValueValidator()
-//                                .withFieldNames("min(name)")
-//                                .withExpectedValues("Logging")
-//                                .withExpectedValues("Reporting") },
-//                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
-//                        new FieldValueValidator()
-//                                .withFieldNames("min(name)")
-//                                .withExpectedValues("Reporting")
-//                                .withExpectedValues("Sales") }
+                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
+                        new FieldValueValidator()
+                                .withFieldNames("min(name)")
+                                .withExpectedValues("Logging")
+                                .withExpectedValues("Reporting") },
+                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
+                        new FieldValueValidator()
+                                .withFieldNames("min(name)")
+                                .withExpectedValues("Reporting")
+                                .withExpectedValues("Sales") }
         };
     }
 
@@ -490,21 +510,32 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "errorQueriesProvider")
     private Object[][] errorQueries() {
         return new Object[][]{
-                {"`isa`"},
-                {"PIII"},
-                {"DBBB as d select d"},
+                {"`isa`"}, // Tag doesn't exist in the test data
+                {"PIII"},  // same as above
+                {"DBBB as d select d"}, // same as above
+                {"hive_db has db"}, // same as above
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1"},
-                {"hive_table as t, sd, hive_column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"}
+                {"hive_table as t, sd, hive_column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"},
+                {"hive_table isa hive_db"}, // isa should be a trait/classification
+                {"hive_table isa FooTag"},  // FooTag doesn't exist
+                {"hive_table groupby(db.name)"}, // GroupBy on referred attribute is not supported
+                {"hive_table orderby(db.name)"}, // OrderBy on referred attribute is not supported
+                {"hive_table select db, columns"}, // Can't select multiple referred attributes/entity
+                {"hive_table select min(db.name), columns"}, // Can't do aggregation on referred attribute
+                {"hive_table select db.name, columns"}, // Can't select more than one referred attribute
+                {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
+                {"hive_table select owner, db.name"}, // Same as above
+                {"hive_order"}, // From src should be an Entity or Classification
         };
     }
 
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
     public void errorQueries(String query) throws AtlasBaseException {
-        discoveryService.searchUsingDslQuery(query, 25, 0);
+        discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 
     private void queryAssert(String query, FieldValueValidator fv) throws AtlasBaseException {
-        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, 25, 0);
+        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
         assertSearchResult(searchResult, fv);
     }
 
@@ -521,17 +552,17 @@ public class DSLQueriesTest extends BasicTestSetup {
         assertEquals(searchResult.getAttributes().getValues().size(), expected.values.size());
     }
 
-    private void assertSearchResult(AtlasSearchResult searchResult, int expected) {
+    private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
         assertNotNull(searchResult);
         if(expected == 0) {
             assertTrue(searchResult.getAttributes() == null || CollectionUtils.isEmpty(searchResult.getAttributes().getValues()));
-            assertNull(searchResult.getEntities());
+            assertNull(searchResult.getEntities(), query);
         } else if(searchResult.getEntities() != null) {
-            assertEquals(searchResult.getEntities().size(), expected);
+            assertEquals(searchResult.getEntities().size(), expected, query);
         } else {
             assertNotNull(searchResult.getAttributes());
             assertNotNull(searchResult.getAttributes().getValues());
-            assertEquals(searchResult.getAttributes().getValues().size(), expected);
+            assertEquals(searchResult.getAttributes().getValues().size(), expected, query);
         }
     }
 
