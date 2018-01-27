@@ -25,6 +25,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -32,10 +35,13 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -56,6 +62,7 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     private static String        msgIdPrefix = UUID.randomUUID().toString();
     private static AtomicInteger msgIdSuffix = new AtomicInteger(0);
+    private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
     /**
      * The current expected version for notification messages.
@@ -83,6 +90,9 @@ public abstract class AbstractNotification implements NotificationInterface {
         registerTypeAdapter(Referenceable.class, new ReferenceableSerializer()).
         registerTypeAdapter(IStruct.class, new StructSerializer()).
         registerTypeAdapter(JSONArray.class, new JSONArraySerializer()).
+        registerTypeAdapter(AtlasEntityWithExtInfo.class, new AtlasEntityWithExtInfoSerializer()).
+        registerTypeAdapter(AtlasEntitiesWithExtInfo.class, new AtlasEntitiesWithExtInfoSerializer()).
+        registerTypeAdapter(AtlasObjectId.class, new AtlasObjectIdSerializer()).
         create();
 
     // ----- Constructors ----------------------------------------------------
@@ -264,6 +274,57 @@ public abstract class AbstractNotification implements NotificationInterface {
         @Override
         public JsonElement serialize(JSONArray src, Type typeOfSrc, JsonSerializationContext context) {
             return new JsonParser().parse(src.toString()).getAsJsonArray();
+        }
+    }
+
+    /**
+     * Serializer for AtlasEntityWithExtInfo.
+     */
+    public static final class AtlasEntityWithExtInfoSerializer implements JsonSerializer<AtlasEntityWithExtInfo> {
+        @Override
+        public JsonElement serialize(AtlasEntityWithExtInfo src, Type typeOfSrc, JsonSerializationContext context) {
+            try {
+                String instanceJson = mapper.writeValueAsString(src);
+                return new JsonParser().parse(instanceJson).getAsJsonObject();
+            } catch (IOException excp) {
+                LOG.warn("failed to serialize entity {}", src, excp);
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * Serializer for AtlasEntitiesWithExtInfo.
+     */
+    public static final class AtlasEntitiesWithExtInfoSerializer implements JsonSerializer<AtlasEntitiesWithExtInfo> {
+        @Override
+        public JsonElement serialize(AtlasEntitiesWithExtInfo src, Type typeOfSrc, JsonSerializationContext context) {
+            try {
+                String instanceJson = mapper.writeValueAsString(src);
+                return new JsonParser().parse(instanceJson).getAsJsonObject();
+            } catch (IOException excp) {
+                LOG.warn("failed to serialize entity {}", src, excp);
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * Serializer for AtlasObjectId.
+     */
+    public static final class AtlasObjectIdSerializer implements JsonSerializer<AtlasObjectId> {
+        @Override
+        public JsonElement serialize(AtlasObjectId src, Type typeOfSrc, JsonSerializationContext context) {
+            try {
+                String instanceJson = mapper.writeValueAsString(src);
+                return new JsonParser().parse(instanceJson).getAsJsonObject();
+            } catch (IOException excp) {
+                LOG.warn("failed to serialize objectId {}", src, excp);
+            }
+
+            return null;
         }
     }
 

@@ -23,8 +23,15 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
 import org.apache.atlas.hook.AtlasHook;
-import org.apache.atlas.notification.hook.HookNotification;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.notification.hook.HookNotification.EntityDeleteRequestV2;
+import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequestV2;
+import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -40,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -213,113 +221,122 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private void createOrUpdateNamespaceInstance(HBaseOperationContext hbaseOperationContext) {
-        Referenceable nameSpaceRef = buildNameSpaceRef(hbaseOperationContext);
+        AtlasEntity nameSpace = buildNameSpace(hbaseOperationContext);
 
         switch (hbaseOperationContext.getOperation()) {
             case CREATE_NAMESPACE:
-                LOG.info("Create NameSpace {}", nameSpaceRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Create NameSpace {}", nameSpace.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequestV2(hbaseOperationContext.getUser(), new AtlasEntitiesWithExtInfo(nameSpace)));
                 break;
 
             case ALTER_NAMESPACE:
-                LOG.info("Modify NameSpace {}", nameSpaceRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Modify NameSpace {}", nameSpace.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequestV2(hbaseOperationContext.getUser(), new AtlasEntitiesWithExtInfo(nameSpace)));
                 break;
         }
     }
 
     private void deleteNameSpaceInstance(HBaseOperationContext hbaseOperationContext) {
-        String nameSpaceQualifiedName = getNameSpaceQualifiedName(clusterName, hbaseOperationContext.getNameSpace());
+        String        nameSpaceQName = getNameSpaceQualifiedName(clusterName, hbaseOperationContext.getNameSpace());
+        AtlasObjectId nameSpaceId    = new AtlasObjectId(HBaseDataTypes.HBASE_NAMESPACE.getName(), REFERENCEABLE_ATTRIBUTE_NAME, nameSpaceQName);
 
-        LOG.info("Delete NameSpace {}", nameSpaceQualifiedName);
+        LOG.info("Delete NameSpace {}", nameSpaceQName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_NAMESPACE.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  nameSpaceQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequestV2(hbaseOperationContext.getUser(), Collections.singletonList(nameSpaceId)));
     }
 
     private void createOrUpdateTableInstance(HBaseOperationContext hbaseOperationContext) {
-        Referenceable       nameSpaceRef    = buildNameSpaceRef(hbaseOperationContext);
-        Referenceable       tableRef        = buildTableRef(hbaseOperationContext, nameSpaceRef);
-        List<Referenceable> columnFamilyRef = buildColumnFamiliesRef(hbaseOperationContext, nameSpaceRef, tableRef);
+        AtlasEntity       nameSpace      = buildNameSpace(hbaseOperationContext);
+        AtlasEntity       table          = buildTable(hbaseOperationContext, nameSpace);
+        List<AtlasEntity> columnFamilies = buildColumnFamilies(hbaseOperationContext, nameSpace, table);
 
-        tableRef.set(ATTR_COLUMNFAMILIES, columnFamilyRef);
+        table.setAttribute(ATTR_COLUMNFAMILIES, AtlasTypeUtil.getAtlasObjectIds(columnFamilies));
+
+        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(table);
+
+        entities.addReferredEntity(nameSpace);
+
+        if (CollectionUtils.isNotEmpty(columnFamilies)) {
+            for (AtlasEntity columnFamily : columnFamilies) {
+                entities.addReferredEntity(columnFamily);
+            }
+        }
 
         switch (hbaseOperationContext.getOperation()) {
             case CREATE_TABLE:
-                LOG.info("Create Table {}", tableRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Create Table {}", table.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequestV2(hbaseOperationContext.getUser(), entities));
                 break;
 
             case ALTER_TABLE:
-                LOG.info("Modify Table {}", tableRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Modify Table {}", table.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequestV2(hbaseOperationContext.getUser(), entities));
                 break;
         }
     }
 
     private void deleteTableInstance(HBaseOperationContext hbaseOperationContext) {
-        TableName tableName      = hbaseOperationContext.getTableName();
-        String    tableNameSpace = tableName.getNamespaceAsString();
+        TableName tableName     = hbaseOperationContext.getTableName();
+        String    nameSpaceName = tableName.getNamespaceAsString();
 
-        if (tableNameSpace == null) {
-            tableNameSpace = tableName.getNameWithNamespaceInclAsString();
+        if (nameSpaceName == null) {
+            nameSpaceName = tableName.getNameWithNamespaceInclAsString();
         }
 
-        String tableNameStr       = tableName.getNameAsString();
-        String tableQualifiedName = getTableQualifiedName(clusterName, tableNameSpace, tableNameStr);
+        String        tableNameStr = tableName.getNameAsString();
+        String        tableQName   = getTableQualifiedName(clusterName, nameSpaceName, tableNameStr);
+        AtlasObjectId tableId      = new AtlasObjectId(HBaseDataTypes.HBASE_TABLE.getName(), REFERENCEABLE_ATTRIBUTE_NAME, tableQName);
 
-        LOG.info("Delete Table {}", tableQualifiedName);
+        LOG.info("Delete Table {}", tableQName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_TABLE.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  tableQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequestV2(hbaseOperationContext.getUser(), Collections.singletonList(tableId)));
     }
 
     private void createOrUpdateColumnFamilyInstance(HBaseOperationContext hbaseOperationContext) {
-        Referenceable nameSpaceRef    = buildNameSpaceRef(hbaseOperationContext);
-        Referenceable tableRef        = buildTableRef(hbaseOperationContext, nameSpaceRef);
-        Referenceable columnFamilyRef = buildColumnFamilyRef(hbaseOperationContext, hbaseOperationContext.gethColumnDescriptor(), nameSpaceRef, tableRef);
+        AtlasEntity nameSpace    = buildNameSpace(hbaseOperationContext);
+        AtlasEntity table        = buildTable(hbaseOperationContext, nameSpace);
+        AtlasEntity columnFamily = buildColumnFamily(hbaseOperationContext, hbaseOperationContext.gethColumnDescriptor(), nameSpace, table);
+
+        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(columnFamily);
+
+        entities.addReferredEntity(nameSpace);
+        entities.addReferredEntity(table);
 
         switch (hbaseOperationContext.getOperation()) {
             case CREATE_COLUMN_FAMILY:
-                LOG.info("Create ColumnFamily {}", columnFamilyRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Create ColumnFamily {}", columnFamily.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityCreateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
+                hbaseOperationContext.addMessage(new EntityCreateRequestV2(hbaseOperationContext.getUser(), entities));
                 break;
 
             case ALTER_COLUMN_FAMILY:
-                LOG.info("Alter ColumnFamily {}", columnFamilyRef.get(REFERENCEABLE_ATTRIBUTE_NAME));
+                LOG.info("Alter ColumnFamily {}", columnFamily.getAttribute(REFERENCEABLE_ATTRIBUTE_NAME));
 
-                hbaseOperationContext.addMessage(new HookNotification.EntityUpdateRequest(hbaseOperationContext.getUser(), nameSpaceRef, tableRef, columnFamilyRef));
+                hbaseOperationContext.addMessage(new EntityUpdateRequestV2(hbaseOperationContext.getUser(), entities));
                 break;
         }
     }
 
     private void deleteColumnFamilyInstance(HBaseOperationContext hbaseOperationContext) {
-        TableName tableName      = hbaseOperationContext.getTableName();
-        String    tableNameSpace = tableName.getNamespaceAsString();
+        TableName tableName     = hbaseOperationContext.getTableName();
+        String    nameSpaceName = tableName.getNamespaceAsString();
 
-        if (tableNameSpace == null) {
-            tableNameSpace = tableName.getNameWithNamespaceInclAsString();
+        if (nameSpaceName == null) {
+            nameSpaceName = tableName.getNameWithNamespaceInclAsString();
         }
 
-        String tableNameStr              = tableName.getNameAsString();
-        String columnFamilyName          = hbaseOperationContext.getColummFamily();
-        String columnFamilyQualifiedName = getColumnFamilyQualifiedName(clusterName, tableNameSpace, tableNameStr, columnFamilyName);
+        String        tableNameStr      = tableName.getNameAsString();
+        String        columnFamilyName  = hbaseOperationContext.getColummFamily();
+        String        columnFamilyQName = getColumnFamilyQualifiedName(clusterName, nameSpaceName, tableNameStr, columnFamilyName);
+        AtlasObjectId columnFamilyId    = new AtlasObjectId(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(), REFERENCEABLE_ATTRIBUTE_NAME, columnFamilyQName);
 
-        LOG.info("Delete ColumnFamily {}", columnFamilyQualifiedName);
+        LOG.info("Delete ColumnFamily {}", columnFamilyQName);
 
-        hbaseOperationContext.addMessage(new HookNotification.EntityDeleteRequest(hbaseOperationContext.getUser(),
-                                                                                  HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(),
-                                                                                  REFERENCEABLE_ATTRIBUTE_NAME,
-                                                                                  columnFamilyQualifiedName));
+        hbaseOperationContext.addMessage(new EntityDeleteRequestV2(hbaseOperationContext.getUser(), Collections.singletonList(columnFamilyId)));
     }
 
 
@@ -363,127 +380,123 @@ public class HBaseAtlasHook extends AtlasHook {
         return tableName.substring(tableName.indexOf(":") + 1);
     }
 
-    private Referenceable buildNameSpaceRef(HBaseOperationContext hbaseOperationContext) {
-        Referenceable nameSpaceRef = new Referenceable(HBaseDataTypes.HBASE_NAMESPACE.getName());
-
-        String nameSpace = null;
-
+    private AtlasEntity buildNameSpace(HBaseOperationContext hbaseOperationContext) {
+        AtlasEntity         nameSpace     = new AtlasEntity(HBaseDataTypes.HBASE_NAMESPACE.getName());
         NamespaceDescriptor nameSpaceDesc = hbaseOperationContext.getNamespaceDescriptor();
+        String              nameSpaceName = nameSpaceDesc == null ? null : hbaseOperationContext.getNamespaceDescriptor().getName();
 
-        if (nameSpaceDesc != null) {
-            nameSpace = hbaseOperationContext.getNamespaceDescriptor().getName();
+        if (nameSpaceName == null) {
+            nameSpaceName = hbaseOperationContext.getNameSpace();
         }
-
-        if (nameSpace == null) {
-            nameSpace = hbaseOperationContext.getNameSpace();
-        }
-
-        nameSpaceRef.set(ATTR_NAME, nameSpace);
-        nameSpaceRef.set(REFERENCEABLE_ATTRIBUTE_NAME, getNameSpaceQualifiedName(clusterName, nameSpace));
-        nameSpaceRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
-        nameSpaceRef.set(ATTR_DESCRIPTION, nameSpace);
-        nameSpaceRef.set(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
-        nameSpaceRef.set(ATTR_OWNER, hbaseOperationContext.getOwner());
 
         Date now = new Date(System.currentTimeMillis());
 
+        nameSpace.setAttribute(ATTR_NAME, nameSpaceName);
+        nameSpace.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, getNameSpaceQualifiedName(clusterName, nameSpaceName));
+        nameSpace.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
+        nameSpace.setAttribute(ATTR_DESCRIPTION, nameSpaceName);
+        nameSpace.setAttribute(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
+        nameSpace.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
+        nameSpace.setAttribute(ATTR_MODIFIED_TIME, now);
+
         if (OPERATION.CREATE_NAMESPACE.equals(hbaseOperationContext.getOperation())) {
-            nameSpaceRef.set(ATTR_CREATE_TIME, now);
-            nameSpaceRef.set(ATTR_MODIFIED_TIME, now);
-        } else {
-            nameSpaceRef.set(ATTR_MODIFIED_TIME, now);
+            nameSpace.setAttribute(ATTR_CREATE_TIME, now);
         }
 
-        return nameSpaceRef;
+        return nameSpace;
     }
 
-    private Referenceable buildTableRef(HBaseOperationContext hbaseOperationContext, Referenceable nameSpaceRef) {
-        Referenceable tableRef  = new Referenceable(HBaseDataTypes.HBASE_TABLE.getName());
-        String        tableName = getTableName(hbaseOperationContext);
-        String    tableNameSpace     = hbaseOperationContext.getNameSpace();
-        String    tableQualifiedName = getTableQualifiedName(clusterName, tableNameSpace, tableName);
-        OPERATION operation          = hbaseOperationContext.getOperation();
-        Date      now                = new Date(System.currentTimeMillis());
+    private AtlasEntity buildTable(HBaseOperationContext hbaseOperationContext, AtlasEntity nameSpace) {
+        AtlasEntity table         = new AtlasEntity(HBaseDataTypes.HBASE_TABLE.getName());
+        String      tableName     = getTableName(hbaseOperationContext);
+        String      nameSpaceName = (String) nameSpace.getAttribute(ATTR_NAME);
+        String      tableQName    = getTableQualifiedName(clusterName, nameSpaceName, tableName);
+        OPERATION   operation     = hbaseOperationContext.getOperation();
+        Date        now           = new Date(System.currentTimeMillis());
 
-        tableRef.set(REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
-        tableRef.set(ATTR_NAME, tableName);
-        tableRef.set(ATTR_URI, tableName);
-        tableRef.set(ATTR_OWNER, hbaseOperationContext.getOwner());
-        tableRef.set(ATTR_DESCRIPTION, tableName);
-        tableRef.set(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
+        table.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, tableQName);
+        table.setAttribute(ATTR_NAME, tableName);
+        table.setAttribute(ATTR_URI, tableName);
+        table.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
+        table.setAttribute(ATTR_DESCRIPTION, tableName);
+        table.setAttribute(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
+        table.setAttribute(ATTR_NAMESPACE, AtlasTypeUtil.getAtlasObjectId(nameSpace));
 
         switch (operation) {
             case CREATE_TABLE:
-                tableRef.set(ATTR_NAMESPACE, nameSpaceRef);
-                tableRef.set(ATTR_CREATE_TIME, now);
-                tableRef.set(ATTR_MODIFIED_TIME, now);
+                table.setAttribute(ATTR_CREATE_TIME, now);
+                table.setAttribute(ATTR_MODIFIED_TIME, now);
                 break;
             case ALTER_TABLE:
-                tableRef.set(ATTR_NAMESPACE, nameSpaceRef);
-                tableRef.set(ATTR_MODIFIED_TIME, now);
+                table.setAttribute(ATTR_MODIFIED_TIME, now);
                 break;
             default:
-                tableRef.set(ATTR_NAMESPACE, nameSpaceRef.getId());
                 break;
         }
 
-        return tableRef;
+        return table;
     }
 
-    private List<Referenceable> buildColumnFamiliesRef(HBaseOperationContext hbaseOperationContext, Referenceable nameSpaceRef, Referenceable tableRef) {
-        List<Referenceable> entities = new ArrayList<>();
-
+    private List<AtlasEntity> buildColumnFamilies(HBaseOperationContext hbaseOperationContext, AtlasEntity nameSpace, AtlasEntity table) {
+        List<AtlasEntity>   columnFamilies     = new ArrayList<>();
         HColumnDescriptor[] hColumnDescriptors = hbaseOperationContext.gethColumnDescriptors();
 
         if (hColumnDescriptors != null) {
             for (HColumnDescriptor hColumnDescriptor : hColumnDescriptors) {
-                Referenceable columnFamilyRef = buildColumnFamilyRef(hbaseOperationContext, hColumnDescriptor, nameSpaceRef, tableRef);
+                AtlasEntity columnFamily = buildColumnFamily(hbaseOperationContext, hColumnDescriptor, nameSpace, table);
 
-                entities.add(columnFamilyRef);
+                columnFamilies.add(columnFamily);
             }
         }
 
-        return entities;
+        return columnFamilies;
     }
 
-    private Referenceable buildColumnFamilyRef(HBaseOperationContext hbaseOperationContext, HColumnDescriptor hColumnDescriptor, Referenceable nameSpaceRef, Referenceable tableReference) {
-        Referenceable columnFamilyRef  = new Referenceable(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName());
-        String        columnFamilyName = hColumnDescriptor.getNameAsString();
-        String        tableName        = (String) tableReference.get(ATTR_NAME);
-        String        namespace        = (String) nameSpaceRef.get(ATTR_NAME);
+    private AtlasEntity buildColumnFamily(HBaseOperationContext hbaseOperationContext, HColumnDescriptor hColumnDescriptor, AtlasEntity nameSpace, AtlasEntity table) {
+        AtlasEntity columnFamily      = new AtlasEntity(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName());
+        String      columnFamilyName  = hColumnDescriptor.getNameAsString();
+        String      tableName         = (String) table.getAttribute(ATTR_NAME);
+        String      nameSpaceName     = (String) nameSpace.getAttribute(ATTR_NAME);
+        String      columnFamilyQName = getColumnFamilyQualifiedName(clusterName, nameSpaceName, tableName, columnFamilyName);
+        Date        now               = new Date(System.currentTimeMillis());
 
-        String columnFamilyQualifiedName = getColumnFamilyQualifiedName(clusterName, namespace, tableName, columnFamilyName);
-
-        columnFamilyRef.set(ATTR_NAME, columnFamilyName);
-        columnFamilyRef.set(ATTR_DESCRIPTION, columnFamilyName);
-        columnFamilyRef.set(REFERENCEABLE_ATTRIBUTE_NAME, columnFamilyQualifiedName);
-        columnFamilyRef.set(ATTR_OWNER, hbaseOperationContext.getOwner());
-
-        Date now = new Date(System.currentTimeMillis());
+        columnFamily.setAttribute(ATTR_NAME, columnFamilyName);
+        columnFamily.setAttribute(ATTR_DESCRIPTION, columnFamilyName);
+        columnFamily.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, columnFamilyQName);
+        columnFamily.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
+        columnFamily.setAttribute(ATTR_TABLE, AtlasTypeUtil.getAtlasObjectId(table));
 
         switch (hbaseOperationContext.getOperation()) {
             case CREATE_COLUMN_FAMILY:
-                columnFamilyRef.set(ATTR_TABLE, tableReference);
-                columnFamilyRef.set(ATTR_CREATE_TIME, now);
-                columnFamilyRef.set(ATTR_MODIFIED_TIME, now);
+                columnFamily.setAttribute(ATTR_CREATE_TIME, now);
+                columnFamily.setAttribute(ATTR_MODIFIED_TIME, now);
                 break;
 
             case ALTER_COLUMN_FAMILY:
-                columnFamilyRef.set(ATTR_TABLE, tableReference);
-                columnFamilyRef.set(ATTR_MODIFIED_TIME, now);
+                columnFamily.setAttribute(ATTR_MODIFIED_TIME, now);
                 break;
 
             default:
-                columnFamilyRef.set(ATTR_TABLE, tableReference.getId());
+                break;
         }
 
-        return columnFamilyRef;
+        return columnFamily;
     }
 
     private String getTableName(HBaseOperationContext hbaseOperationContext) {
-        HTableDescriptor tableDescriptor = hbaseOperationContext.gethTableDescriptor();
+        final String ret;
 
-        return (tableDescriptor != null) ? tableDescriptor.getNameAsString() : null;
+        TableName tableName = hbaseOperationContext.getTableName();
+
+        if (tableName != null) {
+            ret = tableName.getNameAsString();
+        } else {
+            HTableDescriptor tableDescriptor = hbaseOperationContext.gethTableDescriptor();
+
+            ret = (tableDescriptor != null) ? tableDescriptor.getNameAsString() : null;
+        }
+
+        return ret;
     }
 
     private void notifyAsPrivilegedAction(final HBaseOperationContext hbaseOperationContext) {
@@ -491,7 +504,7 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.debug("==> HBaseAtlasHook.notifyAsPrivilegedAction({})", hbaseOperationContext);
         }
 
-        final List<HookNotification.HookNotificationMessage> messages = hbaseOperationContext.getMessages();
+        final List<HookNotificationMessage> messages = hbaseOperationContext.getMessages();
 
 
         try {
@@ -534,7 +547,7 @@ public class HBaseAtlasHook extends AtlasHook {
      *
      * @param messages hook notification messages
      */
-    protected void notifyEntities(List<HookNotification.HookNotificationMessage> messages) {
+    protected void notifyEntities(List<HookNotificationMessage> messages) {
         final int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
         notifyEntities(messages, maxRetries);
     }

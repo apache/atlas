@@ -22,6 +22,9 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -38,7 +41,6 @@ import java.util.List;
  * Contains the structure of messages transferred from hooks to atlas.
  */
 public class HookNotification implements JsonDeserializer<HookNotification.HookNotificationMessage> {
-
     @Override
     public HookNotificationMessage deserialize(JsonElement json, Type typeOfT,
                                                JsonDeserializationContext context) {
@@ -61,6 +63,18 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         case TYPE_UPDATE:
             return context.deserialize(json, TypeRequest.class);
 
+        case ENTITY_CREATE_V2:
+            return context.deserialize(json, EntityCreateRequestV2.class);
+
+        case ENTITY_FULL_UPDATE_V2:
+            return context.deserialize(json, EntityUpdateRequestV2.class);
+
+        case ENTITY_PARTIAL_UPDATE_V2:
+            return context.deserialize(json, EntityPartialUpdateRequestV2.class);
+
+        case ENTITY_DELETE_V2:
+            return context.deserialize(json, EntityDeleteRequestV2.class);
+
         default:
             throw new IllegalStateException("Unhandled type " + type);
         }
@@ -70,7 +84,8 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
      * Type of the hook message.
      */
     public enum HookNotificationType {
-        TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE, ENTITY_DELETE
+        TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE, ENTITY_DELETE,
+        ENTITY_CREATE_V2, ENTITY_PARTIAL_UPDATE_V2, ENTITY_FULL_UPDATE_V2, ENTITY_DELETE_V2
     }
 
     /**
@@ -180,7 +195,7 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
     }
 
     /**
-     * Hook message for updating entities(partial update).
+     * Hook message for updating an entity(partial update).
      */
     public static class EntityPartialUpdateRequest extends HookNotificationMessage {
         private String typeName;
@@ -228,7 +243,7 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
     }
 
     /**
-     * Hook message for creating new entities.
+     * Hook message for deleting an entity.
      */
     public static class EntityDeleteRequest extends HookNotificationMessage {
 
@@ -270,6 +285,100 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
                 + ", attribute=" + attribute
                 + ", value=" + attributeValue
                 + '}';
+        }
+    }
+
+    public static class EntityCreateRequestV2 extends HookNotificationMessage {
+        private AtlasEntitiesWithExtInfo entities;
+
+        private EntityCreateRequestV2() {
+        }
+
+        public EntityCreateRequestV2(String user, AtlasEntitiesWithExtInfo entities) {
+            super(HookNotificationType.ENTITY_CREATE_V2, user);
+
+            this.entities = entities;
+        }
+
+        public AtlasEntitiesWithExtInfo getEntities() {
+            return entities;
+        }
+
+        @Override
+        public String toString() {
+            return entities.toString();
+        }
+    }
+
+    public static class EntityUpdateRequestV2 extends HookNotificationMessage {
+        private AtlasEntitiesWithExtInfo entities;
+
+        private EntityUpdateRequestV2() {
+        }
+
+        public EntityUpdateRequestV2(String user, AtlasEntitiesWithExtInfo entities) {
+            super(HookNotificationType.ENTITY_FULL_UPDATE_V2, user);
+
+            this.entities = entities;
+        }
+
+        public AtlasEntitiesWithExtInfo getEntities() {
+            return entities;
+        }
+
+        @Override
+        public String toString() {
+            return entities.toString();
+        }
+    }
+
+    public static class EntityPartialUpdateRequestV2 extends HookNotificationMessage {
+        private AtlasObjectId          entityId;
+        private AtlasEntityWithExtInfo entity;
+
+        private EntityPartialUpdateRequestV2() {
+        }
+
+        public EntityPartialUpdateRequestV2(String user, AtlasObjectId entityId, AtlasEntityWithExtInfo entity) {
+            super(HookNotificationType.ENTITY_PARTIAL_UPDATE_V2, user);
+
+            this.entityId = entityId;
+            this.entity   = entity;
+        }
+
+        public AtlasObjectId getEntityId() {
+            return entityId;
+        }
+
+        public AtlasEntityWithExtInfo getEntity() {
+            return entity;
+        }
+
+        @Override
+        public String toString() {
+            return entity.toString();
+        }
+    }
+
+    public static class EntityDeleteRequestV2 extends HookNotificationMessage {
+        private List<AtlasObjectId> entities;
+
+        private EntityDeleteRequestV2() {
+        }
+
+        public EntityDeleteRequestV2(String user, List<AtlasObjectId> entities) {
+            super(HookNotificationType.ENTITY_DELETE_V2, user);
+
+            this.entities = entities;
+        }
+
+        public List<AtlasObjectId> getEntities() {
+            return entities;
+        }
+
+        @Override
+        public String toString() {
+            return entities.toString();
         }
     }
 }

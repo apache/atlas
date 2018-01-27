@@ -27,15 +27,21 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +51,7 @@ import java.util.Map;
  * Base notification message deserializer.
  */
 public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMessageDeserializer<T> {
+    private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationConfig.Feature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
     private static final Map<Type, JsonDeserializer> DESERIALIZER_MAP = new HashMap<>();
 
@@ -55,6 +62,9 @@ public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMe
         DESERIALIZER_MAP.put(IStruct.class, new StructDeserializer());
         DESERIALIZER_MAP.put(IReferenceableInstance.class, new ReferenceableDeserializer());
         DESERIALIZER_MAP.put(Referenceable.class, new ReferenceableDeserializer());
+        DESERIALIZER_MAP.put(AtlasEntityWithExtInfo.class, new AtlasEntityWithExtInfoDeserializer());
+        DESERIALIZER_MAP.put(AtlasEntitiesWithExtInfo.class, new AtlasEntitiesWithExtInfoDeserializer());
+        DESERIALIZER_MAP.put(AtlasObjectId.class, new AtlasObjectIdDeserializer());
     }
 
 
@@ -160,6 +170,42 @@ public abstract class AbstractMessageDeserializer<T> extends AtlasNotificationMe
                                                   final JsonDeserializationContext context) {
 
             return InstanceSerialization.fromJsonReferenceable(json.toString(), true);
+        }
+    }
+
+    protected static final class AtlasEntityWithExtInfoDeserializer implements JsonDeserializer<AtlasEntityWithExtInfo> {
+        @Override
+        public AtlasEntityWithExtInfo deserialize(final JsonElement json, final Type type,
+                                                  final JsonDeserializationContext context) throws JsonParseException {
+            try {
+                return mapper.readValue(json.toString(), AtlasEntityWithExtInfo.class);
+            } catch (IOException excp) {
+                throw new JsonParseException(excp);
+            }
+        }
+    }
+
+    protected static final class AtlasEntitiesWithExtInfoDeserializer implements JsonDeserializer<AtlasEntitiesWithExtInfo> {
+        @Override
+        public AtlasEntitiesWithExtInfo deserialize(final JsonElement json, final Type type,
+                                                    final JsonDeserializationContext context) throws JsonParseException {
+            try {
+                return mapper.readValue(json.toString(), AtlasEntitiesWithExtInfo.class);
+            } catch (IOException excp) {
+                throw new JsonParseException(excp);
+            }
+        }
+    }
+
+    protected static final class AtlasObjectIdDeserializer implements JsonDeserializer<AtlasObjectId> {
+        @Override
+        public AtlasObjectId deserialize(final JsonElement json, final Type type,
+                                         final JsonDeserializationContext context) throws JsonParseException {
+            try {
+                return mapper.readValue(json.toString(), AtlasObjectId.class);
+            } catch (IOException excp) {
+                throw new JsonParseException(excp);
+            }
         }
     }
 }
