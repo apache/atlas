@@ -54,6 +54,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -592,6 +593,8 @@ public abstract class AtlasBaseClient {
         private final String produces;
         private final Response.Status status;
 
+        private static final Logger LOG = LoggerFactory.getLogger(API.class);
+
         public API(String path, String method, Response.Status status) {
             this(path, method, status, JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON);
         }
@@ -613,7 +616,25 @@ public abstract class AtlasBaseClient {
         }
 
         public String getNormalizedPath() {
-            return Paths.get(path).normalize().toString();
+            // This method used to return Paths.get(path).normalize().toString(), but
+            // the use of Paths.get(path) on Windows produces a path with Windows
+            // path separators (i.e. back-slashes) which is not valid for a URI
+            // and will result in an HTTP 404 status code.
+            URI uri = null;
+            String resultUri = null;
+
+            try {
+                uri = new URI(path);
+                if (uri != null) {
+                    URI normalizedUri = uri.normalize();
+                    resultUri = normalizedUri.toString();
+                }
+            } catch (Exception e) {
+                LOG.error("getNormalizedPath() caught exception for path={}", path, e);
+                resultUri = null;
+            }
+
+            return resultUri;
         }
 
         public Response.Status getExpectedStatus() {
