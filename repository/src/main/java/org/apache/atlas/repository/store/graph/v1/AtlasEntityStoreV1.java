@@ -226,6 +226,38 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public EntityMutationResponse updateEntity(AtlasObjectId objectId, AtlasEntityWithExtInfo updatedEntityInfo, boolean isPartialUpdate) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> updateEntity({}, {}, {})", objectId, updatedEntityInfo, isPartialUpdate);
+        }
+
+        if (objectId == null || updatedEntityInfo == null || updatedEntityInfo.getEntity() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "null entity-id/entity");
+        }
+
+        final String guid;
+
+        if (AtlasTypeUtil.isAssignedGuid(objectId.getGuid())) {
+            guid = objectId.getGuid();
+        } else {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, objectId.getTypeName());
+            }
+
+            guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(typeRegistry.getEntityTypeByName(objectId.getTypeName()), objectId.getUniqueAttributes());
+        }
+
+        AtlasEntity entity = updatedEntityInfo.getEntity();
+
+        entity.setGuid(guid);
+
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), isPartialUpdate, false);
+    }
+
+    @Override
+    @GraphTransaction
     public EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
                                                            AtlasEntityWithExtInfo updatedEntityInfo) throws AtlasBaseException {
 

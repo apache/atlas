@@ -110,7 +110,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
         AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationBaseMessage.class);
 
-        if (msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
+        if (msg == null || msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
             ret = AtlasType.fromV1Json(messageJson, messageType);
         } else  {
             String msgJson = messageJson;

@@ -20,9 +20,11 @@ package org.apache.atlas.hbase;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
-import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.hadoop.conf.Configuration;
@@ -40,6 +42,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Collections;
 import java.util.Iterator;
 
 import static org.testng.Assert.assertNotNull;
@@ -47,12 +50,13 @@ import static org.testng.Assert.fail;
 
 
 public class HBaseAtlasHookIT {
-    private static final   Logger LOG          = LoggerFactory.getLogger(HBaseAtlasHookIT.class);
-    protected static final String DGI_URL      = "http://localhost:31000/";
+    private   static final Logger LOG          = LoggerFactory.getLogger(HBaseAtlasHookIT.class);
+    protected static final String ATLAS_URL    = "http://localhost:31000/";
     protected static final String CLUSTER_NAME = "primary";
-    private static HBaseTestingUtility utility;
-    private static int                 port;
-    private static AtlasClient         atlasClient;
+
+    private HBaseTestingUtility utility;
+    private int                 port;
+    private AtlasClientV2       atlasClient;
 
 
     @BeforeClass
@@ -65,36 +69,42 @@ public class HBaseAtlasHookIT {
         }
     }
 
-
     @AfterClass
-    public static void cleanup() throws Exception {
-        LOG.info(" Stopping mini cluster.. ");
+    public void cleanup() throws Exception {
+        LOG.info("Stopping mini cluster.. ");
         utility.shutdownMiniCluster();
     }
 
     @Test
     public void testCreateNamesapce() throws Exception {
         final Configuration conf = HBaseConfiguration.create();
+
         conf.set("hbase.zookeeper.quorum", "localhost");
         conf.set("hbase.zookeeper.property.clientPort", String.valueOf(port));
         conf.set("zookeeper.znode.parent", "/hbase-unsecure");
+
         Connection          conn  = ConnectionFactory.createConnection(conf);
         Admin               admin = conn.getAdmin();
         NamespaceDescriptor ns    = NamespaceDescriptor.create("test_namespace").build();
+
         admin.createNamespace(ns);
-        String nameSpace = assertNameSpaceIsRegistered(ns.getName());
+
         //assert on qualified name
-        Referenceable nameSpaceRef           = getAtlasClient().getEntity(nameSpace);
-        String        nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, ns.getName());
-        Assert.assertEquals(nameSpaceRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
+        String                 nameSpace              = assertNameSpaceIsRegistered(ns.getName());
+        AtlasEntityWithExtInfo nameSpaceRef           = getAtlasClient().getEntityByGuid(nameSpace);
+        String                 nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, ns.getName());
+
+        Assert.assertEquals(nameSpaceRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
     }
 
     @Test
     public void testCreateTable() throws Exception {
         final Configuration conf = HBaseConfiguration.create();
+
         conf.set("hbase.zookeeper.quorum", "localhost");
         conf.set("hbase.zookeeper.property.clientPort", String.valueOf(port));
         conf.set("zookeeper.znode.parent", "/hbase-unsecure");
+
         Connection conn      = ConnectionFactory.createConnection(conf);
         Admin      admin     = conn.getAdmin();
         String     namespace = "test_namespace1";
@@ -103,27 +113,35 @@ public class HBaseAtlasHookIT {
         // Create a table
         if (!admin.tableExists(TableName.valueOf(namespace, tablename))) {
             NamespaceDescriptor ns = NamespaceDescriptor.create(namespace).build();
+
             admin.createNamespace(ns);
+
             HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(namespace, tablename));
+
             tableDescriptor.addFamily(new HColumnDescriptor("colfam1"));
+
             admin.createTable(tableDescriptor);
         }
-        String table = assertTableIsRegistered(namespace, tablename);
+
         //assert on qualified name
-        Referenceable tableRef   = getAtlasClient().getEntity(table);
-        String        entityName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, namespace, tablename);
-        Assert.assertEquals(tableRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
+        String                 table      = assertTableIsRegistered(namespace, tablename);
+        AtlasEntityWithExtInfo tableRef   = getAtlasClient().getEntityByGuid(table);
+        String                 entityName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, namespace, tablename);
+
+        Assert.assertEquals(tableRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
     }
 
     // Methods for creating HBase
 
-    public static void createAtlasClient() {
+    private void createAtlasClient() {
         try {
             org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
             String[]                                       atlasEndPoint = configuration.getStringArray(HBaseAtlasHook.ATTR_ATLAS_ENDPOINT);
+
             configuration.setProperty("atlas.cluster.name", CLUSTER_NAME);
+
             if (atlasEndPoint == null || atlasEndPoint.length == 0) {
-                atlasEndPoint = new String[]{DGI_URL};
+                atlasEndPoint = new String[]{ATLAS_URL};
             }
 
             Iterator<String> keys = configuration.getKeys();
@@ -133,12 +151,10 @@ public class HBaseAtlasHookIT {
             }
 
             if (AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-                atlasClient = new AtlasClient(configuration, atlasEndPoint);
+                atlasClient = new AtlasClientV2(configuration, atlasEndPoint, null);
             } else {
-                atlasClient = new AtlasClient(configuration, atlasEndPoint, new String[]{"admin", "admin"});
+                atlasClient = new AtlasClientV2(configuration, atlasEndPoint, new String[]{"admin", "admin"});
             }
-
-
         } catch (Exception e) {
             LOG.error("Unable to create AtlasClient for Testing ", e);
         }
@@ -147,15 +163,18 @@ public class HBaseAtlasHookIT {
     private static int getFreePort() throws IOException {
         ServerSocket serverSocket = new ServerSocket(0);
         int          port         = serverSocket.getLocalPort();
+
         serverSocket.close();
+
         return port;
     }
 
-    public static void createHBaseCluster() throws Exception {
+    private void createHBaseCluster() throws Exception {
         LOG.info("Creating Hbase Admin...");
-        port = getFreePort();
 
+        port    = getFreePort();
         utility = new HBaseTestingUtility();
+
         utility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(port));
         utility.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
         utility.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
@@ -170,8 +189,8 @@ public class HBaseAtlasHookIT {
     }
 
 
-    public AtlasClient getAtlasClient() {
-        AtlasClient ret = null;
+    public AtlasClientV2 getAtlasClient() {
+        AtlasClientV2 ret = null;
         if (atlasClient != null) {
             ret = atlasClient;
         }
@@ -205,7 +224,7 @@ public class HBaseAtlasHookIT {
     }
 
     public interface AssertPredicate {
-        void assertOnEntity(Referenceable entity) throws Exception;
+        void assertOnEntity(AtlasEntity entity) throws Exception;
     }
 
     public interface Predicate {
@@ -224,15 +243,19 @@ public class HBaseAtlasHookIT {
         waitFor(80000, new HBaseAtlasHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
-                Referenceable entity = atlasClient.getEntity(typeName, property, value);
+                AtlasEntityWithExtInfo entity = atlasClient.getEntityByAttribute(typeName, Collections.singletonMap(property, value));
+
                 assertNotNull(entity);
+
                 if (assertPredicate != null) {
-                    assertPredicate.assertOnEntity(entity);
+                    assertPredicate.assertOnEntity(entity.getEntity());
                 }
             }
         });
-        Referenceable entity = atlasClient.getEntity(typeName, property, value);
-        return entity.getId()._getId();
+
+        AtlasEntityWithExtInfo entity = atlasClient.getEntityByAttribute(typeName, Collections.singletonMap(property, value));
+
+        return entity.getEntity().getGuid();
     }
 
     /**

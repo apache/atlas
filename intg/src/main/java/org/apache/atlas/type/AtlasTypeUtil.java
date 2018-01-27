@@ -347,6 +347,22 @@ public class AtlasTypeUtil {
         return new AtlasObjectId(header.getGuid(), header.getTypeName());
     }
 
+    public static List<AtlasObjectId> getAtlasObjectIds(List<AtlasEntity> entities) {
+        final List<AtlasObjectId> ret;
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            ret = new ArrayList<>(entities.size());
+
+            for (AtlasEntity entity : entities) {
+                ret.add(getAtlasObjectId(entity));
+            }
+        } else {
+            ret = new ArrayList<>();
+        }
+
+        return ret;
+    }
+
     public static boolean isValidGuid(AtlasObjectId objId) {
         return isValidGuid(objId.getGuid());
     }

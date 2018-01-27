@@ -29,6 +29,10 @@ import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationType;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
 import org.apache.atlas.v1.model.instance.Id;
@@ -65,12 +69,23 @@ public class AtlasJson {
     static {
         SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
 
-        atlasSerDeModule.addSerializer(Date.class, new DateSerializer());
-        atlasSerDeModule.addDeserializer(Date.class, new DateDeserializer());
+        atlasSerDeModule.addSerializer(Referenceable.class, new ReferenceableSerializer());
+        atlasSerDeModule.addDeserializer(Referenceable.class, new ReferenceableDeserializer());
+        atlasSerDeModule.addSerializer(Struct.class, new StructSerializer());
+        atlasSerDeModule.addDeserializer(Struct.class, new StructDeserializer());
+        atlasSerDeModule.addSerializer(Id.class, new IdSerializer());
+        atlasSerDeModule.addDeserializer(Id.class, new IdDeserializer());
         atlasSerDeModule.addDeserializer(HookNotification.class, new HookNotificationDeserializer());
         atlasSerDeModule.addDeserializer(EntityNotification.class, new EntityNotificationDeserializer());
 
-        mapperV1.registerModule(atlasSerDeModule);
+        mapper.registerModule(atlasSerDeModule);
+
+        SimpleModule atlasSerDeV1Module = new SimpleModule("AtlasSerDeV1", new Version(1, 0, 0, null));
+
+        atlasSerDeV1Module.addSerializer(Date.class, new DateSerializer());
+        atlasSerDeV1Module.addDeserializer(Date.class, new DateDeserializer());
+
+        mapperV1.registerModule(atlasSerDeV1Module);
 
         SimpleModule searchResultV1SerDeModule = new SimpleModule("SearchResultV1SerDe", new Version(1, 0, 0, null));
 
@@ -90,7 +105,7 @@ public class AtlasJson {
             if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
                 ret = ((JsonNode) obj).textValue();
             } else {
-                ret = mapperV1.writeValueAsString(obj);
+                ret = mapper.writeValueAsString(obj);
             }
         }catch (IOException e){
             LOG.error("AtlasJson.toJson()", e);
@@ -106,6 +121,30 @@ public class AtlasJson {
         if (jsonStr != null) {
             try {
                 ret = mapper.readValue(jsonStr, type);
+
+                if (ret instanceof Struct) {
+                    ((Struct) ret).normalize();
+                }
+            } catch (IOException e) {
+                LOG.error("AtlasType.fromJson()", e);
+
+                ret = null;
+            }
+        }
+
+        return ret;
+    }
+
+    public static <T> T fromJson(String jsonStr, TypeReference<T> type) {
+        T ret = null;
+
+        if (jsonStr != null) {
+            try {
+                ret = mapper.readValue(jsonStr, type);
+
+                if (ret instanceof Struct) {
+                    ((Struct) ret).normalize();
+                }
             } catch (IOException e) {
                 LOG.error("AtlasType.fromJson()", e);
 
@@ -117,55 +156,15 @@ public class AtlasJson {
     }
 
     public static String toV1Json(Object obj) {
-        String ret;
-        try {
-            if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
-                ret = ((JsonNode) obj).textValue();
-            } else {
-                ret = mapperV1.writeValueAsString(obj);
-            }
-        } catch (IOException e) {
-            LOG.error("AtlasType.toV1Json()", e);
-
-            ret = null;
-        }
-        return ret;
+        return toJson(obj);
     }
 
     public static <T> T fromV1Json(String jsonStr, Class<T> type) {
-        T ret = null;
-
-        if (jsonStr != null) {
-            try {
-                ret = mapperV1.readValue(jsonStr, type);
-
-                if (ret instanceof Struct) {
-                    ((Struct) ret).normalize();
-                }
-            } catch (IOException e) {
-                LOG.error("AtlasType.fromV1Json()", e);
-
-                ret = null;
-            }
-        }
-
-        return ret;
+        return fromJson(jsonStr, type);
     }
 
     public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
-        T ret = null;
-
-        if (jsonStr != null) {
-            try {
-                ret = mapperV1.readValue(jsonStr, type);
-            } catch (IOException e) {
-                LOG.error("AtlasType.toV1Json()", e);
-
-                ret = null;
-            }
-        }
-
-        return ret;
+        return fromJson(jsonStr, type);
     }
 
     public static String toV1SearchJson(Object obj) {
@@ -198,7 +197,7 @@ public class AtlasJson {
     }
 
     public static ArrayNode createV1ArrayNode(Collection<?> array) {
-        ArrayNode ret = mapperV1.createArrayNode();
+        ArrayNode ret = mapper.createArrayNode();
 
         for (Object elem : array) {
             ret.addPOJO(elem);
@@ -209,13 +208,13 @@ public class AtlasJson {
 
 
     public static JsonNode parseToV1JsonNode(String json) throws IOException {
-        JsonNode jsonNode = mapperV1.readTree(json);
+        JsonNode jsonNode = mapper.readTree(json);
 
         return jsonNode;
     }
 
     public static ArrayNode parseToV1ArrayNode(String json) throws IOException {
-        JsonNode jsonNode = mapperV1.readTree(json);
+        JsonNode jsonNode = mapper.readTree(json);
 
         if (jsonNode instanceof ArrayNode) {
             return (ArrayNode)jsonNode;
@@ -228,7 +227,7 @@ public class AtlasJson {
         ArrayNode ret = createV1ArrayNode();
 
         for (String json : jsonStrings) {
-            JsonNode jsonNode = mapperV1.readTree(json);
+            JsonNode jsonNode = mapper.readTree(json);
 
             ret.add(jsonNode);
         }
@@ -258,6 +257,60 @@ public class AtlasJson {
                 } catch (ParseException excp) {
                 }
             }
+
+            return ret;
+        }
+    }
+
+    static class ReferenceableSerializer extends JsonSerializer<Referenceable> {
+        @Override
+        public void serialize(Referenceable value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                mapperV1.writeValue(jgen, value);
+            }
+        }
+    }
+
+    static class ReferenceableDeserializer extends JsonDeserializer<Referenceable> {
+        @Override
+        public Referenceable deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Referenceable ret = mapperV1.readValue(parser, Referenceable.class);
+
+            return ret;
+        }
+    }
+
+    static class StructSerializer extends JsonSerializer<Struct> {
+        @Override
+        public void serialize(Struct value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                mapperV1.writeValue(jgen, value);
+            }
+        }
+    }
+
+    static class StructDeserializer extends JsonDeserializer<Struct> {
+        @Override
+        public Struct deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Struct ret = mapperV1.readValue(parser, Struct.class);
+
+            return ret;
+        }
+    }
+
+    static class IdSerializer extends JsonSerializer<Id> {
+        @Override
+        public void serialize(Id value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (value != null) {
+                mapperV1.writeValue(jgen, value);
+            }
+        }
+    }
+
+    static class IdDeserializer extends JsonDeserializer<Id> {
+        @Override
+        public Id deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            Id ret = mapperV1.readValue(parser, Id.class);
 
             return ret;
         }
@@ -294,6 +347,22 @@ public class AtlasJson {
 
                     case ENTITY_DELETE:
                         ret = mapper.treeToValue(root, EntityDeleteRequest.class);
+                        break;
+
+                    case ENTITY_CREATE_V2:
+                        ret = mapper.treeToValue(root, EntityCreateRequestV2.class);
+                        break;
+
+                    case ENTITY_PARTIAL_UPDATE_V2:
+                        ret = mapper.treeToValue(root, EntityPartialUpdateRequestV2.class);
+                        break;
+
+                    case ENTITY_FULL_UPDATE_V2:
+                        ret = mapper.treeToValue(root, EntityUpdateRequestV2.class);
+                        break;
+
+                    case ENTITY_DELETE_V2:
+                        ret = mapper.treeToValue(root, EntityDeleteRequestV2.class);
                         break;
                 }
             }

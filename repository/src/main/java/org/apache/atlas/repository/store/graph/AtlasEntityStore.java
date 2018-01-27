@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
@@ -82,6 +83,16 @@ public interface AtlasEntityStore {
      * @throws AtlasBaseException
      */
     EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException;
+
+    /**
+     * Update a single entity
+     * @param objectId     ID of the entity
+     * @param updatedEntityInfo updated entity information
+     * @return EntityMutationResponse details of the updates performed by this call
+     * @throws AtlasBaseException
+     *
+     */
+    EntityMutationResponse updateEntity(AtlasObjectId objectId, AtlasEntityWithExtInfo updatedEntityInfo, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
      * Update a single entity
