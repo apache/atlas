@@ -591,7 +591,7 @@ public final class GraphHelper {
         AtlasEdge ret;
 
         try {
-            ret = findEdge(Constants.GUID_PROPERTY_KEY, guid);
+            ret = findEdge(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, guid);
         } catch (EntityNotFoundException e) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
         }

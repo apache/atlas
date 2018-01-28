@@ -55,8 +55,7 @@ public abstract class AbstractGraphDatabaseTest {
         AtlasGraphManagement mgmt = db.getGraph().getManagementSystem();
 
         if (mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
-            mgmt.createVertexIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX,
-                    Collections.<AtlasPropertyKey>emptyList());
+            mgmt.createVertexMixedIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX, Collections.emptyList());
         }
         mgmt.makePropertyKey("age13", Integer.class, AtlasCardinality.SINGLE);
 
@@ -100,14 +99,14 @@ public abstract class AbstractGraphDatabaseTest {
         AtlasPropertyKey key = management.makePropertyKey(propertyName, propertyClass, cardinality);
         try {
             if (propertyClass != Integer.class) {
-                management.addVertexIndexKey(BACKING_INDEX_NAME, key);
+                management.addMixedIndex(BACKING_INDEX_NAME, key);
             }
         } catch(Throwable t) {
             //ok
             t.printStackTrace();
         }
         try {
-            management.createExactMatchIndex(propertyName, isUnique, Collections.singletonList(key));
+            management.createVertexCompositeIndex(propertyName, isUnique, Collections.singletonList(key));
 
         } catch(Throwable t) {
             //ok

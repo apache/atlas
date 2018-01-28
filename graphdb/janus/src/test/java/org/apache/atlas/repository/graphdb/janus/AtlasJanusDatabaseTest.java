@@ -30,10 +30,8 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
@@ -43,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.*;
 
 /**
@@ -67,7 +64,7 @@ public class AtlasJanusDatabaseTest {
                 AtlasPropertyKey propertyKey = mgmt.getPropertyKey(propertyName);
                 if (propertyKey == null) {
                     propertyKey = mgmt.makePropertyKey(propertyName, String.class, AtlasCardinality.SET);
-                    mgmt.createExactMatchIndex(propertyName, false, Collections.singletonList(propertyKey));
+                    mgmt.createVertexCompositeIndex(propertyName, false, Collections.singletonList(propertyKey));
                 }
             }
             mgmt.commit();

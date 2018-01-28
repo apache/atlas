@@ -25,6 +25,7 @@ import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.JanusGraphManagement.IndexBuilder;
 import org.janusgraph.graphdb.internal.Token;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
@@ -33,7 +34,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,50 +46,52 @@ import java.util.Set;
  * Janus implementation of AtlasGraphManagement.
  */
 public class AtlasJanusGraphManagement implements AtlasGraphManagement {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
-
+    private static final Logger LOG            = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
     private static final char[] RESERVED_CHARS = { '{', '}', '"', '$', Token.SEPARATOR_CHAR };
 
-    private AtlasJanusGraph graph;
+    private AtlasJanusGraph      graph;
     private JanusGraphManagement management;
-
-    private Set<String> newMultProperties = new HashSet<>();
+    private Set<String>          newMultProperties = new HashSet<>();
 
     public AtlasJanusGraphManagement(AtlasJanusGraph graph, JanusGraphManagement managementSystem) {
         this.management = managementSystem;
-        this.graph = graph;
+        this.graph      = graph;
     }
 
     @Override
-    public void createVertexIndex(String propertyName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+    public void createVertexMixedIndex(String indexName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+        IndexBuilder indexBuilder = management.buildIndex(indexName, Vertex.class);
 
-        JanusGraphManagement.IndexBuilder indexBuilder = management.buildIndex(propertyName, Vertex.class);
         for (AtlasPropertyKey key : propertyKeys) {
             PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
             indexBuilder.addKey(janusKey);
         }
+
         indexBuilder.buildMixedIndex(backingIndex);
     }
 
     @Override
-    public void createEdgeIndex(String index, String backingIndex) {
-        buildMixedIndex(index, Edge.class, backingIndex);
-    }
+    public void createEdgeMixedIndex(String indexName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+        IndexBuilder indexBuilder = management.buildIndex(indexName, Edge.class);
 
-    private void buildMixedIndex(String index, Class<? extends Element> janusClass, String backingIndex) {
+        for (AtlasPropertyKey key : propertyKeys) {
+            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(janusKey);
+        }
 
-        management.buildIndex(index, janusClass).buildMixedIndex(backingIndex);
+        indexBuilder.buildMixedIndex(backingIndex);
     }
 
     @Override
-    public void createFullTextIndex(String indexName, AtlasPropertyKey propertyKey, String backingIndex) {
+    public void createFullTextMixedIndex(String indexName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+        IndexBuilder indexBuilder = management.buildIndex(indexName, Vertex.class);
 
-        PropertyKey fullText = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
+        for (AtlasPropertyKey key : propertyKeys) {
+            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(janusKey, org.janusgraph.core.schema.Parameter.of("mapping", Mapping.TEXT));
+        }
 
-        management.buildIndex(indexName, Vertex.class)
-                .addKey(fullText, org.janusgraph.core.schema.Parameter.of("mapping", Mapping.TEXT))
-                .buildMixedIndex(backingIndex);
+        indexBuilder.buildMixedIndex(backingIndex);
     }
 
     @Override
@@ -114,25 +116,28 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         //for some reason, name checking was removed from StandardPropertyKeyMaker.make()
         //in Janus.  For consistency, do the check here.
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
+
         for (char c : RESERVED_CHARS) {
-            Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c,
-                    name);
+            Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
         }
 
     }
 
     @Override
     public AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, AtlasCardinality cardinality) {
-
         if (cardinality.isMany()) {
             newMultProperties.add(propertyName);
         }
+
         PropertyKeyMaker propertyKeyBuilder = management.makePropertyKey(propertyName).dataType(propertyClass);
+
         if (cardinality != null) {
             Cardinality janusCardinality = AtlasJanusObjectFactory.createCardinality(cardinality);
             propertyKeyBuilder.cardinality(janusCardinality);
         }
+
         PropertyKey propertyKey = propertyKeyBuilder.make();
+
         return GraphDbObjectFactory.createPropertyKey(propertyKey);
     }
 
@@ -151,6 +156,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         for (int i = 0;; i++) {
             String deletedKeyName = janusPropertyKey + "_deleted_" + i;
+
             if (null == management.getPropertyKey(deletedKeyName)) {
                 management.changeName(janusPropertyKey, deletedKeyName);
                 break;
@@ -161,6 +167,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     @Override
     public AtlasPropertyKey getPropertyKey(String propertyName) {
         checkName(propertyName);
+
         return GraphDbObjectFactory.createPropertyKey(management.getPropertyKey(propertyName));
     }
 
@@ -169,37 +176,50 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         return GraphDbObjectFactory.createEdgeLabel(management.getEdgeLabel(label));
     }
 
-    public void createExactMatchVertexIndex(String propertyName, boolean enforceUniqueness,
-                                      List<AtlasPropertyKey> propertyKeys) {
-
-        JanusGraphManagement.IndexBuilder indexBuilder = management.buildIndex(propertyName, Vertex.class);
-        for (AtlasPropertyKey key : propertyKeys) {
-            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
-            indexBuilder.addKey(janusKey);
-        }
-        if (enforceUniqueness) {
-            indexBuilder.unique();
-        }
-        indexBuilder.buildCompositeIndex();
-    }
-
     @Override
-    public void addVertexIndexKey(String indexName, AtlasPropertyKey propertyKey) {
-        PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
+    public void addMixedIndex(String indexName, AtlasPropertyKey propertyKey) {
+        PropertyKey     janusKey    = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex vertexIndex = management.getGraphIndex(indexName);
+
         management.addIndexKey(vertexIndex, janusKey);
     }
 
     @Override
     public AtlasGraphIndex getGraphIndex(String indexName) {
         JanusGraphIndex index = management.getGraphIndex(indexName);
+
         return GraphDbObjectFactory.createGraphIndex(index);
     }
 
     @Override
-    public void createExactMatchIndex(String propertyName, boolean isUnique,
-            List<AtlasPropertyKey> propertyKeys) {
-        createExactMatchVertexIndex(propertyName, isUnique, propertyKeys);
+    public void createVertexCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
+        IndexBuilder indexBuilder = management.buildIndex(propertyName, Vertex.class);
+
+        for (AtlasPropertyKey key : propertyKeys) {
+            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(janusKey);
+        }
+
+        if (isUnique) {
+            indexBuilder.unique();
+        }
+
+        indexBuilder.buildCompositeIndex();
     }
 
+    @Override
+    public void createEdgeCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
+        IndexBuilder indexBuilder = management.buildIndex(propertyName, Edge.class);
+
+        for (AtlasPropertyKey key : propertyKeys) {
+            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(janusKey);
+        }
+
+        if (isUnique) {
+            indexBuilder.unique();
+        }
+
+        indexBuilder.buildCompositeIndex();
+    }
 }

@@ -35,15 +35,6 @@ public interface AtlasGraphManagement {
     boolean containsPropertyKey(String key);
 
     /**
-     * Creates a full text index for the given property.
-     *
-     * @param  indexName the name of the index to create
-     * @param propertyKey full text property to index
-     * @param backingIndex the name of the backing index to use
-     */
-    void createFullTextIndex(String indexName, AtlasPropertyKey propertyKey, String backingIndex);
-
-    /**
      * Rolls back the changes that have been made to the management system.
      */
     void rollback();
@@ -87,13 +78,22 @@ public interface AtlasGraphManagement {
     AtlasEdgeLabel getEdgeLabel(String label);
 
     /**
-     * Creates a composite index for the graph.
+     * Creates a composite vertex index for the graph.
      *
      * @param propertyName
      * @param isUnique
      * @param propertyKeys
      */
-    void createExactMatchIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys);
+    void createVertexCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys);
+
+    /**
+     * Creates a composite edge index for the graph.
+     *
+     * @param propertyName
+     * @param isUnique
+     * @param propertyKeys
+     */
+    void createEdgeCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys);
 
     /**
      * Looks up the index with the specified name in the graph.  Returns null if
@@ -109,8 +109,27 @@ public interface AtlasGraphManagement {
      *
      * @param name the name of the index to create
      * @param backingIndex the name of the backing index to use
+     * @param propertyKeys list of propertyKeys to be added to the index
      */
-    void createVertexIndex(String name, String backingIndex, List<AtlasPropertyKey> propertyKeys);
+    void createVertexMixedIndex(String name, String backingIndex, List<AtlasPropertyKey> propertyKeys);
+
+    /**
+     * Creates a mixed Edge index for the graph.
+     *
+     * @param index the name of the index to create
+     * @param backingIndex the name of the backing index to use
+     * @param propertyKeys list of propertyKeys to be added to the index
+     */
+    void createEdgeMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys);
+
+    /**
+     * Creates a full text index for the given property.
+     *
+     * @param index the name of the index to create
+     * @param backingIndex the name of the backing index to use
+     * @param propertyKeys list of propertyKeys to be added to the index
+     */
+    void createFullTextMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys);
 
     /**
      * Adds a property key to the given index in the graph.
@@ -118,14 +137,5 @@ public interface AtlasGraphManagement {
      * @param vertexIndex
      * @param propertyKey
      */
-    void addVertexIndexKey(String vertexIndex, AtlasPropertyKey propertyKey);
-
-    /**
-     * Creates a mixed Edge index for the graph.
-     *
-     * @param index the name of the index to create
-     * @param backingIndex the name of the backing index to use
-     */
-    void createEdgeIndex(String index, String backingIndex);
-
+    void addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey);
 }

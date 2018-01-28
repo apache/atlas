@@ -58,23 +58,16 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public void createEdgeIndex(String index, String backingIndex) {
-        buildMixedIndex(index, Edge.class, backingIndex);
+    public void createEdgeMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+    }
+
+    @Override
+    public void createFullTextMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
     }
 
     private void buildMixedIndex(String index, Class<? extends Element> titanClass, String backingIndex) {
 
         management.buildIndex(index, titanClass).buildMixedIndex(backingIndex);
-    }
-
-    @Override
-    public void createFullTextIndex(String indexName, AtlasPropertyKey propertyKey, String backingIndex) {
-
-        PropertyKey fullText = TitanObjectFactory.createPropertyKey(propertyKey);
-
-        management.buildIndex(indexName, Vertex.class)
-                .addKey(fullText, com.thinkaurelius.titan.core.schema.Parameter.of("mapping", Mapping.TEXT))
-                .buildMixedIndex(backingIndex);
     }
 
     @Override
@@ -146,8 +139,8 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public void createExactMatchIndex(String propertyName, boolean enforceUniqueness,
-            List<AtlasPropertyKey> propertyKeys) {
+    public void createVertexCompositeIndex(String propertyName, boolean enforceUniqueness,
+                                           List<AtlasPropertyKey> propertyKeys) {
 
         TitanManagement.IndexBuilder indexBuilder = management.buildIndex(propertyName, Vertex.class);
         for(AtlasPropertyKey key : propertyKeys) {
@@ -161,7 +154,23 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public void createVertexIndex(String propertyName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+    public void createEdgeCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
+        TitanManagement.IndexBuilder indexBuilder = management.buildIndex(propertyName, Edge.class);
+
+        for(AtlasPropertyKey key : propertyKeys) {
+            PropertyKey titanKey = TitanObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(titanKey);
+        }
+
+        if (isUnique) {
+            indexBuilder.unique();
+        }
+
+        indexBuilder.buildCompositeIndex();
+    }
+
+    @Override
+    public void createVertexMixedIndex(String propertyName, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
 
         TitanManagement.IndexBuilder indexBuilder = management.buildIndex(propertyName, Vertex.class);
         for(AtlasPropertyKey key : propertyKeys) {
@@ -173,7 +182,7 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
 
 
     @Override
-    public void addVertexIndexKey(String indexName, AtlasPropertyKey propertyKey) {
+    public void addMixedIndex(String indexName, AtlasPropertyKey propertyKey) {
         PropertyKey titanKey = TitanObjectFactory.createPropertyKey(propertyKey);
         TitanGraphIndex vertexIndex = management.getGraphIndex(indexName);
         management.addIndexKey(vertexIndex, titanKey);
