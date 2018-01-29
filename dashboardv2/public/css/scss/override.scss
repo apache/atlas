@@ -112,8 +112,8 @@ td {
     td {
         white-space: normal;
     }
-    .select-all-header-cell{
-        width : 42px;
+    .select-all-header-cell {
+        width: 42px;
     }
 }
 
@@ -316,18 +316,41 @@ td {
     .rules-list>:first-child::before {
         top: -8px;
     }
-    .rules-group-header .btn-group.group-conditions label {
-        display: none;
-    }
     .rules-group-container {
-        border: none;
+        border-color: transparent;
         background: none;
+        .rules-group-header {
+            .group-actions {
+                .btn-success {
+                    color: #38BB9B !important;
+                    background-color: transparent !important;
+                    border-color: #38BB9B !important;
+                }
+                .btn-danger {
+                    color: #e14f00;
+                    background-color: transparent;
+                    border-color: #e14f00;
+                }
+            }
+            .group-conditions {
+                .btn-primary {
+                    color: #333 !important;
+                    background-color: #fff !important;
+                    border-color: #ccc !important;
+                }
+                .active {
+                    color: #fff !important;
+                    background-color: #5bc0de !important;
+                    border-color: #46b8da !important;
+                }
+            }
+        }
     }
-}
 
 
-.rules-group-header .btn-group.pull-right.group-actions {
-    float: left !important;
+    .rules-group-header .btn-group.pull-right.group-actions {
+        float: right !important;
+    }
 }
 
 div.columnmanager-visibilitycontrol {

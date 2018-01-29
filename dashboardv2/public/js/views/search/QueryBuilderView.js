@@ -158,8 +158,8 @@ define(['require',
                         filters: filters,
                         select_placeholder: '--Select Attribute--',
                         allow_empty: true,
-                        conditions: ['AND'],
-                        allow_groups: false,
+                        conditions: ['AND','OR'],
+                        allow_groups: true,
                         allow_empty: true,
                         operators: [
                             { type: '=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
@@ -188,7 +188,7 @@ define(['require',
                         },
                         rules: rules_widgets
                     });
-                    this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-right pull-left');
+                    this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-left');
                 } else {
                     this.ui.builder.html('<h4>No Attributes are available !</h4>')
                 }

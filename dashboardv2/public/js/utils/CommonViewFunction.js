@@ -261,25 +261,29 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     CommonViewFunction.generateQueryOfFilter = function(value) {
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
             tagFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.tagFilters, "formatDate": true }),
-            queryArray = [],
-            objToString = function(filterObj) {
-                var tempObj = [];
-                _.each(filterObj, function(obj) {
-                    tempObj.push('<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>")
-                });
-                return tempObj.join('&nbsp<span class="operator">AND</span>&nbsp');
-            }
+            queryArray = [];
+
+        function objToString(filterObj) {
+            var generatedQuery = _.map(filterObj.rules, function(obj, key) {
+                if (_.has(obj, 'condition')) {
+                    return '&nbsp<span class="operator">' + obj.condition + '</span>&nbsp' + '(' + objToString(obj) + ')';
+                } else {
+                    return '<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>";
+                }
+            });
+            return generatedQuery;
+        }
         if (value.type) {
             var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
             if (entityFilters) {
-                typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(entityFilters);
+                typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp(<span class="operator">' + entityFilters.condition + '</span>&nbsp(' + objToString(entityFilters) + '))';
             }
             queryArray.push(typeKeyValue)
         }
         if (value.tag) {
             var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
             if (tagFilters) {
-                tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp' + objToString(tagFilters);
+                tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
             }
             queryArray.push(tagKeyValue);
         }
@@ -335,7 +339,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             obj = {};
         if (value) {
             _.each(Enums.extractFromUrlForSearch, function(svalue, skey) {
-                if(_.isObject(svalue)) {
+                if (_.isObject(svalue)) {
                     _.each(svalue, function(v, k) {
                         var val = value[skey][v];
                         if (!_.isUndefinedNull(val)) {
@@ -349,15 +353,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                         attrMerge: true,
                                         data: classificationDef.toJSON()
                                     });
-                                    _.each(val.criterion, function(obj) {
-                                        var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
-                                        if (attributeDef) {
-                                            obj.attributeValue = obj.attributeValue;
-                                            obj['attributeType'] = attributeDef.typeName;
-                                        }
-                                    });
                                 }
-                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
                                 if (entityDefCollection) {
                                     var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
@@ -366,22 +363,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                             attrMerge: true,
                                             data: entityDef.toJSON()
                                         });
-                                    _.each(val.criterion, function(obj) {
-                                        var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
-                                        if (attributeDef) {
-                                            obj.attributeValue = obj.attributeValue;
-                                            obj['attributeType'] = attributeDef.typeName;
-                                        }
-                                    });
                                 }
-                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val.criterion });
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
                                 val = val ? false : true;
                             }
                         }
                         obj[k] = val;
                     });
-                }else{
+                } else {
                     obj[skey] = value[skey];
                 }
             });
@@ -392,23 +382,39 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         generateUrl: function(options) {
             var attrQuery = [],
                 attrObj = options.value,
-                formatedDateToLong = options.formatedDateToLong;
-            if (attrObj) {
-                _.each(attrObj, function(obj) {
-                    var type = (obj.type || obj.attributeType),
-                        //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
-                        value = (_.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
-                        url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
-                    if (type) {
-                        url.push(type);
-                    }
-                    attrQuery.push(url.join("::"));
-                });
-                if (attrQuery.length) {
-                    return attrQuery.join(":,:");
+                formatedDateToLong = options.formatedDateToLong,
+                attributeDefs = options.attributeDefs, /* set attributeType for criterion while creating object*/
+                spliter = 1;
+            attrQuery = conditionalURl(attrObj, spliter);
+
+            function conditionalURl(options, spliter) {
+                if (options) {
+                    return _.map(options.rules || options.criterion, function(obj, key) {
+                        if (_.has(obj, 'condition')) {
+                            return obj.condition + '(' + conditionalURl(obj, (spliter + 1)) + ')';
+                        }
+                        if (attributeDefs) {
+                            var attributeDef = _.findWhere(attributeDefs, { 'name': obj.attributeName });
+                            if (attributeDef) {
+                                obj.attributeValue = obj.attributeValue;
+                                obj['attributeType'] = attributeDef.typeName;
+                            }
+                        }
+                        var type = (obj.type || obj.attributeType),
+                            //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
+                            value = ((_.isString(obj.value) && _.contains(["is_null","not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
+                            url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
+                        if (type) {
+                            url.push(type);
+                        }
+                        return url.join("::");
+                    }).join('|' + spliter + '|')
                 } else {
                     return null;
                 }
+            }
+            if (attrQuery.length) {
+                return attrObj.condition + '(' + attrQuery + ')';
             } else {
                 return null;
             }
@@ -441,48 +447,48 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         },
         extractUrl: function(options) {
-            var attrObj = [],
+            var attrObj = {},
                 urlObj = options.value,
-                formatDate = options.formatDate;
+                formatDate = options.formatDate,
+                spliter = 1,
+                apiObj = options.apiObj; //if apiObj then create object for API call else for QueryBuilder.
             if (urlObj && urlObj.length) {
-                _.each(urlObj.split(":,:"), function(obj) {
-                    var temp = obj.split("::");
-                    var finalObj = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
-                    if (temp[3]) {
-                        finalObj['type'] = temp[3];
-                    }
-                    finalObj.value = finalObj.type === 'date' && formatDate && finalObj.value.length ? moment(parseInt(finalObj.value)).format('MM/DD/YYYY h:mm A') : finalObj.value;
-                    attrObj.push(finalObj);
-                });
-                return attrObj;
-            } else {
-                return null;
-            }
-        },
-        generateAPIObj: function(url) {
-            if (url && url.length) {
-                var parsObj = {
-                    "condition": 'AND',
-                    "criterion": convertKeyAndExtractObj(this.extractUrl({ "value": url }))
-                }
-                return parsObj;
-            } else {
-                return null;
-            }
+                attrObj = createObject(urlObj);
 
-            function convertKeyAndExtractObj(rules) {
-                var convertObj = [];
-                _.each(rules, function(rulObj) {
-                    var tempObj = {};
-                    tempObj = {
-                        "attributeName": rulObj.id,
-                        "operator": mapUiOperatorToAPI(rulObj.operator),
-                        "attributeValue": _.trim(rulObj.value)
-                    }
-                    convertObj.push(tempObj);
-                });
-                return convertObj;
+                function createObject(urlObj) {
+                    var finalObj = {};
+                    finalObj['condition'] = /^AND\(/.test(urlObj) ? "AND" : "OR";
+                    urlObj = finalObj.condition === "AND" ? urlObj.substr(4).slice(0, -1) : urlObj.substr(3).slice(0, -1);
+                    finalObj[apiObj ? "criterion" : "rules"] = _.map(urlObj.split('|' + spliter + '|'), function(obj, key) {
+                        var isStringNested = obj.split('|' + (spliter + 1) + '|').length > 1,
+                            isCondition = /^AND\(/.test(obj) || /^OR\(/.test(obj);
+                        if (isStringNested && isCondition) {
+                            ++spliter;
+                            return createObject(obj);
+                        } else if (isCondition) {
+                            return createObject(obj);
+                        } else {
+                            var temp = obj.split("::") || obj.split('|' + spliter + '|'),
+                                rule = {};
+                            if (apiObj) {
+                                rule = { attributeName: temp[0], operator: mapUiOperatorToAPI(temp[1]), attributeValue: _.trim(temp[2]) }
+                                rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? moment(parseInt(rule.attributeValue)).format('MM/DD/YYYY h:mm A') : rule.attributeValue;
+                            } else {
+                                rule = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
+                                if (temp[3]) {
+                                    rule['type'] = temp[3];
+                                }
+                                rule.value = rule.type === 'date' && formatDate && rule.value.length ? moment(parseInt(rule.value)).format('MM/DD/YYYY h:mm A') : rule.value;
+                            }
+                            return rule;
+                        }
+                    });
+                    return finalObj;
+                }
+            } else {
+                return null;
             }
+            return attrObj;
 
             function mapUiOperatorToAPI(oper) {
                 if (oper == "=") {
@@ -509,6 +515,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     return "isNull";
                 }
                 return oper;
+            }
+        },
+        generateAPIObj: function(url) {
+            if (url && url.length) {
+                return this.extractUrl({ "value": url, "apiObj": true });
+            } else {
+                return null;
             }
         }
     }
