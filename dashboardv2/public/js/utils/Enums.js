@@ -91,11 +91,11 @@ define(['require'], function(require) {
             max: 9223372036854775807
         },
         "float": {
-            min: 1.4E-45,
+            min: -3.4028235E38,
             max: 3.4028235E38
         },
         "double": {
-            min: 4.9E-324,
+            min: -1.7976931348623157E308,
             max: 1.7976931348623157E308
         }
       }
