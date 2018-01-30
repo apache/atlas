@@ -212,7 +212,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db where hive_db is JdbcAccess", 0},
                 {"hive_db where hive_db has name", 3},
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
                 {"Dimension", 5},
                 {"JdbcAccess", 2},
@@ -342,10 +342,10 @@ public class DSLQueriesTest extends BasicTestSetup {
 
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0},
 
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 limit 10", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 5", 0},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 5", 0},
 
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
@@ -426,10 +426,10 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 0", 2, "owner", true},
                 {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 1", 2, "owner", true},
 
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby createTime ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01T0:0:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5", 0, "_col_1", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime ", 1, "_col_1", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5", 0, "_col_1", true},
 
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name ", 1, "_col_0", true},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "_col_0", true},
@@ -592,7 +592,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"PIII"},  // same as above
                 {"DBBB as d select d"}, // same as above
                 {"hive_db has db"}, // same as above
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1"},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1"},
                 {"hive_table as t, sd, hive_column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"},
                 {"hive_table isa hive_db"}, // isa should be a trait/classification
                 {"hive_table isa FooTag"},  // FooTag doesn't exist

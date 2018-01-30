@@ -47,13 +47,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GremlinQueryComposer {
-    private static final Logger                  LOG                         = LoggerFactory.getLogger(GremlinQueryComposer.class);
-    private static final String                  ISO8601_FORMAT              = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final ThreadLocal<DateFormat> DSL_DATE_FORMAT             = ThreadLocal.withInitial(() -> {
-        DateFormat ret = new SimpleDateFormat(ISO8601_FORMAT);
-        ret.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return ret;
+    private static final Logger LOG                 = LoggerFactory.getLogger(GremlinQueryComposer.class);
+    private static final String ISO8601_FORMAT      = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd";
+    
+    private static final ThreadLocal<DateFormat[]> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
+        final String formats[] = {ISO8601_FORMAT, ISO8601_DATE_FORMAT};
+        DateFormat[] dfs = new DateFormat[formats.length];
+        for (int i = 0; i < formats.length; i++) {
+            dfs[i] = new SimpleDateFormat(formats[i]);
+            dfs[i].setTimeZone(TimeZone.getTimeZone("UTC"));
+            }
+        return dfs;
     });
+    
     private final        String                  EMPTY_STRING                = "";
     private final        int                     DEFAULT_QUERY_RESULT_LIMIT  = 25;
     private final        int                     DEFAULT_QUERY_RESULT_OFFSET = 0;
@@ -303,12 +310,14 @@ public class GremlinQueryComposer {
     }
 
     public long getDateFormat(String s) {
-        try {
-            return DSL_DATE_FORMAT.get().parse(s).getTime();
-        } catch (ParseException ex) {
-            context.validator.check(ex, AtlasErrorCode.INVALID_DSL_INVALID_DATE);
+
+        for (DateFormat dateFormat : DSL_DATE_FORMAT.get()) {
+            try {
+                return dateFormat.parse(s).getTime();
+            } catch (ParseException ignored) {}
         }
 
+        context.validator.check(false, AtlasErrorCode.INVALID_DSL_INVALID_DATE, s);
         return -1;
     }
 

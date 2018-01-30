@@ -177,8 +177,9 @@ public class GremlinQueryComposerTest {
     @Test
     public void whereClauseWithDateCompare() {
         String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('1513046158440')).has('Table.name').has('Table.owner').limit(local, 25).limit(25).toList()";
-        verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner", getExpected(exSel, exMain));
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('%s')).has('Table.name').has('Table.owner').limit(local, 25).limit(25).toList()";
+        verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner", getExpected(exSel, String.format(exMain, "1513046158440")));
+        verify("Table as t where t.createTime = \"2017-12-12\" select t.name, t.owner", getExpected(exSel, String.format(exMain, "1513036800000")));
     }
 
     @Test
