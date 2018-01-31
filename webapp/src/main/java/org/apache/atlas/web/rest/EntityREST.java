@@ -108,6 +108,17 @@ public class EntityREST {
 
     /**
      * Fetch complete definition of an entity given its type and unique attribute.
+     *
+     * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
+     *
+     * attr:<attrName>=<attrValue>
+     *
+     * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
+     *
+     * The REST request would look something like this
+     *
+     * GET /v2/entity/uniqueAttribute/type/aType?attr:aTypeAttribute=someValue
+     *
      * @param typeName
      * @return AtlasEntityWithExtInfo
      * @throws AtlasBaseException
@@ -139,34 +150,22 @@ public class EntityREST {
         }
     }
 
-    /**
-     * Create new entity or update existing entity in Atlas.
-     * Existing entity is matched using its unique guid if supplied or by its unique attributes eg: qualifiedName
-     * @param entity
-     * @return EntityMutationResponse
-     * @throws AtlasBaseException
-     */
-    @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
-            }
-
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
     /*******
      * Entity Partial Update - Allows a subset of attributes to be updated on
      * an entity which is identified by its type and unique attribute  eg: Referenceable.qualifiedName.
      * Null updates are not possible
+     *
+     * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
+     *
+     * attr:<attrName>=<attrValue>
+     *
+     * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
+     *
+     * The REST request would look something like this
+     *
+     * PUT /v2/entity/uniqueAttribute/type/aType?attr:aTypeAttribute=someValue
+     *
+
      *******/
     @PUT
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -191,6 +190,72 @@ public class EntityREST {
             validateUniqueAttribute(entityType, uniqueAttributes);
 
             return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Delete an entity identified by its type and unique attributes.
+     *
+     * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
+     *
+     * attr:<attrName>=<attrValue>
+     *
+     * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
+     *
+     * The REST request would look something like this
+     *
+     * DELETE /v2/entity/uniqueAttribute/type/aType?attr:aTypeAttribute=someValue
+     *
+     * @param  typeName - entity type to be deleted
+     * @param  servletRequest - request containing unique attributes/values
+     * @return EntityMutationResponse
+     */
+    @DELETE
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Path("/uniqueAttribute/type/{typeName}")
+    public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
+                                                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            Map<String, Object> attributes = getAttributes(servletRequest);
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByUniqueAttribute(" + typeName + "," + attributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Create new entity or update existing entity in Atlas.
+     * Existing entity is matched using its unique guid if supplied or by its unique attributes eg: qualifiedName
+     * @param entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
+            }
+
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -245,37 +310,6 @@ public class EntityREST {
             }
 
             return entitiesStore.deleteById(guid);
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
-    /**
-     * Delete an entity identified by its type and unique attributes.
-     * @param  typeName - entity type to be deleted
-     * @param  servletRequest - request containing unique attributes/values
-     * @return EntityMutationResponse
-     */
-    @DELETE
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Path("/uniqueAttribute/type/{typeName}")
-    public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
-                                                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
-        Servlets.validateQueryParamLength("typeName", typeName);
-
-        AtlasPerfTracer perf = null;
-
-        try {
-            Map<String, Object> attributes = getAttributes(servletRequest);
-
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByUniqueAttribute(" + typeName + "," + attributes + ")");
-            }
-
-            AtlasEntityType entityType = ensureEntityType(typeName);
-
-            return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
