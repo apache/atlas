@@ -61,6 +61,8 @@ as well. Currently, Atlas supports ingesting and managing metadata from the foll
    * [[Bridge-Sqoop][Sqoop]]
    * [[Bridge-Falcon][Falcon]]
    * [[StormAtlasHook][Storm]]
+   * [[StormAtlasHook][Storm]]
+   * HBase - _documentation work-in-progress_
 
 The integration implies two things:
 There are metadata models that Atlas defines natively to represent objects of these components.
@@ -79,13 +81,6 @@ building its functionality.
 for the Hadoop ecosystem having wide integration with a variety of Hadoop components. By integrating with Atlas,
 Ranger allows security administrators to define metadata driven security policies for effective governance.
 Ranger is a consumer to the metadata change events notified by Atlas.
-
-*Business Taxonomy*: The metadata objects ingested into Atlas from the Metadata sources are primarily a form
-of technical metadata. To enhance the discoverability and governance capabilities, Atlas comes with a Business
-Taxonomy interface that allows users to first, define a hierarchical set of business terms that represent their
-business domain and associate them to the metadata entities Atlas manages. Business Taxonomy is a web application that
-is part of the Atlas Admin UI currently and integrates with Atlas using the REST API.
-
 
 
 

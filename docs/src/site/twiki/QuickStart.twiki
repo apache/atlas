@@ -1,9 +1,8 @@
----+ Quick Start Guide
+---+ Quick Start
 
 ---++ Introduction
-This quick start user guide is a simple client that adds a few sample type definitions modeled
-after the example as shown below. It also adds example entities along with traits as shown in the
-instance graph below.
+Quick start is a simple client that adds a few sample type definitions modeled after the example shown below.
+It also adds sample entities along with traits as shown in the instance graph below.
 
 
 ---+++ Example Type Definitions

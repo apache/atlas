@@ -1,37 +1,42 @@
 ---+ Sqoop Atlas Bridge
 
 ---++ Sqoop Model
-The default Sqoop modelling is available in org.apache.atlas.sqoop.model.SqoopDataModelGenerator. It defines the following types:
-<verbatim>
-sqoop_operation_type(EnumType) - values [IMPORT, EXPORT, EVAL]
-sqoop_dbstore_usage(EnumType) - values [TABLE, QUERY, PROCEDURE, OTHER]
-sqoop_process(ClassType) - super types [Process] - attributes [name, operation, dbStore, hiveTable, commandlineOpts, startTime, endTime, userName]
-sqoop_dbdatastore(ClassType) - super types [DataSet] - attributes [name, dbStoreType, storeUse, storeUri, source, description, ownerName]
-</verbatim>
+The default hive model includes the following types:
+   * Entity types:
+      * sqoop_process
+         * super-types: Process
+         * attributes: name, operation, dbStore, hiveTable, commandlineOpts, startTime, endTime, userName
+      * sqoop_dbdatastore
+         * super-types: !DataSet
+         * attributes: name, dbStoreType, storeUse, storeUri, source, description, ownerName
+
+   * Enum types:
+      * sqoop_operation_type
+         * values: IMPORT, EXPORT, EVAL
+      * sqoop_dbstore_usage
+         * values: TABLE, QUERY, PROCEDURE, OTHER
 
 The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying as well:
-sqoop_process - attribute name - sqoop-dbStoreType-storeUri-endTime
-sqoop_dbdatastore - attribute name - dbStoreType-connectorUrl-source
+   * sqoop_process.qualifiedName     - dbStoreType-storeUri-endTime
+   * sqoop_dbdatastore.qualifiedName - dbStoreType-storeUri-source
 
 ---++ Sqoop Hook
-Sqoop added a !SqoopJobDataPublisher that publishes data to Atlas after completion of import Job. Today, only hiveImport is supported in sqoopHook.
-This is used to add entities in Atlas using the model defined in org.apache.atlas.sqoop.model.SqoopDataModelGenerator.
-Follow these instructions in your sqoop set-up to add sqoop hook for Atlas in <sqoop-conf>/sqoop-site.xml:
+Sqoop added a !SqoopJobDataPublisher that publishes data to Atlas after completion of import Job. Today, only hiveImport is supported in !SqoopHook.
+This is used to add entities in Atlas using the model detailed above.
 
-   * Sqoop Job publisher class.  Currently only one publishing class is supported
+Follow the instructions below to setup Atlas hook in Hive:
+
+Add the following properties to  to enable Atlas hook in Sqoop:
+   * Set-up Atlas hook in <sqoop-conf>/sqoop-site.xml by adding the following:
+  <verbatim>
    <property>
      <name>sqoop.job.data.publish.class</name>
      <value>org.apache.atlas.sqoop.hook.SqoopHook</value>
-   </property>
-   * Atlas cluster name
-   <property>
-     <name>atlas.cluster.name</name>
-     <value><clustername></value>
-   </property>
+   </property></verbatim>
    * Copy <atlas-conf>/atlas-application.properties to to the sqoop conf directory <sqoop-conf>/
    * Link <atlas-home>/hook/sqoop/*.jar in sqoop lib
 
 Refer [[Configuration][Configuration]] for notification related configurations
 
----++ Limitations
+---++ NOTES
    * Only the following sqoop operations are captured by sqoop hook currently - hiveImport

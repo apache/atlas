@@ -7,39 +7,49 @@ Atlas is a scalable and extensible set of core foundational governance services 
 enterprises to effectively and efficiently meet their compliance requirements within Hadoop and
 allows integration with the whole enterprise data ecosystem.
 
+Apache Atlas provides open metadata management and governance capabilities for organizations
+to build a catalog of their data assets, classify and govern these assets and provide collaboration
+capabilities around these data assets for data scientists, analysts and the data governance team.
+
 ---++ Features
 
----+++ Data Classification
-   * Import or define taxonomy business-oriented annotations for data
-   * Define, annotate, and automate capture of relationships between data sets and underlying elements including source, target, and derivation processes
-   * Export metadata to third-party systems
+---+++ Metadata types & instances
+   * Pre-defined types for various Hadoop and non-Hadoop metadata
+   * Ability to define new types for the metadata to be managed
+   * Types can have primitive attributes, complex attributes, object references; can inherit from other types
+   * Instances of types, called entities, capture metadata object details and their relationships
+   * REST APIs to work with types and instances allow easier integration
 
----+++ Centralized Auditing
-   * Capture security access information for every application, process, and interaction with data
-   * Capture the operational information for execution, steps, and activities
+---+++ Classification
+   * Ability to dynamically create classifications - like PII, EXPIRES_ON, DATA_QUALITY, SENSITIVE
+   * Classifications can include attributes - like expiry_date attribute in EXPIRES_ON classification
+   * Entities can be associated with multiple classifications, enabling easier discovery and security enforcement
 
----+++ Search & Lineage (Browse)
-   * Pre-defined navigation paths to explore the data classification and audit information
-   * Text-based search features locates relevant data and audit event across Data Lake quickly and accurately
-   * Browse visualization of data set lineage allowing users to drill-down into operational, security, and provenance related information
+---+++ Lineage
+   * Intuitive UI to view lineage of data as it moves through various processes
+   * REST APIs to access and update lineage
 
----+++ Security & Policy Engine
-   * Rationalize compliance policy at runtime based on data classification schemes, attributes and roles.
-   * Advanced definition of policies for preventing data derivation based on classification (i.e. re-identification) – Prohibitions
-   * Column and Row level masking based on cell values and attibutes.
+---+++ Search/Discovery
+   * Intuitive UI to search entities by type, classification, attribute value or free-text
+   * Rich REST APIs to search by complex criteria
+   * SQL like query language to search entities - Domain Specific Language (DSL)
+
+---+++ Security & Data Masking
+   * Integration with Apache Ranger enables authorization/data-masking based on classifications associated with entities in Apache Atlas. For example:
+      * who can access data classified as PII, SENSITIVE
+      * customer-service users can only see last 4 digits of columns classified as NATIONAL_ID
 
 
 ---++ Getting Started
 
-   * [[InstallationSteps][Install Steps]]
-   * [[QuickStart][Quick Start Guide]]
+   * [[InstallationSteps][Build & Install]]
+   * [[QuickStart][Quick Start]]
 
 
 ---++ Documentation
 
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
-   * [[Repository][Metadata Repository]]
    * [[Search][Search]]
    * [[security][Security]]
    * [[Authentication-Authorization][Authentication and Authorization]]

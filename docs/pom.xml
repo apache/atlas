@@ -83,7 +83,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-				    <port>9090</port>
+				    <port>8080</port>
                 </configuration>
                 <executions>
                     <execution>
