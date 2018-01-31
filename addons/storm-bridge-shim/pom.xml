@@ -22,7 +22,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.8.2-SNAPSHOT</version>
+        <version>0.8.2</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>storm-bridge-shim</artifactId>
