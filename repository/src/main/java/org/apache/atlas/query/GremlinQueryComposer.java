@@ -50,22 +50,22 @@ public class GremlinQueryComposer {
     private static final Logger LOG                 = LoggerFactory.getLogger(GremlinQueryComposer.class);
     private static final String ISO8601_FORMAT      = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd";
-    
+
     private static final ThreadLocal<DateFormat[]> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
         final String formats[] = {ISO8601_FORMAT, ISO8601_DATE_FORMAT};
-        DateFormat[] dfs = new DateFormat[formats.length];
+        DateFormat[] dfs       = new DateFormat[formats.length];
         for (int i = 0; i < formats.length; i++) {
             dfs[i] = new SimpleDateFormat(formats[i]);
             dfs[i].setTimeZone(TimeZone.getTimeZone("UTC"));
-            }
+        }
         return dfs;
     });
-    
-    private final        String                  EMPTY_STRING                = "";
-    private final        int                     DEFAULT_QUERY_RESULT_LIMIT  = 25;
-    private final        int                     DEFAULT_QUERY_RESULT_OFFSET = 0;
-    private final        GremlinClauseList       queryClauses                = new GremlinClauseList();
-    private final        Set<String>             attributesProcessed         = new HashSet<>();
+
+    private final String            EMPTY_STRING                = "";
+    private final int               DEFAULT_QUERY_RESULT_LIMIT  = 25;
+    private final int               DEFAULT_QUERY_RESULT_OFFSET = 0;
+    private final GremlinClauseList queryClauses                = new GremlinClauseList();
+    private final Set<String>       attributesProcessed         = new HashSet<>();
     private final Lookup                 lookup;
     private final boolean                isNestedQuery;
     private final AtlasDSL.QueryMetadata queryMetadata;
@@ -104,12 +104,12 @@ public class GremlinQueryComposer {
             LOG.debug("addFrom(typeName={})", typeName);
         }
 
-        IdentifierHelper.IdentifierMetadata ta = getIdMetadata(typeName);
+        IdentifierHelper.Info typeInfo = createInfo(typeName);
 
-        if (context.shouldRegister(ta.get())) {
-            context.registerActive(ta.get());
+        if (context.shouldRegister(typeInfo.get())) {
+            context.registerActive(typeInfo.get());
 
-            IdentifierHelper.IdentifierMetadata ia = getIdMetadata(ta.get());
+            IdentifierHelper.Info ia = createInfo(typeInfo.get());
 
             if (ia.isTrait()) {
                 add(GremlinClause.TRAIT, ia);
@@ -121,7 +121,7 @@ public class GremlinQueryComposer {
                 }
             }
         } else {
-            IdentifierHelper.IdentifierMetadata ia = getIdMetadata(ta.get());
+            IdentifierHelper.Info ia = createInfo(typeInfo.get());
             introduceType(ia);
         }
     }
@@ -135,7 +135,7 @@ public class GremlinQueryComposer {
             addFrom(typeName);
         }
 
-        add(GremlinClause.HAS_PROPERTY, getIdMetadata(attribute));
+        add(GremlinClause.HAS_PROPERTY, createInfo(attribute));
     }
 
     public void addIsA(String typeName, String traitName) {
@@ -143,8 +143,8 @@ public class GremlinQueryComposer {
             addFrom(typeName);
         }
 
-        IdentifierHelper.IdentifierMetadata ia = getIdMetadata(traitName);
-        add(GremlinClause.TRAIT, ia);
+        IdentifierHelper.Info traitInfo = createInfo(traitName);
+        add(GremlinClause.TRAIT, traitInfo);
     }
 
     public void addWhere(String lhs, String operator, String rhs) {
@@ -152,13 +152,13 @@ public class GremlinQueryComposer {
             LOG.debug("addWhere(lhs={}, operator={}, rhs={})", lhs, operator, rhs);
         }
 
-        String                              currentType = context.getActiveTypeName();
-        IdentifierHelper.IdentifierMetadata org         = null;
-        IdentifierHelper.IdentifierMetadata lhsI        = getIdMetadata(lhs);
+        String                currentType = context.getActiveTypeName();
+        IdentifierHelper.Info org         = null;
+        IdentifierHelper.Info lhsI        = createInfo(lhs);
         if (!lhsI.isPrimitive()) {
             introduceType(lhsI);
             org = lhsI;
-            lhsI = getIdMetadata(lhs);
+            lhsI = createInfo(lhs);
         }
 
         if (!context.validator.isValidQualifiedName(lhsI.getQualifiedName(), lhsI.getRaw())) {
@@ -204,17 +204,12 @@ public class GremlinQueryComposer {
         this.attributesProcessed.addAll(attributesProcessed);
     }
 
-    public void addProcessedAttribute(String attribute) {
-        attributesProcessed.add(attribute);
-    }
-
     public void addSelect(SelectClauseComposer selectClauseComposer) {
         process(selectClauseComposer);
 
         if (CollectionUtils.isEmpty(context.getErrorList())) {
             addSelectAttrExistsCheck(selectClauseComposer);
         }
-
 
         // If the query contains orderBy and groupBy then the transformation determination is deferred to the method processing orderBy
         if (!(queryMetadata.hasOrderBy() && queryMetadata.hasGroupBy())) {
@@ -277,8 +272,9 @@ public class GremlinQueryComposer {
     public String get() {
         close();
 
-        String items[] = getFormattedClauses(queryMetadata.needTransformation());
-        String s = queryMetadata.needTransformation() ?
+        boolean mustTransform = !isNestedQuery && queryMetadata.needTransformation();
+        String  items[]       = getFormattedClauses(mustTransform);
+        String s = mustTransform ?
                            getTransformedClauses(items) :
                            String.join(".", items);
 
@@ -298,7 +294,7 @@ public class GremlinQueryComposer {
             LOG.debug("addOrderBy(name={}, isDesc={})", name, isDesc);
         }
 
-        IdentifierHelper.IdentifierMetadata ia = getIdMetadata(name);
+        IdentifierHelper.Info ia = createInfo(name);
         if (queryMetadata.hasSelect() && queryMetadata.hasGroupBy()) {
             addSelectTransformation(this.context.selectClauseComposer, getQualifiedName(ia), isDesc);
         } else if (queryMetadata.hasGroupBy()) {
@@ -314,7 +310,8 @@ public class GremlinQueryComposer {
         for (DateFormat dateFormat : DSL_DATE_FORMAT.get()) {
             try {
                 return dateFormat.parse(s).getTime();
-            } catch (ParseException ignored) {}
+            } catch (ParseException ignored) {
+            }
         }
 
         context.validator.check(false, AtlasErrorCode.INVALID_DSL_INVALID_DATE, s);
@@ -326,7 +323,7 @@ public class GremlinQueryComposer {
                        queryClauses.contains(GremlinClause.HAS_TYPE_WITHIN) != -1;
     }
 
-    private String getQualifiedName(IdentifierHelper.IdentifierMetadata ia) {
+    private String getQualifiedName(IdentifierHelper.Info ia) {
         return context.validator.isValidQualifiedName(ia.getQualifiedName(), ia.getRaw()) ?
                        ia.getQualifiedName() : ia.getRaw();
     }
@@ -337,8 +334,8 @@ public class GremlinQueryComposer {
         String[] qualifiedAttributes = selectClauseComposer.getAttributes();
         if (qualifiedAttributes != null && qualifiedAttributes.length > 0) {
             for (int i = 0; i < qualifiedAttributes.length; i++) {
-                String                              qualifiedAttribute = qualifiedAttributes[i];
-                IdentifierHelper.IdentifierMetadata idMetadata         = getIdMetadata(qualifiedAttribute);
+                String                qualifiedAttribute = qualifiedAttributes[i];
+                IdentifierHelper.Info idMetadata         = createInfo(qualifiedAttribute);
                 // Only primitive attributes need to be checked
                 if (idMetadata.isPrimitive() && !selectClauseComposer.isAggregatorIdx(i) && !attributesProcessed.contains(qualifiedAttribute)) {
                     add(GremlinClause.HAS_PROPERTY, qualifiedAttribute);
@@ -359,7 +356,7 @@ public class GremlinQueryComposer {
         }
 
         for (int i = 0; i < scc.getItems().length; i++) {
-            IdentifierHelper.IdentifierMetadata ia = getIdMetadata(scc.getItem(i));
+            IdentifierHelper.Info ia = createInfo(scc.getItem(i));
 
             if (scc.isAggregatorWithArgument(i) && !ia.isPrimitive()) {
                 context.check(false, AtlasErrorCode.INVALID_DSL_SELECT_INVALID_AGG, ia.getQualifiedName());
@@ -383,7 +380,7 @@ public class GremlinQueryComposer {
                 scc.incrementTypesIntroduced();
                 scc.isSelectNoop = !ia.hasParts();
                 if (ia.hasParts()) {
-                    scc.assign(i, getQualifiedName(getIdMetadata(ia.get())), GremlinClause.INLINE_GET_PROPERTY);
+                    scc.assign(i, getQualifiedName(createInfo(ia.get())), GremlinClause.INLINE_GET_PROPERTY);
                 }
             } else {
                 scc.assign(i, getQualifiedName(ia), GremlinClause.INLINE_GET_PROPERTY);
@@ -396,7 +393,7 @@ public class GremlinQueryComposer {
         context.validator.check(!scc.hasMixedAttributes(), AtlasErrorCode.INVALID_DSL_SELECT_ATTR_MIXING);
     }
 
-    private boolean hasNoopCondition(IdentifierHelper.IdentifierMetadata ia) {
+    private boolean hasNoopCondition(IdentifierHelper.Info ia) {
         return !ia.isPrimitive() && !ia.isAttribute() && context.hasAlias(ia.getRaw());
     }
 
@@ -519,7 +516,7 @@ public class GremlinQueryComposer {
         }
     }
 
-    private boolean introduceType(IdentifierHelper.IdentifierMetadata ia) {
+    private boolean introduceType(IdentifierHelper.Info ia) {
         if (ia.isReferredType()) {
             add(GremlinClause.OUT, ia.getEdgeLabel());
             context.registerActive(ia);
@@ -528,7 +525,7 @@ public class GremlinQueryComposer {
         return ia.isReferredType();
     }
 
-    private IdentifierHelper.IdentifierMetadata getIdMetadata(String actualTypeName) {
+    private IdentifierHelper.Info createInfo(String actualTypeName) {
         return IdentifierHelper.create(context, lookup, actualTypeName);
     }
 
@@ -549,7 +546,7 @@ public class GremlinQueryComposer {
             LOG.debug("addOrderByClause(name={})", name, descr);
         }
 
-        IdentifierHelper.IdentifierMetadata ia = getIdMetadata(name);
+        IdentifierHelper.Info ia = createInfo(name);
         add((!descr) ? GremlinClause.ORDER_BY : GremlinClause.ORDER_BY_DESC, ia);
     }
 
@@ -558,16 +555,16 @@ public class GremlinQueryComposer {
             LOG.debug("addGroupByClause(name={})", name);
         }
 
-        IdentifierHelper.IdentifierMetadata ia = getIdMetadata(name);
+        IdentifierHelper.Info ia = createInfo(name);
         add(GremlinClause.GROUP_BY, ia);
     }
 
-    private void add(GremlinClause clause, IdentifierHelper.IdentifierMetadata ia) {
-        if (context != null && !context.validator.isValid(context, clause, ia)) {
+    private void add(GremlinClause clause, IdentifierHelper.Info idInfo) {
+        if (context != null && !context.validator.isValid(context, clause, idInfo)) {
             return;
         }
 
-        add(clause, (ia.getQualifiedName() == null ? ia.get() : ia.getQualifiedName()));
+        add(clause, (idInfo.getQualifiedName() == null ? idInfo.get() : idInfo.getQualifiedName()));
     }
 
     private void add(GremlinClause clause, String... args) {
@@ -623,10 +620,10 @@ public class GremlinQueryComposer {
             }
         }
 
-        public void registerActive(IdentifierHelper.IdentifierMetadata identifierMetadata) {
-            if (validator.check(StringUtils.isNotEmpty(identifierMetadata.getTypeName()),
-                                AtlasErrorCode.INVALID_DSL_UNKNOWN_TYPE, identifierMetadata.getRaw())) {
-                registerActive(identifierMetadata.getTypeName());
+        public void registerActive(IdentifierHelper.Info info) {
+            if (validator.check(StringUtils.isNotEmpty(info.getTypeName()),
+                                AtlasErrorCode.INVALID_DSL_UNKNOWN_TYPE, info.getRaw())) {
+                registerActive(info.getTypeName());
             } else {
                 activeType = UNKNOWN_TYPE;
             }
@@ -706,7 +703,7 @@ public class GremlinQueryComposer {
             this.lookup = lookup;
         }
 
-        public boolean isValid(Context ctx, GremlinClause clause, IdentifierHelper.IdentifierMetadata ia) {
+        public boolean isValid(Context ctx, GremlinClause clause, IdentifierHelper.Info ia) {
             switch (clause) {
                 case TRAIT:
                     return check(ia.isTrait(), AtlasErrorCode.INVALID_DSL_UNKNOWN_CLASSIFICATION, ia.getRaw());

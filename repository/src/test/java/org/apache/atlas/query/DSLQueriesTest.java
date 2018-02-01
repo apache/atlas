@@ -214,6 +214,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
+                {"hive_table where (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime", 1},
                 {"Dimension", 5},
                 {"JdbcAccess", 2},
                 {"ETL", 5},

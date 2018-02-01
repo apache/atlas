@@ -47,12 +47,12 @@ public class IdentifierHelper {
         return ret;
     }
 
-    public static IdentifierMetadata create(GremlinQueryComposer.Context context,
-                                            org.apache.atlas.query.Lookup lookup,
-                                            String identifier) {
-        IdentifierMetadata ia = new IdentifierMetadata(identifier);
-        ia.update(lookup, context);
-        return ia;
+    public static Info create(GremlinQueryComposer.Context context,
+                              org.apache.atlas.query.Lookup lookup,
+                              String identifier) {
+        Info idInfo = new Info(identifier);
+        idInfo.update(lookup, context);
+        return idInfo;
     }
 
     private static String extract(Pattern p, String s) {
@@ -106,7 +106,7 @@ public class IdentifierHelper {
     }
 
 
-    public static class IdentifierMetadata {
+    public static class Info {
         private String   raw;
         private String   actual;
         private String[] parts;
@@ -123,7 +123,7 @@ public class IdentifierHelper {
         private String   qualifiedName;
         private boolean  isDate;
 
-        public IdentifierMetadata(String s) {
+        public Info(String s) {
             this.raw = removeQuotes(s);
             this.actual = IdentifierHelper.get(raw);
         }
