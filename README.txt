@@ -49,7 +49,7 @@ Build Process
 
 2. Execute the following commands to build Apache Atlas
 
-   $ export MAVEN_OPTS="-Xms2g -Xmx2g -XX:MaxPermSize=512M"
+   $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
 
    # currently few tests might fail in some environments
@@ -68,3 +68,5 @@ Build Process
    addons/hive-bridge/target/hive-bridge-<version>.jar
    addons/sqoop-bridge/target/sqoop-bridge-<version>.jar
    addons/storm-bridge/target/storm-bridge-<version>.jar
+
+4. For more details on building and running Apache Atlas, please refer to http://atlas.apache.org/InstallationSteps.html
