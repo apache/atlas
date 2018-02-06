@@ -50,7 +50,8 @@ capabilities around these data assets for data scientists, analysts and the data
 
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
-   * [[Search][Search]]
+   * [[Search - Basic][Basic Search]]
+   * [[Search - Advanced][Advanced Search]]
    * [[security][Security]]
    * [[Authentication-Authorization][Authentication and Authorization]]
    * [[Configuration][Configuration]]

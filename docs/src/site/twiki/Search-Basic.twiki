@@ -1,0 +1,163 @@
+---+ Basic Search
+
+The basic search allows you to query using typename of an entity, associated classification/tag
+and has support for filtering on the entity attribute(s) as well as the classification/tag attributes.
+
+The entire query structure can be represented using the following JSON structure (called !SearchParameters)
+
+<verbatim>
+{
+  "typeName": "hive_table",
+  "excludeDeletedEntities": true,
+  "classification" : "",
+  "query": "",
+  "limit": 25,
+  "offset": 0,
+  "entityFilters": {
+   "attributeName": "name",
+   "operator": "contains",
+   "attributeValue": "testtable"
+  },
+  "tagFilters": null,
+  "attributes": [""]
+}
+</verbatim>
+
+__Field description__
+
+   * typeName: The type of entity to look for
+   * excludeDeletedEntities: Should the search include deleted entities too (default: true)
+   * classification: Only include entities with given Classification/tag
+   * query: Any free text occurrence that the entity should have (generic/wildcard queries might be slow)
+   * limit: Max number of results to fetch
+   * offset: Starting offset of the result set (useful for pagination)
+   * entityFilters: Entity Attribute filter(s)
+   * tagFilters: Classification/tag Attribute filter(s)
+   * attributes: Attributes to include in the search result (default: include any attribute present in the filter)
+
+   Attribute based filtering can be done on multiple attributes with AND/OR condition.
+
+    *NOTE: The tagFilters and entityFilters field have same JSON structure.*
+
+__Examples of filtering (for hive_table attributes)__
+   * Single attribute
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "attributeName": "name",
+        "operator": "contains",
+        "attributeValue": "testtable"
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+   * Multi-attribute with OR
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "condition": "OR",
+        "criterion": [
+           {
+              "attributeName": "name",
+              "operator": "contains",
+              "attributeValue": "testtable"
+           },
+           {
+              "attributeName": "owner",
+              "operator": "eq",
+              "attributeValue": "admin"
+           }
+        ]
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+   * Multi-attribute with AND
+   <verbatim>
+   {
+     "typeName": "hive_table",
+     "excludeDeletedEntities": true,
+     "classification" : "",
+     "query": "",
+     "limit": 50,
+     "offset": 0,
+     "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+           {
+              "attributeName": "name",
+              "operator": "contains",
+              "attributeValue": "testtable"
+           },
+           {
+              "attributeName": "owner",
+              "operator": "eq",
+              "attributeValue": "admin"
+           }
+        ]
+     },
+     "tagFilters": null,
+     "attributes": [""]
+   }
+   </verbatim>
+
+__Supported operators for filtering__
+
+   * LT (symbols: <, lt) works with Numeric, Date attributes
+   * GT (symbols: >, gt) works with Numeric, Date attributes
+   * LTE (symbols: <=, lte) works with Numeric, Date attributes
+   * GTE (symbols: >=, gte) works with Numeric, Date attributes
+   * EQ (symbols: eq, =) works with Numeric, Date, String attributes
+   * NEQ (symbols: neq, !=) works with Numeric, Date, String attributes
+   * LIKE (symbols: like, LIKE) works with String attributes
+   * STARTS_WITH (symbols: startsWith, STARTSWITH) works with String attributes
+   * ENDS_WITH (symbols: endsWith, ENDSWITH) works with String attributes
+   * CONTAINS (symbols: contains, CONTAINS) works with String attributes
+
+__CURL Samples__
+
+<verbatim>
+    curl -sivk -g
+    -u <user>:<password>
+    -X POST
+    -d '{
+            "typeName": "hive_table",
+            "excludeDeletedEntities": true,
+            "classification" : "",
+            "query": "",
+            "limit": 50,
+            "offset": 0,
+            "entityFilters": {
+               "condition": "AND",
+               "criterion": [
+                  {
+                     "attributeName": "name",
+                     "operator": "contains",
+                     "attributeValue": "testtable"
+                  },
+                  {
+                     "attributeName": "owner",
+                     "operator": "eq",
+                     "attributeValue": "admin"
+                  }
+               ]
+            },
+            "tagFilters": null,
+            "attributes": [""]
+          }'
+    <protocol>://<atlas_host>:<atlas_port>/api/atlas/v2/search/basic
+</verbatim>
