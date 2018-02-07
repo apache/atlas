@@ -38,6 +38,15 @@ class RegistryBasedLookup implements Lookup {
                     Constants.TIMESTAMP_PROPERTY_KEY,
                     Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY));
 
+    private static final Set<String> NUMERIC_ATTRIBUTES = new HashSet<>(
+            Arrays.asList(AtlasBaseTypeDef.ATLAS_TYPE_SHORT,
+                    AtlasBaseTypeDef.ATLAS_TYPE_INT,
+                    AtlasBaseTypeDef.ATLAS_TYPE_LONG,
+                    AtlasBaseTypeDef.ATLAS_TYPE_FLOAT,
+                    AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE,
+                    AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER,
+                    AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL));
+
     private final AtlasTypeRegistry typeRegistry;
 
     public RegistryBasedLookup(AtlasTypeRegistry typeRegistry) {
@@ -201,6 +210,16 @@ class RegistryBasedLookup implements Lookup {
 
         AtlasType attr = et.getAttributeType(attributeName);
         return attr != null && attr.getTypeName().equals(AtlasBaseTypeDef.ATLAS_TYPE_DATE);
+    }
 
+    @Override
+    public boolean isNumeric(GremlinQueryComposer.Context context, String attrName) {
+        AtlasEntityType et = context.getActiveEntityType();
+        if (et == null) {
+            return false;
+        }
+
+        AtlasType attr = et.getAttributeType(attrName);
+        return attr != null && NUMERIC_ATTRIBUTES.contains(attr.getTypeName());
     }
 }

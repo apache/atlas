@@ -159,6 +159,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (houseNumber < 153)", 3},
                 {"Person where (houseNumber <= 153)", 4},
                 {"Person where (houseNumber =  17)", 1},
+                {"Person where houseNumber >= 17 or numberOfCars = 2", 2},
                 {"Person where (houseNumber != 17)", 3},
 
                 {"Person where (carMileage > 0)", 2},

@@ -306,6 +306,13 @@ public class GremlinQueryComposerTest {
         verify("Table has name and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).limit(local, 25).limit(25).toList()");
     }
 
+
+    @Test
+    public void numericAttributes() {
+        verify("Table where partitionSize = 2048", "g.V().has('__typeName', 'Table').has('Table.partitionSize', eq(2048)).limit(local, 25).limit(25).toList()");
+        verify("Table where partitionSize = 2048 or partitionSize = 10", "g.V().has('__typeName', 'Table').or(__.has('Table.partitionSize', eq(2048)),__.has('Table.partitionSize', eq(10))).limit(local, 25).limit(25).toList()");
+    }
+
     @Test
     public void systemAttributes() {
         verify("Table has __state", "g.V().has('__typeName', 'Table').has('__state').limit(local, 25).limit(25).toList()");
@@ -437,7 +444,8 @@ public class GremlinQueryComposerTest {
                     attributeName.equals("createTime") ||
                     attributeName.equals("clusterName") ||
                     attributeName.equals("__guid") ||
-                    attributeName.equals("__state");
+                    attributeName.equals("__state") ||
+                    attributeName.equals("partitionSize");
         }
 
         @Override
@@ -461,6 +469,7 @@ public class GremlinQueryComposerTest {
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("isFile")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("__guid")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("__state")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("partitionSize")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("name")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("owner")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("createTime")) ||
@@ -491,13 +500,21 @@ public class GremlinQueryComposerTest {
         public String getTypeFromEdge(GremlinQueryComposer.Context context, String item) {
             if(context.getActiveTypeName().equals("DB") && item.equals("Table")) {
                 return "Table";
-            } else if(context.getActiveTypeName().equals("Table") && item.equals("Column")) {
+            }
+
+            if(context.getActiveTypeName().equals("Table") && item.equals("Column")) {
                 return "Column";
-            } else if(context.getActiveTypeName().equals("Table") && item.equals("db")) {
+            }
+
+            if(context.getActiveTypeName().equals("Table") && item.equals("db")) {
                 return "DB";
-            } else if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
+            }
+
+            if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
                 return "Column";
-            } else if(context.getActiveTypeName().equals(item)) {
+            }
+
+            if(context.getActiveTypeName().equals(item)) {
                 return null;
             }
             return context.getActiveTypeName();
@@ -506,6 +523,11 @@ public class GremlinQueryComposerTest {
         @Override
         public boolean isDate(GremlinQueryComposer.Context context, String attributeName) {
             return attributeName.equals("createTime");
+        }
+
+        @Override
+        public boolean isNumeric(GremlinQueryComposer.Context context, String attrName) {
+            return attrName.equals("partitionSize");
         }
     }
 }

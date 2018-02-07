@@ -41,4 +41,6 @@ public interface Lookup {
     String getTypeFromEdge(GremlinQueryComposer.Context context, String item);
 
     boolean isDate(GremlinQueryComposer.Context context, String attributeName);
+
+    boolean isNumeric(GremlinQueryComposer.Context context, String attrName);
 }

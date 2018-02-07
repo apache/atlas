@@ -122,6 +122,7 @@ public class IdentifierHelper {
         private boolean  isAttribute;
         private String   qualifiedName;
         private boolean  isDate;
+        private boolean  isNumeric;
 
         public Info(String s) {
             this.raw = removeQuotes(s);
@@ -196,6 +197,7 @@ public class IdentifierHelper {
             isPrimitive = lookup.isPrimitive(context, attributeName);
             setQualifiedName(lookup, context, isAttribute, attributeName);
             setIsDate(lookup, context, isPrimitive, attributeName);
+            setIsNumeric(lookup, context, isPrimitive, attributeName);
         }
 
         private String getDefaultQualifiedNameForSinglePartName(GremlinQueryComposer.Context context, String s) {
@@ -220,6 +222,12 @@ public class IdentifierHelper {
         private void setIsDate(Lookup lookup, GremlinQueryComposer.Context context, boolean isPrimitive, String attrName) {
             if (isPrimitive) {
                 isDate = lookup.isDate(context, attrName);
+            }
+        }
+
+        private void setIsNumeric(Lookup lookup, GremlinQueryComposer.Context context, boolean isPrimitive, String attrName) {
+            if (isPrimitive) {
+                isNumeric = lookup.isNumeric(context, attrName);
             }
         }
 
@@ -283,5 +291,8 @@ public class IdentifierHelper {
             return raw;
         }
 
+        public boolean isNumeric() {
+            return isNumeric;
+        }
     }
 }

@@ -169,8 +169,12 @@ public class GremlinQueryComposer {
             rhs = parseDate(rhs);
         }
 
+        if (lhsI.isNumeric()) {
+            rhs = parseNumber(rhs);
+        }
+
+        rhs = addQuotesIfNecessary(lhsI, rhs);
         SearchParameters.Operator op = SearchParameters.Operator.fromString(operator);
-        rhs = addQuotesIfNecessary(rhs);
         if (op == SearchParameters.Operator.LIKE) {
             add(GremlinClause.TEXT_CONTAINS, lhsI.getQualifiedName(), IdentifierHelper.getFixedRegEx(rhs));
         } else if (op == SearchParameters.Operator.IN) {
@@ -186,6 +190,10 @@ public class GremlinQueryComposer {
             add(GremlinClause.IN, org.getEdgeLabel());
             context.registerActive(currentType);
         }
+    }
+
+    private String parseNumber(String rhs) {
+        return rhs.replace("'", "").replace("\"", "");
     }
 
     public void addAndClauses(List<String> clauses) {
@@ -464,7 +472,8 @@ public class GremlinQueryComposer {
         add(GremlinClause.INLINE_TRANSFORM_CALL);
     }
 
-    private String addQuotesIfNecessary(String rhs) {
+    private String addQuotesIfNecessary(IdentifierHelper.Info rhsI, String rhs) {
+        if(rhsI.isNumeric()) return rhs;
         if (IdentifierHelper.isTrueOrFalse(rhs)) return rhs;
         if (IdentifierHelper.isQuoted(rhs)) return rhs;
         return IdentifierHelper.getQuoted(rhs);
