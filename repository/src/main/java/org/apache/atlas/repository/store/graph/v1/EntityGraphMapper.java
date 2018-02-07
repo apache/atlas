@@ -1463,7 +1463,7 @@ public class EntityGraphMapper {
         AtlasObjectId    objectId = new AtlasObjectId(GraphHelper.getGuid(vertex), GraphHelper.getTypeName(vertex));
         RequestContextV1 req      = RequestContextV1.get();
 
-        if (!objectIdsContain(req.getUpdatedEntityIds(), objectId)) {
+        if (!objectIdsContain(req.getUpdatedEntityIds(), objectId) && !objectIdsContain(req.getCreatedEntityIds(), objectId)) {
             req.recordEntityUpdate(objectId);
         }
     }

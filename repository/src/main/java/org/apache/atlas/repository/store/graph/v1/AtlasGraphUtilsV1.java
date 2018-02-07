@@ -253,7 +253,8 @@ public class AtlasGraphUtilsV1 {
                 } else {
                     vertex = AtlasGraphUtilsV1.findByTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
 
-                    if (vertex == null) {
+                    // if no instance of given typeName is found, try to find an instance of type's sub-type
+                    if (vertex == null && !entityType.getAllSubTypes().isEmpty()) {
                         vertex = AtlasGraphUtilsV1.findBySuperTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
                     }
                 }
