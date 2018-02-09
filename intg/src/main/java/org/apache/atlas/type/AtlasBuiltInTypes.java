@@ -255,6 +255,7 @@ public class AtlasBuiltInTypes {
      */
     public static class AtlasFloatType extends AtlasType {
         private static final Float DEFAULT_VALUE = 0f;
+        private static final Float FLOAT_EPSILON = 0.00000001f;
 
         public AtlasFloatType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, TypeCategory.PRIMITIVE);
@@ -272,6 +273,32 @@ public class AtlasBuiltInTypes {
             }
 
             return getNormalizedValue(obj) != null;
+        }
+
+        public boolean areEqualValues(Object val1, Object val2) {
+            final boolean ret;
+
+            if (val1 == null) {
+                ret = val2 == null;
+            } else if (val2 == null) {
+                ret = false;
+            } else {
+                Float floatVal1 = getNormalizedValue(val1);
+
+                if (floatVal1 == null) {
+                    ret = false;
+                } else {
+                    Float floatVal2 = getNormalizedValue(val2);
+
+                    if (floatVal2 == null) {
+                        ret = false;
+                    } else {
+                        ret = Math.abs(floatVal1 - floatVal2) < FLOAT_EPSILON;
+                    }
+                }
+            }
+
+            return ret;
         }
 
         @Override
@@ -304,6 +331,7 @@ public class AtlasBuiltInTypes {
      */
     public static class AtlasDoubleType extends AtlasType {
         private static final Double DEFAULT_VALUE = 0d;
+        private static final Double DOUBLE_EPSILON = 0.00000001d;
 
         public AtlasDoubleType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE);
@@ -321,6 +349,32 @@ public class AtlasBuiltInTypes {
             }
 
             return getNormalizedValue(obj) != null;
+        }
+
+        public boolean areEqualValues(Object val1, Object val2) {
+            final boolean ret;
+
+            if (val1 == null) {
+                ret = val2 == null;
+            } else if (val2 == null) {
+                ret = false;
+            } else {
+                Double doubleVal1 = getNormalizedValue(val1);
+
+                if (doubleVal1 == null) {
+                    ret = false;
+                } else {
+                    Double doubleVal2 = getNormalizedValue(val2);
+
+                    if (doubleVal2 == null) {
+                        ret = false;
+                    } else {
+                        ret = Math.abs(doubleVal1 - doubleVal2) < DOUBLE_EPSILON;
+                    }
+                }
+            }
+
+            return ret;
         }
 
         @Override

@@ -19,6 +19,9 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+
 
 /**
  * Persistence/Retrieval API for AtlasRelationship
@@ -44,6 +47,9 @@ public interface AtlasRelationshipStore {
      * @return AtlasRelationship
      */
     AtlasRelationship getById(String guid) throws AtlasBaseException;
+
+
+    AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Retrieve a relationship if it exists or creates a new relationship instance.

@@ -59,6 +59,15 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasEntity extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String KEY_GUID        = "guid";
+    public static final String KEY_STATUS      = "status";
+    public static final String KEY_CREATED_BY  = "createdBy";
+    public static final String KEY_UPDATED_BY  = "updatedBy";
+    public static final String KEY_CREATE_TIME = "createTime";
+    public static final String KEY_UPDATE_TIME = "updateTime";
+    public static final String KEY_VERSION     = "version";
+
+
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
      */
@@ -100,6 +109,48 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         super(typeName, attributes);
 
         init();
+    }
+
+    public AtlasEntity(Map map) {
+        super(map);
+
+        if (map != null) {
+            Object oGuid      = map.get(KEY_GUID);
+            Object status     = map.get(KEY_STATUS);
+            Object createdBy  = map.get(KEY_CREATED_BY);
+            Object updatedBy  = map.get(KEY_UPDATED_BY);
+            Object createTime = map.get(KEY_CREATE_TIME);
+            Object updateTime = map.get(KEY_UPDATE_TIME);
+            Object version    = map.get(KEY_VERSION);
+
+            if (oGuid != null) {
+                setGuid(oGuid.toString());
+            }
+
+            if (status != null) {
+                setStatus(Status.valueOf(status.toString()));
+            }
+
+            if (createdBy != null) {
+                setCreatedBy(createdBy.toString());
+            }
+
+            if (createTime instanceof Number) {
+                setCreateTime(new Date(((Number) createTime).longValue()));
+            }
+
+            if (updatedBy != null) {
+                setUpdatedBy(updatedBy.toString());
+            }
+
+            if (updateTime instanceof Number) {
+                setUpdateTime(new Date(((Number) updateTime).longValue()));
+            }
+
+            if (version instanceof Number) {
+                setVersion(((Number) version).longValue());
+            }
+        }
     }
 
     public AtlasEntity(AtlasEntity other) {

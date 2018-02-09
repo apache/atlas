@@ -276,6 +276,7 @@ public class AtlasEntityType extends AtlasStructType {
 
         return ret;
     }
+
     @Override
     public boolean isValidValue(Object obj) {
         if (obj != null) {
@@ -289,6 +290,17 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2) {
+        for (AtlasEntityType superType : superTypes) {
+            if (!superType.areEqualValues(val1, val2)) {
+                return false;
+            }
+        }
+
+        return super.areEqualValues(val1, val2);
     }
 
     @Override

@@ -65,6 +65,10 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         super(typeName, attrName, attrValue);
     }
 
+    public AtlasClassification(Map map) {
+        super(map);
+    }
+
     public AtlasClassification(AtlasClassification other) {
         if (other != null) {
             setTypeName(other.getTypeName());

@@ -1422,25 +1422,7 @@ public class EntityGraphMapper {
 
     private AtlasEdge getOrCreateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName,
                                               Map<String, Object> relationshipAttributes) throws AtlasBaseException {
-        AtlasEdge     ret  = null;
-        AtlasObjectId end1 = new AtlasObjectId(getIdFromVertex(end1Vertex), AtlasGraphUtilsV1.getTypeName(end1Vertex));
-        AtlasObjectId end2 = new AtlasObjectId(getIdFromVertex(end2Vertex), AtlasGraphUtilsV1.getTypeName(end2Vertex));
-
-        AtlasRelationship relationship = relationshipStore.getOrCreate(new AtlasRelationship(relationshipName, end1, end2, relationshipAttributes));
-        // return newly created AtlasEdge
-        // if multiple edges are returned, compare using guid to pick the right one
-        Iterator<AtlasEdge> outEdges = graphHelper.getOutGoingEdgesByLabel(end1Vertex, relationship.getLabel());
-
-        while (outEdges.hasNext()) {
-            AtlasEdge edge = outEdges.next();
-
-            if (getIdFromVertex(end2Vertex).equals(getIdFromVertex(edge.getInVertex()))) {
-                ret = edge;
-                break;
-            }
-        }
-
-        return ret;
+        return relationshipStore.getOrCreate(end1Vertex, end2Vertex, new AtlasRelationship(relationshipName, relationshipAttributes));
     }
 
     private boolean isRelationshipExists(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {

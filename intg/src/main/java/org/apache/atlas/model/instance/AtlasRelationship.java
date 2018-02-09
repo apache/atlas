@@ -25,12 +25,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.atlas.type.AtlasBuiltInTypes;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,6 +51,18 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelationship extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    public static final String KEY_GUID           = "guid";
+    public static final String KEY_STATUS         = "status";
+    public static final String KEY_CREATED_BY     = "createdBy";
+    public static final String KEY_UPDATED_BY     = "updatedBy";
+    public static final String KEY_CREATE_TIME    = "createTime";
+    public static final String KEY_UPDATE_TIME    = "updateTime";
+    public static final String KEY_VERSION        = "version";
+    public static final String KEY_END1           = "end1";
+    public static final String KEY_END2           = "end2";
+    public static final String KEY_LABEL          = "label";
+    public static final String KEY_PROPAGATE_TAGS = "propagateTags";
 
     private String        guid          = null;
     private AtlasObjectId end1          = null;
@@ -103,6 +117,76 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public AtlasRelationship(AtlasRelationshipDef relationshipDef) {
         this(relationshipDef != null ? relationshipDef.getName() : null);
+    }
+
+    public AtlasRelationship(Map map) {
+        super(map);
+
+        if (map != null) {
+            Object oGuid         = map.get(KEY_GUID);
+            Object oEnd1         = map.get(KEY_END1);
+            Object oEnd2         = map.get(KEY_END2);
+            Object label         = map.get(KEY_LABEL);
+            Object propagateTags = map.get(KEY_PROPAGATE_TAGS);
+            Object status        = map.get(KEY_STATUS);
+            Object createdBy     = map.get(KEY_CREATED_BY);
+            Object updatedBy     = map.get(KEY_UPDATED_BY);
+            Object createTime    = map.get(KEY_CREATE_TIME);
+            Object updateTime    = map.get(KEY_UPDATE_TIME);
+            Object version       = map.get(KEY_VERSION);
+
+            if (oGuid != null) {
+                setGuid(oGuid.toString());
+            }
+
+            if (oEnd1 != null) {
+                if (oEnd1 instanceof AtlasObjectId) {
+                    setEnd1((AtlasObjectId) oEnd1);
+                } else if (oEnd1 instanceof Map) {
+                    setEnd1(new AtlasObjectId((Map) oEnd1));
+                }
+            }
+
+            if (oEnd2 != null) {
+                if (oEnd2 instanceof AtlasObjectId) {
+                    setEnd2((AtlasObjectId) oEnd2);
+                } else if (oEnd2 instanceof Map) {
+                    setEnd2(new AtlasObjectId((Map) oEnd2));
+                }
+            }
+
+            if (label != null) {
+                setLabel(label.toString());
+            }
+
+            if (propagateTags != null) {
+                setPropagateTags(PropagateTags.valueOf(propagateTags.toString()));
+            }
+
+            if (status != null) {
+                setStatus(Status.valueOf(status.toString()));
+            }
+
+            if (createdBy != null) {
+                setCreatedBy(createdBy.toString());
+            }
+
+            if (createTime instanceof Number) {
+                setCreateTime(new Date(((Number) createTime).longValue()));
+            }
+
+            if (updatedBy != null) {
+                setUpdatedBy(updatedBy.toString());
+            }
+
+            if (updateTime instanceof Number) {
+                setUpdateTime(new Date(((Number) updateTime).longValue()));
+            }
+
+            if (version instanceof Number) {
+                setVersion(((Number) version).longValue());
+            }
+        }
     }
 
     public AtlasRelationship(AtlasRelationship other) {

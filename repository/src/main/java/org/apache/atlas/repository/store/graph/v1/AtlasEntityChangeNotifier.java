@@ -20,10 +20,13 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -213,8 +216,8 @@ public class AtlasEntityChangeNotifier {
         return ret;
     }
 
-    private void doFullTextMapping(List<AtlasEntityHeader> atlasEntityHeaders) {
-        if (CollectionUtils.isEmpty(atlasEntityHeaders)) {
+    private void doFullTextMapping(List<AtlasEntityHeader> entityHeaders) {
+        if (CollectionUtils.isEmpty(entityHeaders)) {
             return;
         }
 
@@ -226,18 +229,22 @@ public class AtlasEntityChangeNotifier {
             LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
         }
 
-        for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
-            String      guid        = atlasEntityHeader.getGuid();
-            AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(guid);
+        for (AtlasEntityHeader entityHeader : entityHeaders) {
+            if(GraphHelper.isInternalType(entityHeader.getTypeName())) {
+                continue;
+            }
 
-            if(atlasVertex == null || GraphHelper.isInternalType(atlasVertex)) {
+            String      guid   = entityHeader.getGuid();
+            AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(guid);
+
+            if(vertex == null) {
                 continue;
             }
 
             try {
                 String fullText = fullTextMapperV2.getIndexTextForEntity(guid);
 
-                GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+                GraphHelper.setProperty(vertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
             } catch (AtlasBaseException e) {
                 LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }

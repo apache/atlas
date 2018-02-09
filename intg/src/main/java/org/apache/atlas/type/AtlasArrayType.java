@@ -161,6 +161,86 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
+    public boolean areEqualValues(Object val1, Object val2) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = isEmptyArrayValue(val2);
+        } else if (val2 == null) {
+            ret = isEmptyArrayValue(val1);
+        } else {
+            if (val1.getClass().isArray() && val2.getClass().isArray()) {
+                int len = Array.getLength(val1);
+
+                if (len != Array.getLength(val2)) {
+                    ret = false;
+                } else {
+                    for (int i = 0; i < len; i++) {
+                        if (!elementType.areEqualValues(Array.get(val1, i), Array.get(val2, i))) {
+                            ret = false;
+
+                            break;
+                        }
+                    }
+                }
+            } else if ((val1 instanceof Set) && (val2 instanceof Set)) {
+                Set set1 = (Set) val1;
+                Set set2 = (Set) val2;
+
+                if (set1.size() != set2.size()) {
+                    ret = false;
+                } else {
+                    for (Object elem1 : set1) {
+                        boolean foundInSet2 = false;
+
+                        for (Object elem2 : set2) {
+                            if (elementType.areEqualValues(elem1, elem2)) {
+                                foundInSet2 = true;
+
+                                break;
+                            }
+                        }
+
+                        if (!foundInSet2) {
+                            ret = false;
+
+                            break;
+                        }
+                    }
+                }
+            } else {
+                List list1 = getListFromValue(val1);
+
+                if (list1 == null) {
+                    ret = false;
+                } else {
+                    List list2 = getListFromValue(val2);
+
+                    if (list2 == null) {
+                        ret = false;
+                    } else {
+                        int len = list1.size();
+
+                        if (len != list2.size()) {
+                            ret = false;
+                        } else {
+                            for (int i = 0; i < len; i++) {
+                                if (!elementType.areEqualValues(list1.get(i), list2.get(i))) {
+                                    ret = false;
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
     public boolean isValidValueForUpdate(Object obj) {
         if (obj != null) {
             if (obj instanceof List || obj instanceof Set) {
@@ -438,5 +518,51 @@ public class AtlasArrayType extends AtlasType {
         }
 
         return true;
+    }
+
+    private boolean isEmptyArrayValue(Object val) {
+        if (val == null) {
+            return true;
+        } else if (val instanceof Collection) {
+            return ((Collection) val).isEmpty();
+        } else if (val.getClass().isArray()) {
+            return Array.getLength(val) == 0;
+        } else if (val instanceof String){
+            List list = AtlasType.fromJson(val.toString(), List.class);
+
+            return list == null || list.isEmpty();
+        }
+
+        return false;
+    }
+
+    private List getListFromValue(Object val) {
+        final List ret;
+
+        if (val instanceof List) {
+            ret = (List) val;
+        } else if (val instanceof Collection) {
+            int len = ((Collection) val).size();
+
+            ret = new ArrayList<>(len);
+
+            for (Object elem : ((Collection) val)) {
+                ret.add(elem);
+            }
+        } else if (val.getClass().isArray()) {
+            int len = Array.getLength(val);
+
+            ret = new ArrayList<>(len);
+
+            for (int i = 0; i < len; i++) {
+                ret.add(Array.get(val, i));
+            }
+        } else if (val instanceof String){
+            ret = AtlasType.fromJson(val.toString(), List.class);
+        } else {
+            ret = null;
+        }
+
+        return ret;
     }
 }

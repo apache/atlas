@@ -120,7 +120,8 @@ public enum AtlasErrorCode {
     INVALID_DSL_DUPLICATE_ALIAS(400, "ATLAS-400-00-066", "DSL Semantic Error - Duplicate alias found: '{0}' for type '{1}' already present."),
     INVALID_DSL_INVALID_DATE(400, "ATLAS-400-00-067", "DSL Semantic Error - Date format: {0}."),
     INVALID_DSL_HAS_PROPERTY(400, "ATLAS-400-00-068", "DSL Semantic Error - Property needs to be a primitive type: {0}"),
-
+    RELATIONSHIP_UPDATE_END_CHANGE_NOT_ALLOWED(404, "ATLAS-400-00-069", "change of relationship end is not permitted. relationship-type={}, relationship-guid={}, end-guid={}, updated-end-guid={}"),
+    RELATIONSHIP_UPDATE_TYPE_CHANGE_NOT_ALLOWED(404, "ATLAS-400-00-06A", "change of relationship type is not permitted. relationship-guid={}, current-type={}, new-type={}"),
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),

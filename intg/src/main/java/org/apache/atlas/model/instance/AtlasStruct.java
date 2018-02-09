@@ -58,6 +58,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String KEY_TYPENAME   = "typeName";
+    public static final String KEY_ATTRIBUTES = "attributes";
+
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
     @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
@@ -81,6 +84,19 @@ public class AtlasStruct implements Serializable {
     public AtlasStruct(String typeName, String attrName, Object attrValue) {
         setTypeName(typeName);
         setAttribute(attrName, attrValue);
+    }
+
+    public AtlasStruct(Map map) {
+        if (map != null) {
+            Object typeName   = map.get(KEY_TYPENAME);
+            Map    attributes = (map.get(KEY_ATTRIBUTES) instanceof Map) ? (Map) map.get(KEY_ATTRIBUTES) : map;
+
+            if (typeName != null) {
+                setTypeName(typeName.toString());
+            }
+
+            setAttributes(new HashMap<>(attributes));
+        }
     }
 
     public AtlasStruct(AtlasStruct other) {

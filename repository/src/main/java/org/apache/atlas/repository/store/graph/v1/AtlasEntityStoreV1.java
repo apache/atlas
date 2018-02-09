@@ -40,6 +40,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +58,8 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 @Component
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("store.EntityStore");
+
 
     private final DeleteHandlerV1           deleteHandler;
     private final AtlasTypeRegistry         typeRegistry;
@@ -167,50 +170,60 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
-        // Create/Update entities
-        EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+        AtlasPerfTracer perf = null;
 
-        // for existing entities, skip update if incoming entity doesn't have any change
-        if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
-            EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "createOrUpdate()");
+        }
 
-            List<AtlasEntity> entitiesToSkipUpdate = null;
-            for (AtlasEntity entity : context.getUpdatedEntities()) {
-                String          guid          = entity.getGuid();
-                AtlasVertex     vertex        = context.getVertex(guid);
-                AtlasEntity     entityInStore = entityRetriever.toAtlasEntity(vertex);
-                AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        try {
+            // Create/Update entities
+            EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
-                if (!AtlasEntityUtil.hasAnyAttributeUpdate(entityType, entity, entityInStore)) {
-                    // if classifications are to be replaced as well, then skip updates only when no change in classifications as well
-                    if (!replaceClassifications || Objects.equals(entity.getClassifications(), entityInStore.getClassifications())) {
-                        if (entitiesToSkipUpdate == null) {
-                            entitiesToSkipUpdate = new ArrayList<>();
+            // for existing entities, skip update if incoming entity doesn't have any change
+            if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
+                EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
+
+                List<AtlasEntity> entitiesToSkipUpdate = null;
+                for (AtlasEntity entity : context.getUpdatedEntities()) {
+                    String          guid          = entity.getGuid();
+                    AtlasVertex     vertex        = context.getVertex(guid);
+                    AtlasEntity     entityInStore = entityRetriever.toAtlasEntity(vertex);
+                    AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                    if (!AtlasEntityUtil.hasAnyAttributeUpdate(entityType, entity, entityInStore)) {
+                        // if classifications are to be replaced as well, then skip updates only when no change in classifications as well
+                        if (!replaceClassifications || Objects.equals(entity.getClassifications(), entityInStore.getClassifications())) {
+                            if (entitiesToSkipUpdate == null) {
+                                entitiesToSkipUpdate = new ArrayList<>();
+                            }
+
+                            entitiesToSkipUpdate.add(entity);
                         }
-
-                        entitiesToSkipUpdate.add(entity);
                     }
+                }
+
+                if (entitiesToSkipUpdate != null) {
+                    context.getUpdatedEntities().removeAll(entitiesToSkipUpdate);
                 }
             }
 
-            if (entitiesToSkipUpdate != null) {
-                context.getUpdatedEntities().removeAll(entitiesToSkipUpdate);
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
+
+            ret.setGuidAssignments(context.getGuidAssignments());
+
+            // Notify the change listeners
+            entityChangeNotifier.onEntitiesMutated(ret, entityStream instanceof EntityImportStream);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== createOrUpdate()");
             }
+
+            return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
-
-        ret.setGuidAssignments(context.getGuidAssignments());
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== createOrUpdate()");
-        }
-
-        // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret, entityStream instanceof EntityImportStream);
-
-        return ret;
-    }
+   }
 
     @Override
     @GraphTransaction
@@ -584,10 +597,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
             AtlasEntity entity = entityStream.getByGuid(guid);
 
-            if (entity != null) {
-
+            if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 if (vertex != null) {
-                    // entity would be null if guid is not in the stream but referenced by an entity in the stream
                     if (!isPartialUpdate) {
                         graphDiscoverer.validateAndNormalize(entity);
                     } else {

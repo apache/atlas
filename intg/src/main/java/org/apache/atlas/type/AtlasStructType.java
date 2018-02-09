@@ -31,12 +31,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
@@ -235,6 +230,51 @@ public class AtlasStructType extends AtlasType {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasStruct structVal1 = getStructFromValue(val1);
+
+            if (structVal1 == null) {
+                ret = false;
+            } else {
+                AtlasStruct structVal2 = getStructFromValue(val2);
+
+                if (structVal2 == null) {
+                    ret = false;
+                } else if (!StringUtils.equalsIgnoreCase(structVal1.getTypeName(), structVal2.getTypeName())) {
+                    ret = false;
+                } else {
+                    for (Map.Entry<String, Object> entry : structVal1.getAttributes().entrySet()) {
+                        String         attrName  = entry.getKey();
+                        AtlasAttribute attribute = getAttribute(attrName);
+
+                        if (attribute == null) { // ignore unknown attribute
+                            continue;
+                        } else {
+                            Object attrValue1 = entry.getValue();
+                            Object attrValue2 = structVal2.getAttribute(attrName);
+
+                            if (!attribute.getAttributeType().areEqualValues(attrValue1, attrValue2)) {
+                                ret = false;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
     }
 
     @Override
@@ -615,6 +655,28 @@ public class AtlasStructType extends AtlasType {
         }
 
         return Collections.unmodifiableMap(ret);
+    }
+
+    private AtlasStruct getStructFromValue(Object val) {
+        final AtlasStruct ret;
+
+        if (val instanceof AtlasStruct) {
+            ret = (AtlasStruct) val;
+        } else if (val instanceof Map) {
+            ret = new AtlasStruct((Map) val);
+        } else if (val instanceof String) {
+            Map map = AtlasType.fromJson(val.toString(), Map.class);
+
+            if (map == null) {
+                ret = null;
+            } else {
+                ret = new AtlasStruct((Map) val);
+            }
+        } else {
+            ret = null;
+        }
+
+        return ret;
     }
 
     public static class AtlasAttribute {

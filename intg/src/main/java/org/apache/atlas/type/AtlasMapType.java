@@ -24,6 +24,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 
@@ -121,6 +122,45 @@ public class AtlasMapType extends AtlasType {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = isEmptyMapValue(val2);
+        } else if (val2 == null) {
+            ret = isEmptyMapValue(val1);
+        } else {
+            Map map1 = getMapFromValue(val1);
+
+            if (map1 == null) {
+                ret = false;
+            } else {
+                Map map2 = getMapFromValue(val2);
+
+                if (map2 == null) {
+                    ret = false;
+                } else {
+                    int len = map1.size();
+
+                    if (len != map2.size()) {
+                        ret = false;
+                    } else {
+                        for (Object key : map1.keySet()) {
+                            if (!valueType.areEqualValues(map1.get(key), map2.get(key))) {
+                                ret = false;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
     }
 
     @Override
@@ -302,5 +342,33 @@ public class AtlasMapType extends AtlasType {
 
             return attributeType;
         }
+    }
+
+    private boolean isEmptyMapValue(Object val) {
+        if (val == null) {
+            return true;
+        } else if (val instanceof Map) {
+            return ((Map) val).isEmpty();
+        } else if (val instanceof String) {
+            Map map = AtlasType.fromJson(val.toString(), Map.class);
+
+            return map == null || map.isEmpty();
+        }
+
+        return false;
+    }
+
+    private Map getMapFromValue(Object val) {
+        final Map ret;
+
+        if (val instanceof Map) {
+            ret = (Map) val;
+        } else if (val instanceof String) {
+            ret = AtlasType.fromJson(val.toString(), Map.class);
+        } else {
+            ret = null;
+        }
+
+        return ret;
     }
 }

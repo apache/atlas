@@ -47,33 +47,18 @@ public class AtlasEntityUtil {
         for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
             String    attrName  = attribute.getName();
             AtlasType attrType  = attribute.getAttributeType();
-            Object    currValue = attrType.getNormalizedValue(currEntity.getAttribute(attrName));
-            Object    newValue  = attrType.getNormalizedValue(newEntity.getAttribute(attrName));
+            Object    currValue = currEntity.getAttribute(attrName);
+            Object    newValue  = newEntity.getAttribute(attrName);
 
-            if (!Objects.equals(currValue, newValue)) {
+            if (!attrType.areEqualValues(currEntity.getAttribute(attrName), newEntity.getAttribute(attrName))) {
                 ret = true;
 
-                // for map/list types, treat 'null' same as empty
-                if ((currValue == null && newValue != null) || (currValue != null && newValue == null)) {
-                    if (attrType instanceof AtlasMapType) {
-                        if (MapUtils.isEmpty((Map) currValue) && MapUtils.isEmpty((Map) newValue)) {
-                            ret = false;
-                        }
-                    } else if (attrType instanceof AtlasArrayType) {
-                        if (CollectionUtils.isEmpty((Collection) currValue) && CollectionUtils.isEmpty((Collection) newValue)) {
-                            ret = false;
-                        }
-                    }
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("hasAnyAttributeUpdate(guid={}, typeName={}): attribute '{}' is found updated - currentValue={}, newValue={}",
+                            currEntity.getGuid(), currEntity.getTypeName(), attrName, currValue, newValue);
                 }
 
-                if (ret) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("hasAnyAttributeUpdate(guid={}, typeName={}): attribute '{}' is found updated - currentValue={}, newValue={}",
-                                  currEntity.getGuid(), currEntity.getTypeName(), attrName, currValue, newValue);
-                    }
-
-                    break;
-                }
+                break;
             }
         }
 

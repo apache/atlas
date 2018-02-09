@@ -20,6 +20,9 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
@@ -29,6 +32,9 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -58,6 +64,7 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         resolveReferences(typeRegistry);
     }
+
     public AtlasRelationshipDef getRelationshipDef() { return relationshipDef; }
 
     @Override
@@ -76,19 +83,17 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         if (type1 instanceof AtlasEntityType) {
             end1Type = (AtlasEntityType) type1;
-
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
         }
 
         if (type2 instanceof AtlasEntityType) {
             end2Type = (AtlasEntityType) type2;
-
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
         }
 
-        validateAtlasRelationshipDef(this.relationshipDef);
+        validateAtlasRelationshipDef(relationshipDef);
     }
 
     @Override
@@ -150,15 +155,46 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     @Override
     public boolean isValidValue(Object obj) {
-        boolean ret = true;
-
         if (obj != null) {
-
-            if (obj instanceof AtlasRelationshipType) {
-                validateAtlasRelationshipType((AtlasRelationshipType) obj);
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
             }
+        }
 
-            ret = super.isValidValue(obj);
+        return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2) {
+        final boolean ret;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasRelationship rel1 = getRelationshipFromValue(val1);
+
+            if (rel1 == null) {
+                ret = false;
+            } else {
+                AtlasRelationship rel2 = getRelationshipFromValue(val2);
+
+                if (rel2 == null) {
+                    ret = false;
+                } else if (!super.areEqualValues(rel1, rel2)) {
+                    ret = false;
+                } else {
+                    ret = Objects.equals(rel1.getGuid(), rel2.getGuid()) &&
+                          Objects.equals(rel1.getEnd1(), rel2.getEnd1()) &&
+                          Objects.equals(rel1.getEnd2(), rel2.getEnd2()) &&
+                          Objects.equals(rel1.getLabel(), rel2.getLabel()) &&
+                          Objects.equals(rel1.getPropagateTags(), rel2.getPropagateTags()) &&
+                          Objects.equals(rel1.getStatus(), rel2.getStatus());
+                }
+            }
         }
 
         return ret;
@@ -166,14 +202,15 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     @Override
     public boolean isValidValueForUpdate(Object obj) {
-        boolean ret = true;
-
         if (obj != null) {
-            validateAtlasRelationshipType((AtlasRelationshipType) obj);
-            ret = super.isValidValueForUpdate(obj);
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
+            }
         }
 
-        return ret;
+        return true;
     }
 
     public AtlasEntityType getEnd1Type() { return end1Type; }
@@ -182,18 +219,18 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     /**
      * Validate the fields in the the RelationshipType are consistent with respect to themselves.
-     * @param type
+     * @param relationship
      * @throws AtlasBaseException
      */
-    private boolean validateAtlasRelationshipType(AtlasRelationshipType type) {
-        boolean isValid = false;
-        try {
-            validateAtlasRelationshipDef(type.getRelationshipDef());
-            isValid = true;
-        } catch (AtlasBaseException abe) {
-            LOG.error("Validation error for AtlasRelationshipType", abe);
+    private boolean validateRelationship(AtlasRelationship relationship) {
+        String end1TypeName = relationship.getEnd1() != null ? relationship.getEnd1().getTypeName() : null;
+        String end2TypeName = relationship.getEnd2() != null ? relationship.getEnd2().getTypeName() : null;
+
+        if (StringUtils.isNotEmpty(end1TypeName) && StringUtils.isNotEmpty(end2TypeName)) {
+            return end1Type.isTypeOrSuperTypeOf(end1TypeName) && end2Type.isTypeOrSuperTypeOf(end2TypeName) && super.isValidValue(relationship);
         }
-        return isValid;
+
+        return false;
     }
 
     /**
@@ -293,6 +330,20 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         if (attribute != null) {
             ret = "__" + attribute.getQualifiedName();
+        }
+
+        return ret;
+    }
+
+    private AtlasRelationship getRelationshipFromValue(Object val) {
+        final AtlasRelationship ret;
+
+        if (val instanceof AtlasRelationship) {
+            ret = (AtlasRelationship) val;
+        } else if (val instanceof Map) {
+            ret = new AtlasRelationship((Map) val);
+        } else {
+            ret = null;
         }
 
         return ret;
