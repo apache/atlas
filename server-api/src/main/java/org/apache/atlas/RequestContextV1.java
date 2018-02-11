@@ -31,18 +31,15 @@ public class RequestContextV1 {
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
 
-    private Set<AtlasObjectId> createdEntityIds = new LinkedHashSet<>();
-    private Set<AtlasObjectId> updatedEntityIds = new LinkedHashSet<>();
-    private Set<AtlasObjectId> deletedEntityIds = new LinkedHashSet<>();
-    private Map<String, AtlasEntityWithExtInfo> entityCacheV2 = new HashMap<>();
+    private final Map<String, AtlasObjectId>          updatedEntities = new HashMap<>();
+    private final Map<String, AtlasObjectId>          deletedEntities = new HashMap<>();
+    private final Map<String, AtlasEntityWithExtInfo> entityCacheV2   = new HashMap<>();
+    private final Metrics                             metrics         = new Metrics();
+    private final long                                requestTime     = System.currentTimeMillis();
 
     private String user;
-    private final long requestTime;
-
-    private Metrics metrics = new Metrics();
 
     private RequestContextV1() {
-        requestTime = System.currentTimeMillis();
     }
 
     //To handle gets from background threads where createContext() is not called
@@ -62,9 +59,9 @@ public class RequestContextV1 {
         RequestContextV1 instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            if (instance.entityCacheV2 != null) {
-                instance.entityCacheV2.clear();
-            }
+            instance.updatedEntities.clear();
+            instance.deletedEntities.clear();
+            instance.entityCacheV2.clear();
         }
 
         CURRENT_CONTEXT.remove();
@@ -78,24 +75,16 @@ public class RequestContextV1 {
         this.user = user;
     }
 
-    public void recordEntityCreate(Collection<AtlasObjectId> createdEntityIds) {
-        this.createdEntityIds.addAll(createdEntityIds);
+    public void recordEntityUpdate(AtlasObjectId entity) {
+        if (entity != null && entity.getGuid() != null) {
+            updatedEntities.put(entity.getGuid(), entity);
+        }
     }
 
-    public void recordEntityCreate(AtlasObjectId createdEntityId) {
-        this.createdEntityIds.add(createdEntityId);
-    }
-
-    public void recordEntityUpdate(Collection<AtlasObjectId> updatedEntityIds) {
-        this.updatedEntityIds.addAll(updatedEntityIds);
-    }
-
-    public void recordEntityUpdate(AtlasObjectId entityId) {
-        this.updatedEntityIds.add(entityId);
-    }
-
-    public void recordEntityDelete(AtlasObjectId entityId) {
-        deletedEntityIds.add(entityId);
+    public void recordEntityDelete(AtlasObjectId entity) {
+        if (entity != null && entity.getGuid() != null) {
+            deletedEntities.put(entity.getGuid(), entity);
+        }
     }
 
     /**
@@ -108,16 +97,12 @@ public class RequestContextV1 {
         }
     }
 
-    public Collection<AtlasObjectId> getCreatedEntityIds() {
-        return createdEntityIds;
+    public Collection<AtlasObjectId> getUpdatedEntities() {
+        return updatedEntities.values();
     }
 
-    public Collection<AtlasObjectId> getUpdatedEntityIds() {
-        return updatedEntityIds;
-    }
-
-    public Collection<AtlasObjectId> getDeletedEntityIds() {
-        return deletedEntityIds;
+    public Collection<AtlasObjectId> getDeletedEntities() {
+        return deletedEntities.values();
     }
 
     /**
@@ -135,8 +120,12 @@ public class RequestContextV1 {
         return requestTime;
     }
 
-    public boolean isDeletedEntity(AtlasObjectId entityId) {
-        return deletedEntityIds.contains(entityId);
+    public boolean isUpdatedEntity(String guid) {
+        return updatedEntities.containsKey(guid);
+    }
+
+    public boolean isDeletedEntity(String guid) {
+        return deletedEntities.containsKey(guid);
     }
 
     public static Metrics getMetrics() {

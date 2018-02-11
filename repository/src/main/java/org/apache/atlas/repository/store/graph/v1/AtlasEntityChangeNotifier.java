@@ -158,7 +158,7 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
-        List<Referenceable> typedRefInsts = toReferenceables(entityHeaders);
+        List<Referenceable> typedRefInsts = toReferenceables(entityHeaders, operation);
 
         for (EntityChangeListener listener : entityChangeListeners) {
             try {
@@ -180,11 +180,18 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
-    private List<Referenceable> toReferenceables(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+    private List<Referenceable> toReferenceables(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
         List<Referenceable> ret = new ArrayList<>(entityHeaders.size());
 
-        for (AtlasEntityHeader entityHeader : entityHeaders) {
-            ret.add(toReferenceable(entityHeader.getGuid()));
+        // delete notifications don't need all attributes. Hence the special handling for delete operation
+        if (operation == EntityOperation.DELETE) {
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                ret.add(new Referenceable(entityHeader.getGuid(), entityHeader.getTypeName(), entityHeader.getAttributes()));
+            }
+        } else {
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                ret.add(toReferenceable(entityHeader.getGuid()));
+            }
         }
 
         return ret;

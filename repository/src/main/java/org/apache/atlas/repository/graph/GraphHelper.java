@@ -68,9 +68,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 /**
  * Utility class for graph operations.
@@ -888,24 +885,23 @@ public final class GraphHelper {
      * Guid and AtlasVertex combo
      */
     public static class VertexInfo {
-        private String guid;
-        private AtlasVertex vertex;
-        private String typeName;
+        private final AtlasObjectId entity;
+        private final AtlasVertex   vertex;
 
-        public VertexInfo(String guid, AtlasVertex vertex, String typeName) {
-            this.guid = guid;
+        public VertexInfo(AtlasObjectId entity, AtlasVertex vertex) {
+            this.entity = entity;
             this.vertex = vertex;
-            this.typeName = typeName;
         }
 
-        public String getGuid() {
-            return guid;
-        }
+        public AtlasObjectId getEntity() { return entity; }
         public AtlasVertex getVertex() {
             return vertex;
         }
+        public String getGuid() {
+            return entity.getGuid();
+        }
         public String getTypeName() {
-            return typeName;
+            return entity.getTypeName();
         }
 
         @Override
@@ -913,14 +909,13 @@ public final class GraphHelper {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             VertexInfo that = (VertexInfo) o;
-            return Objects.equals(guid, that.guid) &&
-                    Objects.equals(vertex, that.vertex) &&
-                    Objects.equals(typeName, that.typeName);
+            return Objects.equals(entity, that.entity) &&
+                    Objects.equals(vertex, that.vertex);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(guid, vertex, typeName);
+            return Objects.hash(entity, vertex);
         }
     }
 
@@ -1303,40 +1298,5 @@ public final class GraphHelper {
         String edgeLabel = edge.getLabel();
 
         return StringUtils.isNotEmpty(edge.getLabel()) ? edgeLabel.startsWith("r:") : false;
-    }
-
-    public static AtlasObjectId getReferenceObjectId(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection,
-                                                     AtlasVertex parentVertex) {
-        AtlasObjectId ret = null;
-
-        if (relationshipDirection == OUT) {
-            ret = getAtlasObjectIdForInVertex(edge);
-
-        } else if (relationshipDirection == IN) {
-            ret = getAtlasObjectIdForOutVertex(edge);
-
-        } else if (relationshipDirection == BOTH){
-            // since relationship direction is BOTH, edge direction can be inward or outward
-            // compare with parent entity vertex and pick the right reference vertex
-            if (verticesEquals(parentVertex, edge.getOutVertex())) {
-                ret = getAtlasObjectIdForInVertex(edge);
-            } else {
-                ret = getAtlasObjectIdForOutVertex(edge);
-            }
-        }
-
-        return ret;
-    }
-
-    public static AtlasObjectId getAtlasObjectIdForOutVertex(AtlasEdge edge) {
-        return new AtlasObjectId(getGuid(edge.getOutVertex()), getTypeName(edge.getOutVertex()));
-    }
-
-    public static AtlasObjectId getAtlasObjectIdForInVertex(AtlasEdge edge) {
-        return new AtlasObjectId(getGuid(edge.getInVertex()), getTypeName(edge.getInVertex()));
-    }
-
-    private static boolean verticesEquals(AtlasVertex vertexA, AtlasVertex vertexB) {
-        return StringUtils.equals(getGuid(vertexB), getGuid(vertexA));
     }
 }

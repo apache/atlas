@@ -147,6 +147,70 @@ public final class EntityGraphRetriever {
         return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
     }
 
+    public AtlasEntityHeader toAtlasEntityHeader(AtlasEntity entity) {
+        AtlasEntityHeader ret        = null;
+        String            typeName   = entity.getTypeName();
+        AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null) {
+            Map<String, Object> uniqueAttributes = new HashMap<>();
+
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                Object attrValue = entity.getAttribute(attribute.getName());
+
+                if (attrValue != null) {
+                    uniqueAttributes.put(attribute.getName(), attrValue);
+                }
+            }
+
+            ret = new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), uniqueAttributes);
+        }
+
+        return ret;
+    }
+
+    public AtlasObjectId toAtlasObjectId(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasObjectId   ret        = null;
+        String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null) {
+            Map<String, Object> uniqueAttributes = new HashMap<>();
+
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                Object attrValue = getVertexAttribute(entityVertex, attribute);
+
+                if (attrValue != null) {
+                    uniqueAttributes.put(attribute.getName(), attrValue);
+                }
+            }
+
+            ret = new AtlasObjectId(entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class), typeName, uniqueAttributes);
+        }
+
+        return ret;
+    }
+
+    public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {
+        AtlasVertex entityVertex = null;
+
+        if (relationshipDirection == OUT) {
+            entityVertex = edge.getInVertex();
+        } else if (relationshipDirection == IN) {
+            entityVertex = edge.getOutVertex();
+        } else if (relationshipDirection == BOTH){
+            // since relationship direction is BOTH, edge direction can be inward or outward
+            // compare with parent entity vertex and pick the right reference vertex
+            if (StringUtils.equals(GraphHelper.getGuid(parentVertex), GraphHelper.getGuid(edge.getOutVertex()))) {
+                entityVertex = edge.getInVertex();
+            } else {
+                entityVertex = edge.getOutVertex();
+            }
+        }
+
+        return entityVertex;
+    }
+
     public AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
         AtlasVertex ret = AtlasGraphUtilsV1.findByGuid(guid);
 

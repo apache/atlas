@@ -85,6 +85,7 @@ public class EntityGraphMapper {
     private final AtlasGraph             graph;
     private final DeleteHandlerV1        deleteHandler;
     private final AtlasTypeRegistry      typeRegistry;
+    private final EntityGraphRetriever   entityRetriever;
     private final AtlasRelationshipStore relationshipStore;
 
     @Inject
@@ -92,6 +93,7 @@ public class EntityGraphMapper {
                              AtlasRelationshipStore relationshipStore) {
         this.deleteHandler     = deleteHandler;
         this.typeRegistry      = typeRegistry;
+        this.entityRetriever   = new EntityGraphRetriever(typeRegistry);
         this.graph             = atlasGraph;
         this.relationshipStore = relationshipStore;
     }
@@ -192,16 +194,16 @@ public class EntityGraphMapper {
 
         RequestContextV1 req = RequestContextV1.get();
 
-        for (AtlasObjectId id : req.getDeletedEntityIds()) {
-            resp.addEntity(DELETE, constructHeader(id));
+        for (AtlasObjectId entity : req.getDeletedEntities()) {
+            resp.addEntity(DELETE, entity);
         }
 
-        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
+        for (AtlasObjectId entity : req.getUpdatedEntities()) {
             if (isPartialUpdate) {
-                resp.addEntity(PARTIAL_UPDATE, constructHeader(id));
+                resp.addEntity(PARTIAL_UPDATE, entity);
             }
             else {
-                resp.addEntity(UPDATE, constructHeader(id));
+                resp.addEntity(UPDATE, entity);
             }
         }
 
@@ -423,7 +425,6 @@ public class EntityGraphMapper {
                         AtlasVertex attrVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(ctx.getValue()));
 
                         recordEntityUpdate(attrVertex);
-                        updateModificationMetadata(attrVertex);
                     }
 
                     //delete old reference
@@ -494,9 +495,13 @@ public class EntityGraphMapper {
         }
 
         if (inverseUpdated) {
-            updateModificationMetadata(inverseVertex);
-            AtlasObjectId inverseEntityId = new AtlasObjectId(getIdFromVertex(inverseVertex), inverseType.getTypeName());
-            RequestContextV1.get().recordEntityUpdate(inverseEntityId);
+            RequestContextV1 requestContext = RequestContextV1.get();
+
+            if (!requestContext.isDeletedEntity(GraphHelper.getGuid(inverseVertex))) {
+                updateModificationMetadata(inverseVertex);
+
+                requestContext.recordEntityUpdate(entityRetriever.toAtlasObjectId(inverseVertex));
+            }
         }
     }
 
@@ -1441,31 +1446,14 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    private void recordEntityUpdate(AtlasVertex vertex) {
-        AtlasObjectId    objectId = new AtlasObjectId(GraphHelper.getGuid(vertex), GraphHelper.getTypeName(vertex));
-        RequestContextV1 req      = RequestContextV1.get();
+    private void recordEntityUpdate(AtlasVertex vertex) throws AtlasBaseException {
+        RequestContextV1 req  = RequestContextV1.get();
 
-        if (!objectIdsContain(req.getUpdatedEntityIds(), objectId) && !objectIdsContain(req.getCreatedEntityIds(), objectId)) {
-            req.recordEntityUpdate(objectId);
+        if (!req.isUpdatedEntity(GraphHelper.getGuid(vertex))) {
+            updateModificationMetadata(vertex);
+
+            req.recordEntityUpdate(entityRetriever.toAtlasObjectId(vertex));
         }
-    }
-
-    private boolean objectIdsContain(Collection<AtlasObjectId> objectIds, AtlasObjectId objectId) {
-        boolean ret = false;
-
-        if (CollectionUtils.isEmpty(objectIds)) {
-            ret = false;
-
-        } else {
-            for (AtlasObjectId id : objectIds) {
-                if (StringUtils.equals(id.getGuid(), objectId.getGuid())) {
-                    ret = true;
-                    break;
-                }
-            }
-        }
-
-        return ret;
     }
 
     private static void compactAttributes(AtlasEntity entity) {

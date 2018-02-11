@@ -647,14 +647,16 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
         EntityMutationResponse response = new EntityMutationResponse();
-        deleteHandler.deleteEntities(deletionCandidates);
-        RequestContextV1 req = RequestContextV1.get();
-        for (AtlasObjectId id : req.getDeletedEntityIds()) {
-            response.addEntity(DELETE, EntityGraphMapper.constructHeader(id));
+        RequestContextV1       req      = RequestContextV1.get();
+
+        deleteHandler.deleteEntities(deletionCandidates); // this will update req with list of deleted/updated entities
+
+        for (AtlasObjectId entity : req.getDeletedEntities()) {
+            response.addEntity(DELETE, entity);
         }
 
-        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
-            response.addEntity(UPDATE, EntityGraphMapper.constructHeader(id));
+        for (AtlasObjectId entity : req.getUpdatedEntities()) {
+            response.addEntity(UPDATE, entity);
         }
 
         return response;
