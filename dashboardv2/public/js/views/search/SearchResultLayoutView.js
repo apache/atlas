@@ -781,7 +781,6 @@ define(['require',
                 if (valueObj && valueObj.length) {
                     var firstObj = _.first(valueObj);
                     _.each(_.keys(firstObj), function(key) {
-                        if (key !== 'guid') {
                             col[key] = {
                                 label: key.capitalize(),
                                 cell: "Html",
@@ -818,7 +817,6 @@ define(['require',
                                     }
                                 })
                             };
-                        }
                     });
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);

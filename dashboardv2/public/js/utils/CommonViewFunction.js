@@ -221,6 +221,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = keyValue
             } else if (Utils.isUrl(keyValue)) {
                 val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + keyValue + '</a>';
+            } else if (key === 'guid' || key === "__guid") {
+                val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + keyValue + '</a>';
             } else {
                 val = _.escape(keyValue);
             }
@@ -534,7 +536,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var attrQuery = [],
                 attrObj = options.value,
                 formatedDateToLong = options.formatedDateToLong,
-                attributeDefs = options.attributeDefs, /* set attributeType for criterion while creating object*/
+                attributeDefs = options.attributeDefs,
+                /* set attributeType for criterion while creating object*/
                 spliter = 1;
             attrQuery = conditionalURl(attrObj, spliter);
 
@@ -553,7 +556,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                         var type = (obj.type || obj.attributeType),
                             //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
-                            value = ((_.isString(obj.value) && _.contains(["is_null","not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
+                            value = ((_.isString(obj.value) && _.contains(["is_null", "not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
                             url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
                         if (type) {
                             url.push(type);
