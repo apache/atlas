@@ -40,7 +40,7 @@ public class AtlasAccessRequest {
     public AtlasAccessRequest(HttpServletRequest request, String user, Set<String> userGroups) {
         // Spring Security 4 Change => request.getServletPath() -> request.getPathInfo()
         this(AtlasAuthorizationUtils.getAtlasResourceType(request.getPathInfo()), "*", AtlasAuthorizationUtils
-            .getAtlasAction(request.getMethod()), user, userGroups,AtlasAuthorizationUtils.getRequestIpAddress(request));
+            .getAtlasAction(request.getMethod(),request.getPathInfo()), user, userGroups,AtlasAuthorizationUtils.getRequestIpAddress(request));
     }
 
     public AtlasAccessRequest(Set<AtlasResourceTypes> resourceType, String resource, AtlasActionTypes action,
