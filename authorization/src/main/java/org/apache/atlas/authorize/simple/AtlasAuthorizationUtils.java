@@ -71,12 +71,17 @@ public class AtlasAuthorizationUtils {
         return api;
     }
 
-    public static AtlasActionTypes getAtlasAction(String method) {
+    public static AtlasActionTypes getAtlasAction(String method, String contextPath) {
         AtlasActionTypes action = null;
 
         switch (method.toUpperCase()) {
             case "POST":
-                action = AtlasActionTypes.CREATE;
+                String api = getApi(contextPath);
+                if (api != null && api.startsWith("search")) {   // exceptional case for basic search api with POST method
+                    action = AtlasActionTypes.READ;
+                } else {
+                    action = AtlasActionTypes.CREATE;
+                }
                 break;
             case "GET":
                 action = AtlasActionTypes.READ;
