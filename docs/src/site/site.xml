@@ -112,14 +112,20 @@
         </menu>
 
         <menu name="ASF">
-            <item name="How Apache Works" href="http://www.apache.org/foundation/how-it-works.html"/>
-            <item name="Foundation" href="http://www.apache.org/foundation/"/>
+            <item name="How Apache Works"  href="http://www.apache.org/foundation/how-it-works.html"/>
+            <item name="Events"            href="https://www.apache.org/events/current-event" />
+            <item name="License"           href="https://www.apache.org/licenses/" />
+            <item name="Foundation" 	   href="http://www.apache.org/foundation/"/>
             <item name="Sponsoring Apache" href="http://www.apache.org/foundation/sponsorship.html"/>
-            <item name="Thanks" href="http://www.apache.org/foundation/thanks.html"/>
+            <item name="Thanks"            href="http://www.apache.org/foundation/thanks.html"/>
         </menu>
 
         <footer>
-            Copyright Â© 2018 The Apache Software Foundation, Licensed under the Apache License, Version 2.0.
+<![CDATA[
+<p><a href="https://www.apache.org/foundation/contributing"><img src="https://www.apache.org/images/SupportApache-small.png" alt="Support the ASF" id="asf-logo" height="20" width="20" /></a>Copyright © 2011-2018 The Apache Software Foundation. Licensed under the <a href="https://www.apache.org/licenses/">Apache License, Version 2.0</a>.<br/>
+Apache Atlas, Atlas, Apache, the Apache feather logo are trademarks of the <a href="https://www.apache.org">Apache Software Foundation</a>.<br/>
+All other marks mentioned may be trademarks or registered trademarks of their respective owners.</p>
+]]>
         </footer>
     </body>
 </project>
