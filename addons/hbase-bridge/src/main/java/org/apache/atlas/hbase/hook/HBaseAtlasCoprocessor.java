@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
 import org.apache.hadoop.hbase.coprocessor.ObserverContext;
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,6 +150,30 @@ public class HBaseAtlasCoprocessor extends HBaseAtlasCoprocessorBase {
             LOG.debug("<== HBaseAtlasCoprocessor.postModifyNamespace()");
         }
     }
+
+    @Override
+    public void postCloneSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, HBaseProtos.SnapshotDescription snapshotDescription, HTableDescriptor hTableDescriptor) throws IOException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> HBaseAtlasCoprocessoror.postCloneSnapshot()");
+        }
+        hbaseAtlasHook.sendHBaseTableOperation(hTableDescriptor, null, HBaseAtlasHook.OPERATION.CREATE_TABLE);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== HBaseAtlasCoprocessoror.postCloneSnapshot()");
+        }
+
+    }
+
+    @Override
+    public void postRestoreSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, HBaseProtos.SnapshotDescription snapshotDescription, HTableDescriptor hTableDescriptor) throws IOException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> HBaseAtlasCoprocessor.postRestoreSnapshot()");
+        }
+        hbaseAtlasHook.sendHBaseTableOperation(hTableDescriptor, hTableDescriptor.getTableName(), HBaseAtlasHook.OPERATION.ALTER_TABLE);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
+        }
+    }
+
 }
 
 
