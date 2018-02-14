@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
@@ -39,16 +40,19 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -107,7 +111,35 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate GUIDs in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : compositeVertices) {
-                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getGuid(), vertexInfo.getTypeName()));
+                AtlasVertex         vertex     = vertexInfo.getVertex();
+                AtlasEntityType     entityType = typeRegistry.getEntityTypeByName(vertexInfo.getTypeName());
+                Map<String, Object> attributes = null;
+
+                if (entityType != null && MapUtils.isNotEmpty(entityType.getUniqAttributes())) {
+                    attributes = new HashMap<>();
+
+                    for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                        Object attrVal = GraphHelper.getProperty(vertex, attribute.getQualifiedName());
+
+                        if (attrVal != null) {
+                            attributes.put(attribute.getName(), attrVal);
+                        }
+                    }
+
+                    // include clusterName attribute as well, if it is defined in the entity-type
+                    AtlasAttribute attrClusterName = entityType.getAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE);
+
+                    if (attrClusterName != null) {
+                        Object clusterName = GraphHelper.getProperty(vertex, attrClusterName.getQualifiedName());
+
+                        if (clusterName != null) {
+                            attributes.put(attrClusterName.getName(), clusterName);
+                        }
+                    }
+                }
+
+                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getGuid(), vertexInfo.getTypeName(), attributes));
+
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }

@@ -159,10 +159,8 @@ public class RequestContext {
         this.updatedEntityIds.add(entityId);
     }
 
-    public void recordEntityDelete(String entityId, String typeName) throws AtlasException {
-        ClassType type = typeSystem.getDataType(ClassType.class, typeName);
-        ITypedReferenceableInstance entity = type.createInstance(new Id(entityId, 0, typeName));
-        if (deletedEntityIds.add(entityId)) {
+    public void recordEntityDelete(ITypedReferenceableInstance entity) throws AtlasException {
+        if (deletedEntityIds.add(entity.getId()._getId())) {
             deletedEntities.add(entity);
         }
     }

@@ -33,9 +33,13 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +49,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -185,7 +190,38 @@ public class AtlasEntityChangeNotifier {
         // fail, since the entity vertex would already be gone. Hence the special handling for delete operation
         if (operation == EntityOperation.DELETE) {
             for (AtlasEntityHeader entity : entityHeaders) {
-                ret.add(new ReferenceableInstance(entity.getGuid(), entity.getTypeName()));
+                ReferenceableInstance instance = null;
+
+                if (MapUtils.isNotEmpty(entity.getAttributes())) {
+                    try {
+                        TypeSystem typeSystem = TypeSystem.getInstance();
+                        ClassType  entityType = (ClassType) typeSystem.getDataType(entity.getTypeName());
+
+                        instance = (ReferenceableInstance) entityType.createInstance(new Id(entity.getGuid(), 0, entity.getTypeName()));
+
+                        // set all attributes to null
+                        for (String attribute : instance.fieldMapping().fields.keySet()) {
+                            instance.setNull(attribute);
+                        }
+
+                        // set attributes from entity header
+                        for (Map.Entry<String, Object> attr : entity.getAttributes().entrySet()) {
+                            try {
+                                instance.set(attr.getKey(), attr.getValue());
+                            } catch (AtlasException e) {
+                                LOG.warn("failed to set attribute {}={} for entity: type={}, guid={}", attr.getKey(), attr.getValue(), entity.getTypeName(), entity.getGuid(), e);
+                            }
+                        }
+                    } catch (AtlasException e) {
+                        LOG.warn("failed to get type {}", entity.getTypeName(), e);
+                    }
+                }
+
+                if (instance == null) {
+                    instance = new ReferenceableInstance(entity.getGuid(), entity.getTypeName());
+                }
+
+                ret.add(instance);
             }
         } else {
             for (AtlasEntityHeader entityHeader : entityHeaders) {

@@ -154,12 +154,7 @@ public final class GraphToTypedInstanceMapper {
             break;  // add only if vertex has this attribute
 
         case ENUM:
-            Object propertyValue = GraphHelper.getProperty(instanceVertex, vertexPropertyName);
-            if (propertyValue == null) {
-                return;
-            }
-
-            typedInstance.set(attributeInfo.name, dataType.convert(propertyValue, Multiplicity.REQUIRED));
+            mapVertexToEnum(instanceVertex, typedInstance, attributeInfo);
             break;
 
         case ARRAY:
@@ -381,7 +376,7 @@ public final class GraphToTypedInstanceMapper {
         }
     }
 
-    private void mapVertexToPrimitive(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
+    public static void mapVertexToPrimitive(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
             AttributeInfo attributeInfo) throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding primitive {} from vertex {}", attributeInfo, instanceVertex);
@@ -417,6 +412,16 @@ public final class GraphToTypedInstanceMapper {
             final Long dateVal = GraphHelper.getSingleValuedProperty(instanceVertex, vertexPropertyName, Long.class);
             typedInstance.setDate(attributeInfo.name, new Date(dateVal));
         }
+    }
+
+    public static void mapVertexToEnum(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
+        final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
+        final Object propertyValue      = GraphHelper.getProperty(instanceVertex, vertexPropertyName);
+        if (propertyValue == null) {
+            return;
+        }
+
+        typedInstance.set(attributeInfo.name, attributeInfo.dataType().convert(propertyValue, Multiplicity.REQUIRED));
     }
 
 

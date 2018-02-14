@@ -36,9 +36,11 @@ import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.exception.NullRequiredAttributeException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.HierarchicalType;
@@ -93,7 +95,25 @@ public abstract class DeleteHandler {
            // Record all deletion candidate GUIDs in RequestContext
            // and gather deletion candidate vertices.
            for (VertexInfo vertexInfo : compositeVertices) {
-               requestContext.recordEntityDelete(vertexInfo.getGuid(), vertexInfo.getTypeName());
+               ClassType                   entityType = typeSystem.getDataType(ClassType.class, vertexInfo.getTypeName());
+               ITypedReferenceableInstance entity     = entityType.createInstance(new Id(guid, 0, vertexInfo.getTypeName()));
+
+               // populate unique attributes only
+               for (AttributeInfo attributeInfo : entityType.fieldMapping().fields.values()) {
+                   if (!attributeInfo.isUnique) {
+                       continue;
+                   }
+
+                   DataTypes.TypeCategory attrTypeCategory = attributeInfo.dataType().getTypeCategory();
+
+                   if (attrTypeCategory == DataTypes.TypeCategory.PRIMITIVE) {
+                       GraphToTypedInstanceMapper.mapVertexToPrimitive(vertexInfo.getVertex(), entity, attributeInfo);
+                   } else if (attrTypeCategory == DataTypes.TypeCategory.ENUM) {
+                       GraphToTypedInstanceMapper.mapVertexToEnum(vertexInfo.getVertex(), entity, attributeInfo);
+                   }
+               }
+
+               requestContext.recordEntityDelete(entity);
                deletionCandidateVertices.add(vertexInfo.getVertex());
            }
        }
