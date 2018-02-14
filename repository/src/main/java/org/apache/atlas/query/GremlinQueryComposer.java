@@ -167,9 +167,7 @@ public class GremlinQueryComposer {
 
         if (lhsI.isDate()) {
             rhs = parseDate(rhs);
-        }
-
-        if (lhsI.isNumeric()) {
+        } else if (lhsI.isNumeric()) {
             rhs = parseNumber(rhs);
         }
 
@@ -491,6 +489,15 @@ public class GremlinQueryComposer {
     private void close() {
         if (isNestedQuery)
             return;
+
+        // Need de-duping at the end so that correct results are fetched
+        if (queryClauses.size() > 2) {
+            // QueryClauses should've something more that just g.V() (hence 2)
+            add(GremlinClause.DEDUP);
+            // Range and limit must be present after the de-duping construct
+            moveToLast(GremlinClause.RANGE);
+            moveToLast(GremlinClause.LIMIT);
+        }
 
         if (!queryMetadata.hasLimitOffset()) {
             addDefaultLimit();

@@ -44,6 +44,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class DSLQueriesTest extends BasicTestSetup {
@@ -176,7 +177,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Person where (age < 50)", 3},
                 {"Person where (age <= 35)", 2},
                 {"Person where (age =  35)", 0},
-                {"Person where (age != 35)", 4}
+                {"Person where (age != 35)", 4},
+                {"Person where (approximationOfPi > -3.4028235e+38)", 4},
         };
     }
 
@@ -606,7 +608,17 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
                 {"hive_table select owner, db.name"}, // Same as above
                 {"hive_order"}, // From src should be an Entity or Classification
+                {"Person where (age > -3.4028235e+38)"} // comparing float with BigDecimal
         };
+    }
+
+    @Test
+    public void testQuery() {
+        try {
+            discoveryService.searchUsingDslQuery("hive_table select db", DEFAULT_LIMIT, 0);
+        } catch (AtlasBaseException e) {
+            fail("Should've been a success");
+        }
     }
 
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
