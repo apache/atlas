@@ -18,8 +18,14 @@
 package org.apache.atlas;
 
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.AbstractMap;
 
+import com.sun.jersey.json.impl.provider.entity.JSONArrayProvider;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.springframework.cache.interceptor.SimpleKey;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -125,5 +131,20 @@ public class ApplicationPropertiesTest {
                 inStr.close();
             }
         }
+    }
+
+    @Test
+    public void verifySetDefault() throws AtlasException {
+        Configuration props = ApplicationProperties.get("test.properties");
+        ApplicationProperties aProps = (ApplicationProperties) props;
+
+        String defaultValue = "someValue";
+        String someKey = "someKey";
+        AbstractMap.SimpleEntry<String, String> defaultKV = new AbstractMap.SimpleEntry<>(someKey, defaultValue);
+        aProps.setDefault(defaultKV, "newValue");
+
+        assertNotEquals(props.getString(someKey), defaultValue);
+        aProps.setDefault(defaultKV, "");
+        assertEquals(props.getString(someKey), defaultValue);
     }
 }

@@ -21,6 +21,7 @@ import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 
 /**
@@ -36,10 +38,15 @@ import java.util.Iterator;
  */
 public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
-
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
-    public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
+    public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
+
+    public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
+    public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
+    public static final SimpleEntry<String, String> DB_CACHE_SIZE_CONF          = new SimpleEntry<>("atlas.graph.cache.db-cache-size", "0.5");
+    public static final SimpleEntry<String, String> DB_TX_CACHE_SIZE_CONF       = new SimpleEntry<>("atlas.graph.cache.tx-cache.size", "15000");
+    public static final SimpleEntry<String, String> DB_CACHE_TX_DIRTY_SIZE_CONF = new SimpleEntry<>("atlas.graph.cache.tx-dirty-size", "120");
 
     private static volatile Configuration instance = null;
 
@@ -90,7 +97,12 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
             LOG.info("Loading {} from {}", fileName, url);
 
-            Configuration configuration = new ApplicationProperties(url).interpolatedConfiguration();
+            ApplicationProperties appProperties = new ApplicationProperties(url);
+
+            appProperties.setDefaults();
+
+            Configuration configuration = appProperties.interpolatedConfiguration();
+
             logConfiguration(configuration);
             return configuration;
         } catch (Exception e) {
@@ -123,6 +135,21 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             } else {
                 String message = "Class " + clazz.getName() + " specified in property " + propertyName
                         + " is not assignable to class " + assignableClass.getName();
+                LOG.error(message);
+                throw new AtlasException(message);
+            }
+        } catch (Exception e) {
+            throw new AtlasException(e);
+        }
+    }
+
+    public static Class getClass(String fullyQualifiedClassName, Class assignableClass) throws AtlasException {
+        try {
+            Class<?> clazz = Class.forName(fullyQualifiedClassName);
+            if (assignableClass == null || assignableClass.isAssignableFrom(clazz)) {
+                return clazz;
+            } else {
+                String message = "Class " + clazz.getName() + " is not assignable to class " + assignableClass.getName();
                 LOG.error(message);
                 throw new AtlasException(message);
             }
@@ -199,5 +226,31 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             }
         }
         return inStr;
+    }
+
+    private void setDefaults() {
+        setDbCacheConfDefaults();
+    }
+
+    void setDefault(SimpleEntry<String, String> keyValueDefault, String currentValue) {
+        if (StringUtils.isNotEmpty(currentValue)) {
+            return;
+        }
+
+        clearPropertyDirect(keyValueDefault.getKey());
+        addPropertyDirect(keyValueDefault.getKey(), keyValueDefault.getValue());
+        LOG.info("Property (set to default) {} = {}", keyValueDefault.getKey(), keyValueDefault.getValue());
+    }
+
+    private void setDbCacheConfDefaults() {
+        SimpleEntry<String, String> keyValues[] = new SimpleEntry[]{ DB_CACHE_CONF, DB_CACHE_CLEAN_WAIT_CONF,
+                                                                     DB_CACHE_SIZE_CONF, DB_TX_CACHE_SIZE_CONF,
+                                                                     DB_CACHE_TX_DIRTY_SIZE_CONF };
+
+        for(SimpleEntry<String, String> kv : keyValues) {
+            String currentValue = getString(kv.getKey());
+
+            setDefault(kv, currentValue);
+        }
     }
 }
