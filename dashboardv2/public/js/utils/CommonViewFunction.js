@@ -223,6 +223,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + keyValue + '</a>';
             } else if (key === 'guid' || key === "__guid") {
                 val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + keyValue + '</a>';
+            } else if (key.toLocaleLowerCase().indexOf("time") !== -1 || key.toLocaleLowerCase().indexOf("date") !== -1) {
+                val = new Date(keyValue);
             } else {
                 val = _.escape(keyValue);
             }
