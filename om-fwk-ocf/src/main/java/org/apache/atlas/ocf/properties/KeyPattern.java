@@ -20,19 +20,19 @@ package org.apache.atlas.ocf.properties;
 import java.io.Serializable;
 
 /**
- * A KeyPattern defines the type of External Identifier in use of an asset, or the type of Primary Key used within an
+ * A KeyPattern defines the type of External Identifier in use for an asset, or the type of Primary Key used within an
  * asset.
  */
 public enum KeyPattern implements Serializable
 {
-    LOCAL_KEY(0, "Local Key", "Unique key allocated and used within the scope of a single system."),
-    RECYCLED_KEY(1, "Recycled Key", "Key allocated and used within the scope of a single system that is periodically reused for different records."),
-    NATURAL_KEY(2, "Natural Key", "Key derived from an attribute of the entity, such as email address, passport number."),
-    MIRROR_KEY(3, "Mirror Key", "Key value copied from another system."),
-    AGGREGATE_KEY(4, "Aggregate Key", "Key formed by combining keys from multiple systems."),
-    CALLERS_KEY(5, "Caller's Key", "Key from another system can bey used if system name provided."),
-    STABLE_KEY(6, "Stable Key", "Key value will remain active even if records are merged."),
-    OTHER(99, "Other", "Another key pattern.");
+    LOCAL_KEY     (0,  "Local Key", "Unique key allocated and used within the scope of a single system."),
+    RECYCLED_KEY  (1,  "Recycled Key", "Key allocated and used within the scope of a single system that is periodically reused for different records."),
+    NATURAL_KEY   (2,  "Natural Key", "Key derived from an attribute of the entity, such as email address, passport number."),
+    MIRROR_KEY    (3,  "Mirror Key", "Key value copied from another system."),
+    AGGREGATE_KEY (4,  "Aggregate Key", "Key formed by combining keys from multiple systems."),
+    CALLERS_KEY   (5,  "Caller's Key", "Key from another system can bey used if system name provided."),
+    STABLE_KEY    (6,  "Stable Key", "Key value will remain active even if records are merged."),
+    OTHER         (99, "Other", "Another key pattern.");
 
     private static final long     serialVersionUID = 1L;
 

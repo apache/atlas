@@ -77,10 +77,10 @@ public class Connection extends Referenceable
     /*
      * Attributes of a connector
      */
-    private String                    displayName = null;
-    private String                    description = null;
-    private ConnectorType             connectorType = null;
-    private Endpoint                  endpoint = null;
+    protected String                    displayName = null;
+    protected String                    description = null;
+    protected ConnectorType             connectorType = null;
+    protected Endpoint                  endpoint = null;
 
     /*
      * Secured properties are protected so they can only be accessed by subclassing this object.

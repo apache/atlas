@@ -18,6 +18,7 @@
 package org.apache.atlas.ocf;
 
 import org.apache.atlas.ocf.ffdc.PropertyServerException;
+import org.apache.atlas.ocf.properties.AdditionalProperties;
 import org.apache.atlas.ocf.properties.ConnectedAssetProperties;
 import org.apache.atlas.ocf.properties.Connection;
 import org.slf4j.Logger;
@@ -50,6 +51,12 @@ public abstract class ConnectorBase extends Connector
     protected String                     connectorInstanceId = null;
     protected Connection                 connection = null;
     protected ConnectedAssetProperties   connectedAssetProperties = null;
+
+    /*
+     * Secured properties are protected properties from the connection.  They are retrieved as a protected
+     * variable to allow subclasses of ConnectorBase to access them.
+     */
+    protected AdditionalProperties       securedProperties = null;
 
     private static final int      hashCode = UUID.randomUUID().hashCode();
     private static final Logger   log = LoggerFactory.getLogger(ConnectorBase.class);
@@ -85,6 +92,12 @@ public abstract class ConnectorBase extends Connector
     {
         this.connectorInstanceId = connectorInstanceId;
         this.connection = connection;
+
+        /*
+         * Set up the secured properties
+         */
+        ProtectedConnection  protectedConnection = new ProtectedConnection(connection);
+        this.securedProperties = protectedConnection.getSecuredProperties();
 
         if (log.isDebugEnabled())
         {
@@ -216,5 +229,32 @@ public abstract class ConnectorBase extends Connector
                 ", connection=" + connection +
                 ", connectedAssetProperties=" + connectedAssetProperties +
                 '}';
+    }
+
+    private class ProtectedConnection extends Connection
+    {
+        private ProtectedConnection(Connection templateConnection)
+        {
+            super(templateConnection);
+        }
+
+        /**
+         * Return a copy of the secured properties.  Null means no secured properties are available.
+         * This method is protected so only OCF (or subclasses) can access them.  When Connector is passed to calling
+         * OMAS, the secured properties are not available.
+         *
+         * @return secured properties - typically user credentials for the connection
+         */
+        protected AdditionalProperties getSecuredProperties()
+        {
+            if (super.securedProperties == null)
+            {
+                return securedProperties;
+            }
+            else
+            {
+                return new AdditionalProperties(super.getParentAsset(), securedProperties);
+            }
+        }
     }
 }

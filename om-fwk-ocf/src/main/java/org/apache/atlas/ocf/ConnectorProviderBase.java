@@ -65,7 +65,7 @@ public abstract class ConnectorProviderBase extends ConnectorProvider
      *
      * @return guid for a new connector instance
      */
-    private String  getNewConnectorGUID()
+    protected String  getNewConnectorGUID()
     {
         UUID     newUUID = UUID.randomUUID();
 
