@@ -615,7 +615,12 @@ public class HiveMetaStoreBridge {
             ref.set("nameServiceId", nameServiceID);
         } else {
             ref.set("path", pathUri);
-            ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, pathUri));
+            // Only append clusterName for the HDFS path
+            if (pathUri.startsWith(HdfsNameServiceResolver.HDFS_SCHEME)) {
+                ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, pathUri));
+            } else {
+                ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
+            }
         }
         ref.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         return ref;

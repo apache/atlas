@@ -263,11 +263,10 @@ public class HiveHookIT extends HiveITBase {
         Iterator<? extends Entity> iterator = expectedTables.iterator();
         for(int i = 0; i < expectedTables.size(); i++) {
             Entity hiveEntity = iterator.next();
-            if (Entity.Type.TABLE.equals(hiveEntity.getType()) ||
-                Entity.Type.DFS_DIR.equals(hiveEntity.getType())) {
+            if (Entity.Type.TABLE.equals(hiveEntity.getType()) || Entity.Type.DFS_DIR.equals(hiveEntity.getType())) {
                 Referenceable entity = atlasClient.getEntity(tableRef.get(i)._getId());
                 LOG.debug("Validating output {} {} ", i, entity);
-                Assert.assertEquals(entity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), hiveEntity.getName());
+                assertTrue(((String)entity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME)).startsWith(hiveEntity.getName()));
             }
         }
     }

@@ -32,8 +32,9 @@ import java.util.Objects;
 public class HdfsNameServiceResolver {
     private static final Logger LOG = LoggerFactory.getLogger(HdfsNameServiceResolver.class);
 
+    public static final String HDFS_SCHEME                            = "hdfs://";
+
     private static final int    DEFAULT_PORT                           = 8020;
-    private static final String HDFS_SCHEME                            = "hdfs://";
     private static final String HDFS_NAMESERVICE_PROPERTY_KEY          = "dfs.nameservices";
     private static final String HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY = "dfs.internal.nameservices";
     private static final String HDFS_NAMENODES_HA_NODES_PREFIX         = "dfs.ha.namenodes.";
@@ -83,7 +84,7 @@ public class HdfsNameServiceResolver {
         String ret = path;
 
         // Only handle URLs that begin with hdfs://
-        if (path.indexOf(HDFS_SCHEME) == 0) {
+        if (path != null && path.indexOf(HDFS_SCHEME) == 0) {
             URI    uri = new Path(path).toUri();
             String nsId;
 
@@ -114,7 +115,7 @@ public class HdfsNameServiceResolver {
         String ret = "";
 
         // Only handle path URLs that begin with hdfs://
-        if (path.indexOf(HDFS_SCHEME) == 0) {
+        if (path != null && path.indexOf(HDFS_SCHEME) == 0) {
             try {
                 URI uri = new Path(path).toUri();
 

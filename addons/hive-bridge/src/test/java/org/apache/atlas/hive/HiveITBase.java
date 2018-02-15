@@ -231,13 +231,21 @@ public class HiveITBase {
             Referenceable hdfsPathRef = atlasClient.getEntity(hdfsPathId);
             Assert.assertEquals(hdfsPathRef.get("path"), testPathNormed);
             Assert.assertEquals(hdfsPathRef.get(NAME), Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-            Assert.assertEquals(hdfsPathRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), testPathNormed);
+            if (testPathNormed != null) {
+                Assert.assertTrue(((String)hdfsPathRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME)).startsWith(testPathNormed));
+            }
         }
     }
 
     private String assertHDFSPathIsRegistered(String path) throws Exception {
         LOG.debug("Searching for hdfs path {}", path);
-        return assertEntityIsRegistered(HiveMetaStoreBridge.HDFS_PATH, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, path, null);
+        // ATLAS-2444 HDFS name node federation adds the cluster name to the qualifiedName
+        if (path.startsWith("hdfs://")) {
+            String pathWithCluster = path + "@" + CLUSTER_NAME;
+            return assertEntityIsRegistered(HiveMetaStoreBridge.HDFS_PATH, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathWithCluster, null);
+        } else {
+            return assertEntityIsRegistered(HiveMetaStoreBridge.HDFS_PATH, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, path, null);
+        }
     }
 
     protected String assertDatabaseIsRegistered(String dbName) throws Exception {
