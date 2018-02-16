@@ -9,7 +9,7 @@
       "attributeDefs": [
         {
           "name": "maxFileSize",
-          "typeName": "int",
+          "typeName": "long",
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
