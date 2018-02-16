@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,8 +262,6 @@ public class ExportServiceTest {
 
     @Test
     public void verifyOverallStatus() throws Exception {
-
-//        ExportService service = new ExportService(typeRegistry);
         assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus());
 
         assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(AtlasExportResult.OperationStatus.SUCCESS));
@@ -299,6 +298,26 @@ public class ExportServiceTest {
         assertEquals(AtlasExportResult.OperationStatus.FAIL, zipSource.getExportResult().getOperationStatus());
     }
 
+    @Test
+    public void requestForTypeFull() {
+        AtlasExportRequest req = getRequestForTypeFull("Department,Employee");
+
+        assertNotNull(req);
+        assertEquals(req.getItemsToExport().size(), 1);
+        assertEquals(req.getOptions().get(AtlasExportRequest.OPTION_ATTR_MATCH_TYPE), "forType");
+    }
+
+    @Test
+    public void verifyTypeFull() throws AtlasBaseException, IOException {
+        ZipSource zipSource = runExportWithParameters(getRequestForTypeFull("Department,Employee,Manager"));
+        verifyExportForFullEmployeeData(zipSource);
+    }
+
+    private AtlasExportRequest getRequestForTypeFull(String type) {
+        String jsonRequest = "{ \"itemsToExport\": [ { \"typeName\": \"%s\" } ], \"options\": {  \"fetchType\": \"FULL\", \"matchType\": \"forType\"} }";
+        return AtlasType.fromJson(String.format(jsonRequest, type), AtlasExportRequest.class);
+    }
+
     private void tamperEmployeeRequest(AtlasExportRequest request) {
         AtlasObjectId objectId = request.getItemsToExport().get(0);
         objectId.getUniqueAttributes().remove("name");
@@ -310,6 +329,24 @@ public class ExportServiceTest {
 
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), 2);
+        assertTrue(zipSource.hasNext());
+
+        while (zipSource.hasNext()) {
+            AtlasEntity entity = zipSource.next();
+
+            assertNotNull(entity);
+            assertEquals(AtlasEntity.Status.ACTIVE, entity.getStatus());
+            assertTrue(expectedEntityTypes.contains(entity.getTypeName()));
+        }
+
+        verifyTypeDefs(zipSource);
+    }
+
+    private void verifyExportForFullEmployeeData(ZipSource zipSource) throws AtlasBaseException {
+        final List<String> expectedEntityTypes = Arrays.asList(new String[]{"Manager", "Employee", "Department"});
+
+        assertNotNull(zipSource.getCreationOrder());
+        assertEquals(zipSource.getCreationOrder().size(), 1);
         assertTrue(zipSource.hasNext());
 
         while (zipSource.hasNext()) {

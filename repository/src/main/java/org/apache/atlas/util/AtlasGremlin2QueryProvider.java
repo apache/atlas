@@ -43,6 +43,8 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V('__guid', startGuid).inE().outV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
                 return "g.V('__guid', startGuid).outE().inV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
+            case EXPORT_TYPE_ALL_FOR_TYPE:
+                return "g.V().has('__typeName',T.in,typeName).has('__guid').__guid.toList()";
             case EXPORT_TYPE_STARTS_WITH:
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).startsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_ENDS_WITH:
