@@ -58,7 +58,7 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'profileData', 'guid', 'value', 'typeName', 'entityDetail', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
-                if (this.typeName === "hive_db") {
+                if (this.typeName === "hive_db" || this.typeName === "hbase_namespace") {
                     this.profileData = { attributes: true };
                 }
             },
@@ -67,7 +67,7 @@ define(['require',
                 if (this.profileData) {
                     if (this.typeName === "hive_table") {
                         this.renderProfileTableLayoutView();
-                    } else if (this.typeName === "hive_db") {
+                    } else if (this.typeName === "hive_db" || this.typeName === "hbase_namespace") {
                         this.renderSearchResultLayoutView();
                     } else {
                         this.renderProfileColumnLayoutView();
@@ -80,13 +80,15 @@ define(['require',
                     var value = _.extend({}, that.value, {
                         'guid': that.guid,
                         'searchType': 'relationship',
-                        'profileDBView': true
+                        'profileDBView' : true,
+                        'typeName': that.typeName
                     });
                     that.RProfileTableOrColumnLayoutView.show(new SearchResultLayoutView({
                         'value': value,
                         'typeHeaders': that.typeHeaders,
                         'entityDefCollection': that.entityDefCollection,
                         'enumDefCollection': that.enumDefCollection,
+                        'isDisable': true,
                         'classificationDefCollection': that.classificationDefCollection
                     }));
                 });

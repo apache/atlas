@@ -124,7 +124,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -186,7 +186,7 @@ define(['require',
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
                     var responseJSON = response && response.responseJSON ? response.responseJSON : null,
-                    errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error ))|| 'Invalid Expression';
+                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) || 'Invalid Expression';
                     if (errorText) {
                         Utils.notifyError({
                             content: errorText
@@ -458,10 +458,10 @@ define(['require',
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null });
-                    if (value.profileDBView && value.guid) {
+                    if (value.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
-                        profileParam['relation'] = '__hive_table.db';
+                        profileParam['relation'] = value.typeName === 'hive_db' ? '__hive_table.db' : '__hbase_table.namespace';
                         profileParam['sortBy'] = 'name';
                         profileParam['sortOrder'] = 'ASCENDING';
                         _.extend(this.searchCollection.queryParams, profileParam);
@@ -485,7 +485,7 @@ define(['require',
                     } else {
                         apiObj.data = null;
                         if (this.value.profileDBView) {
-                            _.extend(this.searchCollection.queryParams,checkBoxValue);
+                            _.extend(this.searchCollection.queryParams, checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
@@ -534,11 +534,13 @@ define(['require',
                     }
                     that.$(".ellipsis .inputAssignTag").hide();
                     table.trigger("grid:refresh"); /*Event fire when table rendered*/
-                    tableDragger(document.querySelector(".colSort")).on('drop', function(from, to, el) {
-                        that.columnOrder = that.getColumnOrder(el.querySelectorAll('th.renderable'));
-                        table.trigger("grid:refresh:update");
-                        that.triggerUrl();
-                    });
+                    if (that.isDisable !== true) {
+                        tableDragger(document.querySelector(".colSort")).on('drop', function(from, to, el) {
+                            that.columnOrder = that.getColumnOrder(el.querySelectorAll('th.renderable'));
+                            table.trigger("grid:refresh:update");
+                            that.triggerUrl();
+                        });
+                    }
                     that.checkTableFetch();
                 });
             },
@@ -731,42 +733,42 @@ define(['require',
                 if (valueObj && valueObj.length) {
                     var firstObj = _.first(valueObj);
                     _.each(_.keys(firstObj), function(key) {
-                            col[key] = {
-                                label: key.capitalize(),
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                resizeable: true,
-                                orderable: true,
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        var modelObj = model.toJSON();
-                                        if (key == "name") {
-                                            var nameHtml = "",
-                                                name = modelObj[key];
-                                            if (modelObj.guid) {
-                                                nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + '">' + name + '</a>';
-                                            } else {
-                                                nameHtml = '<span title="' + name + '">' + name + '</span>';
-                                            }
-                                            if (modelObj.status && Enums.entityStateReadOnly[modelObj.status]) {
-                                                nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
-                                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
-                                            }
-                                            return nameHtml;
-                                        } else if (modelObj && !_.isUndefined(modelObj[key])) {
-                                            var tempObj = {
-                                                'scope': that,
-                                                // 'attributeDefs':
-                                                'valueObject': {},
-                                                'isTable': false
-                                            };
-                                            tempObj.valueObject[key] = modelObj[key];
-                                            return CommonViewFunction.propertyTable(tempObj);
+                        col[key] = {
+                            label: key.capitalize(),
+                            cell: "Html",
+                            editable: false,
+                            sortable: false,
+                            resizeable: true,
+                            orderable: true,
+                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                fromRaw: function(rawValue, model) {
+                                    var modelObj = model.toJSON();
+                                    if (key == "name") {
+                                        var nameHtml = "",
+                                            name = modelObj[key];
+                                        if (modelObj.guid) {
+                                            nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + '">' + name + '</a>';
+                                        } else {
+                                            nameHtml = '<span title="' + name + '">' + name + '</span>';
                                         }
+                                        if (modelObj.status && Enums.entityStateReadOnly[modelObj.status]) {
+                                            nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
+                                            return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                        }
+                                        return nameHtml;
+                                    } else if (modelObj && !_.isUndefined(modelObj[key])) {
+                                        var tempObj = {
+                                            'scope': that,
+                                            // 'attributeDefs':
+                                            'valueObject': {},
+                                            'isTable': false
+                                        };
+                                        tempObj.valueObject[key] = modelObj[key];
+                                        return CommonViewFunction.propertyTable(tempObj);
                                     }
-                                })
-                            };
+                                }
+                            })
+                        };
                     });
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
