@@ -90,11 +90,17 @@ public class HBaseAtlasHookIT {
         admin.createNamespace(ns);
 
         //assert on qualified name
-        String                 nameSpace              = assertNameSpaceIsRegistered(ns.getName());
-        AtlasEntityWithExtInfo nameSpaceRef           = getAtlasClient().getEntityByGuid(nameSpace);
-        String                 nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, ns.getName());
+        String        nameSpace   = assertNameSpaceIsRegistered(ns.getName());
+        AtlasClientV2 atlasClient = getAtlasClient();
 
-        Assert.assertEquals(nameSpaceRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
+        if (atlasClient != null) {
+            AtlasEntityWithExtInfo nameSpaceRef           = atlasClient.getEntityByGuid(nameSpace);
+            String                 nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, ns.getName());
+
+            Assert.assertEquals(nameSpaceRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
+        } else {
+            Assert.fail("Unable to create AtlasClient for Testing");
+        }
     }
 
     @Test
@@ -124,11 +130,17 @@ public class HBaseAtlasHookIT {
         }
 
         //assert on qualified name
-        String                 table      = assertTableIsRegistered(namespace, tablename);
-        AtlasEntityWithExtInfo tableRef   = getAtlasClient().getEntityByGuid(table);
-        String                 entityName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, namespace, tablename);
+        String        table       = assertTableIsRegistered(namespace, tablename);
+        AtlasClientV2 atlasClient = getAtlasClient();
 
-        Assert.assertEquals(tableRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
+        if (atlasClient != null) {
+            AtlasEntityWithExtInfo tableRef   = atlasClient.getEntityByGuid(table);
+            String                 entityName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, namespace, tablename);
+
+            Assert.assertEquals(tableRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
+        } else {
+            Assert.fail("Unable to create AtlasClient for Testing");
+        }
     }
 
     // Methods for creating HBase
