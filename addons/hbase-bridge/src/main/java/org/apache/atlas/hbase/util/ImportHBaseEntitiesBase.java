@@ -68,6 +68,29 @@ public class ImportHBaseEntitiesBase {
     static final String  TABLE                 = "table";
     static final String  COLUMN_FAMILIES       = "column_families";
 
+    // column addition metadata
+    public static final String ATTR_TABLE_MAX_FILESIZE              = "maxFileSize";
+    public static final String ATTR_TABLE_ISREADONLY                = "isReadOnly";
+    public static final String ATTR_TABLE_ISCOMPACTION_ENABLED      = "isCompactionEnabled";
+    public static final String ATTR_TABLE_REPLICATION_PER_REGION    = "replicasPerRegion";
+    public static final String ATTR_TABLE_DURABLILITY               = "durability";
+
+    // column family additional metadata
+    public static final String ATTR_CF_BLOOMFILTER_TYPE             = "bloomFilterType";
+    public static final String ATTR_CF_COMPRESSION_TYPE             = "compressionType";
+    public static final String ATTR_CF_COMPACTION_COMPRESSION_TYPE  = "compactionCompressionType";
+    public static final String ATTR_CF_ENCRYPTION_TYPE              = "encryptionType";
+    public static final String ATTR_CF_KEEP_DELETE_CELLS            = "keepDeletedCells";
+    public static final String ATTR_CF_MAX_VERSIONS                 = "maxVersions";
+    public static final String ATTR_CF_MIN_VERSIONS                 = "minVersions";
+    public static final String ATTR_CF_DATA_BLOCK_ENCODING          = "dataBlockEncoding";
+    public static final String ATTR_CF_TTL                          = "ttl";
+    public static final String ATTR_CF_BLOCK_CACHE_ENABLED          = "blockCacheEnabled";
+    public static final String ATTR_CF_CACHED_BLOOM_ON_WRITE        = "cacheBloomsOnWrite";
+    public static final String ATTR_CF_CACHED_DATA_ON_WRITE         = "cacheDataOnWrite";
+    public static final String ATTR_CF_CACHED_INDEXES_ON_WRITE      = "cacheIndexesOnWrite";
+    public static final String ATTR_CF_EVICT_BLOCK_ONCLOSE          = "evictBlocksOnClose";
+    public static final String ATTR_CF_PREFETCH_BLOCK_ONOPEN        = "prefetchBlocksOnOpen";
 
     protected final HBaseAdmin                   hbaseAdmin;
     protected final boolean                      failOnError;
@@ -149,7 +172,7 @@ public class ImportHBaseEntitiesBase {
         if (tableEntity == null) {
             LOG.info("Importing Table: " + tblQualifiedName);
 
-            AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity);
+            AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity, htd);
 
             tableEntity = createEntityInAtlas(entity);
         }
@@ -266,7 +289,7 @@ public class ImportHBaseEntitiesBase {
         return ret;
     }
 
-    private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity) {
+    private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity, HTableDescriptor htd) {
         AtlasEntity ret                = new AtlasEntity(TABLE_TYPE);
         String      tableQualifiedName = getTableQualifiedName(clusterName, nameSpace, tableName);
 
@@ -277,6 +300,11 @@ public class ImportHBaseEntitiesBase {
         ret.setAttribute(DESCRIPTION_ATTR, tableName);
         ret.setAttribute(OWNER, owner);
         ret.setAttribute(URI, tableName);
+        ret.setAttribute(ATTR_TABLE_MAX_FILESIZE, htd.getMaxFileSize());
+        ret.setAttribute(ATTR_TABLE_REPLICATION_PER_REGION, htd.getRegionReplication());
+        ret.setAttribute(ATTR_TABLE_ISREADONLY, htd.isReadOnly());
+        ret.setAttribute(ATTR_TABLE_ISCOMPACTION_ENABLED, htd.isCompactionEnabled());
+        ret.setAttribute(ATTR_TABLE_DURABLILITY, (htd.getDurability() != null ? htd.getDurability().name() : null));
 
         return ret;
     }
@@ -292,6 +320,21 @@ public class ImportHBaseEntitiesBase {
         ret.setAttribute(NAME, cfName);
         ret.setAttribute(DESCRIPTION_ATTR, cfName);
         ret.setAttribute(OWNER, owner);
+        ret.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, hcdt.isBlockCacheEnabled());
+        ret.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (hcdt.getBloomFilterType() != null ? hcdt.getBloomFilterType().name():null));
+        ret.setAttribute(ATTR_CF_CACHED_BLOOM_ON_WRITE, hcdt.isCacheBloomsOnWrite());
+        ret.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, hcdt.isCacheDataOnWrite());
+        ret.setAttribute(ATTR_CF_CACHED_INDEXES_ON_WRITE, hcdt.isCacheIndexesOnWrite());
+        ret.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (hcdt.getCompactionCompressionType() != null ? hcdt.getCompactionCompressionType().name():null));
+        ret.setAttribute(ATTR_CF_COMPRESSION_TYPE, (hcdt.getCompressionType() != null ? hcdt.getCompressionType().name():null));
+        ret.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (hcdt.getDataBlockEncoding() != null ? hcdt.getDataBlockEncoding().name():null));
+        ret.setAttribute(ATTR_CF_ENCRYPTION_TYPE, hcdt.getEncryptionType());
+        ret.setAttribute(ATTR_CF_EVICT_BLOCK_ONCLOSE, hcdt.isEvictBlocksOnClose());
+        ret.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, ( hcdt.getKeepDeletedCells() != null ? hcdt.getKeepDeletedCells().name():null));
+        ret.setAttribute(ATTR_CF_MAX_VERSIONS, hcdt.getMaxVersions());
+        ret.setAttribute(ATTR_CF_MIN_VERSIONS, hcdt.getMinVersions());
+        ret.setAttribute(ATTR_CF_PREFETCH_BLOCK_ONOPEN, hcdt.isPrefetchBlocksOnOpen());
+        ret.setAttribute(ATTR_CF_TTL, hcdt.getTimeToLive());
 
         return ret;
     }
