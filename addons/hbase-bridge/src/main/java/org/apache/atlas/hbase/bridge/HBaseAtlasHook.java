@@ -507,7 +507,7 @@ public class HBaseAtlasHook extends AtlasHook {
             columnFamily.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, hColumnDescriptor.isBlockCacheEnabled());
             columnFamily.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (hColumnDescriptor.getBloomFilterType() != null ? hColumnDescriptor.getBloomFilterType().name():null));
             columnFamily.setAttribute(ATTR_CF_CACHED_BLOOM_ON_WRITE, hColumnDescriptor.isCacheBloomsOnWrite());
-            columnFamily.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, hColumnDescriptor.isCacheBloomsOnWrite());
+            columnFamily.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, hColumnDescriptor.isCacheDataOnWrite());
             columnFamily.setAttribute(ATTR_CF_CACHED_INDEXES_ON_WRITE, hColumnDescriptor.isCacheIndexesOnWrite());
             columnFamily.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (hColumnDescriptor.getCompactionCompressionType() != null ? hColumnDescriptor.getCompactionCompressionType().name():null));
             columnFamily.setAttribute(ATTR_CF_COMPRESSION_TYPE, (hColumnDescriptor.getCompressionType() != null ? hColumnDescriptor.getCompressionType().name():null));
