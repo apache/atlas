@@ -192,8 +192,8 @@ define(['require',
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
                     this.renderTermTableLayoutView(_.extend({}, obj, { term: true }));
-                    if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db")) {
-                        if (collectionJSON.typeName === "hive_db") {
+                    if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace")) {
+                        if (collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace") {
                             this.$('.profileTab a').text("Tables")
                         }
                         this.$('.profileTab').show();
