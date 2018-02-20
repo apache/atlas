@@ -285,10 +285,10 @@ public class StructInstance implements ITypedStruct {
     public Map<String, Object> getValuesMap() throws AtlasException {
         Map<String, Object> m = new HashMap<>();
         for (String attr : fieldMapping.fields.keySet()) {
-            int pos = fieldMapping.fieldNullPos.get(attr);
-            if (!nullFlags[pos]) {
+//            int pos = fieldMapping.fieldNullPos.get(attr);
+//            if (!nullFlags[pos]) {
                 m.put(attr, get(attr));
-            }
+//            }
         }
         return m;
     }

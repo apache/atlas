@@ -594,11 +594,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         EntityMutationResponse response = new EntityMutationResponse();
         deleteHandler.deleteEntities(deletionCandidates);
         RequestContextV1 req = RequestContextV1.get();
-        for (AtlasObjectId id : req.getDeletedEntityIds()) {
+        for (AtlasObjectId id : req.getDeletedEntities()) {
             response.addEntity(DELETE, EntityGraphMapper.constructHeader(id));
         }
 
-        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
+        for (AtlasObjectId id : req.getUpdatedEntities()) {
             response.addEntity(UPDATE, EntityGraphMapper.constructHeader(id));
         }
 

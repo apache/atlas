@@ -45,7 +45,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -59,7 +61,7 @@ import java.util.Set;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 
-
+@Component
 public final class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
@@ -73,6 +75,7 @@ public final class EntityGraphRetriever {
 
     private final AtlasTypeRegistry typeRegistry;
 
+    @Inject
     public EntityGraphRetriever(AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
     }

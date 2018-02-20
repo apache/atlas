@@ -168,11 +168,11 @@ public class EntityGraphMapper {
 
         RequestContextV1 req = RequestContextV1.get();
 
-        for (AtlasObjectId id : req.getDeletedEntityIds()) {
+        for (AtlasObjectId id : req.getDeletedEntities()) {
             resp.addEntity(DELETE, constructHeader(id));
         }
 
-        for (AtlasObjectId id : req.getUpdatedEntityIds()) {
+        for (AtlasObjectId id : req.getUpdatedEntities()) {
             if (isPartialUpdate) {
                 resp.addEntity(PARTIAL_UPDATE, constructHeader(id));
             }

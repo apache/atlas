@@ -19,32 +19,30 @@
 package org.apache.atlas;
 
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RequestContextV1 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContextV1.class);
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
 
-    private Set<AtlasObjectId> createdEntityIds = new LinkedHashSet<>();
-    private Set<AtlasObjectId> updatedEntityIds = new LinkedHashSet<>();
-    private Set<AtlasObjectId> deletedEntityIds = new LinkedHashSet<>();
+    private final Map<String, AtlasObjectId> updatedEntities = new HashMap<>();
+    private final Map<String, AtlasObjectId> deletedEntities = new HashMap<>();
+    private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
+    private final Metrics                    metrics         = new Metrics();
+    private final long                       requestTime     = System.currentTimeMillis();
 
     private String user;
-    private final long requestTime;
 
-    TypeSystem typeSystem = TypeSystem.getInstance();
-    private Metrics metrics = new Metrics();
 
     private RequestContextV1() {
-        requestTime = System.currentTimeMillis();
     }
 
     //To handle gets from background threads where createContext() is not called
@@ -60,6 +58,14 @@ public class RequestContextV1 {
         return ret;
     }
     public static void clear() {
+        RequestContextV1 instance = CURRENT_CONTEXT.get();
+
+        if (instance != null) {
+            instance.updatedEntities.clear();
+            instance.deletedEntities.clear();
+            instance.entityCacheV2.clear();
+        }
+
         CURRENT_CONTEXT.remove();
     }
 
@@ -71,44 +77,57 @@ public class RequestContextV1 {
         this.user = user;
     }
 
-    public void recordEntityCreate(Collection<AtlasObjectId> createdEntityIds) {
-        this.createdEntityIds.addAll(createdEntityIds);
+    public void recordEntityUpdate(AtlasObjectId entity) {
+        if (entity != null && entity.getGuid() != null) {
+            updatedEntities.put(entity.getGuid(), entity);
+        }
     }
 
-    public void recordEntityCreate(AtlasObjectId createdEntityId) {
-        this.createdEntityIds.add(createdEntityId);
+    public void recordEntityDelete(AtlasObjectId entity) {
+        if (entity != null && entity.getGuid() != null) {
+            deletedEntities.put(entity.getGuid(), entity);
+        }
     }
 
-    public void recordEntityUpdate(Collection<AtlasObjectId> updatedEntityIds) {
-        this.updatedEntityIds.addAll(updatedEntityIds);
+    /**
+     * Adds the specified instance to the cache
+     *
+     */
+    public void cache(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            entityCacheV2.put(entity.getGuid(), entity);
+        }
     }
 
-    public void recordEntityUpdate(AtlasObjectId entityId) {
-        this.updatedEntityIds.add(entityId);
+    public Collection<AtlasObjectId> getUpdatedEntities() {
+        return updatedEntities.values();
     }
 
-    public void recordEntityDelete(AtlasObjectId entityId) {
-        deletedEntityIds.add(entityId);
+    public Collection<AtlasObjectId> getDeletedEntities() {
+        return deletedEntities.values();
     }
 
-    public Collection<AtlasObjectId> getCreatedEntityIds() {
-        return createdEntityIds;
-    }
-
-    public Collection<AtlasObjectId> getUpdatedEntityIds() {
-        return updatedEntityIds;
-    }
-
-    public Collection<AtlasObjectId> getDeletedEntityIds() {
-        return deletedEntityIds;
+    /**
+     * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
+     * or null if it is not in the cache.
+     *
+     * @param guid the guid to find
+     * @return Either the instance or null if it is not in the cache.
+     */
+    public AtlasEntity getInstanceV2(String guid) {
+        return entityCacheV2.get(guid);
     }
 
     public long getRequestTime() {
         return requestTime;
     }
 
-    public boolean isDeletedEntity(AtlasObjectId entityId) {
-        return deletedEntityIds.contains(entityId);
+    public boolean isUpdatedEntity(String guid) {
+        return updatedEntities.containsKey(guid);
+    }
+
+    public boolean isDeletedEntity(String guid) {
+        return deletedEntities.containsKey(guid);
     }
 
     public static Metrics getMetrics() {
