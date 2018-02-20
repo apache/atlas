@@ -20,6 +20,8 @@ package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.exception.AtlasBaseException;
 
 import java.util.List;
 
@@ -32,14 +34,14 @@ public interface EntityAuditRepository {
      * @param events events to be added
      * @throws AtlasException
      */
-    void putEvents(EntityAuditEvent... events) throws AtlasException;
+    void putEventsV1(EntityAuditEvent... events) throws AtlasException;
 
     /**
      * Add events to the event repository
      * @param events events to be added
      * @throws AtlasException
      */
-    void putEvents(List<EntityAuditEvent> events) throws AtlasException;
+    void putEventsV1(List<EntityAuditEvent> events) throws AtlasException;
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
@@ -49,13 +51,48 @@ public interface EntityAuditRepository {
      * @return list of events
      * @throws AtlasException
      */
-    List<EntityAuditEvent> listEvents(String entityId, String startKey, short n) throws AtlasException;
+    List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short n) throws AtlasException;
+
+    /**
+     * Add v2 events to the event repository
+     * @param events events to be added
+     * @throws AtlasBaseException
+     */
+    void putEventsV2(EntityAuditEventV2... events) throws AtlasBaseException;
+
+    /**
+     * Add v2 events to the event repository
+     * @param events events to be added
+     * @throws AtlasBaseException
+     */
+    void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException;
+
+    /**
+     * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     * @param entityId entity id
+     * @param startKey key for the first event to be returned, used for pagination
+     * @param n        number of events to be returned
+     * @return list of events
+     * @throws AtlasBaseException
+     */
+    List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) throws AtlasBaseException;
+
+
+    /**
+     * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     * @param entityId entity id
+     * @param startKey key for the first event to be returned, used for pagination
+     * @param n        number of events to be returned
+     * @return list of events
+     * @throws AtlasBaseException
+     */
+    List<Object> listEvents(String entityId, String startKey, short n) throws AtlasBaseException;
 
     /**
      * Returns maximum allowed repository size per EntityAuditEvent
      * @throws AtlasException
      */
-    long repositoryMaxSize() throws AtlasException;
+    long repositoryMaxSize();
 
     /**
      * list of attributes to be excluded when storing in audit repo.
@@ -63,5 +100,5 @@ public interface EntityAuditRepository {
      * @return list of attribute names to be excluded
      * @throws AtlasException
      */
-    List<String> getAuditExcludeAttributes(String entityType) throws AtlasException;
+    List<String> getAuditExcludeAttributes(String entityType);
 }

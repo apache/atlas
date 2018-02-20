@@ -74,6 +74,7 @@ import static org.apache.atlas.repository.Constants.FULLTEXT_INDEX;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
@@ -275,6 +276,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
             createVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, String.class, false, SET, true, true);
             createVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, String.class, false, SET, true, true);
+            createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class, false, LIST, true, true);
             createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, true);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
 

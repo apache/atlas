@@ -46,9 +46,9 @@ public class AuditRepositoryTestBase {
         EntityAuditEvent event = new EntityAuditEvent(rand(), System.currentTimeMillis(), "u1",
                 EntityAuditEvent.EntityAuditAction.ENTITY_CREATE, "d1", new Referenceable(rand()));
 
-        eventRepository.putEvents(event);
+        eventRepository.putEventsV1(event);
 
-        List<EntityAuditEvent> events = eventRepository.listEvents(event.getEntityId(), null, (short) 10);
+        List<EntityAuditEvent> events = eventRepository.listEventsV1(event.getEntityId(), null, (short) 10);
 
         assertEquals(events.size(), 1);
         assertEventEquals(events.get(0), event);
@@ -67,28 +67,28 @@ public class AuditRepositoryTestBase {
             //Add events for both ids
             EntityAuditEvent event = new EntityAuditEvent(id2, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE, "details" + i, entity);
 
-            eventRepository.putEvents(event);
+            eventRepository.putEventsV1(event);
             expectedEvents.add(event);
-            eventRepository.putEvents(new EntityAuditEvent(id1, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_DELETE, "details" + i, entity));
-            eventRepository.putEvents(new EntityAuditEvent(id3, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_ADD, "details" + i, entity));
+            eventRepository.putEventsV1(new EntityAuditEvent(id1, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_DELETE, "details" + i, entity));
+            eventRepository.putEventsV1(new EntityAuditEvent(id3, ts - i, "user" + i, EntityAuditEvent.EntityAuditAction.TAG_ADD, "details" + i, entity));
         }
 
         //Use ts for which there is no event - ts + 2
-        List<EntityAuditEvent> events = eventRepository.listEvents(id2, null, (short) 3);
+        List<EntityAuditEvent> events = eventRepository.listEventsV1(id2, null, (short) 3);
         assertEquals(events.size(), 3);
         assertEventEquals(events.get(0), expectedEvents.get(0));
         assertEventEquals(events.get(1), expectedEvents.get(1));
         assertEventEquals(events.get(2), expectedEvents.get(2));
 
         //Use last event's timestamp for next list(). Should give only 1 event and shouldn't include events from other id
-        events = eventRepository.listEvents(id2, events.get(2).getEventKey(), (short) 3);
+        events = eventRepository.listEventsV1(id2, events.get(2).getEventKey(), (short) 3);
         assertEquals(events.size(), 1);
         assertEventEquals(events.get(0), expectedEvents.get(2));
     }
 
     @Test
     public void testInvalidEntityId() throws Exception {
-        List<EntityAuditEvent> events = eventRepository.listEvents(rand(), null, (short) 3);
+        List<EntityAuditEvent> events = eventRepository.listEventsV1(rand(), null, (short) 3);
 
         assertEquals(events.size(), 0);
     }

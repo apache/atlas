@@ -67,7 +67,7 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(event);
         }
 
-        auditRepository.putEvents(events);
+        auditRepository.putEventsV1(events);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(event);
         }
 
-        auditRepository.putEvents(events);
+        auditRepository.putEventsV1(events);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class EntityAuditListener implements EntityChangeListener {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_ADD,
                                                      "Added trait: " + AtlasType.toV1Json(trait));
 
-                auditRepository.putEvents(event);
+                auditRepository.putEventsV1(event);
             }
         }
     }
@@ -99,7 +99,7 @@ public class EntityAuditListener implements EntityChangeListener {
             for (String traitName : traitNames) {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
 
-                auditRepository.putEvents(event);
+                auditRepository.putEventsV1(event);
             }
         }
     }
@@ -111,7 +111,7 @@ public class EntityAuditListener implements EntityChangeListener {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_UPDATE,
                                                      "Updated trait: " + AtlasType.toV1Json(trait));
 
-                auditRepository.putEvents(event);
+                auditRepository.putEventsV1(event);
             }
         }
     }
@@ -124,11 +124,11 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(event);
         }
 
-        auditRepository.putEvents(events);
+        auditRepository.putEventsV1(events);
     }
 
     public List<EntityAuditEvent> getAuditEvents(String guid) throws AtlasException{
-        return auditRepository.listEvents(guid, null, (short) 10);
+        return auditRepository.listEventsV1(guid, null, (short) 10);
     }
 
     private EntityAuditEvent createEvent(Referenceable entity, EntityAuditAction action)

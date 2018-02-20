@@ -42,7 +42,7 @@ import java.util.*;
  */
 @Component
 public class NotificationEntityChangeListener implements EntityChangeListener {
-    private static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
+    protected static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
 
     private final NotificationInterface     notificationInterface;
     private final AtlasTypeRegistry         typeRegistry;

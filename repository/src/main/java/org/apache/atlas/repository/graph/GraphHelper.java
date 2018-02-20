@@ -26,10 +26,12 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -55,6 +57,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,6 +73,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL;
 
 /**
  * Utility class for graph operations.
@@ -79,6 +92,8 @@ public final class GraphHelper {
 
     public static final String RETRY_COUNT = "atlas.graph.storage.num.retries";
     public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
+
+    private final AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
 
     private static volatile GraphHelper INSTANCE;
 
@@ -166,7 +181,7 @@ public final class GraphHelper {
         return vertexWithoutIdentity;
     }
 
-    private AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
+    public AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding edge for {} -> label {} -> {}", string(fromVertex), edgeLabel, string(toVertex));
         }
@@ -264,6 +279,26 @@ public final class GraphHelper {
      */
     public AtlasEdge findEdge(Object... args) throws EntityNotFoundException {
         return (AtlasEdge) findElement(false, args);
+    }
+
+    public static boolean edgeExists(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) {
+        boolean             ret   = false;
+        Iterator<AtlasEdge> edges = getAdjacentEdgesByLabel(inVertex, AtlasEdgeDirection.IN, edgeLabel);
+
+        while (edges != null && edges.hasNext()) {
+            AtlasEdge edge = edges.next();
+
+            if (edge.getOutVertex().equals(outVertex)) {
+                Status edgeState = getStatus(edge);
+
+                if (edgeState == null || edgeState == ACTIVE) {
+                    ret = true;
+                    break;
+                }
+            }
+        }
+
+        return ret;
     }
 
     private AtlasElement findElement(boolean isVertexSearch, Object... args) throws EntityNotFoundException {
@@ -522,7 +557,7 @@ public final class GraphHelper {
     }
 
     /**
-     * Adds an additional value to a multi-property.
+     * Adds an additional value to a multi-property (SET).
      *
      * @param vertex
      * @param propertyName
@@ -536,6 +571,23 @@ public final class GraphHelper {
         }
 
         vertex.addProperty(actualPropertyName, value);
+    }
+
+    /**
+     * Adds an additional value to a multi-property (LIST).
+     *
+     * @param vertex
+     * @param propertyName
+     * @param value
+     */
+    public static void addListProperty(AtlasVertex vertex, String propertyName, Object value) {
+        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Adding property {} = \"{}\" to vertex {}", actualPropertyName, value, string(vertex));
+        }
+
+        vertex.addListProperty(actualPropertyName, value);
     }
 
     /**
@@ -635,6 +687,73 @@ public final class GraphHelper {
         return result;
     }
 
+    public List<AtlasVertex> getIncludedImpactedVerticesWithReferences(AtlasVertex entityVertex, String relationshipGuid) throws AtlasBaseException {
+        List<AtlasVertex> ret              = new ArrayList<>();
+        List<AtlasVertex> impactedVertices = getImpactedVerticesWithReferences(getGuid(entityVertex), relationshipGuid);
+
+        ret.add(entityVertex);
+
+        if (CollectionUtils.isNotEmpty(impactedVertices)) {
+            ret.addAll(impactedVertices);
+        }
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVertices(String guid) throws AtlasBaseException {
+        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
+        Bindings          bindings     = scriptEngine.createBindings();
+        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES);
+        List<AtlasVertex> ret          = new ArrayList<>();
+
+        bindings.put("g", graph);
+        bindings.put("guid", guid);
+
+        try {
+            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+
+            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
+                List<?> results = (List) resultObj;
+                Object firstElement = results.get(0);
+
+                if (firstElement instanceof AtlasVertex) {
+                    ret = (List<AtlasVertex>) results;
+                }
+            }
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
+        }
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesWithReferences(String guid, String relationshipGuid) throws AtlasBaseException {
+        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
+        Bindings          bindings     = scriptEngine.createBindings();
+        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL);
+        List<AtlasVertex> ret          = new ArrayList<>();
+
+        bindings.put("g", graph);
+        bindings.put("guid", guid);
+        bindings.put("relationshipGuid", relationshipGuid);
+
+        try {
+            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+
+            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
+                List<?> results = (List) resultObj;
+                Object firstElement = results.get(0);
+
+                if (firstElement instanceof AtlasVertex) {
+                    ret = (List<AtlasVertex>) results;
+                }
+            }
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
+        }
+
+        return ret;
+    }
 
     /**
      * Finds the Vertices that correspond to the given GUIDs.  GUIDs
@@ -655,13 +774,60 @@ public final class GraphHelper {
         return attrName;
     }
 
-    public static List<String> getTraitNames(AtlasVertex<?,?> entityVertex) {
-        ArrayList<String> traits = new ArrayList<>();
-        Collection<String> propertyValues = entityVertex.getPropertyValues(Constants.TRAIT_NAMES_PROPERTY_KEY, String.class);
-        for(String value : propertyValues) {
-            traits.add(value);
+    public static String getTraitLabel(String traitName) {
+        return traitName;
+    }
+
+    public static String getPropagatedEdgeLabel(String classificationName) {
+        return "propagated:" + classificationName;
+    }
+
+    public static List<String> getAllTraitNames(AtlasVertex<?, ?> entityVertex) {
+        ArrayList<String> ret = new ArrayList<>();
+
+        if (entityVertex != null) {
+            Collection<String> traitNames = entityVertex.getPropertyValues(TRAIT_NAMES_PROPERTY_KEY, String.class);
+
+            if (CollectionUtils.isNotEmpty(traitNames)) {
+                ret.addAll(traitNames);
+            }
+
+            traitNames = entityVertex.getPropertyValues(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
+
+            if (CollectionUtils.isNotEmpty(traitNames)) {
+                ret.addAll(traitNames);
+            }
         }
-        return traits;
+
+        return ret;
+    }
+
+    public static List<String> getTraitNames(AtlasVertex<?,?> entityVertex) {
+        ArrayList<String> ret = new ArrayList<>();
+
+        if (entityVertex != null) {
+            Collection<String> traitNames = entityVertex.getPropertyValues(TRAIT_NAMES_PROPERTY_KEY, String.class);
+
+            if (CollectionUtils.isNotEmpty(traitNames)) {
+                ret.addAll(traitNames);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<String> getPropagatedTraitNames(AtlasVertex<?,?> entityVertex) {
+        ArrayList<String> ret = new ArrayList<>();
+
+        if (entityVertex != null) {
+            Collection<String> traitNames = entityVertex.getPropertyValues(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
+
+            if (CollectionUtils.isNotEmpty(traitNames)) {
+                ret.addAll(traitNames);
+            }
+        }
+
+        return ret;
     }
 
     public static List<String> getSuperTypeNames(AtlasVertex<?,?> entityVertex) {
@@ -689,6 +855,10 @@ public final class GraphHelper {
 
     public static Id getIdFromVertex(AtlasVertex vertex) {
         return getIdFromVertex(getTypeName(vertex), vertex);
+    }
+
+    public static String getRelationshipGuid(AtlasElement element) {
+        return element.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
     }
 
     public static String getGuid(AtlasElement element) {
@@ -741,6 +911,25 @@ public final class GraphHelper {
 
     public static long getModifiedTime(AtlasElement element){
         return element.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
+    public List<AtlasVertex> getPropagatedEntityVerticesFromClassification(AtlasVertex classificationVertex) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (classificationVertex != null) {
+            String              classificationName = getTypeName(classificationVertex);
+            Iterator<AtlasEdge> iterator           = getIncomingEdgesByLabel(classificationVertex, getPropagatedEdgeLabel(classificationName));
+
+            while (iterator != null && iterator.hasNext()) {
+                AtlasEdge propagatedEdge = iterator.next();
+
+                if (propagatedEdge != null) {
+                    ret.add(propagatedEdge.getOutVertex());
+                }
+            }
+        }
+
+        return ret;
     }
 
     /**
@@ -881,6 +1070,41 @@ public final class GraphHelper {
         return Collections.emptyList();
     }
 
+    public static List<String> getTypeNames(List<AtlasVertex> vertices) {
+        List<String> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(vertices)) {
+            for (AtlasVertex vertex : vertices) {
+                String entityTypeProperty = vertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+
+                if (entityTypeProperty != null) {
+                    ret.add(getTypeName(vertex));
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static AtlasVertex getAssociatedEntityVertex(AtlasVertex classificationVertex) {
+        AtlasVertex ret = null;
+
+        if (classificationVertex != null) {
+            Iterator<AtlasEdge> iterator = getIncomingEdgesByLabel(classificationVertex, getTypeName(classificationVertex));
+
+            while (iterator != null && iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                if (edge != null) {
+                    ret = edge.getOutVertex();
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
     /**
      * Guid and AtlasVertex combo
      */
@@ -919,7 +1143,8 @@ public final class GraphHelper {
         }
     }
 
-    /**
+    /*
+     /**
      * Get the GUIDs and vertices for all composite entities owned/contained by the specified root entity AtlasVertex.
      * The graph is traversed from the root entity through to the leaf nodes of the containment graph.
      *
@@ -1298,5 +1523,52 @@ public final class GraphHelper {
         String edgeLabel = edge.getLabel();
 
         return StringUtils.isNotEmpty(edge.getLabel()) ? edgeLabel.startsWith("r:") : false;
+    }
+
+    public static AtlasObjectId getReferenceObjectId(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection,
+                                                     AtlasVertex parentVertex) {
+        AtlasObjectId ret = null;
+
+        if (relationshipDirection == OUT) {
+            ret = getAtlasObjectIdForInVertex(edge);
+        } else if (relationshipDirection == IN) {
+            ret = getAtlasObjectIdForOutVertex(edge);
+        } else if (relationshipDirection == BOTH){
+            // since relationship direction is BOTH, edge direction can be inward or outward
+            // compare with parent entity vertex and pick the right reference vertex
+            if (verticesEquals(parentVertex, edge.getOutVertex())) {
+                ret = getAtlasObjectIdForInVertex(edge);
+            } else {
+                ret = getAtlasObjectIdForOutVertex(edge);
+            }
+        }
+
+        return ret;
+    }
+
+    public static AtlasObjectId getAtlasObjectIdForOutVertex(AtlasEdge edge) {
+        return new AtlasObjectId(getGuid(edge.getOutVertex()), getTypeName(edge.getOutVertex()));
+    }
+
+    public static AtlasObjectId getAtlasObjectIdForInVertex(AtlasEdge edge) {
+        return new AtlasObjectId(getGuid(edge.getInVertex()), getTypeName(edge.getInVertex()));
+    }
+
+    private static boolean verticesEquals(AtlasVertex vertexA, AtlasVertex vertexB) {
+        return StringUtils.equals(getGuid(vertexB), getGuid(vertexA));
+    }
+
+    public static void removePropagatedTraitNameFromVertex(AtlasVertex entityVertex, String propagatedTraitName) {
+        List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+
+        if (CollectionUtils.isNotEmpty(propagatedTraitNames) && propagatedTraitNames.contains(propagatedTraitName)) {
+            propagatedTraitNames.remove(propagatedTraitName);
+
+            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+
+            for (String pTraitName : propagatedTraitNames) {
+                GraphHelper.addListProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, pTraitName);
+            }
+        }
     }
 }

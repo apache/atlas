@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -48,6 +49,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private String  entityGuid = null;
+    private boolean propagate  = true;
 
     public AtlasClassification() {
         this(null, null);
@@ -74,6 +78,47 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setTypeName(other.getTypeName());
             setAttributes(other.getAttributes());
         }
+    }
+
+    public String getEntityGuid() {
+        return entityGuid;
+    }
+
+    public void setEntityGuid(String entityGuid) {
+        this.entityGuid = entityGuid;
+    }
+
+    public boolean isPropagate() {
+        return propagate;
+    }
+
+    public void setPropagate(boolean propagate) {
+        this.propagate = propagate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        if (!super.equals(o)) { return false; }
+        AtlasClassification that = (AtlasClassification) o;
+        return propagate == that.propagate &&
+               Objects.equals(entityGuid, that.entityGuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), entityGuid, propagate);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AtlasClassification{");
+        super.toString(sb);
+        sb.append("entityGuid='").append(entityGuid).append('\'');
+        sb.append(", propagate=").append(propagate);
+        sb.append('}');
+        return sb.toString();
     }
 
     /**

@@ -23,9 +23,13 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -116,17 +120,17 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @throws AtlasException
      */
     @Override
-    public void putEvents(EntityAuditEvent... events) throws AtlasException {
-        putEvents(Arrays.asList(events));
+    public void putEventsV1(EntityAuditEvent... events) throws AtlasException {
+        putEventsV1(Arrays.asList(events));
     }
 
-    @Override
     /**
      * Add events to the event repository
      * @param events events to be added
      * @throws AtlasException
      */
-    public void putEvents(List<EntityAuditEvent> events) throws AtlasException {
+    @Override
+    public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Putting {} events", events.size());
         }
@@ -154,6 +158,146 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         }
     }
 
+    @Override
+    public void putEventsV2(EntityAuditEventV2... events) throws AtlasBaseException {
+        putEventsV2(Arrays.asList(events));
+    }
+
+    @Override
+    public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Putting {} events", events.size());
+        }
+
+        Table table = null;
+
+        try {
+            table          = connection.getTable(tableName);
+            List<Put> puts = new ArrayList<>(events.size());
+
+            for (EntityAuditEventV2 event : events) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Adding entity audit event {}", event);
+                }
+
+                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp()));
+
+                addColumn(put, COLUMN_ACTION, event.getAction());
+                addColumn(put, COLUMN_USER, event.getUser());
+                addColumn(put, COLUMN_DETAIL, event.getDetails());
+
+                if (persistEntityDefinition) {
+                    addColumn(put, COLUMN_DEFINITION, event.getEntity());
+                }
+
+                puts.add(put);
+            }
+
+            table.put(puts);
+        } catch (IOException e) {
+            throw new AtlasBaseException(e);
+        } finally {
+            try {
+                close(table);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(e);
+            }
+        }
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
+        }
+
+        Table         table   = null;
+        ResultScanner scanner = null;
+
+        try {
+            table = connection.getTable(tableName);
+
+            /**
+             * Scan Details:
+             * In hbase, the events are stored in increasing order of timestamp. So, doing reverse scan to get the latest event first
+             * Page filter is set to limit the number of results returned.
+             * Stop row is set to the entity id to avoid going past the current entity while scanning
+             * small is set to true to optimise RPC calls as the scanner is created per request
+             */
+            Scan scan = new Scan().setReversed(true).setFilter(new PageFilter(n))
+                                  .setStopRow(Bytes.toBytes(entityId))
+                                  .setCaching(n)
+                                  .setSmall(true);
+
+            if (StringUtils.isEmpty(startKey)) {
+                //Set start row to entity id + max long value
+                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE);
+                scan = scan.setStartRow(entityBytes);
+            } else {
+                scan = scan.setStartRow(Bytes.toBytes(startKey));
+            }
+
+            scanner = table.getScanner(scan);
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            Result result;
+
+            //PageFilter doesn't ensure n results are returned. The filter is per region server.
+            //So, adding extra check on n here
+            while ((result = scanner.next()) != null && events.size() < n) {
+                EntityAuditEventV2 event = fromKeyV2(result.getRow());
+
+                //In case the user sets random start key, guarding against random events
+                if (!event.getEntityId().equals(entityId)) {
+                    continue;
+                }
+                event.setUser(getResultString(result, COLUMN_USER));
+                event.setAction(EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
+                event.setDetails(getResultString(result, COLUMN_DETAIL));
+
+                if (persistEntityDefinition) {
+                    String colDef = getResultString(result, COLUMN_DEFINITION);
+
+                    if (colDef != null) {
+                        event.setEntityDefinition(colDef);
+                    }
+                }
+
+                events.add(event);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
+            }
+
+            return events;
+        } catch (IOException e) {
+            throw new AtlasBaseException(e);
+        } finally {
+            try {
+                close(scanner);
+                close(table);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(e);
+            }
+        }
+    }
+
+    @Override
+    public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
+        List ret = listEventsV2(entityId, startKey, maxResults);
+
+        try {
+            if (CollectionUtils.isEmpty(ret)) {
+                ret = listEventsV1(entityId, startKey, maxResults);
+            }
+        } catch (AtlasException e) {
+            throw new AtlasBaseException(e);
+        }
+
+        return ret;
+    }
+
     private <T> void addColumn(Put put, byte[] columnName, T columnValue) {
         if (columnValue != null && !columnValue.toString().isEmpty()) {
             put.addColumn(COLUMN_FAMILY, columnName, Bytes.toBytes(columnValue.toString()));
@@ -175,7 +319,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @return list of events
      * @throws AtlasException
      */
-    public List<EntityAuditEvent> listEvents(String entityId, String startKey, short n)
+    public List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short n)
             throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
@@ -243,7 +387,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     }
 
     @Override
-    public long repositoryMaxSize() throws AtlasException {
+    public long repositoryMaxSize() {
         long ret;
         initApplicationProperties();
 
@@ -257,7 +401,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     }
 
     @Override
-    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+    public List<String> getAuditExcludeAttributes(String entityType) {
         List<String> ret = null;
 
         initApplicationProperties();
@@ -305,6 +449,20 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
             event.setTimestamp(Long.valueOf(parts[1]));
             event.setEventKey(key);
         }
+        return event;
+    }
+
+    private EntityAuditEventV2 fromKeyV2(byte[] keyBytes) {
+        String             key   = Bytes.toString(keyBytes);
+        EntityAuditEventV2 event = new EntityAuditEventV2();
+
+        if (StringUtils.isNotEmpty(key)) {
+            String[] parts = key.split(FIELD_SEPARATOR);
+            event.setEntityId(parts[0]);
+            event.setTimestamp(Long.valueOf(parts[1]));
+            event.setEventKey(key);
+        }
+
         return event;
     }
 

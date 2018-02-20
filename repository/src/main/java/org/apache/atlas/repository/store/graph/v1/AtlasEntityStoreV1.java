@@ -462,54 +462,26 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         validateEntityAssociations(guid, classifications);
 
         entityGraphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
-
-        // notify listeners on classification addition
-        entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
     }
 
     @Override
     @GraphTransaction
-    public void updateClassifications(String guid, List<AtlasClassification> newClassifications) throws AtlasBaseException {
+    public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Updating classifications={} for entity={}", newClassifications, guid);
+            LOG.debug("Updating classifications={} for entity={}", classifications, guid);
         }
 
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid not specified");
         }
 
-        if (CollectionUtils.isEmpty(newClassifications)) {
+        if (CollectionUtils.isEmpty(classifications)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
         }
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
-        List<AtlasClassification> updatedClassifications = new ArrayList<>();
 
-        for (AtlasClassification newClassification : newClassifications) {
-            String              classificationName = newClassification.getTypeName();
-            AtlasClassification oldClassification  = getClassification(guid, classificationName);
-
-            if (oldClassification == null) {
-                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
-            }
-
-            validateAndNormalizeForUpdate(newClassification);
-
-            Map<String, Object> newAttrs = newClassification.getAttributes();
-
-            if (MapUtils.isNotEmpty(newAttrs)) {
-                for (String attrName : newAttrs.keySet()) {
-                    oldClassification.setAttribute(attrName, newAttrs.get(attrName));
-                }
-            }
-
-            entityGraphMapper.updateClassification(new EntityMutationContext(), guid, oldClassification);
-
-            updatedClassifications.add(oldClassification);
-        }
-
-        // notify listeners on update to classifications
-        entityChangeNotifier.onClassificationUpdatedToEntity(guid, updatedClassifications);
+        entityGraphMapper.updateClassifications(new EntityMutationContext(), guid, classifications);
     }
 
     @Override
@@ -533,15 +505,10 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         List<AtlasClassification> classifications = Collections.singletonList(classification);
 
         for (String guid : guids) {
-            // validate if entity, not already associated with classifications
             validateEntityAssociations(guid, classifications);
 
             entityGraphMapper.addClassifications(new EntityMutationContext(), guid, classifications);
-
-            // notify listeners on classification addition
-            entityChangeNotifier.onClassificationAddedToEntity(guid, classifications);
         }
-
     }
 
     @Override
@@ -561,16 +528,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         entityGraphMapper.deleteClassifications(guid, classificationNames);
-
-        // notify listeners on classification deletion
-        entityChangeNotifier.onClassificationDeletedFromEntity(guid, classificationNames);
     }
 
     @Override
     @GraphTransaction
     public List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Getting classifications for entities={}", guid);
+            LOG.debug("Getting classifications for entity={}", guid);
         }
 
         EntityGraphRetriever graphRetriever = new EntityGraphRetriever(typeRegistry);
@@ -680,24 +644,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         type.getNormalizedValue(classification);
     }
 
-    private void validateAndNormalizeForUpdate(AtlasClassification classification) throws AtlasBaseException {
-        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
-
-        if (type == null) {
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
-        }
-
-        List<String> messages = new ArrayList<>();
-
-        type.validateValueForUpdate(classification, classification.getTypeName(), messages);
-
-        if (!messages.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, messages);
-        }
-
-        type.getNormalizedValueForUpdate(classification);
-    }
-
     /**
      * Validate if classification is not already associated with the entities
      *
@@ -734,7 +680,11 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             ret = new ArrayList<>();
 
             for (AtlasClassification classification : classifications) {
-                ret.add(classification.getTypeName());
+                String entityGuid = classification.getEntityGuid();
+
+                if (StringUtils.isEmpty(entityGuid) || StringUtils.equalsIgnoreCase(guid, entityGuid)) {
+                    ret.add(classification.getTypeName());
+                }
             }
         }
 

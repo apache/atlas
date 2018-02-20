@@ -30,8 +30,10 @@ import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.EntityLineageService;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.repository.audit.EntityAuditListener;
+import org.apache.atlas.repository.audit.EntityAuditListenerV2;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -144,6 +146,10 @@ public class TestModules {
             Multibinder<EntityChangeListener> entityChangeListenerBinder =
                     Multibinder.newSetBinder(binder(), EntityChangeListener.class);
             entityChangeListenerBinder.addBinding().to(EntityAuditListener.class);
+
+            Multibinder<EntityChangeListenerV2> entityChangeListenerV2Binder =
+                    Multibinder.newSetBinder(binder(), EntityChangeListenerV2.class);
+            entityChangeListenerV2Binder.addBinding().to(EntityAuditListenerV2.class);
 
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
             requestInjection(graphTransactionInterceptor);

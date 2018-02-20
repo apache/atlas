@@ -560,7 +560,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
             fail("Deletion should've failed for non-existent trait association");
         } catch (AtlasServiceException ex) {
             Assert.assertNotNull(ex.getStatus());
-            assertEquals(ex.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(ex.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
 

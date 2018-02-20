@@ -20,7 +20,9 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -53,6 +55,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
+import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
 
 @Singleton
 @Component
@@ -290,7 +299,7 @@ public class AtlasInstanceConverter {
     }
 
 
-    private AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
+    public AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
         RequestContextV1                   context           = RequestContextV1.get();
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
 
@@ -307,5 +316,94 @@ public class AtlasInstanceConverter {
         }
 
         return entityWithExtInfo;
+    }
+
+    public EntityAuditEvent toV1AuditEvent(EntityAuditEventV2 v2Event) throws AtlasBaseException {
+        EntityAuditEvent ret = new EntityAuditEvent();
+
+        ret.setEntityId(v2Event.getEntityId());
+        ret.setTimestamp(v2Event.getTimestamp());
+        ret.setUser(v2Event.getUser());
+        ret.setDetails(v2Event.getDetails());
+        ret.setEventKey(v2Event.getEventKey());
+
+        ret.setAction(getV1AuditAction(v2Event.getAction()));
+        ret.setEntityDefinition(getReferenceable(v2Event.getEntityId()));
+
+        return ret;
+    }
+
+    public EntityAuditEventV2 toV2AuditEvent(EntityAuditEvent v1Event) throws AtlasBaseException {
+        EntityAuditEventV2 ret = new EntityAuditEventV2();
+
+        ret.setEntityId(v1Event.getEntityId());
+        ret.setTimestamp(v1Event.getTimestamp());
+        ret.setUser(v1Event.getUser());
+        ret.setDetails(v1Event.getDetails());
+        ret.setEventKey(v1Event.getEventKey());
+        ret.setAction(getV2AuditAction(v1Event.getAction()));
+
+        AtlasEntitiesWithExtInfo entitiesWithExtInfo = toAtlasEntity(v1Event.getEntityDefinition());
+
+        if (entitiesWithExtInfo != null && CollectionUtils.isNotEmpty(entitiesWithExtInfo.getEntities())) {
+            // there will only one source entity
+            AtlasEntity entity = entitiesWithExtInfo.getEntities().get(0);
+
+            ret.setEntity(entity);
+        }
+
+        return ret;
+    }
+
+    private EntityAuditEvent.EntityAuditAction getV1AuditAction(EntityAuditEventV2.EntityAuditAction v2AuditAction) {
+        EntityAuditEvent.EntityAuditAction ret = null;
+
+        switch (v2AuditAction) {
+            case ENTITY_CREATE:
+            case ENTITY_UPDATE:
+            case ENTITY_DELETE:
+            case ENTITY_IMPORT_CREATE:
+            case ENTITY_IMPORT_UPDATE:
+            case ENTITY_IMPORT_DELETE:
+                ret = EntityAuditEvent.EntityAuditAction.valueOf(v2AuditAction.name());
+                break;
+            case CLASSIFICATION_ADD:
+                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_ADD.name());
+                break;
+            case CLASSIFICATION_DELETE:
+                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_DELETE.name());
+                break;
+            case CLASSIFICATION_UPDATE:
+                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_UPDATE.name());
+                break;
+        }
+
+        return ret;
+    }
+
+    private EntityAuditEventV2.EntityAuditAction getV2AuditAction(EntityAuditEvent.EntityAuditAction v1AuditAction) {
+        EntityAuditEventV2.EntityAuditAction ret = null;
+
+        switch (v1AuditAction) {
+            case ENTITY_CREATE:
+            case ENTITY_UPDATE:
+            case ENTITY_DELETE:
+            case ENTITY_IMPORT_CREATE:
+            case ENTITY_IMPORT_UPDATE:
+            case ENTITY_IMPORT_DELETE:
+                ret = EntityAuditEventV2.EntityAuditAction.valueOf(v1AuditAction.name());
+                break;
+            case TAG_ADD:
+                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_ADD.name());
+                break;
+            case TAG_DELETE:
+                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_DELETE.name());
+                break;
+            case TAG_UPDATE:
+                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_UPDATE.name());
+                break;
+        }
+
+        return ret;
     }
 }

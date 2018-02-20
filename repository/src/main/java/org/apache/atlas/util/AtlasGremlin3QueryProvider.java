@@ -63,6 +63,18 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
                 return "g.V().range(0,1).toList()";
             case GREMLIN_SEARCH_RETURNS_EDGE_ID:
                 return "g.E().range(0,1).toList()";
+
+            case TAG_PROPAGATION_IMPACTED_INSTANCES:
+                return "g.V().has('__guid', guid).aggregate('src')" +
+                            ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).inV(), " +
+                                           "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).outV())" +
+                            ".dedup().where(without('src')).simplePath()).emit().toList();";
+
+            case TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL:
+                return "g.V().has('__guid', guid).aggregate('src')" +
+                            ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).has('_r__guid', neq(relationshipGuid)).inV(), " +
+                                           "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).has('_r__guid', neq(relationshipGuid)).outV())" +
+                            ".dedup().where(without('src')).simplePath()).emit().toList();";
         }
         return super.getQuery(gremlinQuery);
     }

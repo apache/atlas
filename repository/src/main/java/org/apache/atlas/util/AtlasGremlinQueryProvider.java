@@ -81,6 +81,9 @@ public abstract class AtlasGremlinQueryProvider {
         COMPARE_ENDS_WITH,
         COMPARE_CONTAINS,
         COMPARE_IS_NULL,
-        COMPARE_NOT_NULL
+        COMPARE_NOT_NULL,
+
+        TAG_PROPAGATION_IMPACTED_INSTANCES,
+        TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL
     }
 }

@@ -157,7 +157,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hbase_column_family_columns",
@@ -177,7 +177,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         }
     ]
 }

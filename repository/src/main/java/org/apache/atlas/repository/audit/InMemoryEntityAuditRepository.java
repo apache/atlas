@@ -21,6 +21,8 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
@@ -37,15 +39,16 @@ import java.util.TreeMap;
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class InMemoryEntityAuditRepository implements EntityAuditRepository {
-    private TreeMap<String, EntityAuditEvent> auditEvents = new TreeMap<>();
+    private TreeMap<String, EntityAuditEvent>   auditEvents   = new TreeMap<>();
+    private TreeMap<String, EntityAuditEventV2> auditEventsV2 = new TreeMap<>();
 
     @Override
-    public void putEvents(EntityAuditEvent... events) throws AtlasException {
-        putEvents(Arrays.asList(events));
+    public void putEventsV1(EntityAuditEvent... events) throws AtlasException {
+        putEventsV1(Arrays.asList(events));
     }
 
     @Override
-    public synchronized void putEvents(List<EntityAuditEvent> events) throws AtlasException {
+    public synchronized void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
         for (EntityAuditEvent event : events) {
             String rowKey = event.getEntityId() + (Long.MAX_VALUE - event.getTimestamp());
             event.setEventKey(rowKey);
@@ -56,8 +59,7 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     //synchronized to avoid concurrent modification exception that occurs if events are added
     //while we are iterating through the map
     @Override
-    public synchronized List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
-            throws AtlasException {
+    public synchronized List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short maxResults) {
         List<EntityAuditEvent> events = new ArrayList<>();
         String myStartKey = startKey;
         if (myStartKey == null) {
@@ -73,12 +75,57 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public long repositoryMaxSize() throws AtlasException {
+    public long repositoryMaxSize() {
         return -1;
     }
 
     @Override
-    public List<String> getAuditExcludeAttributes(String entityType) throws AtlasException {
+    public List<String> getAuditExcludeAttributes(String entityType) {
         return null;
+    }
+
+    @Override
+    public void putEventsV2(EntityAuditEventV2... events) {
+        putEventsV2(Arrays.asList(events));
+    }
+
+    @Override
+    public void putEventsV2(List<EntityAuditEventV2> events) {
+        for (EntityAuditEventV2 event : events) {
+            String rowKey = event.getEntityId() + (Long.MAX_VALUE - event.getTimestamp());
+            event.setEventKey(rowKey);
+            auditEventsV2.put(rowKey, event);
+        }
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short maxResults) {
+        List<EntityAuditEventV2> events     = new ArrayList<>();
+        String                   myStartKey = startKey;
+
+        if (myStartKey == null) {
+            myStartKey = entityId;
+        }
+
+        SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(myStartKey);
+
+        for (EntityAuditEventV2 event : subMap.values()) {
+            if (events.size() < maxResults && event.getEntityId().equals(entityId)) {
+                events.add(event);
+            }
+        }
+
+        return events;
+    }
+
+    @Override
+    public List<Object> listEvents(String entityId, String startKey, short maxResults) {
+        List events = listEventsV2(entityId, startKey, maxResults);
+
+        if (CollectionUtils.isEmpty(events)) {
+            events = listEventsV1(entityId, startKey, maxResults);
+        }
+
+        return events;
     }
 }

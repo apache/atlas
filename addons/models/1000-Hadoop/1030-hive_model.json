@@ -539,7 +539,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_columns",
@@ -559,7 +559,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_partitionkeys",
@@ -579,7 +579,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_storagedesc",
@@ -599,7 +599,7 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_process_column_lineage",

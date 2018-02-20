@@ -69,6 +69,7 @@ public final class Constants {
      * Trait names property key and index name.
      */
     public static final String TRAIT_NAMES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "traitNames";
+    public static final String PROPAGATED_TRAIT_NAMES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "propagatedTraitNames";
 
     public static final String VERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "version";
     public static final String STATE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "state";
@@ -114,6 +115,9 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_STATE    = "state";
     public static final String ATTRIBUTE_NAME_VERSION  = "version";
     public static final String TEMP_STRUCT_NAME_PREFIX = "__tempQueryResultStruct";
+
+    public static final String CLASSIFICATION_ENTITY_GUID = INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid";
+    public static final String CLASSIFICATION_PROPAGATE_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
 
     private Constants() {
     }

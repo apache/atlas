@@ -808,7 +808,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         } catch (AtlasServiceException e) {
             assertNotNull(e);
             assertNotNull(e.getStatus());
-            assertEquals(e.getStatus(), ClientResponse.Status.NOT_FOUND);
+            assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
 

@@ -164,7 +164,7 @@ public class TestEntityREST {
             put("tag", "tagName_updated");
         }});
 
-        entityREST.updateClassification(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification, testClassification)));
+        entityREST.updateClassifications(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification, testClassification)));
 
         AtlasClassification updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
         Assert.assertNotNull(updatedClassification);

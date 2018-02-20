@@ -55,6 +55,14 @@ public interface AtlasVertex<V, E> extends AtlasElement {
      */
     <T> void addProperty(String propertyName, T value);
 
+    /**
+     * Adds a value to a multiplicity-many property.
+     * If the property is already present, the value is added to it; if not, the propery is set with the given value
+     *
+     * @param propertyName
+     * @param value
+     */
+    <T> void addListProperty(String propertyName, T value);
 
     /**
      * Creates a vertex query.

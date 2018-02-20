@@ -44,7 +44,7 @@ public class EntityNotification implements Serializable {
      * Type of the hook message.
      */
     public enum EntityNotificationType {
-        ENTITY_NOTIFICATION_V1
+        ENTITY_NOTIFICATION_V1, ENTITY_NOTIFICATION_V2
     }
 
     protected EntityNotificationType type;

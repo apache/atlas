@@ -18,6 +18,8 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -26,6 +28,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v1.EntityStream;
@@ -38,6 +42,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -45,6 +50,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -67,17 +73,24 @@ import java.util.Map;
 @Singleton
 @Service
 public class EntityREST {
+    private static final Logger LOG      = LoggerFactory.getLogger(EntityREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityREST");
 
     public static final String PREFIX_ATTR = "attr:";
 
-    private final AtlasTypeRegistry         typeRegistry;
-    private final AtlasEntityStore          entitiesStore;
+    private final AtlasTypeRegistry      typeRegistry;
+    private final AtlasEntityStore       entitiesStore;
+    private final EntityAuditRepository  auditRepository;
+    private final AtlasInstanceConverter instanceConverter;
+
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
-        this.typeRegistry    = typeRegistry;
-        this.entitiesStore   = entitiesStore;
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
+                      EntityAuditRepository auditRepository, AtlasInstanceConverter instanceConverter) {
+        this.typeRegistry      = typeRegistry;
+        this.entitiesStore     = entitiesStore;
+        this.auditRepository   = auditRepository;
+        this.instanceConverter = instanceConverter;
     }
 
     /**
@@ -409,14 +422,14 @@ public class EntityREST {
     @PUT
     @Path("/guid/{guid}/classifications")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void updateClassification(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+    public void updateClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.updateClassification(" + guid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.updateClassifications(" + guid + ")");
             }
 
             if (StringUtils.isEmpty(guid)) {
@@ -576,6 +589,38 @@ public class EntityREST {
             }
 
             entitiesStore.addClassification(entityGuids, classification);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("{guid}/audit")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
+                                                   @QueryParam("count") @DefaultValue("100") short count) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
+            }
+
+            List                     events = auditRepository.listEvents(guid, startKey, count);
+            List<EntityAuditEventV2> ret    = new ArrayList<>();
+
+            for (Object event : events) {
+                if (event instanceof EntityAuditEventV2) {
+                    ret.add((EntityAuditEventV2) event);
+                } else if (event instanceof EntityAuditEvent) {
+                    ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
+                } else {
+                    LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+                }
+            }
+
+            return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }

@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -28,7 +27,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -98,7 +97,7 @@ public class EntityResource {
     private final AtlasTypeRegistry      typeRegistry;
     private final EntityREST             entityREST;
     private final EntityAuditRepository  entityAuditRepository;
-    private final AtlasDiscoveryService  atlasDiscoveryService;
+    private final AtlasInstanceConverter instanceConverter;
 
     @Context
     UriInfo uriInfo;
@@ -109,13 +108,13 @@ public class EntityResource {
                           final AtlasTypeRegistry typeRegistry,
                           final EntityREST entityREST,
                           final EntityAuditRepository entityAuditRepository,
-                          final AtlasDiscoveryService atlasDiscoveryService) {
+                          final AtlasInstanceConverter instanceConverter) {
         this.restAdapters  = restAdapters;
         this.entitiesStore = entitiesStore;
         this.typeRegistry  = typeRegistry;
         this.entityREST    = entityREST;
         this.entityAuditRepository = entityAuditRepository;
-        this.atlasDiscoveryService = atlasDiscoveryService;
+        this.instanceConverter = instanceConverter;
     }
 
     /**
@@ -1133,20 +1132,27 @@ public class EntityResource {
 
         AtlasPerfTracer perf = null;
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Audit events request for entity {}, start key {}, number of results required {}", guid, startKey, count);
-        }
-
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
-            List<EntityAuditEvent> events = entityAuditRepository.listEvents(guid, startKey, count);
+            List                   events   = entityAuditRepository.listEvents(guid, startKey, count);
+            List<EntityAuditEvent> v1Events = new ArrayList<>();
+
+            for (Object event : events) {
+                if (event instanceof EntityAuditEvent) {
+                    v1Events.add((EntityAuditEvent) event);
+                } else if (event instanceof EntityAuditEventV2) {
+                    v1Events.add(instanceConverter.toV1AuditEvent((EntityAuditEventV2) event));
+                } else {
+                    LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+                }
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.EVENTS, events);
+            response.put(AtlasClient.EVENTS, v1Events);
             return Response.ok(AtlasJson.toV1Json(response)).build();
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);

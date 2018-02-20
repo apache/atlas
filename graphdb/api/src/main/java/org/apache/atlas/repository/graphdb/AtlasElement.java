@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.atlas.AtlasException;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -85,7 +84,7 @@ public interface AtlasElement {
      * is needed for this because special logic is required to handle this situation
      * in some implementations.
      */
-    void setListProperty(String propertyName, List<String> values) throws AtlasException;
+    void setListProperty(String propertyName, List<String> values);
 
 
     /**

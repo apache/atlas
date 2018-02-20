@@ -213,7 +213,7 @@
                 "cardinality": "SET",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "NONE"
+            "propagateTags": "ONE_TO_TWO"
         },
         {
           "name": "process_dataset_outputs",
@@ -232,7 +232,7 @@
                 "isContainer": false,
                 "cardinality": "SET"
           },
-          "propagateTags": "NONE"
+          "propagateTags": "ONE_TO_TWO"
         }
     ]
 }
