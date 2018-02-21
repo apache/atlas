@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -38,7 +39,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
-import org.joda.time.DateTime;
+import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -446,6 +447,48 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         atlasClientV2.addClassifications(createHiveTable().getGuid(), Collections.singletonList(new AtlasClassification(piiTrait.getName())));
 
         assertEntityAudit(createHiveTable().getGuid(), EntityAuditEvent.EntityAuditAction.TAG_ADD);
+    }
+
+    @Test(dependsOnMethods = "testGetTraitNames")
+    public void testAddTraitWithValidityPeriod() throws Exception {
+        traitName = "PII_Trait" + randomString();
+
+        AtlasClassificationDef piiTrait = AtlasTypeUtil.createTraitTypeDef(traitName, Collections.<String>emptySet());
+        AtlasTypesDef          typesDef = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.singletonList(piiTrait), Collections.emptyList());
+
+        createType(typesDef);
+
+        String              tableGuid      = createHiveTable().getGuid();
+        AtlasClassification classification = new AtlasClassification(piiTrait.getName());
+        TimeBoundary        validityPeriod = new TimeBoundary("2018/03/01 00:00:00", "2018/04/01 00:00:00", "GMT");
+
+        classification.setEntityGuid(tableGuid);
+        classification.setValidityPeriod(validityPeriod);
+
+        atlasClientV2.addClassifications(tableGuid, Collections.singletonList(classification));
+
+        assertEntityAudit(tableGuid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
+
+        AtlasClassifications classifications = atlasClientV2.getClassifications(tableGuid);
+
+        assertNotNull(classifications);
+        assertNotNull(classifications.getList());
+        assertTrue(classifications.getList().size() > 1);
+
+        boolean foundClassification = false;
+        for (AtlasClassification entityClassification : classifications.getList()) {
+            if (StringUtils.equalsIgnoreCase(entityClassification.getTypeName(), piiTrait.getName())) {
+                foundClassification = true;
+
+                assertEquals(entityClassification.getTypeName(), piiTrait.getName());
+                assertEquals(entityClassification.getValidityPeriod(), validityPeriod);
+                assertEquals(entityClassification, classification);
+
+                break;
+            }
+        }
+
+        assertTrue(foundClassification, "classification '" + piiTrait.getName() + "' is missing for entity '" + tableGuid + "'");
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")

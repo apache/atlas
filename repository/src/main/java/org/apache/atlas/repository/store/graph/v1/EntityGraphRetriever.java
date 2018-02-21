@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -68,9 +69,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_PROPAGATE_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.edgeExists;
 import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
@@ -218,6 +217,14 @@ public final class EntityGraphRetriever {
 
         ret.setEntityGuid(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
         ret.setPropagate(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_PROPAGATE_KEY, Boolean.class));
+
+        String vpStartTime = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_STARTTIME_KEY, String.class);
+        String vpEndTime   = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_ENDTIME_KEY, String.class);
+        String vpTimeZone  = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_TIMEZONE_KEY, String.class);
+
+        if (vpStartTime != null || vpEndTime != null || vpTimeZone != null) {
+            ret.setValidityPeriod(new TimeBoundary(vpStartTime, vpEndTime, vpTimeZone));
+        }
 
         mapAttributes(classificationVertex, ret, null);
 

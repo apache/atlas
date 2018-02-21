@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TimeBoundary;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -50,8 +51,10 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String  entityGuid = null;
-    private boolean propagate  = true;
+    private String       entityGuid     = null;
+    private boolean      propagate      = true;
+    private TimeBoundary validityPeriod = null;
+
 
     public AtlasClassification() {
         this(null, null);
@@ -96,6 +99,14 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         this.propagate = propagate;
     }
 
+    public TimeBoundary getValidityPeriod() {
+        return validityPeriod;
+    }
+
+    public void setValidityPeriod(TimeBoundary validityPeriod) {
+        this.validityPeriod = validityPeriod;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) { return true; }
@@ -103,7 +114,8 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         if (!super.equals(o)) { return false; }
         AtlasClassification that = (AtlasClassification) o;
         return propagate == that.propagate &&
-               Objects.equals(entityGuid, that.entityGuid);
+               Objects.equals(entityGuid, that.entityGuid) &&
+               Objects.equals(validityPeriod, that.validityPeriod);
     }
 
     @Override
@@ -117,6 +129,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         super.toString(sb);
         sb.append("entityGuid='").append(entityGuid).append('\'');
         sb.append(", propagate=").append(propagate);
+        sb.append(", validityPeriod=").append(validityPeriod);
         sb.append('}');
         return sb.toString();
     }

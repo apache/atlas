@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -53,7 +54,6 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdg
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
@@ -1591,6 +1591,12 @@ public class EntityGraphMapper {
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification,
                                         AtlasEntityType entityType, AtlasVertex parentInstanceVertex, AtlasVertex traitInstanceVertex)
                                         throws AtlasBaseException {
+
+        TimeBoundary validityPeriod = classification.getValidityPeriod();
+
+        AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VALIDITY_PERIOD_STARTTIME_KEY, validityPeriod != null ? validityPeriod.getStartTime() : null);
+        AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VALIDITY_PERIOD_ENDTIME_KEY, validityPeriod != null ? validityPeriod.getEndTime() : null);
+        AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VALIDITY_PERIOD_TIMEZONE_KEY, validityPeriod != null ? validityPeriod.getTimeZone() : null);
 
         // map all the attributes to this newly created AtlasVertex
         mapAttributes(classification, traitInstanceVertex, operation, context);
