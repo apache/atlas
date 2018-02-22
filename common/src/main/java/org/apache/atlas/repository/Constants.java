@@ -116,11 +116,9 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_VERSION  = "version";
     public static final String TEMP_STRUCT_NAME_PREFIX = "__tempQueryResultStruct";
 
-    public static final String CLASSIFICATION_ENTITY_GUID                   = INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid";
-    public static final String CLASSIFICATION_PROPAGATE_KEY                 = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
-    public static final String CLASSIFICATION_VALIDITY_PERIOD_STARTTIME_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "vp_startTime";
-    public static final String CLASSIFICATION_VALIDITY_PERIOD_ENDTIME_KEY   = INTERNAL_PROPERTY_KEY_PREFIX + "vp_endTime";
-    public static final String CLASSIFICATION_VALIDITY_PERIOD_TIMEZONE_KEY  = INTERNAL_PROPERTY_KEY_PREFIX + "vp_timeZone";
+    public static final String CLASSIFICATION_ENTITY_GUID          = INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid";
+    public static final String CLASSIFICATION_PROPAGATE_KEY        = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
+    public static final String CLASSIFICATION_VALIDITY_PERIODS_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "validityPeriods";
 
     private Constants() {
     }

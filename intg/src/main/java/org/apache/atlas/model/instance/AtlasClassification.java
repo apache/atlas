@@ -19,10 +19,12 @@ package org.apache.atlas.model.instance;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,9 +53,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String       entityGuid     = null;
-    private boolean      propagate      = true;
-    private TimeBoundary validityPeriod = null;
+    private String             entityGuid      = null;
+    private boolean            propagate       = true;
+    private List<TimeBoundary> validityPeriods = null;
 
 
     public AtlasClassification() {
@@ -99,12 +101,25 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         this.propagate = propagate;
     }
 
-    public TimeBoundary getValidityPeriod() {
-        return validityPeriod;
+    public List<TimeBoundary> getValidityPeriods() {
+        return validityPeriods;
     }
 
-    public void setValidityPeriod(TimeBoundary validityPeriod) {
-        this.validityPeriod = validityPeriod;
+    public void setValidityPeriods(List<TimeBoundary> validityPeriods) {
+        this.validityPeriods = validityPeriods;
+    }
+
+    @JsonIgnore
+    public void addValityPeriod(TimeBoundary validityPeriod) {
+        List<TimeBoundary> vpList = this.validityPeriods;
+
+        if (vpList == null) {
+            vpList = new ArrayList<>();
+
+            this.validityPeriods = vpList;
+        }
+
+        vpList.add(validityPeriod);
     }
 
     @Override
@@ -115,7 +130,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         AtlasClassification that = (AtlasClassification) o;
         return propagate == that.propagate &&
                Objects.equals(entityGuid, that.entityGuid) &&
-               Objects.equals(validityPeriod, that.validityPeriod);
+               Objects.equals(validityPeriods, that.validityPeriods);
     }
 
     @Override
@@ -129,7 +144,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         super.toString(sb);
         sb.append("entityGuid='").append(entityGuid).append('\'');
         sb.append(", propagate=").append(propagate);
-        sb.append(", validityPeriod=").append(validityPeriod);
+        sb.append(", validityPeriods=").append(validityPeriods);
         sb.append('}');
         return sb.toString();
     }

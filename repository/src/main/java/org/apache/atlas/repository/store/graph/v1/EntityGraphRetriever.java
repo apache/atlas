@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -102,7 +103,8 @@ public final class EntityGraphRetriever {
     private final String CREATE_TIME    = "createTime";
     private final String QUALIFIED_NAME = "qualifiedName";
 
-    private static final GraphHelper graphHelper = GraphHelper.getInstance();
+    private static final List<TimeBoundary> TIME_BOUNDARIES_LIST = new ArrayList<>();
+    private static final GraphHelper        graphHelper          = GraphHelper.getInstance();
 
     private final AtlasTypeRegistry typeRegistry;
 
@@ -218,12 +220,10 @@ public final class EntityGraphRetriever {
         ret.setEntityGuid(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
         ret.setPropagate(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_PROPAGATE_KEY, Boolean.class));
 
-        String vpStartTime = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_STARTTIME_KEY, String.class);
-        String vpEndTime   = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_ENDTIME_KEY, String.class);
-        String vpTimeZone  = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIOD_TIMEZONE_KEY, String.class);
+        String strValidityPeriods = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
-        if (vpStartTime != null || vpEndTime != null || vpTimeZone != null) {
-            ret.setValidityPeriod(new TimeBoundary(vpStartTime, vpEndTime, vpTimeZone));
+        if (strValidityPeriods != null) {
+            ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST.getClass()));
         }
 
         mapAttributes(classificationVertex, ret, null);

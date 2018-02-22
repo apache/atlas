@@ -463,7 +463,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         TimeBoundary        validityPeriod = new TimeBoundary("2018/03/01 00:00:00", "2018/04/01 00:00:00", "GMT");
 
         classification.setEntityGuid(tableGuid);
-        classification.setValidityPeriod(validityPeriod);
+        classification.addValityPeriod(validityPeriod);
 
         atlasClientV2.addClassifications(tableGuid, Collections.singletonList(classification));
 
@@ -481,7 +481,9 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
                 foundClassification = true;
 
                 assertEquals(entityClassification.getTypeName(), piiTrait.getName());
-                assertEquals(entityClassification.getValidityPeriod(), validityPeriod);
+                assertNotNull(entityClassification.getValidityPeriods());
+                assertEquals(entityClassification.getValidityPeriods().size(), 1);
+                assertEquals(entityClassification.getValidityPeriods().get(0), validityPeriod);
                 assertEquals(entityClassification, classification);
 
                 break;
