@@ -1463,7 +1463,7 @@ public class EntityGraphMapper {
                 String classificationName       = classification.getTypeName();
                 String classificationEntityGuid = classification.getEntityGuid();
 
-                if (StringUtils.isNotEmpty(classificationEntityGuid) && StringUtils.equalsIgnoreCase(guid, classificationEntityGuid)) {
+                if (StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equalsIgnoreCase(guid, classificationEntityGuid)) {
                     throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
                 }
 
