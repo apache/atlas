@@ -356,54 +356,52 @@ public class AtlasInstanceConverter {
     }
 
     private EntityAuditEvent.EntityAuditAction getV1AuditAction(EntityAuditEventV2.EntityAuditAction v2AuditAction) {
-        EntityAuditEvent.EntityAuditAction ret = null;
-
         switch (v2AuditAction) {
             case ENTITY_CREATE:
+                return EntityAuditEvent.EntityAuditAction.ENTITY_CREATE;
             case ENTITY_UPDATE:
+                return EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE;
             case ENTITY_DELETE:
+                return EntityAuditEvent.EntityAuditAction.ENTITY_DELETE;
             case ENTITY_IMPORT_CREATE:
+                return EntityAuditEvent.EntityAuditAction.ENTITY_IMPORT_CREATE;
             case ENTITY_IMPORT_UPDATE:
+                return EntityAuditEvent.EntityAuditAction.ENTITY_IMPORT_UPDATE;
             case ENTITY_IMPORT_DELETE:
-                ret = EntityAuditEvent.EntityAuditAction.valueOf(v2AuditAction.name());
-                break;
+                return EntityAuditEvent.EntityAuditAction.ENTITY_IMPORT_DELETE;
             case CLASSIFICATION_ADD:
-                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_ADD.name());
-                break;
+                return EntityAuditEvent.EntityAuditAction.TAG_ADD;
             case CLASSIFICATION_DELETE:
-                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_DELETE.name());
-                break;
+                return EntityAuditEvent.EntityAuditAction.TAG_DELETE;
             case CLASSIFICATION_UPDATE:
-                ret = EntityAuditEvent.EntityAuditAction.valueOf(TAG_UPDATE.name());
-                break;
+                return EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
         }
 
-        return ret;
+        return null;
     }
 
     private EntityAuditEventV2.EntityAuditAction getV2AuditAction(EntityAuditEvent.EntityAuditAction v1AuditAction) {
-        EntityAuditEventV2.EntityAuditAction ret = null;
-
         switch (v1AuditAction) {
             case ENTITY_CREATE:
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_CREATE;
             case ENTITY_UPDATE:
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_UPDATE;
             case ENTITY_DELETE:
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_DELETE;
             case ENTITY_IMPORT_CREATE:
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_CREATE;
             case ENTITY_IMPORT_UPDATE:
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_UPDATE;
             case ENTITY_IMPORT_DELETE:
-                ret = EntityAuditEventV2.EntityAuditAction.valueOf(v1AuditAction.name());
-                break;
+                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_DELETE;
             case TAG_ADD:
-                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_ADD.name());
-                break;
+                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_ADD;
             case TAG_DELETE:
-                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_DELETE.name());
-                break;
+                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
             case TAG_UPDATE:
-                ret = EntityAuditEventV2.EntityAuditAction.valueOf(CLASSIFICATION_UPDATE.name());
-                break;
+                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
         }
 
-        return ret;
+        return null;
     }
 }

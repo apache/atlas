@@ -252,7 +252,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                     continue;
                 }
                 event.setUser(getResultString(result, COLUMN_USER));
-                event.setAction(EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
+                event.setAction(EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION)));
                 event.setDetails(getResultString(result, COLUMN_DETAIL));
 
                 if (persistEntityDefinition) {
@@ -362,7 +362,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                     continue;
                 }
                 event.setUser(getResultString(result, COLUMN_USER));
-                event.setAction(EntityAuditEvent.EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
+                event.setAction(EntityAuditEvent.EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION)));
                 event.setDetails(getResultString(result, COLUMN_DETAIL));
                 if (persistEntityDefinition) {
                     String colDef = getResultString(result, COLUMN_DEFINITION);

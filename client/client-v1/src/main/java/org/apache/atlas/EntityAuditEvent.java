@@ -47,7 +47,35 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class EntityAuditEvent implements Serializable {
     public enum EntityAuditAction {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE, TAG_UPDATE,
-        ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE,
+        ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE;
+
+        public static EntityAuditAction fromString(String strValue) {
+            switch (strValue) {
+                case "ENTITY_CREATE":
+                    return ENTITY_CREATE;
+                case "ENTITY_UPDATE":
+                    return ENTITY_UPDATE;
+                case "ENTITY_DELETE":
+                    return ENTITY_DELETE;
+                case "ENTITY_IMPORT_CREATE":
+                    return ENTITY_IMPORT_CREATE;
+                case "ENTITY_IMPORT_UPDATE":
+                    return ENTITY_IMPORT_UPDATE;
+                case "ENTITY_IMPORT_DELETE":
+                    return ENTITY_IMPORT_DELETE;
+                case "CLASSIFICATION_ADD":
+                case "TAG_ADD":
+                    return TAG_ADD;
+                case "CLASSIFICATION_DELETE":
+                case "TAG_DELETE":
+                    return TAG_DELETE;
+                case "CLASSIFICATION_UPDATE":
+                case "TAG_UPDATE":
+                    return TAG_UPDATE;
+            }
+
+            throw new IllegalArgumentException("No enum constant " + EntityAuditAction.class.getCanonicalName() + "." + strValue);
+        }
     }
 
     private String entityId;
