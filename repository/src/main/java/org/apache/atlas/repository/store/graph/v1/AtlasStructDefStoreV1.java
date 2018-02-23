@@ -19,6 +19,9 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -93,11 +96,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
             LOG.debug("==> AtlasStructDefStoreV1.create({}, {})", structDef, preCreateResult);
         }
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(structDef) : preCreateResult;
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, structDef), "create struct-def ", structDef.getName());
 
         if (CollectionUtils.isEmpty(structDef.getAttributeDefs())) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Missing attributes for structdef");
         }
+
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(structDef) : preCreateResult;
 
         AtlasStructDefStoreV1.updateVertexAddReferences(structDef, vertex, typeDefStore);
 
@@ -197,6 +202,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
             LOG.debug("==> AtlasStructDefStoreV1.updateByName({}, {})", name, structDef);
         }
 
+        AtlasStructDef existingDef = typeRegistry.getStructDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update struct-def ", name);
+
         validateType(structDef);
 
         AtlasType type = typeRegistry.getType(structDef.getName());
@@ -228,6 +237,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasStructDef existingDef = typeRegistry.getStructDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update struct-def ", (existingDef != null ? existingDef.getName() : guid));
 
         validateType(structDef);
 
@@ -261,6 +274,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
             LOG.debug("==> AtlasStructDefStoreV1.preDeleteByName({})", name);
         }
 
+        AtlasStructDef existingDef = typeRegistry.getStructDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete struct-def ", name);
+
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.STRUCT);
 
         if (AtlasGraphUtilsV1.typeHasInstanceVertex(name)) {
@@ -285,6 +302,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.preDeleteByGuid({})", guid);
         }
+
+        AtlasStructDef existingDef = typeRegistry.getStructDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete struct-def ", (existingDef != null ? existingDef.getName() : guid));
 
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.STRUCT);
 

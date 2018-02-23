@@ -19,6 +19,9 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.Constants;
@@ -83,11 +86,12 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult)
-        throws AtlasBaseException {
+    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, classificationDef), "create classification-def ", classificationDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef) : preCreateResult;
 
@@ -190,6 +194,10 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
         }
 
+        AtlasClassificationDef existingDef   = typeRegistry.getClassificationDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update classification-def ", name);
+
         validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
@@ -221,6 +229,10 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasClassificationDef existingDef   = typeRegistry.getClassificationDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update classification-def ", (existingDef != null ? existingDef.getName() : guid));
 
         validateType(classificationDef);
 
@@ -254,6 +266,10 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
             LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByName({})", name);
         }
 
+        AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete classification-def ", name);
+
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.TRAIT);
 
         if (AtlasGraphUtilsV1.typeHasInstanceVertex(name)) {
@@ -278,6 +294,10 @@ class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasClassif
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByGuid({})", guid);
         }
+
+        AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete classification-def ", (existingDef != null ? existingDef.getName() : guid));
 
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.TRAIT);
 

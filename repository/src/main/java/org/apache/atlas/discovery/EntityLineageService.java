@@ -22,15 +22,17 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
@@ -80,8 +82,14 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
         AtlasLineageInfo lineageInfo;
 
-        if (!entityExists(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entity), "read entity lineage: guid=", guid);
+
+        AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null || !entityType.getTypeAndAllSuperTypes().contains(AtlasClient.DATA_SET_SUPER_TYPE)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_DATASET, guid);
         }
 
         if (direction != null) {
@@ -129,10 +137,14 @@ public class EntityLineageService implements AtlasLineageService {
 
         ret.setDataType(AtlasTypeUtil.toClassTypeDefinition(hive_column));
 
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
-        AtlasEntity                        entity            = entityWithExtInfo.getEntity();
-        Map<String, AtlasEntity>           referredEntities  = entityWithExtInfo.getReferredEntities();
-        List<String>                       columnIds         = getColumnIds(entity);
+        AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
+                                             "read entity schema: guid=", guid);
+
+        Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
+        List<String>             columnIds        = getColumnIds(entity);
 
         if (MapUtils.isNotEmpty(referredEntities)) {
             List<Map<String, Object>> rows = referredEntities.entrySet()
@@ -244,21 +256,4 @@ public class EntityLineageService implements AtlasLineageService {
         }
         return lineageQuery;
     }
-
-    private boolean entityExists(String guid) {
-        boolean ret = false;
-        Iterator<AtlasVertex> results = graph.query()
-                                             .has(Constants.GUID_PROPERTY_KEY, guid)
-                                             .vertices().iterator();
-
-        while (results.hasNext()) {
-            AtlasVertex  entityVertex = results.next();
-            List<String> superTypes   = GraphHelper.getSuperTypeNames(entityVertex);
-
-            ret = (CollectionUtils.isNotEmpty(superTypes)) && superTypes.contains(AtlasClient.DATA_SET_SUPER_TYPE);
-        }
-
-        return ret;
-    }
-
 }

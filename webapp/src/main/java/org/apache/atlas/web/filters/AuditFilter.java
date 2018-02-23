@@ -21,7 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
-import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -48,9 +49,8 @@ import java.util.UUID;
  */
 @Component
 public class AuditFilter implements Filter {
+    private static final Logger LOG       = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
-    private static final Logger LOG = LoggerFactory.getLogger(AuditFilter.class);
-    private static final Logger METRICS_LOG = LoggerFactory.getLogger("METRICS");
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -60,25 +60,32 @@ public class AuditFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
-        final String requestTimeISO9601 = DateTimeHelper.formatDateUTC(new Date());
-        final HttpServletRequest httpRequest = (HttpServletRequest) request;
-        final String requestId = UUID.randomUUID().toString();
-        final Thread currentThread = Thread.currentThread();
-        final String oldName = currentThread.getName();
-        String user = getUserFromRequest(httpRequest);
+        final long                startTime          = System.currentTimeMillis();
+        final Date                requestTime         = new Date();
+        final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
+        final HttpServletResponse httpResponse       = (HttpServletResponse) response;
+        final String              requestId          = UUID.randomUUID().toString();
+        final Thread              currentThread      = Thread.currentThread();
+        final String              oldName            = currentThread.getName();
+        final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
+        final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
 
         try {
             currentThread.setName(formatName(oldName, requestId));
+
             RequestContextV1.clear();
             RequestContextV1 requestContext = RequestContextV1.get();
-            requestContext.setUser(user);
-            recordAudit(httpRequest, requestTimeISO9601, user);
+            requestContext.setUser(user, userGroups);
+
             filterChain.doFilter(request, response);
         } finally {
+            long timeTaken = System.currentTimeMillis() - startTime;
+
+            recordAudit(httpRequest, requestTime, user, httpResponse.getStatus(), timeTaken);
+
             // put the request id into the response so users can trace logs for this request
-            ((HttpServletResponse) response).setHeader(AtlasClient.REQUEST_ID, requestId);
+            httpResponse.setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
-            recordMetrics();
             RequestContextV1.clear();
         }
     }
@@ -87,17 +94,14 @@ public class AuditFilter implements Filter {
         return oldName + " - " + requestId;
     }
 
-    private void recordAudit(HttpServletRequest httpRequest, String whenISO9601, String who) {
-        final String fromHost = httpRequest.getRemoteHost();
+    private void recordAudit(HttpServletRequest httpRequest, Date when, String who, int httpStatus, long timeTaken) {
         final String fromAddress = httpRequest.getRemoteAddr();
         final String whatRequest = httpRequest.getMethod();
-        final String whatURL = Servlets.getRequestURL(httpRequest);
-        final String whatAddrs = httpRequest.getLocalAddr();
-
-        final String whatUrlPath = httpRequest.getRequestURL().toString();//url path without query string
+        final String whatURL     = Servlets.getRequestURL(httpRequest);
+        final String whatUrlPath = httpRequest.getRequestURL().toString(); //url path without query string
 
         if (!isOperationExcludedFromAudit(whatRequest, whatUrlPath.toLowerCase(), null)) {
-            audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
+            audit(new AuditLog(who, fromAddress, whatRequest, whatURL, when, httpStatus, timeTaken));
         } else {
             if(LOG.isDebugEnabled()) {
                 LOG.debug(" Skipping Audit for {} ", whatURL);
@@ -105,25 +109,11 @@ public class AuditFilter implements Filter {
         }
     }
 
-    private String getUserFromRequest(HttpServletRequest httpRequest) {
-        // look for the user in the request
-        final String userFromRequest = Servlets.getUserFromRequest(httpRequest);
-        return userFromRequest == null ? "UNKNOWN" : userFromRequest;
-    }
-
-    public static void audit(String who, String fromAddress, String whatRequest, String fromHost, String whatURL, String whatAddrs,
-            String whenISO9601) {
-        AUDIT_LOG.info("Audit: {}/{}-{} performed request {} {} ({}) at time {}", who, fromAddress, fromHost, whatRequest, whatURL,
-                whatAddrs, whenISO9601);
-    }
-
-    public static void recordMetrics() {
-        //record metrics
-        Metrics requestMetrics = RequestContextV1.getMetrics();
-        if (!requestMetrics.isEmpty()) {
-            METRICS_LOG.info("{}", requestMetrics);
+    public static void audit(AuditLog auditLog) {
+        if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
+            AUDIT_LOG.info(auditLog.toString());
         }
-     }
+    }
 
     boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
        try {
@@ -136,5 +126,54 @@ public class AuditFilter implements Filter {
     @Override
     public void destroy() {
         // do nothing
+    }
+
+    public static class AuditLog {
+        private static final char FIELD_SEP = '|';
+
+        private final String userName;
+        private final String fromAddress;
+        private final String requestMethod;
+        private final String requestUrl;
+        private final Date   requestTime;
+        private       int    httpStatus;
+        private       long   timeTaken;
+
+        public AuditLog(String userName, String fromAddress, String requestMethod, String requestUrl) {
+            this(userName, fromAddress, requestMethod, requestUrl, new Date());
+        }
+
+        public AuditLog(String userName, String fromAddress, String requestMethod, String requestUrl, Date requestTime) {
+            this(userName, fromAddress, requestMethod, requestUrl, requestTime, HttpServletResponse.SC_OK, 0);
+        }
+
+        public AuditLog(String userName, String fromAddress, String requestMethod, String requestUrl, Date requestTime, int httpStatus, long timeTaken) {
+            this.userName      = userName;
+            this.fromAddress   = fromAddress;
+            this.requestMethod = requestMethod;
+            this.requestUrl    = requestUrl;
+            this.requestTime   = requestTime;
+            this.httpStatus    = httpStatus;
+            this.timeTaken     = timeTaken;
+        }
+
+        public void setHttpStatus(int httpStatus) { this.httpStatus = httpStatus; }
+
+        public void setTimeTaken(long timeTaken) { this.timeTaken = timeTaken; }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(DateTimeHelper.formatDateUTC(requestTime))
+              .append(FIELD_SEP).append(userName)
+              .append(FIELD_SEP).append(fromAddress)
+              .append(FIELD_SEP).append(requestMethod)
+              .append(FIELD_SEP).append(requestUrl)
+              .append(FIELD_SEP).append(httpStatus)
+              .append(FIELD_SEP).append(timeTaken);
+
+            return sb.toString();
+        }
     }
 }

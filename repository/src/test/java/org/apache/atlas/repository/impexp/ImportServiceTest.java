@@ -70,7 +70,7 @@ public class ImportServiceTest {
     @BeforeTest
     public void setupTest() {
         RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
     @AfterClass

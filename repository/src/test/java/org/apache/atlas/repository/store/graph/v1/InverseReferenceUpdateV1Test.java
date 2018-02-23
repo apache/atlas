@@ -75,7 +75,7 @@ public abstract class InverseReferenceUpdateV1Test {
     @BeforeClass
     public void setUp() throws Exception {
         RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
                                                               TestUtilsV2.defineInverseReferenceTestTypes()
@@ -109,7 +109,7 @@ public abstract class InverseReferenceUpdateV1Test {
     @BeforeMethod
     public void init() throws Exception {
         RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
     @Test

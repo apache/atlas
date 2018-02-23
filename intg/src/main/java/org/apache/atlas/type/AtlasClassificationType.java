@@ -45,6 +45,7 @@ public class AtlasClassificationType extends AtlasStructType {
     private Set<String>                   subTypes                 = Collections.emptySet();
     private Set<String>                   allSubTypes              = Collections.emptySet();
     private Set<String>                   typeAndAllSubTypes       = Collections.emptySet();
+    private Set<String>                   typeAndAllSuperTypes     = Collections.emptySet();
     private String                        typeAndAllSubTypesQryStr = "";
 
     // we need to store the entityTypes specified in our supertypes. i.e. our parent classificationDefs may specify more entityTypes
@@ -113,6 +114,10 @@ public class AtlasClassificationType extends AtlasStructType {
         this.entityTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
+
+        this.typeAndAllSuperTypes = new HashSet<>(this.allSuperTypes);
+        this.typeAndAllSuperTypes.add(this.getTypeName());
+        this.typeAndAllSuperTypes = Collections.unmodifiableSet(this.typeAndAllSuperTypes);
     }
 
     @Override
@@ -240,6 +245,8 @@ public class AtlasClassificationType extends AtlasStructType {
     public Set<String> getAllSubTypes() { return allSubTypes; }
 
     public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
+
+    public Set<String> getTypeAndAllSuperTypes() { return typeAndAllSuperTypes; }
 
     public String getTypeQryStr() { return typeQryStr; }
 

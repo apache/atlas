@@ -173,30 +173,32 @@ public class AtlasRepositoryConfiguration {
      * @throws AtlasException
      */
     public static List<String> getAuditExcludedOperations(Configuration config) throws AtlasException {
-        if (config == null) {
-            try {
-                config = ApplicationProperties.get();
-            } catch (AtlasException e) {
-                LOG.error(" Error reading operations for auditing ", e);
-                throw e;
-            }
-        }
         if (skippedOperations == null) {
-            skippedOperations = new ArrayList<String>();
-                String[] skipAuditForOperations = config
-                        .getStringArray(AUDIT_EXCLUDED_OPERATIONS);
-                if (skipAuditForOperations != null
-                        && skipAuditForOperations.length > 0) {
-                    for (String skippedOperation : skipAuditForOperations) {
-                        String[] excludedOperations = skippedOperation.trim().toLowerCase().split(SEPARATOR);
-                        if (excludedOperations!= null && excludedOperations.length == 2) {
-                            skippedOperations.add(skippedOperation.toLowerCase());
-                        } else {
-                            LOG.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
-                        }
+            if (config == null) {
+                try {
+                    config = ApplicationProperties.get();
+                } catch (AtlasException e) {
+                    LOG.error(" Error reading operations for auditing ", e);
+                    throw e;
+                }
+            }
+
+            skippedOperations = new ArrayList<>();
+
+            String[] skipAuditForOperations = config.getStringArray(AUDIT_EXCLUDED_OPERATIONS);
+
+            if (skipAuditForOperations != null && skipAuditForOperations.length > 0) {
+                for (String skippedOperation : skipAuditForOperations) {
+                    String[] excludedOperations = skippedOperation.trim().toLowerCase().split(SEPARATOR);
+                    if (excludedOperations!= null && excludedOperations.length == 2) {
+                        skippedOperations.add(skippedOperation.toLowerCase());
+                    } else {
+                        LOG.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
                     }
                 }
+            }
         }
+
         return skippedOperations;
     }
 

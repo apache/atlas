@@ -20,65 +20,71 @@ package org.apache.atlas.authorize;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthorizer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AtlasAuthorizerFactory {
 
+public class AtlasAuthorizerFactory {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizerFactory.class);
-    private static final String SIMPLE_AUTHORIZER = "org.apache.atlas.authorize.simple.SimpleAtlasAuthorizer";
-    private static final String RANGER_AUTHORIZER =
-        "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+
+    private static final String NONE_AUTHORIZER   = AtlasNoneAuthorizer.class.getName();
+    private static final String SIMPLE_AUTHORIZER = AtlasSimpleAuthorizer.class.getName();
+    private static final String RANGER_AUTHORIZER = "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+
     private static volatile AtlasAuthorizer INSTANCE = null;
-    private static boolean isDebugEnabled = LOG.isDebugEnabled();
 
     public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
-        Configuration configuration = null;
-        try {
-            configuration = ApplicationProperties.get();
-        } catch (AtlasException e) {
-            if (LOG.isErrorEnabled()) {
-                LOG.error("Exception while fetching configuration. ", e);
-            }
-        }
         AtlasAuthorizer ret = INSTANCE;
 
         if (ret == null) {
             synchronized (AtlasAuthorizerFactory.class) {
                 if (INSTANCE == null) {
-                    String authorizerClass =
-                        configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+                    Configuration configuration = null;
+
+                    try {
+                        configuration = ApplicationProperties.get();
+                    } catch (AtlasException e) {
+                        LOG.error("Exception while fetching configuration", e);
+                    }
+
+                    String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
 
                     if (StringUtils.isNotEmpty(authorizerClass)) {
                         if (StringUtils.equalsIgnoreCase(authorizerClass, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
                         } else if (StringUtils.equalsIgnoreCase(authorizerClass, "RANGER")) {
                             authorizerClass = RANGER_AUTHORIZER;
+                        } else if (StringUtils.equalsIgnoreCase(authorizerClass, "NONE")) {
+                            authorizerClass = NONE_AUTHORIZER;
                         }
                     } else {
                         authorizerClass = SIMPLE_AUTHORIZER;
                     }
 
-                    if (isDebugEnabled) {
-                        LOG.debug("Initializing Authorizer :: {}", authorizerClass);
-                    }
+                    LOG.info("Initializing Authorizer {}", authorizerClass);
+
                     try {
                         Class authorizerMetaObject = Class.forName(authorizerClass);
+
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
+
+                            INSTANCE.init();
                         }
                     } catch (Exception e) {
-                        LOG.error("Error while creating authorizer of type '{}", authorizerClass, e);
-                        throw new AtlasAuthorizationException("Error while creating authorizer of type '"
-                            + authorizerClass + "'", e);
+                        LOG.error("Error while creating authorizer of type {}", authorizerClass, e);
+
+                        throw new AtlasAuthorizationException("Error while creating authorizer of type '" + authorizerClass + "'", e);
                     }
-                    ret = INSTANCE;
                 }
+
+                ret = INSTANCE;
             }
         }
+
         return ret;
     }
-
 }

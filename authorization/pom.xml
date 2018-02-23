@@ -36,9 +36,19 @@
       </dependency>
 
       <dependency>
+          <groupId>org.apache.atlas</groupId>
+          <artifactId>atlas-intg</artifactId>
+      </dependency>
+
+      <dependency>
           <groupId>javax.servlet</groupId>
           <artifactId>javax.servlet-api</artifactId>
           <version>${javax.servlet.version}</version>
+      </dependency>
+ 
+      <dependency>
+          <groupId>org.springframework.security</groupId>
+          <artifactId>spring-security-core</artifactId>
       </dependency>
 
       <dependency>

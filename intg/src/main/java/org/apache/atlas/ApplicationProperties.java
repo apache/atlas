@@ -174,57 +174,57 @@ public final class ApplicationProperties extends PropertiesConfiguration {
      * @throws AtlasException if no file was found or if there was an error loading the file
      */
     public static InputStream getFileAsInputStream(Configuration configuration, String propertyName, String defaultFileName) throws AtlasException {
-        File fileToLoad = null;
-        String fileName = configuration.getString(propertyName);
+        File   fileToLoad = null;
+        String fileName   = configuration.getString(propertyName);
+
         if (fileName == null) {
             if (defaultFileName == null) {
                 throw new AtlasException(propertyName + " property not set and no default value specified");
             }
+
+            LOG.info("{} property not set; defaulting to {}", propertyName, defaultFileName);
+
             fileName = defaultFileName;
+
             String atlasConfDir = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+
             if (atlasConfDir != null) {
                 // Look for default filename in Atlas config directory
                 fileToLoad = new File(atlasConfDir, fileName);
-            }
-            else {
+            } else {
                 // Look for default filename under the working directory
                 fileToLoad = new File(fileName);
             }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{} property not set - defaulting to {}", propertyName, fileToLoad.getPath());
-            }
-        }
-        else {
+        } else {
             // Look for configured filename
             fileToLoad = new File(fileName);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Using {} property setting: {}", propertyName, fileToLoad.getPath());
-            }
         }
 
         InputStream inStr = null;
+
         if (fileToLoad.exists()) {
             try {
+                LOG.info("Loading file {} from {}", fileName, fileToLoad.getPath());
+
                 inStr = new FileInputStream(fileToLoad);
             } catch (FileNotFoundException e) {
                 throw new AtlasException("Error loading file " + fileName, e);
             }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Loaded file from : {}", fileToLoad.getPath());
-            }
-        }
-        else {
+        } else {
             // Look for file as class loader resource
             inStr = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+
             if (inStr == null) {
                 String msg = fileName + " not found in file system or as class loader resource";
+
                 LOG.error(msg);
+
                 throw new AtlasException(msg);
             }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Loaded {} as resource from : {}", fileName, Thread.currentThread().getContextClassLoader().getResource(fileName).toString());
-            }
+
+            LOG.info("Loaded {} as resource from {}", fileName, Thread.currentThread().getContextClassLoader().getResource(fileName).toString());
         }
+
         return inStr;
     }
 

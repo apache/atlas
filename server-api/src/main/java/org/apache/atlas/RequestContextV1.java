@@ -18,7 +18,6 @@
 
 package org.apache.atlas;
 
-import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.slf4j.Logger;
@@ -34,10 +33,10 @@ public class RequestContextV1 {
     private final Map<String, AtlasObjectId>          updatedEntities = new HashMap<>();
     private final Map<String, AtlasObjectId>          deletedEntities = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo> entityCacheV2   = new HashMap<>();
-    private final Metrics                             metrics         = new Metrics();
     private final long                                requestTime     = System.currentTimeMillis();
 
-    private String user;
+    private String      user;
+    private Set<String> userGroups;
 
     private RequestContextV1() {
     }
@@ -71,8 +70,13 @@ public class RequestContextV1 {
         return user;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public Set<String> getUserGroups() {
+        return userGroups;
+    }
+
+    public void setUser(String user, Set<String> userGroups) {
+        this.user       = user;
+        this.userGroups = userGroups;
     }
 
     public void recordEntityUpdate(AtlasObjectId entity) {
@@ -126,9 +130,5 @@ public class RequestContextV1 {
 
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
-    }
-
-    public static Metrics getMetrics() {
-        return get().metrics;
     }
 }

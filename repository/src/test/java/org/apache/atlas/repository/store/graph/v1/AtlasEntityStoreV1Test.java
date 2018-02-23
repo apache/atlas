@@ -111,7 +111,7 @@ public class AtlasEntityStoreV1Test {
     @BeforeClass
     public void setUp() throws Exception {
         RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
 
         new GraphBackedSearchIndexer(typeRegistry);
 
@@ -156,7 +156,7 @@ public class AtlasEntityStoreV1Test {
     public void init() throws Exception {
         entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
         RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
     @Test

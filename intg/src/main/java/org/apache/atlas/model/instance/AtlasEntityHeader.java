@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.commons.collections.CollectionUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -95,6 +97,20 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setDisplayText(other.getDisplayText());
             setClassificationNames(other.getClassificationNames());
             setClassifications(other.getClassifications());
+        }
+    }
+
+    public AtlasEntityHeader(AtlasEntity entity){
+        super(entity.getTypeName(), entity.getAttributes());
+        setGuid(entity.getGuid());
+        setClassifications(entity.getClassifications());
+
+        if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+            this.classificationNames = new ArrayList<>(entity.getClassifications().size());
+
+            for (AtlasClassification classification : entity.getClassifications()) {
+                this.classificationNames.add(classification.getTypeName());
+            }
         }
     }
 

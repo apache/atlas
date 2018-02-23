@@ -170,6 +170,22 @@ public final class EntityGraphRetriever {
         return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
     }
 
+    public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(String guid) throws AtlasBaseException {
+        return toAtlasEntityHeaderWithClassifications(getEntityVertex(guid), Collections.emptySet());
+    }
+
+    public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
+        return toAtlasEntityHeaderWithClassifications(entityVertex, Collections.emptySet());
+    }
+
+    public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+        AtlasEntityHeader ret = toAtlasEntityHeader(entityVertex, attributes);
+
+        ret.setClassifications(getClassifications(entityVertex));
+
+        return ret;
+    }
+
     public AtlasEntityHeader toAtlasEntityHeader(AtlasEntity entity) {
         AtlasEntityHeader ret        = null;
         String            typeName   = entity.getTypeName();
@@ -187,6 +203,19 @@ public final class EntityGraphRetriever {
             }
 
             ret = new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), uniqueAttributes);
+
+            if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+                List<AtlasClassification> classifications     = new ArrayList<>(entity.getClassifications().size());
+                List<String>              classificationNames = new ArrayList<>(entity.getClassifications().size());
+
+                for (AtlasClassification classification : entity.getClassifications()) {
+                    classifications.add(classification);
+                    classificationNames.add(classification.getTypeName());
+                }
+
+                ret.setClassifications(classifications);
+                ret.setClassificationNames(classificationNames);
+            }
         }
 
         return ret;
@@ -218,7 +247,7 @@ public final class EntityGraphRetriever {
         AtlasClassification ret = new AtlasClassification(getTypeName(classificationVertex));
 
         ret.setEntityGuid(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
-        ret.setPropagate(AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_PROPAGATE_KEY, Boolean.class));
+        ret.setPropagate(isPropagationEnabled(classificationVertex));
 
         String strValidityPeriods = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 

@@ -59,24 +59,6 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
     }
 
 
-    @Test(enabled = true)
-    public void testSimpleLoginAndAuthorizationWithValidCrendentialsAndInvalidAccessToResource()
-            throws Exception {
-        try {
-            URL url = new URL("http://localhost:31000/api/atlas/admin/stack");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            String userpassword = "rangertagsync:rangertagsync"; //right password with no policy for taxonomies api
-            String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
-            connection.setRequestProperty("Authorization", "Basic " +
-                    encodedAuthorization);
-            connection.connect();
-            assertEquals(connection.getResponseCode(), 403);
-
-        } catch (Exception e) {
-            Assert.fail("Failed with exception " + e.getMessage());
-        }
-    }
 
 
     @Test(enabled = true)

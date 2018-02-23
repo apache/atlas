@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -150,6 +151,20 @@ public class AtlasJson {
                 LOG.error("AtlasType.fromJson()", e);
 
                 ret = null;
+            }
+        }
+
+        return ret;
+    }
+
+    public static <T> T fromJson(InputStream inputStream, Class<T> type) throws IOException {
+        T ret = null;
+
+        if (inputStream != null) {
+            ret = mapper.readValue(inputStream, type);
+
+            if (ret instanceof Struct) {
+                ((Struct) ret).normalize();
             }
         }
 

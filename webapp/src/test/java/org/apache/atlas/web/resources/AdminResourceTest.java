@@ -51,7 +51,7 @@ public class AdminResourceTest {
 
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null);
         Response response = adminResource.getStatus();
         assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
         JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
@@ -62,7 +62,7 @@ public class AdminResourceTest {
     public void testResourceGetsValueFromServiceState() throws IOException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null);
         Response response = adminResource.getStatus();
 
         verify(serviceState).getState();

@@ -18,6 +18,9 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.Constants;
@@ -60,6 +63,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
+
+
         AtlasVertex ret = typeDefStore.findTypeVertexByName(entityDef.getName());
 
         if (ret != null) {
@@ -82,6 +87,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.create({}, {})", entityDef, preCreateResult);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, entityDef), "create entity-def ", entityDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(entityDef) : preCreateResult;
 
@@ -184,6 +191,10 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
             LOG.debug("==> AtlasEntityDefStoreV1.updateByName({}, {})", name, entityDef);
         }
 
+        AtlasEntityDef existingDef = typeRegistry.getEntityDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update entity-def ", name);
+
         validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
@@ -215,6 +226,10 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasEntityDef existingDef = typeRegistry.getEntityDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update entity-def ", (existingDef != null ? existingDef.getName() : guid));
 
         validateType(entityDef);
 
@@ -248,6 +263,10 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
             LOG.debug("==> AtlasEntityDefStoreV1.preDeleteByName({})", name);
         }
 
+        AtlasEntityDef existingDef = typeRegistry.getEntityDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete entity-def ", name);
+
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
 
         if (AtlasGraphUtilsV1.typeHasInstanceVertex(name)) {
@@ -277,6 +296,10 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEntityDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.preDeleteByGuid({})", guid);
         }
+
+        AtlasEntityDef existingDef = typeRegistry.getEntityDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete entity-def ", (existingDef != null ? existingDef.getName() : guid));
 
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 

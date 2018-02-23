@@ -328,10 +328,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     try {
                         String requestUser = httpRequest.getRemoteUser();
                         NDC.push(requestUser + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
-                        RequestContextV1 requestContext = RequestContextV1.get();
-                        if (requestContext != null) {
-                            requestContext.setUser(requestUser);
-                        }
+
                         LOG.info("Request from authenticated user: {}, URL={}", requestUser,
                                 Servlets.getRequestURI(httpRequest));
 

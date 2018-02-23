@@ -22,9 +22,10 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasActionTypes;
-import org.apache.atlas.authorize.AtlasResourceTypes;
-import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
@@ -38,6 +39,7 @@ import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
@@ -97,6 +99,8 @@ public class AdminResource {
     @Context
     private HttpServletResponse httpServletResponse;
 
+    private final AtlasTypeRegistry typeRegistry;
+
     private final ReentrantLock importExportOperationLock;
 
     private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
@@ -126,12 +130,14 @@ public class AdminResource {
 
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
-                         ExportService exportService, ImportService importService, SearchTracker activeSearches) {
+                         ExportService exportService, ImportService importService,
+                         SearchTracker activeSearches, AtlasTypeRegistry typeRegistry) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
         this.exportService = exportService;
         this.importService = importService;
         this.activeSearches = activeSearches;
+        this.typeRegistry = typeRegistry;
         importExportOperationLock = new ReentrantLock();
     }
 
@@ -249,10 +255,8 @@ public class AdminResource {
                 groups.add(c.getAuthority());
             }
 
-            isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                    AtlasActionTypes.UPDATE, userName, groups, httpServletRequest);
-            isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                    AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
+            isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE));
+            isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE));
         }
 
         Map<String, Object> responseData = new HashMap<>();
@@ -305,6 +309,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.export()");
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export");
+
         acquireExportImportLock("export");
 
         ZipSink exportSink = null;
@@ -351,6 +357,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.importData(jsonData={}, inputStream={})", jsonData, (inputStream != null));
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importData");
+
         acquireExportImportLock("import");
         AtlasImportResult result;
 
@@ -383,6 +391,8 @@ public class AdminResource {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.importFile()");
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importFile");
 
         acquireExportImportLock("importFile");
 

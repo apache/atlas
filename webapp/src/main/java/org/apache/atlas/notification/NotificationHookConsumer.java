@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import kafka.utils.ShutdownableThread;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
@@ -53,8 +52,8 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AuditFilter;
+import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.commons.configuration.Configuration;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -70,10 +69,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.atlas.AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE;
-import static org.apache.atlas.AtlasClientV2.API_V2.UPDATE_ENTITY;
-import static org.apache.atlas.AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE;
-
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
  */
@@ -85,7 +80,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final Logger PERF_LOG   = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
     private static final Logger FAILED_LOG = LoggerFactory.getLogger("FAILED");
 
-    private static final String LOCALHOST         = "localhost";
+    private static final int    SC_OK          = 200;
+    private static final int    SC_BAD_REQUEST = 400;
     private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
 
     public static final String CONSUMER_THREADS_PROPERTY         = "atlas.notification.hook.numthreads";
@@ -353,6 +349,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             AtlasPerfTracer  perf        = null;
             HookNotification message     = kafkaMsg.getMessage();
             String           messageUser = message.getUser();
+            long             startTime   = System.currentTimeMillis();
+            boolean          isFailedMsg = false;
+            AuditLog         auditLog = null;
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, message.getType().name());
@@ -368,17 +367,17 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     try {
                         RequestContextV1 requestContext = RequestContextV1.get();
 
-                        requestContext.setUser(messageUser);
+                        requestContext.setUser(messageUser, null);
 
                         switch (message.getType()) {
                             case ENTITY_CREATE: {
                                 final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
                                 final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = AtlasClient.API_V1.CREATE_ENTITY;
-
-                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClient.API_V1.CREATE_ENTITY.getMethod(),
+                                                            AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
                                 }
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
@@ -390,9 +389,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final Referenceable              referenceable        = partialUpdateRequest.getEntity();
                                 final AtlasEntitiesWithExtInfo   entities             = instanceConverter.toAtlasEntity(referenceable);
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = UPDATE_ENTITY_BY_ATTRIBUTE;
-                                    audit(messageUser, api.getMethod(), String.format(api.getNormalizedPath(), partialUpdateRequest.getTypeName()));
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getMethod(),
+                                                            String.format(AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), partialUpdateRequest.getTypeName()));
                                 }
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
@@ -408,9 +408,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             case ENTITY_DELETE: {
                                 final EntityDeleteRequest deleteRequest = (EntityDeleteRequest) message;
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = DELETE_ENTITY_BY_ATTRIBUTE;
-                                    audit(messageUser, api.getMethod(), String.format(api.getNormalizedPath(), deleteRequest.getTypeName()));
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
+                                                            String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), deleteRequest.getTypeName()));
                                 }
 
                                 try {
@@ -427,10 +428,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final EntityUpdateRequest      updateRequest = (EntityUpdateRequest) message;
                                 final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(updateRequest.getEntities());
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = UPDATE_ENTITY;
-
-                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
@@ -441,9 +442,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final EntityCreateRequestV2 createRequestV2 = (EntityCreateRequestV2) message;
                                 final AtlasEntitiesWithExtInfo entities        = createRequestV2.getEntities();
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = AtlasClientV2.API_V2.CREATE_ENTITY;
-                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(),
+                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
                                 }
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
@@ -455,9 +457,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
                                 final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = AtlasClientV2.API_V2.UPDATE_ENTITY;
-                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
                                 atlasEntityStore.updateEntity(entityId, entity, true);
@@ -468,9 +471,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 final EntityUpdateRequestV2    updateRequest = (EntityUpdateRequestV2) message;
                                 final AtlasEntitiesWithExtInfo entities      = updateRequest.getEntities();
 
-                                if (numRetries == 0) { // audit only on the first attempt
-                                    AtlasBaseClient.API api = AtlasClientV2.API_V2.UPDATE_ENTITY;
-                                    audit(messageUser, api.getMethod(), api.getNormalizedPath());
+                                if (auditLog == null) {
+                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
+                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
@@ -483,9 +487,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 try {
                                     for (AtlasObjectId entity : entities) {
-                                        if (numRetries == 0) { // audit only on the first attempt
-                                            AtlasBaseClient.API api = AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE;
-                                            audit(messageUser, api.getMethod(), String.format(api.getNormalizedPath(), entity.getTypeName()));
+                                        if (auditLog == null) {
+                                            auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
+                                                                    AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
+                                                                    String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), entity.getTypeName()));
                                         }
 
                                         AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
@@ -516,6 +521,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         if (numRetries == (maxRetries - 1)) {
                             LOG.warn("Max retries exceeded for message {}", message, e);
 
+                            isFailedMsg = true;
+
                             failedMessages.add(message);
 
                             if (failedMessages.size() >= failedMsgCacheSize) {
@@ -527,9 +534,17 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         RequestContextV1.clear();
                     }
                 }
+
                 commit(kafkaMsg);
             } finally {
                 AtlasPerfTracer.log(perf);
+
+                if (auditLog != null) {
+                    auditLog.setHttpStatus(isFailedMsg ? SC_BAD_REQUEST : SC_OK);
+                    auditLog.setTimeTaken(System.currentTimeMillis() - startTime);
+
+                    AuditFilter.audit(auditLog);
+                }
             }
         }
 
@@ -596,13 +611,5 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             LOG.info("<== HookConsumer shutdown()");
         }
-    }
-
-    private void audit(String messageUser, String method, String path) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> audit({},{}, {})", messageUser, method, path);
-        }
-
-        AuditFilter.audit(messageUser, THREADNAME_PREFIX, method, LOCALHOST, path, LOCALHOST, DateTimeHelper.formatDateUTC(new Date()));
     }
 }

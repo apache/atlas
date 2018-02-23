@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,6 +18,30 @@
 
 package org.apache.atlas.authorize;
 
-public enum AtlasResourceTypes {
-    UNKNOWN, ENTITY, TYPE, OPERATION, RELATIONSHIP
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+public class AtlasNoneAuthorizer implements AtlasAuthorizer {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasNoneAuthorizer.class);
+
+    public void init() {
+        LOG.info("AtlasNoneAuthorizer.init()");
+    }
+
+    public void cleanUp() {
+        LOG.info("AtlasNoneAuthorizer.cleanUp()");
+    }
+
+    public boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
+
+    public boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
+
+    public boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
 }

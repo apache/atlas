@@ -17,6 +17,30 @@
  */
 package org.apache.atlas.authorize;
 
-public enum AtlasActionTypes {
-    READ, CREATE, UPDATE, DELETE
+public enum AtlasPrivilege {
+     TYPE_CREATE("type-create"),
+     TYPE_UPDATE("type-update"),
+     TYPE_DELETE("type-delete"),
+
+     ENTITY_READ("entity-read"),
+     ENTITY_CREATE("entity-create"),
+     ENTITY_UPDATE("entity-update"),
+     ENTITY_DELETE("entity-delete"),
+     ENTITY_READ_CLASSIFICATION("entity-read-classification"),
+     ENTITY_ADD_CLASSIFICATION("entity-add-classification"),
+     ENTITY_UPDATE_CLASSIFICATION("entity-update-classification"),
+     ENTITY_REMOVE_CLASSIFICATION("entity-remove-classification"),
+
+     ADMIN_EXPORT("admin-export"),
+     ADMIN_IMPORT("admin-import");
+
+     private final String type;
+
+     AtlasPrivilege(String actionType){
+           this.type = actionType;
+     }
+
+     public String getType() {
+          return type;
+     }
 }

@@ -401,6 +401,8 @@ public class TypesREST {
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
+
+
             typeDefStore.deleteTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
