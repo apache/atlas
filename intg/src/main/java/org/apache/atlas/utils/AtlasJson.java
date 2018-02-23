@@ -39,6 +39,7 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
+import org.apache.atlas.v1.model.notification.EntityNotificationV2;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.*;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -385,6 +386,10 @@ public class AtlasJson {
                 switch (notificationType) {
                     case ENTITY_NOTIFICATION_V1:
                         ret = mapper.treeToValue(root, EntityNotificationV1.class);
+                        break;
+
+                    case ENTITY_NOTIFICATION_V2:
+                        ret = mapper.treeToValue(root, EntityNotificationV2.class);
                         break;
                 }
             }
