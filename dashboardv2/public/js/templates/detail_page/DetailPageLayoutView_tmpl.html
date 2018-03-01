@@ -26,11 +26,16 @@
         <div data-id="editButtonContainer" class="pull-right"></div>
         {{/if}}
         <div class="form-group">
-            <span class="control-label-sm-pr pull-left">Tags:</span>
+            <span class="control-label-sm-pr pull-left">Classifications:</span>
             <div class="pull-left" data-id="tagList">
-                <button class="btn btn-action btn-sm" title="Add Tag" data-id="addTag">
+                <button class="btn btn-action btn-sm" title="Add Classification" data-id="addTag">
                     <i class="fa fa-plus"> </i>
                 </button>
+            </div>
+        </div>
+         <div class="form-group" style="display: none;" data-id="propagatedTagDiv">
+            <span class="control-label-sm-pr pull-left">Propagated Classifications:</span>
+            <div class="pull-left" data-id="propagatedTagList">
             </div>
         </div>
     </div>
@@ -75,7 +80,7 @@
                         <div class="col-sm-12">
                             <ul class="nav nav-tabs ">
                                 <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                                <li role="tags"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
+                                <li role="tags"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
                                 <li role="audits" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
                                 <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                                 <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>

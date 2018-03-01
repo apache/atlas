@@ -44,6 +44,8 @@ define(['require',
                 addTag: "[data-id='addTag']",
                 deleteTag: "[data-id='delete']",
                 editTag: "[data-id='edit']",
+                checkPropagtedTag: "[data-id='checkPropagtedTag']",
+                propagatedFromClick: "[data-id='propagatedFromClick']"
             },
             /** ui events hash */
             events: function() {
@@ -57,6 +59,14 @@ define(['require',
                 events["click " + this.ui.editTag] = function(e) {
                     this.editTagDataModal(e);
                 };
+                events["click " + this.ui.propagatedFromClick] = function(e) {
+                    Utils.setUrl({
+                        url: '#!/detailPage/' + e.currentTarget.dataset.guid,
+                        mergeBrowserUrl: false,
+                        trigger: true
+                    });
+                };
+                events["click " + this.ui.checkPropagtedTag] = 'onCheckPropagtedTag';
                 return events;
             },
             /**
@@ -97,19 +107,24 @@ define(['require',
                     })));
                 });
             },
-            getSchemaTableColumns: function() {
-                var that = this;
-                var col = {};
+            getSchemaTableColumns: function(options) {
+                var that = this,
+                    col = {};
 
                 return this.tagCollection.constructor.getTableCols({
                         tag: {
-                            label: "Tags",
-                            cell: "String",
+                            label: "Classification",
+                            cell: "html",
                             editable: false,
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    return model.get('typeName');
+                                    if (that.guid !== model.get('entityGuid') ) {
+                                        var propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" title="Propagated From" data-guid='+ model.get('entityGuid') +' data-id="propagatedFromClick"><span> Propagated From </span></span>';
+                                        return '<a title="" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>' + propagtedFrom;
+                                    } else {
+                                        return '<a title="' + model.get('typeName') + '" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>';
+                                    }
                                 }
                             })
                         },
@@ -145,7 +160,7 @@ define(['require',
                             })
                         },
                         tool: {
-                            label: "Tool",
+                            label: "Action",
                             cell: "html",
                             editable: false,
                             sortable: false,
@@ -154,12 +169,11 @@ define(['require',
                                     var deleteData = '<button title="Delete" class="btn btn-action btn-sm" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
                                         editData = '<button title="Edit" class="btn btn-action btn-sm" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>',
                                         btnObj = null;
-                                    if (model.get('attributes') === undefined) {
-                                        btnObj = deleteData;
+                                    if (that.guid === model.get('entityGuid')) {
+                                        return '<div class="btn-inline">' + deleteData + editData + '</div>'
                                     } else {
-                                        btnObj = deleteData + editData;
+                                        return;
                                     }
-                                    return '<div class="btn-inline">' + btnObj + '</div>'
                                 }
                             })
                         },
@@ -233,6 +247,20 @@ define(['require',
                         'enumDefCollection': that.enumDefCollection
                     });
                 });
+            },
+            onCheckPropagtedTag: function(e) {
+                var that = this,
+                    tags = _.toArray(that.collectionObject.classifications),
+                    unPropagatedTags = [];
+                e.stopPropagation();
+                if (e.target.checked) {
+                    that.tagCollection.reset(tags);
+                } else {
+                 unPropagatedTags = _.filter(tags,function(val){
+                       return that.guid === val.entityGuid;
+                    });
+                   that.tagCollection.reset(unPropagatedTags);
+                }
             }
         });
     return TagDetailTableLayoutView;

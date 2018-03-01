@@ -98,6 +98,7 @@ module.exports = function(grunt) {
                     'select2.full.min.js': { 'select2/dist/js': 'select2' },
                     'backgrid-select-all.min.js': { 'backgrid-select-all': 'backgrid-select-all' },
                     'moment.min.js': { 'moment/min': 'moment/js' },
+                    'moment-timezone-with-data.min.js' : {'moment-timezone/builds' : 'moment-timezone'},
                     'jquery.placeholder.js': { 'jquery-placeholder': 'jquery-placeholder/js' },
                     'platform.js': { 'platform': 'platform' },
                     'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
@@ -158,7 +159,8 @@ module.exports = function(grunt) {
                         { 'd3-tip': 'd3/' },
                         { 'dagre-d3': 'dagre-d3' },
                         { 'platform': 'platform/' },
-                        { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' }
+                        { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' },
+                        {'moment-timezone' : 'moment-timezone'}
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },

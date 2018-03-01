@@ -779,7 +779,7 @@ define(['require',
                     col = options.col;
                 if (col) {
                     col['tag'] = {
-                        label: "Tags",
+                        label: "Classifications",
                         cell: "Html",
                         editable: false,
                         sortable: false,

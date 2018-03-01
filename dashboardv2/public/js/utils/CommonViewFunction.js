@@ -43,7 +43,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     skipDefaultError: true,
                     success: function(data) {
                         Utils.notifySuccess({
-                            content: "Tag " + options.tagName + Messages.removeSuccessMessage
+                            content: "Classification " + options.tagName + Messages.removeSuccessMessage
                         });
                         if (options.callback) {
                             options.callback();
@@ -285,7 +285,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             queryArray.push(typeKeyValue)
         }
         if (value.tag) {
-            var tagKeyValue = '<span class="key">Tag:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
+            var tagKeyValue = '<span class="key">Classification:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
             if (tagFilters) {
                 tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
             }

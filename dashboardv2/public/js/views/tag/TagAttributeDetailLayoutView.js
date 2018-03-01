@@ -292,7 +292,7 @@ define(['require',
                 ], function(CreateTagLayoutView, Modal) {
                     var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'model': that.model, 'tag': that.tag, 'enumDefCollection': enumDefCollection });
                     that.modal = new Modal({
-                        title: 'Edit Tag',
+                        title: 'Edit Classification',
                         content: view,
                         cancelText: "Cancel",
                         okText: 'Save',

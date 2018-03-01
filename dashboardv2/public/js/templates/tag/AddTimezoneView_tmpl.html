@@ -14,13 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div>
-    <div class="tableOverlay"></div>
-    <div class="inline-content-fr table-action-btn">
-        <div class="inline" >
-            <label class="checkbox-inline btn">
-                <input type="checkbox" data-id="checkPropagtedTag" class="input" checked="true" name="queryType" value="text" name="check" value="1" /> Show Propagated Classifications</label>
+<div class="form-group clearfix">
+        <div class="col-sm-4">
+            <label for="">Start Time</label>
+            <input type="text" class="form-control" name="startTime" data-id="startTime" />
         </div>
-    </div>
-    <div id="r_tagTableLayoutView"></div>
+        <div class="col-sm-4">
+            <label for="">End Time</label>
+            <input type="text" class="form-control" name="endTime" data-id="endTime" />
+        </div>
+        <div class="col-sm-3">
+            <label for="">TimeZone</label>
+            <select class="form-control row-margin-bottom" data-id="timeZone" required>
+            </select>
+        </div>
+        <div class="col-sm-1 attributePlusData" align="right">
+            <button type="button" class="btn btn-danger btn-sm closeInput" data-id="close"><i class="fa fa-times"></i></button>
+        </div>
 </div>

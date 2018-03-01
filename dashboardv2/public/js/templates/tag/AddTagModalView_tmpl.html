@@ -18,9 +18,39 @@
     <div class="form-group hide">
         {{#if tagModel}}
         <h4>{{tagModel.typeName}}</h4> {{else}}
-        <select class="form-control row-margin-bottom" data-id="addTagOptions" required>
-        </select>
-        {{/if}}
+        <div class="row modalHeight">
+            <div class="col-md-8">
+                <select class="form-control row-margin-bottom" data-id="addTagOptions" required>
+                </select>
+            </div>
+            {{/if}}
+            <div class="col-sm-2">
+                <div class="inline">
+                    <label class="checkbox-inline btn">
+                        <input type="checkbox" data-id="checkModalTagProperty" class="input" checked /> Propagate</label>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="inline-content-fr table-action-btn">
+                    <div class="inline">
+                        <label class="checkbox-inline btn">
+                            <input type="checkbox" data-id="checkTimezoneProperty" class="input" /> Apply Validity Period</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row modalHeight" style="display: none;" data-id="timeZoneDiv">
+            <hr>
+            <div class="col-sm-12">
+                <div class="clearfix form-group">
+                    <button type="button" class="btn btn-action btn-sm pull-right" data-id="addTimezoneParms"><i class="fa fa-plus"></i> Add Validity Period</button>
+                </div>
+                <div class="panel panel-default" data-id="validityPeriodBody" style="display: none;">
+                    <div class="panel-body" data-id="addTimezoneDiv">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="row modalHeight">
         <div class="col-sm-12">
@@ -29,7 +59,7 @@
             </div>
         </div>
         <div class="col-sm-12" style="display:none">
-            <p>Tag Attributes(optional)</p>
+            <p>Classification Attributes(optional)</p>
             <p class="text-gray">Add attribute values for this tag</p>
             <div data-id="tagAttribute"></div>
         </div>

@@ -50,6 +50,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
+                propagatedTagDiv: '[data-id="propagatedTagDiv"]',
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
                 editButtonContainer: '[data-id="editButtonContainer"]',
@@ -59,6 +60,7 @@ define(['require',
                 backButton: "[data-id='backButton']",
                 addTag: '[data-id="addTag"]',
                 tagList: '[data-id="tagList"]',
+                propagatedTagList: '[data-id="propagatedTagList"]',
                 fullscreenPanel: "#fullscreen_panel"
             },
             templateHelpers: function() {
@@ -302,12 +304,27 @@ define(['require',
             },
             generateTag: function(tagObject) {
                 var that = this,
-                    tagData = "";
+                    tagData = "",
+                    propagatedTagListData = "",
+                    tag = {
+                        'self': [],
+                        'propagated': []
+                    };
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
+                    val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
                 });
+                _.each(tag.self, function(val) {
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Delete Tag"></i></span>';
+                });
+                _.each(tag.propagated, function(val) {
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span></span>';
+                });
+                propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
+                this.ui.propagatedTagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
+                this.ui.propagatedTagList.html(propagatedTagListData);
+
             },
             hideLoader: function() {
                 Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
@@ -318,19 +335,23 @@ define(['require',
             onClickAddTagBtn: function(e) {
                 var that = this;
                 require(['views/tag/AddTagModalView'], function(AddTagModalView) {
-                    var view = new AddTagModalView({
-                        guid: that.id,
-                        tagList: _.map(that.entityObject.entity.classifications, function(obj) {
-                            return obj.typeName;
-                        }),
-                        callback: function() {
-                            that.fetchCollection();
-                        },
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that),
-                        collection: that.classificationDefCollection,
-                        enumDefCollection: that.enumDefCollection
-                    });
+                    var tagList = [];
+                    _.map(that.entityObject.entity.classifications, function(obj) {
+                            if (obj.entityGuid === that.id) {
+                                tagList.push(obj.typeName);
+                            }
+                        });
+                        var view = new AddTagModalView({
+                            guid: that.id,
+                            tagList: tagList,
+                            callback: function() {
+                                that.fetchCollection();
+                            },
+                            showLoader: that.showLoader.bind(that),
+                            hideLoader: that.hideLoader.bind(that),
+                            collection: that.classificationDefCollection,
+                            enumDefCollection: that.enumDefCollection
+                        });
                     view.modal.on('ok', function() {
                         Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
                     });

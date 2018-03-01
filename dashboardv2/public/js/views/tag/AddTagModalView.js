@@ -18,6 +18,7 @@
 
 define(['require',
     'hbs!tmpl/tag/AddTagModalView_tmpl',
+    'views/tag/AddTimezoneItemView',
     'collection/VTagList',
     'collection/VCommonList',
     'modules/Modal',
@@ -26,26 +27,61 @@ define(['require',
     'utils/UrlLinks',
     'utils/Enums',
     'utils/Messages',
+    'moment',
+    'moment-timezone',
     'daterangepicker'
-], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages) {
+], function(require, AddTagModalViewTmpl, AddTimezoneItemView, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages, moment) {
     'use strict';
 
-    var AddTagModel = Marionette.LayoutView.extend({
+    var AddTagModel = Backbone.Marionette.CompositeView.extend({
         template: AddTagModalViewTmpl,
         templateHelpers: function() {
             return {
                 tagModel: this.tagModel
             };
         },
-
+        childView: AddTimezoneItemView,
+        childViewOptions: function() {
+            return {
+                // saveButton: this.ui.saveButton,
+                parentView: this,
+                tagModel: this.tagModel
+            };
+        },
+        childViewContainer: "[data-id='addTimezoneDiv']",
         regions: {},
         ui: {
             addTagOptions: "[data-id='addTagOptions']",
-            tagAttribute: "[data-id='tagAttribute']"
+            tagAttribute: "[data-id='tagAttribute']",
+            togglepropagated: "input[name='togglePropagated']",
+            checkTimeZone: "[data-id='checkTimezoneProperty']",
+            timeZoneDiv: "[data-id='timeZoneDiv']",
+            checkTagModalPropagate: "[data-id='checkModalTagProperty']",
+            addTimezoneParms: "[data-id='addTimezoneParms']",
+            validityPeriodBody: "[data-id='validityPeriodBody']"
         },
         events: function() {
             var events = {};
             events["change " + this.ui.addTagOptions] = 'onChangeTagDefination';
+            events["change " + this.ui.togglepropagated] = 'checkPropagtedTag';
+            events["change " + this.ui.checkTimeZone] = function(e) {
+                if (e.target.checked) {
+                    this.ui.timeZoneDiv.show();
+                    this.ui.validityPeriodBody.show();
+                    if (_.isEmpty(this.collection.models)) {
+                        this.collection.add(new Backbone.Model({
+                            "startTime": "",
+                            "endTime": "",
+                            "timeZone": ""
+                        }));
+                    }
+                } else {
+                    this.ui.timeZoneDiv.hide();
+                    this.ui.validityPeriodBody.hide();
+                }
+            };
+            events["change " + this.ui.checkTagModalPropagate] = 'checkTagModalPropagate';
+            events["click " + this.ui.addTimezoneParms] = 'addTimezoneBtn'
             return events;
         },
         /**
@@ -53,21 +89,29 @@ define(['require',
          * @constructs
          */
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'collection', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
+            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
             this.commonCollection = new VTagList();
+            if (this.tagModel) {
+                this.collection = new Backbone.Collection(this.tagModel.validityPeriods);
+            } else {
+                this.collection = new Backbone.Collection();
+            }
+            this.tagCollection = options.collection;
             var that = this,
                 modalObj = {
-                    title: 'Add Tag',
+                    title: 'Add Classification',
                     content: this,
                     okText: 'Add',
                     cancelText: "Cancel",
+                    mainClass: 'modal-lg',
                     allowCancel: true,
                 };
             if (this.tagModel) {
-                modalObj.title = 'Edit Tag';
+                modalObj.title = 'Edit Classification';
                 modalObj.okText = 'Update';
             }
-            this.modal = new Modal(modalObj).open();
+            this.modal = new Modal(modalObj)
+            this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
@@ -183,17 +227,34 @@ define(['require',
 
         onRender: function() {
             var that = this;
-            this.hideAttributeBox();
+            this.propagate,
+                this.hideAttributeBox();
             this.tagsCollection();
             if (this.tagModel) {
                 this.fetchTagSubData(that.tagModel.typeName);
+                that.ui.checkTagModalPropagate.prop('checked', this.tagModel.propagate === true ? true : false);
+                that.ui.checkTimeZone.prop('checked', _.isEmpty(this.tagModel.validityPeriods) ? false : true);
+                if (_.isEmpty(this.tagModel.validityPeriods)) {
+                    that.ui.timeZoneDiv.hide()
+                } else {
+                    that.ui.timeZoneDiv.show();
+                }
+                that.checkTimezoneProperty(that.ui.checkTimeZone[0]);
             }
             that.showAttributeBox();
+        },
+        addTimezoneBtn: function() {
+            this.ui.validityPeriodBody.show();
+            this.collection.add(new Backbone.Model({
+                "startTime": "",
+                "endTime": "",
+                "timeZone": ""
+            }));
         },
         bindEvents: function() {
             var that = this;
             this.enumArr = [];
-            this.listenTo(this.collection, 'reset', function() {
+            this.listenTo(this.tagCollection, 'reset', function() {
                 this.tagsCollection();
             }, this);
             this.listenTo(this.commonCollection, 'reset', function() {
@@ -202,8 +263,8 @@ define(['require',
         },
         tagsCollection: function() {
             var that = this,
-                str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
-            this.collection.fullCollection.each(function(obj, key) {
+                str = '<option selected="selected" disabled="disabled">-- Select a Classification from the dropdown list --</option>';
+            this.tagCollection.fullCollection.each(function(obj, key) {
                 var name = Utils.getName(obj.toJSON(), 'name');
                 // using obj.get('name') insted of name variable because if html is presen in name then escaped name will not found in tagList.
                 if (_.indexOf(that.tagList, obj.get('name')) === -1) {
@@ -227,14 +288,15 @@ define(['require',
         },
         fetchTagSubData: function(tagname) {
             var attributeDefs = Utils.getNestedSuperTypeObj({
-                data: this.collection.fullCollection.find({ name: tagname }).toJSON(),
-                collection: this.collection,
+                data: this.tagCollection.fullCollection.find({ name: tagname }).toJSON(),
+                collection: this.tagCollection,
                 attrMerge: true
             });
             this.subAttributeData(attributeDefs);
         },
         showAttributeBox: function() {
-            var that = this;
+            var that = this,
+                isButtonactive;
             this.$('.attrLoader').hide();
             this.$('.form-group.hide').removeClass('hide');
             if (this.ui.tagAttribute.children().length !== 0) {
@@ -242,9 +304,20 @@ define(['require',
             }
             this.ui.tagAttribute.find('input,select').on("keyup change", function(e) {
                 if (e.keyCode != 32) {
-                    that.modal.$el.find('button.ok').attr("disabled", false);
+                    that.buttonActive({ isButtonActive: true });
                 }
             });
+            this.ui.checkTagModalPropagate.on('change', function(e) {
+                if (that.tagModel) {
+                    that.buttonActive({ isButtonActive: true });
+                }
+            });
+        },
+        buttonActive: function(option) {
+            if (option && option.isButtonActive) {
+                var isButton = option.isButtonActive;
+                this.modal.$el.find('button.ok').attr("disabled", isButton === true ? false : true);
+            }
         },
         hideAttributeBox: function() {
             this.ui.tagAttribute.children().empty();
@@ -314,22 +387,51 @@ define(['require',
             }
 
         },
+        checkPropagtedTag: function(e) {
+            if (!this.ui.togglepropagated.prop('checked')) {
+                this.propagate = true;
+            } else {
+                this.propagate = false;
+            }
+
+        },
+        checkTimezoneProperty: function(e) {
+            if (e.checked) {
+                this.ui.timeZoneDiv.show();
+                this.ui.validityPeriodBody.show();
+            } else {
+                this.ui.timeZoneDiv.hide();
+                this.ui.validityPeriodBody.hide();
+            }
+        },
+        checkTagModalPropagate: function(e) {
+            if (e.target.checked) {
+                this.propagate = true;
+            } else {
+                this.propagate = false;
+            }
+        },
         saveTagData: function(options) {
             var that = this;
             this.entityModel = new VEntity();
             var tagName = options.tagName,
                 tagAttributes = options.tagAttributes,
+                validityPeriodVal = that.ui.checkTimeZone.is(':checked') ? that.collection.toJSON() : [],
                 json = {
                     "classification": {
                         "typeName": tagName,
-                        "attributes": tagAttributes
+                        "attributes": tagAttributes,
+                        "propagate": _.isUndefined(that.propagate) ? true : that.propagate,
+                        "validityPeriods": validityPeriodVal
                     },
                     "entityGuids": options.guid
                 };
             if (this.tagModel) {
                 json = [{
                     "typeName": tagName,
-                    "attributes": tagAttributes
+                    "attributes": tagAttributes,
+                    "propagate": _.isUndefined(that.propagate) ? true : that.propagate,
+                    "validityPeriods": validityPeriodVal
                 }]
             }
             if (this.showLoader) {

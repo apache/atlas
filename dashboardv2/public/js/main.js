@@ -114,6 +114,12 @@ require.config({
         'daterangepicker': {
             'deps': ['jquery', 'moment']
         },
+        'moment-timezone' : {
+            'deps' : ['moment']
+        },
+        'moment':{
+            'exports':['moment']
+        },
         'nvd3': {
             'deps': ['d3']
         },
@@ -150,6 +156,7 @@ require.config({
         'select2': 'libs/select2/select2.full.min',
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
         'moment': 'libs/moment/js/moment.min',
+        'moment-timezone': 'libs/moment-timezone/moment-timezone-with-data.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
         'pnotify': 'external_lib/pnotify/pnotify.custom.min',
         'pnotify.buttons': 'external_lib/pnotify/pnotify.custom.min',

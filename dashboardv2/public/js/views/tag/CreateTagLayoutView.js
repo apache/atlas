@@ -109,7 +109,7 @@ define(['require',
                 if (platform.name === "IE") {
                     that.ui.parentTag.select2({
                         multiple: true,
-                        placeholder: "Search Tags",
+                        placeholder: "Search Classification",
                         allowClear: true
                     });
                 }

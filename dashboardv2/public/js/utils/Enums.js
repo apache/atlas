@@ -25,9 +25,9 @@ define(['require'], function(require) {
         ENTITY_CREATE: "Entity Created",
         ENTITY_UPDATE: "Entity Updated",
         ENTITY_DELETE: "Entity Deleted",
-        TAG_ADD: "Tag Added",
-        TAG_DELETE: "Tag Deleted",
-        TAG_UPDATE: "Tag Updated",
+        TAG_ADD: "Classification Added",
+        TAG_DELETE: "Classification Deleted",
+        TAG_UPDATE: "Classification Updated",
         ENTITY_IMPORT_CREATE: "Entity Created by import",
         ENTITY_IMPORT_UPDATE: "Entity Updated by import",
         ENTITY_IMPORT_DELETE: "Entity Deleted by import"

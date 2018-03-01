@@ -124,7 +124,7 @@ define(['require',
                 });
                 that.ui.treeLov.html(treeStr);
                 that.ui.treeLov.select2({
-                    placeholder: "Search tag",
+                    placeholder: "Search Classification",
                     allowClear: true
                 });
             },
@@ -349,7 +349,7 @@ define(['require',
                     var name = (!(nodeName == "BUTTON") ? that.query[that.viewType].tagName : null);
                     var view = new CreateTagLayoutView({ 'tagCollection': that.collection, 'selectedTag': name, 'enumDefCollection': enumDefCollection }),
                         modal = new Modal({
-                            title: 'Create a new tag',
+                            title: 'Create a new classification',
                             content: view,
                             cancelText: "Cancel",
                             okCloses: false,
@@ -368,7 +368,7 @@ define(['require',
                     modal.on('shownModal', function() {
                         view.ui.parentTag.select2({
                             multiple: true,
-                            placeholder: "Search Tags",
+                            placeholder: "Search Classification",
                             allowClear: true
                         });
                     });
@@ -493,7 +493,7 @@ define(['require',
                         that.collection.fullCollection.add(classificationDefs);
                         that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
-                            content: "Tag " + that.name + Messages.addSuccessMessage
+                            content: "Classification " + that.name + Messages.addSuccessMessage
                         });
                         modal.trigger('cancel');
                         that.typeHeaders.fetch({ reset: true });
@@ -529,9 +529,9 @@ define(['require',
                     popoverOptions: {
                         content: function() {
                             return "<ul>" +
-                                "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Tag</a></li>" +
-                                "<li class='listTerm' ><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-tag</a></li>" +
-                                "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Tag</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTag'>Search Classification</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li>" +
+                                "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDeleteTag'>Delete Classification</a></li>" +
                                 "</ul>";
                         }
                     }
@@ -563,7 +563,7 @@ define(['require',
                         },
                         cancel: function(argument) {}
                     }
-                var text = "Are you sure you want to delete the tag"
+                var text = "Are you sure you want to delete the classification"
                 notifyObj['text'] = text;
                 Utils.notifyConfirm(notifyObj);
             },
@@ -581,7 +581,7 @@ define(['require',
                     data: JSON.stringify(deleteJson),
                     success: function() {
                         Utils.notifySuccess({
-                            content: "Tag " + that.tag + Messages.deleteSuccessMessage
+                            content: "Classification " + that.tag + Messages.deleteSuccessMessage
                         });
                         // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
