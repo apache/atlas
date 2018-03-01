@@ -46,7 +46,15 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.util.SearchPredicateUtil.*;
@@ -87,7 +95,7 @@ public abstract class SearchProcessor {
         OPERATOR_MAP.put(SearchParameters.Operator.EQ, INDEX_SEARCH_PREFIX + "\"%s\": %s");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.EQ, getEQPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.NEQ, "-" + INDEX_SEARCH_PREFIX + "\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.NEQ, "(*:* -" + INDEX_SEARCH_PREFIX + "\"%s\": %s)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NEQ, getNEQPredicateGenerator());
 
         OPERATOR_MAP.put(SearchParameters.Operator.IN, INDEX_SEARCH_PREFIX + "\"%s\": (%s)"); // this should be a list of quoted strings
