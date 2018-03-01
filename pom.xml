@@ -528,8 +528,8 @@
         <fastutil.version>6.5.16</fastutil.version>
         <guice.version>4.1.0</guice.version>
         <spring.version>4.3.8.RELEASE</spring.version>
-        <spring.security.version>4.2.2.RELEASE</spring.security.version>
-        <spring-ldap-core.version>2.3.1.RELEASE</spring-ldap-core.version>
+        <spring.security.version>4.2.4.RELEASE</spring.security.version>
+
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <guava.version>19.0</guava.version>
 
@@ -1273,12 +1273,6 @@
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-ldap</artifactId>
                 <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ldap</groupId>
-                <artifactId>spring-ldap-core</artifactId>
-                <version>${spring-ldap-core.version}</version>
             </dependency>
 
             <dependency>
