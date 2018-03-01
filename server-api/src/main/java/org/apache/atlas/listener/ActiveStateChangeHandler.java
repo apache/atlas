@@ -27,7 +27,7 @@ import org.apache.atlas.AtlasException;
  */
 public interface ActiveStateChangeHandler {
     public enum HandlerOrder {
-        HBASE_AUDIT_REPOSITORY(0),
+        AUDIT_REPOSITORY(0),
         GRAPH_BACKED_SEARCH_INDEXER(1),
         TYPEDEF_STORE_INITIALIZER(2),
         DEFAULT_METADATA_SERVICE(3),

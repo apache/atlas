@@ -34,6 +34,15 @@ mvn clean -DskipTests package -Pdist,embedded-hbase-solr</verbatim>
 
 Using the embedded-hbase-solr profile will configure Atlas so that an HBase instance and a Solr instance will be started and stopped along with the Atlas server by default.
 
+---+++ Packaging Atlas with Embedded Cassandra & Solr
+To create Apache Atlas package that includes Cassandra and Solr, build with the embedded-cassandra-solr profile as shown below:
+
+<verbatim>
+mvn clean package -Pdist,embedded-cassandra-solr</verbatim>
+
+Using the embedded-cassandra-solr profile will configure Atlas so that an embedded Cassandra instance and a Solr instance will be started and stopped along with the Atlas server by default.
+
+NOTE: This distribution profile is only intended to be used for single node development not in production.
 
 ---+++ Apache Atlas Package
 Build will create following files, which are used to install Apache Atlas.

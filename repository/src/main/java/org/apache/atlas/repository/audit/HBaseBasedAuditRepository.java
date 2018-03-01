@@ -80,13 +80,11 @@ import java.util.Map;
 @Singleton
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
-public class HBaseBasedAuditRepository implements Service, EntityAuditRepository, ActiveStateChangeHandler {
+public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
-    public static final String CONFIG_PREFIX = "atlas.audit";
     public static final String CONFIG_TABLE_NAME = CONFIG_PREFIX + ".hbase.tablename";
     public static final String DEFAULT_TABLE_NAME = "ATLAS_ENTITY_AUDIT_EVENTS";
-    public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
 
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
     public static final byte[] COLUMN_ACTION = Bytes.toBytes("a");
@@ -94,35 +92,8 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public static final byte[] COLUMN_USER = Bytes.toBytes("u");
     public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
 
-    private static final String  AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
-    private static final String  AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
-    private static final String  FIELD_SEPARATOR = ":";
-    private static final long    ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE = 1024 * 1024;
-    private static Configuration APPLICATION_PROPERTIES = null;
-
-    private static boolean       persistEntityDefinition;
-
-    private Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
-
-    static {
-        try {
-            persistEntityDefinition = ApplicationProperties.get().getBoolean(CONFIG_PERSIST_ENTITY_DEFINITION, false);
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
-        }
-    }
     private TableName tableName;
     private Connection connection;
-
-    /**
-     * Add events to the event repository
-     * @param events events to be added
-     * @throws AtlasException
-     */
-    @Override
-    public void putEventsV1(EntityAuditEvent... events) throws AtlasException {
-        putEventsV1(Arrays.asList(events));
-    }
 
     /**
      * Add events to the event repository
@@ -156,11 +127,6 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         } finally {
             close(table);
         }
-    }
-
-    @Override
-    public void putEventsV2(EntityAuditEventV2... events) throws AtlasBaseException {
-        putEventsV2(Arrays.asList(events));
     }
 
     @Override
@@ -283,32 +249,10 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         }
     }
 
-    @Override
-    public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
-        List ret = listEventsV2(entityId, startKey, maxResults);
-
-        try {
-            if (CollectionUtils.isEmpty(ret)) {
-                ret = listEventsV1(entityId, startKey, maxResults);
-            }
-        } catch (AtlasException e) {
-            throw new AtlasBaseException(e);
-        }
-
-        return ret;
-    }
-
     private <T> void addColumn(Put put, byte[] columnName, T columnValue) {
         if (columnValue != null && !columnValue.toString().isEmpty()) {
             put.addColumn(COLUMN_FAMILY, columnName, Bytes.toBytes(columnValue.toString()));
         }
-    }
-
-    private byte[] getKey(String id, Long ts) {
-        assert id != null : "entity id can't be null";
-        assert ts != null : "timestamp can't be null";
-        String keyStr = id + FIELD_SEPARATOR + ts;
-        return Bytes.toBytes(keyStr);
     }
 
     /**
@@ -383,52 +327,6 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         } finally {
             close(scanner);
             close(table);
-        }
-    }
-
-    @Override
-    public long repositoryMaxSize() {
-        long ret;
-        initApplicationProperties();
-
-        if (APPLICATION_PROPERTIES == null) {
-            ret = ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE;
-        } else {
-            ret = APPLICATION_PROPERTIES.getLong(AUDIT_REPOSITORY_MAX_SIZE_PROPERTY, ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE);
-        }
-
-        return ret;
-    }
-
-    @Override
-    public List<String> getAuditExcludeAttributes(String entityType) {
-        List<String> ret = null;
-
-        initApplicationProperties();
-
-        if (auditExcludedAttributesCache.containsKey(entityType)) {
-            ret = auditExcludedAttributesCache.get(entityType);
-        } else if (APPLICATION_PROPERTIES != null) {
-            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
-                    entityType + "." +  "attributes.exclude");
-
-            if (excludeAttributes != null) {
-                ret = Arrays.asList(excludeAttributes);
-            }
-
-            auditExcludedAttributesCache.put(entityType, ret);
-        }
-
-        return ret;
-    }
-
-    private void initApplicationProperties() {
-        if (APPLICATION_PROPERTIES == null) {
-            try {
-                APPLICATION_PROPERTIES = ApplicationProperties.get();
-            } catch (AtlasException ex) {
-                // ignore
-            }
         }
     }
 
@@ -560,13 +458,4 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         createTableIfNotExists();
     }
 
-    @Override
-    public void instanceIsPassive() {
-        LOG.info("Reacting to passive: No action for now.");
-    }
-
-    @Override
-    public int getHandlerOrder() {
-        return HandlerOrder.HBASE_AUDIT_REPOSITORY.getOrder();
-    }
 }

@@ -118,6 +118,14 @@ def main():
     #solr setup
     if mc.is_solr_local(confdir):
         print "configured for local solr."
+
+        if mc.is_cassandra_local(confdir):
+            print "Cassandra embedded configured."
+            mc.configure_cassandra(atlas_home)
+            mc.configure_zookeeper(atlas_home)
+            mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
+            print "zookeeper started."
+
         mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
         print "solr started."
 
