@@ -1,0 +1,37 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+Introduction
+  The purpose of this utility is to export type definitions and data from an Atlas repository.
+
+What is Exported?
+  All data and types are exported.
+
+How Much Time Will this Take?
+  The duration of the export process depends on the number of entities present in your database. While cluster configuration determines speed of operation,
+  on an average, for cluster with reasonable configuration, it takes 30 minutes to export 1 million entities.
+
+Steps to Start Export step of Migration
+  - Shutdown Atlas. This is critical to ensure that no updates are being made to Atlas database while the operation is in progress.
+  - Execute the following commands in the host where Atlas server runs:
+    - unzip atlas-migration-exporter.zip
+    - cd atlas-migration-exporter
+    - python atlas_migration_export.py
+
+Next Steps
+  Once done, please use the Atlas Migration Guide for next steps.
