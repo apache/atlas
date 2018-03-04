@@ -1,0 +1,4 @@
+{
+  "itemsToExport": [ { "typeName": "hive_db" } ],
+  "options": { "fetchType": "FULL", "matchType": "forType" }
+}
