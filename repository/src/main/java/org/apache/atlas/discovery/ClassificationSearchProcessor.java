@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -149,13 +150,24 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             }
         } else {
             tagGraphQueryWithAttributes = null;
+            List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
             if (classificationType != SearchContext.MATCH_ALL_CLASSIFICATION) {
-                entityGraphQueryTraitNames = graph.query().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes);
-                entityPredicateTraitNames  = SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class);
+                orConditions.add(graph.query().createChildQuery().in(Constants.TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes));
+                orConditions.add(graph.query().createChildQuery().in(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes));
+
+                entityGraphQueryTraitNames = graph.query().or(orConditions);
+                entityPredicateTraitNames  = PredicateUtils.orPredicate(
+                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class),
+                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationType.getTypeAndAllSubTypes(), List.class));
             } else {
-                entityGraphQueryTraitNames = graph.query().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null);
-                entityPredicateTraitNames = SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class);
+                orConditions.add(graph.query().createChildQuery().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                orConditions.add(graph.query().createChildQuery().has(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+
+                entityGraphQueryTraitNames = graph.query().or(orConditions);
+                entityPredicateTraitNames  = PredicateUtils.orPredicate(
+                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
             }
 
             if (context.getSearchParameters().getExcludeDeletedEntities()) {

@@ -112,7 +112,7 @@ public class GremlinQueryComposer {
             IdentifierHelper.Info ia = createInfo(typeInfo.get());
 
             if (ia.isTrait()) {
-                add(GremlinClause.TRAIT, ia);
+                addTrait(GremlinClause.TRAIT, ia);
             } else {
                 if (ia.hasSubtypes()) {
                     add(GremlinClause.HAS_TYPE_WITHIN, ia.getSubTypes());
@@ -144,7 +144,7 @@ public class GremlinQueryComposer {
         }
 
         IdentifierHelper.Info traitInfo = createInfo(traitName);
-        add(GremlinClause.TRAIT, traitInfo);
+        addTrait(GremlinClause.TRAIT, traitInfo);
     }
 
     public void addWhere(String lhs, String operator, String rhs) {
@@ -589,6 +589,14 @@ public class GremlinQueryComposer {
 
     private void add(int idx, GremlinClause clause, String... args) {
         queryClauses.add(idx, new GremlinClauseValue(clause, clause.get(args)));
+    }
+
+    private void addTrait(GremlinClause clause, IdentifierHelper.Info idInfo) {
+        if (context != null && !context.validator.isValid(context, clause, idInfo)) {
+            return;
+        }
+
+        add(clause, idInfo.get(), idInfo.get());
     }
 
     static class GremlinClauseValue {
