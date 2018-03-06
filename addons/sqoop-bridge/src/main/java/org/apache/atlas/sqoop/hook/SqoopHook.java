@@ -68,6 +68,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public static final String CMD_LINE_OPTS  = "commandlineOpts";
     public static final String INPUTS         = "inputs";
     public static final String OUTPUTS        = "outputs";
+    public static final String ATTRIBUTE_DB   = "db";
 
     static {
         org.apache.hadoop.conf.Configuration.addDefaultResource("sqoop-site.xml");
@@ -114,7 +115,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
         entHiveTable.setAttribute(AtlasClient.NAME, tableName.toLowerCase());
         entHiveTable.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
-        entHiveTable.setAttribute(HiveMetaStoreBridge.DB, AtlasTypeUtil.getAtlasObjectId(entHiveDb));
+        entHiveTable.setAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasObjectId(entHiveDb));
 
         return entHiveTable;
     }

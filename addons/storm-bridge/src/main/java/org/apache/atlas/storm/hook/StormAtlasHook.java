@@ -64,6 +64,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     public static final String ANONYMOUS_OWNER = "anonymous";
 
     public static final String HBASE_NAMESPACE_DEFAULT = "default";
+    public static final String ATTRIBUTE_DB = "db";
 
     private final HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
 
@@ -271,7 +272,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(clusterName,
                         databaseName, hiveTableName);
                 dataSetReferenceable.set(AtlasClient.NAME, hiveTableName);
-                dataSetReferenceable.set(HiveMetaStoreBridge.DB, dbReferenceable);
+                dataSetReferenceable.set(ATTRIBUTE_DB, dbReferenceable);
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
                 break;
 

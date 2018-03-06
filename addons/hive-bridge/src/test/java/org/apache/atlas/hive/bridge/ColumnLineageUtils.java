@@ -18,7 +18,6 @@
 
 package org.apache.atlas.hive.bridge;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo;
@@ -32,6 +31,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_COLUMNS;
+import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
+
 
 public class ColumnLineageUtils {
     public static final Logger LOG = LoggerFactory.getLogger(ColumnLineageUtils.class);
@@ -127,10 +130,10 @@ public class ColumnLineageUtils {
     static void populateColumnReferenceableMap(Map<String, Referenceable> m,
                                                Referenceable r) {
         if (r.getTypeName().equals(HiveDataTypes.HIVE_TABLE.getName())) {
-            String qName = (String) r.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
+            String qName = (String) r.get(ATTRIBUTE_QUALIFIED_NAME);
             String[] qNameComps = extractComponents(qName);
-            for (Referenceable col : (List<Referenceable>) r.get(HiveMetaStoreBridge.COLUMNS)) {
-                String cName = (String) col.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
+            for (Referenceable col : (List<Referenceable>) r.get(ATTRIBUTE_COLUMNS)) {
+                String cName = (String) col.get(ATTRIBUTE_QUALIFIED_NAME);
                 String[] colQNameComps = extractComponents(cName);
                 String colQName = colQNameComps[0] + "." + colQNameComps[1] + "." + colQNameComps[2];
                 m.put(colQName, col);

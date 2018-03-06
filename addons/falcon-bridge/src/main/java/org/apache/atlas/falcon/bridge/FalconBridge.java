@@ -68,6 +68,7 @@ public class FalconBridge {
     public static final String RUNSON = "runs-on";
     public static final String STOREDIN = "stored-in";
     public static final String FREQUENCY = "frequency";
+    public static final String ATTRIBUTE_DB = "db";
 
     /**
      * Creates cluster entity
@@ -357,7 +358,7 @@ public class FalconBridge {
         tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
         tableRef.set(AtlasClient.NAME, tableName.toLowerCase());
-        tableRef.set(HiveMetaStoreBridge.DB, dbRef);
+        tableRef.set(ATTRIBUTE_DB, dbRef);
         entities.add(tableRef);
 
         return entities;
