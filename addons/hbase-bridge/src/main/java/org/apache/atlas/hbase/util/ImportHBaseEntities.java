@@ -90,7 +90,7 @@ public class ImportHBaseEntities extends ImportHBaseEntitiesBase {
     public String importTable(final String tableName) throws Exception {
         byte[]              tblName      = tableName.getBytes();
         HTableDescriptor    htd          = hbaseAdmin.getTableDescriptor(tblName);
-        String              nsName       = htd.getTableName().getNamespaceAsString();
+        String              nsName       = htd.getTableName().getNameWithNamespaceInclAsString();
         NamespaceDescriptor nsDescriptor = hbaseAdmin.getNamespaceDescriptor(nsName);
         AtlasEntity         nsEntity     = createOrUpdateNameSpace(nsDescriptor);
         HColumnDescriptor[] hcdts        = htd.getColumnFamilies();
