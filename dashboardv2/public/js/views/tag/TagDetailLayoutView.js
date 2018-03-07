@@ -65,7 +65,8 @@ define(['require',
                             entityDefCollection: that.entityDefCollection,
                             typeHeaders: that.typeHeaders,
                             tagCollection: that.collection,
-                            enumDefCollection: that.enumDefCollection
+                            enumDefCollection: that.enumDefCollection,
+                            classificationDefCollection: that.classificationDefCollection
                         }));
                     }
                 });
