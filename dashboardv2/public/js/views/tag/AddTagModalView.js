@@ -53,7 +53,6 @@ define(['require',
         ui: {
             addTagOptions: "[data-id='addTagOptions']",
             tagAttribute: "[data-id='tagAttribute']",
-            togglepropagated: "input[name='togglePropagated']",
             checkTimeZone: "[data-id='checkTimezoneProperty']",
             timeZoneDiv: "[data-id='timeZoneDiv']",
             checkTagModalPropagate: "[data-id='checkModalTagProperty']",
@@ -63,7 +62,6 @@ define(['require',
         events: function() {
             var events = {};
             events["change " + this.ui.addTagOptions] = 'onChangeTagDefination';
-            events["change " + this.ui.togglepropagated] = 'checkPropagtedTag';
             events["change " + this.ui.checkTimeZone] = function(e) {
                 if (e.target.checked) {
                     this.ui.timeZoneDiv.show();
@@ -80,7 +78,6 @@ define(['require',
                     this.ui.validityPeriodBody.hide();
                 }
             };
-            events["change " + this.ui.checkTagModalPropagate] = 'checkTagModalPropagate';
             events["click " + this.ui.addTimezoneParms] = 'addTimezoneBtn'
             return events;
         },
@@ -387,14 +384,6 @@ define(['require',
             }
 
         },
-        checkPropagtedTag: function(e) {
-            if (!this.ui.togglepropagated.prop('checked')) {
-                this.propagate = true;
-            } else {
-                this.propagate = false;
-            }
-
-        },
         checkTimezoneProperty: function(e) {
             if (e.checked) {
                 this.ui.timeZoneDiv.show();
@@ -402,13 +391,6 @@ define(['require',
             } else {
                 this.ui.timeZoneDiv.hide();
                 this.ui.validityPeriodBody.hide();
-            }
-        },
-        checkTagModalPropagate: function(e) {
-            if (e.target.checked) {
-                this.propagate = true;
-            } else {
-                this.propagate = false;
             }
         },
         saveTagData: function(options) {
@@ -421,7 +403,7 @@ define(['require',
                     "classification": {
                         "typeName": tagName,
                         "attributes": tagAttributes,
-                        "propagate": _.isUndefined(that.propagate) ? true : that.propagate,
+                        "propagate": that.ui.checkTagModalPropagate.is(":checked") === true ? true : false,
                         "validityPeriods": validityPeriodVal
                     },
                     "entityGuids": options.guid
@@ -430,7 +412,7 @@ define(['require',
                 json = [{
                     "typeName": tagName,
                     "attributes": tagAttributes,
-                    "propagate": _.isUndefined(that.propagate) ? true : that.propagate,
+                    "propagate": that.ui.checkTagModalPropagate.is(":checked") === true ? true : false,
                     "validityPeriods": validityPeriodVal
                 }]
             }
@@ -444,7 +426,7 @@ define(['require',
                 success: function(data) {
                     var addupdatetext = that.tagModel ? 'updated successfully to ' : 'added to ';
                     Utils.notifySuccess({
-                        content: "Tag " + tagName + " has been " + addupdatetext + (that.multiple ? "entities" : "entity")
+                        content: "Classification " + tagName + " has been " + addupdatetext + (that.multiple ? "entities" : "entity")
                     });
                     if (options.modalCollection) {
                         options.modalCollection.fetch({ reset: true });
