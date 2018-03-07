@@ -280,14 +280,16 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         if (value.type) {
             var typeKeyValue = '<span class="key">Type:</span>&nbsp<span class="value">' + _.escape(value.type) + '</span>';
             if (entityFilters) {
-                typeKeyValue += '&nbsp<span class="operator">AND</span>&nbsp(<span class="operator">' + entityFilters.condition + '</span>&nbsp(' + objToString(entityFilters) + '))';
+                var conditionForEntity = entityFilters.rules.length == 1 ? '' : 'AND';
+                typeKeyValue += '&nbsp<span class="operator">' + conditionForEntity + '</span>&nbsp(<span class="operator">' + entityFilters.condition + '</span>&nbsp(' + objToString(entityFilters) + '))';
             }
             queryArray.push(typeKeyValue)
         }
         if (value.tag) {
             var tagKeyValue = '<span class="key">Classification:</span>&nbsp<span class="value">' + _.escape(value.tag) + '</span>';
             if (tagFilters) {
-                tagKeyValue += '&nbsp<span class="operator">AND</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
+                var conditionFortag = tagFilters.rules.length == 1 ? '' : 'AND';
+                tagKeyValue += '&nbsp<span class="operator">' + conditionFortag + '</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
             }
             queryArray.push(tagKeyValue);
         }
