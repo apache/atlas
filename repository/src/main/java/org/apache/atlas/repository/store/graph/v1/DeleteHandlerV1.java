@@ -40,15 +40,23 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
+import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdgeLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromEdge;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getState;
 
@@ -323,7 +331,12 @@ public abstract class DeleteHandlerV1 {
     protected void deleteTypeVertex(AtlasVertex instanceVertex, TypeCategory typeCategory, boolean force) throws AtlasBaseException {
         switch (typeCategory) {
             case STRUCT:
+                deleteTypeVertex(instanceVertex, force);
+            break;
+
             case CLASSIFICATION:
+                removeTagPropagation(instanceVertex);
+
                 deleteTypeVertex(instanceVertex, force);
             break;
 
@@ -334,6 +347,47 @@ public abstract class DeleteHandlerV1 {
 
             default:
                 throw new IllegalStateException("Type category " + typeCategory + " not handled");
+        }
+    }
+
+    public void removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        if (classificationVertex != null) {
+            String              classificationName = getTypeName(classificationVertex);
+            Iterator<AtlasEdge> iterator           = getIncomingEdgesByLabel(classificationVertex, getPropagatedEdgeLabel(classificationName));
+
+            // remove classification from propagated entity vertices
+            while (iterator != null && iterator.hasNext()) {
+                AtlasEdge propagatedEdge = iterator.next();
+
+                if (propagatedEdge != null) {
+                    AtlasVertex propagatedEntityVertex = propagatedEdge.getOutVertex();
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
+                                getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), getPropagatedEdgeLabel(classificationName));
+                    }
+
+                    removePropagatedTraitName(propagatedEntityVertex, classificationName);
+
+                    deleteEdge(propagatedEdge, true);
+
+                    updateModificationMetadata(propagatedEntityVertex);
+                }
+            }
+        }
+    }
+
+    private void removePropagatedTraitName(AtlasVertex entityVertex, String classificationName) {
+        if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
+            List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+
+            propagatedTraitNames.remove(classificationName);
+
+            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+
+            for (String propagatedTraitName : propagatedTraitNames) {
+                addListProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedTraitName);
+            }
         }
     }
 

@@ -78,8 +78,6 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdgeLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
@@ -87,6 +85,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -922,11 +921,6 @@ public class EntityGraphMapper {
         mapAttributes(struct, vertex, UPDATE, context);
     }
 
-    private void updateModificationMetadata(AtlasVertex vertex) {
-        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
-        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
-    }
-
     private Long getEntityVersion(AtlasEntity entity) {
         Long ret = entity != null ? entity.getVersion() : null;
         return (ret != null) ? ret : 0;
@@ -1563,30 +1557,7 @@ public class EntityGraphMapper {
     }
 
     private void removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
-        if (classificationVertex != null) {
-            String              classificationName = getTypeName(classificationVertex);
-            Iterator<AtlasEdge> iterator           = getIncomingEdgesByLabel(classificationVertex, getPropagatedEdgeLabel(classificationName));
-
-            // remove classification from propagated entity vertices
-            while (iterator != null && iterator.hasNext()) {
-                AtlasEdge propagatedEdge = iterator.next();
-
-                if (propagatedEdge != null) {
-                    AtlasVertex propagatedEntityVertex = propagatedEdge.getOutVertex();
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
-                                  getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), getPropagatedEdgeLabel(classificationName));
-                    }
-
-                    removePropagatedTraitName(propagatedEntityVertex, classificationName);
-
-                    deleteHandler.deleteEdge(propagatedEdge, true);
-
-                    updateModificationMetadata(propagatedEntityVertex);
-                }
-            }
-        }
+        deleteHandler.removeTagPropagation(classificationVertex);
     }
 
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification,
@@ -1623,20 +1594,6 @@ public class EntityGraphMapper {
         List<String> traitNames = getTraitNames(instanceVertex);
 
         deleteClassifications(guid, traitNames);
-    }
-
-    private void removePropagatedTraitName(AtlasVertex entityVertex, String classificationName) {
-        if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
-            List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
-
-            propagatedTraitNames.remove(classificationName);
-
-            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-
-            for (String propagatedTraitName : propagatedTraitNames) {
-                addListProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedTraitName);
-            }
-        }
     }
 
     private void updateTraitNamesProperty(AtlasVertex entityVertex, List<String> traitNames) {

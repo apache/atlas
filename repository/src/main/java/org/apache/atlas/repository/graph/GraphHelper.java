@@ -766,6 +766,11 @@ public final class GraphHelper {
         return getVerticesForPropertyValues(Constants.GUID_PROPERTY_KEY, guids);
     }
 
+    public static void updateModificationMetadata(AtlasVertex vertex) {
+        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
+        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+    }
+
     public static String getQualifiedNameForMapKey(String prefix, String key) {
         return prefix + "." + key;
     }
