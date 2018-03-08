@@ -391,6 +391,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
         callAPI(API_V2.DELETE_RELATIONSHIP_BY_GUID, (Class) null, null, guid);
     }
 
+    public AtlasRelationship createRelationship(AtlasRelationship relationship) throws AtlasServiceException {
+        return callAPI(API_V2.CREATE_RELATIONSHIP, AtlasRelationship.class, relationship);
+    }
+
+    public AtlasRelationship updateRelationship(AtlasRelationship relationship) throws AtlasServiceException {
+        return callAPI(API_V2.UPDATE_RELATIONSHIP, AtlasRelationship.class, relationship);
+    }
+
     @Override
     protected API formatPathParameters(final API api, final String... params) {
         return new API(String.format(api.getPath(), params), api.getMethod(), api.getExpectedStatus());
@@ -470,6 +478,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 FACETED_SEARCH              = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 GET_RELATIONSHIP_BY_GUID    = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 DELETE_RELATIONSHIP_BY_GUID = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 CREATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.PUT, Response.Status.OK);
 
         private API_V2(String path, String method, Response.Status status) {
             super(path, method, status);
