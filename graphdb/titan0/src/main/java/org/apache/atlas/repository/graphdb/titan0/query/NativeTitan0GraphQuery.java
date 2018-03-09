@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
@@ -64,6 +65,29 @@ public class NativeTitan0GraphQuery implements NativeTinkerpopGraphQuery<Titan0V
         Iterable it = query.edges();
         return graph.wrapEdges(it);
     }
+
+    @Override
+    public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> edges(int limit) {
+        Iterable it = query.limit(limit).edges();
+        return graph.wrapEdges(it);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> edges(int offset, int limit) {
+        List<Edge>     result = new ArrayList<>(limit);
+        Iterator<Edge> iter   = query.limit(offset + limit).edges().iterator();
+
+        for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            if (resultIdx < offset) {
+                continue;
+            }
+
+            result.add(iter.next());
+        }
+
+        return graph.wrapEdges(result);
+    }
+
     @Override
     public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> vertices(int limit) {
         Iterable it = query.limit(limit).vertices();

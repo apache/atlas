@@ -105,6 +105,15 @@ public interface AtlasGraphManagement {
     AtlasGraphIndex getGraphIndex(String indexName);
 
     /**
+     * Checks if a vertex-centric edge exists already.
+     *
+     * @param label
+     * @param indexName
+     * @return
+     */
+    boolean edgeIndexExist(String label, String indexName);
+
+    /**
      * Creates a mixed Vertex index for the graph.
      *
      * @param name the name of the index to create
@@ -121,6 +130,16 @@ public interface AtlasGraphManagement {
      * @param propertyKeys list of propertyKeys to be added to the index
      */
     void createEdgeMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys);
+
+    /**
+     * Creates a vertex-centric edge index for the graph.
+     *
+     * @param label edge label name
+     * @param indexName name of the edge index
+     * @param edgeDirection direction of the edge to index
+     * @param propertyKeys edge property keys to be added to the index
+     */
+    void createEdgeIndex(String label, String indexName, AtlasEdgeDirection edgeDirection, List<AtlasPropertyKey> propertyKeys);
 
     /**
      * Creates a full text index for the given property.

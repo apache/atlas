@@ -25,6 +25,8 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Factory that serves up instances of Janus/Tinkerpop classes that correspond to
@@ -61,7 +63,7 @@ public final class AtlasJanusObjectFactory {
     /**
      * Converts a Multiplicity to a Cardinality.
      *
-     * @param multiplicity
+     * @param cardinality
      * @return
      */
     public static Cardinality createCardinality(AtlasCardinality cardinality) {
@@ -82,4 +84,16 @@ public final class AtlasJanusObjectFactory {
         return ((AtlasJanusPropertyKey)key).getWrappedPropertyKey();
     }
 
+    public static PropertyKey[] createPropertyKeys(List<AtlasPropertyKey> keys) {
+        PropertyKey[] ret = new PropertyKey[keys.size()];
+
+        int i = 0;
+        for (AtlasPropertyKey key : keys) {
+            ret[i] = createPropertyKey(key);
+
+            i++;
+        }
+
+        return ret;
+    }
 }

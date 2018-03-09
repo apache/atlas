@@ -40,6 +40,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +48,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdgeLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
+import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
@@ -350,21 +351,20 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+    public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
         if (classificationVertex != null) {
-            String              classificationName = getTypeName(classificationVertex);
-            Iterator<AtlasEdge> iterator           = getIncomingEdgesByLabel(classificationVertex, getPropagatedEdgeLabel(classificationName));
+            String          classificationName = getTypeName(classificationVertex);
+            List<AtlasEdge> propagatedEdges    = getPropagatedEdges(classificationVertex);
 
-            // remove classification from propagated entity vertices
-            while (iterator != null && iterator.hasNext()) {
-                AtlasEdge propagatedEdge = iterator.next();
-
-                if (propagatedEdge != null) {
+            if (CollectionUtils.isNotEmpty(propagatedEdges)) {
+                for (AtlasEdge propagatedEdge : propagatedEdges) {
                     AtlasVertex propagatedEntityVertex = propagatedEdge.getOutVertex();
 
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
-                                getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), getPropagatedEdgeLabel(classificationName));
+                                getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
                     removePropagatedTraitName(propagatedEntityVertex, classificationName);
@@ -372,14 +372,18 @@ public abstract class DeleteHandlerV1 {
                     deleteEdge(propagatedEdge, true);
 
                     updateModificationMetadata(propagatedEntityVertex);
+
+                    ret.add(propagatedEntityVertex);
                 }
             }
         }
+
+        return ret;
     }
 
     private void removePropagatedTraitName(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
-            List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+            List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
 
             propagatedTraitNames.remove(classificationName);
 

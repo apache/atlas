@@ -462,7 +462,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
                 if(searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getClassifications(atlasVertex));
+                    entity.setClassifications(entityRetriever.getAllClassifications(atlasVertex));
                 }
 
                 ret.addEntity(entity);

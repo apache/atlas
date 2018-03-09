@@ -52,18 +52,32 @@ public interface AtlasGraphQuery<V, E> {
      */
     AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values);
 
+    /**
+     * Executes the query and returns the matching edges.
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges();
+
+    /**
+     * Executes the query and returns the matching edges till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int limit);
+
+    /**
+     * Executes the query and returns the matching edges from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int offset, int limit);
 
     /**
      * Executes the query and returns the matching vertices.
      * @return
      */
     Iterable<AtlasVertex<V, E>> vertices();
-
-    /**
-     * Executes the query and returns the matching edges.
-     * @return
-     */
-    Iterable<AtlasEdge<V, E>> edges();
 
     /**
      * Executes the query and returns the matching vertices from given offset till the max limit

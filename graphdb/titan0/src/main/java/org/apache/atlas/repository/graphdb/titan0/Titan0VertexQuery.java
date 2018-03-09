@@ -77,4 +77,16 @@ public class Titan0VertexQuery implements AtlasVertexQuery<Titan0Vertex, Titan0E
     public long count() {
         return vertexQuery.count();
     }
+
+    @Override
+    public AtlasVertexQuery<Titan0Vertex, Titan0Edge> label(String label) {
+        vertexQuery.labels(label);
+        return this;
+    }
+
+    @Override
+    public AtlasVertexQuery<Titan0Vertex, Titan0Edge> has(String key, Object value) {
+        vertexQuery.has(key, value);
+        return this;
+    }
 }

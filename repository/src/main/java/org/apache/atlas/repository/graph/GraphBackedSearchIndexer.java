@@ -37,6 +37,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -59,6 +60,7 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +68,9 @@ import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.Constants.BACKING_INDEX;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.EDGE_INDEX;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
@@ -280,6 +285,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, true);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
 
+            // create vertex-centric index
+            createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
+            createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class, SINGLE);
+            createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, Arrays.asList(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY));
+
             // create edge indexes
             createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
 
@@ -474,6 +484,55 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         return propertyKey;
     }
+
+    private void createVertexCentricIndex(AtlasGraphManagement management, String edgeLabel, AtlasEdgeDirection edgeDirection,
+                                          String propertyName, Class propertyClass, AtlasCardinality cardinality) {
+        AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+        if (propertyKey == null) {
+            propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating vertex-centric index for edge label: {} direction: {} for property: {} of type: {} ",
+                        edgeLabel, edgeDirection.name(), propertyName, propertyClass.getName());
+        }
+
+        final String indexName = edgeLabel + propertyKey.getName();
+
+        if (!management.edgeIndexExist(edgeLabel, indexName)) {
+            management.createEdgeIndex(edgeLabel, indexName, edgeDirection, Collections.singletonList(propertyKey));
+
+            LOG.info("Created vertex-centric index for edge label: {} direction: {} for property: {} of type: {}",
+                    edgeLabel, edgeDirection.name(), propertyName, propertyClass.getName());
+        }
+    }
+
+    private void createVertexCentricIndex(AtlasGraphManagement management, String edgeLabel, AtlasEdgeDirection edgeDirection, List<String> propertyNames) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating vertex-centric index for edge label: {} direction: {} for properties: {}",
+                    edgeLabel, edgeDirection.name(), propertyNames);
+        }
+
+        String                 indexName    = edgeLabel;
+        List<AtlasPropertyKey> propertyKeys = new ArrayList<>();
+
+        for (String propertyName : propertyNames) {
+            AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+            if (propertyKey != null) {
+                propertyKeys.add(propertyKey);
+                indexName = indexName + propertyKey.getName();
+            }
+        }
+
+        if (!management.edgeIndexExist(edgeLabel, indexName) && CollectionUtils.isNotEmpty(propertyKeys)) {
+            management.createEdgeIndex(edgeLabel, indexName, edgeDirection, propertyKeys);
+
+            LOG.info("Created vertex-centric index for edge label: {} direction: {} for properties: {}", edgeLabel, edgeDirection.name(), propertyNames);
+        }
+    }
+
 
     private AtlasPropertyKey createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
                                              AtlasCardinality cardinality, boolean createCompositeIndex) {

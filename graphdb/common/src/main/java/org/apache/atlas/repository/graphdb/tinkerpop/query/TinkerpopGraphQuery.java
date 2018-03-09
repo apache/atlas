@@ -157,6 +157,45 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
     }
 
     @Override
+    public Iterable<AtlasEdge<V, E>> edges(int limit) {
+        return edges(0, limit);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<V, E>> edges(int offset, int limit) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
+        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<AtlasEdge<V, E>> result = new HashSet<>();
+        long resultIdx = 0;
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            if (result.size() == limit) {
+                break;
+            }
+
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(AtlasEdge<V, E> edge : andQuery.edges(offset + limit)) {
+                if (resultIdx >= offset) {
+                    result.add(edge);
+
+                    if (result.size() == limit) {
+                        break;
+                    }
+                }
+
+                resultIdx++;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public Iterable<AtlasVertex<V, E>> vertices(int limit) {
         return vertices(0, limit);
     }

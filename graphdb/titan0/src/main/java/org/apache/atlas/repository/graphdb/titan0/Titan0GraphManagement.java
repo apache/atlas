@@ -20,14 +20,15 @@ package org.apache.atlas.repository.graphdb.titan0;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -59,6 +60,20 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
 
     @Override
     public void createEdgeMixedIndex(String index, String backingIndex, List<AtlasPropertyKey> propertyKeys) {
+    }
+
+    @Override
+    public void createEdgeIndex(String label, String indexName, AtlasEdgeDirection edgeDirection, List<AtlasPropertyKey> propertyKeys) {
+        EdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        if (edgeLabel == null) {
+            edgeLabel = management.makeEdgeLabel(label).make();
+        }
+
+        Direction     direction = TitanObjectFactory.createDirection(edgeDirection);
+        PropertyKey[] keys      = TitanObjectFactory.createPropertyKeys(propertyKeys);
+
+        management.buildEdgeIndex(edgeLabel, indexName, direction, keys);
     }
 
     @Override
@@ -201,4 +216,10 @@ public class Titan0GraphManagement implements AtlasGraphManagement {
         return GraphDbObjectFactory.createGraphIndex(index);
     }
 
+    @Override
+    public boolean edgeIndexExist(String label, String indexName) {
+        EdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        return edgeLabel != null && management.getRelationIndex(edgeLabel, indexName) != null;
+    }
 }

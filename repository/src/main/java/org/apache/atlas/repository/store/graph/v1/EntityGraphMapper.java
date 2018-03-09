@@ -22,7 +22,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -74,15 +73,19 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdgeLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEntities;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
@@ -260,7 +263,6 @@ public class EntityGraphMapper {
 
         AtlasGraphUtilsV1.addProperty(ret, Constants.SUPER_TYPES_PROPERTY_KEY, classificationType.getAllSuperTypes());
         AtlasGraphUtilsV1.setProperty(ret, Constants.CLASSIFICATION_ENTITY_GUID, classification.getEntityGuid());
-        AtlasGraphUtilsV1.setProperty(ret, Constants.CLASSIFICATION_PROPAGATE_KEY, classification.isPropagate());
 
         return ret;
     }
@@ -1308,10 +1310,10 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
             }
 
-            String                    entityTypeName            = AtlasGraphUtilsV1.getTypeName(entityVertex);
-            final AtlasEntityType     entityType                = typeRegistry.getEntityTypeByName(entityTypeName);
-            List<AtlasVertex>         propagatedEntityVertices  = null;
-            List<AtlasClassification> propagagedClassifications = null;
+            final String                                entityTypeName        = AtlasGraphUtilsV1.getTypeName(entityVertex);
+            final AtlasEntityType                       entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
+            List<AtlasVertex>                           entitiesToPropagateTo = null;
+            Map<AtlasVertex, List<AtlasClassification>> propagations          = null;
 
             for (AtlasClassification classification : classifications) {
                 String  classificationName = classification.getTypeName();
@@ -1338,22 +1340,30 @@ public class EntityGraphMapper {
 
                 if (propagateTags) {
                     // compute propagatedEntityVertices only once
-                    if (propagatedEntityVertices == null) {
-                        propagatedEntityVertices = graphHelper.getImpactedVertices(guid);
+                    if (entitiesToPropagateTo == null) {
+                        entitiesToPropagateTo = graphHelper.getImpactedVertices(guid);
                     }
 
-                    if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
+                    if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                        if (propagations == null) {
+                            propagations = new HashMap<>(entitiesToPropagateTo.size());
+
+                            for (AtlasVertex entityToPropagateTo : entitiesToPropagateTo) {
+                                propagations.put(entityToPropagateTo, new ArrayList<>());
+                            }
+                        }
+
                         if (LOG.isDebugEnabled()) {
-                            LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityTypeName, getTypeNames(propagatedEntityVertices));
+                            LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityTypeName, getTypeNames(entitiesToPropagateTo));
                         }
 
-                        if (propagagedClassifications == null) {
-                            propagagedClassifications = new ArrayList<>();
+                        List<AtlasVertex> entitiesPropagatedTo = addTagPropagation(classificationVertex, entitiesToPropagateTo);
+
+                        if (entitiesPropagatedTo != null) {
+                            for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
+                                propagations.get(entityPropagatedTo).add(classification);
+                            }
                         }
-
-                        propagagedClassifications.add(classification);
-
-                        addTagPropagation(classificationVertex, propagatedEntityVertices);
                     } else {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug(" --> Not propagating classification: [{}][{}] - no entities found to propagate to.", getTypeName(classificationVertex), entityTypeName);
@@ -1369,171 +1379,235 @@ public class EntityGraphMapper {
             // notify listeners on classification addition
             List<AtlasVertex> notificationVertices = new ArrayList<AtlasVertex>() {{ add(entityVertex); }};
 
-            if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
-                notificationVertices.addAll(propagatedEntityVertices);
+            if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                notificationVertices.addAll(entitiesToPropagateTo);
             }
 
             for (AtlasVertex vertex : notificationVertices) {
                 String                    entityGuid           = GraphHelper.getGuid(vertex);
                 AtlasEntityWithExtInfo    entityWithExtInfo    = instanceConverter.getAndCacheEntity(entityGuid);
                 AtlasEntity               entity               = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-                List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? classifications : Collections.emptyList();
+                List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? classifications : propagations.get(vertex);
 
-                entityChangeNotifier.onClassificationAddedToEntity(entity, addedClassifications);
+                if (CollectionUtils.isNotEmpty(addedClassifications)) {
+                    entityChangeNotifier.onClassificationAddedToEntity(entity, addedClassifications);
+                }
             }
         }
     }
 
-    public void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException {
-        if (CollectionUtils.isNotEmpty(classificationNames)) {
-            AtlasVertex entityVertex = AtlasGraphUtilsV1.findByGuid(guid);
+    public void deleteClassifications(String entityGuid, List<String> classificationNames) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(classificationNames)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "delete", entityGuid);
+        }
 
-            if (entityVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-            }
+        AtlasVertex entityVertex = AtlasGraphUtilsV1.findByGuid(entityGuid);
 
-            List<String> traitNames = getTraitNames(entityVertex);
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
+        }
 
-            validateClassificationExists(traitNames, classificationNames);
+        List<String> traitNames = getTraitNames(entityVertex);
 
-            Set<String> impactedEntities = new HashSet<String>() {{ add(guid); }};
+        if (CollectionUtils.isEmpty(traitNames)) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, entityGuid);
+        }
 
-            for (String classificationName : classificationNames) {
-                AtlasEdge   classificationEdge   = graphHelper.getEdgeForLabel(entityVertex, getTraitLabel(classificationName));
-                AtlasVertex classificationVertex = classificationEdge.getInVertex();
+        validateClassificationExists(traitNames, classificationNames);
 
-                // remove classification from propagated entity vertices
-                boolean propagationEnabled = entityRetriever.isPropagationEnabled(classificationVertex);
+        Map<AtlasVertex, List<String>> removedClassifications = new HashMap<>();
 
-                if (propagationEnabled) {
-                    List<AtlasVertex> impactedEntityVertices = graphHelper.getPropagatedEntityVerticesFromClassification(classificationVertex);
+        for (String classificationName : classificationNames) {
+            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
 
-                    if (CollectionUtils.isNotEmpty(impactedEntityVertices)) {
-                        removeTagPropagation(classificationVertex);
+            // remove classification from propagated entities if propagation is turned on
+            if (isPropagationEnabled(classificationVertex)) {
+                List<AtlasVertex> impactedVertices = removeTagPropagation(classificationVertex);
 
-                        for (AtlasVertex impactedEntityVertex : impactedEntityVertices) {
-                            impactedEntities.add(GraphHelper.getGuid(impactedEntityVertex));
+                if (CollectionUtils.isNotEmpty(impactedVertices)) {
+                    for (AtlasVertex impactedVertex : impactedVertices) {
+                        List<String> classifications = removedClassifications.get(impactedVertex);
+
+                        if (classifications == null) {
+                            classifications = new ArrayList<>();
+
+                            removedClassifications.put(impactedVertex, classifications);
                         }
+
+                        classifications.add(classificationName);
                     }
                 }
-
-                // remove classification from associated entity vertex
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Removing classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName, getTypeName(entityVertex), guid, getTraitLabel(classificationName));
-                }
-
-                deleteHandler.deleteEdgeReference(classificationEdge, CLASSIFICATION, false, true, entityVertex);
-
-                traitNames.remove(classificationName);
             }
 
-            updateTraitNamesProperty(entityVertex, traitNames);
-
-            updateModificationMetadata(entityVertex);
-
-            for (String entityGuid : impactedEntities) {
-                AtlasEntityWithExtInfo    entityWithExtInfo          = instanceConverter.getAndCacheEntity(entityGuid);
-                AtlasEntity               entity                     = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-                List<String>              deletedClassificationNames = StringUtils.equals(entityGuid, guid) ? classificationNames : Collections.emptyList();
-
-                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
+            // remove classifications from associated entity
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
+                            getTypeName(entityVertex), entityGuid, CLASSIFICATION_LABEL);
             }
+
+            AtlasEdge edge = getClassificationEdge(entityVertex, classificationName);
+
+            deleteHandler.deleteEdgeReference(edge, CLASSIFICATION, false, true, entityVertex);
+
+            traitNames.remove(classificationName);
+        }
+
+        removedClassifications.put(entityVertex, classificationNames);
+
+        updateTraitNamesProperty(entityVertex, traitNames);
+
+        updateModificationMetadata(entityVertex);
+
+        for (Map.Entry<AtlasVertex, List<String>> entry : removedClassifications.entrySet()) {
+            String                 guid                       = GraphHelper.getGuid(entry.getKey());
+            List<String>           deletedClassificationNames = entry.getValue();
+            AtlasEntityWithExtInfo entityWithExtInfo          = instanceConverter.getAndCacheEntity(guid);
+            AtlasEntity            entity                     = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+
+            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
     }
 
     public void updateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if (CollectionUtils.isNotEmpty(classifications)) {
-            AtlasVertex entityVertex = AtlasGraphUtilsV1.findByGuid(guid);
+        if (CollectionUtils.isEmpty(classifications)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "update", guid);
+        }
 
-            if (entityVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        AtlasVertex entityVertex = AtlasGraphUtilsV1.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String                    entityTypeName           = AtlasGraphUtilsV1.getTypeName(entityVertex);
+        AtlasEntityType           entityType               = typeRegistry.getEntityTypeByName(entityTypeName);
+        List<AtlasClassification> updatedClassifications   = new ArrayList<>();
+        List<AtlasVertex>         entitiesToPropagateTo    = new ArrayList<>();
+        Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
+        Map<AtlasVertex, List<String>>              removedPropagations = null;
+
+        for (AtlasClassification classification : classifications) {
+            String classificationName       = classification.getTypeName();
+            String classificationEntityGuid = classification.getEntityGuid();
+
+            if (StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equalsIgnoreCase(guid, classificationEntityGuid)) {
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
             }
 
-            String                    entityTypeName           = AtlasGraphUtilsV1.getTypeName(entityVertex);
-            AtlasEntityType           entityType               = typeRegistry.getEntityTypeByName(entityTypeName);
-            List<AtlasClassification> updatedClassifications   = new ArrayList<>();
-            List<AtlasVertex>         propagatedEntityVertices = new ArrayList<>();
+            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
 
-            for (AtlasClassification classification : classifications) {
-                String classificationName       = classification.getTypeName();
-                String classificationEntityGuid = classification.getEntityGuid();
+            if (classificationVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
+            }
 
-                if (StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equalsIgnoreCase(guid, classificationEntityGuid)) {
-                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Updating classification {} for entity {}", classification, guid);
+            }
+
+            AtlasClassification currentClassification = entityRetriever.toAtlasClassification(classificationVertex);
+
+            validateAndNormalizeForUpdate(classification);
+
+            Map<String, Object> classificationAttributes = classification.getAttributes();
+
+            if (MapUtils.isNotEmpty(classificationAttributes)) {
+                for (String attributeName : classificationAttributes.keySet()) {
+                    currentClassification.setAttribute(attributeName, classificationAttributes.get(attributeName));
                 }
+            }
 
-                String    relationshipLabel  = getTraitLabel(entityTypeName, classificationName);
-                AtlasEdge classificationEdge = graphHelper.getEdgeForLabel(entityVertex, relationshipLabel);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("updating vertex {} for trait {}", string(classificationVertex), classificationName);
+            }
 
-                if (classificationEdge == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
-                }
+            mapClassification(EntityOperation.UPDATE, context, classification, entityType, entityVertex, classificationVertex);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Updating classification {} for entity {}", classification, guid);
-                }
+            // handle update of 'propagate' flag
+            boolean currentTagPropagation = currentClassification.isPropagate();
+            boolean updatedTagPropagation = classification.isPropagate();
 
-                AtlasVertex         classificationVertex  = classificationEdge.getInVertex();
-                AtlasClassification currentClassification = entityRetriever.toAtlasClassification(classificationVertex);
-
-                validateAndNormalizeForUpdate(classification);
-
-                Map<String, Object> classificationAttributes = classification.getAttributes();
-
-                if (MapUtils.isNotEmpty(classificationAttributes)) {
-                    for (String attributeName : classificationAttributes.keySet()) {
-                        currentClassification.setAttribute(attributeName, classificationAttributes.get(attributeName));
-                    }
-                }
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("updating vertex {} for trait {}", string(classificationVertex), classificationName);
-                }
-
-                mapClassification(EntityOperation.UPDATE, context, classification, entityType, entityVertex, classificationVertex);
-
-                // handle update of 'propagate' flag
-                boolean currentTagPropagation = currentClassification.isPropagate();
-                boolean updatedTagPropagation = classification.isPropagate();
-
-                // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
-                if (CollectionUtils.isEmpty(propagatedEntityVertices)) {
-                    propagatedEntityVertices = (currentTagPropagation) ? graphHelper.getPropagatedEntityVerticesFromClassification(classificationVertex) :
-                            graphHelper.getImpactedVertices(guid);
-                }
-
-                if (currentTagPropagation != updatedTagPropagation) {
-                    if (updatedTagPropagation) {
-                        addTagPropagation(classificationVertex, propagatedEntityVertices);
-                    } else {
-                        removeTagPropagation(classificationVertex);
+            // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
+            if (currentTagPropagation != updatedTagPropagation) {
+                if (updatedTagPropagation) {
+                    if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
+                        entitiesToPropagateTo = graphHelper.getImpactedVertices(guid);
                     }
 
-                    AtlasGraphUtilsV1.setProperty(classificationVertex, Constants.CLASSIFICATION_PROPAGATE_KEY, updatedTagPropagation);
+                    if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                        if (addedPropagations == null) {
+                            addedPropagations = new HashMap<>(entitiesToPropagateTo.size());
+
+                            for (AtlasVertex entityToPropagateTo : entitiesToPropagateTo) {
+                                addedPropagations.put(entityToPropagateTo, new ArrayList<>());
+                            }
+                        }
+
+                        List<AtlasVertex> entitiesPropagatedTo = addTagPropagation(classificationVertex, entitiesToPropagateTo);
+
+                        if (entitiesPropagatedTo != null) {
+                            for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
+                                addedPropagations.get(entityPropagatedTo).add(classification);
+                            }
+                        }
+                    }
+                } else {
+                    List<AtlasVertex> impactedVertices = removeTagPropagation(classificationVertex);
+
+                    if (CollectionUtils.isNotEmpty(impactedVertices)) {
+                        if (removedPropagations == null) {
+                            removedPropagations = new HashMap<>();
+
+                            for (AtlasVertex impactedVertex : impactedVertices) {
+                                List<String> removedClassifications = removedPropagations.get(impactedVertex);
+
+                                if (removedClassifications == null) {
+                                    removedClassifications = new ArrayList<>();
+
+                                    removedPropagations.put(impactedVertex, removedClassifications);
+                                }
+
+                                removedClassifications.add(classification.getTypeName());
+                            }
+                        }
+                    }
                 }
-
-                updatedClassifications.add(currentClassification);
             }
 
-            // notify listeners on classification update
-            List<AtlasVertex> notificationVertices = new ArrayList<AtlasVertex>() {{ add(entityVertex); }};
+            updatedClassifications.add(currentClassification);
+        }
 
-            if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
-                notificationVertices.addAll(propagatedEntityVertices);
-            }
+        // notify listeners on classification update
+        List<AtlasVertex> notificationVertices = new ArrayList<AtlasVertex>() {{ add(entityVertex); }};
 
-            for (AtlasVertex vertex : notificationVertices) {
-                String                    entityGuid                = GraphHelper.getGuid(vertex);
-                AtlasEntityWithExtInfo    entityWithExtInfo         = instanceConverter.getAndCacheEntity(entityGuid);
-                AtlasEntity               entity                    = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-                List<AtlasClassification> updatedClassificationList = StringUtils.equals(entityGuid, guid) ? updatedClassifications : Collections.emptyList();
+        if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+            notificationVertices.addAll(entitiesToPropagateTo);
+        }
 
-                entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassificationList);
+        for (AtlasVertex vertex : notificationVertices) {
+            String                    entityGuid                = GraphHelper.getGuid(vertex);
+            AtlasEntityWithExtInfo    entityWithExtInfo         = instanceConverter.getAndCacheEntity(entityGuid);
+            AtlasEntity               entity                    = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+            List<AtlasClassification> updatedClassificationList = StringUtils.equals(entityGuid, guid) ? updatedClassifications : Collections.emptyList();
+
+            entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassificationList);
+        }
+
+        if (removedPropagations != null) {
+            for (Map.Entry<AtlasVertex, List<String>> entry : removedPropagations.entrySet()) {
+                AtlasVertex            vertex                 = entry.getKey();
+                List<String>           removedClassifications = entry.getValue();
+                String                 entityGuid             = GraphHelper.getGuid(vertex);
+                AtlasEntityWithExtInfo entityWithExtInfo      = instanceConverter.getAndCacheEntity(entityGuid);
+                AtlasEntity            entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+
+                entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
             }
         }
     }
 
-    private void addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) {
+    private List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) {
+        List<AtlasVertex> ret = null;
+
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName = getTypeName(classificationVertex);
             AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
@@ -1545,19 +1619,27 @@ public class EntityGraphMapper {
                 if (classificationType.canApplyToEntityType(entityType)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
-                                GraphHelper.getGuid(propagatedEntityVertex), getPropagatedEdgeLabel(classificationName));
+                                   GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
-                    graphHelper.addEdge(propagatedEntityVertex, classificationVertex, getPropagatedEdgeLabel(classificationName));
+                    if (ret == null) {
+                        ret = new ArrayList<>();
+                    }
+
+                    ret.add(propagatedEntityVertex);
+
+                    graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
 
                     addListProperty(propagatedEntityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
                 }
             }
         }
+
+        return ret;
     }
 
-    private void removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
-        deleteHandler.removeTagPropagation(classificationVertex);
+    private List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        return deleteHandler.removeTagPropagation(classificationVertex);
     }
 
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification,
@@ -1571,17 +1653,18 @@ public class EntityGraphMapper {
             // if 'null', don't update existing value in the classification
         }
 
+        AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY, classification.isPropagate());
+
         // map all the attributes to this newly created AtlasVertex
         mapAttributes(classification, traitInstanceVertex, operation, context);
 
-        // add an edge to the newly created AtlasVertex from the parent
-        String relationshipLabel = getTraitLabel(entityType.getTypeName(), classification.getTypeName());
+        AtlasEdge ret = getClassificationEdge(parentInstanceVertex, getTypeName(traitInstanceVertex));
 
-        try {
-           return graphHelper.getOrCreateEdge(parentInstanceVertex, traitInstanceVertex, relationshipLabel);
-        } catch (RepositoryException e) {
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        if (ret == null) {
+            ret = graphHelper.addClassificationEdge(parentInstanceVertex, traitInstanceVertex, false);
         }
+
+        return ret;
     }
 
     public void deleteClassifications(String guid) throws AtlasBaseException {

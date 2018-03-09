@@ -25,6 +25,9 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Factory that serves up instances of Titan/Tinkerpop classes that correspond to
  * graph database abstraction layer/Atlas classes.
@@ -60,7 +63,7 @@ public final class TitanObjectFactory {
     /**
      * Converts a Multiplicity to a Cardinality.
      *
-     * @param multiplicity
+     * @param cardinality
      * @return
      */
     public static Cardinality createCardinality(AtlasCardinality cardinality) {
@@ -81,4 +84,16 @@ public final class TitanObjectFactory {
         return ((Titan0PropertyKey)key).getWrappedPropertyKey();
     }
 
+    public static PropertyKey[] createPropertyKeys(List<AtlasPropertyKey> keys) {
+        PropertyKey[] ret = new PropertyKey[keys.size()];
+
+        int i = 0;
+        for (AtlasPropertyKey key : keys) {
+            ret[i] = createPropertyKey(key);
+
+            i++;
+        }
+
+        return ret;
+    }
 }

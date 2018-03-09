@@ -18,6 +18,8 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Preconditions;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -80,6 +82,22 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
 
         indexBuilder.buildMixedIndex(backingIndex);
+    }
+
+    @Override
+    public void createEdgeIndex(String label, String indexName, AtlasEdgeDirection edgeDirection, List<AtlasPropertyKey> propertyKeys) {
+        EdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        if (edgeLabel == null) {
+            edgeLabel = management.makeEdgeLabel(label).make();
+        }
+
+        Direction     direction = AtlasJanusObjectFactory.createDirection(edgeDirection);
+        PropertyKey[] keys      = AtlasJanusObjectFactory.createPropertyKeys(propertyKeys);
+
+        if (management.getRelationIndex(edgeLabel, indexName) == null) {
+            management.buildEdgeIndex(edgeLabel, indexName, direction, keys);
+        }
     }
 
     @Override
@@ -189,6 +207,13 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         JanusGraphIndex index = management.getGraphIndex(indexName);
 
         return GraphDbObjectFactory.createGraphIndex(index);
+    }
+
+    @Override
+    public boolean edgeIndexExist(String label, String indexName) {
+        EdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        return edgeLabel != null && management.getRelationIndex(edgeLabel, indexName) != null;
     }
 
     @Override

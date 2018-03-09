@@ -48,6 +48,21 @@ public interface NativeTinkerpopGraphQuery<V, E> {
 
     /**
      * Executes graph query
+     * @param limit Max edges to return
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int limit);
+
+    /**
+     * Executes graph query
+     * @param offset Starting offset
+     * @param limit Max edges to return
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int offset, int limit);
+
+    /**
+     * Executes graph query
      * @param limit Max vertices to return
      * @return
      */

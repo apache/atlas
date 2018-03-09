@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.janus.query;
 
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphVertex;
@@ -61,6 +62,28 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges() {
         Iterable<JanusGraphEdge> it = query.edges();
         return graph.wrapEdges(it);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges(int limit) {
+        Iterable<JanusGraphEdge> it = query.limit(limit).edges();
+        return graph.wrapEdges(it);
+    }
+
+    @Override
+    public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges(int offset, int limit) {
+        List<Edge>               result = new ArrayList<>(limit);
+        Iterator<? extends Edge> iter   = query.limit(offset + limit).edges().iterator();
+
+        for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            if (resultIdx < offset) {
+                continue;
+            }
+
+            result.add(iter.next());
+        }
+
+        return graph.wrapEdges(result);
     }
 
     @Override
