@@ -145,12 +145,14 @@ public class AtlasLineageInfo implements Serializable {
     public static class LineageRelation {
         private String fromEntityId;
         private String toEntityId;
+        private String relationshipId;
 
         public LineageRelation() { }
 
-        public LineageRelation(String fromEntityId, String toEntityId) {
+        public LineageRelation(String fromEntityId, String toEntityId, final String relationshipId) {
             this.fromEntityId = fromEntityId;
             this.toEntityId   = toEntityId;
+            this.relationshipId = relationshipId;
         }
 
         public String getFromEntityId() {
@@ -169,18 +171,27 @@ public class AtlasLineageInfo implements Serializable {
             this.toEntityId = toEntityId;
         }
 
+        public String getRelationshipId() {
+            return relationshipId;
+        }
+
+        public void setRelationshipId(final String relationshipId) {
+            this.relationshipId = relationshipId;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             LineageRelation that = (LineageRelation) o;
             return Objects.equals(fromEntityId, that.fromEntityId) &&
-                    Objects.equals(toEntityId, that.toEntityId);
+                    Objects.equals(toEntityId, that.toEntityId) &&
+                    Objects.equals(relationshipId, that.relationshipId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(fromEntityId, toEntityId);
+            return Objects.hash(fromEntityId, toEntityId, relationshipId);
         }
 
         @Override
@@ -188,6 +199,7 @@ public class AtlasLineageInfo implements Serializable {
             return "LineageRelation{" +
                     "fromEntityId='" + fromEntityId + '\'' +
                     ", toEntityId='" + toEntityId + '\'' +
+                    ", relationshipId='" + relationshipId + '\'' +
                     '}';
         }
     }

@@ -33,6 +33,8 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
@@ -46,13 +48,14 @@ import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,9 +63,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class EntityLineageService implements AtlasLineageService {
-    private static final String INPUT_PROCESS_EDGE  = "__Process.inputs";
-    private static final String OUTPUT_PROCESS_EDGE = "__Process.outputs";
-    private static final String COLUMNS             = "columns";
+    private static final Logger LOG = LoggerFactory.getLogger(EntityLineageService.class);
+
+    private static final String PROCESS_INPUTS_EDGE  = "__Process.inputs";
+    private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
+    private static final String COLUMNS              = "columns";
 
     private final AtlasGraph                graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
@@ -162,7 +167,7 @@ public class EntityLineageService implements AtlasLineageService {
         List<String> ret        = new ArrayList<>();
         Object       columnObjs = entity.getAttribute(COLUMNS);
 
-        if (columnObjs != null && columnObjs instanceof List) {
+        if (columnObjs instanceof List) {
             for (Object pkObj : (List) columnObjs) {
                 if (pkObj instanceof AtlasObjectId) {
                     ret.add(((AtlasObjectId) pkObj).getGuid());
@@ -182,35 +187,27 @@ public class EntityLineageService implements AtlasLineageService {
         Set<LineageRelation>           relations    = new HashSet<>();
         String                         lineageQuery = getLineageQuery(guid, direction, depth);
 
-        List paths = (List) graph.executeGremlinScript(lineageQuery, true);
+        List edgeMapList = (List) graph.executeGremlinScript(lineageQuery, false);
 
-        if (CollectionUtils.isNotEmpty(paths)) {
-            for (Object path : paths) {
-                if (path instanceof List) {
-                    List vertices = (List) path;
+        if (CollectionUtils.isNotEmpty(edgeMapList)) {
+            for (Object edgeMap : edgeMapList) {
+                if (edgeMap instanceof Map) {
+                    for (final Object o : ((Map) edgeMap).entrySet()) {
+                        final Map.Entry entry = (Map.Entry) o;
+                        Object          value = entry.getValue();
 
-                    if (CollectionUtils.isNotEmpty(vertices)) {
-                        AtlasEntityHeader prev = null;
-
-                        for (Object vertex : vertices) {
-                            if (!(vertex instanceof AtlasVertex)) {
-                                continue;
-                            }
-
-                            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex) vertex);
-
-                            if (!entities.containsKey(entity.getGuid())) {
-                                entities.put(entity.getGuid(), entity);
-                            }
-
-                            if (prev != null) {
-                                if (direction.equals(LineageDirection.INPUT)) {
-                                    relations.add(new LineageRelation(entity.getGuid(), prev.getGuid()));
-                                } else if (direction.equals(LineageDirection.OUTPUT)) {
-                                    relations.add(new LineageRelation(prev.getGuid(), entity.getGuid()));
+                        if (value instanceof List) {
+                            for (Object elem : (List) value) {
+                                if (elem instanceof AtlasEdge) {
+                                    processEdge((AtlasEdge) elem, entities, relations);
+                                } else {
+                                    LOG.warn("Invalid value of type {} found, ignoring", (elem != null ? elem.getClass().getSimpleName() : "null"));
                                 }
                             }
-                            prev = entity;
+                        } else if (value instanceof AtlasEdge) {
+                            processEdge((AtlasEdge) value, entities, relations);
+                        } else {
+                            LOG.warn("Invalid value of type {} found, ignoring", (value != null ? value.getClass().getSimpleName() : "null"));
                         }
                     }
                 }
@@ -218,6 +215,31 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         return new AtlasLineageInfo(guid, entities, relations, direction, depth);
+    }
+
+    private void processEdge(final AtlasEdge edge, final Map<String, AtlasEntityHeader> entities, final Set<LineageRelation> relations) throws AtlasBaseException {
+        AtlasVertex inVertex     = edge.getInVertex();
+        AtlasVertex outVertex    = edge.getOutVertex();
+        String      inGuid       = AtlasGraphUtilsV1.getIdFromVertex(inVertex);
+        String      outGuid      = AtlasGraphUtilsV1.getIdFromVertex(outVertex);
+        String      relationGuid = AtlasGraphUtilsV1.getProperty(edge, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+
+        if (!entities.containsKey(inGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex);
+            entities.put(inGuid, entityHeader);
+        }
+
+        if (!entities.containsKey(outGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex);
+            entities.put(outGuid, entityHeader);
+        }
+
+        if (isInputEdge) {
+            relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
+        } else {
+            relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
+        }
     }
 
     private AtlasLineageInfo getBothLineageInfo(String guid, int depth) throws AtlasBaseException {
@@ -236,10 +258,10 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageQuery = null;
 
         if (direction.equals(LineageDirection.INPUT)) {
-            lineageQuery = generateLineageQuery(entityGuid, depth, OUTPUT_PROCESS_EDGE, INPUT_PROCESS_EDGE);
+            lineageQuery = generateLineageQuery(entityGuid, depth, PROCESS_OUTPUTS_EDGE, PROCESS_INPUTS_EDGE);
 
         } else if (direction.equals(LineageDirection.OUTPUT)) {
-            lineageQuery = generateLineageQuery(entityGuid, depth, INPUT_PROCESS_EDGE, OUTPUT_PROCESS_EDGE);
+            lineageQuery = generateLineageQuery(entityGuid, depth, PROCESS_INPUTS_EDGE, PROCESS_OUTPUTS_EDGE);
         }
 
         return lineageQuery;

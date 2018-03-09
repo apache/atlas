@@ -44,13 +44,9 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
             case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
                 return "g.V().has('__guid', startGuid).outE().inV().has('__guid').project('__guid', 'isProcess').by('__guid').by(map {it.get().values('__superTypeNames').toSet().contains('Process')}).dedup().toList()";
             case FULL_LINEAGE:
-                return "g.V().has('__guid', '%s').repeat(__.in('%s').out('%s'))." +
-                        "emit(has('__superTypeNames').and().properties('__superTypeNames').hasValue('DataSet'))." +
-                        "path().toList()";
+                return "g.V().has('__guid', '%s').repeat(__.inE('%s').as('e1').outV().outE('%s').as('e2').inV()).emit().select('e1', 'e2').toList()";
             case PARTIAL_LINEAGE:
-                return "g.V().has('__guid', '%s').repeat(__.in('%s').out('%s')).times(%s)." +
-                        "emit(has('__superTypeNames').and().properties('__superTypeNames').hasValue('DataSet'))." +
-                        "path().toList()";
+                return "g.V().has('__guid', '%s').repeat(__.inE('%s').as('e1').outV().outE('%s').as('e2').inV()).times(%s).emit().select('e1', 'e2').toList()";
             case TO_RANGE_LIST:
                 return ".range(startIdx, endIdx).toList()";
             case RELATIONSHIP_SEARCH:
