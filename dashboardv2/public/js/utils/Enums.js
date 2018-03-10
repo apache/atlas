@@ -74,31 +74,36 @@ define(['require'], function(require) {
     }
     Enums.regex = {
         RANGE_CHECK: {
-        "byte": {
-            min: -128,
-            max: 127
-        },
-        "short": {
-            min: -32768,
-            max: 32767
-        },
-        "int": {
-            min: -2147483648,
-            max: 2147483647
-        },
-        "long": {
-            min: -9223372036854775808,
-            max: 9223372036854775807
-        },
-        "float": {
-            min: -3.4028235E38,
-            max: 3.4028235E38
-        },
-        "double": {
-            min: -1.7976931348623157E308,
-            max: 1.7976931348623157E308
+            "byte": {
+                min: -128,
+                max: 127
+            },
+            "short": {
+                min: -32768,
+                max: 32767
+            },
+            "int": {
+                min: -2147483648,
+                max: 2147483647
+            },
+            "long": {
+                min: -9223372036854775808,
+                max: 9223372036854775807
+            },
+            "float": {
+                min: -3.4028235E38,
+                max: 3.4028235E38
+            },
+            "double": {
+                min: -1.7976931348623157E308,
+                max: 1.7976931348623157E308
+            }
         }
-      }
+    }
+    Enums.graphIcon = {
+        // hive_db: { icon: "fa-database", textContent: '\uf1c0' },
+        // hive_column: { icon: "fa-columns", textContent: '\uf0db' },
+        // hive_table: { icon: "fa-table", textContent: '\uf0ce' }
     }
     return Enums;
 });

@@ -201,7 +201,9 @@ define(['require',
                 );
             },
             createGraph: function() {
-                var that = this;
+                var that = this,
+                    width = this.$('svg').width(),
+                    height = this.$('svg').height();
                 this.g.nodes().forEach(function(v) {
                     var node = that.g.node(v);
                     // Round the corners of the nodes
@@ -283,7 +285,9 @@ define(['require',
                     return shapeSvg;
                 };
                 // Set up an SVG group so that we can translate the final graph.
-                var svg = this.svg = d3.select(this.$("svg")[0]),
+                var svg = this.svg = d3.select(this.$("svg")[0])
+                    .attr("viewBox", "0 0 " + width + " " + height)
+                    .attr("enable-background", "new 0 0 " + width + " " + height),
                     svgGroup = svg.append("g");
                 var zoom = this.zoom = d3.behavior.zoom()
                     .scaleExtent([0.5, 6])
@@ -392,7 +396,7 @@ define(['require',
                     .on('dblclick', function(d) {
                         tooltip.hide(d);
                         Utils.setUrl({
-                            url: '#!/detailPage/' + d,
+                            url: '#!/detailPage/' + d + '?tabActive=lineage',
                             mergeBrowserUrl: false,
                             trigger: true
                         });

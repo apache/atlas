@@ -4,14 +4,15 @@
  * Licensed under MIT (https://github.com/BlackrockDigital/startbootstrap/blob/gh-pages/LICENSE)
  */
 
+
 /* Toggle Styles */
 
 #wrapper {
     padding-left: 0;
-    -webkit-transition: all 0.5s ease;
-    -moz-transition: all 0.5s ease;
-    -o-transition: all 0.5s ease;
-    transition: all 0.5s ease;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 #wrapper.toggled {
@@ -27,14 +28,15 @@
     margin-left: -350px;
     overflow-y: auto;
     background: #323544;
-    -webkit-transition: all 0.5s ease;
-    -moz-transition: all 0.5s ease;
-    -o-transition: all 0.5s ease;
-    transition: all 0.5s ease;
+    -moz-transition: left 0.3s;
+    -o-transition: left 0.3s;
+    -webkit-transition: left 0.3s;
+    transition: left 0.3s;
 }
 
 #wrapper.toggled #sidebar-wrapper {
-    width: 350px;}
+    width: 350px;
+}
 
 #page-content-wrapper {
     width: 100%;
@@ -46,67 +48,76 @@
     margin-right: -350px;
 }
 
+
 /* Sidebar Styles */
+
 .sidebar-nav {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.sidebar-nav > li {
+.sidebar-nav>li {
     line-height: 50px;
     padding: 0 20px;
     border-bottom: 1px #1c1e2a solid;
 }
-.sidebar-nav > li a {
+
+.sidebar-nav>li a {
     display: block;
     text-decoration: none;
     color: #fff;
 }
 
-.sidebar-nav > li a:hover {
+.sidebar-nav>li a:hover {
     text-decoration: none;
     color: #fff;
 }
 
-.sidebar-nav > li a:active,
-.sidebar-nav > li a:focus {
+.sidebar-nav>li a:active,
+.sidebar-nav>li a:focus {
     text-decoration: none;
 }
 
-.sidebar-nav > .sidebar-brand {
+.sidebar-nav>.sidebar-brand {
     font-size: 18px;
-    line-height: 60px;
+    line-height: 50px;
 }
 
-.sidebar-nav > .sidebar-brand a {
+.sidebar-nav>.sidebar-brand a {
     color: #ddd;
     letter-spacing: 1px;
 }
 
-.sidebar-nav > .sidebar-brand a:hover {
+.sidebar-nav>.sidebar-brand a:hover {
     color: #fff;
     background: none;
 }
 
+
 /* Extended Elements */
+
 .sidebar-input .input-group {
     margin: 10px 0px;
 }
+
 .sidebar-input .form-control,
 .sidebar-input .input-group-addon {
     background-color: transparent;
     border-radius: 0px;
 }
+
 .sidebar-input .form-control {
     border-right: none;
     color: #eee;
 }
+
 .sidebar-input .input-group-addon {
     border-left: none;
     color: #ccc;
 }
-.sidebar-input .form-control:focus + .input-group-addon {
+
+.sidebar-input .form-control:focus+.input-group-addon {
     border-color: #66afe9;
 }
 
@@ -120,7 +131,8 @@
     }
 
     #sidebar-wrapper {
-        width: 350px;    }
+        width: 350px;
+    }
 
     #wrapper.toggled #sidebar-wrapper {
         width: 0;

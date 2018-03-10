@@ -54,3 +54,22 @@
         }
     }
 }
+
+.details-backbutton {
+    display: none !important;
+}
+
+.full-screen {
+    #sidebar-wrapper {
+        left: 0;
+    }
+    #wrapper {
+        padding-left: 0px;
+    }
+}
+
+.detail-page {
+    .details-backbutton {
+        display: block !important;
+    }
+}

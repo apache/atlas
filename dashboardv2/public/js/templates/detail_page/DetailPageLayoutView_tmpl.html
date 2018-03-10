@@ -19,10 +19,7 @@
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <div class="entityDetail form-horizontal col-sm-12">
-        <div class="row">
-            <a href="javascript:void(0);" data-id="backButton"><i class="fa fa-chevron-left"></i>  Back To Results</a>
-        </div>
-        <h1 class="form-group"><span  data-id="title"></span></h1> {{#if entityUpdate}}
+        <h1 class="title row"><span data-id="title"></span></h1> {{#if entityUpdate}}
         <div data-id="editButtonContainer" class="pull-right"></div>
         {{/if}}
         <div class="form-group">
@@ -39,91 +36,72 @@
             </div>
         </div>
     </div>
-</div>
-<div class="container-fluid gray-bg">
     <div class="row">
-        <div class="col-sm-custom">
-            <div class="">
-                <!--  <h4 class="lineageLabel"></h4> -->
-                <div class="lineageLayout">
-                    <div class="panel panel-default" id="panel">
-                        <div class="panel-heading clearfix">
-                            <h4 class="panel-title pull-left"> LINEAGE & IMPACT</h4>
-                            <div class="btn-group pull-right">
-                                <button type="button" class="fullscreen_panel" id="fullscreen_panel" title="Fullscreen"><i class="fa fa-expand" aria-hidden="true"></i></button>
-                                <button type="button" id="expand_collapse_panel" class="expand_collapse_panel" title="Collapse"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
-                            </div>
-                        </div>
-                        <div id="panel_body" class="panel-body graph-bg resize-graph animated" align="center" style="height:375px;">
-                            <div id="r_lineageLayoutView">
-                                <div class="fontLoader">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
+        <div class="col-sm-12 default-tab">
+            <ul class="nav nav-tabs" data-id="tab-list">
+                <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
+                <li role="lineage" class="tab"><a href="#tab-lineage" aria-controls="tab-lineage" role="tab" data-toggle="tab">Lineage</a></li>
+                <li role="relationship" class="tab"><a href="#tab-relationship" aria-controls="tab-relationship" role="tab" data-toggle="tab">Relationships</a></li>
+                <li role="classification"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
+                <li role="audit" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
+                <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="gray-bg">
+    <div class="tab-content">
+        <div id="tab-details" role="properties" class="tab-pane active animated fadeIn">
+            <div id="r_entityDetailTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+            </div>
+        </div>
+        <div id="tab-lineage" role="lineage" class="tab-pane animated fadeIn">
+            <div class="resize-graph animated" align="center" style="height:64vh;">
+                <div id="r_lineageLayoutView">
+                    <div class="fontLoader-relative">
+                        <i class="fa fa-refresh fa-spin-custom"></i>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-sm-custom">
-            <div class="panel with-nav-tabs panel-default">
-                <div class="panel-heading clearfix">
-                    <h4 class="panel-title pull-left">DETAILS</h4>
-                    <div class="btn-group pull-right">
-                        <button type="button" class="expand_collapse_panel" title="Collapse"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
+        <div id="tab-relationship" role="relationship" class="tab-pane animated fadeIn">
+            <div class="resize-graph animated" align="center" style="height:64vh;">
+                <div id="r_relationshipLayoutView">
+                    <div class="fontLoader-relative">
+                        <i class="fa fa-refresh fa-spin-custom"></i>
                     </div>
                 </div>
-                <div class="panel-body">
-                    <div class="row">
-                        <div class="col-sm-12">
-                            <ul class="nav nav-tabs ">
-                                <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                                <li role="tags"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
-                                <li role="audits" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
-                                <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
-                                <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="tab-content">
-                        <div id="tab-details" role="properties" class="tab-pane active">
-                            <div id="r_entityDetailTableLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-tagTable" role="tags" class="tab-pane fade">
-                            <div id="r_tagTableLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-audit" role="audits" class="tab-pane">
-                            <div id="r_auditTableLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-schema" role="schema" class="tab-pane">
-                            <div id="r_schemaTableLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-profile" role="profile" class="tab-pane">
-                            <div id="r_profileLayoutView">
-                                <div class="fontLoader-relative">
-                                    <i class="fa fa-refresh fa-spin-custom"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+        </div>
+        <div id="tab-tagTable" role="classification" class="tab-pane animated fadeIn">
+            <div id="r_tagTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+            </div>
+        </div>
+        <div id="tab-audit" role="audit" class="tab-pane animated fadeIn">
+            <div id="r_auditTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+            </div>
+        </div>
+        <div id="tab-schema" role="schema" class="tab-pane animated fadeIn">
+            <div id="r_schemaTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+            </div>
+        </div>
+        <div id="tab-profile" role="profile" class="tab-pane animated fadeIn">
+            <div id="r_profileLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
                 </div>
             </div>
         </div>

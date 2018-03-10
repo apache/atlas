@@ -43,7 +43,7 @@ header {
     >a {
         display: inline-block;
         color: $color_ironside_gray_approx;
-        padding: 16px 14px;
+        padding: 15px 14px;
         &:hover {
             border-bottom: 2px solid $color_jungle_green_approx;
             padding: 14px 14px;
@@ -53,7 +53,6 @@ header {
             padding: 5px;
         }
         i {
-            margin-top: 7px;
             font-size: 18px;
         }
     }
@@ -95,7 +94,11 @@ header {
 
 .page-title {
     background-color: $white;
-    padding: 25px;
+    padding: 10px 15px;
+    .title {
+        padding-top: 0;
+        margin-top: 0;
+    }
     h1 {
         // margin-top: 50px;
         margin-bottom: 10px;
@@ -206,8 +209,7 @@ hr[size="10"] {
 }
 
 .gray-bg {
-    background-color: #f6f7fb;
-    padding-bottom: 4%;
+    background-color: $color_white_lilac_approx
 }
 
 

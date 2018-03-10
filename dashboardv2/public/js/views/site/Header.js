@@ -19,15 +19,37 @@
 define(['require',
     'hbs!tmpl/site/Header',
     'utils/CommonViewFunction',
-    'utils/Globals'
-], function(require, tmpl, CommonViewFunction, Globals) {
+    'utils/Globals',
+    'utils/Utils'
+], function(require, tmpl, CommonViewFunction, Globals, Utils) {
     'use strict';
 
     var Header = Marionette.LayoutView.extend({
         template: tmpl,
         regions: {},
-        events: {},
+        ui: {
+            backButton: "[data-id='backButton']",
+            menuHamburger: "[data-id='menuHamburger']",
+        },
+        events: function() {
+            var events = {};
+            events['click ' + this.ui.backButton] = function() {
+                Utils.setUrl({
+                    url: Globals.saveApplicationState.tabState.searchUrl,
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
+
+            };
+            events['click ' + this.ui.menuHamburger] = function() {
+                $('body').toggleClass("full-screen");
+            };
+            return events;
+
+        },
         initialize: function(options) {},
+
         onRender: function() {
             var that = this;
             if (Globals.userLogedIn.status) {

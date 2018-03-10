@@ -14,13 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="position-relative">
-    <div class="tableOverlay"></div>
-    <div class="inline-content-fr table-action-btn">
-        <div class="inline" >
-            <label class="checkbox-inline btn">
-                <input type="checkbox" data-id="checkPropagtedTag" class="input" checked="true" name="queryType" value="text" name="check" value="1" /> Show Propagated Classifications</label>
+<!-- <div class="graph-toolbar clearfix"></div> -->
+<div style="position: absolute;height:100%;width:100%;" class="white-bg no-padding relationship-box">
+    <div class="fontLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
+    </div>
+    <div style="position: absolute;height:100%;width:100%;">
+        <svg width="100%" height="100%" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
+    </div>
+    <div class="relationship-details">
+        <div data-id="close" class="close-details"><i class="fa fa-times"></i></div>
+        <h4 class="title"><span data-id="typeName"></span></h4>
+        <div class="col-md-12">
+            <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />
+            <ul data-id="entityList" class="entity-list"></ul>
         </div>
     </div>
-    <div id="r_tagTableLayoutView"></div>
 </div>
