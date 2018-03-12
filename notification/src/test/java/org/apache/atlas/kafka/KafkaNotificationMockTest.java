@@ -77,7 +77,8 @@ public class KafkaNotificationMockTest {
         String topicName = kafkaNotification.getTopicName(NotificationInterface.NotificationType.HOOK);
         String message = "This is a test message";
         Future returnValue = mock(Future.class);
-        when(returnValue.get()).thenReturn(new RecordMetadata(new TopicPartition(topicName, 0), 0, 0));
+        TopicPartition topicPartition = new TopicPartition(topicName, 0);
+        when(returnValue.get()).thenReturn(new RecordMetadata(topicPartition, 0, 0, 0, Long.valueOf(0), 0, 0));
         ProducerRecord expectedRecord = new ProducerRecord(topicName, message);
         when(producer.send(expectedRecord)).thenReturn(returnValue);
 
