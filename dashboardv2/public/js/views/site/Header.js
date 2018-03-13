@@ -34,8 +34,13 @@ define(['require',
         events: function() {
             var events = {};
             events['click ' + this.ui.backButton] = function() {
+                var queryParams = Utils.getUrlState.getQueryParams(),
+                    urlPath = "searchUrl";
+                if (queryParams && queryParams.from && queryParams.from == "classification") {
+                    urlPath = "tagUrl";
+                }
                 Utils.setUrl({
-                    url: Globals.saveApplicationState.tabState.searchUrl,
+                    url: Globals.saveApplicationState.tabState[urlPath],
                     mergeBrowserUrl: false,
                     trigger: true,
                     updateTabState: true

@@ -114,13 +114,16 @@ define(['require',
                     typeName = data.typeName || options.obj.name,
                     searchString = options.searchString,
                     listString = "";
-
+                this.ui.searchNode.hide();
                 this.$("[data-id='typeName']").text(typeName);
                 var getElement = function(options) {
                     var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
                     return "<li><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a></li>";
                 }
                 if (_.isArray(data)) {
+                    if (data.length > 1) {
+                        this.ui.searchNode.show();
+                    }
                     _.each(_.sortBy(data, "displayText"), function(val) {
                         var name = Utils.getName(val, "displayText"),
                             valObj = _.extend({}, val, { entityName: name });
@@ -166,11 +169,57 @@ define(['require',
                     .on("zoom", zoomed);
 
                 function zoomed() {
-                    var translateX = d3.event.translate[0];
-                    var translateY = d3.event.translate[1];
-                    var xScale = d3.event.scale;
-                    container.attr("transform", "translate(" + translateX + "," + translateY + ")scale(" + xScale + ")");
+                    container.attr("transform",
+                        "translate(" + zoom.translate() + ")" +
+                        "scale(" + zoom.scale() + ")"
+                    );
                 }
+
+                function interpolateZoom(translate, scale) {
+                    var self = this;
+                    return d3.transition().duration(350).tween("zoom", function() {
+                        var iTranslate = d3.interpolate(zoom.translate(), translate),
+                            iScale = d3.interpolate(zoom.scale(), scale);
+                        return function(t) {
+                            zoom
+                                .scale(iScale(t))
+                                .translate(iTranslate(t));
+                            zoomed();
+                        };
+                    });
+                }
+
+                function zoomClick() {
+                    var clicked = d3.event.target,
+                        direction = 1,
+                        factor = 0.5,
+                        target_zoom = 1,
+                        center = [width / 2, height / 2],
+                        extent = zoom.scaleExtent(),
+                        translate = zoom.translate(),
+                        translate0 = [],
+                        l = [],
+                        view = { x: translate[0], y: translate[1], k: zoom.scale() };
+
+                    d3.event.preventDefault();
+                    direction = (this.id === 'zoom_in') ? 1 : -1;
+                    target_zoom = zoom.scale() * (1 + factor * direction);
+
+                    if (target_zoom < extent[0] || target_zoom > extent[1]) { return false; }
+
+                    translate0 = [(center[0] - view.x) / view.k, (center[1] - view.y) / view.k];
+                    view.k = target_zoom;
+                    l = [translate0[0] * view.k + view.x, translate0[1] * view.k + view.y];
+
+                    view.x += center[0] - l[0];
+                    view.y += center[1] - l[1];
+
+                    interpolateZoom([view.x, view.y], view.k);
+                }
+
+
+
+                d3.selectAll(this.$('span.lineageZoomButton')).on('click', zoomClick);
 
                 var svg = d3.select(this.$("svg")[0])
                     .attr("viewBox", "0 0 " + width + " " + height)
@@ -214,6 +263,16 @@ define(['require',
                     .data(force.nodes())
                     .enter().append("g")
                     .attr("class", "node")
+                    .on('touchstart', function(d) {
+                        if (d && d.value && d.value.guid != that.guid) {
+                            d3.event.stopPropagation();
+                        }
+                    })
+                    .on('mousedown', function(d) {
+                        if (d && d.value && d.value.guid != that.guid) {
+                            d3.event.stopPropagation();
+                        }
+                    })
                     .on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
                         that.toggleInformationSlider({ open: true, obj: d });
@@ -302,7 +361,7 @@ define(['require',
                     .attr("text-anchor", "middle")
                     .attr("fill", "#e0e0e0")
                     .text(function(d) {
-                        if (_.isArray(d.value)) {
+                        if (_.isArray(d.value) && d.value.length > 1) {
                             return d.value.length;
                         }
                     });

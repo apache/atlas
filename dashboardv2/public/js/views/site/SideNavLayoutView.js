@@ -112,12 +112,23 @@ define(['require',
             });
         },
         selectTab: function() {
-            if (Utils.getUrlState.isTagTab()) {
-                this.$('.tabs').find('li a[aria-controls="tab-tag"]').parents('li').addClass('active').siblings().removeClass('active');
-                this.$('.tab-content').find('div#tab-tag').addClass('active').siblings().removeClass('active');
-            } else if (Utils.getUrlState.isSearchTab() || (Utils.getUrlState.isDetailPage()) || Utils.getUrlState.isInitial()) {
-                this.$('.tabs').find('li a[aria-controls="tab-search"]').parents('li').addClass('active').siblings().removeClass('active');
-                this.$('.tab-content').find('div#tab-search').addClass('active').siblings().removeClass('active');
+            var that = this;
+            var activeTab = function(options) {
+                var view = options.view;
+                that.$('.tabs').find('li a[aria-controls="tab-' + view + '"]').parents('li').addClass('active').siblings().removeClass('active');
+                that.$('.tab-content').find('div#tab-' + view).addClass('active').siblings().removeClass('active');
+            };
+            if (Utils.getUrlState.isSearchTab() || Utils.getUrlState.isInitial()) {
+                activeTab({ "view": "search" });
+            } else if (Utils.getUrlState.isTagTab()) {
+                activeTab({ "view": "tag" });
+            } else if (Utils.getUrlState.isDetailPage()) {
+                var queryParams = Utils.getUrlState.getQueryParams(),
+                    view = "search";
+                if (queryParams && queryParams.from && queryParams.from == "classification") {
+                    view = "tag";
+                }
+                activeTab({ "view": view });
             }
         },
     });

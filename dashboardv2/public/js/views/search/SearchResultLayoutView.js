@@ -124,7 +124,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable'));
+                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable', 'fromView'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -600,7 +600,7 @@ define(['require',
                                 nameHtml = "",
                                 name = Utils.getName(obj);
                             if (obj.guid) {
-                                nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + '">' + name + '</a>';
+                                nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
                             } else {
                                 nameHtml = '<span title="' + name + '">' + name + '</span>';
                             }
@@ -747,7 +747,7 @@ define(['require',
                                         var nameHtml = "",
                                             name = modelObj[key];
                                         if (modelObj.guid) {
-                                            nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + '">' + name + '</a>';
+                                            nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
                                         } else {
                                             nameHtml = '<span title="' + name + '">' + name + '</span>';
                                         }
