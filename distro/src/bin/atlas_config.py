@@ -47,6 +47,7 @@ HBASE_CONF_DIR = "HBASE_CONF_DIR"
 MANAGE_LOCAL_HBASE = "MANAGE_LOCAL_HBASE"
 MANAGE_LOCAL_SOLR = "MANAGE_LOCAL_SOLR"
 MANAGE_EMBEDDED_CASSANDRA = "MANAGE_EMBEDDED_CASSANDRA"
+MANAGE_LOCAL_ELASTICSEARCH = "MANAGE_LOCAL_ELASTICSEARCH"
 SOLR_BIN = "SOLR_BIN"
 SOLR_CONF = "SOLR_CONF"
 SOLR_PORT = "SOLR_PORT"
@@ -58,7 +59,7 @@ DEFAULT_SOLR_REPLICATION_FACTOR = "1"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
-            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA]
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
@@ -106,6 +107,9 @@ def zookeeperBinDir(dir):
 
 def solrBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "solr", BIN))
+
+def elasticsearchBinDir(dir):
+    return os.environ.get(SOLR_BIN, os.path.join(dir, "elasticsearch", BIN))
 
 def solrConfDir(dir):
     return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
@@ -448,6 +452,12 @@ def is_solr_local(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and grep(confdir, SOLR_INDEX_LOCAL_CONF_ENTRY) is not None
 
+def is_elasticsearch_local():
+    if os.environ.get(MANAGE_LOCAL_ELASTICSEARCH, "False").lower() == 'false':
+        return False
+
+    return True
+
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return getConfig(confdir, SOLR_INDEX_ZK_URL)
@@ -519,6 +529,19 @@ def run_zookeeper(dir, action, logdir = None, wait=True):
     cmd = [os.path.join(dir, zookeeperScript), action, os.path.join(dir, '../../conf/zookeeper/zoo.cfg')]
 
     return runProcess(cmd, logdir, False, wait)
+
+def start_elasticsearch(dir, logdir = None, wait=True):
+
+    elasticsearchScript = "elasticsearch"
+
+    if IS_WINDOWS:
+        elasticsearchScript = "elasticsearch.bat"
+
+    cmd = [os.path.join(dir, elasticsearchScript), '-d', '-p', os.path.join(logdir, 'elasticsearch.pid')]
+
+    processVal = runProcess(cmd, logdir, False, wait)
+    sleep(6)
+    return processVal
 
 def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
 

@@ -20,7 +20,13 @@ If any further JanusGraph configuration needs to be setup, please prefix the pro
 In addition to setting up configurations, please ensure that environment variable HBASE_CONF_DIR is setup to point to
 the directory containing HBase configuration file hbase-site.xml.
 
----+++ Graph Search Index - Solr
+---+++ Graph Index Search Engine
+
+An index search engine is required for ATLAS. This search engine runs separately from the ATLAS server and from the
+storage backend. Only two search engines are currently supported: Solr and Elasticsearch. Pick the search engine
+best suited for your environment and follow the configuration instructions below.
+
+---++++ Graph Search Index - Solr
 Solr installation in Cloud mode is a prerequisite for Apache Atlas use. Set the following properties to configure JanusGraph to use Solr as the index search engine.
 
 <verbatim>
@@ -37,6 +43,14 @@ atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
 # SolrCloud Zookeeper Session Timeout. Default value is 60000 ms
 atlas.graph.index.search.solr.zookeeper-session-timeout=60000
 </verbatim>
+
+---++++ Graph Search Index - Elasticsearch (Tech Preview)
+Elasticsearch is a prerequisite for Apache Atlas use. Set the following properties to configure JanusGraph to use Elasticsearch as the index search engine.
+
+<verbatim>
+atlas.graph.index.search.backend=elasticsearch
+atlas.graph.index.search.hostname=<hostname(s) of the Elasticsearch master nodes comma separated>
+atlas.graph.index.search.elasticsearch.client-only=true</verbatim>
 
 
 ---++ Search Configs

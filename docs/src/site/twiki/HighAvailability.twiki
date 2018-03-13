@@ -170,14 +170,24 @@ HA guarantees HBase provides. In order to configure Atlas to use HBase in HA mod
 ---++ Index Store
 
 As described above, Atlas indexes metadata through JanusGraph to support full text search queries. In order to provide HA
-for the index store, we recommend that Atlas be configured to use Solr as the backing index store for JanusGraph. In order
-to configure Atlas to use Solr in HA mode, do the following:
+for the index store, we recommend that Atlas be configured to use Solr or Elasticsearch as the backing index store for JanusGraph.
+
+---+++ Solr
+In order to configure Atlas to use Solr in HA mode, do the following:
 
    * Choose an existing !SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [[https://cwiki.apache.org/confluence/display/solr/SolrCloud][SolrCloud cluster]].
       * Ensure Solr is brought up on at least 2 physical hosts for redundancy, and each host runs a Solr node.
       * We recommend the number of replicas to be set to at least 2 for redundancy.
    * Create the !SolrCloud collections required by Atlas, as described in [[InstallationSteps][Installation Steps]]
    * Refer to the [[Configuration][Configuration page]] for the options to configure in atlas.properties to setup Atlas with Solr.
+
+---+++ Elasticsearch  (Tech Preview)
+In order to configure Atlas to use Elasticsearch in HA mode, do the following:
+
+   * Choose an existing Elasticsearch cluster setup, (OR) setup a new cluster [[https://www.elastic.co/guide/en/elasticsearch/reference/5.6/setup.html][Elasticsearch cluster]].
+      * Ensure that Elasticsearch is brought up on at least five physical hosts for redundancy.
+      * A replica count of 3 is recommended
+   * Refer to the [[Configuration][Configuration page]] for the options to configure in atlas.properties to setup Atlas with Elasticsearch.
 
 ---++ Notification Server
 

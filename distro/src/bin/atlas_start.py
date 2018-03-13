@@ -134,6 +134,12 @@ def main():
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir)
 
+    #elasticsearch setup
+    if mc.is_elasticsearch_local():
+        print "configured for local elasticsearch."
+        mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir)
+        print "elasticsearch started."
+
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
