@@ -18,6 +18,10 @@
 
 package org.apache.atlas.repository;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
+import org.apache.commons.configuration.Configuration;
+
 /**
  * Repository Constants.
  *
@@ -52,12 +56,12 @@ public final class Constants {
     /**
      * Properties for type store graph.
      */
-    public static final String TYPE_CATEGORY_PROPERTY_KEY   = INTERNAL_PROPERTY_KEY_PREFIX + "type.category";
-    public static final String VERTEX_TYPE_PROPERTY_KEY     = INTERNAL_PROPERTY_KEY_PREFIX + "type";
-    public static final String TYPENAME_PROPERTY_KEY        = INTERNAL_PROPERTY_KEY_PREFIX + "type.name";
-    public static final String TYPEDESCRIPTION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.description";
-    public static final String TYPEVERSION_PROPERTY_KEY     = INTERNAL_PROPERTY_KEY_PREFIX + "type.version";
-    public static final String TYPEOPTIONS_PROPERTY_KEY     = INTERNAL_PROPERTY_KEY_PREFIX + "type.options";
+    public static final String TYPE_CATEGORY_PROPERTY_KEY   = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.category");
+    public static final String VERTEX_TYPE_PROPERTY_KEY     = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type");
+    public static final String TYPENAME_PROPERTY_KEY        = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.name");
+    public static final String TYPEDESCRIPTION_PROPERTY_KEY = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.description");
+    public static final String TYPEVERSION_PROPERTY_KEY     = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
+    public static final String TYPEOPTIONS_PROPERTY_KEY     = getTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.options");
 
     // relationship def constants
     public static final String RELATIONSHIPTYPE_END1_KEY                               = "endDef1";
@@ -135,4 +139,19 @@ public final class Constants {
     private Constants() {
     }
 
+    private static String getTypePropertyKey(String defaultKey) {
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            if (configuration.containsKey("atlas.graph.index.search.backend") &&
+                configuration.getString("atlas.graph.index.search.backend").equals("elasticsearch")) {
+
+                return defaultKey.replaceAll("\\.", "_");
+            }
+
+            return defaultKey;
+        } catch (AtlasException e) {
+            return defaultKey;
+        }
+    }
 }

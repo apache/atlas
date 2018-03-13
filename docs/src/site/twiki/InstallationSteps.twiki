@@ -185,6 +185,24 @@ Pre-requisites for running Solr in cloud mode
   * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Solr nodes running on different servers with replication enabled.
     If using !SolrCloud, then you also need !ZooKeeper installed and configured with 3 or 5 !ZooKeeper nodes
 
+*Configuring Elasticsearch as the Indexing Backend for the Graph Repository (Tech Preview)*
+
+By default, Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Elasticsearch, please follow the instructions below
+
+   * Install an Elasticsearch cluster. The version currently supported is 5.6.4, and can be acquired from: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.4.tar.gz
+
+   * For simple testing a single Elasticsearch node can be started by using the 'elasticsearch' command in the bin directory of the Elasticsearch distribution.
+
+   * Change ATLAS configuration to point to the Elasticsearch instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
+<verbatim>
+ atlas.graph.index.search.backend=elasticsearch
+ atlas.graph.index.search.hostname=<the hostname(s) of the Elasticsearch master nodes comma separated>
+ atlas.graph.index.search.elasticsearch.client-only=true
+
+   * Restart Atlas
+
+For more information on JanusGraph solr configuration , please refer http://docs.janusgraph.org/0.2.0/elasticsearch.html
+
 *Configuring Kafka Topics*
 
 Atlas uses Kafka to ingest metadata from other components at runtime. This is described in the [[Architecture][Architecture page]]
