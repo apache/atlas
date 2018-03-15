@@ -232,7 +232,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         return table;
     }
     CommonViewFunction.tagForTable = function(obj) {
-        var traits = obj.classificationNames || _.pluck(obj.classifications, 'typeName'),
+        var traits = obj.classifications,
             atags = "",
             addTag = "",
             popTag = "",
@@ -241,7 +241,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         if (traits) {
             traits.map(function(tag) {
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
-                    tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag + '">' + tag + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag + '" data-type="tag" data-guid="' + obj.guid + '" ></i></a>';
+                    deleteIcon = "";
+                if (obj.guid === tag.entityGuid) {
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
+                } else {
+                    className += " propagte-classification";
+                }
+                var tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag.typeName + '">' + tag.typeName + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTag += tagString;
                 } else {

@@ -222,6 +222,11 @@ button:focus {
 .btn-fixed-width {
     .btn-icon {
         min-width: 100px;
+        &.propagte-classification {
+            >span {
+                width: 98px;
+            }
+        }
         >span {
             @include ellipsis();
             float: left;

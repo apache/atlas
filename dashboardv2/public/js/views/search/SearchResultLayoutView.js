@@ -450,7 +450,8 @@ define(['require',
                     var checkBoxValue = {
                         'excludeDeletedEntities': (this.value.includeDE ? false : true),
                         'includeSubClassifications': (this.value.excludeSC ? false : true),
-                        'includeSubTypes': (this.value.excludeST ? false : true)
+                        'includeSubTypes': (this.value.excludeST ? false : true),
+                        'includeClassificationAttributes' : true // server will return classication details with guid
                     }
                 }
                 if (value) {
