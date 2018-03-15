@@ -63,6 +63,9 @@ define(['require',
             var events = {};
             events["change " + this.ui.addTagOptions] = 'onChangeTagDefination';
             events["change " + this.ui.checkTimeZone] = function(e) {
+                if(this.tagModel){
+                    this.buttonActive({isButtonActive: true});
+                }
                 if (e.target.checked) {
                     this.ui.timeZoneDiv.show();
                     this.ui.validityPeriodBody.show();
@@ -311,7 +314,7 @@ define(['require',
             });
         },
         buttonActive: function(option) {
-            if (option && option.isButtonActive) {
+            if (option) {
                 var isButton = option.isButtonActive;
                 this.modal.$el.find('button.ok').attr("disabled", isButton === true ? false : true);
             }

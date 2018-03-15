@@ -16,26 +16,24 @@
 -->
 <div>
     <div class="form-group hide">
-        {{#if tagModel}}
-        <h4>{{tagModel.typeName}}</h4> {{else}}
         <div class="row modalHeight">
-            <div class="col-md-8">
+            <div class="col-md-7">
+                {{#if tagModel}}
+                <h4>{{tagModel.typeName}}</h4> </div>{{else}}
                 <select class="form-control row-margin-bottom" data-id="addTagOptions" required>
                 </select>
             </div>
             {{/if}}
-            <div class="col-sm-2">
+            <div class="col-md-2">
                 <div class="inline">
                     <label class="checkbox-inline btn">
                         <input type="checkbox" data-id="checkModalTagProperty" class="input" checked /> Propagate</label>
                 </div>
             </div>
-            <div class="col-sm-2">
-                <div class="inline-content-fr table-action-btn">
-                    <div class="inline">
-                        <label class="checkbox-inline btn">
-                            <input type="checkbox" data-id="checkTimezoneProperty" class="input" /> Apply Validity Period</label>
-                    </div>
+            <div class="col-md-3">
+                <div class="inline">
+                    <label class="checkbox-inline btn">
+                        <input type="checkbox" data-id="checkTimezoneProperty" class="input" /> Apply Validity Period</label>
                 </div>
             </div>
         </div>
@@ -60,7 +58,7 @@
         </div>
         <div class="col-sm-12" style="display:none">
             <p>Classification Attributes(optional)</p>
-            <p class="text-gray">Add attribute values for this tag</p>
+            <p class="text-gray">Add attribute values for this classification</p>
             <div data-id="tagAttribute"></div>
         </div>
     </div>

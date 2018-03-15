@@ -36,19 +36,14 @@ define(['require',
             /** ui selector cache */
             ui: {
                 close: "[data-id='close']",
-                startTime: 'input[name="startTime"]',
-                endTime: 'input[name="endTime"]',
+                timeInterval: 'input[name="timeInterval"]',
                 timeZone: '[data-id="timeZone"]'
             },
             /** ui events hash */
             events: function() {
-                var events = {};
-                events["change " + this.ui.startTime] = function(e) {
-                    this.model.set({ "startTime": this.ui.startTime.val() });
-                    this.buttonActive({ isButtonActive: true });
-                };
-                events["change " + this.ui.endTime] = function(e) {
-                    this.model.set({ "endTime": this.ui.endTime.val() });
+                var events = {},
+                    that = this;
+                events["change " + this.ui.timeInterval] = function(e) {
                     this.buttonActive({ isButtonActive: true });
                 };
                 events["change " + this.ui.timeZone] = function(e) {
@@ -68,46 +63,45 @@ define(['require',
             },
             onRender: function() {
                 var that = this,
+                    minDate = new Date(),
                     dateObj = {
-                        "singleDatePicker": true,
                         "showDropdowns": true,
                         "timePicker": true,
+                        "timePicker24Hour": true,
                         "startDate": new Date(),
-                        "timePickerIncrement": 30,
                         "locale": {
-                            format: 'YYYY/MM/DD HH:MM:SS'
-                        }
+                            format: 'YYYY/MM/DD h:mm A'
+                        },
+                        "alwaysShowCalendars": true
                     },
                     tzstr = '<option selected="selected" disabled="disabled">-- Select Timezone --</option>';
 
                 if (this.model.get('startTime') !== "") {
-                    this.ui.startTime.daterangepicker({
-                        "singleDatePicker": true,
+                    this.ui.timeInterval.daterangepicker({
                         "showDropdowns": true,
                         "timePicker": true,
+                        "timePicker24Hour": true,
                         "startDate": this.model.get('startTime'),
-                        "timePickerIncrement": 30,
+                        "endDate": this.model.get('endTime'),
                         "locale": {
-                            format: 'YYYY/MM/DD HH:MM:SS'
-                        }
-                    });
-                    this.ui.endTime.daterangepicker({
-                        "singleDatePicker": true,
-                        "showDropdowns": true,
-                        "timePicker": true,
-                        "startDate": this.model.get('endTime'),
-                        "timePickerIncrement": 30,
-                        "locale": {
-                            format: 'YYYY/MM/DD HH:MM:SS'
-                        }
+                            format: 'YYYY/MM/DD h:mm A'
+                        },
+                        "alwaysShowCalendars": true
+                    }).on('apply.daterangepicker', function(fullDate) {
+                        var val = fullDate.currentTarget.value.split(' - ');
+                        that.model.set('startTime', val[0]);
+                        that.model.set('endTime', val[1]);
                     });
                     this.ui.timeZone.select2({
                         data: moment.tz.names()
                     });
                     this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
                 } else {
-                    this.ui.startTime.daterangepicker(dateObj);
-                    this.ui.endTime.daterangepicker(dateObj);
+                    this.ui.timeInterval.daterangepicker(dateObj).on('apply.daterangepicker', function(fullDate) {
+                        var val = fullDate.currentTarget.value.split(' - ');
+                        that.model.set('startTime', val[0]);
+                        that.model.set('endTime', val[1]);
+                    });
                     this.ui.timeZone.html(tzstr);
                     this.ui.timeZone.select2({
                         placeholder: "Select TimeZone",
@@ -115,6 +109,8 @@ define(['require',
                         data: moment.tz.names()
                     });
                 }
+                $('[name="daterangepicker_start"]').attr('readonly', true); +
+                $('[name="daterangepicker_end"]').attr('readonly', true);
             },
             buttonActive: function(option) {
                 var that = this;
@@ -129,8 +125,8 @@ define(['require',
                 }
                 if (this.parentView.collection.models.length <= 0) {
                     this.parentView.ui.timeZoneDiv.hide();
-                    this.parentView.ui.checkTimeZone.prop('checked',false);
-                    this.parentView.modal.$el.find('button.ok').attr("disabled",true);
+                    this.parentView.ui.checkTimeZone.prop('checked', false);
+                    this.parentView.modal.$el.find('button.ok').attr("disabled", true);
                 }
             }
         });
