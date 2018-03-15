@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.tinkerpop.query;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
@@ -93,4 +94,11 @@ public interface NativeTinkerpopGraphQuery<V, E> {
      * @param value
      */
     void has(String propertyName, QueryOperator op, Object value);
+
+    /**
+     * Add sort predicate for give property
+     * @param propertyName
+     * @param sortOrder
+     */
+    void orderBy(String propertyName, AtlasGraphQuery.SortOrder sortOrder);
 }

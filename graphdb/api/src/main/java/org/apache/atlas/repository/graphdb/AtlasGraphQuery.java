@@ -30,6 +30,8 @@ import java.util.List;
  */
 public interface AtlasGraphQuery<V, E> {
 
+    enum SortOrder { ASC, DESC }
+
     /**
      * Adds a predicate that the returned vertices must have the specified
      * property and that one of the values of the property must be the
@@ -105,6 +107,15 @@ public interface AtlasGraphQuery<V, E> {
      * @return
      */
     AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator op, Object values);
+
+
+    /**
+     * Adds a sorting predicate
+     * @param propertyKey property key to sort on
+     * @param order ASC or DESC
+     * @return
+     */
+    AtlasGraphQuery<V, E> orderBy(String propertyKey, SortOrder order);
 
     /**
      * Adds a predicate that the vertices returned must satisfy the

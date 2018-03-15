@@ -18,22 +18,11 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.type.AtlasType;
-import org.apache.commons.configuration.Configuration;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.SchemaViolationException;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -46,6 +35,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
+import org.apache.atlas.type.AtlasType;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
@@ -58,6 +49,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphIndexQuery;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.SchemaViolationException;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
 
 import javax.script.Bindings;
@@ -72,6 +71,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
@@ -406,13 +407,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {
 
-        return Iterables.transform(it, new Function<Vertex, AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>>() {
-
-            @Override
-            public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> apply(Vertex input) {
-                return GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input);
-            }
-        });
+        return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input)).collect(Collectors.toList());
 
     }
 
@@ -423,13 +418,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> wrapEdges(Iterable<? extends Edge> it) {
 
-        return Iterables.transform(it, new Function<Edge, AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>>() {
-
-            @Override
-            public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> apply(Edge input) {
-                return GraphDbObjectFactory.createEdge(AtlasJanusGraph.this, input);
-            }
-        });
+        return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createEdge(AtlasJanusGraph.this, input)).collect(Collectors.toList());
 
     }
 

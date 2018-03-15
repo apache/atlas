@@ -24,6 +24,7 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.profile.AtlasUserProfile;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.util.FilterUtil;
@@ -39,11 +40,15 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType.BASIC;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class UserProfileServiceTest {
@@ -80,7 +85,8 @@ public class UserProfileServiceTest {
         filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
 
         assertNotNull(filteredTypeDefs);
-        assertEquals(filteredTypeDefs.getEntityDefs().size(), maxTypeDefs - 3);
+        Optional<AtlasEntityDef> anyInternal = filteredTypeDefs.getEntityDefs().stream().filter(e -> e.getSuperTypes().contains("__internal")).findAny();
+        assertFalse(anyInternal.isPresent());
     }
 
     @Test

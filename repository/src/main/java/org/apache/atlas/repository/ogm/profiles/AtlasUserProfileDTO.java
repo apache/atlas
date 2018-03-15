@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.ogm;
+package org.apache.atlas.repository.ogm.profiles;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -23,10 +23,14 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserProfile;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.repository.ogm.AbstractDataTransferObject;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
 
+@Component
 public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserProfile> {
     private final String PROPERTY_USER_NAME      = "name";
     private final String PROPERTY_FULL_NAME      = "fullName";
@@ -34,8 +38,9 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
 
     private final AtlasSavedSearchDTO savedSearchDTO;
 
+    @Inject
     public AtlasUserProfileDTO(AtlasTypeRegistry typeRegistry, AtlasSavedSearchDTO savedSearchDTO) {
-        super(typeRegistry, AtlasUserProfile.class);
+        super(typeRegistry, AtlasUserProfile.class, true);
 
         this.savedSearchDTO = savedSearchDTO;
     }

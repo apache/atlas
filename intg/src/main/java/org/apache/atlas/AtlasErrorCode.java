@@ -128,6 +128,9 @@ public enum AtlasErrorCode {
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(400, "ATLAS-400-00-06E", "No classifications associated with entity: {0}"),
     INVALID_CLASSIFICATION_PARAMS(400, "ATLAS-400-00-06F", "Invalid classification parameters passed for {0} operation for entity: {1}"),
     PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity"),
+    // Glossary Related errors
+    INVALID_PARTIAL_UPDATE_ATTR_VAL(400, "ATLAS-400-00-071", "Invalid attrVal for partial update of {0}, expected = {1} found {2}"),
+    MISSING_MANDATORY_ANCHOR(400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -148,6 +151,7 @@ public enum AtlasErrorCode {
     RELATIONSHIP_ALREADY_DELETED(404, "ATLAS-404-00-00F", "Attempting to delete a relationship which is already deleted : {0}"),
     INVALID_ENTITY_GUID_FOR_CLASSIFICATION_UPDATE(404, "ATLAS-404-00-010", "Updating entityGuid of classification is not allowed."),
     INSTANCE_GUID_NOT_DATASET(404, "ATLAS-404-00-011", "Given instance guid {0} is not a dataset"),
+    INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
@@ -177,7 +181,7 @@ public enum AtlasErrorCode {
     HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}"),
     DATA_ACCESS_SAVE_FAILED(500, "ATLAS-500-00-012", "Save failed: {0}"),
     DATA_ACCESS_LOAD_FAILED(500, "ATLAS-500-00-013", "Load failed: {0}"),
-    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {} : {}");
+    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}");
 
     private String errorCode;
     private String errorMessage;

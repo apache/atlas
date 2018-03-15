@@ -17,29 +17,30 @@
  */
 package org.apache.atlas.repository.ogm;
 
-import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class DTORegistry {
-    private final Map<Type, DataTransferObject> typeDTOMap = new HashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(DTORegistry.class);
 
+    private final Map<Class, DataTransferObject> typeDTOMap = new HashMap<>();
 
     @Inject
-    public DTORegistry(AtlasTypeRegistry typeRegistry) {
-        AtlasSavedSearchDTO savedSearchDTO = new AtlasSavedSearchDTO(typeRegistry);
-        AtlasUserProfileDTO userProfileDTO = new AtlasUserProfileDTO(typeRegistry, savedSearchDTO);
-
-        registerDTO(savedSearchDTO);
-        registerDTO(userProfileDTO);
+    public DTORegistry(Set<DataTransferObject> availableDTOs) {
+        for (DataTransferObject availableDTO : availableDTOs) {
+            LOG.info("Registering DTO: {}", availableDTO.getClass().getSimpleName());
+            registerDTO(availableDTO);
+        }
     }
 
-    public <T extends DataTransferObject> DataTransferObject get(Type t) {
+    public <T extends DataTransferObject> DataTransferObject get(Class t) {
         return typeDTOMap.get(t);
     }
 

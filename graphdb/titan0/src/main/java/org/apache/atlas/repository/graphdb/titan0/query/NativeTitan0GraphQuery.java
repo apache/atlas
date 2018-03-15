@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.titan0.query;
 
-import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.core.attribute.Text;
@@ -26,6 +26,7 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.MatchingOperator;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
@@ -36,7 +37,10 @@ import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
 import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Titan 0.5.4 implementation of NativeTitanGraphQuery.
@@ -127,6 +131,11 @@ public class NativeTitan0GraphQuery implements NativeTinkerpopGraphQuery<Titan0V
             pred = getGremlinPredicate((MatchingOperator) op);
         }
         query.has(propertyName, pred, value);
+    }
+
+    @Override
+    public void orderBy(final String propertyName, final AtlasGraphQuery.SortOrder sortOrder) {
+        query.orderBy(propertyName, sortOrder == AtlasGraphQuery.SortOrder.ASC ? Order.ASC : Order.DESC);
     }
 
     private Text getGremlinPredicate(MatchingOperator op) {

@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -54,6 +55,7 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.*;
 
 /**
  * Utility methods for Graph.
@@ -338,20 +340,30 @@ public class AtlasGraphUtilsV1 {
         return vertex;
     }
 
-    public static List<String> findEntityGUIDsByType(String typename) {
+    public static List<String> findEntityGUIDsByType(String typename, SortOrder sortOrder) {
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                   .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typename);
+        if (sortOrder != null) {
+            AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+            query.orderBy(Constants.QUALIFIED_NAME, qrySortOrder);
+        }
+
         Iterator<AtlasVertex> results = query.vertices().iterator();
+        ArrayList<String> ret = new ArrayList<>();
+
         if (!results.hasNext()) {
             return Collections.emptyList();
         }
 
-        ArrayList<String> entityList = new ArrayList<>();
         while (results.hasNext()) {
-            entityList.add(getIdFromVertex(results.next()));
+            ret.add(getIdFromVertex(results.next()));
         }
 
-        return entityList;
+        return ret;
+    }
+
+    public static List<String> findEntityGUIDsByType(String typename) {
+        return findEntityGUIDsByType(typename, null);
     }
 
     public static boolean relationshipTypeHasInstanceEdges(String typeName) throws AtlasBaseException {
