@@ -28,6 +28,7 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.EntityLineageService;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.EntityChangeListenerV2;
@@ -38,13 +39,21 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
+import org.apache.atlas.repository.ogm.DTORegistry;
+import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.DataTransferObject;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryCategoryDTO;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasRelationshipStoreV1;
+import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.store.graph.v1.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
@@ -150,6 +159,20 @@ public class TestModules {
             Multibinder<EntityChangeListenerV2> entityChangeListenerV2Binder =
                     Multibinder.newSetBinder(binder(), EntityChangeListenerV2.class);
             entityChangeListenerV2Binder.addBinding().to(EntityAuditListenerV2.class);
+
+            // OGM related mappings
+            Multibinder<DataTransferObject> availableDTOs = Multibinder.newSetBinder(binder(), DataTransferObject.class);
+            availableDTOs.addBinding().to(AtlasUserProfileDTO.class);
+            availableDTOs.addBinding().to(AtlasSavedSearchDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryTermDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryCategoryDTO.class);
+
+            bind(DTORegistry.class).asEagerSingleton();
+            bind(DataAccess.class).asEagerSingleton();
+
+            // Glossary related bindings
+            bind(GlossaryService.class).asEagerSingleton();
 
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
             requestInjection(graphTransactionInterceptor);

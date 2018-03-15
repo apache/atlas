@@ -29,6 +29,7 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -38,10 +39,12 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
@@ -54,6 +57,36 @@ public class ZipFileResourceTestUtils {
 
     public static FileInputStream getFileInputStream(String fileName) {
         return TestResourceFileUtils.getFileInputStream(fileName);
+    }
+
+    public static List<String> getAllModels(String dirName) throws IOException {
+        List<String> ret                  = null;
+        File         topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
+        File[]       topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
+
+        assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
+        if(topModelsDirContents != null) {
+            Arrays.sort(topModelsDirContents);
+            for (File modelDir : topModelsDirContents) {
+                if (modelDir.exists() && modelDir.isDirectory() && modelDir.getAbsolutePath().contains(dirName)) {
+                    File[] models = modelDir.listFiles();
+                    Arrays.sort(models);
+                    ret = new ArrayList<>();
+                    for (File model : Objects.requireNonNull(models)) {
+                        ret.add(getFileContents(modelDir, model.getName()));
+                    }
+
+                }
+
+                if (ret != null && ret.size() > 0) {
+                    break;
+                }
+            }
+        } else {
+            throw new IOException("Unable to retrieve model contents.");
+        }
+
+        return ret;
     }
 
     public static String getModelJson(String fileName) throws IOException {
@@ -145,10 +178,17 @@ public class ZipFileResourceTestUtils {
         return r;
     }
 
-
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
+    }
+
+    public static void loadAllModels(String dirName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+        List<String>  allModels     = getAllModels(dirName);
+        for (String model : allModels) {
+            AtlasTypesDef typesFromJson = AtlasJson.fromJson(model, AtlasTypesDef.class);
+            createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
+        }
     }
 
     public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {

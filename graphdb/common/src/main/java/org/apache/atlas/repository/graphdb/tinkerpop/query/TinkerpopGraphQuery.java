@@ -26,11 +26,13 @@ import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.AndCondition;
 import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.HasPredicate;
 import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.InPredicate;
 import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.OrCondition;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.expr.OrderByPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -129,7 +131,8 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
         }
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<AtlasVertex<V, E>> result = new HashSet<>();
+        Set<AtlasVertex<V, E>> result = new LinkedHashSet<>();
+
         for(AndCondition andExpr : queryCondition.getAndTerms()) {
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
             for(AtlasVertex<V, E> vertex : andQuery.vertices()) {
@@ -266,6 +269,12 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
         }
 
         queryCondition.andWith(overallChildQuery);
+        return this;
+    }
+
+    @Override
+    public AtlasGraphQuery<V, E> orderBy(final String propertyKey, final SortOrder order) {
+        queryCondition.andWith(new OrderByPredicate(propertyKey, order));
         return this;
     }
 

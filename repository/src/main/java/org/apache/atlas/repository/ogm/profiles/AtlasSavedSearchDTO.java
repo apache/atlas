@@ -15,21 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.ogm;
+package org.apache.atlas.repository.ogm.profiles;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.repository.ogm.AbstractDataTransferObject;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
 
+@Component
 public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSavedSearch> {
     private static final String PROPERTY_NAME              = "name";
     private static final String PROPERTY_OWNER_NAME        = "ownerName";
@@ -38,8 +42,9 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     private static final String PROPERTY_SEARCH_TYPE       = "searchType";
     private static final String PROPERTY_UI_PARAMETERS       = "uiParameters";
 
+    @Inject
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasUserSavedSearch.class);
+        super(typeRegistry, AtlasUserSavedSearch.class, true);
     }
 
     @Override

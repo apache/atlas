@@ -17,9 +17,7 @@
  */
 package org.apache.atlas.notification;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -46,26 +44,23 @@ import java.util.Set;
 
 import static org.apache.atlas.notification.NotificationEntityChangeListener.ATLAS_ENTITY_NOTIFICATION_PROPERTY;
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.CLASSIFICATION_DELETE;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.CLASSIFICATION_UPDATE;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.ENTITY_CREATE;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.ENTITY_DELETE;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.ENTITY_UPDATE;
+import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.*;
 
 @Component
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private final AtlasTypeRegistry         typeRegistry;
     private final NotificationInterface     notificationInterface;
+    private final Configuration             configuration;
     private final Map<String, List<String>> notificationAttributesCache = new HashMap<>();
 
-    private static Configuration APPLICATION_PROPERTIES = null;
-
     @Inject
-    public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry, NotificationInterface notificationInterface) {
+    public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry,
+                                        NotificationInterface notificationInterface,
+                                        Configuration configuration) {
         this.typeRegistry          = typeRegistry;
         this.notificationInterface = notificationInterface;
+        this.configuration = configuration;
     }
 
     @Override
@@ -186,13 +181,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private List<String> getNotificationAttributes(String entityType) {
         List<String> ret = null;
 
-        initApplicationProperties();
-
         if (notificationAttributesCache.containsKey(entityType)) {
             ret = notificationAttributesCache.get(entityType);
-        } else if (APPLICATION_PROPERTIES != null) {
-            String[] notificationAttributes = APPLICATION_PROPERTIES.getStringArray(ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." +
-                                                                                    entityType + "." + "attributes.include");
+        } else if (configuration != null) {
+            String attributesToIncludeKey = ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." + entityType + "." + "attributes.include";
+            String[] notificationAttributes = configuration.getStringArray(attributesToIncludeKey);
 
             if (notificationAttributes != null) {
                 ret = Arrays.asList(notificationAttributes);
@@ -202,15 +195,5 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
-    }
-
-    private void initApplicationProperties() {
-        if (APPLICATION_PROPERTIES == null) {
-            try {
-                APPLICATION_PROPERTIES = ApplicationProperties.get();
-            } catch (AtlasException ex) {
-                // ignore
-            }
-        }
     }
 }

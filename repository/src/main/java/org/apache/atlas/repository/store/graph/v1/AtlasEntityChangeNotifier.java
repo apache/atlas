@@ -60,16 +60,16 @@ public class AtlasEntityChangeNotifier {
     private final Set<EntityChangeListener>   entityChangeListeners;
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
     private final AtlasInstanceConverter      instanceConverter;
+    private final FullTextMapperV2            fullTextMapperV2;
 
-    @Inject
-    private FullTextMapperV2 fullTextMapperV2;
 
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners, Set<EntityChangeListenerV2> entityChangeListenersV2,
-                                     AtlasInstanceConverter instanceConverter) {
+                                     AtlasInstanceConverter instanceConverter, final FullTextMapperV2 fullTextMapperV2) {
         this.entityChangeListeners   = entityChangeListeners;
         this.entityChangeListenersV2 = entityChangeListenersV2;
         this.instanceConverter       = instanceConverter;
+        this.fullTextMapperV2 = fullTextMapperV2;
     }
 
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {

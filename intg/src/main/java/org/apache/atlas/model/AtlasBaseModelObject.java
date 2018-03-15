@@ -17,32 +17,18 @@
  */
 package org.apache.atlas.model;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.annotation.AtlasJSON;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Objects;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@AtlasJSON
 public abstract class AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String guid;
 
-
-    protected AtlasBaseModelObject() {
-    }
-
+    protected AtlasBaseModelObject() {}
 
     public String getGuid() {
         return this.guid;
@@ -52,7 +38,6 @@ public abstract class AtlasBaseModelObject implements Serializable {
         this.guid = guid;
     }
 
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -61,6 +46,20 @@ public abstract class AtlasBaseModelObject implements Serializable {
         toString(sb);
         sb.append("}");
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AtlasBaseModelObject)) return false;
+        final AtlasBaseModelObject that = (AtlasBaseModelObject) o;
+        return Objects.equals(guid, that.guid);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(guid);
     }
 
     protected abstract StringBuilder toString(StringBuilder sb);

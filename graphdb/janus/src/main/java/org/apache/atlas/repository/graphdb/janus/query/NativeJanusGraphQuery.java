@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.graphdb.janus.query;
 
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphQuery;
@@ -124,6 +126,12 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
             pred = getGremlinPredicate((MatchingOperator)op);
         }
         query.has(propertyName, pred, value);
+    }
+
+    @Override
+    public void orderBy(final String propertyName, final AtlasGraphQuery.SortOrder sortOrder) {
+        Order order = sortOrder == AtlasGraphQuery.SortOrder.ASC ? Order.incr : Order.decr;
+        query.orderBy(propertyName, order);
     }
 
     private Text getGremlinPredicate(MatchingOperator op) {

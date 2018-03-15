@@ -144,11 +144,11 @@ public class UserProfileService {
     public void deleteUserProfile(String userName) throws AtlasBaseException {
         AtlasUserProfile profile = getUserProfile(userName);
 
-        dataAccess.deleteUsingGuid(profile.getGuid());
+        dataAccess.delete(profile.getGuid());
     }
 
     public void deleteSavedSearch(String guid) throws AtlasBaseException {
-        dataAccess.deleteUsingGuid(guid);
+        dataAccess.delete(guid);
     }
 
     public void deleteSearchBySearchName(String userName, String searchName) throws AtlasBaseException {

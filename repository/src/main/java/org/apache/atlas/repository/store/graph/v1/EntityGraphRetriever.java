@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.PropagationState;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -68,6 +69,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.DELETED;
@@ -220,6 +222,11 @@ public final class EntityGraphRetriever {
                 ret.setClassifications(classifications);
                 ret.setClassificationNames(classificationNames);
             }
+
+            if (CollectionUtils.isNotEmpty(entity.getMeanings())) {
+                ret.setMeanings(entity.getMeanings());
+                ret.setMeaningNames(entity.getMeanings().stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
+            }
         }
 
         return ret;
@@ -358,6 +365,8 @@ public final class EntityGraphRetriever {
         ret.setGuid(guid);
         ret.setStatus(GraphHelper.getStatus(entityVertex));
         ret.setClassificationNames(getAllTraitNames(entityVertex));
+
+        // TODO: Add the term mapping here
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 

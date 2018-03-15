@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.commons.collections.CollectionUtils;
@@ -80,9 +80,10 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date   updateTime = null;
     private Long   version    = 0L;
 
-    private Map<String, Object>       relationshipAttributes;
-    private List<AtlasClassification> classifications;
-    private List<AtlasClassification> propagationDisabledClassifications;
+    private Map<String, Object>             relationshipAttributes;
+    private List<AtlasClassification>       classifications;
+    private List<AtlasClassification>       propagationDisabledClassifications;
+    private List<AtlasTermAssignmentHeader> meanings;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -280,6 +281,24 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.classifications = c;
     }
 
+    public List<AtlasTermAssignmentHeader> getMeanings() {
+        return meanings;
+    }
+
+    public void setMeanings(final List<AtlasTermAssignmentHeader> meanings) {
+        this.meanings = meanings;
+    }
+
+    public void addMeaning(AtlasTermAssignmentHeader meaning) {
+        List<AtlasTermAssignmentHeader> meanings = this.meanings;
+
+        if (meanings == null) {
+            meanings = new ArrayList<>();
+        }
+        meanings.add(meaning);
+        setMeanings(meanings);
+    }
+
     private void init() {
         setGuid(nextInternalId());
         setStatus(null);
@@ -289,6 +308,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setUpdateTime(null);
         setClassifications(null);
         setPropagationDisabledClassifications(null);
+        setMeanings(null);
     }
 
     private static String nextInternalId() {
@@ -318,6 +338,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(']');
         sb.append(", propagationDisabledClassifications=[");
         AtlasBaseTypeDef.dumpObjects(propagationDisabledClassifications, sb);
+        sb.append(']');
+        sb.append(", meanings=[");
+        AtlasBaseTypeDef.dumpObjects(meanings, sb);
         sb.append(']');
         sb.append('}');
 
