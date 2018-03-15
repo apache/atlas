@@ -113,7 +113,13 @@ public class DataAccess {
             List<AtlasBaseModelObject> ret = new ArrayList<>();
 
             for (T object : objects) {
-                ret.add(load(object));
+                try {
+                    ret.add(load(object));
+                } catch (AtlasBaseException e) {
+                    // In case of bulk load, some entities might be in deleted state causing an exception to be thrown
+                    // by the single load API call
+                    LOG.warn("Bulk load encountered an error.", e);
+                }
             }
 
             return (Iterable<T>) ret;

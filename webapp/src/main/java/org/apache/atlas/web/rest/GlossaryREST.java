@@ -26,7 +26,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
@@ -723,10 +723,10 @@ public class GlossaryREST {
      */
     @GET
     @Path("/terms/{termGuid}/assignedEntities")
-    public List<AtlasEntityHeader> getEntitiesAssignedWithTerm(@PathParam("termGuid") String termGuid,
-                                                   @DefaultValue("-1") @QueryParam("limit") String limit,
-                                                   @DefaultValue("0") @QueryParam("offset") String offset,
-                                                   @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+    public List<AtlasRelatedObjectId> getEntitiesAssignedWithTerm(@PathParam("termGuid") String termGuid,
+                                                                  @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                                  @DefaultValue("0") @QueryParam("offset") String offset,
+                                                                  @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
         AtlasPerfTracer perf = null;
@@ -746,7 +746,7 @@ public class GlossaryREST {
     /**
      * Assign the given term to the provided list of entity headers
      * @param termGuid Glossary term GUID
-     * @param entityHeaders Entity headers for which the term has to be associated
+     * @param relatedObjectIds Related Entity IDs to which the term has to be associated
      * @throws AtlasBaseException
      * @HTTP 204 If the term assignment was successful
      * @HTTP 400 If ANY of the entity header is invalid
@@ -754,7 +754,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/terms/{termGuid}/assignedEntities")
-    public void assignTermToEntities(@PathParam("termGuid") String termGuid, List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+    public void assignTermToEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
         AtlasPerfTracer perf = null;
@@ -763,7 +763,7 @@ public class GlossaryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.assignTermToEntities(" + termGuid + ")");
             }
 
-            glossaryService.assignTermToEntities(termGuid, entityHeaders);
+            glossaryService.assignTermToEntities(termGuid, relatedObjectIds);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -772,7 +772,7 @@ public class GlossaryREST {
     /**
      * Remove the term assignment for the given list of entity headers
      * @param termGuid Glossary term GUID
-     * @param entityHeaders List of entity headers from which the term has to be dissociated
+     * @param relatedObjectIds List of related entity IDs from which the term has to be dissociated
      * @throws AtlasBaseException
      * @HTTP 204 If glossary term dissociation was successful
      * @HTTP 400 If ANY of the entity header is invalid
@@ -780,7 +780,7 @@ public class GlossaryREST {
      */
     @DELETE
     @Path("/terms/{termGuid}/assignedEntities")
-    public void removeTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+    public void removeTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
         AtlasPerfTracer perf = null;
@@ -789,7 +789,7 @@ public class GlossaryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.removeTermAssignmentFromEntities(" + termGuid + ")");
             }
 
-            glossaryService.removeTermFromEntities(termGuid, entityHeaders);
+            glossaryService.removeTermFromEntities(termGuid, relatedObjectIds);
         } finally {
             AtlasPerfTracer.log(perf);
         }

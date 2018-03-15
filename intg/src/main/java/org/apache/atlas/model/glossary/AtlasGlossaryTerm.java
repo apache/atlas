@@ -23,7 +23,7 @@ import org.apache.atlas.model.annotation.AtlasJSON;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.HashMap;
@@ -42,7 +42,7 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     // Attributes derived from relationships
     private AtlasGlossaryHeader                anchor;
-    private Set<AtlasEntityHeader>             assignedEntities;
+    private Set<AtlasRelatedObjectId>          assignedEntities;
     private Set<AtlasTermCategorizationHeader> categories;
 
     // Related Terms
@@ -128,21 +128,21 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         setCategories(categories);
     }
 
-    public Set<AtlasEntityHeader> getAssignedEntities() {
+    public Set<AtlasRelatedObjectId> getAssignedEntities() {
         return assignedEntities;
     }
 
-    public void setAssignedEntities(final Set<AtlasEntityHeader> assignedEntities) {
+    public void setAssignedEntities(final Set<AtlasRelatedObjectId> assignedEntities) {
         this.assignedEntities = assignedEntities;
     }
 
-    public void addAssignedEntity(final AtlasEntityHeader entityHeader) {
-        Set<AtlasEntityHeader> entityHeaders = this.assignedEntities;
-        if (entityHeaders == null) {
-            entityHeaders = new HashSet<>();
+    public void addAssignedEntity(final AtlasRelatedObjectId atlasObjectId) {
+        Set<AtlasRelatedObjectId> assignedEntities = this.assignedEntities;
+        if (assignedEntities == null) {
+            assignedEntities = new HashSet<>();
         }
-        entityHeaders.add(entityHeader);
-        setAssignedEntities(entityHeaders);
+        assignedEntities.add(atlasObjectId);
+        setAssignedEntities(assignedEntities);
     }
 
     public Set<AtlasRelatedTermHeader> getSeeAlso() {

@@ -20,7 +20,6 @@ package org.apache.atlas.repository.ogm.glossary;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -92,12 +91,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
                 if (assignedEntity instanceof AtlasRelatedObjectId) {
                     AtlasRelatedObjectId id = (AtlasRelatedObjectId) assignedEntity;
                     if (id.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                        AtlasEntityHeader    entityHeader = new AtlasEntityHeader(id.getTypeName(), id.getGuid(), id.getUniqueAttributes());
-                        if (entityHeader.getAttributes() == null) {
-                            entityHeader.setAttributes(new HashMap<>());
-                        }
-                        entityHeader.getAttributes().put("relationGuid", id.getRelationshipGuid());
-                        ret.addAssignedEntity(entityHeader);
+                        ret.addAssignedEntity(id);
                     }
                 }
             }

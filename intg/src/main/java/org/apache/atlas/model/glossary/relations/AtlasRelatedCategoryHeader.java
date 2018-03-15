@@ -24,6 +24,7 @@ import java.util.Objects;
 @AtlasJSON
 public class AtlasRelatedCategoryHeader {
     private String categoryGuid;
+    private String parentCategoryGuid;
     private String relationGuid;
     private String displayText;
     private String description;
@@ -61,6 +62,7 @@ public class AtlasRelatedCategoryHeader {
         if (!(o instanceof AtlasRelatedCategoryHeader)) return false;
         final AtlasRelatedCategoryHeader that = (AtlasRelatedCategoryHeader) o;
         return Objects.equals(categoryGuid, that.categoryGuid) &&
+                       Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
                        Objects.equals(displayText, that.displayText) &&
                        Objects.equals(description, that.description);
     }
@@ -68,13 +70,14 @@ public class AtlasRelatedCategoryHeader {
     @Override
     public int hashCode() {
 
-        return Objects.hash(categoryGuid, displayText, description);
+        return Objects.hash(categoryGuid, parentCategoryGuid, displayText, description);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AtlasRelatedCategoryId{");
         sb.append("categoryGuid='").append(categoryGuid).append('\'');
+        sb.append(", parentCategoryGuid='").append(parentCategoryGuid).append('\'');
         sb.append(", relationGuid='").append(relationGuid).append('\'');
         sb.append(", displayText='").append(displayText).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -89,5 +92,13 @@ public class AtlasRelatedCategoryHeader {
 
     public void setRelationGuid(final String relationGuid) {
         this.relationGuid = relationGuid;
+    }
+
+    public String getParentCategoryGuid() {
+        return parentCategoryGuid;
+    }
+
+    public void setParentCategoryGuid(final String parentCategoryGuid) {
+        this.parentCategoryGuid = parentCategoryGuid;
     }
 }

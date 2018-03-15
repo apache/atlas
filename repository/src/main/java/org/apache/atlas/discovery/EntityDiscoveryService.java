@@ -475,7 +475,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                         AtlasObjectId objId = (AtlasObjectId) attrValue;
 
                         if (ret.getReferredEntities() == null) {
-                            ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
+                            ret.setReferredEntities(new HashMap<>());
                         }
 
                         if (!ret.getReferredEntities().containsKey(objId.getGuid())) {
@@ -489,7 +489,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                 AtlasObjectId objId = (AtlasObjectId) obj;
 
                                 if (ret.getReferredEntities() == null) {
-                                    ret.setReferredEntities(new HashMap<String, AtlasEntityHeader>());
+                                    ret.setReferredEntities(new HashMap<>());
                                 }
 
                                 if (!ret.getReferredEntities().containsKey(objId.getGuid())) {

@@ -128,9 +128,16 @@ public enum AtlasErrorCode {
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(400, "ATLAS-400-00-06E", "No classifications associated with entity: {0}"),
     INVALID_CLASSIFICATION_PARAMS(400, "ATLAS-400-00-06F", "Invalid classification parameters passed for {0} operation for entity: {1}"),
     PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity"),
-    INVALID_PARTIAL_UPDATE_ATTR_VAL(400, "ATLAS-400-00-071", "Invalid attrVal for partial update of {0}, expected = {1} found {2}"),
+    INVALID_BLOCKED_PROPAGATED_CLASSIFICATION(400, "ATLAS-400-00-071", "Invalid propagated classification: {0} with entityGuid: {1} added to blocked propagated classifications."),
     MISSING_MANDATORY_ANCHOR(400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing"),
-    INVALID_BLOCKED_PROPAGATED_CLASSIFICATION(400, "ATLAS-400-00-073", "Invalid propagated classification: {0} with entityGuid: {1} added to blocked propagated classifications."),
+    MISSING_MANDATORY_QUALIFIED_NAME(400, "ATLAS-400-00-073", "Mandatory qualifiedName attribute is missing"),
+    INVALID_PARTIAL_UPDATE_ATTR_VAL(400, "ATLAS-400-00-074", "Invalid attrVal for partial update of {0}, expected = {1} found {2}"),
+    MISSING_TERM_ID_FOR_CATEGORIZATION(400, "ATLAS-400-00-075", "Term guid can't be empty/null when adding to a category"),
+    INVALID_NEW_ANCHOR_GUID(400, "ATLAS-400-00-076", "New Anchor guid can't be empty/null"),
+    TERM_DISSOCIATION_MISSING_RELATION_GUID(400, "ATLAS-400-00-077", "Missing mandatory attribute, TermAssignment relationship guid"),
+    GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-078", "Attributes qualifiedName and displayName are missing. Failed to derive a unique name for Glossary"),
+    GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-079", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary term"),
+    GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-07A", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary category"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

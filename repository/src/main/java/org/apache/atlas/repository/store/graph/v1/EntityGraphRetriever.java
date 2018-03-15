@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.PropagationState;
@@ -71,30 +72,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.glossary.GlossaryUtils.*;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.DELETED;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
-import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
-import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
-import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
-import static org.apache.atlas.repository.graph.GraphHelper.removeFromPropagatedTraitNames;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
+import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -105,7 +92,11 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 public final class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
+    private static final String TERM_RELATION_NAME = "__AtlasGlossarySemanticAssignment";
+    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "__AtlasGlossaryTerm.displayName";
+
     private final String NAME           = "name";
+    private final String DISPLAY_NAME   = "displayName";
     private final String DESCRIPTION    = "description";
     private final String OWNER          = "owner";
     private final String CREATE_TIME    = "createTime";
@@ -368,7 +359,9 @@ public final class EntityGraphRetriever {
         ret.setStatus(GraphHelper.getStatus(entityVertex));
         ret.setClassificationNames(getAllTraitNames(entityVertex));
 
-        // TODO: Add the term mapping here
+        List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+        ret.setMeanings(termAssignmentHeaders);
+        ret.setMeaningNames(termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
@@ -410,6 +403,7 @@ public final class EntityGraphRetriever {
                     }
                 }
             }
+
         }
 
         return ret;
@@ -498,6 +492,85 @@ public final class EntityGraphRetriever {
                     ret.add(toAtlasClassification(edge.getInVertex()));
                 }
             }
+        }
+
+        return ret;
+    }
+
+    public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) throws AtlasBaseException {
+        List<AtlasTermAssignmentHeader> ret = new ArrayList<>();
+
+        Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.IN).label(TERM_ASSIGNMENT_LABEL).edges();
+
+        if (edges != null) {
+            Iterator<AtlasEdge> iterator = edges.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                if (edge != null) {
+                    ret.add(toTermAssignmentHeader(edge));
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasTermAssignmentHeader toTermAssignmentHeader(final AtlasEdge edge) {
+        AtlasTermAssignmentHeader ret = new AtlasTermAssignmentHeader();
+
+        AtlasVertex termVertex = edge.getOutVertex();
+
+        String guid = GraphHelper.getGuid(termVertex);
+        if (guid != null) {
+            ret.setTermGuid(guid);
+        }
+
+        String relationGuid = edge.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        if (relationGuid != null) {
+            ret.setRelationGuid(relationGuid);
+        }
+
+        Object displayName = GraphHelper.getProperty(termVertex, GLOSSARY_TERM_DISPLAY_NAME_ATTR);
+        if (displayName instanceof String) {
+            ret.setDisplayText((String) displayName);
+        }
+
+        String description = edge.getProperty(TERM_ASSIGNMENT_ATTR_DESCRIPTION, String.class);
+        if (description != null) {
+            ret.setDescription(description);
+        }
+
+        String expression    = edge.getProperty(TERM_ASSIGNMENT_ATTR_EXPRESSION, String.class);
+        if (expression != null) {
+            ret.setExpression(expression);
+        }
+
+        String status = edge.getProperty(TERM_ASSIGNMENT_ATTR_STATUS, String.class);
+        if (status != null) {
+            AtlasTermAssignmentStatus assignmentStatus = AtlasTermAssignmentStatus.valueOf(status);
+            ret.setStatus(assignmentStatus);
+        }
+
+        Integer confidence = edge.getProperty(TERM_ASSIGNMENT_ATTR_CONFIDENCE, Integer.class);
+        if (confidence != null) {
+            ret.setConfidence(confidence);
+        }
+
+        String createdBy = edge.getProperty(TERM_ASSIGNMENT_ATTR_CREATED_BY, String.class);
+        if (createdBy != null) {
+            ret.setCreatedBy(createdBy);
+        }
+
+        String steward = edge.getProperty(TERM_ASSIGNMENT_ATTR_STEWARD, String.class);
+        if (steward != null) {
+            ret.setSteward(steward);
+        }
+
+        String source = edge.getProperty(TERM_ASSIGNMENT_ATTR_SOURCE, String.class);
+        if (source != null) {
+            ret.setSource(source);
         }
 
         return ret;
@@ -879,6 +952,10 @@ public final class EntityGraphRetriever {
 
         if (entityType != null) {
             ret = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+
+            if (ret == null) {
+                ret = getVertexAttribute(entityVertex, entityType.getAttribute(DISPLAY_NAME));
+            }
 
             if (ret == null) {
                 ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
