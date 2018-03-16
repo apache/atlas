@@ -36,7 +36,9 @@ import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -128,6 +130,8 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.create({}, {})", relationshipDef, preCreateResult);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, relationshipDef), "create relationship-def ", relationshipDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(relationshipDef) : preCreateResult;
 
@@ -230,6 +234,10 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
             LOG.debug("==> AtlasRelationshipDefStoreV1.updateByName({}, {})", name, relationshipDef);
         }
 
+        AtlasRelationshipDef existingDef = typeRegistry.getRelationshipDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update relationship-def ", name);
+
         validateType(relationshipDef);
 
         AtlasType type = typeRegistry.getType(relationshipDef.getName());
@@ -261,6 +269,10 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasRelationshipDef existingDef = typeRegistry.getRelationshipDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update relationship-Def ", (existingDef != null ? existingDef.getName() : guid));
 
         validateType(relationshipDef);
 
@@ -294,6 +306,10 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
             LOG.debug("==> AtlasRelationshipDefStoreV1.preDeleteByName({})", name);
         }
 
+        AtlasRelationshipDef existingDef = typeRegistry.getRelationshipDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete relationship-def ", name);
+
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.RELATIONSHIP);
 
         if (ret == null) {
@@ -318,6 +334,10 @@ public class AtlasRelationshipDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasRe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.preDeleteByGuid({})", guid);
         }
+
+        AtlasRelationshipDef existingDef = typeRegistry.getRelationshipDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete relationship-def ", (existingDef != null ? existingDef.getName() : guid));
 
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.RELATIONSHIP);
 

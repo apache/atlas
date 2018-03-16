@@ -29,7 +29,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -74,6 +76,8 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
         if (LOG.isDebugEnabled()) {
           LOG.debug("==> AtlasEnumDefStoreV1.create({}, {})", enumDef, preCreateResult);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef) : preCreateResult;
 
@@ -174,6 +178,10 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
             LOG.debug("==> AtlasEnumDefStoreV1.updateByName({}, {})", name, enumDef);
         }
 
+        AtlasEnumDef existingDef = typeRegistry.getEnumDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update enum-def ", name);
+
         validateType(enumDef);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
@@ -200,6 +208,10 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV1.updateByGuid({})", guid);
         }
+
+        AtlasEnumDef existingDef = typeRegistry.getEnumDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update enum-def ", (existingDef != null ? existingDef.getName() : guid));
 
         validateType(enumDef);
 
@@ -230,6 +242,10 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
+        AtlasEnumDef existingDef = typeRegistry.getEnumDefByName(name);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete enum-def ", (existingDef != null ? existingDef.getName() : name));
+
         return vertex;
     }
 
@@ -240,6 +256,10 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
         if (vertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
+
+        AtlasEnumDef existingDef = typeRegistry.getEnumDefByGuid(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_DELETE, existingDef), "delete enum-def ", (existingDef != null ? existingDef.getName() : guid));
 
         return vertex;
     }
