@@ -312,6 +312,7 @@ define(['require',
                     tagName = options.el.text();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 CommonViewFunction.deleteTag(_.extend({}, options, {
+                    hideLoader: that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
                     }
