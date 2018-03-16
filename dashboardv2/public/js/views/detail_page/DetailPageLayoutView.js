@@ -319,6 +319,7 @@ define(['require',
                     'tagName': tagName,
                     'guid': that.id,
                     'tagOrTerm': tagOrTerm,
+                    'hideLoader': that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
                     }
