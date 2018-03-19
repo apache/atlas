@@ -119,8 +119,8 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    if (that.guid !== model.get('entityGuid') ) {
-                                        var propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" title="Propagated From" data-guid='+ model.get('entityGuid') +' data-id="propagatedFromClick"><span> Propagated From </span></span>';
+                                    if (that.guid !== model.get('entityGuid')) {
+                                        var propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" title="Propagated From" data-guid=' + model.get('entityGuid') + ' data-id="propagatedFromClick"><span> Propagated From </span></span>';
                                         return '<a title="" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>' + propagtedFrom;
                                     } else {
                                         return '<a title="' + model.get('typeName') + '" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>';
@@ -233,7 +233,9 @@ define(['require',
             editTagDataModal: function(e) {
                 var that = this,
                     tagName = $(e.currentTarget).data('name'),
-                    tagModel = _.findWhere(that.collectionObject.classifications, { typeName: tagName });
+                    tagModel = _.find(that.collectionObject.classifications, function(tag) {
+                        return (tagName === tag.typeName && that.guid === tag.entityGuid);
+                    });
                 require([
                     'views/tag/AddTagModalView'
                 ], function(AddTagModalView) {
@@ -256,10 +258,10 @@ define(['require',
                 if (e.target.checked) {
                     that.tagCollection.reset(tags);
                 } else {
-                 unPropagatedTags = _.filter(tags,function(val){
-                       return that.guid === val.entityGuid;
+                    unPropagatedTags = _.filter(tags, function(val) {
+                        return that.guid === val.entityGuid;
                     });
-                   that.tagCollection.reset(unPropagatedTags);
+                    that.tagCollection.reset(unPropagatedTags);
                 }
             }
         });
