@@ -106,8 +106,8 @@ define(['require',
                         pageLimit: null,
                         entityFilters: null,
                         includeDE: null,
-                        excludeST:null,
-                        excludeSC : null
+                        excludeST: null,
+                        excludeSC: null
                     }
                 };
                 if (!this.value) {
@@ -383,7 +383,8 @@ define(['require',
             okAttrFilterButton: function(e) {
                 var isTag = this.attrModal.tag ? true : false,
                     filtertype = isTag ? 'tagFilters' : 'entityFilters',
-                    queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder;
+                    queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder,
+                    col = [];
                 if (queryBuilderRef.data('queryBuilder')) {
                     var rule = queryBuilderRef.queryBuilder('getRules');
                 }
@@ -395,11 +396,22 @@ define(['require',
                         if (!this.searchTableColumns[this.value.type]) {
                             this.searchTableColumns[this.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"]
                         }
-                        this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], _.pluck(rule.rules, 'id')));
+                        this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], getIdFromRuleObject(rule)));
                     }
                     this.attrModal.modal.close();
                     if ($(e.currentTarget).hasClass('search')) {
                         this.findSearchResult();
+                    }
+
+                    function getIdFromRuleObject(rule) {
+                        _.map(rule.rules, function(obj, key) {
+                            if (_.has(obj, 'condition')) {
+                                return getIdFromRuleObject(obj);
+                            } else {
+                                return col.push(obj.id)
+                            }
+                        });
+                        return col;
                     }
                 }
             },
