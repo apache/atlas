@@ -37,6 +37,8 @@ public class RequestContextV1 {
 
     private String      user;
     private Set<String> userGroups;
+    private String clientIPAddress;
+
 
     private RequestContextV1() {
     }
@@ -77,6 +79,14 @@ public class RequestContextV1 {
     public void setUser(String user, Set<String> userGroups) {
         this.user       = user;
         this.userGroups = userGroups;
+    }
+
+    public String getClientIPAddress() {
+        return clientIPAddress;
+    }
+
+    public void setClientIPAddress(String clientIPAddress) {
+        this.clientIPAddress = clientIPAddress;
     }
 
     public void recordEntityUpdate(AtlasObjectId entity) {

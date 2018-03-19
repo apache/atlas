@@ -33,7 +33,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
-
+import org.apache.atlas.RequestContextV1;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -71,7 +71,7 @@ public class AtlasAuthorizationUtils {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
                 request.setUser(userName, getCurrentUserGroups());
-
+                request.setClientIPAddress(RequestContextV1.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -92,7 +92,7 @@ public class AtlasAuthorizationUtils {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
                 request.setUser(getCurrentUserName(), getCurrentUserGroups());
-
+                request.setClientIPAddress(RequestContextV1.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -113,7 +113,7 @@ public class AtlasAuthorizationUtils {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
                 request.setUser(getCurrentUserName(), getCurrentUserGroups());
-
+                request.setClientIPAddress(RequestContextV1.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);

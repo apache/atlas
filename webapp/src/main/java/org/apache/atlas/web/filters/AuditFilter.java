@@ -76,7 +76,7 @@ public class AuditFilter implements Filter {
             RequestContextV1.clear();
             RequestContextV1 requestContext = RequestContextV1.get();
             requestContext.setUser(user, userGroups);
-
+            requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
             filterChain.doFilter(request, response);
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
