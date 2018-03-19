@@ -45,7 +45,7 @@ public class EntityTagResourceProvider extends BaseResourceProvider implements R
         Collection<Map<String, Object>> results = atlasQuery.execute();
         if (results.isEmpty()) {
             throw new ResourceNotFoundException(String.format("Tag '%s' not found.",
-                    request.getProperty(resourceDefinition.getIdPropertyName())));
+                    (String) request.getProperty(resourceDefinition.getIdPropertyName())));
         }
 
         return new Result(results);

@@ -134,7 +134,7 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         try {
             doGetResourceById(request);
             throw new ResourceAlreadyExistsException(String.format("Taxonomy '%s' already exists.",
-                    request.getProperty("name")));
+                    (String) request.getProperty("name")));
         } catch (ResourceNotFoundException e) {
             // expected case
         }
@@ -152,7 +152,7 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         Collection<Map<String, Object>> resultSet = atlasQuery.execute();
         if (resultSet.isEmpty()) {
             throw new ResourceNotFoundException(String.format("Taxonomy '%s' not found.",
-                    request.getProperty(resourceDefinition.getIdPropertyName())));
+                    (String) request.getProperty(resourceDefinition.getIdPropertyName())));
         }
         return new Result(resultSet);
     }

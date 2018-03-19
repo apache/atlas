@@ -44,7 +44,7 @@ public class EntityResourceProvider extends BaseResourceProvider implements Reso
         Collection<Map<String, Object>> results = atlasQuery.execute();
         if (results.isEmpty()) {
             throw new ResourceNotFoundException(String.format("Entity '%s' not found.",
-                    request.getProperty(resourceDefinition.getIdPropertyName())));
+                    (String) request.getProperty(resourceDefinition.getIdPropertyName())));
         }
         return new Result(results);
     }

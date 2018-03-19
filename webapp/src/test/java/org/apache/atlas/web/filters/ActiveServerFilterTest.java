@@ -137,7 +137,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types?query%3DTRAIT");
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types?query=TRAIT");
 
     }
 

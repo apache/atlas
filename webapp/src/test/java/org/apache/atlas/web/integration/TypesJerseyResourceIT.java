@@ -249,7 +249,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                         createOptionalAttrDef("parameters",
                                 DataTypes.mapTypeName(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE)),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
-                        new AttributeDefinition("database", "database", Multiplicity.REQUIRED, false, "database"));
+                        TypesUtil.createRequiredAttrDef("database", "database"));
         typeDefinitions.add(tableTypeDefinition);
 
         HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil

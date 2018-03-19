@@ -96,7 +96,7 @@ public abstract class DeleteHandler {
            // and gather deletion candidate vertices.
            for (VertexInfo vertexInfo : compositeVertices) {
                ClassType                   entityType = typeSystem.getDataType(ClassType.class, vertexInfo.getTypeName());
-               ITypedReferenceableInstance entity     = entityType.createInstance(new Id(guid, 0, vertexInfo.getTypeName()));
+               ITypedReferenceableInstance entity     = entityType.createInstance(new Id(vertexInfo.getGuid(), 0, vertexInfo.getTypeName()));
 
                // populate unique attributes only
                for (AttributeInfo attributeInfo : entityType.fieldMapping().fields.values()) {

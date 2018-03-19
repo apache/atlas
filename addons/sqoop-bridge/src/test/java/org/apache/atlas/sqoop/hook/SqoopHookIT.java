@@ -38,7 +38,7 @@ public class SqoopHookIT {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SqoopHookIT.class);
     private static final String CLUSTER_NAME = "primary";
     public static final String DEFAULT_DB = "default";
-    private static final int MAX_WAIT_TIME = 2000;
+    private static final int MAX_WAIT_TIME = 80000;
     private AtlasClient atlasClient;
 
     @BeforeClass

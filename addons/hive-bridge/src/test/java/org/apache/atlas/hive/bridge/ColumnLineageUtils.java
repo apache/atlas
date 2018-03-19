@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.bridge;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.hive.hook.events.BaseHiveEvent;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo;
@@ -129,7 +130,7 @@ public class ColumnLineageUtils {
         if (r.getTypeName().equals(HiveDataTypes.HIVE_TABLE.getName())) {
             String qName = (String) r.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
             String[] qNameComps = extractComponents(qName);
-            for (Referenceable col : (List<Referenceable>) r.get(HiveMetaStoreBridge.COLUMNS)) {
+            for (Referenceable col : (List<Referenceable>) r.get(BaseHiveEvent.ATTRIBUTE_COLUMNS)) {
                 String cName = (String) col.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
                 String[] colQNameComps = extractComponents(cName);
                 String colQName = colQNameComps[0] + "." + colQNameComps[1] + "." + colQNameComps[2];

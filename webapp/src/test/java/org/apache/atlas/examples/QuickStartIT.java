@@ -117,7 +117,7 @@ public class QuickStartIT extends BaseResourceIT {
         return getTable(tableName).getId()._getId();
     }
 
-    @Test
+    @Test(enabled = false)
     public void testLineageIsMaintained() throws AtlasServiceException, JSONException {
         String salesFactTableId = getTableId(QuickStart.SALES_FACT_TABLE);
         String timeDimTableId = getTableId(QuickStart.TIME_DIM_TABLE);

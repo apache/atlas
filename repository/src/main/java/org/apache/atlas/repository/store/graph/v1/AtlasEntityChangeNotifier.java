@@ -33,9 +33,13 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
-import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
+import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,15 +58,18 @@ public class AtlasEntityChangeNotifier {
 
     private final Set<EntityChangeListener> entityChangeListeners;
     private final AtlasInstanceConverter    instanceConverter;
+    private final TypeSystem                typeSystem;
 
     @Inject
     private FullTextMapperV2 fullTextMapperV2;
 
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
-                                     AtlasInstanceConverter    instanceConverter) {
+                                     AtlasInstanceConverter    instanceConverter,
+                                     TypeSystem                typeSystem) {
         this.entityChangeListeners = entityChangeListeners;
         this.instanceConverter     = instanceConverter;
+        this.typeSystem            = typeSystem;
     }
 
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
@@ -185,7 +192,7 @@ public class AtlasEntityChangeNotifier {
         // fail, since the entity vertex would already be gone. Hence the special handling for delete operation
         if (operation == EntityOperation.DELETE) {
             for (AtlasEntityHeader entity : entityHeaders) {
-                ret.add(new ReferenceableInstance(entity.getGuid(), entity.getTypeName()));
+                ret.add(toInstanceForNotification(entity));
             }
         } else {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
@@ -289,5 +296,34 @@ public class AtlasEntityChangeNotifier {
         entityHeader.setGuid(guid);
 
         doFullTextMapping(Collections.singletonList(entityHeader));
+    }
+
+
+    // create a referenceale instance that includes only unique attributes and 'clusterName' attribute (if present)
+    private ITypedReferenceableInstance toInstanceForNotification(AtlasEntityHeader entity) throws AtlasBaseException {
+        try {
+            ClassType                   classType = typeSystem.getDataType(ClassType.class, entity.getTypeName());
+            ITypedReferenceableInstance ret       = classType.createInstance(new Id(entity.getGuid(), 0, entity.getTypeName()));
+
+            if (MapUtils.isNotEmpty(entity.getAttributes())) {
+                for (AttributeInfo attrInfo : classType.fieldMapping().fields.values()) {
+                    String attrName = attrInfo.name;
+
+                    if (attrInfo.isUnique || "clusterName".equalsIgnoreCase(attrName)) {
+                        Object attrValue = entity.getAttribute(attrName);
+
+                        if (attrValue != null) {
+                            ret.set(attrName, attrValue);
+                        }
+                    }
+                }
+            }
+
+            return ret;
+        } catch (AtlasException excp) {
+            LOG.warn("failed to create ITypedReferenceableInstance for type {}", entity.getTypeName(), excp);
+
+            throw AtlasInstanceConverter.toAtlasBaseException(excp);
+        }
     }
 }

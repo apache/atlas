@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.TestUtils.*;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
@@ -339,11 +338,11 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
 
         final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
-        final AtlasEntityHeader deptCreated = hrDeptCreationResponse.getFirstUpdatedEntityByTypeName(DEPARTMENT_TYPE);
-        final AtlasEntityHeader maxEmployeeCreated = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
-        final AtlasEntityHeader johnEmployeeCreated = hrDeptCreationResponse.getUpdatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
-        final AtlasEntityHeader janeEmployeeCreated = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
-        final AtlasEntityHeader juliusEmployeeCreated = hrDeptCreationResponse.getUpdatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
+        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, DEPARTMENT_TYPE);
+        final AtlasEntityHeader maxEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
+        final AtlasEntityHeader johnEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
+        final AtlasEntityHeader janeEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
+        final AtlasEntityHeader juliusEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
 
         ITypedReferenceableInstance max = metadataService.getEntityDefinition(maxEmployeeCreated.getGuid());
         String maxGuid = max.getId()._getId();
@@ -462,11 +461,11 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
         final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
 
-        final AtlasEntityHeader deptCreated = hrDeptCreationResponse.getFirstCreatedEntityByTypeName(DEPARTMENT_TYPE);
-        final AtlasEntityHeader maxEmployee = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
-        final AtlasEntityHeader johnEmployee = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
-        final AtlasEntityHeader janeEmployee = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
-        final AtlasEntityHeader juliusEmployee = hrDeptCreationResponse.getCreatedEntityByTypeNameAndAttribute(TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
+        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, DEPARTMENT_TYPE);
+        final AtlasEntityHeader maxEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
+        final AtlasEntityHeader johnEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
+        final AtlasEntityHeader janeEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
+        final AtlasEntityHeader juliusEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
 
         ITypedReferenceableInstance hrDeptInstance = metadataService.getEntityDefinition(deptCreated.getGuid());
         Map<String, String> nameGuidMap = getEmployeeNameGuidMap(hrDeptInstance);
@@ -493,7 +492,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEquals(entityResult.getDeletedEntities().get(0).getGuid(), maxEmployee.getGuid());
         assertEquals(entityResult.getUpdatedEntities().size(), 3);
 
-        assertEquals(extractGuids(entityResult.getUpdatedEntities()), Arrays.asList(janeEmployee.getGuid(), deptCreated.getGuid(), johnEmployee.getGuid()));
+        assertTrue(extractGuids(entityResult.getUpdatedEntities()).containsAll(Arrays.asList(janeEmployee.getGuid(), deptCreated.getGuid(), johnEmployee.getGuid())));
         assertEntityDeleted(maxEmployee.getGuid());
 
         assertMaxForTestDisconnectBidirectionalReferences(nameGuidMap);
@@ -505,7 +504,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEquals(entityResult.getDeletedEntities().size(), 1);
         assertEquals(entityResult.getDeletedEntities().get(0).getGuid(), janeEmployee.getGuid());
         assertEquals(entityResult.getUpdatedEntities().size(), 2);
-        assertEquals(extractGuids(entityResult.getUpdatedEntities()), Arrays.asList(deptCreated.getGuid(), johnEmployee.getGuid()));
+        assertTrue(extractGuids(entityResult.getUpdatedEntities()).containsAll(Arrays.asList(deptCreated.getGuid(), johnEmployee.getGuid())));
 
         assertEntityDeleted(janeEmployee.getGuid());
 
@@ -1138,4 +1137,23 @@ public abstract class AtlasDeleteHandlerV1Test {
         }
     }
 
+    private AtlasEntityHeader getFirstCreatedOrUpdatedEntityByTyp(EntityMutationResponse response, String typeName) {
+        AtlasEntityHeader ret = response.getFirstCreatedEntityByTypeName(typeName);
+
+        if (ret == null) {
+            ret = response.getFirstUpdatedEntityByTypeName(typeName);
+        }
+
+        return ret;
+    }
+
+    private AtlasEntityHeader getCreatedOrUpdatedEntityByTypeAndAttribute(EntityMutationResponse response, String typeName, String attrName, String attrValue) {
+        AtlasEntityHeader ret = response.getCreatedEntityByTypeNameAndAttribute(typeName, attrName, attrValue);
+
+        if (ret == null) {
+            ret = response.getUpdatedEntityByTypeNameAndAttribute(typeName, attrName, attrValue);
+        }
+
+        return ret;
+    }
 }
