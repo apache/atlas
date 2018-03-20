@@ -92,6 +92,10 @@ public class ImportHBaseEntitiesBase {
     public static final String ATTR_CF_EVICT_BLOCK_ONCLOSE          = "evictBlocksOnClose";
     public static final String ATTR_CF_PREFETCH_BLOCK_ONOPEN        = "prefetchBlocksOnOpen";
 
+    public static final String HBASE_NAMESPACE_QUALIFIED_NAME            = "%s@%s";
+    public static final String HBASE_TABLE_QUALIFIED_NAME_FORMAT         = "%s:%s@%s";
+    public static final String HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT = "%s:%s.%s@%s";
+
     protected final HBaseAdmin                   hbaseAdmin;
     protected final boolean                      failOnError;
     protected final String                       namespaceToImport;
@@ -380,8 +384,7 @@ public class ImportHBaseEntitiesBase {
      */
     private static String getColumnFamilyQualifiedName(String clusterName, String nameSpace, String tableName, String columnFamily) {
         tableName = stripNameSpace(tableName.toLowerCase());
-
-        return String.format("%s.%s.%s@%s", nameSpace.toLowerCase(), tableName, columnFamily.toLowerCase(), clusterName);
+        return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, columnFamily.toLowerCase(), clusterName);
     }
 
     /**
@@ -393,8 +396,7 @@ public class ImportHBaseEntitiesBase {
      */
     private static String getTableQualifiedName(String clusterName, String nameSpace, String tableName) {
         tableName = stripNameSpace(tableName.toLowerCase());
-
-        return String.format("%s.%s@%s", nameSpace.toLowerCase(), tableName, clusterName);
+        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, clusterName);
     }
 
     /**
@@ -404,7 +406,7 @@ public class ImportHBaseEntitiesBase {
      * @return Unique qualified name to identify the HBase NameSpace instance in Atlas.
      */
     private static String getNameSpaceQualifiedName(String clusterName, String nameSpace) {
-        return String.format("%s@%s", nameSpace.toLowerCase(), clusterName);
+        return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), clusterName);
     }
 
     private static String stripNameSpace(String tableName){
