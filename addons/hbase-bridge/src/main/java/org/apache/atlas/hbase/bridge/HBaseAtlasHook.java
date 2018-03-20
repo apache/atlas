@@ -116,6 +116,10 @@ public class HBaseAtlasHook extends AtlasHook {
     public static final String ATTR_CF_EVICT_BLOCK_ONCLOSE          = "evictBlocksOnClose";
     public static final String ATTR_CF_PREFETCH_BLOCK_ONOPEN        = "prefetchBlocksOnOpen";
 
+    public static final String HBASE_NAMESPACE_QUALIFIED_NAME            = "%s@%s";
+    public static final String HBASE_TABLE_QUALIFIED_NAME_FORMAT         = "%s:%s@%s";
+    public static final String HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT = "%s:%s.%s@%s";
+
     private static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
     private              String clusterName                  = null;
 
@@ -377,7 +381,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (clusterName == null || nameSpace == null || tableName == null || columnFamily == null) {
             return null;
         } else {
-            return String.format("%s.%s.%s@%s", nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), columnFamily.toLowerCase(), clusterName);
+            return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), columnFamily.toLowerCase(), clusterName);
         }
     }
 
@@ -393,7 +397,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (clusterName == null || nameSpace == null || tableName == null) {
             return null;
         } else {
-            return String.format("%s.%s@%s", nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), clusterName);
+            return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), clusterName);
         }
     }
 
@@ -408,7 +412,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (clusterName == null || nameSpace == null) {
             return null;
         } else {
-            return String.format("%s@%s", nameSpace.toLowerCase(), clusterName);
+            return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), clusterName);
         }
     }
 
