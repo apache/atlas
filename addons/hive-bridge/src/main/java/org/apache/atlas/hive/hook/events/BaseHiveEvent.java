@@ -796,6 +796,7 @@ public abstract class BaseHiveEvent {
             case ALTERTABLE_RENAMECOL:
             case ALTERVIEW_PROPERTIES:
             case ALTERVIEW_RENAME:
+            case ALTERVIEW_AS:
                 return true;
         }
 

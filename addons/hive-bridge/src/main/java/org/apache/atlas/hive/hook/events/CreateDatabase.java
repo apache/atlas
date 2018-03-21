@@ -21,8 +21,11 @@ package org.apache.atlas.hive.hook.events;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.notification.hook.HookNotification.EntityCreateRequestV2;
 import org.apache.atlas.notification.hook.HookNotification.HookNotificationMessage;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.slf4j.Logger;
@@ -40,9 +43,12 @@ public class CreateDatabase extends BaseHiveEvent {
 
     @Override
     public List<HookNotificationMessage> getNotificationMessages() throws Exception {
-        AtlasEntitiesWithExtInfo      entities     = getEntities();
-        HookNotificationMessage       notification = new EntityCreateRequestV2(getUserName(), entities);
-        List<HookNotificationMessage> ret          = Collections.singletonList(notification);
+        List<HookNotificationMessage> ret      = null;
+        AtlasEntitiesWithExtInfo      entities = getEntities();
+
+        if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
+            ret = Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities));
+        }
 
         return ret;
     }
