@@ -63,7 +63,6 @@ define(['require',
             },
             onRender: function() {
                 var that = this,
-                    minDate = new Date(),
                     dateObj = {
                         "showDropdowns": true,
                         "timePicker": true,
@@ -75,41 +74,24 @@ define(['require',
                         "alwaysShowCalendars": true
                     },
                     tzstr = '<option selected="selected" disabled="disabled">-- Select Timezone --</option>';
-
+                this.ui.timeZone.select2({
+                    allowClear: true,
+                    data: moment.tz.names()
+                });
                 if (this.model.get('startTime') !== "") {
-                    this.ui.timeInterval.daterangepicker({
-                        "showDropdowns": true,
-                        "timePicker": true,
-                        "timePicker24Hour": true,
-                        "startDate": this.model.get('startTime'),
-                        "endDate": this.model.get('endTime'),
-                        "locale": {
-                            format: 'YYYY/MM/DD h:mm A'
-                        },
-                        "alwaysShowCalendars": true
-                    }).on('apply.daterangepicker', function(fullDate) {
-                        var val = fullDate.currentTarget.value.split(' - ');
-                        that.model.set('startTime', val[0]);
-                        that.model.set('endTime', val[1]);
-                    });
-                    this.ui.timeZone.select2({
-                        data: moment.tz.names()
-                    });
+                    dateObj["startDate"] = this.model.get('startTime');
+                    dateObj["endDate"] = this.model.get('endTime');
                     this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
                 } else {
-                    this.ui.timeInterval.daterangepicker(dateObj).on('apply.daterangepicker', function(fullDate) {
-                        var val = fullDate.currentTarget.value.split(' - ');
-                        that.model.set('startTime', val[0]);
-                        that.model.set('endTime', val[1]);
-                    });
                     this.ui.timeZone.html(tzstr);
-                    this.ui.timeZone.select2({
-                        placeholder: "Select TimeZone",
-                        allowClear: true,
-                        data: moment.tz.names()
-                    });
+                    this.model.set('startTime', moment(dateObj.startDate).format('YYYY/MM/DD h:mm A'));
+                    this.model.set('endTime', moment(dateObj.startDate).format('YYYY/MM/DD h:mm A'));
                 }
-                $('[name="daterangepicker_start"]').attr('readonly', true); +
+                this.ui.timeInterval.daterangepicker(dateObj).on('apply.daterangepicker', function(ev, picker) {
+                    that.model.set('startTime', picker.startDate.format('YYYY/MM/DD h:mm A'));
+                    that.model.set('endTime', picker.endDate.format('YYYY/MM/DD h:mm A'));
+                });
+                $('[name="daterangepicker_start"]').attr('readonly', true);
                 $('[name="daterangepicker_end"]').attr('readonly', true);
             },
             buttonActive: function(option) {
