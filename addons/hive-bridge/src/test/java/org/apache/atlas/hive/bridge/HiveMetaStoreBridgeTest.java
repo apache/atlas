@@ -97,7 +97,7 @@ public class HiveMetaStoreBridgeTest {
                         getEntity(HiveDataTypes.HIVE_DB.getName(), AtlasClient.GUID, "72e06b34-9151-4023-aa9d-b82103a50e76"))).getEntity());
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
-        bridge.importHiveMetadata(true);
+        bridge.importHiveMetadata(null, null, true);
 
         // verify update is called
         verify(atlasClientV2).updateEntity(anyObject());
@@ -126,7 +126,8 @@ public class HiveMetaStoreBridgeTest {
         when(atlasEntityWithExtInfo.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77"))
                 .thenReturn(createTableReference());
 
-        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTables.get(0));
+        Table testTable =  hiveTables.get(0);
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, testTable);
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_PROCESS.getName(),
             Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -136,7 +137,7 @@ public class HiveMetaStoreBridgeTest {
 
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
-        bridge.importHiveMetadata(true);
+        bridge.importHiveMetadata(null, null, true);
 
         // verify update is called on table
         verify(atlasClientV2, times(2)).updateEntity(anyObject());
@@ -207,7 +208,7 @@ public class HiveMetaStoreBridgeTest {
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
         try {
-            bridge.importHiveMetadata(true);
+            bridge.importHiveMetadata(null, null, true);
         } catch (Exception e) {
             Assert.fail("Partition with null key caused import to fail with exception ", e);
         }
@@ -231,7 +232,8 @@ public class HiveMetaStoreBridgeTest {
         when(atlasEntityWithExtInfo.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77"))
                 .thenReturn(createTableReference());
 
-        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTables.get(1));
+        Table testTable =  hiveTables.get(1);
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, testTable);
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_PROCESS.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -241,7 +243,7 @@ public class HiveMetaStoreBridgeTest {
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
         try {
-            bridge.importHiveMetadata(false);
+            bridge.importHiveMetadata(null, null, false);
         } catch (Exception e) {
             Assert.fail("Table registration failed with exception", e);
         }
@@ -267,7 +269,8 @@ public class HiveMetaStoreBridgeTest {
         when(atlasEntityWithExtInfo.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77"))
                 .thenReturn(createTableReference());
 
-        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTables.get(1));
+        Table testTable  = hiveTables.get(1);
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, testTable);
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_PROCESS.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -277,7 +280,7 @@ public class HiveMetaStoreBridgeTest {
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
         try {
-            bridge.importHiveMetadata(true);
+            bridge.importHiveMetadata(null, null, true);
             Assert.fail("Table registration is supposed to fail");
         } catch (Exception e) {
             //Expected

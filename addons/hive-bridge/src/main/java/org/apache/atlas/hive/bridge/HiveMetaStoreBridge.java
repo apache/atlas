@@ -36,11 +36,11 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -86,7 +86,9 @@ public class HiveMetaStoreBridge {
     public static final String SEP                             = ":".intern();
     public static final String HDFS_PATH                       = "hdfs_path";
 
-    private static final String DEFAULT_ATLAS_URL            = "http://localhost:21000/";
+    private static final int    EXIT_CODE_SUCCESS = 0;
+    private static final int    EXIT_CODE_FAILED  = 1;
+    private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
 
     private final HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
     private final String                  clusterName;
@@ -95,16 +97,27 @@ public class HiveMetaStoreBridge {
     private final boolean                 convertHdfsPathToLowerCase;
 
 
-    public static void main(String[] args) throws AtlasHookException {
-        try {
-            Configuration atlasConf     = ApplicationProperties.get();
-            String[]      atlasEndpoint = atlasConf.getStringArray(ATLAS_ENDPOINT);
+    public static void main(String[] args) {
+        int exitCode = EXIT_CODE_FAILED;
 
-            if (atlasEndpoint == null || atlasEndpoint.length == 0){
+        try {
+            Options options = new Options();
+            options.addOption("d", "database", true, "Databbase name");
+            options.addOption("t", "table", true, "Table name");
+            options.addOption("failOnError", false, "failOnError");
+
+            CommandLine   cmd              = new BasicParser().parse(options, args);
+            boolean       failOnError      = cmd.hasOption("failOnError");
+            String        databaseToImport = cmd.getOptionValue("d");
+            String        tableToImport    = cmd.getOptionValue("t");
+            Configuration atlasConf        = ApplicationProperties.get();
+            String[]      atlasEndpoint    = atlasConf.getStringArray(ATLAS_ENDPOINT);
+
+            if (atlasEndpoint == null || atlasEndpoint.length == 0) {
                 atlasEndpoint = new String[] { DEFAULT_ATLAS_URL };
             }
 
-            AtlasClientV2 atlasClientV2;
+            final AtlasClientV2 atlasClientV2;
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
@@ -116,17 +129,35 @@ public class HiveMetaStoreBridge {
                 atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), atlasEndpoint);
             }
 
-            Options           options     = new Options();
-            CommandLineParser parser      = new BasicParser();
-            CommandLine       cmd         = parser.parse(options, args);
-            boolean           failOnError = cmd.hasOption("failOnError");
-
             HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClientV2);
 
-            hiveMetaStoreBridge.importHiveMetadata(failOnError);
+            hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+
+            exitCode = EXIT_CODE_SUCCESS;
+        } catch(ParseException e) {
+            LOG.error("Failed to parse arguments. Error: ", e.getMessage());
+
+            printUsage();
         } catch(Exception e) {
-            throw new AtlasHookException("HiveMetaStoreBridge.main() failed.", e);
+            LOG.error("Import failed", e);
         }
+
+        System.exit(exitCode);
+    }
+
+    private static void printUsage() {
+        System.out.println();
+        System.out.println();
+        System.out.println("Usage 1: import-hive.sh [-d <database> OR --database <database>] "  );
+        System.out.println("    Imports specified database and its tables ...");
+        System.out.println();
+        System.out.println("Usage 2: import-hive.sh [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
+        System.out.println("    Imports specified table within that database ...");
+        System.out.println();
+        System.out.println("Usage 3: import-hive.sh");
+        System.out.println("    Imports all databases and tables...");
+        System.out.println();
+        System.out.println();
     }
 
     /**
@@ -174,23 +205,33 @@ public class HiveMetaStoreBridge {
 
 
     @VisibleForTesting
-    public void importHiveMetadata(boolean failOnError) throws Exception {
+    public void importHiveMetadata(String databaseToImport, String tableToImport, boolean failOnError) throws Exception {
         LOG.info("Importing Hive metadata");
 
-        importDatabases(failOnError);
+        importDatabases(failOnError, databaseToImport, tableToImport);
     }
 
-    private void importDatabases(boolean failOnError) throws Exception {
-        List<String> databases = hiveClient.getAllDatabases();
+    private void importDatabases(boolean failOnError, String databaseToImport, String tableToImport) throws Exception {
+        final List<String> databaseNames;
 
-        LOG.info("Found {} databases", databases.size());
+        if (StringUtils.isEmpty(databaseToImport)) {
+            databaseNames = hiveClient.getAllDatabases();
+        } else {
+            databaseNames = hiveClient.getDatabasesByPattern(databaseToImport);
+        }
 
-        for (String databaseName : databases) {
-            AtlasEntityWithExtInfo dbEntity = registerDatabase(databaseName);
+        if(!CollectionUtils.isEmpty(databaseNames)) {
+            LOG.info("Found {} databases", databaseNames.size());
 
-            if (dbEntity != null) {
-                importTables(dbEntity.getEntity(), databaseName, failOnError);
+            for (String databaseName : databaseNames) {
+                AtlasEntityWithExtInfo dbEntity = registerDatabase(databaseName);
+
+                if (dbEntity != null) {
+                    importTables(dbEntity.getEntity(), databaseName, tableToImport, failOnError);
+                }
             }
+        } else {
+            LOG.info("No database found");
         }
     }
 
@@ -201,25 +242,35 @@ public class HiveMetaStoreBridge {
      * @param failOnError
      * @throws Exception
      */
-    private int importTables(AtlasEntity dbEntity, String databaseName, final boolean failOnError) throws Exception {
-        List<String> hiveTables = hiveClient.getAllTables(databaseName);
-
-        LOG.info("Found {} tables in database {}", hiveTables.size(), databaseName);
-
+    private int importTables(AtlasEntity dbEntity, String databaseName, String tblName, final boolean failOnError) throws Exception {
         int tablesImported = 0;
 
-        try {
-            for (String tableName : hiveTables) {
-                int imported = importTable(dbEntity, databaseName, tableName, failOnError);
+        final List<String> tableNames;
 
-                tablesImported += imported;
+        if (StringUtils.isEmpty(tblName)) {
+            tableNames = hiveClient.getAllTables(databaseName);
+        } else {
+            tableNames = hiveClient.getTablesByPattern(databaseName, tblName);
+        }
+
+        if(!CollectionUtils.isEmpty(tableNames)) {
+            LOG.info("Found {} tables to import in database {}", tableNames.size(), databaseName);
+
+            try {
+                for (String tableName : tableNames) {
+                    int imported = importTable(dbEntity, databaseName, tableName, failOnError);
+
+                    tablesImported += imported;
+                }
+            } finally {
+                if (tablesImported == tableNames.size()) {
+                    LOG.info("Successfully imported {} tables from database {}", tablesImported, databaseName);
+                } else {
+                    LOG.error("Imported {} of {} tables from database {}. Please check logs for errors during import", tablesImported, tableNames.size(), databaseName);
+                }
             }
-        } finally {
-            if (tablesImported == hiveTables.size()) {
-                LOG.info("Successfully imported all {} tables from database {}", tablesImported, databaseName);
-            } else {
-                LOG.error("Imported {} of {} tables from database {}. Please check logs for errors during import", tablesImported, hiveTables.size(), databaseName);
-            }
+        } else {
+            LOG.info("No tables to import in database {}", databaseName);
         }
 
         return tablesImported;

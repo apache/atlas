@@ -31,6 +31,8 @@ done
 BASEDIR=`dirname ${PRG}`
 BASEDIR=`cd ${BASEDIR}/..;pwd`
 
+allargs=$@
+
 if test -z "${JAVA_HOME}"
 then
     JAVA_BIN=`which java`
@@ -128,8 +130,8 @@ done
 
 echo "Log file for import is $LOGFILE"
 
-"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge
+"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge $allargs
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive Data Model imported successfully!!!
-[ $RETVAL -ne 0 ] && echo Failed to import Hive Data Model!!!
+[ $RETVAL -eq 0 ] && echo Hive Meta Data imported successfully!!!
+[ $RETVAL -ne 0 ] && echo Failed to import Hive Meta Data!!!
