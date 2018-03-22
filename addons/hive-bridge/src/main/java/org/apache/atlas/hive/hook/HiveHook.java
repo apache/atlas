@@ -83,77 +83,81 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             LOG.debug("==> HiveHook.run({})", hookContext.getOperationName());
         }
 
-        HiveOperation        oper    = OPERATION_MAP.get(hookContext.getOperationName());
-        AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext);
+        try {
+            HiveOperation        oper    = OPERATION_MAP.get(hookContext.getOperationName());
+            AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext);
 
-        BaseHiveEvent event = null;
+            BaseHiveEvent event = null;
 
-        switch (oper) {
-            case CREATEDATABASE:
-                event = new CreateDatabase(context);
+            switch (oper) {
+                case CREATEDATABASE:
+                    event = new CreateDatabase(context);
                 break;
 
-            case DROPDATABASE:
-                event = new DropDatabase(context);
+                case DROPDATABASE:
+                    event = new DropDatabase(context);
                 break;
 
-            case ALTERDATABASE:
-            case ALTERDATABASE_OWNER:
-                event = new AlterDatabase(context);
+                case ALTERDATABASE:
+                case ALTERDATABASE_OWNER:
+                    event = new AlterDatabase(context);
                 break;
 
-            case CREATETABLE:
-                event = new CreateTable(context, true);
+                case CREATETABLE:
+                    event = new CreateTable(context, true);
                 break;
 
-            case DROPTABLE:
-            case DROPVIEW:
-                event = new DropTable(context);
+                case DROPTABLE:
+                case DROPVIEW:
+                    event = new DropTable(context);
                 break;
 
-            case CREATETABLE_AS_SELECT:
-            case CREATEVIEW:
-            case ALTERVIEW_AS:
-            case LOAD:
-            case EXPORT:
-            case IMPORT:
-            case QUERY:
-            case TRUNCATETABLE:
-                event = new CreateHiveProcess(context);
+                case CREATETABLE_AS_SELECT:
+                case CREATEVIEW:
+                case ALTERVIEW_AS:
+                case LOAD:
+                case EXPORT:
+                case IMPORT:
+                case QUERY:
+                case TRUNCATETABLE:
+                    event = new CreateHiveProcess(context);
                 break;
 
-            case ALTERTABLE_FILEFORMAT:
-            case ALTERTABLE_CLUSTER_SORT:
-            case ALTERTABLE_BUCKETNUM:
-            case ALTERTABLE_PROPERTIES:
-            case ALTERVIEW_PROPERTIES:
-            case ALTERTABLE_SERDEPROPERTIES:
-            case ALTERTABLE_SERIALIZER:
-            case ALTERTABLE_ADDCOLS:
-            case ALTERTABLE_REPLACECOLS:
-            case ALTERTABLE_PARTCOLTYPE:
-            case ALTERTABLE_LOCATION:
-                event = new AlterTable(context);
+                case ALTERTABLE_FILEFORMAT:
+                case ALTERTABLE_CLUSTER_SORT:
+                case ALTERTABLE_BUCKETNUM:
+                case ALTERTABLE_PROPERTIES:
+                case ALTERVIEW_PROPERTIES:
+                case ALTERTABLE_SERDEPROPERTIES:
+                case ALTERTABLE_SERIALIZER:
+                case ALTERTABLE_ADDCOLS:
+                case ALTERTABLE_REPLACECOLS:
+                case ALTERTABLE_PARTCOLTYPE:
+                case ALTERTABLE_LOCATION:
+                    event = new AlterTable(context);
                 break;
 
-            case ALTERTABLE_RENAME:
-            case ALTERVIEW_RENAME:
-                event = new AlterTableRename(context);
+                case ALTERTABLE_RENAME:
+                case ALTERVIEW_RENAME:
+                    event = new AlterTableRename(context);
                 break;
 
-            case ALTERTABLE_RENAMECOL:
-                event = new AlterTableRenameCol(context);
+                case ALTERTABLE_RENAMECOL:
+                    event = new AlterTableRenameCol(context);
                 break;
 
-            default:
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("HiveHook.run({}): operation ignored", hookContext.getOperationName());
-                }
+                default:
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("HiveHook.run({}): operation ignored", hookContext.getOperationName());
+                    }
                 break;
-        }
+            }
 
-        if (event != null) {
-            super.notifyEntities(event.getNotificationMessages());
+            if (event != null) {
+                super.notifyEntities(event.getNotificationMessages());
+            }
+        } catch (Throwable t) {
+            LOG.error("HiveHook.run(): failed to process operation {}", hookContext.getOperationName(), t);
         }
 
         if (LOG.isDebugEnabled()) {
