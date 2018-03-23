@@ -19,18 +19,22 @@
 package org.apache.atlas.security;
 
 import org.apache.hadoop.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
 
-//Unstable test. Disabling
-@Test(enabled=false)
+@Test(enabled=true)
 public class InMemoryJAASConfigurationTest {
 
+    private static final Logger LOG = LoggerFactory.getLogger(InMemoryJAASConfigurationTest.class);
     private static final String ATLAS_JAAS_PROP_FILE = "atlas-jaas.properties";
 
     @BeforeClass
@@ -38,7 +42,7 @@ public class InMemoryJAASConfigurationTest {
             InMemoryJAASConfiguration.init(ATLAS_JAAS_PROP_FILE);
     }
 
-    @Test(enabled=false)
+    @Test(enabled=true)
     public void testGetAppConfigurationEntryStringForKafkaClient() {
         AppConfigurationEntry[] entries =
                 Configuration.getConfiguration().getAppConfigurationEntry("KafkaClient");
@@ -49,10 +53,9 @@ public class InMemoryJAASConfigurationTest {
         String[] components = principal.split("[/@]");
         Assert.assertEquals(3, components.length);
         Assert.assertEquals(false, StringUtils.equalsIgnoreCase(components[1], "_HOST"));
-
     }
 
-    @Test(enabled=false)
+    @Test(enabled=true)
     public void testGetAppConfigurationEntryStringForMyClient() {
         AppConfigurationEntry[] entries =
                 Configuration.getConfiguration().getAppConfigurationEntry("myClient");
@@ -70,7 +73,7 @@ public class InMemoryJAASConfigurationTest {
         Assert.assertEquals(2, components.length);
     }
 
-    @Test(enabled=false)
+    @Test(enabled=true)
     public void testGetAppConfigurationEntryStringForUnknownClient() {
         AppConfigurationEntry[] entries =
                 Configuration.getConfiguration().getAppConfigurationEntry("UnknownClient");
