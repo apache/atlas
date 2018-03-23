@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.ql.hooks.Entity;
@@ -42,9 +43,12 @@ public class CreateTable extends BaseHiveEvent {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        AtlasEntitiesWithExtInfo entities     = getEntities();
-        HookNotification         notification = new EntityCreateRequestV2(getUserName(), entities);
-        List<HookNotification>   ret          = Collections.singletonList(notification);
+        List<HookNotification>   ret      = null;
+        AtlasEntitiesWithExtInfo entities = getEntities();
+
+        if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
+            ret = Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities));
+        }
 
         return ret;
     }

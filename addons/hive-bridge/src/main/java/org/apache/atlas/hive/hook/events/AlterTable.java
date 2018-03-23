@@ -22,6 +22,7 @@ import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,9 +34,12 @@ public class AlterTable extends CreateTable {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        AtlasEntitiesWithExtInfo entities     = getEntities();
-        HookNotification         notification = new EntityUpdateRequestV2(getUserName(), entities);
-        List<HookNotification>   ret          = Collections.singletonList(notification);
+        List<HookNotification>   ret      = null;
+        AtlasEntitiesWithExtInfo entities = getEntities();
+
+        if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
+            ret = Collections.singletonList(new EntityUpdateRequestV2(getUserName(), entities));
+        }
 
         return ret;
     }

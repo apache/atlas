@@ -53,8 +53,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
+        List<HookNotification>   ret      = null;
         AtlasEntitiesWithExtInfo entities = getEntities();
-        List<HookNotification>   ret      = entities != null ? Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities)) : null;
+
+        if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
+            ret = Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities));
+        }
 
         return ret;
     }

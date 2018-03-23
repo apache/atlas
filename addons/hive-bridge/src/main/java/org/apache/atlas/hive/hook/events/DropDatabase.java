@@ -22,6 +22,7 @@ import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 
 import java.util.ArrayList;
@@ -35,9 +36,16 @@ public class DropDatabase extends BaseHiveEvent {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        List<AtlasObjectId>    entities     = getEntities();
-        HookNotification       notification = new EntityDeleteRequestV2(getUserName(), entities);
-        List<HookNotification> ret          = Collections.singletonList(notification);
+        List<HookNotification> ret      = null;
+        List<AtlasObjectId>    entities = getEntities();
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            ret = new ArrayList<>(entities.size());
+
+            for (AtlasObjectId entity : entities) {
+                ret.add(new EntityDeleteRequestV2(getUserName(), Collections.singletonList(entity)));
+            }
+        }
 
         return ret;
     }
