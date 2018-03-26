@@ -20,9 +20,10 @@ import sys
 sys.path.insert(0, '/usr/hdp/current/atlas-server/bin/')
 
 import traceback
+import subprocess
 import atlas_config as mc
 
-ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
+ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=atlas-migration-exporter.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx4096m -XX:MaxPermSize=512m"
@@ -47,10 +48,7 @@ def main():
         jvm_logdir = logdir
 
     #create sys property for conf dirs
-    if not is_setup:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
-    else:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split()
+    jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir)).split()
 
     cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
@@ -73,11 +71,11 @@ def main():
     mc.expandWebApp(atlas_home)
 
     p = os.pathsep
-    atlas_classpath = confdir + p \
+    atlas_classpath = os.path.join(os.getcwd(), ".", "*") + p \
+	                   + confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
-                       + os.path.join(atlas_home, "libext", "*") + p \
-                       + os.path.join(os.getcwd(), ".", "*")
+                       + os.path.join(atlas_home, "libext", "*")
 
     is_hbase = mc.is_hbase(confdir)
 
@@ -118,17 +116,32 @@ def main():
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
 
-    start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
-    print "Apache Atlas Migration started!\n"
+    start_migration_export(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
 
-def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
+def start_migration_export(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
     args = []
     args.extend(sys.argv[1:])
-    print "Arguments: ".join(str(x) for x in args) 
-    process = mc.java("org.apache.atlas.migration.Exporter", args, atlas_classpath, jvm_opts_list, jvm_logdir)
-    print "To watch the progress use: tail -f /var/log/atlas/application.log"
-    mc.writePid(atlas_pid_file, process)
+    process = java("org.apache.atlas.migration.Exporter", args, atlas_classpath, jvm_opts_list)
 
+def java(classname, args, classpath, jvm_opts_list):
+    java_home = os.environ.get("JAVA_HOME", None)
+    if java_home:
+        prg = os.path.join(java_home, "bin", "java")
+    else:
+        prg = mc.which("java")
+
+    if prg is None:
+        raise EnvironmentError('The java binary could not be found in your path or JAVA_HOME')
+
+    commandline = [prg]
+    commandline.extend(jvm_opts_list)
+    commandline.append("-classpath")
+    commandline.append(classpath)
+    commandline.append(classname)
+    commandline.extend(args)
+
+    p = subprocess.Popen(commandline)
+    p.communicate()
 
 if __name__ == '__main__':
     try:

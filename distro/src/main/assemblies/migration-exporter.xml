@@ -25,6 +25,8 @@
         <format>zip</format>
     </formats>
 
+    <baseDirectory>atlas-migration-exporter</baseDirectory>
+
     <fileSets>
         <fileSet>
             <includes>
@@ -37,7 +39,7 @@
             <includes>
                 <include>*.py</include>
                 <include>migrationContext.xml</include>
-                <include>*.json</include>
+                <include>atlas-log4j.xml</include>
                 <include>README</include>
             </includes>
             <fileMode>0755</fileMode>

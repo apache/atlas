@@ -18,11 +18,19 @@
 
 package org.apache.atlas.migration;
 
-import org.apache.atlas.model.impexp.AtlasExportRequest;
-import org.apache.atlas.repository.impexp.ExportService;
-import org.apache.atlas.repository.impexp.ZipSink;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -30,37 +38,55 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.ArrayList;
+
 
 public class Exporter {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
 
-    private static final String EXPORT_REQUEST_JSON_FILE = "migration-export-request.json";
-    private static final String ATLAS_EXPORT_SERVICE     = "exportService";
-    private static final String APPLICATION_CONTEXT      = "migrationContext.xml";
-    private static final int    PROGRAM_ERROR_STATUS     = -1;
+    private static final String ATLAS_TYPE_REGISTRY         = "atlasTypeRegistry";
+    private static final String APPLICATION_CONTEXT         = "migrationContext.xml";
+    private static final String MIGRATION_TYPESDEF_FILENAME = "atlas-migration-typesdef.json";
+    private static final String MIGRATION_DATA_FILENAME     = "atlas-migration-data.json";
+    private static final String LOG_MSG_PREFIX              = "atlas-migration-export: ";
+    private static final int    PROGRAM_ERROR_STATUS        = -1;
+    private static final int    PROGRAM_SUCCESS_STATUS      = 0;
 
-
-    private ApplicationContext applicationContext;
-
+    private final String            typesDefFileName;
+    private final String            dataFileName;
+    private final AtlasTypeRegistry typeRegistry;
 
     public static void main(String args[]) {
-        int result = PROGRAM_ERROR_STATUS;
+        int result;
 
         try {
-            display("=== Atlas Migration: Export === >>");
-            String fileName = getExportToFileName(args);
+            String logFileName = System.getProperty("atlas.log.dir") + File.separatorChar + System.getProperty("atlas.log.file");
 
-            Exporter exporter = new Exporter(APPLICATION_CONTEXT);
+            displayMessage("starting migration export. Log file location " + logFileName);
 
-            result = exporter.perform(fileName);
+            Options options = new Options();
+            options.addOption("d", "outputdir", true, "Output directory");
 
-            display("<< === Atlas Migration: Export: Done! ===");
+            CommandLine cmd       = (new BasicParser()).parse(options, args);
+            String      outputDir = cmd.getOptionValue("d");
+
+            if (StringUtils.isEmpty(outputDir)) {
+                outputDir = System.getProperty("user.dir");
+            }
+
+            String typesDefFileName = outputDir + File.separatorChar + MIGRATION_TYPESDEF_FILENAME;
+            String dataFileName     = outputDir + File.separatorChar + MIGRATION_DATA_FILENAME;
+
+            Exporter exporter = new Exporter(typesDefFileName, dataFileName, APPLICATION_CONTEXT);
+
+            exporter.perform();
+
+            result = PROGRAM_SUCCESS_STATUS;
+
+            displayMessage("completed migration export!");
         } catch (Exception e) {
-            LOG.error("<=== Atlas Migration: Export: Failed! ===", e);
+            displayError("Failed", e);
 
             result = PROGRAM_ERROR_STATUS;
         }
@@ -68,146 +94,100 @@ public class Exporter {
         System.exit(result);
     }
 
-    public Exporter(String contextXml) {
-        try {
-            applicationContext = new ClassPathXmlApplicationContext(contextXml);
-        } catch (Exception ex) {
-            LOG.error("Initialization failed!", ex);
+    public Exporter(String typesDefFileName, String dataFileName, String contextXml) throws Exception {
+        validate(typesDefFileName, dataFileName);
 
-            throw ex;
+        displayMessage("initializing");
+
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext(contextXml);
+
+        this.typesDefFileName = typesDefFileName;
+        this.dataFileName     = dataFileName;
+        this.typeRegistry     = applicationContext.getBean(ATLAS_TYPE_REGISTRY, AtlasTypeRegistry.class);;
+
+        displayMessage("initialized");
+    }
+
+    public void perform() throws Exception {
+        exportTypes();
+        exportData();
+    }
+
+    private void validate(String typesDefFileName, String dataFileName) throws Exception {
+        File typesDefFile = new File(typesDefFileName);
+        File dataFile     = new File(dataFileName);
+
+        if (typesDefFile.exists()) {
+            throw new Exception("output file " + typesDefFileName + " already exists");
+        }
+
+        if (dataFile.exists()) {
+            throw new Exception("output file " + dataFileName + " already exists");
         }
     }
 
-    public int perform(String fileName) {
-        LOG.info("Starting export to {}", fileName);
+    private void exportTypes() throws Exception {
+        displayMessage("exporting typesDef to file " + typesDefFileName);
 
-        int                ret = 0;
-        AtlasExportRequest req = getRequest(getExportRequestFile(), getDefaultExportRequest());
-        OutputStream       os  = null;
-        ZipSink            zs  = null;
+        AtlasTypesDef typesDef = getTypesDef(typeRegistry);
+
+        FileUtils.write(new File(typesDefFileName), AtlasType.toJson(typesDef));
+
+        displayMessage("exported  typesDef to file " + typesDefFileName);
+    }
+
+    private void exportData() throws Exception {
+        displayMessage("exporting data to file " + dataFileName);
+
+        OutputStream os = null;
 
         try {
-            os = new FileOutputStream(fileName);
-            zs = new ZipSink(os);
+            os = new FileOutputStream(dataFileName);
 
-            ExportService svc = getExportService();
+            Graph graph = getTitan0GraphDatabase();
 
-            svc.run(zs, req, getUserName(), getHostName(), getIPAddress());
-
-            ret = 0;
-        } catch (Exception ex) {
-            LOG.error("Export failed!", ex);
-
-            ret = PROGRAM_ERROR_STATUS;
+            GraphSONWriter.outputGraph(graph, os, GraphSONMode.EXTENDED);
         } finally {
-            if (zs != null) {
-                try {
-                    zs.close();
-                } catch (Throwable t) {
-                    // ignore
-                }
-            }
-
             if (os != null) {
                 try {
                     os.close();
-                } catch (Throwable t) {
+                } catch (Exception excp) {
                     // ignore
                 }
             }
         }
 
-        return ret;
+        displayMessage("exported  data to file " + dataFileName);
     }
 
-    private AtlasExportRequest getRequest(File requestFile, String defaultJson) {
-        String reqJson = null;
+    private AtlasTypesDef getTypesDef(AtlasTypeRegistry registry) {
+        return new AtlasTypesDef(new ArrayList<>(registry.getAllEnumDefs()),
+                                 new ArrayList<>(registry.getAllStructDefs()),
+                                 new ArrayList<>(registry.getAllClassificationDefs()),
+                                 new ArrayList<>(registry.getAllEntityDefs()));
+    }
 
-        try {
-            if (requestFile.exists()) {
-                LOG.info("Using request from the file {}", requestFile.getPath());
+    private TitanGraph getTitan0GraphDatabase() {
+        return Titan0GraphDatabase.getGraphInstance();
+    }
 
-                reqJson = FileUtils.readFileToString(requestFile);
-            } else {
-                LOG.info("Using default request...");
+    private static void displayMessage(String msg) {
+        LOG.info(LOG_MSG_PREFIX + msg);
 
-                reqJson = defaultJson;
-            }
-        } catch (IOException e) {
-            LOG.error("Error reading request from {}", requestFile.getPath());
+        System.out.println(LOG_MSG_PREFIX + msg);
+        System.out.flush();
+    }
 
-            reqJson = defaultJson;
+    private static void displayError(String msg, Throwable t) {
+        LOG.error(LOG_MSG_PREFIX + msg, t);
+
+        System.out.println(LOG_MSG_PREFIX + msg);
+        System.out.flush();
+
+        if (t != null) {
+            System.out.println("ERROR: " + t.getMessage());
         }
 
-        LOG.info("Export request: {}", reqJson);
-
-        return AtlasType.fromJson(reqJson, AtlasExportRequest.class);
-    }
-
-    private ExportService getExportService() {
-        return applicationContext.getBean(ATLAS_EXPORT_SERVICE, ExportService.class);
-    }
-
-    private String getUserName() {
-        return System.getProperty("user.name");
-    }
-
-    private String getHostName() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            LOG.error("faild to get hostname; using localhost", e);
-
-            return "localhost";
-        }
-    }
-
-    private String getIPAddress() {
-        try {
-            return InetAddress.getLocalHost().toString();
-        } catch (UnknownHostException e) {
-            LOG.error("failed to get IP address; using 127.0.0.1", e);
-
-            return "127.0.0.1";
-        }
-    }
-
-    private File getExportRequestFile() {
-        return getFile(getCurrentDirectory(), EXPORT_REQUEST_JSON_FILE);
-    }
-
-    private File getFile(String currentDir, String fileName) {
-        LOG.info("Attempting to use request file: {}/{}", currentDir, fileName);
-        return new File(currentDir, fileName);
-    }
-
-    private String getCurrentDirectory() {
-        return System.getProperty("user.dir");
-    }
-
-    private String getDefaultExportRequest() {
-        return "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\" } ], \"options\": {  \"fetchType\": \"FULL\", \"matchType\": \"forType\"} }";
-    }
-
-    private static void display(String s) {
-        LOG.info(s);
-    }
-
-    private static String getExportToFileName(String[] args) {
-        String fileName = (args.length > 0) ? args[0] : getDefaultFileName();
-
-        if (args.length == 0) {
-            printUsage(fileName);
-        }
-
-        return fileName;
-    }
-
-    private static void printUsage(String fileName) {
-        display("Exporting to file " + fileName + ". To export data to a different file, please specify the file path as argument");
-    }
-
-    private static String getDefaultFileName() {
-        return String.format("atlas-export-%s.zip", System.currentTimeMillis());
+        System.out.flush();
     }
 }
