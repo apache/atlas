@@ -52,6 +52,8 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -112,7 +114,7 @@ public abstract class DeleteHandlerV1 {
 
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
-            deleteAllTraits(deletionCandidateVertex);
+            deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, false);
         }
     }
@@ -336,9 +338,7 @@ public abstract class DeleteHandlerV1 {
             break;
 
             case CLASSIFICATION:
-                removeTagPropagation(instanceVertex);
-
-                deleteTypeVertex(instanceVertex, force);
+                deleteClassificationVertex(instanceVertex, force);
             break;
 
             case ENTITY:
@@ -367,7 +367,7 @@ public abstract class DeleteHandlerV1 {
                                 getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
-                    removePropagatedTraitName(propagatedEntityVertex, classificationName);
+                    removeFromPropagatedTraitNames(propagatedEntityVertex, classificationName);
 
                     deleteEdge(propagatedEdge, true);
 
@@ -381,7 +381,7 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
-    private void removePropagatedTraitName(AtlasVertex entityVertex, String classificationName) {
+    private void removeFromPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
             List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
 
@@ -485,22 +485,15 @@ public abstract class DeleteHandlerV1 {
     }
 
     /**
-     * Delete all traits from the specified vertex.
+     * Delete all associated classifications from the specified entity vertex.
      * @param instanceVertex
      * @throws AtlasException
      */
-    private void deleteAllTraits(AtlasVertex instanceVertex) throws AtlasBaseException {
-        String       typeName   = GraphHelper.getTypeName(instanceVertex);
-        List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
+    private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
+        List<AtlasEdge> classificationEdges = getClassificationEdges(instanceVertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting traits {} for {}", traitNames, string(instanceVertex));
-        }
-
-        for (String traitNameToBeDeleted : traitNames) {
-            String relationshipLabel = GraphHelper.getTraitLabel(typeName, traitNameToBeDeleted);
-
-            deleteEdgeReference(instanceVertex, relationshipLabel, TypeCategory.CLASSIFICATION, false);
+        for (AtlasEdge edge : classificationEdges) {
+            deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, false, instanceVertex);
         }
     }
 
@@ -688,5 +681,13 @@ public abstract class DeleteHandlerV1 {
         }
 
         _deleteVertex(instanceVertex, force);
+    }
+
+    protected void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting classification vertex", string(classificationVertex));
+        }
+
+        _deleteVertex(classificationVertex, force);
     }
 }

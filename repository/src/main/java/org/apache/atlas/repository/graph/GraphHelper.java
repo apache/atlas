@@ -917,6 +917,43 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex) {
+        return getClassificationEdges(entityVertex, false);
+    }
+
+    public static List<AtlasEdge> getPropagatedClassificationEdges(AtlasVertex entityVertex) {
+        return getClassificationEdges(entityVertex, true);
+    }
+
+    public static List<AtlasEdge> getAllClassificationEdges(AtlasVertex entityVertex) {
+        return getClassificationEdges(entityVertex, null);
+    }
+
+    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex, Boolean propagated) {
+        List<AtlasEdge>  ret   = new ArrayList<>();
+        AtlasVertexQuery query = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL);
+
+        if (propagated != null) {
+            query = query.has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, propagated);
+        }
+
+        Iterable edges = query.edges();
+
+        if (edges != null) {
+            Iterator<AtlasEdge> iterator = edges.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                if (edge != null) {
+                    ret.add(edge);
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public static List<String> getSuperTypeNames(AtlasVertex<?,?> entityVertex) {
         ArrayList<String>  superTypes     = new ArrayList<>();
         Collection<String> propertyValues = entityVertex.getPropertyValues(Constants.SUPER_TYPES_PROPERTY_KEY, String.class);
