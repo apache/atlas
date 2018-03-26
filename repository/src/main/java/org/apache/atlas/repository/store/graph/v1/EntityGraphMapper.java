@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -1479,10 +1480,11 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        String                    entityTypeName           = AtlasGraphUtilsV1.getTypeName(entityVertex);
-        AtlasEntityType           entityType               = typeRegistry.getEntityTypeByName(entityTypeName);
-        List<AtlasClassification> updatedClassifications   = new ArrayList<>();
-        List<AtlasVertex>         entitiesToPropagateTo    = new ArrayList<>();
+        String                    entityTypeName         = AtlasGraphUtilsV1.getTypeName(entityVertex);
+        AtlasEntityType           entityType             = typeRegistry.getEntityTypeByName(entityTypeName);
+        List<AtlasClassification> updatedClassifications = new ArrayList<>();
+        List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
+
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
         Map<AtlasVertex, List<String>>              removedPropagations = null;
 
@@ -1508,12 +1510,31 @@ public class EntityGraphMapper {
 
             validateAndNormalizeForUpdate(classification);
 
-            Map<String, Object> classificationAttributes = classification.getAttributes();
+            boolean isClassificationUpdated = false;
 
-            if (MapUtils.isNotEmpty(classificationAttributes)) {
-                for (String attributeName : classificationAttributes.keySet()) {
-                    currentClassification.setAttribute(attributeName, classificationAttributes.get(attributeName));
+            // check for attribute update
+            Map<String, Object> updatedAttributes = classification.getAttributes();
+
+            if (MapUtils.isNotEmpty(updatedAttributes)) {
+                for (String attributeName : updatedAttributes.keySet()) {
+                    currentClassification.setAttribute(attributeName, updatedAttributes.get(attributeName));
                 }
+
+                isClassificationUpdated = true;
+            }
+
+            // check for validity period update
+            List<TimeBoundary> currentValidityPeriods = currentClassification.getValidityPeriods();
+            List<TimeBoundary> updatedValidityPeriods = classification.getValidityPeriods();
+
+            if (!Objects.equals(currentValidityPeriods, updatedValidityPeriods)) {
+                currentClassification.setValidityPeriods(updatedValidityPeriods);
+
+                isClassificationUpdated = true;
+            }
+
+            if (isClassificationUpdated && CollectionUtils.isEmpty(entitiesToPropagateTo)) {
+                entitiesToPropagateTo = graphHelper.getImpactedVertices(guid);
             }
 
             if (LOG.isDebugEnabled()) {

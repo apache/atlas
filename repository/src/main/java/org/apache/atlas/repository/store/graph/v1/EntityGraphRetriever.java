@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
@@ -100,8 +101,8 @@ public final class EntityGraphRetriever {
     private final String CREATE_TIME    = "createTime";
     private final String QUALIFIED_NAME = "qualifiedName";
 
-    private static final List<TimeBoundary> TIME_BOUNDARIES_LIST = new ArrayList<>();
-    private static final GraphHelper        graphHelper          = GraphHelper.getInstance();
+    private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
+    private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
     private final AtlasTypeRegistry typeRegistry;
 
@@ -249,7 +250,7 @@ public final class EntityGraphRetriever {
         String strValidityPeriods = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
         if (strValidityPeriods != null) {
-            ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST.getClass()));
+            ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
         }
 
         mapAttributes(classificationVertex, ret, null);
