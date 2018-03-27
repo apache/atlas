@@ -36,13 +36,13 @@ import static org.testng.Assert.fail;
 public class GremlinQueryComposerTest {
     @Test
     public void classification() {
-        String expected = "g.V().outE('classifiedAs').has('__name', within('PII')).outV().dedup().limit(25).toList()";
+        String expected = "g.V().outE('classifiedAs').has('__name', within('PII')).has('__state', 'ACTIVE').outV().dedup().limit(25).toList()";
         verify("PII", expected);
     }
 
     @Test()
     public void dimension() {
-        String expected = "g.V().has('__typeName', 'Table').outE('classifiedAs').has('__name', within('Dimension')).outV().dedup().limit(25).toList()";
+        String expected = "g.V().has('__typeName', 'Table').outE('classifiedAs').has('__name', within('Dimension')).has('__state', 'ACTIVE').outV().dedup().limit(25).toList()";
         verify("Table isa Dimension", expected);
         verify("Table is Dimension", expected);
         verify("Table where Table is Dimension", expected);
@@ -295,14 +295,14 @@ public class GremlinQueryComposerTest {
     @Test
     public void keywordsInWhereClause() {
         verify("Table as t where t has name and t isa Dimension",
-                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.outE('classifiedAs').has('__name', within('Dimension')).outV()).dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.outE('classifiedAs').has('__name', within('Dimension')).has('__state', 'ACTIVE').outV()).dedup().limit(25).toList()");
         verify("Table as t where t has name and t.name = 'sales_fact'",
                 "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
         verify("Table as t where t is Dimension and t.name = 'sales_fact'",
-                "g.V().has('__typeName', 'Table').as('t').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table isa 'Dimension' and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').as('t').and(__.outE('classifiedAs').has('__name', within('Dimension')).has('__state', 'ACTIVE').outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table isa 'Dimension' and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).has('__state', 'ACTIVE').outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
         verify("Table has name and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table is 'Dimension' and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table is 'Dimension' and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).has('__state', 'ACTIVE').outV(),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
         verify("Table has name and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
     }
 

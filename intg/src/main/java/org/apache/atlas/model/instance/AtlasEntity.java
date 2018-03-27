@@ -67,7 +67,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_UPDATE_TIME = "updateTime";
     public static final String KEY_VERSION     = "version";
 
-
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
      */
@@ -83,6 +82,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private Map<String, Object>       relationshipAttributes;
     private List<AtlasClassification> classifications;
+    private List<AtlasClassification> propagationDisabledClassifications;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -165,6 +165,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setUpdateTime(other.getUpdateTime());
             setVersion(other.getVersion());
             setClassifications(other.getClassifications());
+            setPropagationDisabledClassifications(other.getPropagationDisabledClassifications());
         }
     }
 
@@ -259,6 +260,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
 
+    public List<AtlasClassification> getPropagationDisabledClassifications() {
+        return propagationDisabledClassifications;
+    }
+
+    public void setPropagationDisabledClassifications(List<AtlasClassification> propagationDisabledClassifications) {
+        this.propagationDisabledClassifications = propagationDisabledClassifications;
+    }
+
     public void addClassifications(List<AtlasClassification> classifications) {
         List<AtlasClassification> c = this.classifications;
 
@@ -279,6 +288,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setCreateTime(null);
         setUpdateTime(null);
         setClassifications(null);
+        setPropagationDisabledClassifications(null);
     }
 
     private static String nextInternalId() {
@@ -306,7 +316,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", classifications=[");
         AtlasBaseTypeDef.dumpObjects(classifications, sb);
         sb.append(']');
-        sb.append(", ");
+        sb.append(", propagationDisabledClassifications=[");
+        AtlasBaseTypeDef.dumpObjects(propagationDisabledClassifications, sb);
+        sb.append(']');
         sb.append('}');
 
         return sb;
@@ -327,13 +339,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(updateTime, that.updateTime) &&
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
-                Objects.equals(classifications, that.classifications);
+                Objects.equals(classifications, that.classifications) &&
+                Objects.equals(propagationDisabledClassifications, that.propagationDisabledClassifications);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version,
-                            relationshipAttributes, classifications);
+                            relationshipAttributes, classifications, propagationDisabledClassifications);
     }
 
     @Override

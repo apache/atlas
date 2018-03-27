@@ -57,6 +57,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     private boolean            propagate       = true;
     private List<TimeBoundary> validityPeriods = null;
 
+    public enum PropagationState { ACTIVE, DELETED }
 
     public AtlasClassification() {
         this(null, null);

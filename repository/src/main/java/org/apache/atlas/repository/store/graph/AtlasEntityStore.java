@@ -157,4 +157,6 @@ public interface AtlasEntityStore {
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
 
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
+
+    void setPropagatedClassificationState(String guid, String classificationName, String sourceEntityGuid, boolean disablePropagation) throws AtlasBaseException;
 }

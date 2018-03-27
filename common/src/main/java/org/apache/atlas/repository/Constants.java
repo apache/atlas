@@ -121,6 +121,7 @@ public final class Constants {
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
     public static final String CLASSIFICATION_EDGE_NAME_PROPERTY_KEY          = INTERNAL_PROPERTY_KEY_PREFIX + "name";
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated";
+    public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;
     public static final String CLASSIFICATION_LABEL                           = "classifiedAs";
 
     private Constants() {

@@ -475,6 +475,52 @@ public class EntityREST {
         }
     }
 
+
+    /**
+     * Disable/Enable propagated classification for an existing entity represented by its guid.
+     * @param guid               globally unique identifier for the entity
+     * @param classificationName name of the propagated classification
+     * @param sourceEntityGuid   source entity guid of the propagated classification
+     * @param disablePropagation disable/enable propagation
+     */
+    @PUT
+    @Path("/guid/{guid}/propagatedClassifications/{classificationName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void setPropagatedClassificationState(@PathParam("guid") String guid,
+                                                 @PathParam("classificationName") final String classificationName,
+                                                 @QueryParam("sourceEntityGuid") String sourceEntityGuid,
+                                                 @QueryParam("disablePropagation") boolean disablePropagation) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+        Servlets.validateQueryParamLength("classificationName", classificationName);
+        Servlets.validateQueryParamLength("sourceEntityGuid", sourceEntityGuid);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setPropagatedClassificationState(" + guid + "," + classificationName + "," + sourceEntityGuid + "," + disablePropagation + ")");
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            if (StringUtils.isEmpty(classificationName)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "propagated classification not specified");
+            }
+
+            if (StringUtils.isEmpty(sourceEntityGuid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, sourceEntityGuid);
+            }
+
+            ensureClassificationType(classificationName);
+
+            entitiesStore.setPropagatedClassificationState(guid, classificationName, sourceEntityGuid, disablePropagation);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     /******************************************************************/
     /** Bulk API operations                                          **/
     /******************************************************************/

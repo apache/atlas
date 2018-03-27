@@ -41,18 +41,19 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdg
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
-import static org.apache.atlas.repository.graph.GraphHelper.addListProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
@@ -367,7 +368,9 @@ public abstract class DeleteHandlerV1 {
                                 getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
-                    removeFromPropagatedTraitNames(propagatedEntityVertex, classificationName);
+                    if (getClassificationEdgeState(propagatedEdge) == ACTIVE) {
+                        removeFromPropagatedTraitNames(propagatedEntityVertex, classificationName);
+                    }
 
                     deleteEdge(propagatedEdge, true);
 
@@ -390,7 +393,7 @@ public abstract class DeleteHandlerV1 {
             entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
 
             for (String propagatedTraitName : propagatedTraitNames) {
-                addListProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedTraitName);
+                addToPropagatedTraitNames(entityVertex, propagatedTraitName);
             }
         }
     }
