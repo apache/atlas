@@ -1739,15 +1739,17 @@ public class EntityGraphMapper {
     }
 
     public void deleteClassifications(String guid) throws AtlasBaseException {
-
         AtlasVertex instanceVertex = AtlasGraphUtilsV1.findByGuid(guid);
+
         if (instanceVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
         List<String> traitNames = getTraitNames(instanceVertex);
 
-        deleteClassifications(guid, traitNames);
+        if (CollectionUtils.isNotEmpty(traitNames)) {
+            deleteClassifications(guid, traitNames);
+        }
     }
 
     private void updateTraitNamesProperty(AtlasVertex entityVertex, List<String> traitNames) {
