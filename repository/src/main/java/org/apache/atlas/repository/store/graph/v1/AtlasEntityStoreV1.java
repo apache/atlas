@@ -496,7 +496,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
         for (String classification : classificationNames) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader, new AtlasClassification(classification)), "remove classification: guid=", guid, ", classification=", classification);
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, entityHeader, new AtlasClassification(classification)), "remove classification: guid=", guid, ", classification=", classification);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -507,6 +507,19 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         entityGraphMapper.deleteClassifications(guid, classificationNames);
     }
+
+
+    @GraphTransaction
+    public List<AtlasClassification> retrieveClassifications(String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Retriving classifications for entity={}", guid);
+        }
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+        return entityHeader.getClassifications();
+    }
+
 
     @Override
     @GraphTransaction
@@ -758,7 +771,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     private List<String> getClassificationNames(String guid) throws AtlasBaseException {
         List<String>              ret             = null;
-        List<AtlasClassification> classifications = getClassifications(guid);
+        List<AtlasClassification> classifications = retrieveClassifications(guid);
 
         if (CollectionUtils.isNotEmpty(classifications)) {
             ret = new ArrayList<>();
