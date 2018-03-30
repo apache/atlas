@@ -28,7 +28,6 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -44,7 +43,6 @@ import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +59,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_CLUSTER_NAME;
+import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_ENTITY_NAME;
+import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_PROCESS;
 
 public abstract class BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHiveEvent.class);
@@ -125,10 +126,6 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_ALIASES                   = "aliases";
 
 
-    public static final char   QNAME_SEP_CLUSTER_NAME = '@';
-    public static final char   QNAME_SEP_ENTITY_NAME  = '.';
-    public static final char   QNAME_SEP_PROCESS      = ':';
-    public static final String TEMP_TABLE_PREFIX      = "_temp-";
     public static final long   MILLIS_CONVERT_FACTOR  = 1000;
 
     public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
@@ -587,21 +584,11 @@ public abstract class BaseHiveEvent {
     }
 
     protected String getQualifiedName(Database db) {
-        return (db.getName() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return context.getQualifiedName(db);
     }
 
     protected String getQualifiedName(Table table) {
-        String tableName = table.getTableName();
-
-        if (table.isTemporary()) {
-            if (SessionState.get() != null && SessionState.get().getSessionId() != null) {
-                tableName = tableName + TEMP_TABLE_PREFIX + SessionState.get().getSessionId();
-            } else {
-                tableName = tableName + TEMP_TABLE_PREFIX + RandomStringUtils.random(10);
-            }
-        }
-
-        return (table.getDbName() + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return context.getQualifiedName(table);
     }
 
     protected String getQualifiedName(Table table, StorageDescriptor sd) {
@@ -654,6 +641,17 @@ public abstract class BaseHiveEvent {
         }
 
         return path.toLowerCase();
+    }
+
+    protected String getColumnQualifiedName(String tblQualifiedName, String columnName) {
+        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
+
+        if (sepPos == -1) {
+            return tblQualifiedName + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase();
+        } else {
+            return tblQualifiedName.substring(0, sepPos) + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase() + tblQualifiedName.substring(sepPos);
+        }
+
     }
 
     protected String getQualifiedName(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
