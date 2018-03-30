@@ -137,17 +137,6 @@ public class AlterTableRename extends BaseHiveEvent {
         }
     }
 
-    private String getColumnQualifiedName(String tblQualifiedName, String columnName) {
-        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
-
-        if (sepPos == -1) {
-            return tblQualifiedName + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase();
-        } else {
-            return tblQualifiedName.substring(0, sepPos) + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase() + tblQualifiedName.substring(sepPos);
-        }
-
-    }
-
     private void removeAttribute(AtlasEntityWithExtInfo entity, String attributeName) {
         Object attributeValue = entity.getEntity().getAttribute(attributeName);
 

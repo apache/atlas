@@ -19,9 +19,16 @@
 package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.session.SessionState;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +36,11 @@ import java.util.Map;
 
 
 public class AtlasHiveHookContext {
+    public static final char   QNAME_SEP_CLUSTER_NAME = '@';
+    public static final char   QNAME_SEP_ENTITY_NAME  = '.';
+    public static final char   QNAME_SEP_PROCESS      = ':';
+    public static final String TEMP_TABLE_PREFIX      = "_temp-";
+
     private final HiveHook                 hook;
     private final HiveOperation            hiveOperation;
     private final HookContext              hiveContext;
@@ -40,6 +52,8 @@ public class AtlasHiveHookContext {
         this.hiveOperation = hiveOperation;
         this.hiveContext   = hiveContext;
         this.hive          = Hive.get(hiveContext.getConf());
+
+        init();
     }
 
     public HookContext getHiveContext() {
@@ -69,6 +83,24 @@ public class AtlasHiveHookContext {
         return hook.getClusterName();
     }
 
+    public String getQualifiedName(Database db) {
+        return (db.getName() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+    }
+
+    public String getQualifiedName(Table table) {
+        String tableName = table.getTableName();
+
+        if (table.isTemporary()) {
+            if (SessionState.get() != null && SessionState.get().getSessionId() != null) {
+                tableName = tableName + TEMP_TABLE_PREFIX + SessionState.get().getSessionId();
+            } else {
+                tableName = tableName + TEMP_TABLE_PREFIX + RandomStringUtils.random(10);
+            }
+        }
+
+        return (table.getDbName() + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+    }
+
     public boolean isKnownDatabase(String dbQualifiedName) {
         return hook.isKnownDatabase(dbQualifiedName);
     }
@@ -87,5 +119,25 @@ public class AtlasHiveHookContext {
 
     public void removeFromKnownTable(String tblQualifiedName) {
         hook.removeFromKnownTable(tblQualifiedName);
+    }
+
+    private void init() {
+        String operationName = hiveContext.getOperationName();
+
+        if (operationName != null && operationName.startsWith("CREATE") || operationName.startsWith("ALTER")) {
+            if (CollectionUtils.isNotEmpty(hiveContext.getOutputs())) {
+                for (WriteEntity output : hiveContext.getOutputs()) {
+                    switch (output.getType()) {
+                        case DATABASE:
+                            hook.removeFromKnownDatabase(getQualifiedName(output.getDatabase()));
+                            break;
+
+                        case TABLE:
+                            hook.removeFromKnownTable(getQualifiedName(output.getTable()));
+                            break;
+                    }
+                }
+            }
+        }
     }
 }
