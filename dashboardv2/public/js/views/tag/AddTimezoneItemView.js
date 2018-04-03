@@ -36,14 +36,20 @@ define(['require',
             /** ui selector cache */
             ui: {
                 close: "[data-id='close']",
-                timeInterval: 'input[name="timeInterval"]',
+                startTime: '[data-id="startTime"]',
+                endTime: '[data-id="endTime"]',
                 timeZone: '[data-id="timeZone"]'
             },
             /** ui events hash */
             events: function() {
                 var events = {},
                     that = this;
-                events["change " + this.ui.timeInterval] = function(e) {
+                events["change " + this.ui.startTime] = function(e) {
+                    this.model.set({ "startTime": this.ui.startTime.val() });
+                    this.buttonActive({ isButtonActive: true });
+                };
+                events["change " + this.ui.endTime] = function(e) {
+                    this.model.set({ "endTime": this.ui.endTime.val() });
                     this.buttonActive({ isButtonActive: true });
                 };
                 events["change " + this.ui.timeZone] = function(e) {
@@ -63,36 +69,62 @@ define(['require',
             },
             onRender: function() {
                 var that = this,
-                    dateObj = {
+                    tzstr = '<option selected="selected" disabled="disabled">-- Select Timezone --</option>',
+                    dateConfig = {
+                        "singleDatePicker": true,
                         "showDropdowns": true,
                         "timePicker": true,
                         "timePicker24Hour": true,
+                        "timePickerSeconds": true,
                         "startDate": new Date(),
+                        "autoApply": true,
+                        "autoUpdateInput": false,
                         "locale": {
-                            format: 'YYYY/MM/DD h:mm A'
+                            format: 'YYYY/MM/DD hh:mm:ss',
+                            cancelLabel: 'Clear'
                         },
-                        "alwaysShowCalendars": true
                     },
-                    tzstr = '<option selected="selected" disabled="disabled">-- Select Timezone --</option>';
+                    startDateObj = _.extend({}, dateConfig),
+                    endDateObj = _.extend({}, dateConfig);
+
+                this.ui.timeZone.html(tzstr);
                 this.ui.timeZone.select2({
                     allowClear: true,
                     data: moment.tz.names()
                 });
-                if (this.model.get('startTime') !== "") {
-                    dateObj["startDate"] = this.model.get('startTime');
-                    dateObj["endDate"] = this.model.get('endTime');
+
+                if (!_.isEmpty(this.model.get('startTime')) || !_.isEmpty(this.model.get('endTime')) || !_.isEmpty(this.model.get('timeZone'))) {
+                    if (_.isEmpty(this.model.get('startTime'))) {
+                        startDateObj["autoUpdateInput"] = false;
+                    } else {
+                        startDateObj["autoUpdateInput"] = true;
+                        startDateObj["startDate"] = this.model.get('startTime');
+                    }
+                    if (_.isEmpty(this.model.get('endTime'))) {
+                        endDateObj["autoUpdateInput"] = false;
+                        endDateObj["minDate"] = this.model.get('startTime');
+                    } else {
+                        endDateObj["autoUpdateInput"] = true;
+                        endDateObj["minDate"] = this.model.get('startTime');
+                        endDateObj["startDate"] = this.model.get('endTime');
+                    }
                     this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
                 } else {
-                    this.ui.timeZone.html(tzstr);
-                    this.model.set('startTime', moment(dateObj.startDate).format('YYYY/MM/DD h:mm A'));
-                    this.model.set('endTime', moment(dateObj.startDate).format('YYYY/MM/DD h:mm A'));
+                    this.model.set('startTime', that.ui.startTime.val());
+                    this.model.set('endTime', that.ui.endTime.val());
                 }
-                this.ui.timeInterval.daterangepicker(dateObj).on('apply.daterangepicker', function(ev, picker) {
-                    that.model.set('startTime', picker.startDate.format('YYYY/MM/DD h:mm A'));
-                    that.model.set('endTime', picker.endDate.format('YYYY/MM/DD h:mm A'));
+                this.ui.startTime.daterangepicker(startDateObj).on('apply.daterangepicker', function(ev, picker) {
+                    that.ui.startTime.val(picker.startDate.format('YYYY/MM/DD hh:mm:ss'));
+                    _.extend(endDateObj, { "minDate": that.ui.startTime.val() })
+                    that.endDateInitialize(endDateObj);
+                    that.model.set('startTime', that.ui.startTime.val());
+                }).on('cancel.daterangepicker', function(ev, picker) {
+                    that.ui.startTime.val('');
+                    delete endDateObj.minDate;
+                    that.endDateInitialize(endDateObj);
+                    that.model.set('startTime', that.ui.startTime.val());
                 });
-                $('[name="daterangepicker_start"]').attr('readonly', true);
-                $('[name="daterangepicker_end"]').attr('readonly', true);
+                this.endDateInitialize(endDateObj);
             },
             buttonActive: function(option) {
                 var that = this;
@@ -110,6 +142,16 @@ define(['require',
                     this.parentView.ui.checkTimeZone.prop('checked', false);
                     this.parentView.modal.$el.find('button.ok').attr("disabled", true);
                 }
+            },
+            endDateInitialize: function(option) {
+                var that = this;
+                this.ui.endTime.daterangepicker(option).on('apply.daterangepicker', function(ev, picker) {
+                    that.ui.endTime.val(picker.startDate.format('YYYY/MM/DD hh:mm:ss'));
+                    that.model.set('endTime', that.ui.endTime.val());
+                }).on('cancel.daterangepicker', function(ev, picker) {
+                    that.ui.endTime.val('');
+                    that.model.set('endTime', that.ui.endTime.val());
+                });
             }
         });
 });
