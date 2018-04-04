@@ -93,4 +93,29 @@ public class HiveMetastoreBridgeIT extends HiveITBase {
         assertEquals(outputs.size(), 1);
         assertEquals(outputs.get(0).getGuid(), tableId);
     }
+
+
+    @Test
+    public void testCreateTableHiveProcessNameAttribute() throws Exception {
+    	//test if \n is trimmed from name attribute of the process entity
+        String tableName = tableName();
+        String tableName2 = tableName();
+        String name = String.format("create table %s (id string)", tableName2);
+        String query = String.format("create table %s (id string);%n%n%s;", tableName, name);
+        runCommand(query);
+
+        String dbId = assertDatabaseIsRegistered(DEFAULT_DB);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        String tableId2 = assertTableIsRegistered(DEFAULT_DB, tableName2);
+
+        //verify lineage is created
+        String      processId      = assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getTableProcessQualifiedName(DEFAULT_DB, tableName), null);
+        AtlasEntity processsEntity = atlasClientV2.getEntityByGuid(processId).getEntity();
+
+        String      processId2      = assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getTableProcessQualifiedName(DEFAULT_DB, tableName2), null);
+        AtlasEntity processsEntity2 = atlasClientV2.getEntityByGuid(processId2).getEntity();
+        
+        assertEquals(processsEntity2.getAttribute("name"), name);
+    }
+
 }
