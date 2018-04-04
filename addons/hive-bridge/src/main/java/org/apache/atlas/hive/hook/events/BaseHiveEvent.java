@@ -505,7 +505,7 @@ public abstract class BaseHiveEvent {
         String      queryStr    = hookContext.getQueryPlan().getQueryStr();
 
         if (queryStr != null) {
-            queryStr = queryStr.toLowerCase();
+            queryStr = queryStr.toLowerCase().trim();
         }
 
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
