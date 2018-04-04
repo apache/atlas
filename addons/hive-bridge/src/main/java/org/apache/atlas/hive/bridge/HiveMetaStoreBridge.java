@@ -44,6 +44,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
@@ -62,6 +63,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,14 +106,16 @@ public class HiveMetaStoreBridge {
 
         try {
             Options options = new Options();
-            options.addOption("d", "database", true, "Databbase name");
+            options.addOption("d", "database", true, "Database name");
             options.addOption("t", "table", true, "Table name");
+            options.addOption("f", "filename", true, "Filename");
             options.addOption("failOnError", false, "failOnError");
 
             CommandLine   cmd              = new BasicParser().parse(options, args);
             boolean       failOnError      = cmd.hasOption("failOnError");
             String        databaseToImport = cmd.getOptionValue("d");
             String        tableToImport    = cmd.getOptionValue("t");
+            String        fileToImport     = cmd.getOptionValue("f");
             Configuration atlasConf        = ApplicationProperties.get();
             String[]      atlasEndpoint    = atlasConf.getStringArray(ATLAS_ENDPOINT);
 
@@ -131,12 +137,40 @@ public class HiveMetaStoreBridge {
 
             HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClientV2);
 
-            hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+            if (StringUtils.isNotEmpty(fileToImport)) {
+                File f = new File(fileToImport);
+
+                if (f.exists() && f.canRead()) {
+                    BufferedReader br   = new BufferedReader(new FileReader(f));
+                    String         line = null;
+
+                    while((line = br.readLine()) != null) {
+                        String val[] = line.split(":");
+
+                        if (ArrayUtils.isNotEmpty(val)) {
+                            databaseToImport = val[0];
+
+                            if (val.length > 1) {
+                                tableToImport = val[1];
+                            } else {
+                                tableToImport = "";
+                            }
+
+                            hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+                        }
+                    }
+
+                    exitCode = EXIT_CODE_SUCCESS;
+                } else {
+                    LOG.error("Failed to read the input file: " + fileToImport);
+                }
+            } else {
+                hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+            }
 
             exitCode = EXIT_CODE_SUCCESS;
         } catch(ParseException e) {
             LOG.error("Failed to parse arguments. Error: ", e.getMessage());
-
             printUsage();
         } catch(Exception e) {
             LOG.error("Import failed", e);
@@ -157,6 +191,12 @@ public class HiveMetaStoreBridge {
         System.out.println("Usage 3: import-hive.sh");
         System.out.println("    Imports all databases and tables...");
         System.out.println();
+        System.out.println("Usage 4: import-hive.sh -f <filename>");
+        System.out.println("  Imports all databases and tables in the file...");
+        System.out.println("    Format:");
+        System.out.println("    database1:tbl1");
+        System.out.println("    database1:tbl2");
+        System.out.println("    database2:tbl2");
         System.out.println();
     }
 

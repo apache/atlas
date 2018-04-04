@@ -134,7 +134,7 @@ done
 
 echo "Log file for import is $LOGFILE"
 
-"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hbase.util.ImportHBaseEntities $allargs
+"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hbase.bridge.HBaseBridge $allargs
 
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo HBase Data Model imported successfully!!!
