@@ -28,15 +28,9 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasExportRequest;
-import org.apache.atlas.model.impexp.AtlasExportResult;
-import org.apache.atlas.model.impexp.AtlasImportRequest;
-import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.*;
 import org.apache.atlas.model.metrics.AtlasMetrics;
-import org.apache.atlas.repository.impexp.ExportService;
-import org.apache.atlas.repository.impexp.ImportService;
-import org.apache.atlas.repository.impexp.ZipSink;
-import org.apache.atlas.repository.impexp.ZipSource;
+import org.apache.atlas.repository.impexp.*;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -75,17 +69,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Jersey Resource for admin operations.
+ * Jersey Resource for admin operations
  */
 @Path("admin")
 @Singleton
@@ -93,32 +82,32 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
 
+    private static final String isCSRF_ENABLED                 = "atlas.rest-csrf.enabled";
+    private static final String BROWSER_USER_AGENT_PARAM       = "atlas.rest-csrf.browser-useragents-regex";
+    private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
+    private static final String CUSTOM_HEADER_PARAM            = "atlas.rest-csrf.custom-header";
+    private static final String isEntityUpdateAllowed          = "atlas.entity.update.allowed";
+    private static final String isEntityCreateAllowed          = "atlas.entity.create.allowed";
+    private static final String editableEntityTypes            = "atlas.ui.editable.entity.types";
+    private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic,hbase_namespace";
+
     @Context
     private HttpServletRequest httpServletRequest;
 
     @Context
     private HttpServletResponse httpServletResponse;
 
-    private final AtlasTypeRegistry typeRegistry;
-
-    private final ReentrantLock importExportOperationLock;
-
-    private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
-    private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
-    private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
-    private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
-    private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
-    private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
-    private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
-    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic,hbase_namespace";
     private Response version;
 
-    private final ServiceState      serviceState;
-    private final MetricsService    metricsService;
-    private static Configuration atlasProperties;
-    private final ExportService exportService;
-    private final ImportService importService;
-    private final SearchTracker activeSearches;
+    private final ServiceState             serviceState;
+    private final MetricsService           metricsService;
+    private static Configuration           atlasProperties;
+    private final ExportService            exportService;
+    private final ImportService            importService;
+    private final SearchTracker            activeSearches;
+    private final AtlasTypeRegistry        typeRegistry;
+    private final MigrationProgressService migrationProgressService;
+    private final ReentrantLock            importExportOperationLock;
 
     static {
         try {
@@ -129,15 +118,16 @@ public class AdminResource {
     }
 
     @Inject
-    public AdminResource(ServiceState serviceState, MetricsService metricsService,
-                         ExportService exportService, ImportService importService,
-                         SearchTracker activeSearches, AtlasTypeRegistry typeRegistry) {
+    public AdminResource(ServiceState serviceState, MetricsService metricsService, AtlasTypeRegistry typeRegistry,
+                         ExportService exportService, ImportService importService, SearchTracker activeSearches,
+                         MigrationProgressService migrationProgressService) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
         this.exportService = exportService;
         this.importService = importService;
         this.activeSearches = activeSearches;
         this.typeRegistry = typeRegistry;
+        this.migrationProgressService = migrationProgressService;
         importExportOperationLock = new ReentrantLock();
     }
 
@@ -223,8 +213,18 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getStatus()");
         }
 
-        Map<String, Object> responseData = Collections.singletonMap(AtlasClient.STATUS, serviceState.getState().toString());
-        Response            response     = Response.ok(AtlasJson.toV1Json(responseData)).build();
+        Map<String, Object> responseData = new HashMap() {{
+                put(AtlasClient.STATUS, serviceState.getState().toString());
+            }};
+
+        if(serviceState.isInstanceInMigration()) {
+            MigrationStatus status = migrationProgressService.getStatus();
+            if (status != null) {
+                responseData.put("MigrationStatus", status);
+            }
+        }
+
+        Response response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getStatus()");

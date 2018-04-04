@@ -18,7 +18,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -68,7 +69,7 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-	    <dependency>
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -112,7 +113,7 @@
             <type>pom</type>
             <scope>test</scope>
         </dependency>
- 
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-authorization</artifactId>
@@ -256,7 +257,7 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-resources</id>
+                        <id>copy-resources-solr</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>

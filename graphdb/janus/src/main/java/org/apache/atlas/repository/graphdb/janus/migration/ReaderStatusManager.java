@@ -1,0 +1,116 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.atlas.repository.graphdb.janus.migration;
+
+import org.apache.atlas.repository.Constants;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+
+public class ReaderStatusManager {
+    private static final Logger LOG = LoggerFactory.getLogger(ReaderStatusManager.class);
+
+    private static final String MIGRATION_STATUS_TYPE_NAME = "__MigrationStatus";
+    private static final String CURRENT_INDEX_PROPERTY     = "currentIndex";
+    private static final String OPERATION_STATUS_PROPERTY  = "operationStatus";
+    private static final String START_TIME_PROPERTY        = "startTime";
+    private static final String END_TIME_PROPERTY          = "endTime";
+    private static final String TOTAL_COUNT_PROPERTY       = "totalCount";
+
+    public static final String STATUS_NOT_STARTED = "NOT STARTED";
+    public static final String STATUS_IN_PROGRESS = "IN PROGRESS";
+    public static final String STATUS_SUCCESS     = "SUCCESS";
+    public static final String STATUS_FAILED      = "FAILED";
+
+    private Object migrationStatusId = null;
+    private Vertex migrationStatus   = null;
+
+    public ReaderStatusManager(Graph graph, Graph bulkLoadGraph) {
+        init(graph, bulkLoadGraph);
+    }
+
+    public void init(Graph graph, Graph bulkLoadGraph) {
+        migrationStatus = fetchUsingTypeName(bulkLoadGraph.traversal());
+        if(migrationStatus == null) {
+            createAndCommit(graph);
+            migrationStatus = fetchUsingId(bulkLoadGraph.traversal());
+        }
+
+        if(migrationStatus == null) {
+            migrationStatus = fetchUsingId(bulkLoadGraph.traversal());
+        }
+    }
+
+    public void end(Graph bGraph, Long counter, String status) {
+        migrationStatus.property(END_TIME_PROPERTY, new Date());
+        migrationStatus.property(TOTAL_COUNT_PROPERTY, counter);
+
+        update(bGraph, counter, status);
+    }
+
+    public void update(Graph graph, Long counter) {
+        migrationStatus.property(CURRENT_INDEX_PROPERTY, counter);
+        graph.tx().commit();
+    }
+
+    public void update(Graph graph, Long counter, String status) {
+        migrationStatus.property(OPERATION_STATUS_PROPERTY, status);
+        update(graph, counter);
+    }
+
+    public void clear() {
+        migrationStatus = null;
+    }
+
+    public long getStartIndex() {
+        return (long) migrationStatus.property(CURRENT_INDEX_PROPERTY).value();
+    }
+
+    private Vertex fetchUsingId(GraphTraversalSource g) {
+        return g.V(migrationStatusId).next();
+    }
+
+    private Vertex fetchUsingTypeName(GraphTraversalSource g) {
+        GraphTraversal src = g.V().has(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
+        return src.hasNext() ? (Vertex) src.next() : null;
+    }
+
+    private void createAndCommit(Graph rGraph) {
+        Vertex v = rGraph.addVertex();
+
+        long longValue = 0L;
+        v.property(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
+        v.property(CURRENT_INDEX_PROPERTY, longValue);
+        v.property(TOTAL_COUNT_PROPERTY, longValue);
+        v.property(OPERATION_STATUS_PROPERTY, STATUS_NOT_STARTED);
+        v.property(START_TIME_PROPERTY, new Date());
+        v.property(END_TIME_PROPERTY, new Date());
+
+        migrationStatusId = v.id();
+
+        rGraph.tx().commit();
+
+        LOG.info("migrationStatus vertex created! v[{}]", migrationStatusId);
+    }
+}

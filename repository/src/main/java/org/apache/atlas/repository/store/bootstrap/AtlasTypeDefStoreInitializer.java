@@ -63,6 +63,7 @@ import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
 
 /**
@@ -88,10 +89,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     @PostConstruct
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefStoreInitializer.init()");
+        boolean isMigrationEnabled = !StringUtils.isEmpty(conf.getString(ATLAS_MIGRATION_MODE_FILENAME));
 
-        if (!HAConfiguration.isHAEnabled(conf)) {
+        if (!HAConfiguration.isHAEnabled(conf) || isMigrationEnabled) {
             atlasTypeDefStore.init();
-
             loadBootstrapTypeDefs();
         } else {
             LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
@@ -151,44 +152,50 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         File[] typeDefFiles = typesDir.exists() ? typesDir.listFiles() : null;
 
         if (typeDefFiles == null || typeDefFiles.length == 0) {
-            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName );
+            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName);
         } else {
-
             // sort the files by filename
             Arrays.sort(typeDefFiles);
-
             for (File typeDefFile : typeDefFiles) {
-                if (typeDefFile.isFile()) {
-                    try {
-                        String        jsonStr  = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
-                        AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
-
-                        if (typesDef == null || typesDef.isEmpty()) {
-                            LOG.info("No type in file {}", typeDefFile.getAbsolutePath());
-
-                            continue;
-                        }
-
-                        AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, atlasTypeRegistry);
-                        AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, atlasTypeRegistry, true);
-
-                        if (!typesToCreate.isEmpty() || !typesToUpdate.isEmpty()) {
-                            atlasTypeDefStore.createUpdateTypesDef(typesToCreate, typesToUpdate);
-
-                            LOG.info("Created/Updated types defined in file {}", typeDefFile.getAbsolutePath());
-                        } else {
-                            LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
-                        }
-
-                    } catch (Throwable t) {
-                        LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
-                    }
+                try {
+                    readTypesFromFile(typeDefFile);
+                } catch (Throwable t) {
+                    LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
                 }
             }
-
-            applyTypePatches(typesDir.getPath());
         }
+
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
+    }
+
+    public void readTypesFromFile(File typeDefFile) {
+        if (!typeDefFile.isFile()) {
+            return;
+        }
+
+        try {
+            String        jsonStr  = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
+            AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+
+            if (typesDef == null || typesDef.isEmpty()) {
+                LOG.info("No type in file {}", typeDefFile.getAbsolutePath());
+                return;
+            }
+
+            AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, atlasTypeRegistry);
+            AtlasTypesDef typesToUpdate = getTypesToUpdate(typesDef, atlasTypeRegistry, true);
+
+            if (!typesToCreate.isEmpty() || !typesToUpdate.isEmpty()) {
+                atlasTypeDefStore.createUpdateTypesDef(typesToCreate, typesToUpdate);
+
+                LOG.info("Created/Updated types defined in file {}", typeDefFile.getAbsolutePath());
+            } else {
+                LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
+            }
+
+        } catch (Throwable t) {
+            LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
+        }
     }
 
     public static AtlasTypesDef getTypesToCreate(AtlasTypesDef typesDef, AtlasTypeRegistry typeRegistry) {

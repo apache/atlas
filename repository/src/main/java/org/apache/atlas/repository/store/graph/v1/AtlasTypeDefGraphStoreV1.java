@@ -24,6 +24,7 @@ import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.VERTEX_TYPE;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,10 +38,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.*;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -110,6 +108,11 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         super.init();
 
         LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
+    }
+
+    @Override
+    public void loadLegacyData(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
+        getAtlasGraph().loadLegacyGraphSON(relationshipCache, fs);
     }
 
     AtlasGraph getAtlasGraph() { return atlasGraph; }
@@ -275,8 +278,19 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         String updatedBy   = vertex.getProperty(Constants.MODIFIED_BY_KEY, String.class);
         Long   createTime  = vertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
         Long   updateTime  = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
-        Long   version     = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Long.class);
+        Object versionObj  = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Object.class);
         String options     = vertex.getProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, String.class);
+
+        Long version = null;
+
+        if(versionObj instanceof Number) {
+            version = ((Number)versionObj).longValue();
+        } else if (versionObj != null) {
+            version = Long.valueOf(versionObj.toString());
+        } else {
+            version = Long.valueOf(0);
+        }
+
 
         typeDef.setName(name);
         typeDef.setDescription(description);
@@ -313,7 +327,15 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         boolean ret = false;
 
         if (isTypeVertex(vertex)) {
-            TypeCategory vertexCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, TypeCategory.class);
+            Object objTypeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, Object.class);
+
+            TypeCategory vertexCategory = null;
+
+            if(objTypeCategory instanceof TypeCategory) {
+                vertexCategory = (TypeCategory) objTypeCategory;
+            } else if (objTypeCategory != null) {
+                vertexCategory = TypeCategory.valueOf(objTypeCategory.toString());
+            }
 
             ret = category.equals(vertexCategory);
         }

@@ -24,6 +24,7 @@ import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -43,6 +44,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.inject.Inject;
 import java.util.LinkedHashMap;
+
+import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -151,8 +154,14 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
         //@formatter:on
 
-        if (configuration.getBoolean("atlas.server.ha.enabled", false)) {
-            LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
+        boolean configMigrationEnabled = !StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
+        if (configuration.getBoolean("atlas.server.ha.enabled", false) ||
+                configMigrationEnabled) {
+            if(configMigrationEnabled) {
+                LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
+            } else {
+                LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
+            }
             httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
         }
         httpSecurity

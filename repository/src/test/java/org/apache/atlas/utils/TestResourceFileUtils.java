@@ -55,6 +55,11 @@ public class TestResourceFileUtils {
         return fs;
     }
 
+    public static String getDirectory(String subDir) {
+        final String userDir = System.getProperty("user.dir");
+        return getTestFilePath(userDir, subDir, "");
+    }
+
     public static <T> T readObjectFromJson(String subDir, String filename, Class<T> objectClass) throws IOException {
         final String userDir = System.getProperty("user.dir");
         String filePath = getTestJsonPath(userDir, subDir, filename);

@@ -50,7 +50,7 @@ public class AtlasExportResult implements Serializable {
     public final static String ENTITY_COUNT = "entityCount";
 
     public enum OperationStatus {
-        SUCCESS, PARTIAL_SUCCESS, FAIL
+        SUCCESS, PARTIAL_SUCCESS, INPROGRESS, FAIL
     }
 
     private AtlasExportRequest   request;
@@ -143,6 +143,9 @@ public class AtlasExportResult implements Serializable {
         this.operationStatus = operationStatus;
     }
 
+    public void setMetric(String key, int value) {
+        metrics.put(key, value);
+    }
 
     public void incrementMeticsCounter(String key) {
         incrementMeticsCounter(key, 1);
@@ -221,7 +224,6 @@ public class AtlasExportResult implements Serializable {
         public List<String> getEntityCreationOrder() { return entityCreationOrder; }
 
         public void setEntityCreationOrder(List<String> entityCreationOrder) { this.entityCreationOrder = entityCreationOrder; }
-
 
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {

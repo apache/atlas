@@ -55,6 +55,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -414,7 +415,12 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         return multiProperties.contains(propertyName);
     }
 
+    @Override
+    public void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
+    }
+
     public void addMultiProperties(Set<String> names) {
         multiProperties.addAll(names);
     }
+
 }

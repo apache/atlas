@@ -124,6 +124,9 @@ public final class Constants {
     public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;
     public static final String CLASSIFICATION_LABEL                           = "classifiedAs";
 
+    public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
+    public static final String EDGE_ID_IN_IMPORT_KEY = "__eIdInImport";
+
     private Constants() {
     }
 

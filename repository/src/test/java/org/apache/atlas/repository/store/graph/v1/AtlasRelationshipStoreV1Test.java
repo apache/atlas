@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.commons.configuration.Configuration;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;

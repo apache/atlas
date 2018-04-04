@@ -64,6 +64,7 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashSet;
@@ -463,5 +464,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 // ignore
             }
         }
+    }
+
+    @Override
+    public void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
+        AtlasJanusGraphDatabase.loadLegacyGraphSON(relationshipCache, fs);
     }
 }

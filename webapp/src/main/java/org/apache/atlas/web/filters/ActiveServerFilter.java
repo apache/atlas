@@ -87,6 +87,18 @@ public class ActiveServerFilter implements Filter {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             LOG.error("Instance in transition. Service may not be ready to return a result");
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        } if(serviceState.isInstanceInMigration()) {
+            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+            LOG.error("Instance in migration. Service may not be ready to return a result");
+            httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        } if (serviceState.isInstanceInMigration()) {
+            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+            LOG.error("Instance in migration. Service may not be ready to return a result");
+            httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        } else if (serviceState.isInstanceInMigration()) {
+            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+            LOG.error("Instance in migration. Service may not be ready to return a result");
+            httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         } else {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             String activeServerAddress = activeInstanceState.getActiveServerAddress();

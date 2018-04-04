@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
@@ -317,4 +318,6 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     boolean isMultiProperty(String name);
+
+    void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException;
 }

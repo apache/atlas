@@ -67,27 +67,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
-import static org.apache.atlas.repository.Constants.BACKING_INDEX;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
-import static org.apache.atlas.repository.Constants.EDGE_INDEX;
-import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.FULLTEXT_INDEX;
-import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
-import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE;
@@ -101,6 +81,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
+    private static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
+    private static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
     private static final List<Class> INDEX_EXCLUSION_CLASSES = new ArrayList() {
         {
             add(Boolean.class);
@@ -284,6 +266,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class, false, LIST, true, true);
             createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, true);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
+            createVertexIndex(management, CLASSIFICATION_ENTITY_GUID, String.class, false, SINGLE, true, true);
+
+            createVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, Long.class, false, SINGLE, true, false);
 
             // create vertex-centric index
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
@@ -292,6 +277,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             // create edge indexes
             createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
+            createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true);
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
