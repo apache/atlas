@@ -611,9 +611,13 @@ public abstract class BaseHiveEvent {
     protected String getQualifiedName(BaseColumnInfo column) {
         String dbName    = column.getTabAlias().getTable().getDbName();
         String tableName = column.getTabAlias().getTable().getTableName();
-        String colName   = column.getColumn().getName();
+        String colName   = column.getColumn() != null ? column.getColumn().getName() : null;
 
-        return getQualifiedName(dbName, tableName, colName);
+        if (colName == null) {
+            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        } else {
+            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        }
     }
 
     protected String getQualifiedName(String dbName, String tableName, String colName) {
