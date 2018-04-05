@@ -61,11 +61,7 @@ public class ServiceState {
     public ServiceState(Configuration configuration) {
         this.configuration = configuration;
 
-        if(StringUtils.isNotEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME))) {
-            state = ServiceStateValue.MIGRATING;
-        } else {
-            state = !HAConfiguration.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
-        }
+        state = !HAConfiguration.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
 
         if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
