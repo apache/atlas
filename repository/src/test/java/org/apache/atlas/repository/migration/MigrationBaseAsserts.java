@@ -18,13 +18,26 @@
 
 package org.apache.atlas.repository.migration;
 
+import com.google.inject.Inject;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.runner.LocalSolrRunner;
+import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.testng.annotations.AfterClass;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
@@ -34,10 +47,45 @@ public class MigrationBaseAsserts {
     private final String TYPE_NAME_PROPERTY = "__typeName";
     private final String R_GUID_PROPERTY_NAME = "_r__guid";
 
+    @Inject
+    private AtlasTypeDefStore typeDefStore;
+
+    @Inject
+    private AtlasTypeRegistry typeRegistry;
+
+    @Inject
+    private AtlasTypeDefStoreInitializer storeInitializer;
+
+    @Inject
+    private GraphBackedSearchIndexer indexer;
+
     protected AtlasGraph graph;
 
     protected MigrationBaseAsserts(AtlasGraph graph) {
         this.graph = graph;
+    }
+
+    @AfterClass
+    public void clear() throws Exception {
+        AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
+    }
+
+    private void loadTypesFromJson() throws IOException, AtlasBaseException {
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
+    }
+
+    protected void runFileImporter(String directoryToImport) throws IOException, AtlasBaseException {
+        loadTypesFromJson();
+        String directoryName = TestResourceFileUtils.getDirectory(directoryToImport);
+        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(typeDefStore, typeRegistry,
+                storeInitializer, directoryName, indexer);
+
+        fi.run();
     }
 
     protected void assertHiveVertices(int dbCount, int tableCount, int columnCount) {

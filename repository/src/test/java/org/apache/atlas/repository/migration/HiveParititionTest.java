@@ -21,67 +21,29 @@ package org.apache.atlas.repository.migration;
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-import org.apache.atlas.runner.LocalSolrRunner;
-import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.TestResourceFileUtils;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class HiveParititionIT extends  MigrationBaseAsserts {
-    @Inject
-    private AtlasTypeDefStore typeDefStore;
+public class HiveParititionTest extends  MigrationBaseAsserts {
 
     @Inject
-    private AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    private AtlasTypeDefStoreInitializer storeInitializer;
-
-    @Inject
-    private GraphBackedSearchIndexer indexer;
-
-    @Inject
-    public HiveParititionIT(AtlasGraph graph) {
+    public HiveParititionTest(AtlasGraph graph) {
         super(graph);
-    }
-
-    @AfterClass
-    public void clear() throws Exception {
-        AtlasGraphProvider.cleanup();
-
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
     }
 
     @Test
     public void fileImporterTest() throws IOException, AtlasBaseException {
-        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
-
-        String directoryName = TestResourceFileUtils.getDirectory("parts_db");
-        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(typeDefStore, typeRegistry,
-                storeInitializer, directoryName, indexer);
-
-        fi.run();
-
+        runFileImporter("parts_db");
 
         assertPartitionKeyProperty(getVertex("hive_table", "t1"), 1);
         assertPartitionKeyProperty(getVertex("hive_table", "tv1"), 1);

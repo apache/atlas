@@ -18,65 +18,26 @@
 package org.apache.atlas.repository.migration;
 
 import com.google.inject.Inject;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
-import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.runner.LocalSolrRunner;
-import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.TestResourceFileUtils;
-import org.testng.ITestContext;
-import org.testng.annotations.*;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
-
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class HiveStocksIT extends MigrationBaseAsserts {
-    @Inject
-    private AtlasTypeDefStore typeDefStore;
+public class HiveStocksTest extends MigrationBaseAsserts {
 
     @Inject
-    private AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    public HiveStocksIT(AtlasGraph graph) {
+    public HiveStocksTest(AtlasGraph graph) {
         super(graph);
     }
 
-    @BeforeTest
-    public void setupTest() {
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
-    }
-
-    @AfterClass
-    public void clear() throws Exception {
-        AtlasGraphProvider.cleanup();
-
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
-    }
-
-    @DataProvider(name = "stocks-2-branch08-tag")
-    public static Object[][] getStocksTag(ITestContext context) throws IOException {
-        return new Object[][]{{ TestResourceFileUtils.getFileInputStream("stocks-2-0.8-extended-tag.json") }};
-    }
-
-    @Test(dataProvider = "stocks-2-branch08-tag")
-    public void migrateFromEarlierVersionWithTag(FileInputStream fs) throws AtlasBaseException, IOException {
-        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
-
-        typeDefStore.loadLegacyData(RelationshipCacheGenerator.get(typeRegistry), fs);
+    @Test
+    public void migrateStocks() throws AtlasBaseException, IOException {
+        runFileImporter("stocks_db");
 
         assertHiveVertices(1, 1, 7);
         assertTypeCountNameGuid("hive_db", 1, "stocks", "4e13b36b-9c54-4616-9001-1058221165d0");
@@ -97,6 +58,6 @@ public class HiveStocksIT extends MigrationBaseAsserts {
         assertEdges(getVertex("hive_table", "stocks_daily").getEdges(AtlasEdgeDirection.OUT).iterator(), 1, 1, "hive_db_tables");
         assertEdges(getVertex("hive_column", "high").getEdges(AtlasEdgeDirection.OUT).iterator(), 1,1, "hive_table_columns");
 
-        assertMigrationStatus(164);
+        assertMigrationStatus(187);
     }
 }
