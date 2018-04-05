@@ -32,6 +32,9 @@ public interface OMRSConnectionConsumer
      * open metadata repository cohort.
      *
      * @param cohortName - name of the cohort adding the remote connection.
+     * @param remoteServerName - name of the remote server for this connection.
+     * @param remoteServerType - type of the remote server.
+     * @param owningOrganizationName - name of the organization the owns the remote server.
      * @param metadataCollectionId - Unique identifier for the metadata collection
      * @param remoteConnection - Connection object providing properties necessary to create an
      *                         OMRSRepositoryConnector for the remote repository.
@@ -39,6 +42,9 @@ public interface OMRSConnectionConsumer
      * @throws ConnectorCheckedException - there is a problem initializing the Connector
      */
     void addRemoteConnection(String         cohortName,
+                             String         remoteServerName,
+                             String         remoteServerType,
+                             String         owningOrganizationName,
                              String         metadataCollectionId,
                              Connection     remoteConnection) throws ConnectionCheckedException, ConnectorCheckedException;
 

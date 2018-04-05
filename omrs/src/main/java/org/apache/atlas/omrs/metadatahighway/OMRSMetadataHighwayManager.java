@@ -25,6 +25,7 @@ import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
 import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
 import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.OMRSCohortRegistryStore;
 import org.apache.atlas.omrs.eventmanagement.*;
 import org.apache.atlas.omrs.enterprise.connectormanager.OMRSConnectionConsumer;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * OMRSMetadataHighwayManager is responsible for managing the connectivity to to each cohort that the local
@@ -44,20 +46,19 @@ import java.util.ArrayList;
  */
 public class OMRSMetadataHighwayManager
 {
-    private ArrayList<OMRSCohortManager>    cohortManagers = new ArrayList<>();
-
-    private String                 localServerName                    = null;
-    private String                 localServerType                    = null;
-    private String                 localOrganizationName              = null;
-    private OMRSLocalRepository    localRepository                    = null;
-    private OMRSTypeDefValidator   localTypeDefValidator              = null;
-    private OMRSConnectionConsumer enterpriseAccessConnectionConsumer = null;
-    private OMRSTopicConnector     enterpriseAccessTopicConnector     = null;
+    private List<OMRSCohortManager>      cohortManagers = new ArrayList<>();
+    private String                       localServerName;                    /* set in constructor */
+    private String                       localServerType;                    /* set in constructor */
+    private String                       localOrganizationName;              /* set in constructor */
+    private OMRSLocalRepository          localRepository;                    /* set in constructor */
+    private OMRSRepositoryContentManager localRepositoryContentManager;      /* set in constructor */
+    private OMRSConnectionConsumer       enterpriseAccessConnectionConsumer; /* set in constructor */
+    private OMRSTopicConnector           enterpriseAccessTopicConnector;     /* set in constructor */
 
 
     private static final OMRSAuditLog auditLog = new OMRSAuditLog(OMRSAuditingComponent.METADATA_HIGHWAY_MANAGER);
 
-    private static final Logger log = LoggerFactory.getLogger(OMRSEventPublisher.class);
+    private static final Logger log = LoggerFactory.getLogger(OMRSMetadataHighwayManager.class);
 
     /**
      * Constructor taking the values that are used in every cohort.  Any of these values may be null.
@@ -66,8 +67,9 @@ public class OMRSMetadataHighwayManager
      * @param localServerType - descriptive type of the local server.
      * @param localOrganizationName - name of the organization that owns the local server.
      * @param localRepository - link to local repository - may be null.
-     * @param localTypeDefValidator - the TypeDefValidator is ues in evaluating the type definitions (TypeDefs)
-     *                              passed around the cohort.
+     * @param localRepositoryContentManager - repository content manager associated with this server's operation
+     *                                        and used in evaluating the type definitions (TypeDefs)
+     *                                        passed around the cohort.
      * @param enterpriseAccessConnectionConsumer - connection consumer for managing the connections of enterprise access.
      * @param enterpriseAccessTopicConnector - connector for the OMRS Topic for enterprise access.
      */
@@ -75,7 +77,7 @@ public class OMRSMetadataHighwayManager
                                       String                          localServerType,
                                       String                          localOrganizationName,
                                       OMRSLocalRepository             localRepository,
-                                      OMRSTypeDefValidator            localTypeDefValidator,
+                                      OMRSRepositoryContentManager    localRepositoryContentManager,
                                       OMRSConnectionConsumer          enterpriseAccessConnectionConsumer,
                                       OMRSTopicConnector              enterpriseAccessTopicConnector)
     {
@@ -83,7 +85,7 @@ public class OMRSMetadataHighwayManager
         this.localServerType = localServerType;
         this.localOrganizationName = localOrganizationName;
         this.localRepository = localRepository;
-        this.localTypeDefValidator = localTypeDefValidator;
+        this.localRepositoryContentManager = localRepositoryContentManager;
         this.enterpriseAccessConnectionConsumer = enterpriseAccessConnectionConsumer;
         this.enterpriseAccessTopicConnector = enterpriseAccessTopicConnector;
     }
@@ -95,7 +97,7 @@ public class OMRSMetadataHighwayManager
      *
      * @param cohortConfigList - list of cohorts to initialize
      */
-    public void initialize(ArrayList<CohortConfig>   cohortConfigList)
+    public void initialize(List<CohortConfig>   cohortConfigList)
     {
         if (cohortConfigList != null)
         {
@@ -185,7 +187,7 @@ public class OMRSMetadataHighwayManager
 
             OMRSRepositoryEventExchangeRule inboundEventExchangeRule
                     = new OMRSRepositoryEventExchangeRule(cohortConfig.getCohortName() + " Events To Process",
-                                                          localTypeDefValidator,
+                                                          localRepositoryContentManager,
                                                           cohortConfig.getEventsToProcessRule(),
                                                           cohortConfig.getSelectedTypesToProcess());
 
@@ -195,6 +197,7 @@ public class OMRSMetadataHighwayManager
                                      localServerType,
                                      localOrganizationName,
                                      localRepository,
+                                     localRepositoryContentManager,
                                      enterpriseAccessConnectionConsumer,
                                      enterpriseAccessTopicConnector,
                                      cohortRegistryStore,
@@ -445,7 +448,7 @@ public class OMRSMetadataHighwayManager
                 ", localServerType='" + localServerType + '\'' +
                 ", localOrganizationName='" + localOrganizationName + '\'' +
                 ", localRepository=" + localRepository +
-                ", localTypeDefValidator=" + localTypeDefValidator +
+                ", localRepositoryContentManager=" + localRepositoryContentManager +
                 ", enterpriseAccessConnectionConsumer=" + enterpriseAccessConnectionConsumer +
                 ", enterpriseAccessTopicConnector=" + enterpriseAccessTopicConnector +
                 '}';

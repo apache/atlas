@@ -17,7 +17,15 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -25,6 +33,9 @@ import java.util.ArrayList;
  * This includes a summary of its type, its unique
  * identifier (guid) last update data and a list of the classifications for the entity.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class EntitySummary extends InstanceHeader
 {
     /*
@@ -55,7 +66,7 @@ public class EntitySummary extends InstanceHeader
 
         if (templateElement != null)
         {
-            classifications = templateElement.getClassifications();
+            this.setClassifications(templateElement.getClassifications());
         }
     }
 
@@ -66,11 +77,11 @@ public class EntitySummary extends InstanceHeader
      *
      * @return Classifications iterator
      */
-    public ArrayList<Classification> getClassifications()
+    public List<Classification> getClassifications()
     {
         if (classifications == null)
         {
-            return classifications;
+            return null;
         }
         else
         {
@@ -84,7 +95,17 @@ public class EntitySummary extends InstanceHeader
      *
      * @param classifications - Classifications list
      */
-    public void setClassifications(ArrayList<Classification> classifications) { this.classifications = classifications; }
+    public void setClassifications(List<Classification> classifications)
+    {
+        if (classifications == null)
+        {
+            this.classifications = null;
+        }
+        else
+        {
+            this.classifications = new ArrayList<>(classifications);
+        }
+    }
 
 
     /**

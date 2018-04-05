@@ -18,13 +18,24 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * CollectionDef supports the definition of a collection type.  This information about the generic
  * collection type is managed in the CollectionDefCategory.  It is instantiated with specific primitive
  * types when it is linked to a specific TypeDefAttribute.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class CollectionDef extends AttributeTypeDef
 {
     private CollectionDefCategory           collectionDefCategory = null;
@@ -68,7 +79,7 @@ public class CollectionDef extends AttributeTypeDef
         {
             this.collectionDefCategory = template.getCollectionDefCategory();
             this.argumentCount = template.getArgumentCount();
-            this.argumentTypes = template.getArgumentTypes();
+            this.setArgumentTypes(template.getArgumentTypes());
         }
     }
 
@@ -97,11 +108,11 @@ public class CollectionDef extends AttributeTypeDef
      *
      * @return list of argument type
      */
-    public ArrayList<PrimitiveDefCategory> getArgumentTypes()
+    public List<PrimitiveDefCategory> getArgumentTypes()
     {
         if (argumentTypes == null)
         {
-            return argumentTypes;
+            return null;
         }
         else
         {
@@ -115,9 +126,16 @@ public class CollectionDef extends AttributeTypeDef
      *
      * @param argumentTypes - list of argument types
      */
-    public void setArgumentTypes(ArrayList<PrimitiveDefCategory> argumentTypes)
+    public void setArgumentTypes(List<PrimitiveDefCategory> argumentTypes)
     {
-        this.argumentTypes = argumentTypes;
+        if (argumentTypes == null)
+        {
+            this.argumentTypes = null;
+        }
+        else
+        {
+            this.argumentTypes = new ArrayList<>(argumentTypes);
+        }
     }
 
 

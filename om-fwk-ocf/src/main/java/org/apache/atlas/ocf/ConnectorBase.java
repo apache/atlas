@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.ocf;
 
+import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.ocf.ffdc.PropertyServerException;
 import org.apache.atlas.ocf.properties.AdditionalProperties;
 import org.apache.atlas.ocf.properties.ConnectedAssetProperties;
@@ -48,9 +49,10 @@ import java.util.UUID;
  */
 public abstract class ConnectorBase extends Connector
 {
-    protected String                     connectorInstanceId = null;
-    protected Connection                 connection = null;
-    protected ConnectedAssetProperties   connectedAssetProperties = null;
+    protected String                   connectorInstanceId      = null;
+    protected Connection               connection               = null;
+    protected ConnectedAssetProperties connectedAssetProperties = null;
+    protected boolean                  isActive                 = false;
 
     /*
      * Secured properties are protected properties from the connection.  They are retrieved as a protected
@@ -166,6 +168,40 @@ public abstract class ConnectorBase extends Connector
         }
 
         return connectedAssetProperties;
+    }
+
+
+    /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public void start() throws ConnectorCheckedException
+    {
+        isActive = true;
+    }
+
+
+    /**
+     * Free up any resources held since the connector is no longer needed.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public  void disconnect() throws ConnectorCheckedException
+    {
+        isActive = false;
+    }
+
+
+    /**
+     * Return a flag indicating whether the connector is active.  This means it has been started and not yet
+     * disconnected.
+     *
+     * @return isActive flag
+     */
+    public boolean isActive()
+    {
+        return isActive;
     }
 
 

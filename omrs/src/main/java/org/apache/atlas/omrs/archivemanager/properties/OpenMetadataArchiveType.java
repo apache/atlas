@@ -17,6 +17,21 @@
  */
 package org.apache.atlas.omrs.archivemanager.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+/**
+ * OpenMetadataArchiveType defines the origin of the open metadata archive.  Content pack means tha the archive contains
+ * pre-defined types and instances for a particular use case.  Metadata export is a collection of types and instances
+ * from a particular metadata server.
+ */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum OpenMetadataArchiveType
 {
     CONTENT_PACK    (1, "ContentPack",

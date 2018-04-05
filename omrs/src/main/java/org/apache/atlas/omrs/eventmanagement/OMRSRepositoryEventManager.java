@@ -21,10 +21,11 @@ import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSInstanceEventProcessor;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSTypeDefEventProcessor;
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
+import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceProvenanceType;
-import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceType;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.*;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
 {
     private ArrayList<OMRSTypeDefEventProcessor>  typeDefEventConsumers  = new ArrayList<>();
     private ArrayList<OMRSInstanceEventProcessor> instanceEventConsumers = new ArrayList<>();
-    private OMRSRepositoryValidator               repositoryValidator    = new OMRSRepositoryValidator();
+    private OMRSRepositoryValidator               repositoryValidator; /* set in constructor */
     private OMRSRepositoryEventExchangeRule       exchangeRule; /* set in constructor */
 
     /*
@@ -60,18 +61,52 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      *
      * @param exchangeRule - this is the rule that determines which events are processed.
      */
-    public OMRSRepositoryEventManager(OMRSRepositoryEventExchangeRule exchangeRule)
+    public OMRSRepositoryEventManager(OMRSRepositoryEventExchangeRule exchangeRule,
+                                      OMRSRepositoryValidator         repositoryValidator)
     {
+        final String   methodName = "OMRSRepositoryEventManager";
         /*
          * If the exchangeRule is null, throw exception
          */
         if (exchangeRule == null)
         {
-            // TODO throw exception
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_EXCHANGE_RULE;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName);
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
 
         this.exchangeRule = exchangeRule;
+
+        /*
+         * If the repository validator is null, throw an exception
+         */
+        if (repositoryValidator == null)
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_REPOSITORY_VALIDATOR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
+        }
+
+        this.repositoryValidator = repositoryValidator;
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("New Event Manager");
+        }
     }
+
 
     /**
      * Adds a new consumer to the list of consumers that the OMRSRepositoryEventManager will notify of
@@ -720,23 +755,18 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this entity's TypeDef
-     * @param typeDefName - name of this entity's TypeDef
-     * @param instanceGUID - unique identifier for the entity
+     * @param entity - deleted entity
      */
     public void processDeletedEntityEvent(String       sourceName,
                                           String       originatorMetadataCollectionId,
                                           String       originatorServerName,
                                           String       originatorServerType,
                                           String       originatorOrganizationName,
-                                          String       typeDefGUID,
-                                          String       typeDefName,
-                                          String       instanceGUID)
+                                          EntityDetail entity)
     {
-        if (repositoryValidator.validInstanceId(sourceName, typeDefGUID, typeDefName, TypeDefCategory.ENTITY_DEF, instanceGUID))
+        if (repositoryValidator.validEntity(sourceName, entity))
         {
-            if (exchangeRule.processInstanceEvent(typeDefGUID,
-                                                  typeDefName))
+            if (exchangeRule.processInstanceEvent(entity))
             {
                 for (OMRSInstanceEventProcessor consumer : instanceEventConsumers)
                 {
@@ -745,9 +775,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
                                                        originatorServerName,
                                                        originatorServerType,
                                                        originatorOrganizationName,
-                                                       typeDefGUID,
-                                                       typeDefName,
-                                                       instanceGUID);
+                                                       entity);
                 }
             }
         }
@@ -1171,22 +1199,18 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this relationship's TypeDef
-     * @param typeDefName - name of this relationship's TypeDef
-     * @param instanceGUID - unique identifier for the relationship
+     * @param relationship - deleted relationship
      */
     public void processDeletedRelationshipEvent(String       sourceName,
                                                 String       originatorMetadataCollectionId,
                                                 String       originatorServerName,
                                                 String       originatorServerType,
                                                 String       originatorOrganizationName,
-                                                String       typeDefGUID,
-                                                String       typeDefName,
-                                                String       instanceGUID)
+                                                Relationship relationship)
     {
-        if (repositoryValidator.validInstanceId(sourceName, typeDefGUID, typeDefName, TypeDefCategory.RELATIONSHIP_DEF, instanceGUID))
+        if (repositoryValidator.validRelationship(sourceName, relationship))
         {
-            if (exchangeRule.processInstanceEvent(typeDefGUID, typeDefName))
+            if (exchangeRule.processInstanceEvent(relationship))
             {
                 for (OMRSInstanceEventProcessor consumer: instanceEventConsumers)
                 {
@@ -1195,9 +1219,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
                                                              originatorServerName,
                                                              originatorServerType,
                                                              originatorOrganizationName,
-                                                             typeDefGUID,
-                                                             typeDefName,
-                                                             instanceGUID);
+                                                             relationship);
                 }
             }
         }

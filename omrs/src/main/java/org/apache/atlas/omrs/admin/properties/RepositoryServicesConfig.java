@@ -17,9 +17,18 @@
  */
 package org.apache.atlas.omrs.admin.properties;
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+import org.apache.atlas.ocf.properties.beans.Connection;
 
 import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * RepositoryServicesConfig provides the configuration properties that are needed by the OMRS components
@@ -31,7 +40,7 @@ import java.util.ArrayList;
  *         component should use.
  *     </li>
  *     <li>
- *         openMetadataArchiveConnectionList is a list of Open Metadata Archive Connections.
+ *         openMetadataArchiveConnections is a list of Open Metadata Archive Connections.
  *         An open metadata archive connection provides properties needed to create a connector to manage
  *         an open metadata archive.  This contains pre-built TypeDefs and metadata instance.
  *         The archives are managed by the OMRSArchiveManager.
@@ -49,13 +58,16 @@ import java.util.ArrayList;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class RepositoryServicesConfig
 {
-    private Connection              auditLogConnection                = null;
-    private ArrayList<Connection>   openMetadataArchiveConnectionList = new ArrayList<>();
-    private LocalRepositoryConfig   localRepositoryConfig             = null;
-    private EnterpriseAccessConfig  enterpriseAccessConfig            = null;
-    private ArrayList<CohortConfig> cohortConfigList                  = new ArrayList<>();
+    private ArrayList<Connection>   auditLogConnections            = new ArrayList<>();
+    private ArrayList<Connection>   openMetadataArchiveConnections = new ArrayList<>();
+    private LocalRepositoryConfig   localRepositoryConfig          = null;
+    private EnterpriseAccessConfig  enterpriseAccessConfig         = null;
+    private ArrayList<CohortConfig> cohortConfigList               = new ArrayList<>();
 
 
     /**
@@ -69,24 +81,24 @@ public class RepositoryServicesConfig
     /**
      * Constructor to set all properties.
      *
-     * @param auditLogConnection - connection to the audit log.
-     * @param openMetadataArchiveConnectionList - list of open metadata archive files to load.
+     * @param auditLogConnections - connections to copies of the audit log.
+     * @param openMetadataArchiveConnections - list of open metadata archive files to load.
      * @param localRepositoryConfig - properties to configure the behavior of the local repository.
      * @param enterpriseAccessConfig - properties to configure the behavior of the federation services provided
      *                                to the Open Metadata Access Services (OMASs).
      * @param cohortConfigList - properties about the open metadata repository clusters that this server connects to.
      */
-    public RepositoryServicesConfig(Connection               auditLogConnection,
-                                    ArrayList<Connection>    openMetadataArchiveConnectionList,
+    public RepositoryServicesConfig(List<Connection>         auditLogConnections,
+                                    List<Connection>         openMetadataArchiveConnections,
                                     LocalRepositoryConfig    localRepositoryConfig,
                                     EnterpriseAccessConfig   enterpriseAccessConfig,
-                                    ArrayList<CohortConfig>  cohortConfigList)
+                                    List<CohortConfig>       cohortConfigList)
     {
-        this.auditLogConnection = auditLogConnection;
-        this.openMetadataArchiveConnectionList = openMetadataArchiveConnectionList;
-        this.localRepositoryConfig = localRepositoryConfig;
-        this.enterpriseAccessConfig = enterpriseAccessConfig;
-        this.cohortConfigList = cohortConfigList;
+        this.setAuditLogConnections(auditLogConnections);
+        this.setOpenMetadataArchiveConnections(openMetadataArchiveConnections);
+        this.setLocalRepositoryConfig(localRepositoryConfig);
+        this.setEnterpriseAccessConfig(enterpriseAccessConfig);
+        this.setCohortConfigList(cohortConfigList);
     }
 
 
@@ -95,20 +107,34 @@ public class RepositoryServicesConfig
      *
      * @return Connection object
      */
-    public Connection getAuditLogConnection()
+    public List<Connection> getAuditLogConnections()
     {
-        return auditLogConnection;
+        if (auditLogConnections == null)
+        {
+            return null;
+        }
+        else
+        {
+            return auditLogConnections;
+        }
     }
 
 
     /**
      * Set up the Connection properties used to create an OCF Connector to the AuditLog.
      *
-     * @param auditLogConnection - Connection object
+     * @param auditLogConnections - list of Connection objects
      */
-    public void setAuditLogConnection(Connection auditLogConnection)
+    public void setAuditLogConnections(List<Connection> auditLogConnections)
     {
-        this.auditLogConnection = auditLogConnection;
+        if (auditLogConnections == null)
+        {
+            this.auditLogConnections = null;
+        }
+        else
+        {
+            this.auditLogConnections = new ArrayList<>(auditLogConnections);
+        }
     }
 
 
@@ -118,9 +144,16 @@ public class RepositoryServicesConfig
      *
      * @return list of Connection objects
      */
-    public ArrayList<Connection> getOpenMetadataArchiveConnectionList()
+    public List<Connection> getOpenMetadataArchiveConnections()
     {
-        return openMetadataArchiveConnectionList;
+        if (openMetadataArchiveConnections == null)
+        {
+            return null;
+        }
+        else
+        {
+            return openMetadataArchiveConnections;
+        }
     }
 
 
@@ -128,11 +161,18 @@ public class RepositoryServicesConfig
      * Set up the list of Connection object, each of which is used to create the Connector to an Open Metadata
      * Archive.  Open Metadata Archive contains pre-built metadata types and instances.
      *
-     * @param openMetadataArchiveConnectionList - list of Connection objects
+     * @param openMetadataArchiveConnections - list of Connection objects
      */
-    public void setOpenMetadataArchiveConnectionList(ArrayList<Connection> openMetadataArchiveConnectionList)
+    public void setOpenMetadataArchiveConnections(List<Connection> openMetadataArchiveConnections)
     {
-        this.openMetadataArchiveConnectionList = openMetadataArchiveConnectionList;
+        if (openMetadataArchiveConnections == null)
+        {
+            this.openMetadataArchiveConnections = null;
+        }
+        else
+        {
+            this.openMetadataArchiveConnections = new ArrayList<>(openMetadataArchiveConnections);
+        }
     }
 
 
@@ -188,9 +228,16 @@ public class RepositoryServicesConfig
      *
      * @return list of cluster configuration properties
      */
-    public ArrayList<CohortConfig> getCohortConfigList()
+    public List<CohortConfig> getCohortConfigList()
     {
-        return cohortConfigList;
+        if (cohortConfigList == null)
+        {
+            return null;
+        }
+        else
+        {
+            return cohortConfigList;
+        }
     }
 
 
@@ -200,8 +247,15 @@ public class RepositoryServicesConfig
      *
      * @param cohortConfigList - list of cluster configuration properties
      */
-    public void setCohortConfigList(ArrayList<CohortConfig> cohortConfigList)
+    public void setCohortConfigList(List<CohortConfig> cohortConfigList)
     {
-        this.cohortConfigList = cohortConfigList;
+        if (cohortConfigList == null)
+        {
+            this.cohortConfigList = null;
+        }
+        else
+        {
+            this.cohortConfigList = new ArrayList<>(cohortConfigList);
+        }
     }
 }

@@ -17,7 +17,14 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The InstanceStatus defines the status of a relationship or an entity in the metadata collection.  It effectively
@@ -33,6 +40,9 @@ import java.io.Serializable;
  *     to support a restore request.  It is not returned on normal queries.</li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum InstanceStatus implements Serializable
 {
     UNKNOWN (0, "<Unknown>", "Unknown instance status."),

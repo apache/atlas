@@ -18,11 +18,21 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * TypeDefPatchAction defines the types of actions that can be taken to update a TypeDef.  These changes are safe
  * to make while there are active instances using them.  If more extensive changes need to be made to a TypeDef
  * then a new TypeDef should be defined.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum TypeDefPatchAction
 {
     ADD_ATTRIBUTES                (1, "AddAttributes",

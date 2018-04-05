@@ -18,7 +18,15 @@
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * InstanceGraph stores a subgraph of entities and relationships and provides methods to access its content.
@@ -26,6 +34,9 @@ import java.util.ArrayList;
  * of these two lists, or request elements that link to a specific element.  For example, request the relationships
  * that link to an entity or the entity at a specific end of a relationship.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class InstanceGraph extends InstanceElementHeader
 {
     private ArrayList<EntityDetail>   entityElementList = null;
@@ -33,17 +44,39 @@ public class InstanceGraph extends InstanceElementHeader
 
 
     /**
-     * Default Constructor creates a graph with the supplied list of elements.  It assumes the caller has supplied
+     * Default constructor
+     */
+    public InstanceGraph()
+    {
+    }
+
+    /**
+     * Typical Constructor creates a graph with the supplied list of elements.  It assumes the caller has supplied
      * elements that do link together.  However, this graph supports graph fragments.
      *
      * @param entityElementList - list of entity elements to add to the list
      * @param relationshipElementList - list of relationship elements to add to the list
      */
-    public InstanceGraph(ArrayList<EntityDetail>      entityElementList,
-                         ArrayList<Relationship>      relationshipElementList)
+    public InstanceGraph(List<EntityDetail> entityElementList,
+                         List<Relationship> relationshipElementList)
     {
-        this.entityElementList = entityElementList;
-        this.relationshipElementList = relationshipElementList;
+        if (entityElementList == null)
+        {
+            this.entityElementList = null;
+        }
+        else
+        {
+            this.entityElementList = new ArrayList<>(entityElementList);
+        }
+
+        if (relationshipElementList == null)
+        {
+            this.relationshipElementList = null;
+        }
+        else
+        {
+            this.relationshipElementList = new ArrayList<>(relationshipElementList);
+        }
     }
 
 
@@ -56,8 +89,8 @@ public class InstanceGraph extends InstanceElementHeader
     {
         if (templateGraph != null)
         {
-            entityElementList = templateGraph.getEntities();
-            relationshipElementList = templateGraph.getRelationships();
+            setEntities(templateGraph.getEntities());
+            setRelationships(templateGraph.getRelationships());
         }
     }
 
@@ -67,23 +100,36 @@ public class InstanceGraph extends InstanceElementHeader
      *
      * @return EntityDetails - entity list
      */
-    public ArrayList<EntityDetail> getEntities()
+    public List<EntityDetail> getEntities()
     {
-        if (entityElementList != null)
+        if (entityElementList == null)
         {
-            ArrayList<EntityDetail>   entities = new ArrayList<>();
-
-            for (EntityDetail  entity : entityElementList)
-            {
-                entities.add(new EntityDetail(entity));
-            }
-            return entities;
+            return null;
         }
         else
         {
-            return entityElementList;
+            return new ArrayList<>(entityElementList);
         }
     }
+
+
+    /**
+     * Set up the list of entities for this instance graph.
+     *
+     * @param entityElementList - list of entities
+     */
+    public void setEntities(List<EntityDetail> entityElementList)
+    {
+        if (entityElementList == null)
+        {
+            this.entityElementList = null;
+        }
+        else
+        {
+            this.entityElementList = new ArrayList<>(entityElementList);
+        }
+    }
+
 
 
     /**
@@ -91,22 +137,33 @@ public class InstanceGraph extends InstanceElementHeader
      *
      * @return Relationships - relationship list
      */
-    public ArrayList<Relationship> getRelationships()
+    public List<Relationship> getRelationships()
     {
-        if (relationshipElementList != null)
+        if (relationshipElementList == null)
         {
-            ArrayList<Relationship>  relationships = new ArrayList<>();
-
-            for (Relationship  relationship : relationshipElementList)
-            {
-                relationships.add(new Relationship(relationship));
-            }
-
-            return relationships;
+            return null;
         }
         else
         {
-            return relationshipElementList;
+            return new ArrayList<>(relationshipElementList);
+        }
+    }
+
+
+    /**
+     * Set up the list of relationships in this instance graph.
+     *
+     * @param relationshipElementList - list of relationships
+     */
+    public void setRelationships(List<Relationship> relationshipElementList)
+    {
+        if (relationshipElementList == null)
+        {
+            this.relationshipElementList = null;
+        }
+        else
+        {
+            this.relationshipElementList = new ArrayList<>(relationshipElementList);
         }
     }
 
@@ -117,7 +174,7 @@ public class InstanceGraph extends InstanceElementHeader
      * @param anchorEntityGUID - unique identifier for an entity
      * @return Relationships - relationship iterator
      */
-    public ArrayList<Relationship> getRelationshipsForEntity(String  anchorEntityGUID)
+    public List<Relationship> getRelationshipsForEntity(String  anchorEntityGUID)
     {
         ArrayList<Relationship> matchingRelationships = new ArrayList<>();
 

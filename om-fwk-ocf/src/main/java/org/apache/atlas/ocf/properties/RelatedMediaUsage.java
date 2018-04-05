@@ -17,12 +17,22 @@
  */
 package org.apache.atlas.ocf.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The RelatedMediaUsage defines how a related media reference can be used in conjunction with the asset properties.
  * These usage options are not mutually exclusive.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum RelatedMediaUsage implements Serializable
 {
     ICON           (0, "Icon", "Provides a small image to represent the asset in tree views and graphs."),

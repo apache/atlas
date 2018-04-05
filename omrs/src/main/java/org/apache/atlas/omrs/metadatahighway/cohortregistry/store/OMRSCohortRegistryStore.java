@@ -19,7 +19,7 @@ package org.apache.atlas.omrs.metadatahighway.cohortregistry.store;
 
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.properties.MemberRegistration;
 
-import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -79,7 +79,7 @@ public interface OMRSCohortRegistryStore
      *
      * @return List of member registrations for remote servers/repositories
      */
-    ArrayList<MemberRegistration> retrieveRemoteRegistrations();
+    List<MemberRegistration> retrieveRemoteRegistrations();
 
 
     /**

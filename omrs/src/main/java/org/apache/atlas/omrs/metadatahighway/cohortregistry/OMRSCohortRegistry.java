@@ -18,7 +18,7 @@
 package org.apache.atlas.omrs.metadatahighway.cohortregistry;
 
 import org.apache.atlas.ocf.ffdc.OCFCheckedExceptionBase;
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
 import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -252,6 +253,13 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
         this.registryStore = cohortRegistryStore;
 
         /*
+         * Save information about the local server
+         */
+        this.localServerName = localServerName;
+        this.localServerType = localServerType;
+        this.localOrganizationName = localOrganizationName;
+
+        /*
          * Save the cohort name for messages and the registry event processor for sending outbound events.
          */
         this.cohortName = cohortName;
@@ -262,6 +270,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
          * This will throw an exception if there are unresolvable differences.
          */
         this.validateLocalMetadataCollectionId(localMetadataCollectionId);
+        this.localMetadataCollectionId = localMetadataCollectionId;
 
         /*
          * Save the TypeDef validator.  This object is able to generate the list of TypeDef
@@ -282,13 +291,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
          * in the registration request that this repository sends out.
          */
         this.localRepositoryRemoteConnection = localRepositoryRemoteConnection;
-
-        /*
-         * Save information about the local server
-         */
-        this.localServerName = localServerName;
-        this.localServerType = localServerType;
-        this.localOrganizationName = localOrganizationName;
     }
 
 
@@ -348,13 +350,9 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
             /*
              * If the local metadata collection Id is null it means there is no local repository.  No registration
              * is required but the cohort registry sends a registration refresh request to ensure it has a complete
-             * list of the remote members for the connection consumer. The connection consumer will be null
-             * if enterprise access is disabled.
+             * list of the remote members for the connection consumer.
              */
-            if (connectionConsumer != null)
-            {
-                this.requestReRegistrationFromCohort(localRegistration);
-            }
+            this.requestReRegistrationFromCohort(localRegistration);
         }
         else if (localRegistration.getRegistrationTime() == null)
         {
@@ -393,7 +391,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
 
         /*
          * Now read the remote registrations from the registry store and publish them to the connection consumer.
-         * The connection consumer will be null if enterprise access is disabled.
          */
         if (connectionConsumer != null)
         {
@@ -401,7 +398,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
              * Extract remote member registrations from the cohort registry store and register each one with the
              * connection consumer.
              */
-            ArrayList<MemberRegistration> remoteRegistrations = registryStore.retrieveRemoteRegistrations();
+            List<MemberRegistration> remoteRegistrations = registryStore.retrieveRemoteRegistrations();
 
             if (remoteRegistrations != null)
             {
@@ -411,6 +408,8 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                     {
                         this.registerRemoteConnectionWithConsumer(remoteMember.getMetadataCollectionId(),
                                                                   remoteMember.getServerName(),
+                                                                  remoteMember.getServerType(),
+                                                                  remoteMember.getOrganizationName(),
                                                                   remoteMember.getRepositoryConnection());
                     }
                 }
@@ -520,9 +519,8 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      * with its own registration events.
      *
      * @param localRegistration - information needed to sent the refresh request
-     * @return boolean flag indicating whether it worked or not.
      */
-    private boolean requestReRegistrationFromCohort(MemberRegistration   localRegistration)
+    private void requestReRegistrationFromCohort(MemberRegistration   localRegistration)
     {
         final String    actionDescription = "Re-registering with cohort";
 
@@ -535,10 +533,10 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                            auditCode.getSystemAction(),
                            auditCode.getUserAction());
 
-        return outboundRegistryEventProcessor.processRegistrationRefreshRequest(cohortName,
-                                                                                localRegistration.getServerName(),
-                                                                                localRegistration.getServerType(),
-                                                                                localRegistration.getOrganizationName());
+        outboundRegistryEventProcessor.processRegistrationRefreshRequest(cohortName,
+                                                                         localRegistration.getServerName(),
+                                                                         localRegistration.getServerType(),
+                                                                         localRegistration.getOrganizationName());
     }
 
 
@@ -546,9 +544,8 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      * Unregister from the Cohort.
      *
      * @param localRegistration - details of the local registration
-     * @return boolean indicating whether the request was successful of not.
      */
-    private boolean unRegisterLocalRepositoryWithCohort(MemberRegistration   localRegistration)
+    private void unRegisterLocalRepositoryWithCohort(MemberRegistration   localRegistration)
     {
         final String    actionDescription = "Unregistering from cohort";
 
@@ -561,11 +558,11 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                            auditCode.getSystemAction(),
                            auditCode.getUserAction());
 
-        return outboundRegistryEventProcessor.processUnRegistrationEvent(cohortName,
-                                                                         localRegistration.getMetadataCollectionId(),
-                                                                         localRegistration.getServerName(),
-                                                                         localRegistration.getServerType(),
-                                                                         localRegistration.getOrganizationName());
+        outboundRegistryEventProcessor.processUnRegistrationEvent(cohortName,
+                                                                  localRegistration.getMetadataCollectionId(),
+                                                                  localRegistration.getServerName(),
+                                                                  localRegistration.getServerType(),
+                                                                  localRegistration.getOrganizationName());
     }
 
 
@@ -575,10 +572,14 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      *
      * @param remoteMetadataCollectionId - id of the remote repository
      * @param remoteServerName - name of the remote server.
+     * @param remoteServerType - type of the remote server.
+     * @param owningOrganizationName - name of the organization the owns the remote server.
      * @param remoteRepositoryConnection - connection used to create a connector to call the remote repository.
      */
     private void registerRemoteConnectionWithConsumer(String      remoteMetadataCollectionId,
                                                       String      remoteServerName,
+                                                      String      remoteServerType,
+                                                      String      owningOrganizationName,
                                                       Connection  remoteRepositoryConnection)
     {
         final String    actionDescription = "Receiving registration request";
@@ -592,6 +593,9 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
             try
             {
                 connectionConsumer.addRemoteConnection(cohortName,
+                                                       remoteServerName,
+                                                       remoteServerType,
+                                                       owningOrganizationName,
                                                        remoteMetadataCollectionId,
                                                        remoteRepositoryConnection);
             }
@@ -689,7 +693,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                             String                    originatorOrganizationName,
                                             Date                      registrationTimestamp,
                                             Connection                remoteConnection,
-                                            ArrayList<TypeDefSummary> typeDefList)
+                                            List<TypeDefSummary>      typeDefList)
     {
         final String    actionDescription = "Receiving Registration event";
 
@@ -716,6 +720,8 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                  */
                 this.registerRemoteConnectionWithConsumer(originatorMetadataCollectionId,
                                                           originatorServerName,
+                                                          originatorServerType,
+                                                          originatorOrganizationName,
                                                           remoteConnection);
             }
 
@@ -839,7 +845,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                               String                    originatorOrganizationName,
                                               Date                      registrationTimestamp,
                                               Connection                remoteConnection,
-                                              ArrayList<TypeDefSummary> typeDefList)
+                                              List<TypeDefSummary>      typeDefList)
     {
         final String    actionDescription = "Receiving ReRegistration event";
 
@@ -868,6 +874,8 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                  */
                 this.registerRemoteConnectionWithConsumer(originatorMetadataCollectionId,
                                                           originatorServerName,
+                                                          originatorServerType,
+                                                          originatorOrganizationName,
                                                           remoteConnection);
             }
 

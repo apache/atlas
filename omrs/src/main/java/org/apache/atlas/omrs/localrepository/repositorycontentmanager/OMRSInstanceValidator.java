@@ -18,9 +18,7 @@
 package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
-import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceType;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCategory;
 
 

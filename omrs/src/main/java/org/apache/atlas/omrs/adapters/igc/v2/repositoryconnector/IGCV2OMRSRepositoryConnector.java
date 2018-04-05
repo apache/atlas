@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.omrs.adapters.igc.v2.repositoryconnector;
 
-import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
-import org.apache.atlas.omrs.adapters.igc.v1.repositoryconnector.IGCOMRSMetadataCollection;
-import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 
 
@@ -29,9 +26,6 @@ import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSReposito
  */
 public class IGCV2OMRSRepositoryConnector extends OMRSRepositoryConnector
 {
-    private IGCV2OMRSMetadataCollection metadataCollection   = null;
-    private String                      metadataCollectionId = null;
-
     /**
      * Default constructor used by the OCF Connector Provider.
      */
@@ -55,32 +49,6 @@ public class IGCV2OMRSRepositoryConnector extends OMRSRepositoryConnector
         /*
          * Initialize the metadata collection only once the connector is properly set up.
          */
-        metadataCollection = new IGCV2OMRSMetadataCollection(this, metadataCollectionId);
-    }
-
-
-    /**
-     * Returns the metadata collection object that provides an OMRS abstraction of the metadata within
-     * a metadata repository.
-     *
-     * @return OMRSMetadataCollection - metadata information retrieved from the metadata repository.
-     */
-    public OMRSMetadataCollection getMetadataCollection()
-    {
-        if (metadataCollection == null)
-        {
-            // TODO Throw exception since it means the local metadata collection id is not set up.
-        }
-        return metadataCollection;
-    }
-
-
-    /**
-     * Free up any resources held since the connector is no longer needed.
-     *
-     * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
-     */
-    public void disconnect() throws ConnectorCheckedException
-    {
+        super.metadataCollection = new IGCV2OMRSMetadataCollection(this, metadataCollectionId);
     }
 }

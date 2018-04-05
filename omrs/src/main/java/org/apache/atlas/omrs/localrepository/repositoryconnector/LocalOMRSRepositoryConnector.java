@@ -18,13 +18,17 @@
 package org.apache.atlas.omrs.localrepository.repositoryconnector;
 
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.*;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSInstanceEventProcessor;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSTypeDefEventProcessor;
-import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapper;
+import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapperConnector;
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
+import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
 import org.apache.atlas.omrs.localrepository.OMRSLocalRepository;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSTypeDefValidator;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
@@ -40,80 +44,69 @@ import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSReposito
  */
 public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implements OMRSLocalRepository
 {
-    private String                       localServerName                  = null;
-    private String                       localServerType                  = null;
-    private String                       localOrganizationName            = null;
-    private OMRSRepositoryEventMapper    repositoryEventMapper            = null;
-    private OMRSRepositoryContentManager localTypeDefManager              = null;
-    private OMRSInstanceEventProcessor   incomingInstanceEventProcessor   = null;
-    private OMRSRepositoryEventManager   outboundRepositoryEventManager   = null;
-    private OMRSRepositoryEventProcessor outboundRepositoryEventProcessor = null;
+    private static final String   repositoryEventMapperName = "LocalRepositoryEventMapper";
+    private static final String   repositoryName            = "LocalRepository";
 
-    private String                       localMetadataCollectionId        = null;
-    private LocalOMRSMetadataCollection  metadataCollection               = null;
+    private OMRSRepositoryContentManager       repositoryContentManager         = null;
 
-    private OMRSRepositoryConnector      realLocalConnector               = null;
-    private OMRSMetadataCollection       realMetadataCollection           = null;
+    private OMRSInstanceEventProcessor         incomingInstanceEventProcessor   = null;
+    private OMRSRepositoryEventProcessor       outboundRepositoryEventProcessor = null;
+    private OMRSRepositoryEventManager         outboundRepositoryEventManager   = null;
+    private OMRSRepositoryEventExchangeRule    saveExchangeRule                 = null;
+
+    private LocalOMRSMetadataCollection        metadataCollection               = null;
+
+    private OMRSRepositoryConnector            realLocalConnector               = null;
+    private OMRSRepositoryEventMapperConnector realEventMapper                  = null;
+
 
     /**
      * Constructor used by the LocalOMRSConnectorProvider.  It provides the information necessary to run the
      * local repository.
      *
-     * @param localServerName - name of the local server
-     * @param localServerType - type of the local server
-     * @param localOrganizationName - name of organization that owns the server
      * @param realLocalConnector - connector to the local repository
-     * @param repositoryEventMapper - optional event mapper for local repository
+     * @param realEventMapper - optional event mapper for local repository
      * @param outboundRepositoryEventManager - event manager to call for outbound events.
-     * @param localTypeDefManager - localTypeDefManager for supporting OMRS in managing TypeDefs.
+     * @param repositoryContentManager - repositoryContentManager for supporting OMRS in managing TypeDefs.
      * @param saveExchangeRule - rule to determine what events to save to the local repository.
      */
-    protected LocalOMRSRepositoryConnector(String                          localServerName,
-                                           String                          localServerType,
-                                           String                          localOrganizationName,
-                                           OMRSRepositoryConnector         realLocalConnector,
-                                           OMRSRepositoryEventMapper       repositoryEventMapper,
-                                           OMRSRepositoryEventManager      outboundRepositoryEventManager,
-                                           OMRSRepositoryContentManager localTypeDefManager,
-                                           OMRSRepositoryEventExchangeRule saveExchangeRule)
+    protected LocalOMRSRepositoryConnector(OMRSRepositoryConnector            realLocalConnector,
+                                           OMRSRepositoryEventMapperConnector realEventMapper,
+                                           OMRSRepositoryEventManager         outboundRepositoryEventManager,
+                                           OMRSRepositoryContentManager       repositoryContentManager,
+                                           OMRSRepositoryEventExchangeRule    saveExchangeRule)
     {
-        this.localServerName = localServerName;
-        this.localServerType = localServerType;
-        this.localOrganizationName = localOrganizationName;
-
         this.realLocalConnector = realLocalConnector;
-        this.realMetadataCollection = realLocalConnector.getMetadataCollection();
-        this.repositoryEventMapper = repositoryEventMapper;
+        this.realEventMapper = realEventMapper;
+
         this.outboundRepositoryEventManager = outboundRepositoryEventManager;
+        this.saveExchangeRule = saveExchangeRule;
+
+        this.repositoryContentManager = repositoryContentManager;
 
         /*
          * Incoming events are processed directly with real local connector to avoid the outbound event
          * propagation managed by LocalOMRSMetadataCollection.
          */
-        this.localTypeDefManager = localTypeDefManager;
-        if (localTypeDefManager != null)
+        if (repositoryContentManager != null)
         {
-            localTypeDefManager.setupEventProcessor(this,
-                                                    realLocalConnector,
-                                                    saveExchangeRule,
-                                                    outboundRepositoryEventManager);
-
+            repositoryContentManager.setupEventProcessor(this,
+                                                         realLocalConnector,
+                                                         saveExchangeRule,
+                                                         outboundRepositoryEventManager);
         }
 
-        this.incomingInstanceEventProcessor = new LocalOMRSInstanceEventProcessor(localMetadataCollectionId,
-                                                                                  realLocalConnector,
-                                                                                  localTypeDefManager,
-                                                                                  saveExchangeRule);
-
         /*
-         * The repositoryEventMapper is a plug-in component that handles repository events for
+         * The realEventMapper is a plug-in component that handles repository events for
          * repository that have additional APIs for managing metadata and need their own mechanism for
-         * sending OMRS Repository Events.  If there is no repositoryEventMapper then the localOMRSMetadataCollection
+         * sending OMRS Repository Events.  If there is no realEventMapper then the localOMRSMetadataCollection
          * will send the outbound repository events.
          */
-        if (repositoryEventMapper != null)
+        if (realEventMapper != null)
         {
-            repositoryEventMapper.setRepositoryEventProcessor(outboundRepositoryEventManager);
+            realEventMapper.initialize(repositoryEventMapperName,
+                                       realLocalConnector);
+            realEventMapper.setRepositoryEventProcessor(outboundRepositoryEventManager);
         }
         else
         {
@@ -127,15 +120,43 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
 
 
     /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public void start() throws ConnectorCheckedException
+    {
+        super.start();
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.start();
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.start();
+        }
+    }
+
+
+    /**
      * Free up any resources held since the connector is no longer needed.
      *
-     * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
     public void disconnect() throws ConnectorCheckedException
     {
+        super.disconnect();
+
         if (realLocalConnector  != null)
         {
             realLocalConnector.disconnect();
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.disconnect();
         }
     }
 
@@ -146,25 +167,165 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
 
     /**
+     * Set up a repository helper object for the repository connector to use.
+     *
+     * @param repositoryHelper - helper object for building TypeDefs and metadata instances.
+     */
+    public void setRepositoryHelper(OMRSRepositoryHelper   repositoryHelper)
+    {
+        super.setRepositoryHelper(repositoryHelper);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setRepositoryHelper(repositoryHelper);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setRepositoryHelper(repositoryHelper);
+        }
+    }
+
+
+    /**
+     * Set up a repository validator for the repository connector to use.
+     *
+     * @param repositoryValidator - validator object to check the validity of TypeDefs and metadata instances.
+     */
+    public void setRepositoryValidator(OMRSRepositoryValidator  repositoryValidator)
+    {
+        super.setRepositoryValidator(repositoryValidator);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setRepositoryValidator(repositoryValidator);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setRepositoryValidator(repositoryValidator);
+        }
+    }
+
+
+    /**
+     * Set up the maximum PageSize
+     *
+     * @param maxPageSize - maximum number of elements that can be retrieved on a request.
+     */
+    public void setMaxPageSize(int    maxPageSize)
+    {
+        super.setMaxPageSize(maxPageSize);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setMaxPageSize(maxPageSize);
+        }
+    }
+
+
+    /**
+     * Set up the name of the server where the metadata collection resides.
+     *
+     * @param serverName - String name
+     */
+    public void  setServerName(String      serverName)
+    {
+        super.setServerName(serverName);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setServerName(serverName);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setServerName(serverName);
+        }
+    }
+
+
+    /**
+     * Set up the descriptive string describing the type of the server.  This might be the
+     * name of the product, or similar identifier.
+     *
+     * @param serverType - String server type
+     */
+    public void setServerType(String serverType)
+    {
+        super.setServerType(serverType);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setServerType(serverType);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setServerType(serverType);
+        }
+    }
+
+
+
+    /**
+     * Set up the name of the organization that runs/owns the server.
+     *
+     * @param organizationName - String organization name
+     */
+    public void setOrganizationName(String organizationName)
+    {
+        super.setOrganizationName(organizationName);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setOrganizationName(organizationName);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setOrganizationName(organizationName);
+        }
+    }
+
+
+    /**
      * Set up the unique Id for this metadata collection.
      *
      * @param metadataCollectionId - String unique Id
      */
     public void setMetadataCollectionId(String     metadataCollectionId)
     {
-        this.localMetadataCollectionId = metadataCollectionId;
+        super.setMetadataCollectionId(metadataCollectionId);
+
+        if (realLocalConnector != null)
+        {
+            realLocalConnector.setMetadataCollectionId(metadataCollectionId);
+        }
+
+        if (realEventMapper != null)
+        {
+            realEventMapper.setMetadataCollectionId(metadataCollectionId);
+        }
+
+        this.incomingInstanceEventProcessor = new LocalOMRSInstanceEventProcessor(metadataCollectionId,
+                                                                                  super.serverName,
+                                                                                  realLocalConnector,
+                                                                                  super.repositoryHelper,
+                                                                                  super.repositoryValidator,
+                                                                                  saveExchangeRule,
+                                                                                  outboundRepositoryEventProcessor);
 
         /*
          * Initialize the metadata collection only once the connector is properly set up.
          */
-        metadataCollection = new LocalOMRSMetadataCollection(localMetadataCollectionId,
-                                                             localServerName,
-                                                             localServerType,
-                                                             localOrganizationName,
-                                                             realMetadataCollection,
+        metadataCollection = new LocalOMRSMetadataCollection(metadataCollectionId,
+                                                             this.getLocalServerName(),
+                                                             this.getLocalServerType(),
+                                                             this.getOrganizationName(),
+                                                             realLocalConnector.getMetadataCollection(),
                                                              outboundRepositoryEventProcessor,
-                                                             localTypeDefManager);
-
+                                                             repositoryContentManager);
     }
 
     /**
@@ -175,9 +336,20 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public OMRSMetadataCollection getMetadataCollection()
     {
+        final String      methodName = "getMetadataCollection";
+
         if (metadataCollection == null)
         {
-            // TODO Throw Error
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_METADATA_COLLECTION;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(repositoryName);
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
 
         return metadataCollection;
@@ -195,7 +367,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public String getMetadataCollectionId()
     {
-        return localMetadataCollectionId;
+        return super.metadataCollectionId;
     }
 
 
@@ -207,7 +379,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public Connection getLocalRepositoryRemoteConnection()
     {
-        return super.connection;
+        return new Connection(super.connection);
     }
 
 
@@ -219,7 +391,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public OMRSTypeDefValidator getTypeDefValidator()
     {
-        return localTypeDefManager;
+        return repositoryContentManager;
     }
 
 
@@ -242,7 +414,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public OMRSTypeDefEventProcessor getIncomingTypeDefEventProcessor()
     {
-        return localTypeDefManager;
+        return repositoryContentManager;
     }
 
 
@@ -256,4 +428,28 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
     {
         return incomingInstanceEventProcessor;
     }
+
+
+    /**
+     * Return the local server name - used for outbound events.
+     *
+     * @return String name
+     */
+    public String getLocalServerName() { return super.serverName; }
+
+
+    /**
+     * Return the local server type - used for outbound events.
+     *
+     * @return String name
+     */
+    public String getLocalServerType() { return super.serverType; }
+
+
+    /**
+     * Return the name of the organization that owns this local repository.
+     *
+     * @return String name
+     */
+    public String getOrganizationName() { return super.organizationName; }
 }

@@ -18,6 +18,13 @@
 package org.apache.atlas.omrs.admin.properties;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * OpenMetadataExchangeRule controls the sending/receiving of metadata instances on the metadata highway.
  * <ul>
@@ -41,6 +48,9 @@ package org.apache.atlas.omrs.admin.properties;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum OpenMetadataExchangeRule
 {
     REGISTRATION_ONLY (0,  "Registration Only", "Only registration exchange; no TypeDefs or metadata instances."),

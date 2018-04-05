@@ -30,7 +30,6 @@ public abstract class AssetPropertyBase extends PropertyBase
      *
      * @param parentAsset - descriptor of asset that his property relates to.
      */
-
     protected AssetPropertyBase(AssetDescriptor     parentAsset)
     {
         /*

@@ -24,6 +24,9 @@ import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.ocf.properties.Connection;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 
@@ -77,10 +80,12 @@ import java.util.UUID;
  */
 public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, OMRSConnectorManager
 {
-    private boolean                                 enterpriseAccessEnabled      = false;
+    private boolean                                enterpriseAccessEnabled;
+    private int                                    maxPageSize;
 
     private String                                 localMetadataCollectionId    = null;
     private OMRSRepositoryConnector                localRepositoryConnector     = null;
+    private OMRSRepositoryContentManager           repositoryContentManager     = null;
     private ArrayList<RegisteredConnector>         registeredRemoteConnectors   = new ArrayList<>();
     private ArrayList<RegisteredConnectorConsumer> registeredConnectorConsumers = new ArrayList<>();
 
@@ -92,10 +97,13 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
      *                                 informed of remote connectors.  If enterpriseAccessEnabled = true
      *                                 the connector consumers will be informed of remote connectors; otherwise
      *                                 they will not.
+     * @param maxPageSize - the maximum number of elements that can be requested on a page.
      */
-    public OMRSEnterpriseConnectorManager(boolean enterpriseAccessEnabled)
+    public OMRSEnterpriseConnectorManager(boolean enterpriseAccessEnabled,
+                                          int     maxPageSize)
     {
         this.enterpriseAccessEnabled = enterpriseAccessEnabled;
+        this.maxPageSize = maxPageSize;
     }
 
 
@@ -141,11 +149,15 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
         }
     }
 
+
     /**
      * Pass details of the connection for one of the remote repositories registered in a connected
      * open metadata repository cohort.
      *
      * @param cohortName - name of the cohort adding the remote connection.
+     * @param remoteServerName - name of the remote server for this connection.
+     * @param remoteServerType - type of the remote server.
+     * @param owningOrganizationName - name of the organization the owns the remote server.
      * @param metadataCollectionId - Unique identifier for the metadata collection
      * @param remoteConnection - Connection object providing properties necessary to create an
      *                         OMRSRepositoryConnector for the remote repository.
@@ -153,14 +165,23 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
      * @throws ConnectorCheckedException - there is a problem initializing the Connector
      */
      public synchronized void addRemoteConnection(String         cohortName,
+                                                  String         remoteServerName,
+                                                  String         remoteServerType,
+                                                  String         owningOrganizationName,
                                                   String         metadataCollectionId,
                                                   Connection     remoteConnection) throws ConnectionCheckedException, ConnectorCheckedException
     {
         /*
          * First test that this connection represents an OMRSRepositoryConnector.  If it does not then an exception
-         * is thrown by getOMRSConnector() to tell the caller there is a problem.
+         * is thrown by getOMRSRepositoryConnector() to tell the caller there is a problem.
          */
-        OMRSRepositoryConnector  remoteConnector = this.getOMRSConnector(remoteConnection);
+        OMRSRepositoryConnector remoteConnector = this.getOMRSRepositoryConnector(remoteConnection,
+                                                                                  remoteServerName,
+                                                                                  remoteServerType,
+                                                                                  owningOrganizationName,
+                                                                                  metadataCollectionId);
+
+
         if (remoteConnector != null)
         {
             /*
@@ -197,7 +218,12 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
         /*
          * Connector is ok so save the connection and metadata collection Id.
          */
-        registeredRemoteConnectors.add(new RegisteredConnector(cohortName, metadataCollectionId, remoteConnection));
+        registeredRemoteConnectors.add(new RegisteredConnector(cohortName,
+                                                               remoteServerName,
+                                                               remoteServerType,
+                                                               owningOrganizationName,
+                                                               metadataCollectionId,
+                                                               remoteConnection));
 
         /*
          * Pass the remote connector to each registered connector consumer if enterprise access is enabled.
@@ -207,7 +233,11 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
             for (RegisteredConnectorConsumer registeredConnectorConsumer : registeredConnectorConsumers)
             {
                 registeredConnectorConsumer.getConnectorConsumer().addRemoteConnector(metadataCollectionId,
-                                                                                      this.getOMRSConnector(remoteConnection));
+                                                                                      this.getOMRSRepositoryConnector(remoteConnection,
+                                                                                                                      remoteServerName,
+                                                                                                                      remoteServerType,
+                                                                                                                      owningOrganizationName,
+                                                                                                                      metadataCollectionId));
             }
         }
     }
@@ -341,7 +371,11 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
             for (RegisteredConnector registeredConnector : registeredRemoteConnectors)
             {
                 connectorConsumer.addRemoteConnector(registeredConnector.getMetadataCollectionId(),
-                                                     getOMRSConnector(registeredConnector.getConnection()));
+                                                     getOMRSRepositoryConnector(registeredConnector.getConnection(),
+                                                                                registeredConnector.getServerName(),
+                                                                                registeredConnector.getServerType(),
+                                                                                registeredConnector.getOwningOrganizationName(),
+                                                                                registeredConnector.getMetadataCollectionId()));
             }
         }
 
@@ -377,24 +411,43 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
 
 
     /**
-     * Private method to convert a Connection into an OMRS connector using the OCF ConnectorBroker.
+     * Private method to convert a Connection into an OMRS repository connector using the OCF ConnectorBroker.
      * The OCF ConnectorBroker is needed because the implementation of the OMRS connector is unknown and
      * may have come from a third party.   Thus the official OCF protocol is followed to create the connector.
      * Any failure to create the connector is returned as an exception.
      *
      * @param connection - Connection properties
+     * @param serverName - name of the server for this connection.
+     * @param serverType - type of the remote server.
+     * @param owningOrganizationName - name of the organization the owns the remote server.
+     * @param metadataCollectionId - metadata collection Id for this repository
      * @return OMRSRepositoryConnector for the connection
      */
-    private OMRSRepositoryConnector getOMRSConnector(Connection connection)
+    private OMRSRepositoryConnector getOMRSRepositoryConnector(Connection connection,
+                                                               String     serverName,
+                                                               String     serverType,
+                                                               String     owningOrganizationName,
+                                                               String     metadataCollectionId)
     {
-        String     methodName = "getOMRSConnector()";
+        String     methodName = "getOMRSRepositoryConnector()";
 
         try
         {
-            ConnectorBroker connectorBroker = new ConnectorBroker();
-            Connector       connector = connectorBroker.getConnector(connection);
+            ConnectorBroker         connectorBroker     = new ConnectorBroker();
+            Connector               connector           = connectorBroker.getConnector(connection);
 
-            return (OMRSRepositoryConnector)connector;
+            OMRSRepositoryConnector repositoryConnector = (OMRSRepositoryConnector) connector;
+
+            repositoryConnector.setServerName(serverName);
+            repositoryConnector.setServerType(serverType);
+            repositoryConnector.setOrganizationName(owningOrganizationName);
+            repositoryConnector.setMaxPageSize(maxPageSize);
+            repositoryConnector.setRepositoryValidator(new OMRSRepositoryValidator(repositoryContentManager));
+            repositoryConnector.setRepositoryHelper((new OMRSRepositoryHelper(repositoryContentManager)));
+            repositoryConnector.setMetadataCollectionId(metadataCollectionId);
+            repositoryConnector.start();
+
+            return repositoryConnector;
         }
         catch (Throwable  error)
         {
@@ -407,8 +460,7 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
             String  connectionName = connection.getConnectionName();
 
             OMRSErrorCode errorCode = OMRSErrorCode.INVALID_OMRS_CONNECTION;
-            String errorMessage = errorCode.getErrorMessageId()
-                                + errorCode.getFormattedErrorMessage(connectionName);
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(connectionName);
 
             throw new OMRSRuntimeException(errorCode.getHTTPErrorCode(),
                                            this.getClass().getName(),
@@ -427,34 +479,81 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
      */
     private class RegisteredConnector
     {
-        private String     source               = null;
-        private String     metadataCollectionId = null;
-        private Connection connection           = null;
+        private String     source;
+        private String     serverName;
+        private String     serverType;
+        private String     owningOrganizationName;
+        private String     metadataCollectionId;
+        private Connection connection;
 
 
         /**
          * Constructor to set up registered connector.
          *
          * @param source - name of the source of the connector.
+         * @param serverName - name of the server for this connection.
+         * @param serverType - type of the remote server.
+         * @param owningOrganizationName - name of the organization the owns the remote server.
          * @param metadataCollectionId - unique identifier for the metadata collection that this connector accesses.
          * @param connection - connection used to generate the connector
          */
-        public RegisteredConnector(String   source, String metadataCollectionId, Connection connection)
+        public RegisteredConnector(String     source,
+                                   String     serverName,
+                                   String     serverType,
+                                   String     owningOrganizationName,
+                                   String     metadataCollectionId,
+                                   Connection connection)
         {
             this.source = source;
+            this.serverName = serverName;
+            this.serverType = serverType;
+            this.owningOrganizationName = owningOrganizationName;
             this.metadataCollectionId = metadataCollectionId;
             this.connection = connection;
         }
 
 
         /**
-         * Return the source name for this connector.
+         * Return the source name for this connector. (Typically the cohort)
          *
          * @return String name
          */
         public String getSource()
         {
             return source;
+        }
+
+
+        /**
+         * Return the name of the server that this connection is used to access.
+         *
+         * @return String name
+         */
+        public String getServerName()
+        {
+            return serverName;
+        }
+
+
+        /**
+         * Return the type of server that this connection is used to access.
+         *
+         * @return String type name
+         */
+        public String getServerType()
+        {
+            return serverType;
+        }
+
+
+        /**
+         * Return the name of the organization that owns the server that this connection is used to access.
+         *
+         * @return String name
+         */
+        public String getOwningOrganizationName()
+        {
+            return owningOrganizationName;
         }
 
         /**

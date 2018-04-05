@@ -125,6 +125,7 @@ public class Connection extends Referenceable
         this.securedProperties = securedProperties;
     }
 
+
     /**
      * Typical Constructor - for constructing a new, populated Connection as part of connected asset properties.
      *

@@ -18,11 +18,12 @@
 package org.apache.atlas.omrs.eventmanagement.events;
 
 
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * OMRSRegistryEventProcessor is an interface implemented by a component that is able to process
@@ -51,7 +52,7 @@ public interface OMRSRegistryEventProcessor
                                      String                    originatorOrganizationName,
                                      Date                      registrationTimestamp,
                                      Connection                remoteConnection,
-                                     ArrayList<TypeDefSummary> typeDefList);
+                                     List<TypeDefSummary>      typeDefList);
 
 
     /**
@@ -91,7 +92,7 @@ public interface OMRSRegistryEventProcessor
                                        String                    originatorOrganizationName,
                                        Date                      registrationTimestamp,
                                        Connection                remoteConnection,
-                                       ArrayList<TypeDefSummary> typeDefList);
+                                       List<TypeDefSummary>      typeDefList);
 
 
     /**

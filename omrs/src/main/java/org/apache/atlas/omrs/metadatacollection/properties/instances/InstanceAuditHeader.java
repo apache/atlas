@@ -17,14 +17,23 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
-import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Date;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * InstanceAuditHeader manages the attributes that are common to classifications and "proper" instances, ie
  * as entities and relationships.  We need to be able to audit when these fundamental elements change and
  * by whom.  Thus they share this header.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public abstract class InstanceAuditHeader extends InstanceElementHeader
 {
     /*
@@ -39,7 +48,7 @@ public abstract class InstanceAuditHeader extends InstanceElementHeader
     protected String                    updatedBy       = null;
     protected Date                      createTime      = null;
     protected Date                      updateTime      = null;
-    protected Long                      version         = 0L;
+    protected long                      version         = 0L;
 
     protected InstanceStatus            currentStatus   = InstanceStatus.UNKNOWN;
 
@@ -215,7 +224,7 @@ public abstract class InstanceAuditHeader extends InstanceElementHeader
      *
      * @return Long versionName number
      */
-    public Long getVersion() { return version; }
+    public long getVersion() { return version; }
 
 
     /**
@@ -223,7 +232,7 @@ public abstract class InstanceAuditHeader extends InstanceElementHeader
      *
      * @param version - Long versionName number
      */
-    public void setVersion(Long version) { this.version = version; }
+    public void setVersion(long version) { this.version = version; }
 
 
     /**

@@ -26,8 +26,7 @@ import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCateg
 
 
 /**
- * OMRSTypeDefManager provides maintenance methods for managing the TypeDefs in the local cache and supporting
- * the OMRSInstanceHelper to build instances that respect their type definition (TypeDef).
+ * OMRSTypeDefManager provides maintenance methods for managing the TypeDefs in the local cache.
  */
 public interface OMRSTypeDefManager
 {
@@ -56,6 +55,15 @@ public interface OMRSTypeDefManager
      * @param typeDef - TypeDef structure.
      */
     void updateTypeDef(String  sourceName, TypeDef   typeDef);
+
+
+    /**
+     * Update one or more properties of a cached TypeDef.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param attributeTypeDef - AttributeTypeDef structure.
+     */
+    void updateAttributeTypeDef(String  sourceName, AttributeTypeDef   attributeTypeDef);
 
 
     /**

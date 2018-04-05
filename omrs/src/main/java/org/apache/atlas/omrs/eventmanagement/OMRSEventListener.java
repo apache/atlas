@@ -562,9 +562,7 @@ public class OMRSEventListener implements OMRSTopicListener
                                                                          instanceEventOriginator.getServerName(),
                                                                          instanceEventOriginator.getServerType(),
                                                                          instanceEventOriginator.getOrganizationName(),
-                                                                         instanceEvent.getTypeDefGUID(),
-                                                                         instanceEvent.getTypeDefName(),
-                                                                         instanceEvent.getInstanceGUID());
+                                                                         instanceEvent.getEntity());
                         break;
 
                     case PURGED_ENTITY_EVENT:
@@ -680,9 +678,7 @@ public class OMRSEventListener implements OMRSTopicListener
                                                                                instanceEventOriginator.getServerName(),
                                                                                instanceEventOriginator.getServerType(),
                                                                                instanceEventOriginator.getOrganizationName(),
-                                                                               instanceEvent.getTypeDefGUID(),
-                                                                               instanceEvent.getTypeDefName(),
-                                                                               instanceEvent.getInstanceGUID());
+                                                                               instanceEvent.getRelationship());
                         break;
 
                     case PURGED_RELATIONSHIP_EVENT:

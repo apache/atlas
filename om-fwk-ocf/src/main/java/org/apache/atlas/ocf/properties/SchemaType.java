@@ -17,10 +17,22 @@
  */
 package org.apache.atlas.ocf.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * SchemaType describes the type of schema element.
  */
-public enum SchemaType
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public enum SchemaType implements Serializable
 {
     UNKNOWN (0, "<Unknown>", "The schema type is unknown."),
     STRUCT  (1, "Struct"   , "The schema type is a structure containing a list of properties of potentially different types."),
@@ -31,6 +43,7 @@ public enum SchemaType
     private String   schemaTypeName;
     private String   schemaTypeDescription;
 
+    private static final long     serialVersionUID = 1L;
 
     /**
      * Constructor to set up the instance of this enum.

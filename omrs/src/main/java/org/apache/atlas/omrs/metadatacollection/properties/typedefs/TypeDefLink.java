@@ -18,7 +18,14 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Objects;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The TypeDefHolds holds basic identifying information used to link one TypeDef to another.  It is used in
@@ -30,6 +37,9 @@ import java.util.Objects;
  *     identity of the types since it is easy to introduce two types with the same name in the distributed model.
  * </p>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TypeDefLink extends TypeDefElementHeader
 {
     protected  String                   guid = null;

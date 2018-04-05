@@ -17,12 +17,16 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -30,9 +34,12 @@ import java.util.Map;
  * It is used for searching the TypeDefs.
  * It wraps a java.util.Map map object built around HashMap.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TypeDefProperties extends TypeDefElementHeader
 {
-    private Map<String,Object>  typeDefProperties = new HashMap<>();
+    private ArrayList<String> typeDefProperties = new ArrayList<>();
 
 
     /**
@@ -58,83 +65,43 @@ public class TypeDefProperties extends TypeDefElementHeader
          */
         if (templateProperties != null)
         {
-            /*
-             * Process templateProperties if they are not null
-             */
-            Iterator<String> propertyNames = templateProperties.getPropertyNames();
-
-            if (propertyNames != null)
-            {
-                while (propertyNames.hasNext())
-                {
-                    String newPropertyName = propertyNames.next();
-                    Object newPropertyValue = templateProperties.getProperty(newPropertyName);
-
-                    typeDefProperties.put(newPropertyName, newPropertyValue);
-                }
-            }
+            this.setTypeDefProperties(templateProperties.getTypeDefProperties());
         }
     }
 
 
     /**
-     * Returns a list of the instance properties for the element.
-     * If no stored properties are present then null is returned.
+     * Return the list of property names
      *
-     * @return list of properties
+     * @return List of String property names
      */
-    public Iterator<String> getPropertyNames()
+    public List<String> getTypeDefProperties()
     {
-        return typeDefProperties.keySet().iterator();
-    }
-
-
-    /**
-     * Returns the requested instance property for the element.
-     * If no stored property with that name is present then null is returned.
-     *
-     * @param name - String name of the property to return.
-     * @return requested property value.
-     */
-    public Object getProperty(String name)
-    {
-        return typeDefProperties.get(name);
-    }
-
-
-    /**
-     * Adds or updates an instance property.
-     * If a null is supplied for the property name, an OMRS runtime exception is thrown.
-     * If a null is supplied for the property value, the property is removed.
-     *
-     * @param  newPropertyName - name
-     * @param  newPropertyValue - value
-     */
-    public void setProperty(String newPropertyName, Object newPropertyValue)
-    {
-        if (newPropertyName == null)
+        if (typeDefProperties == null)
         {
-            /*
-             * Build and throw exception.
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NULL_PROPERTY_NAME;
-            String        errorMessage = errorCode.getErrorMessageId()
-                                       + errorCode.getFormattedErrorMessage();
-
-            throw new OMRSRuntimeException(errorCode.getHTTPErrorCode(),
-                                          this.getClass().getName(),
-                                          "setProperty",
-                                          errorMessage,
-                                          errorCode.getSystemAction(),
-                                          errorCode.getUserAction());
-        }
-        else if (newPropertyValue == null)
-        {
-            typeDefProperties.remove(newPropertyName);
+            return null;
         }
         else
         {
-            typeDefProperties.put(newPropertyName, newPropertyValue);
+            return new ArrayList<>(typeDefProperties);
+        }
+    }
+
+
+    /**
+     * Set up the list of property names.
+     *
+     * @param typeDefProperties - list of property names
+     */
+    public void setTypeDefProperties(List<String> typeDefProperties)
+    {
+        if (typeDefProperties == null)
+        {
+            this.typeDefProperties = null;
+        }
+        else
+        {
+            this.typeDefProperties = new ArrayList<>(typeDefProperties);
         }
     }
 

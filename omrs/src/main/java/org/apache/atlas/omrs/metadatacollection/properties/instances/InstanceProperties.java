@@ -18,12 +18,18 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -55,6 +61,9 @@ import java.util.Map;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class InstanceProperties extends InstanceElementHeader
 {
     /*
@@ -147,7 +156,7 @@ public class InstanceProperties extends InstanceElementHeader
          */
             OMRSErrorCode errorCode = OMRSErrorCode.NULL_PROPERTY_NAME;
             String        errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage();
+                                       + errorCode.getFormattedErrorMessage();
 
             throw new OMRSRuntimeException(errorCode.getHTTPErrorCode(),
                                            this.getClass().getName(),

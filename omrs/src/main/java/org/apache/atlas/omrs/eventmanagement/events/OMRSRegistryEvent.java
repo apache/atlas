@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.omrs.eventmanagement.events;
 
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1RegistrySection;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -59,7 +60,7 @@ public class OMRSRegistryEvent extends OMRSEvent
     /*
      * Used in the registration process to enable the repositories to detect incompatible TypeDefs.
      */
-    private  ArrayList<TypeDefSummary>   typeDefSummaries                = null;
+    private List<TypeDefSummary>         typeDefSummaries = null;
 
     /*
      * Specific variables only used in error reporting.  It defines the subset of error codes from OMRSEvent
@@ -122,7 +123,7 @@ public class OMRSRegistryEvent extends OMRSEvent
     public OMRSRegistryEvent(OMRSRegistryEventType          registryEventType,
                              Date                           registrationTimestamp,
                              Connection                     remoteConnection,
-                             ArrayList<TypeDefSummary>      typeDefSummaries)
+                             List<TypeDefSummary>           typeDefSummaries)
     {
         super(OMRSEventCategory.REGISTRY);
 
@@ -214,7 +215,7 @@ public class OMRSRegistryEvent extends OMRSEvent
      *
      * @return TypeDefSummaries object
      */
-    public ArrayList<TypeDefSummary> getTypeDefSummaries()
+    public List<TypeDefSummary> getTypeDefSummaries()
     {
         return typeDefSummaries;
     }

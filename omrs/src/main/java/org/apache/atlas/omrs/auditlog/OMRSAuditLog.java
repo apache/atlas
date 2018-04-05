@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * OMRSAuditLog is a class for managing the audit logging of activity for the OMRS components.  Each auditing component
@@ -40,11 +41,11 @@ import java.util.ArrayList;
 public class OMRSAuditLog
 {
     static private final OMRSAuditLogRecordOriginator   originator         = new OMRSAuditLogRecordOriginator();
-    static private       OMRSAuditLogStore              auditLogStore      = null;
+    static private       ArrayList<OMRSAuditLogStore>   auditLogStores     = null;
 
     private static final Logger log = LoggerFactory.getLogger(OMRSAuditLog.class);
 
-    private              OMRSAuditLogReportingComponent reportingComponent = null;
+    private              OMRSAuditLogReportingComponent reportingComponent;   /* Initialized in the constructor */
 
 
     /**
@@ -54,18 +55,21 @@ public class OMRSAuditLog
      * @param localServerName - name of the local server
      * @param localServerType - type of the local server
      * @param localOrganizationName - name of the organization that owns the local server
-     * @param auditLogStore - destination for the audit log records
+     * @param auditLogStores - list of destinations for the audit log records
      */
-    public static void  initialize(String              localServerName,
-                                   String              localServerType,
-                                   String              localOrganizationName,
-                                   OMRSAuditLogStore   auditLogStore)
+    public static void  initialize(String                  localServerName,
+                                   String                  localServerType,
+                                   String                  localOrganizationName,
+                                   List<OMRSAuditLogStore> auditLogStores)
     {
         OMRSAuditLog.originator.setServerName(localServerName);
         OMRSAuditLog.originator.setServerType(localServerType);
         OMRSAuditLog.originator.setOrganizationName(localOrganizationName);
 
-        OMRSAuditLog.auditLogStore = auditLogStore;
+        if (auditLogStores != null)
+        {
+            OMRSAuditLog.auditLogStores = new ArrayList<>(auditLogStores);
+        }
     }
 
 
@@ -118,11 +122,11 @@ public class OMRSAuditLog
         {
             if ((severity == OMRSAuditLogRecordSeverity.ERROR) || (severity == OMRSAuditLogRecordSeverity.EXCEPTION))
             {
-                log.error("New Audit Log Record", actionDescription, logMessageId, severity, logMessage, additionalInformation, systemAction, userAction);
+                log.error(logMessageId + " " + logMessage, actionDescription, logMessageId, severity, logMessage, additionalInformation, systemAction, userAction);
             }
             else
             {
-                log.info("New Audit Log Record", actionDescription, logMessageId, severity, logMessage, additionalInformation, systemAction, userAction);
+                log.info(logMessageId + " " + logMessage, actionDescription, logMessageId, severity, logMessage, additionalInformation, systemAction, userAction);
             }
         }
         else
@@ -130,34 +134,41 @@ public class OMRSAuditLog
             severity = OMRSAuditLogRecordSeverity.UNKNOWN;
         }
 
-        if (auditLogStore != null)
+        if (auditLogStores != null)
         {
-            ArrayList<String>   additionalInformationArray = null;
+            for (OMRSAuditLogStore  auditLogStore : auditLogStores)
+            {
+                if (auditLogStore != null)
+                {
+                    ArrayList<String> additionalInformationArray = null;
 
-            if (additionalInformation != null)
-            {
-                additionalInformationArray = new ArrayList<>();
-                additionalInformationArray.add(additionalInformation);
-            }
+                    if (additionalInformation != null)
+                    {
+                        additionalInformationArray = new ArrayList<>();
+                        additionalInformationArray.add(additionalInformation);
+                    }
 
-            OMRSAuditLogRecord   logRecord = new OMRSAuditLogRecord(originator,
-                                                                    reportingComponent,
-                                                                    severity.getSeverityName(),
-                                                                    logMessageId,
-                                                                    logMessage,
-                                                                    additionalInformationArray,
-                                                                    systemAction,
-                                                                    userAction);
-            try
-            {
-                auditLogStore.storeLogRecord(logRecord);
-            }
-            catch (Throwable  error)
-            {
-                log.error("Error writing audit log: ", logRecord, error);
+                    OMRSAuditLogRecord logRecord = new OMRSAuditLogRecord(originator,
+                                                                          reportingComponent,
+                                                                          severity.getSeverityName(),
+                                                                          logMessageId,
+                                                                          logMessage,
+                                                                          additionalInformationArray,
+                                                                          systemAction,
+                                                                          userAction);
+                    try
+                    {
+                        auditLogStore.storeLogRecord(logRecord);
+                    }
+                    catch (Throwable error)
+                    {
+                        log.error("Error writing audit log: ", logRecord, error);
+                    }
+                }
             }
         }
     }
+
 
     /**
      * Log details of an unexpected exception detected by the OMRS.  These exceptions typically mean that the local

@@ -45,11 +45,23 @@ public class KafkaOMRSTopicConnector extends OMRSTopicConnector
     }
 
     /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public void start() throws ConnectorCheckedException
+    {
+        super.start();
+    }
+
+
+    /**
      * Free up any resources held since the connector is no longer needed.
      *
-     * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
-    public void disconnect() throws ConnectorCheckedException
+    public  void disconnect() throws ConnectorCheckedException
     {
+        super.disconnect();
     }
 }

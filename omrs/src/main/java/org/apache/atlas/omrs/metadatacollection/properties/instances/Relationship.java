@@ -18,10 +18,20 @@
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * Relationship is a POJO that manages the properties of an open metadata relationship.  This includes information
  * about the relationship type, the two entities it connects and the properties it holds.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class Relationship extends InstanceHeader
 {
     private   InstanceProperties    relationshipProperties = null;

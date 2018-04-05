@@ -17,7 +17,14 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * ClassificationOrigin describes the provenance of a classification attached to an entity.  Most classifications
@@ -29,6 +36,9 @@ import java.io.Serializable;
  * relationships attached to the entity.  The ClassificationPropagateRule in the relationship's RelationshipDef
  * defines where the classification can flow to.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum ClassificationOrigin implements Serializable
 {
     ASSIGNED       (0, "Assigned",   "The classification is explicitly assigned to the entity"),

@@ -17,8 +17,14 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -29,6 +35,9 @@ import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
  *
  * Note: it is not valid to have a classification with a null or blank name.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class Classification extends InstanceAuditHeader
 {
     private String               classificationName       = null;
@@ -52,7 +61,7 @@ public class Classification extends InstanceAuditHeader
              * Build and throw exception.  This should not happen - likely to be a problem in the
              * repository connector.
              */
-            OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_NAME;
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_PROPERTY_NAME;
             String       errorMessage = errorCode.getErrorMessageId()
                                       + errorCode.getFormattedErrorMessage();
 
@@ -116,7 +125,7 @@ public class Classification extends InstanceAuditHeader
              * Build and throw exception.  This should not happen - likely to be a problem in the
              * repository connector.
              */
-            OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_NAME;
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_PROPERTY_NAME;
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage("<Unknown>");
 

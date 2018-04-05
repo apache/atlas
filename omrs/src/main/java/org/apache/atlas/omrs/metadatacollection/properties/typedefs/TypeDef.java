@@ -17,11 +17,18 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceStatus;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The TypeDef is the base class for objects that store the properties of an open metadata type
@@ -29,7 +36,10 @@ import java.util.Map;
  * <p>
  * The different categories of Typedefs are listed in TypeDefCategory.
  */
-public abstract class TypeDef extends TypeDefSummary
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class TypeDef extends TypeDefSummary
 {
     protected TypeDefLink                        superType                = null;
     protected String                             description              = null;
@@ -44,6 +54,14 @@ public abstract class TypeDef extends TypeDefSummary
     protected ArrayList<InstanceStatus>          validInstanceStatusList  = null;
     protected InstanceStatus                     initialStatus            = null;
     protected ArrayList<TypeDefAttribute>        propertiesDefinition     = null;
+
+
+    /**
+     * Default constructor
+     */
+    public TypeDef()
+    {
+    }
 
 
     /**
@@ -98,9 +116,9 @@ public abstract class TypeDef extends TypeDefSummary
             this.createTime = template.getCreateTime();
             this.updateTime = template.getUpdateTime();
             this.options = template.getOptions();
-            this.externalStandardMappings = template.getExternalStandardMappings();
-            this.validInstanceStatusList = template.getValidInstanceStatusList();
-            this.propertiesDefinition = template.getPropertiesDefinition();
+            this.setExternalStandardMappings(template.getExternalStandardMappings());
+            this.setValidInstanceStatusList(template.getValidInstanceStatusList());
+            this.setPropertiesDefinition(template.getPropertiesDefinition());
         }
     }
 
@@ -308,11 +326,11 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @return ExternalStandardMappings list
      */
-    public ArrayList<ExternalStandardMapping> getExternalStandardMappings()
+    public List<ExternalStandardMapping> getExternalStandardMappings()
     {
         if (externalStandardMappings == null)
         {
-            return externalStandardMappings;
+            return null;
         }
         else
         {
@@ -326,9 +344,16 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @param externalStandardMappings - ExternalStandardMappings list
      */
-    public void setExternalStandardMappings(ArrayList<ExternalStandardMapping> externalStandardMappings)
+    public void setExternalStandardMappings(List<ExternalStandardMapping> externalStandardMappings)
     {
-        this.externalStandardMappings = externalStandardMappings;
+        if (externalStandardMappings == null)
+        {
+            this.externalStandardMappings = null;
+        }
+        else
+        {
+            this.externalStandardMappings = new ArrayList<>(externalStandardMappings);
+        }
     }
 
 
@@ -337,9 +362,16 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @return InstanceStatus array of supported status values.
      */
-    public ArrayList<InstanceStatus> getValidInstanceStatusList()
+    public List<InstanceStatus> getValidInstanceStatusList()
     {
-        return validInstanceStatusList;
+        if (validInstanceStatusList == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(validInstanceStatusList);
+        }
     }
 
 
@@ -348,9 +380,16 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @param validInstanceStatusList - InstanceStatus Array
      */
-    public void setValidInstanceStatusList(ArrayList<InstanceStatus> validInstanceStatusList)
+    public void setValidInstanceStatusList(List<InstanceStatus> validInstanceStatusList)
     {
-        this.validInstanceStatusList = validInstanceStatusList;
+        if (validInstanceStatusList == null)
+        {
+            this.validInstanceStatusList = null;
+        }
+        else
+        {
+            this.validInstanceStatusList = new ArrayList<>(validInstanceStatusList);
+        }
     }
 
 
@@ -381,11 +420,11 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @return AttributeDefs list
      */
-    public ArrayList<TypeDefAttribute> getPropertiesDefinition()
+    public List<TypeDefAttribute> getPropertiesDefinition()
     {
-        if(propertiesDefinition == null)
+        if (propertiesDefinition == null)
         {
-            return propertiesDefinition;
+            return null;
         }
         else
         {
@@ -399,9 +438,16 @@ public abstract class TypeDef extends TypeDefSummary
      *
      * @param propertiesDefinition - AttributeDefs list
      */
-    public void setPropertiesDefinition(ArrayList<TypeDefAttribute> propertiesDefinition)
+    public void setPropertiesDefinition(List<TypeDefAttribute> propertiesDefinition)
     {
-        this.propertiesDefinition = propertiesDefinition;
+        if (propertiesDefinition == null)
+        {
+            this.propertiesDefinition = null;
+        }
+        else
+        {
+            this.propertiesDefinition = new ArrayList<>(propertiesDefinition);
+        }
     }
 
 

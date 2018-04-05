@@ -17,6 +17,13 @@
  */
 package org.apache.atlas.omrs.archivemanager.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * OpenMetadataArchive defines the structure of the properties inside of an open metadata archive.
  * There are 3 sections:
@@ -32,6 +39,9 @@ package org.apache.atlas.omrs.archivemanager.properties;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OpenMetadataArchive
 {
     private OpenMetadataArchiveProperties    archiveProperties    = null;

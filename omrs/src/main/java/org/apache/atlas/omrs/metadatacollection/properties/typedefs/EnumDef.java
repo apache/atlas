@@ -18,12 +18,23 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The EnumDef describes an open metadata enumeration.  This enumeration consists of a list of valid values
  * (stored in EnumElementDef objects) and a default value.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class EnumDef extends AttributeTypeDef
 {
     private ArrayList<EnumElementDef> elementDefs    = null;
@@ -50,7 +61,7 @@ public class EnumDef extends AttributeTypeDef
 
         if (template != null)
         {
-            elementDefs = template.getElementDefs();
+            elementDefs = new ArrayList<>(template.getElementDefs());
             defaultValue = template.getDefaultValue();
         }
     }
@@ -61,11 +72,11 @@ public class EnumDef extends AttributeTypeDef
      *
      * @return EnumElementDefs list
      */
-    public ArrayList<EnumElementDef> getElementDefs()
+    public List<EnumElementDef> getElementDefs()
     {
         if (elementDefs == null)
         {
-            return elementDefs;
+            return null;
         }
         else
         {
@@ -79,7 +90,7 @@ public class EnumDef extends AttributeTypeDef
      *
      * @param elementDefs - EnumElementDefs list
      */
-    public void setElementDefs(ArrayList<EnumElementDef> elementDefs) { this.elementDefs = elementDefs; }
+    public void setElementDefs(List<EnumElementDef> elementDefs) { this.elementDefs = new ArrayList<>(elementDefs); }
 
 
     /**

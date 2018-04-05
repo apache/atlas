@@ -112,22 +112,68 @@ public enum OMRSAuditCode
                       "No action is required.  This is part of the normal operation of the server."),
 
     NO_LOCAL_REPOSITORY("OMRS-AUDIT-0012",
-                        OMRSAuditLogRecordSeverity.INFO,
-                        "No events will be sent to the open metadata repository cohort {0} because the local metadata collection id is null.",
-                        "The local server will not send outbound events because there is no local metadata repository.",
-                        "Validate that the server is configured without a local metadata repository.  " +
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "No events will be sent to the open metadata repository cohort {0} because the local metadata collection id is null.",
+                      "The local server will not send outbound events because there is no local metadata repository.",
+                      "Validate that the server is configured without a local metadata repository.  " +
                                 "If there should be a metadata repository then, verify the server configuration is" +
                                 "correct and look for errors that have occurred during server start up." +
                                 "If necessary, correct the configuration and restart the server."),
 
-    NULL_TOPIC_CONNECTOR("OMRS-AUDIT-0013",
-                         OMRSAuditLogRecordSeverity.EXCEPTION,
-                         "Unable to send or receive events for cohort {0} because the connector to the OMRS Topic failed to initialize",
-                         "The local server will not connect to the cohort.",
-                         "The connection to the connector is configured in the server configuration.  " +
+    LOCAL_REPOSITORY_FAILED_TO_START("OMRS-AUDIT-0013",
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable to start processing in the local repository due to error {0}",
+                      "The local server will not process events.",
+                      "Review previous error messages to determine the precise error in the " +
+                                 "start up configuration. " +
+                                 "Correct the configuration and restart the server. "),
+
+    LOCAL_REPOSITORY_FAILED_TO_DISCONNECT("OMRS-AUDIT-0014",
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable to disconnect processing in the local repository due to error {0}",
+                      "The local server may not shutdown cleanly.",
+                      "Review previous error messages to determine the precise error. Correct the cause and restart the server. "),
+
+    NULL_TOPIC_CONNECTOR("OMRS-AUDIT-0015",
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable to send or receive events for cohort {0} because the connector to the OMRS Topic failed to initialize",
+                      "The local server will not connect to the cohort.",
+                      "The connection to the connector is configured in the server configuration.  " +
                                  "Review previous error messages to determine the precise error in the " +
                                  "start up configuration. " +
                                  "Correct the configuration and reconnect the server to the cohort. "),
+
+    PROCESSING_ARCHIVE("OMRS-AUDIT-0050",
+                       OMRSAuditLogRecordSeverity.INFO,
+                       "The Open Metadata Repository Services (OMRS) is about to process open metadata archive {0}.",
+                       "The local server is about to local types and instances from an open metadata archive.",
+                       "No action is required.  This is part of the normal operation of the server."),
+
+    EMPTY_ARCHIVE("OMRS-AUDIT-0051",
+                       OMRSAuditLogRecordSeverity.ERROR,
+                       "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty.",
+                       "The local server is skipping an open metadata archive because it is empty.",
+                       "Review the list of archives for the server and determine which archive is in error.  " +
+                          "Request a new version of the archive or remove it from the server's archive list."),
+
+    NULL_PROPERTIES_IN_ARCHIVE("OMRS-AUDIT-0052",
+                        OMRSAuditLogRecordSeverity.ERROR,
+                        "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty.",
+                        "The local server is skipping an open metadata archive because it is empty.",
+                        "Review the list of archives for the server and determine which archive is in error. " +
+                           "Request a new version of the archive or remove it from the server's archive list."),
+
+    COMPLETED_ARCHIVE("OMRS-AUDIT-0053",
+                       OMRSAuditLogRecordSeverity.INFO,
+                       "The Open Metadata Repository Services (OMRS) has loaded {0} types and {1} instances from open metadata archive {2}.",
+                       "The local server has completed the processing of the open metadata archive.",
+                       "No action is required.  This is part of the normal operation of the server."),
+
+    EVENT_PROCESSING_ERROR("OMRS-AUDIT-0100",
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable process an incoming event {0} due to exception {1}",
+                      "The information in the event is not available to the server.",
+                      "Review the exception to determine the source of the error and correct it. "),
 
     REGISTERED_WITH_COHORT("OMRS-AUDIT-0101",
                       OMRSAuditLogRecordSeverity.INFO,
@@ -323,6 +369,38 @@ public enum OMRSAuditCode
                       "It is necessary to update the TypeDef to remove the conflict before the local server will " +
                                    "exchange metadata with the remote server."),
 
+    NEW_TYPE_ADDED("OMRS-AUDIT-0301",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The local server has added a new type called {0} with a unique identifier of {1} and a version number of {2} from {3}",
+                      "The local server will be able to manage metadata instances of this type.",
+                      "No action required.  This message is for information only."),
+
+    NEW_TYPE_NOT_SUPPORTED("OMRS-AUDIT-0302",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The local server is unable to add a new type called {0} with a unique identifier of {1} and a version number of {2} because the server does not support this feature",
+                      "The local server will be able to manage metadata instances of this type.",
+                      "No action required.  This message is for information only."),
+
+    TYPE_UPDATED("OMRS-AUDIT-0303",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The local server has updated an existing type called {0} with a unique identifier of {1} to version number of {2} from {3}",
+                      "The local server will be able to manage metadata instances of this latest version of the type.",
+                      "No action required.  This message is for information only."),
+
+    TYPE_REMOVED("OMRS-AUDIT-0304",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The local server has removed an existing type called {0} with a unique identifier of {1} to version number of {2}",
+                      "The local server will be no longer be able to manage metadata instances of this type.",
+                      "No action required.  This message is for information only."),
+
+    TYPE_IDENTIFIER_MISMATCH("OMRS-AUDIT-0305",
+                      OMRSAuditLogRecordSeverity.ERROR,
+                      "The local server has detected a conflict with an existing type called {0} with a unique identifier of {1}. This does not match the type name {2} and unique identifier {3} passed to it on a request",
+                      "The local server will be no longer be able to manage metadata instances of this type.",
+                      "This is a serious error since it may cause metadata to be corrupted.  " +
+                                     "First check the caller to ensure it is operating properly.  " +
+                                     "Then investigate the source of the type and any other errors."),
+
     PROCESS_UNKNOWN_EVENT("OMRS-AUDIT-8001",
                       OMRSAuditLogRecordSeverity.EVENT,
                       "Received unknown event: {0}",
@@ -334,17 +412,17 @@ public enum OMRSAuditCode
                       "Verify that the event is a new event type introduced after this server was written."),
 
     NULL_OMRS_EVENT_RECEIVED("OMRS-AUDIT-9002",
-                         OMRSAuditLogRecordSeverity.EXCEPTION,
-                         "Unable to process a received event because its content is null",
-                         "The system is unable to process an incoming event.",
-                         "This may be caused by an internal logic error or the receipt of an incompatible OMRSEvent"),
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable to process a received event because its content is null",
+                      "The system is unable to process an incoming event.",
+                      "This may be caused by an internal logic error or the receipt of an incompatible OMRSEvent"),
 
     SEND_TYPEDEF_EVENT_ERROR("OMRS-AUDIT-9003",
-                              OMRSAuditLogRecordSeverity.EXCEPTION,
-                              "Unable to send a TypeDef event for cohort {0} due to an error in the OMRS Topic Connector",
-                              "The local server is unable to properly manage TypeDef events for the metadata " +
+                      OMRSAuditLogRecordSeverity.EXCEPTION,
+                      "Unable to send a TypeDef event for cohort {0} due to an error in the OMRS Topic Connector",
+                      "The local server is unable to properly manage TypeDef events for the metadata " +
                                       "repository cohort. The cause of the error is recorded in the accompanying exception.",
-                              "Review the exception and resolve the issue it documents.  " +
+                      "Review the exception and resolve the issue it documents.  " +
                                       "Then disconnect and reconnect this server to the cohort."),
 
     SEND_INSTANCE_EVENT_ERROR("OMRS-AUDIT-9005",
@@ -388,7 +466,17 @@ public enum OMRSAuditCode
                         "Unable to send an event because the event is of an unknown type",
                         "The local server may not be communicating properly with other servers in " +
                                 "the metadata repository cohort.",
-                        "This is an internal logic error.  Raise a JIRA, including the audit log, to get this fixed.")
+                        "This is an internal logic error.  Raise a JIRA, including the audit log, to get this fixed."),
+    UNEXPECTED_EXCEPTION_FROM_EVENT("OMRS-AUDIT-9011",
+                       OMRSAuditLogRecordSeverity.EXCEPTION,
+                       "An incoming event of type {0} from {1} ({2}) generated an exception with message {3}",
+                       "The contents of the event were not accepted by the local repository.",
+                       "Review the exception and resolve the issue it documents."),
+    ENTERPRISE_TOPIC_DISCONNECT_ERROR("OMRS-AUDIT-9012",
+                       OMRSAuditLogRecordSeverity.EXCEPTION,
+                       "Disconnecting from the enterprise topic connector generated an exception with message {0}",
+                       "The server may not have disconnected from the topic cleanly.",
+                       "Review the exception and resolve the issue it documents.")
 
     ;
 

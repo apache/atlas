@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.omrs.localrepository;
 
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSInstanceEventProcessor;
 import org.apache.atlas.omrs.eventmanagement.OMRSRepositoryEventManager;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSTypeDefEventProcessor;
@@ -80,4 +80,28 @@ public interface OMRSLocalRepository
      * @return OMRSInstanceEventProcessor for the local repository.
      */
     OMRSInstanceEventProcessor getIncomingInstanceEventProcessor();
+
+
+    /**
+     * Return the local server name - used for outbound events.
+     *
+     * @return String name
+     */
+    String getLocalServerName();
+
+
+    /**
+     * Return the local server type - used for outbound events.
+     *
+     * @return String name
+     */
+    String getLocalServerType();
+
+
+    /**
+     * Return the name of the organization that owns this local repository.
+     *
+     * @return String name
+     */
+    String getOrganizationName();
 }

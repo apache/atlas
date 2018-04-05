@@ -18,13 +18,24 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * ClassificationDef stores the properties for the definition of a type of classification.  Many of the properties
  * are inherited from TypeDef.  ClassificationDef adds a list of Entity Types that this Classification can be
  * connected to and a boolean to indicate if this classification is propagatable.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ClassificationDef extends TypeDef
 {
     private   ArrayList<TypeDefLink>     validEntityDefs = null;
@@ -70,7 +81,8 @@ public class ClassificationDef extends TypeDef
 
         if (template != null)
         {
-            validEntityDefs = template.getValidEntityDefs();
+            this.setValidEntityDefs(template.getValidEntityDefs());
+
             propagatable = template.isPropagatable();
         }
     }
@@ -81,11 +93,11 @@ public class ClassificationDef extends TypeDef
      *
      * @return List of entity type identifiers
      */
-    public ArrayList<TypeDefLink> getValidEntityDefs()
+    public List<TypeDefLink> getValidEntityDefs()
     {
         if (validEntityDefs == null)
         {
-            return validEntityDefs;
+            return null;
         }
         else
         {
@@ -99,9 +111,16 @@ public class ClassificationDef extends TypeDef
      *
      * @param validEntityDefs - List of entity type identifiers
      */
-    public void setValidEntityDefs(ArrayList<TypeDefLink> validEntityDefs)
+    public void setValidEntityDefs(List<TypeDefLink> validEntityDefs)
     {
-        this.validEntityDefs = validEntityDefs;
+        if (validEntityDefs == null)
+        {
+            this.validEntityDefs = null;
+        }
+        else
+        {
+            this.validEntityDefs = new ArrayList<>(validEntityDefs);
+        }
     }
 
 

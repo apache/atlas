@@ -17,20 +17,28 @@
  */
 package org.apache.atlas.omrs.eventmanagement.events.v1;
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSEventErrorCode;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceProvenanceType;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.AttributeTypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCategory;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * OMRSEventV1ErrorSection describes the properties used to record errors detected by one of the members of the
  * open metadata repository cohort.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OMRSEventV1ErrorSection implements Serializable
 {
     private static final long serialVersionUID = 1L;

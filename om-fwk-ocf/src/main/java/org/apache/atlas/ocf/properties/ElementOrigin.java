@@ -17,7 +17,14 @@
  */
 package org.apache.atlas.ocf.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * ElementOrigin defines where the metadata comes from and, hence if it can be updated.
@@ -43,7 +50,10 @@ import java.io.Serializable;
  *         If the repository rejoins the cohort then these elements can be refreshed from the rejoining repository.
  *     </li>
  * </ul>
-*/
+ */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum ElementOrigin implements Serializable
 {
     LOCAL_COHORT(0, "Local to cohort",  "The element is being maintained within one of the local cohort members. " +

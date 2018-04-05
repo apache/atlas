@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.omrs.metadatacollection.repositoryconnector;
 
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 
 /**
@@ -28,6 +30,55 @@ import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
  */
 public interface OMRSMetadataCollectionManager
 {
+    /**
+     * Set up a repository helper object for the repository connector to use.
+     *
+     * @param repositoryHelper - helper object for building TypeDefs and metadata instances.
+     */
+    void setRepositoryHelper(OMRSRepositoryHelper   repositoryHelper);
+
+
+    /**
+     * Set up a repository validator for the repository connector to use.
+     *
+     * @param repositoryValidator - validator object to check the validity of TypeDefs and metadata instances.
+     */
+    void setRepositoryValidator(OMRSRepositoryValidator  repositoryValidator);
+
+
+    /**
+     * Set up the maximum PageSize
+     *
+     * @param maxPageSize - maximum number of elements that can be retrieved on a request.
+     */
+    void setMaxPageSize(int    maxPageSize);
+
+
+    /**
+     * Set up the name of the server where the metadata collection resides.
+     *
+     * @param serverName - String name
+     */
+    void  setServerName(String      serverName);
+
+
+    /**
+     * Set up the descriptive string describing the type of the server.  This might be the
+     * name of the product, or similar identifier.
+     *
+     * @param serverType - String server type
+     */
+    void setServerType(String serverType);
+
+
+    /**
+     * Set up the name of the organization that runs/owns the server.
+     *
+     * @param organizationName - String organization name
+     */
+    void setOrganizationName(String organizationName);
+
+
     /**
      * Set up the unique Id for this metadata collection.
      *

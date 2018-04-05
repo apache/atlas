@@ -166,18 +166,14 @@ public interface OMRSInstanceEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this entity's TypeDef
-     * @param typeDefName - name of this entity's TypeDef
-     * @param instanceGUID - unique identifier for the entity
+     * @param entity - deleted entity
      */
     void processDeletedEntityEvent(String       sourceName,
                                    String       originatorMetadataCollectionId,
                                    String       originatorServerName,
                                    String       originatorServerType,
                                    String       originatorOrganizationName,
-                                   String       typeDefGUID,
-                                   String       typeDefName,
-                                   String       instanceGUID);
+                                   EntityDetail entity);
 
 
     /**
@@ -418,18 +414,14 @@ public interface OMRSInstanceEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this relationship's TypeDef
-     * @param typeDefName - name of this relationship's TypeDef
-     * @param instanceGUID - unique identifier for the relationship
+     * @param relationship - deleted relationship
      */
     void processDeletedRelationshipEvent(String       sourceName,
                                          String       originatorMetadataCollectionId,
                                          String       originatorServerName,
                                          String       originatorServerType,
                                          String       originatorOrganizationName,
-                                         String       typeDefGUID,
-                                         String       typeDefName,
-                                         String       instanceGUID);
+                                         Relationship relationship);
 
 
     /**

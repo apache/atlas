@@ -17,17 +17,27 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * This enumeration defines the list of open metadata primitive types.  This includes a code value, a string
  * name for the type (used in self describing structures such as JSON or XML) and the name of the Java Class
  * that supports this type.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum PrimitiveDefCategory implements Serializable
 {
-    OM_PRIMITIVE_TYPE_UNKNOWN   (0,  "<>",         null,                    null),
+    OM_PRIMITIVE_TYPE_UNKNOWN   (0,  "<>",         "java.lang.Object",      "1c4b21f4-0b67-41a7-a6ed-2af185eb9b3b"),
     OM_PRIMITIVE_TYPE_BOOLEAN   (1,  "boolean",    "java.lang.Boolean",     "3863f010-611c-41fe-aaae-5d4d427f863b"),
     OM_PRIMITIVE_TYPE_BYTE      (2,  "byte",       "java.lang.Byte",        "6b7d410a-2e8a-4d12-981a-a806449f9bdb"),
     OM_PRIMITIVE_TYPE_CHAR      (3,  "char",       "java.Lang.Char",        "b0abebe5-cf85-4065-86ad-f3c6360ed9c7"),

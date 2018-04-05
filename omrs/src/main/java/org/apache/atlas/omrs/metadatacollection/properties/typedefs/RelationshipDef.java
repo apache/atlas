@@ -18,12 +18,22 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * RelationshipDef describes the type of a relationship.  A relationships links two entities together.
  * The RelationshipDef defines the types of those entities in the RelationshipEndDefs.  It
  * defines if this relationship allows classifications to propagate through it and also it defines the type of
  * relationship - such as association, composition and aggregation.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class RelationshipDef extends TypeDef
 {
     private RelationshipCategory          relationshipCategory     = RelationshipCategory.UNKNOWN;

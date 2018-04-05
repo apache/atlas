@@ -25,13 +25,13 @@ package org.apache.atlas.ocf.properties;
  */
 public class ElementType extends PropertyBase
 {
-    private String                elementTypeId = null;
-    private String                elementTypeName = null;
-    private String                elementTypeVersion = null;
-    private String                elementTypeDescription = null;
-    private String                elementAccessServiceURL = null;
-    private ElementOrigin         elementOrigin = null;
-    private String                elementHomeMetadataCollectionId = null;
+    protected String                elementTypeId = null;
+    protected String                elementTypeName = null;
+    protected long                  elementTypeVersion = 0;
+    protected String                elementTypeDescription = null;
+    protected String                elementAccessServiceURL = null;
+    protected ElementOrigin         elementOrigin = null;
+    protected String                elementHomeMetadataCollectionId = null;
 
 
     /**
@@ -47,7 +47,7 @@ public class ElementType extends PropertyBase
      */
     public ElementType(String         elementTypeId,
                        String         elementTypeName,
-                       String         elementTypeVersion,
+                       long           elementTypeVersion,
                        String         elementTypeDescription,
                        String         elementAccessServiceURL,
                        ElementOrigin  elementOrigin,
@@ -64,6 +64,7 @@ public class ElementType extends PropertyBase
         this.elementHomeMetadataCollectionId = elementHomeMetadataCollectionId;
     }
 
+
     /**
      * Copy/clone constructor
      *
@@ -73,17 +74,21 @@ public class ElementType extends PropertyBase
     {
         super(templateType);
 
-        /*
-         * Copy the properties from the supplied template
-         */
-        this.elementTypeId = templateType.getElementTypeId();
-        this.elementTypeName = templateType.getElementTypeName();
-        this.elementTypeVersion = templateType.getElementTypeVersion();
-        this.elementTypeDescription = templateType.getElementTypeDescription();
-        this.elementAccessServiceURL = templateType.getElementAccessServiceURL();
-        this.elementOrigin = templateType.getElementOrigin();
-        this.elementHomeMetadataCollectionId = templateType.getElementHomeMetadataCollectionId();
+        if (templateType != null)
+        {
+            /*
+             * Copy the properties from the supplied template
+             */
+            this.elementTypeId = templateType.getElementTypeId();
+            this.elementTypeName = templateType.getElementTypeName();
+            this.elementTypeVersion = templateType.getElementTypeVersion();
+            this.elementTypeDescription = templateType.getElementTypeDescription();
+            this.elementAccessServiceURL = templateType.getElementAccessServiceURL();
+            this.elementOrigin = templateType.getElementOrigin();
+            this.elementHomeMetadataCollectionId = templateType.getElementHomeMetadataCollectionId();
+        }
     }
+
 
     /**
      * Return unique identifier for the element's type.
@@ -108,20 +113,20 @@ public class ElementType extends PropertyBase
 
 
     /**
-     * Return the version number for the element type.
+     * Return the version number for this element's type.
      *
      * @return elementTypeVersion - version number for the element type.
      */
-    public String getElementTypeVersion()
+    public long getElementTypeVersion()
     {
         return elementTypeVersion;
     }
 
 
     /**
-     * Return the description for the element type.
+     * Return the description for this element's type.
      *
-     * @return elementTypeDescription - description for the element type
+     * @return elementTypeDescription - String description for the element type
      */
     public String getElementTypeDescription()
     {
@@ -172,7 +177,7 @@ public class ElementType extends PropertyBase
         return "ElementType{" +
                 "elementTypeId='" + elementTypeId + '\'' +
                 ", elementTypeName='" + elementTypeName + '\'' +
-                ", elementTypeVersion='" + elementTypeVersion + '\'' +
+                ", elementTypeVersion=" + elementTypeVersion +
                 ", elementTypeDescription='" + elementTypeDescription + '\'' +
                 ", elementAccessServiceURL='" + elementAccessServiceURL + '\'' +
                 ", elementOrigin=" + elementOrigin +

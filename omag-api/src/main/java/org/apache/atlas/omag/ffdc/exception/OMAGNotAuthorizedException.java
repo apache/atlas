@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.omrs.ffdc.exception;
+
+package org.apache.atlas.omag.ffdc.exception;
 
 /**
- * The RelationshipKnownException is thrown by an OMRS Connector when a specific relationship instance is added but this
- * relationship is already stored in the metadata collection.
+ * OMAGNotAuthorizedException is used when invalid parameters are passed on an OMAG call.
  */
-public class RelationshipKnownException extends OMRSCheckedExceptionBase
+public class OMAGNotAuthorizedException extends OMAGCheckedExceptionBase
 {
     /**
-     * This is the typical constructor used for creating a RelationshipKnownException.
+     * This is the typical constructor used for creating a OMAGNotAuthorizedException.
      *
      * @param httpCode - http response code to use if this exception flows over a REST call
      * @param className - name of class reporting error
@@ -33,14 +33,14 @@ public class RelationshipKnownException extends OMRSCheckedExceptionBase
      * @param systemAction - actions of the system as a result of the error
      * @param userAction - instructions for correcting the error
      */
-    public RelationshipKnownException(int  httpCode, String className, String  actionDescription, String errorMessage, String systemAction, String userAction)
+    public OMAGNotAuthorizedException(int  httpCode, String className, String  actionDescription, String errorMessage, String systemAction, String userAction)
     {
         super(httpCode, className, actionDescription, errorMessage, systemAction, userAction);
     }
 
 
     /**
-     * This is the constructor used for creating a RelationshipKnownException that resulted from a previous error.
+     * This is the constructor used for creating a OMAGNotAuthorizedException that resulted from a previous error.
      *
      * @param httpCode - http response code to use if this exception flows over a REST call
      * @param className - name of class reporting error
@@ -50,7 +50,7 @@ public class RelationshipKnownException extends OMRSCheckedExceptionBase
      * @param userAction - instructions for correcting the error
      * @param caughtError - the error that resulted in this exception.
      * */
-    public RelationshipKnownException(int  httpCode, String className, String  actionDescription, String errorMessage, String systemAction, String userAction, Throwable caughtError)
+    public OMAGNotAuthorizedException(int  httpCode, String className, String  actionDescription, String errorMessage, String systemAction, String userAction, Throwable caughtError)
     {
         super(httpCode, className, actionDescription, errorMessage, systemAction, userAction, caughtError);
     }

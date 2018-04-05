@@ -17,15 +17,17 @@
  */
 package org.apache.atlas.omrs.auditlog.store.file;
 
+import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.omrs.auditlog.store.OMRSAuditLogRecord;
 import org.apache.atlas.omrs.auditlog.store.OMRSAuditLogStoreConnectorBase;
 import org.apache.atlas.omrs.ffdc.exception.PagingErrorException;
-import org.apache.atlas.omrs.ffdc.exception.PropertyErrorException;
+import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * FileBasedAuditLogStoreConnector provides a connector implementation for a file based audit log.
@@ -50,9 +52,9 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      *
      * @param logRecord - log record to store
      * @return unique identifier assigned to the log record
-     * @throws PropertyErrorException - indicates that the logRecord parameter is invalid.
+     * @throws InvalidParameterException - indicates that the logRecord parameter is invalid.
      */
-    public String storeLogRecord(OMRSAuditLogRecord logRecord) throws PropertyErrorException
+    public String storeLogRecord(OMRSAuditLogRecord logRecord) throws InvalidParameterException
     {
         if (logRecord == null)
         {
@@ -61,7 +63,7 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
 
         if (log.isDebugEnabled())
         {
-            log.debug("AuditLogRecord: ", logRecord.toString());
+            log.debug("AuditLogRecord: " + logRecord.toString());
         }
 
         return null;
@@ -73,9 +75,9 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      *
      * @param logRecordId - unique identifier for the log record
      * @return requested audit log record
-     * @throws PropertyErrorException - indicates that the logRecordId parameter is invalid.
+     * @throws InvalidParameterException - indicates that the logRecordId parameter is invalid.
      */
-    public OMRSAuditLogRecord  getAuditLogRecord(String     logRecordId) throws PropertyErrorException
+    public OMRSAuditLogRecord  getAuditLogRecord(String     logRecordId) throws InvalidParameterException
     {
         if (logRecordId == null)
         {
@@ -95,13 +97,13 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
     public ArrayList<OMRSAuditLogRecord> getAuditLogRecordsByTimeStamp(Date    startDate,
                                                                        Date    endDate,
                                                                        int     offset,
-                                                                       int     maximumRecords) throws PropertyErrorException,
+                                                                       int     maximumRecords) throws InvalidParameterException,
                                                                                                       PagingErrorException
     {
         return null;
@@ -117,14 +119,14 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the severity, start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the severity, start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
     public ArrayList<OMRSAuditLogRecord> getAuditLogRecordsBySeverity(String   severity,
                                                                       Date     startDate,
                                                                       Date     endDate,
                                                                       int      offset,
-                                                                      int      maximumRecords) throws PropertyErrorException,
+                                                                      int      maximumRecords) throws InvalidParameterException,
                                                                                                       PagingErrorException
     {
         return null;
@@ -141,24 +143,38 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the component, start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the component, start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
-    public ArrayList<OMRSAuditLogRecord> getAuditLogRecordsByComponent(String   component,
-                                                                       Date     startDate,
-                                                                       Date     endDate,
-                                                                       int      offset,
-                                                                       int      maximumRecords) throws PropertyErrorException,
-                                                                                                       PagingErrorException
+    public List<OMRSAuditLogRecord> getAuditLogRecordsByComponent(String component,
+                                                                  Date   startDate,
+                                                                  Date   endDate,
+                                                                  int    offset,
+                                                                  int    maximumRecords) throws InvalidParameterException,
+                                                                                                PagingErrorException
     {
         return null;
     }
 
 
     /**
-     * Free up any resources held since the connector is no longer needed.
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
-    public void disconnect()
+    public void start() throws ConnectorCheckedException
     {
+        super.start();
+    }
+
+
+    /**
+     * Free up any resources held since the connector is no longer needed.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public  void disconnect() throws ConnectorCheckedException
+    {
+        super.disconnect();
     }
 }

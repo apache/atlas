@@ -17,11 +17,17 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.ArrayPropertyValue;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.MapPropertyValue;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.StructPropertyValue;
 
 import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * This enum defines the list of open metadata collection types.  These types are generic types that need to
@@ -30,6 +36,9 @@ import java.io.Serializable;
  * The enum includes a code value, a string name for the type (used in self describing structures such as JSON or XML)
  * and the name of the Java Class that supports this type.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public enum CollectionDefCategory implements Serializable
 {
     OM_COLLECTION_UNKNOWN (0, "<>",              0, null),

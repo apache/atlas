@@ -18,7 +18,14 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Objects;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * The AttributeTypeDef class is used to identify the type of an attribute.  These can be:
@@ -28,13 +35,26 @@ import java.util.Objects;
  *     <li>EnumDef</li>
  * </ul>
  */
-public abstract class AttributeTypeDef extends TypeDefElementHeader
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class AttributeTypeDef extends TypeDefElementHeader
 {
+    protected long                     version         = 0L;
+    protected String                   versionName     = null;
     protected AttributeTypeDefCategory category        = AttributeTypeDefCategory.UNKNOWN_DEF;
     protected String                   guid            = null;
     protected String                   name            = null;
     protected String                   description     = null;
     protected String                   descriptionGUID = null;
+
+
+    /**
+     * Default constructor
+     */
+    public AttributeTypeDef()
+    {
+    }
 
 
     /**
@@ -78,12 +98,62 @@ public abstract class AttributeTypeDef extends TypeDefElementHeader
 
         if (template != null)
         {
+            this.version = template.getVersion();
+            this.versionName = template.getVersionName();
             this.category = template.getCategory();
             this.guid = template.getGUID();
             this.name = template.getName();
             this.description = template.getDescription();
             this.descriptionGUID = template.getDescriptionGUID();
         }
+    }
+
+
+    /**
+     * Return the version of the AttributeTypeDef.  Versions are created when an AttributeTypeDef's properties
+     * are changed.  If a description is updated, then this does not create a new version.
+     *
+     * @return String version number
+     */
+    public long getVersion()
+    {
+        return version;
+    }
+
+
+    /**
+     * Set up the version of the AttributeTypeDef.  Versions are created when an AttributeTypeDef's properties
+     * are changed.  If a description is updated, then this does not create a new version.
+     *
+     * @param version - long version number
+     */
+    public void setVersion(long version)
+    {
+        this.version = version;
+    }
+
+
+    /**
+     * Return the version name, which is a more of a human readable form of the version number.
+     * It can be used to show whether the change is a minor or major update.
+     *
+     * @return String version name
+     */
+    public String getVersionName()
+    {
+        return versionName;
+    }
+
+
+    /**
+     * Set up the version name, which is a more of a human readable form of the version number.
+     * It can be used to show whether the change is a minor or major update.
+     *
+     * @param versionName - String version name
+     */
+    public void setVersionName(String versionName)
+    {
+        this.versionName = versionName;
     }
 
 
@@ -139,25 +209,51 @@ public abstract class AttributeTypeDef extends TypeDefElementHeader
     public void setName(String name) { this.name = name; }
 
 
+    /**
+     * Return the short description of this AttributeTypeDef.
+     *
+     * @return - String description
+     */
     public String getDescription()
     {
         return description;
     }
 
+
+    /**
+     * Set up the short description of this AttributeTypeDef.
+     *
+     * @param description - String description
+     */
     public void setDescription(String description)
     {
         this.description = description;
     }
 
+
+    /**
+     * Return the unique identifier of the glossary term that describes this AttributeTypeDef.  Null means there
+     * is no known glossary term.
+     *
+     * @return String guid
+     */
     public String getDescriptionGUID()
     {
         return descriptionGUID;
     }
 
+
+    /**
+     * Set up the unique identifier of the glossary term that describes this AttributeTypeDef.  Null means there
+     * is no known glossary term.
+     *
+     * @param descriptionGUID - String guid
+     */
     public void setDescriptionGUID(String descriptionGUID)
     {
         this.descriptionGUID = descriptionGUID;
     }
+
 
     /**
      * Standard toString method.
@@ -168,14 +264,15 @@ public abstract class AttributeTypeDef extends TypeDefElementHeader
     public String toString()
     {
         return "AttributeTypeDef{" +
-                "category=" + category +
+                "version=" + version +
+                ", versionName='" + versionName + '\'' +
+                ", category=" + category +
                 ", guid='" + guid + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", descriptionGUID='" + descriptionGUID + '\'' +
                 '}';
     }
-
 
     /**
      * Validated that the GUID, name and version number of a TypeDef are equal.
@@ -195,11 +292,14 @@ public abstract class AttributeTypeDef extends TypeDefElementHeader
             return false;
         }
         AttributeTypeDef that = (AttributeTypeDef) object;
-        return category == that.category &&
+        return version == that.version &&
+                Objects.equals(versionName, that.versionName) &&
+                category == that.category &&
                 Objects.equals(guid, that.guid) &&
-                Objects.equals(name, that.name);
+                Objects.equals(name, that.name) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(descriptionGUID, that.descriptionGUID);
     }
-
 
     /**
      * Using the GUID as a hashcode - it should be unique if all connected metadata repositories are behaving properly.

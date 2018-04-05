@@ -18,6 +18,8 @@
 package org.apache.atlas.omrs.rest.repositoryconnector;
 
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
+import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 
@@ -29,8 +31,6 @@ import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 public class OMRSRESTRepositoryConnector extends OMRSRepositoryConnector
 {
     private OMRSRESTMetadataCollection  metadataCollection   = null;
-    private String                      metadataCollectionId = null;
-
 
     /**
      * Default constructor used by the OCF Connector Provider.
@@ -53,9 +53,12 @@ public class OMRSRESTRepositoryConnector extends OMRSRepositoryConnector
         this.metadataCollectionId = metadataCollectionId;
 
         /*
-         * Initialize the metadata collection only once the connector is properly set up.
+         * Initialize the metadata collection.
          */
-        metadataCollection = new OMRSRESTMetadataCollection(this, metadataCollectionId);
+        metadataCollection = new OMRSRESTMetadataCollection(this,
+                                                            repositoryHelper,
+                                                            repositoryValidator,
+                                                            metadataCollectionId);
     }
 
 
@@ -69,7 +72,18 @@ public class OMRSRESTRepositoryConnector extends OMRSRepositoryConnector
     {
         if (metadataCollection == null)
         {
-            // TODO Throw exception since it means the local metadata collection id is not set up.
+            final String      methodName = "getMetadataCollection";
+
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_METADATA_COLLECTION;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(super.serverName);
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
         return metadataCollection;
     }

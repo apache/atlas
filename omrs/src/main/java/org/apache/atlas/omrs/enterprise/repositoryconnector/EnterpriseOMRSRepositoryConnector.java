@@ -17,14 +17,20 @@
  */
 package org.apache.atlas.omrs.enterprise.repositoryconnector;
 
+import org.apache.atlas.ocf.Connector;
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
+import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
 import org.apache.atlas.omrs.enterprise.connectormanager.OMRSConnectorConsumer;
 import org.apache.atlas.omrs.enterprise.connectormanager.OMRSConnectorManager;
 import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -57,6 +63,7 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
     private FederatedConnector               localCohortConnector             = null;
     private ArrayList<FederatedConnector>    remoteCohortConnectors           = new ArrayList<>();
 
+    private static final Logger log = LoggerFactory.getLogger(EnterpriseOMRSRepositoryConnector.class);
 
     /**
      * Constructor used by the EnterpriseOMRSConnectorProvider.
@@ -106,6 +113,8 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
         if (metadataCollectionId != null)
         {
             enterpriseMetadataCollection = new EnterpriseOMRSMetadataCollection(this,
+                                                                                repositoryHelper,
+                                                                                repositoryValidator,
                                                                                 enterpriseMetadataCollectionId,
                                                                                 enterpriseMetadataCollectionName);
 
@@ -143,12 +152,25 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
     }
 
     /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public void start() throws ConnectorCheckedException
+    {
+        super.start();
+    }
+
+
+    /**
      * Free up any resources held since the connector is no longer needed.
      *
      * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
      */
     public void disconnect() throws ConnectorCheckedException
     {
+        super.disconnect();
+
         if ((connectorManager != null) && (connectorConsumerId != null))
         {
             connectorManager.unregisterConnectorConsumer(connectorConsumerId);
@@ -228,9 +250,31 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
 
 
     /**
+     * Return a repository helper that can be used by an OMAS to create types and instance objects.
+     *
+     * @return an OMRSRepositoryHelper object that is linked to the repository content manager for this server.
+     */
+    public OMRSRepositoryHelper getRepositoryHelper()
+    {
+        return super.repositoryHelper;
+    }
+
+
+    /**
+     * Return a repository validator that can be used by an OMAS to validate types and instance objects.
+     *
+     * @return an OMRSRepositoryValidator object that is linked to the repository content manager for this server.
+     */
+    public OMRSRepositoryValidator getRepositoryValidator()
+    {
+        return super.repositoryValidator;
+    }
+
+
+    /**
      * Save the connector to the local repository.  This is passed from the OMRSConnectorManager.
      *
-     * @param metadataCollectionId - Unique identifier for the metadata collection
+     * @param metadataCollectionId - Unique identifier for the metadata collection.
      * @param localConnector - OMRSRepositoryConnector object for the local repository.
      */
     public void setLocalConnector(String                  metadataCollectionId,
@@ -252,7 +296,7 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
     /**
      * Pass the connector to one of the remote repositories in the metadata repository cohort.
      *
-     * @param metadataCollectionId - Unique identifier for the metadata collection
+     * @param metadataCollectionId - Unique identifier for the metadata collection.
      * @param remoteConnector - OMRSRepositoryConnector object providing access to the remote repository.
      */
     public void addRemoteConnector(String                  metadataCollectionId,
@@ -282,6 +326,7 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
 
             if (registeredConnector.getMetadataCollectionId().equals(metadataCollectionId))
             {
+                this.disconnectConnector(registeredConnector);
                 iterator.remove();
             }
         }
@@ -292,9 +337,50 @@ public class EnterpriseOMRSRepositoryConnector extends OMRSRepositoryConnector i
      */
     public void disconnectAllConnectors()
     {
-        // TODO
+        if (localCohortConnector != null)
+        {
+            this.disconnectConnector(localCohortConnector);
+
+            if (remoteCohortConnectors != null)
+            {
+                for (FederatedConnector  remoteConnector : remoteCohortConnectors)
+                {
+                    if (remoteConnector != null)
+                    {
+                        this.disconnectConnector(remoteConnector);
+                    }
+                }
+            }
+        }
     }
 
+
+    /**
+     * Issue a disconnect call on the supplied connector.
+     *
+     * @param federatedConnector - connector to disconnect.
+     */
+    private void disconnectConnector(FederatedConnector  federatedConnector)
+    {
+        Connector    connector = null;
+
+        if (federatedConnector != null)
+        {
+            connector = federatedConnector.getConnector();
+        }
+
+        if (connector != null)
+        {
+            try
+            {
+                connector.disconnect();
+            }
+            catch (Throwable  error)
+            {
+                log.error("Exception from disconnect of connector to metadata collection:" + federatedConnector.getMetadataCollectionId() + "  Error message was: " + error.getMessage());
+            }
+        }
+    }
 
     /**
      * FederatedConnector is a private class for storing details of each of the connectors to the repositories

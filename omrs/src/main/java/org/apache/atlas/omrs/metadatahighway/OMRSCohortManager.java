@@ -24,6 +24,8 @@ import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSConnectorErrorException;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.OMRSCohortRegistry;
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.OMRSCohortRegistryStore;
 import org.apache.atlas.omrs.eventmanagement.*;
@@ -73,6 +75,7 @@ public class OMRSCohortManager
      * @param localOrganizationName - the name of the organization that owns the local server/repository.
      *                              It is a descriptive name for informational purposes.
      * @param localRepository - link to the local repository - may be null.
+     * @param localRepositoryContentManager - the content manager that stores information about the known types
      * @param connectionConsumer - The connection consumer is a component interested in maintaining details of the
      *                           connections to each of the members of the open metadata repository cohort.  If it is
      *                           null, the cohort registry does not publish connections for members of the open
@@ -89,6 +92,7 @@ public class OMRSCohortManager
                            String                           localServerType,
                            String                           localOrganizationName,
                            OMRSLocalRepository              localRepository,
+                           OMRSRepositoryContentManager     localRepositoryContentManager,
                            OMRSConnectionConsumer           connectionConsumer,
                            OMRSTopicConnector               enterpriseTopicConnector,
                            OMRSCohortRegistryStore          cohortRegistryStore,
@@ -126,7 +130,8 @@ public class OMRSCohortManager
             /*
              * Create the event manager for processing incoming events from the cohort's OMRS Topic.
              */
-            this.cohortRepositoryEventManager = new OMRSRepositoryEventManager(inboundEventExchangeRule);
+            this.cohortRepositoryEventManager = new OMRSRepositoryEventManager(inboundEventExchangeRule,
+                                                                               new OMRSRepositoryValidator(localRepositoryContentManager));
 
             /*
              * Create an event publisher for the cohort registry to use to send registration requests.
@@ -134,6 +139,11 @@ public class OMRSCohortManager
             OMRSEventPublisher outboundRegistryEventProcessor = new OMRSEventPublisher(cohortName,
                                                                                        eventProtocolVersion,
                                                                                        cohortTopicConnector);
+
+            /*
+             * Create the cohort registry.
+             */
+            this.cohortRegistry = new OMRSCohortRegistry();
 
             /*
              * The presence/absence of the local repository affects the behaviour of the cohort registry.
@@ -299,15 +309,6 @@ public class OMRSCohortManager
         try
         {
             cohortConnectionStatus = CohortConnectionStatus.DISCONNECTING;
-
-            OMRSAuditCode auditCode = OMRSAuditCode.COHORT_DISCONNECTING;
-            auditLog.logRecord(actionDescription,
-                               auditCode.getLogMessageId(),
-                               auditCode.getSeverity(),
-                               auditCode.getFormattedLogMessage(cohortName),
-                               null,
-                               auditCode.getSystemAction(),
-                               auditCode.getUserAction());
 
             if (cohortRegistry != null)
             {

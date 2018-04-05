@@ -18,10 +18,10 @@
 package org.apache.atlas.omrs.auditlog.store;
 
 import org.apache.atlas.omrs.ffdc.exception.PagingErrorException;
-import org.apache.atlas.omrs.ffdc.exception.PropertyErrorException;
+import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * OMRSAuditLogStore is the specialized data API for an Audit Log connector.
@@ -33,9 +33,9 @@ public interface OMRSAuditLogStore
      *
      * @param logRecord - log record to store
      * @return unique identifier assigned to the log record
-     * @throws PropertyErrorException - indicates that the logRecord parameter is invalid.
+     * @throws InvalidParameterException - indicates that the logRecord parameter is invalid.
      */
-    String storeLogRecord(OMRSAuditLogRecord logRecord) throws PropertyErrorException;
+    String storeLogRecord(OMRSAuditLogRecord logRecord) throws InvalidParameterException;
 
 
     /**
@@ -43,9 +43,9 @@ public interface OMRSAuditLogStore
      *
      * @param logRecordId - unique identifier for the log record
      * @return requested audit log record
-     * @throws PropertyErrorException - indicates that the logRecordId parameter is invalid.
+     * @throws InvalidParameterException - indicates that the logRecordId parameter is invalid.
      */
-    OMRSAuditLogRecord  getAuditLogRecord(String     logRecordId) throws PropertyErrorException;
+    OMRSAuditLogRecord  getAuditLogRecord(String     logRecordId) throws InvalidParameterException;
 
 
     /**
@@ -57,14 +57,14 @@ public interface OMRSAuditLogStore
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
-    ArrayList<OMRSAuditLogRecord> getAuditLogRecordsByTimeStamp(Date    startDate,
-                                                                Date    endDate,
-                                                                int     offset,
-                                                                int     maximumRecords) throws PropertyErrorException,
-                                                                                               PagingErrorException;
+    List<OMRSAuditLogRecord> getAuditLogRecordsByTimeStamp(Date    startDate,
+                                                           Date    endDate,
+                                                           int     offset,
+                                                           int     maximumRecords) throws InvalidParameterException,
+                                                                                          PagingErrorException;
 
     /**
      * Retrieve a list of log records that have specific severity.  The offset and maximumRecords
@@ -76,15 +76,15 @@ public interface OMRSAuditLogStore
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the severity, start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the severity, start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
-    ArrayList<OMRSAuditLogRecord> getAuditLogRecordsBySeverity(String   severity,
-                                                               Date     startDate,
-                                                               Date     endDate,
-                                                               int      offset,
-                                                               int      maximumRecords) throws PropertyErrorException,
-                                                                                               PagingErrorException;
+    List<OMRSAuditLogRecord> getAuditLogRecordsBySeverity(String   severity,
+                                                          Date     startDate,
+                                                          Date     endDate,
+                                                          int      offset,
+                                                          int      maximumRecords) throws InvalidParameterException,
+                                                                                          PagingErrorException;
 
     /**
      * Retrieve a list of log records written by a specific component.  The offset and maximumRecords
@@ -96,13 +96,13 @@ public interface OMRSAuditLogStore
      * @param offset - offset of full collection to begin the return results
      * @param maximumRecords - maximum number of log records to return
      * @return list of log records from the specified time period
-     * @throws PropertyErrorException - indicates that the component, start and/or end date parameters are invalid.
+     * @throws InvalidParameterException - indicates that the component, start and/or end date parameters are invalid.
      * @throws PagingErrorException - indicates that the offset or the maximumRecords parameters are invalid.
      */
-    ArrayList<OMRSAuditLogRecord> getAuditLogRecordsByComponent(String   component,
-                                                                Date     startDate,
-                                                                Date     endDate,
-                                                                int      offset,
-                                                                int      maximumRecords) throws PropertyErrorException,
-                                                                                                PagingErrorException;
+    List<OMRSAuditLogRecord> getAuditLogRecordsByComponent(String   component,
+                                                           Date     startDate,
+                                                           Date     endDate,
+                                                           int      offset,
+                                                           int      maximumRecords) throws InvalidParameterException,
+                                                                                           PagingErrorException;
 }

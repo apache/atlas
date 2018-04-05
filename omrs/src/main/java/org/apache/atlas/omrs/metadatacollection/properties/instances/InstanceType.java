@@ -17,14 +17,24 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCategory;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefLink;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * InstanceType contains information from the instance's TypeDef that are useful for processing the instance.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class InstanceType extends InstanceElementHeader
 {
     private TypeDefCategory           typeDefCategory         = TypeDefCategory.UNKNOWN_DEF;
@@ -65,9 +75,9 @@ public class InstanceType extends InstanceElementHeader
                         long                      typeDefVersion,
                         String                    typeDefDescription,
                         String                    typeDefDescriptionGUID,
-                        ArrayList<TypeDefLink>    typeDefSuperTypes,
-                        ArrayList<InstanceStatus> validStatusList,
-                        ArrayList<String>         validInstanceProperties)
+                        List<TypeDefLink>         typeDefSuperTypes,
+                        List<InstanceStatus>      validStatusList,
+                        List<String>              validInstanceProperties)
     {
         this.typeDefCategory = typeDefCategory;
         this.typeDefGUID = typeDefGUID;
@@ -75,9 +85,9 @@ public class InstanceType extends InstanceElementHeader
         this.typeDefVersion = typeDefVersion;
         this.typeDefDescription = typeDefDescription;
         this.typeDefDescriptionGUID = typeDefDescriptionGUID;
-        this.typeDefSuperTypes = typeDefSuperTypes;
-        this.validStatusList = validStatusList;
-        this.validInstanceProperties = validInstanceProperties;
+        this.setTypeDefSuperTypes(typeDefSuperTypes);
+        this.setValidStatusList(validStatusList);
+        this.setValidInstanceProperties(validInstanceProperties);
     }
 
 
@@ -96,9 +106,9 @@ public class InstanceType extends InstanceElementHeader
             typeDefVersion = template.getTypeDefVersion();
             typeDefDescription = template.getTypeDefDescription();
             typeDefDescriptionGUID = template.getTypeDefDescriptionGUID();
-            typeDefSuperTypes = template.getTypeDefSuperTypes();
-            validStatusList = template.getValidStatusList();
-            validInstanceProperties = template.getValidInstanceProperties();
+            setTypeDefSuperTypes(template.getTypeDefSuperTypes());
+            setValidStatusList(template.getValidStatusList());
+            setValidInstanceProperties(template.getValidInstanceProperties());
         }
     }
 
@@ -180,9 +190,16 @@ public class InstanceType extends InstanceElementHeader
      *
      * @return list of types
      */
-    public ArrayList<TypeDefLink> getTypeDefSuperTypes()
+    public List<TypeDefLink> getTypeDefSuperTypes()
     {
-        return typeDefSuperTypes;
+        if (typeDefSuperTypes == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(typeDefSuperTypes);
+        }
     }
 
 
@@ -191,10 +208,18 @@ public class InstanceType extends InstanceElementHeader
      *
      * @param typeDefSuperTypes - list of type names
      */
-    public void setTypeDefSuperTypes(ArrayList<TypeDefLink> typeDefSuperTypes)
+    public void setTypeDefSuperTypes(List<TypeDefLink> typeDefSuperTypes)
     {
-        this.typeDefSuperTypes = typeDefSuperTypes;
+        if (typeDefSuperTypes == null)
+        {
+            this.typeDefSuperTypes = null;
+        }
+        else
+        {
+            this.typeDefSuperTypes = new ArrayList<>(typeDefSuperTypes);
+        }
     }
+
 
     /**
      * Return the description for the TypeDef.
@@ -245,11 +270,11 @@ public class InstanceType extends InstanceElementHeader
      *
      * @return InstanceStatus array of supported status.
      */
-    public ArrayList<InstanceStatus> getValidStatusList()
+    public List<InstanceStatus> getValidStatusList()
     {
         if ( validStatusList == null)
         {
-            return validStatusList;
+            return null;
         }
         else
         {
@@ -263,7 +288,17 @@ public class InstanceType extends InstanceElementHeader
      *
      * @param validStatusList - InstanceStatus Array
      */
-    public void setValidStatusList(ArrayList<InstanceStatus> validStatusList) { this.validStatusList = validStatusList; }
+    public void setValidStatusList(List<InstanceStatus> validStatusList)
+    {
+        if (validStatusList == null)
+        {
+            this.validStatusList = null;
+        }
+        else
+        {
+            this.validStatusList = new ArrayList<>(validStatusList);
+        }
+    }
 
 
     /**
@@ -271,9 +306,16 @@ public class InstanceType extends InstanceElementHeader
      *
      * @return array of property names.
      */
-    public ArrayList<String> getValidInstanceProperties()
+    public List<String> getValidInstanceProperties()
     {
-        return validInstanceProperties;
+        if (validInstanceProperties == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(validInstanceProperties);
+        }
     }
 
 
@@ -282,9 +324,16 @@ public class InstanceType extends InstanceElementHeader
      *
      * @param validInstanceProperties - array of property names.
      */
-    public void setValidInstanceProperties(ArrayList<String> validInstanceProperties)
+    public void setValidInstanceProperties(List<String> validInstanceProperties)
     {
-        this.validInstanceProperties = validInstanceProperties;
+        if (validInstanceProperties == null)
+        {
+            this.validInstanceProperties = null;
+        }
+        else
+        {
+            this.validInstanceProperties = new ArrayList<>(validInstanceProperties);
+        }
     }
 
 

@@ -22,13 +22,13 @@ package org.apache.atlas.ocf.properties;
  * Meaning is a cut-down summary of a glossary term to aid the asset consumer in understanding the content
  * of an asset.
  */
-public class Meaning extends Referenceable
+public class Meaning extends ElementHeader
 {
     /*
      * Attributes of a meaning object definition
      */
-    private String      name = null;
-    private String      description = null;
+    protected String      name = null;
+    protected String      description = null;
 
 
     /**
@@ -39,9 +39,6 @@ public class Meaning extends Referenceable
      * @param guid - String - unique id
      * @param url - String - URL
      * @param classifications - enumeration of classifications
-     * @param qualifiedName - unique name
-     * @param additionalProperties - additional properties for the referenceable object
-     * @param meanings - list of glossary terms (summary) attached to this glossary term - often additional context
      * @param name - name of the glossary term
      * @param description - description of the glossary term.
      */
@@ -50,13 +47,10 @@ public class Meaning extends Referenceable
                    String               guid,
                    String               url,
                    Classifications      classifications,
-                   String               qualifiedName,
-                   AdditionalProperties additionalProperties,
-                   Meanings             meanings,
                    String               name,
                    String               description)
     {
-        super(parentAsset, type, guid, url, classifications, qualifiedName, additionalProperties, meanings);
+        super(parentAsset, type, guid, url, classifications);
 
         this.name = name;
         this.description = description;
@@ -120,12 +114,10 @@ public class Meaning extends Referenceable
         return "Meaning{" +
                 "name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", qualifiedName='" + qualifiedName + '\'' +
-                ", additionalProperties=" + additionalProperties +
-                ", meanings=" + meanings +
                 ", type=" + type +
                 ", guid='" + guid + '\'' +
                 ", url='" + url + '\'' +
+                ", classifications=" + classifications +
                 '}';
     }
 }

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -41,27 +42,68 @@ public class CohortMembership implements Serializable
     private MemberRegistration            localRegistration   = null;
     private ArrayList<MemberRegistration> remoteRegistrations = null;
 
+    /**
+     * Default constructor
+     */
     public CohortMembership()
     {
     }
 
+
+    /**
+     * Return the description of the local server's registration with the cohort.
+     *
+     * @return local registration object
+     */
     public MemberRegistration getLocalRegistration()
     {
         return localRegistration;
     }
 
+
+    /**
+     * Set up the description of the local server's registration with the cohort.
+     *
+     * @param localRegistration - local registration object
+     */
     public void setLocalRegistration(MemberRegistration localRegistration)
     {
         this.localRegistration = localRegistration;
     }
 
-    public ArrayList<MemberRegistration> getRemoteRegistrations()
+
+    /**
+     * Return details of each of the remote repositories registered with this cohort.
+     *
+     * @return details about the remote members of the cohort
+     */
+    public List<MemberRegistration> getRemoteRegistrations()
     {
-        return remoteRegistrations;
+        if (remoteRegistrations == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(remoteRegistrations);
+        }
     }
 
-    public void setRemoteRegistrations(ArrayList<MemberRegistration> remoteRegistrations)
+
+    /**
+     * Set up details of each of the remote repositories registered with this cohort.
+     *
+     * @param remoteRegistrations - details about the remote members of the cohort
+     */
+    public void setRemoteRegistrations(List<MemberRegistration> remoteRegistrations)
     {
-        this.remoteRegistrations = remoteRegistrations;
+        if (remoteRegistrations == null)
+        {
+            this.remoteRegistrations = null;
+        }
+        else
+        {
+            this.remoteRegistrations = new ArrayList<>(remoteRegistrations);
+        }
     }
 }

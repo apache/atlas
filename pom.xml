@@ -730,6 +730,8 @@
         <module>test-tools</module>
 
         <module>om-fwk-ocf</module>
+        <module>omrs</module>
+        <module>omag-api</module>
         <module>intg</module>
         <module>common</module>
         <module>server-api</module>

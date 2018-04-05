@@ -19,9 +19,13 @@
 package org.apache.atlas.omrs.archivemanager;
 
 import org.apache.atlas.omrs.archivemanager.properties.*;
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
+import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -39,15 +43,29 @@ public class OMRSArchiveBuilder
     /*
      * Hash maps for accumulating TypeDefs and instances as the content of the archive is built up.
      */
-    private Map<String, PrimitiveDef>      primitiveDefMap      = new HashMap<>();
-    private Map<String, CollectionDef>     collectionDefMap     = new HashMap<>();
-    private Map<String, EnumDef>           enumDefMap           = new HashMap<>();
-    private Map<String, ClassificationDef> classificationDefMap = new HashMap<>();
-    private Map<String, EntityDef>         entityDefMap         = new HashMap<>();
-    private Map<String, RelationshipDef>   relationshipDefMap   = new HashMap<>();
-    private Map<String, TypeDefPatch>      typeDefPatchMap      = new HashMap<>();
-    private Map<String, EntityDetail>      entityDetailMap      = new HashMap<>();
-    private Map<String, Relationship>      relationshipMap      = new HashMap<>();
+    private Map<String, PrimitiveDef>      primitiveDefMap       = new HashMap<>();
+    private ArrayList<PrimitiveDef>        primitiveDefList      = new ArrayList<>();
+    private Map<String, EnumDef>           enumDefMap            = new HashMap<>();
+    private ArrayList<EnumDef>             enumDefList           = new ArrayList<>();
+    private Map<String, CollectionDef>     collectionDefMap      = new HashMap<>();
+    private ArrayList<CollectionDef>       collectionDefList     = new ArrayList<>();
+    private Map<String, ClassificationDef> classificationDefMap  = new HashMap<>();
+    private ArrayList<ClassificationDef>   classificationDefList = new ArrayList<>();
+    private Map<String, EntityDef>         entityDefMap          = new HashMap<>();
+    private ArrayList<EntityDef>           entityDefList         = new ArrayList<>();
+    private Map<String, RelationshipDef>   relationshipDefMap    = new HashMap<>();
+    private ArrayList<RelationshipDef>     relationshipDefList   = new ArrayList<>();
+    private Map<String, TypeDefPatch>      typeDefPatchMap       = new HashMap<>();
+    private ArrayList<TypeDefPatch>        typeDefPatchList      = new ArrayList<>();
+    private Map<String, EntityDetail>      entityDetailMap       = new HashMap<>();
+    private ArrayList<EntityDetail>        entityDetailList      = new ArrayList<>();
+    private Map<String, Relationship>      relationshipMap       = new HashMap<>();
+    private ArrayList<Relationship>        relationshipList      = new ArrayList<>();
+    private Map<String, Object>            guidMap               = new HashMap<>();
+    private Map<String, Object>            nameMap               = new HashMap<>();
+
+
+    private static final Logger log = LoggerFactory.getLogger(OMRSArchiveBuilder.class);
 
 
     /**
@@ -84,13 +102,126 @@ public class OMRSArchiveBuilder
     /**
      * Add a new PrimitiveDef to the archive.
      *
-     * @param primitiveDef - type to add
+     * @param primitiveDef - type to add - nulls are ignored
      */
     public void addPrimitiveDef(PrimitiveDef   primitiveDef)
     {
+        final String methodName = "addPrimitiveDef()";
+
         if (primitiveDef != null)
         {
-            primitiveDefMap.put(primitiveDef.getName(), primitiveDef);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding PrimitiveDef: " + primitiveDef.toString());
+            }
+
+            PrimitiveDef duplicateElement = primitiveDefMap.put(primitiveDef.getName(), primitiveDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(primitiveDef.getName(),
+                                                                                AttributeTypeDefCategory.PRIMITIVE.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                primitiveDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(primitiveDef.getGUID(), primitiveDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(primitiveDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                primitiveDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(primitiveDef.getName(), primitiveDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(primitiveDef.getGUID(),
+                                                                                duplicateName.toString(),
+                                                                                primitiveDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            primitiveDefList.add(primitiveDef);
+        }
+    }
+
+
+    /**
+     * Retrieve a PrimitiveDef from the archive.
+     *
+     * @param primitiveDefName - primitive to retrieve
+     */
+    public PrimitiveDef getPrimitiveDef(String   primitiveDefName)
+    {
+        final String methodName = "getPrimitiveDef()";
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("Retrieving PrimitiveDef: " + primitiveDefName);
+        }
+
+        if (primitiveDefName != null)
+        {
+            PrimitiveDef   primitiveDef  = primitiveDefMap.get(primitiveDefName);
+
+            if (primitiveDef == null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.MISSING_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(primitiveDefName,
+                                                                                AttributeTypeDefCategory.PRIMITIVE.getTypeName());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            return primitiveDef;
+        }
+        else
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.MISSING_NAME_FOR_ARCHIVE;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(AttributeTypeDefCategory.PRIMITIVE.getTypeName());
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
     }
 
@@ -102,9 +233,122 @@ public class OMRSArchiveBuilder
      */
     public void addCollectionDef(CollectionDef  collectionDef)
     {
+        final String methodName = "addCollectionDef()";
+
         if (collectionDef != null)
         {
-            collectionDefMap.put(collectionDef.getName(), collectionDef);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding CollectionDef: " + collectionDef.toString());
+            }
+
+            CollectionDef duplicateElement = collectionDefMap.put(collectionDef.getName(), collectionDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(collectionDef.getName(),
+                                                                                AttributeTypeDefCategory.COLLECTION.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                collectionDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(collectionDef.getGUID(), collectionDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(collectionDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                collectionDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(collectionDef.getName(), collectionDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(collectionDef.getGUID(),
+                                                                                duplicateName.toString(),
+                                                                                collectionDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            collectionDefList.add(collectionDef);
+        }
+    }
+
+
+    /**
+     * Retrieve a CollectionDef from the archive.
+     *
+     * @param collectionDefName - type to retrieve
+     */
+    public CollectionDef getCollectionDef(String  collectionDefName)
+    {
+        final String methodName = "getCollectionDef()";
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("Retrieving CollectionDef: " + collectionDefName);
+        }
+
+        if (collectionDefName != null)
+        {
+            CollectionDef  collectionDef = collectionDefMap.get(collectionDefName);
+
+            if (collectionDef == null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.MISSING_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(collectionDefName,
+                                                                                AttributeTypeDefCategory.COLLECTION.getTypeName());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            return collectionDef;
+        }
+        else
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.MISSING_NAME_FOR_ARCHIVE;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(AttributeTypeDefCategory.COLLECTION.getTypeName());
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
     }
 
@@ -116,9 +360,123 @@ public class OMRSArchiveBuilder
      */
     public void addEnumDef(EnumDef    enumDef)
     {
+        final String methodName = "addEnumDef()";
+
         if (enumDef != null)
         {
-            enumDefMap.put(enumDef.getName(), enumDef);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding EnumDef: " + enumDef.toString());
+            }
+
+            EnumDef duplicateElement = enumDefMap.put(enumDef.getName(), enumDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(enumDef.getName(),
+                                                                                AttributeTypeDefCategory.ENUM_DEF.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                enumDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(enumDef.getGUID(), enumDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(enumDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                enumDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(enumDef.getName(), enumDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(enumDef.getGUID(),
+                                                                                duplicateName.toString(),
+                                                                                enumDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            enumDefList.add(enumDef);
+        }
+    }
+
+
+    /**
+     * Get an existing EnumDef from the archive.
+     *
+     * @param enumDefName - type to retrieve
+     * @return EnumDef object
+     */
+    public EnumDef getEnumDef(String    enumDefName)
+    {
+        final String methodName = "getEnumDef()";
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("Retrieving EnumDef: " + enumDefName);
+        }
+
+        if (enumDefName != null)
+        {
+            EnumDef enumDef = enumDefMap.get(enumDefName);
+
+            if (enumDef == null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.MISSING_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(enumDefName,
+                                                                                AttributeTypeDefCategory.ENUM_DEF.getTypeName());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            return enumDef;
+        }
+        else
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.MISSING_NAME_FOR_ARCHIVE;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(AttributeTypeDefCategory.ENUM_DEF.getTypeName());
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
     }
 
@@ -130,9 +488,71 @@ public class OMRSArchiveBuilder
      */
     public void addClassificationDef(ClassificationDef   classificationDef)
     {
+        final String methodName = "addClassificationDef()";
+
         if (classificationDef != null)
         {
-            classificationDefMap.put(classificationDef.getName(), classificationDef);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding ClassificationDef: " + classificationDef.toString());
+            }
+
+            ClassificationDef duplicateElement = classificationDefMap.put(classificationDef.getName(), classificationDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(classificationDef.getName(),
+                                                                                TypeDefCategory.CLASSIFICATION_DEF.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                classificationDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(classificationDef.getGUID(), classificationDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(classificationDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                classificationDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(classificationDef.getName(), classificationDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(classificationDef.getName(),
+                                                                                duplicateName.toString(),
+                                                                                classificationDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            classificationDefList.add(classificationDef);
         }
     }
 
@@ -144,14 +564,71 @@ public class OMRSArchiveBuilder
      */
     public void addEntityDef(EntityDef    entityDef)
     {
+        final String methodName = "addEntityDef()";
+
         if (entityDef != null)
         {
-            EntityDef   previousDef = entityDefMap.put(entityDef.getName(), entityDef);
-
-            if (previousDef != null)
+            if (log.isDebugEnabled())
             {
-                // TODO log a duplicate
+                log.debug("Adding EntityDef: " + entityDef.toString());
             }
+
+            EntityDef duplicateElement = entityDefMap.put(entityDef.getName(), entityDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(entityDef.getName(),
+                                                                                TypeDefCategory.ENTITY_DEF.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                entityDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(entityDef.getGUID(), entityDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(entityDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                entityDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(entityDef.getName(), entityDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(entityDef.getName(),
+                                                                                duplicateName.toString(),
+                                                                                entityDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            entityDefList.add(entityDef);
         }
     }
 
@@ -164,23 +641,46 @@ public class OMRSArchiveBuilder
      */
     public EntityDef  getEntityDef(String   entityDefName)
     {
+        final String methodName = "getEntityDef()";
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("Retrieving EntityDef: " + entityDefName);
+        }
+
         if (entityDefName != null)
         {
             EntityDef retrievedEntityDef = entityDefMap.get(entityDefName);
 
-            if (retrievedEntityDef != null)
+            if (retrievedEntityDef == null)
             {
-                return retrievedEntityDef;
+                OMRSErrorCode errorCode = OMRSErrorCode.MISSING_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(entityDefName,
+                                                                                TypeDefCategory.ENTITY_DEF.getTypeName());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
             }
-            else
-            {
-                // TODO Throw exception
-                return null; /* temporary */
-            }
+
+            return retrievedEntityDef;
         }
         else
         {
-            return null;
+            OMRSErrorCode errorCode = OMRSErrorCode.MISSING_NAME_FOR_ARCHIVE;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(TypeDefCategory.ENTITY_DEF.getTypeName());
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
     }
 
@@ -192,9 +692,71 @@ public class OMRSArchiveBuilder
      */
     public void addRelationshipDef(RelationshipDef   relationshipDef)
     {
+        final String methodName = "addRelationshipDef()";
+
         if (relationshipDef != null)
         {
-            relationshipDefMap.put(relationshipDef.getName(), relationshipDef);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding RelationshipDef: " + relationshipDef.toString());
+            }
+
+            RelationshipDef duplicateElement = relationshipDefMap.put(relationshipDef.getName(), relationshipDef);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(relationshipDef.getName(),
+                                                                                TypeDefCategory.RELATIONSHIP_DEF.getTypeName(),
+                                                                                duplicateElement.toString(),
+                                                                                relationshipDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(relationshipDef.getGUID(), relationshipDef);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(relationshipDef.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                relationshipDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateName = nameMap.put(relationshipDef.getName(), relationshipDef);
+
+            if (duplicateName != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(relationshipDef.getName(),
+                                                                                duplicateName.toString(),
+                                                                                relationshipDef.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            relationshipDefList.add(relationshipDef);
         }
     }
 
@@ -206,9 +768,53 @@ public class OMRSArchiveBuilder
      */
     public void addEntity(EntityDetail   entity)
     {
+        final String methodName = "addEntity()";
+
         if (entity != null)
         {
-            entityDetailMap.put(entity.getGUID(), entity);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding Entity: " + entity.toString());
+            }
+
+            EntityDetail   duplicateElement = entityDetailMap.put(entity.getGUID(), entity);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_INSTANCE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(TypeDefCategory.ENTITY_DEF.getTypeName(),
+                                                                                entity.getGUID(),
+                                                                                duplicateElement.toString(),
+                                                                                entity.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(entity.getGUID(), entity);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(entity.getGUID(),
+                                                                                duplicateGUID.toString(),
+                                                                                entity.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            entityDetailList.add(entity);
         }
     }
 
@@ -220,9 +826,53 @@ public class OMRSArchiveBuilder
      */
     public void addRelationship(Relationship  relationship)
     {
+        final String methodName = "addRelationship()";
+
         if (relationship != null)
         {
-            relationshipMap.put(relationship.getGUID(), relationship);
+            if (log.isDebugEnabled())
+            {
+                log.debug("Adding Relationship: " + relationship.toString());
+            }
+
+            Relationship   duplicateElement = relationshipMap.put(relationship.getGUID(), relationship);
+
+            if (duplicateElement != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_INSTANCE_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(TypeDefCategory.ENTITY_DEF.getTypeName(),
+                                                                                relationship.getGUID(),
+                                                                                duplicateElement.toString(),
+                                                                                relationship.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            Object  duplicateGUID = guidMap.put(relationship.getGUID(), relationship);
+
+            if (duplicateGUID != null)
+            {
+                OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_GUID_IN_ARCHIVE;
+                String        errorMessage = errorCode.getErrorMessageId()
+                        + errorCode.getFormattedErrorMessage(relationship.getGUID(),
+                                                             duplicateGUID.toString(),
+                                                             relationship.toString());
+
+                throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                                  this.getClass().getName(),
+                                                  methodName,
+                                                  errorMessage,
+                                                  errorCode.getSystemAction(),
+                                                  errorCode.getUserAction());
+            }
+
+            relationshipList.add(relationship);
         }
     }
 
@@ -234,6 +884,13 @@ public class OMRSArchiveBuilder
      */
     public OpenMetadataArchive  getOpenMetadataArchive()
     {
+        final String methodName = "getOpenMetadataArchive()";
+
+        if (log.isDebugEnabled())
+        {
+            log.debug("Retrieving Open Metadata Archive: " + archiveProperties.getArchiveName());
+        }
+
         OpenMetadataArchive    archive = new OpenMetadataArchive();
 
         /*
@@ -244,41 +901,41 @@ public class OMRSArchiveBuilder
         /*
          * Set up the TypeStore.  The types are added in a strict order to ensure that the dependencies are resolved.
          */
-        ArrayList<AttributeTypeDef>  attributeTypeDefs = null;
+        ArrayList<AttributeTypeDef>  attributeTypeDefs = new ArrayList<>();
         ArrayList<TypeDef>           typeDefs = new ArrayList<>();
         ArrayList<TypeDefPatch>      typeDefPatches = new ArrayList<>();
 
-        if (! primitiveDefMap.isEmpty())
+        if (! primitiveDefList.isEmpty())
         {
-            attributeTypeDefs.addAll(primitiveDefMap.values());
+            attributeTypeDefs.addAll(primitiveDefList);
         }
-        if (! collectionDefMap.isEmpty())
+        if (! collectionDefList.isEmpty())
         {
-            attributeTypeDefs.addAll(collectionDefMap.values());
+            attributeTypeDefs.addAll(collectionDefList);
         }
-        if (! enumDefMap.isEmpty())
+        if (! enumDefList.isEmpty())
         {
-            attributeTypeDefs.addAll(enumDefMap.values());
+            attributeTypeDefs.addAll(enumDefList);
         }
-        if (! entityDefMap.isEmpty())
+        if (! entityDefList.isEmpty())
         {
-            typeDefs.addAll(entityDefMap.values());
+            typeDefs.addAll(entityDefList);
         }
-        if (! classificationDefMap.isEmpty())
+        if (! classificationDefList.isEmpty())
         {
-            typeDefs.addAll(classificationDefMap.values());
+            typeDefs.addAll(classificationDefList);
         }
-        if (! relationshipDefMap.isEmpty())
+        if (! relationshipDefList.isEmpty())
         {
-            typeDefs.addAll(relationshipDefMap.values());
-        }
-
-        if (! typeDefPatchMap.isEmpty())
-        {
-            typeDefPatches.addAll(typeDefPatchMap.values());
+            typeDefs.addAll(relationshipDefList);
         }
 
-        if ((! typeDefs.isEmpty()) || (! typeDefPatches.isEmpty()))
+        if (! typeDefPatchList.isEmpty())
+        {
+            typeDefPatches.addAll(typeDefPatchList);
+        }
+
+        if ((! typeDefs.isEmpty()) || (! typeDefPatches.isEmpty()) || (! attributeTypeDefs.isEmpty()))
         {
             OpenMetadataArchiveTypeStore   typeStore = new OpenMetadataArchiveTypeStore();
 
@@ -307,13 +964,13 @@ public class OMRSArchiveBuilder
         ArrayList<EntityDetail>  entities      = new ArrayList<>();
         ArrayList<Relationship>  relationships = new ArrayList<>();
 
-        if (! entityDetailMap.isEmpty())
+        if (! entityDetailList.isEmpty())
         {
-            entities.addAll(entityDetailMap.values());
+            entities.addAll(entityDetailList);
         }
-        if (! relationshipMap.isEmpty())
+        if (! relationshipList.isEmpty())
         {
-            relationships.addAll(relationshipMap.values());
+            relationships.addAll(relationshipList);
         }
 
         if ((! entities.isEmpty()) || (! relationships.isEmpty()))

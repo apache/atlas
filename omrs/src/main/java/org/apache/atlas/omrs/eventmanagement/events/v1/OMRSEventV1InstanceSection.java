@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.omrs.eventmanagement.events.v1;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSInstanceEventType;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
@@ -24,9 +27,15 @@ import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSumma
 
 import java.io.Serializable;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * OMRSEventV1InstanceSection describes the properties specific to instance events
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OMRSEventV1InstanceSection implements Serializable
 {
     private static final long serialVersionUID = 1L;

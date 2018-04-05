@@ -18,10 +18,18 @@
 package org.apache.atlas.omrs.admin.properties;
 
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * CohortConfig provides the configuration properties used to connect to an open metadata repository cohort.
@@ -56,6 +64,9 @@ import java.util.ArrayList;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class CohortConfig
 {
     private String                           cohortName                     = null;
@@ -214,9 +225,16 @@ public class CohortConfig
      *
      * @return list of TypeDefs that determine which metadata instances to process
      */
-    public ArrayList<TypeDefSummary> getSelectedTypesToProcess()
+    public List<TypeDefSummary> getSelectedTypesToProcess()
     {
-        return selectedTypesToProcess;
+        if (selectedTypesToProcess == null)
+        {
+            return null;
+        }
+        else
+        {
+            return selectedTypesToProcess;
+        }
     }
 
 
@@ -226,8 +244,15 @@ public class CohortConfig
      *
      * @param selectedTypesToProcess - list of TypeDefs that determine which metadata instances to process
      */
-    public void setSelectedTypesToProcess(ArrayList<TypeDefSummary> selectedTypesToProcess)
+    public void setSelectedTypesToProcess(List<TypeDefSummary> selectedTypesToProcess)
     {
-        this.selectedTypesToProcess = selectedTypesToProcess;
+        if (selectedTypesToProcess == null)
+        {
+            this.selectedTypesToProcess = null;
+        }
+        else
+        {
+            this.selectedTypesToProcess = new ArrayList<>(selectedTypesToProcess);
+        }
     }
 }

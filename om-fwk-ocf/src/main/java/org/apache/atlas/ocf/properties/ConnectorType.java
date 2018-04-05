@@ -63,9 +63,9 @@ public class ConnectorType extends Referenceable
     /*
      * Attributes of a connector type
      */
-    private   String                 displayName = null;
-    private   String                 description = null;
-    private   String                 connectorProviderClassName = null;
+    protected   String                 displayName = null;
+    protected   String                 description = null;
+    protected   String                 connectorProviderClassName = null;
 
     /**
      * Typical Constructor - used when Connector Type is used inside a connection object which is itself

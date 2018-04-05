@@ -18,11 +18,22 @@
 
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
- * TypeDefGallery contains details of the AttributeTypeDefs and full TypeDefs supported by a rep
+ * TypeDefGalleryResponse contains details of the AttributeTypeDefs and full TypeDefs supported by a rep
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TypeDefGallery
 {
     private ArrayList<AttributeTypeDef> attributeTypeDefs = null;
@@ -46,18 +57,11 @@ public class TypeDefGallery
     {
         if (template != null)
         {
-            ArrayList<AttributeTypeDef> templateAttributeTypeDefs = template.getAttributeTypeDefs();
-            ArrayList<TypeDef>          templateTypeDefs          = template.getTypeDefs();
+            List<AttributeTypeDef> templateAttributeTypeDefs = template.getAttributeTypeDefs();
+            List<TypeDef>          templateTypeDefs          = template.getTypeDefs();
 
-            if (templateAttributeTypeDefs != null)
-            {
-                attributeTypeDefs = new ArrayList<>(templateAttributeTypeDefs);
-            }
-
-            if (templateTypeDefs != null)
-            {
-                typeDefs = new ArrayList<>(templateTypeDefs);
-            }
+            this.setAttributeTypeDefs(templateAttributeTypeDefs);
+            this.setTypeDefs(templateTypeDefs);
         }
     }
 
@@ -67,11 +71,11 @@ public class TypeDefGallery
      *
      * @return list of attribute type definitions
      */
-    public ArrayList<AttributeTypeDef> getAttributeTypeDefs()
+    public List<AttributeTypeDef> getAttributeTypeDefs()
     {
         if (attributeTypeDefs == null)
         {
-            return attributeTypeDefs;
+            return null;
         }
         else
         {
@@ -85,9 +89,16 @@ public class TypeDefGallery
      *
      * @param attributeTypeDefs - list of attribute type definitions
      */
-    public void setAttributeTypeDefs(ArrayList<AttributeTypeDef> attributeTypeDefs)
+    public void setAttributeTypeDefs(List<AttributeTypeDef> attributeTypeDefs)
     {
-        this.attributeTypeDefs = attributeTypeDefs;
+        if (attributeTypeDefs == null)
+        {
+            this.attributeTypeDefs = null;
+        }
+        else
+        {
+            this.attributeTypeDefs = new ArrayList<>(attributeTypeDefs);
+        }
     }
 
 
@@ -100,7 +111,7 @@ public class TypeDefGallery
     {
         if (typeDefs == null)
         {
-            return typeDefs;
+            return null;
         }
         else
         {
@@ -114,8 +125,15 @@ public class TypeDefGallery
      *
      * @param typeDefs - list of type definitions
      */
-    public void setTypeDefs(ArrayList<TypeDef> typeDefs)
+    public void setTypeDefs(List<TypeDef> typeDefs)
     {
-        this.typeDefs = typeDefs;
+        if (typeDefs == null)
+        {
+            this.typeDefs = null;
+        }
+        else
+        {
+            this.typeDefs = new ArrayList<>(typeDefs);
+        }
     }
 }

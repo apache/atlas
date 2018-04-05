@@ -17,12 +17,14 @@
  */
 package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 
+import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
 import org.apache.atlas.omrs.ffdc.exception.PatchErrorException;
 import org.apache.atlas.omrs.ffdc.exception.TypeErrorException;
-import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceType;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.AttributeTypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
+import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefGallery;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefPatch;
+
 
 /**
  * OMRSTypeDefHelper provides methods for manipulating TypeDefs and creating metadata instances with the correct TypeDef
@@ -30,6 +32,22 @@ import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefPatch
  */
 public interface OMRSTypeDefHelper
 {
+    /**
+     * Return the list of typedefs active in the local repository.
+     *
+     * @return TypeDef gallery
+     */
+    TypeDefGallery   getActiveTypeDefGallery();
+
+
+    /**
+     * Return the list of typedefs known by the local repository.
+     *
+     * @return TypeDef gallery
+     */
+    TypeDefGallery   getKnownTypeDefGallery();
+
+
     /**
      * Return the TypeDef identified by the name supplied by the caller.  This is used in the connectors when
      * validating the actual types of the repository with the known open metadata types - looking specifically
@@ -54,6 +72,45 @@ public interface OMRSTypeDefHelper
      */
     AttributeTypeDef getAttributeTypeDefByName (String    sourceName,
                                                 String    attributeTypeDefName);
+
+
+    /**
+     * Return the TypeDefs identified by the name supplied by the caller.  The TypeDef name may have wild
+     * card characters in it such as * and & which is why the results are returned in a list.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param typeDefName - unique name for the TypeDef
+     * @return TypeDef object or null if TypeDef is not known.
+     */
+    TypeDefGallery getActiveTypesByWildCardName (String    sourceName,
+                                                 String    typeDefName);
+
+
+    /**
+     * Return the TypeDef identified by the guid supplied by the caller.  This call is used when
+     * retrieving a type that only the guid is known.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param typeDefGUID - unique identifier for the TypeDef
+     * @return TypeDef object
+     * @throws TypeErrorException - unknown or invalid type
+     */
+    TypeDef  getTypeDef (String    sourceName,
+                         String    typeDefGUID) throws TypeErrorException;
+
+
+    /**
+     * Return the AttributeTypeDef identified by the guid and name supplied by the caller.  This call is used when
+     * retrieving a type that only the guid is known.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param attributeTypeDefGUID - unique identifier for the AttributeTypeDef
+     * @return TypeDef object
+     * @throws TypeErrorException - unknown or invalid type
+     */
+    AttributeTypeDef  getAttributeTypeDef (String    sourceName,
+                                           String    attributeTypeDefGUID) throws TypeErrorException;
+
 
 
     /**
@@ -85,17 +142,4 @@ public interface OMRSTypeDefHelper
     AttributeTypeDef  getAttributeTypeDef (String    sourceName,
                                            String    attributeTypeDefGUID,
                                            String    attributeTypeDefName) throws TypeErrorException;
-
-
-    /**
-     * Returns an updated TypeDef that has had the supplied patch applied.  It throws an exception if any part of
-     * the patch is incompatible with the original TypeDef.  For example, if there is a mismatch between
-     * the type or version that either represents.
-     *
-     * @param sourceName - source of the request (used for logging)
-     * @param typeDefPatch - patch to apply
-     * @return updated TypeDef
-     * @throws PatchErrorException - the patch is either badly formatted, or does not apply to the supplied TypeDef
-     */
-    TypeDef   applyPatch(String   sourceName, TypeDefPatch typeDefPatch) throws PatchErrorException;
 }

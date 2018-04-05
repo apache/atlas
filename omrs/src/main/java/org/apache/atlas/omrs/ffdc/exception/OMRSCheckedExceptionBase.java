@@ -30,12 +30,12 @@ public class OMRSCheckedExceptionBase extends Exception
     /*
      * These default values are only seen if this exception is initialized using one of its superclass constructors.
      */
-    private int       reportedHTTPCode = 500;
-    private String    reportingClassName = "<Unknown>";
-    private String    reportingActionDescription = "<Unknown>";
-    private String    reportedErrorMessage = "<Unknown>";
-    private String    reportedSystemAction = "<Unknown>";
-    private String    reportedUserAction = "<Unknown>";
+    private int       reportedHTTPCode;
+    private String    reportingClassName;
+    private String    reportingActionDescription;
+    private String    reportedErrorMessage;
+    private String    reportedSystemAction;
+    private String    reportedUserAction;
     private Throwable reportedCaughtException = null;
 
 

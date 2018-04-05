@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class AdditionalProperties extends AssetPropertyBase
 {
-    private Map<String,Object>  additionalProperties = new HashMap<>();
+    protected Map<String,Object>  additionalProperties = new HashMap<>();
 
 
     /**
@@ -55,17 +55,6 @@ public class AdditionalProperties extends AssetPropertyBase
         {
             this.additionalProperties = new HashMap<>(additionalProperties);
         }
-    }
-
-
-    /**
-     * Copy/clone Constructor for additional properties that are not connected to an asset.
-     *
-     * @param templateProperties - template object to copy.
-     */
-    public AdditionalProperties(AdditionalProperties templateProperties)
-    {
-        this(null, templateProperties);
     }
 
 

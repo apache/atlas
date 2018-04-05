@@ -17,12 +17,23 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * EntityUniverse extends EntityDetail to add the relationships that this entity has.  These are available
  * in an iterator to make them easy to process.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class EntityUniverse extends EntityDetail
 {
     private ArrayList<Relationship>  entityRelationships = null;
@@ -48,7 +59,7 @@ public class EntityUniverse extends EntityDetail
 
         if (templateElement != null)
         {
-            entityRelationships = templateElement.getEntityRelationships();
+            this.setEntityRelationships(templateElement.getEntityRelationships());
         }
     }
 
@@ -69,9 +80,16 @@ public class EntityUniverse extends EntityDetail
      *
      * @return Relationships list.
      */
-    public ArrayList<Relationship> getEntityRelationships()
+    public List<Relationship> getEntityRelationships()
     {
-        return entityRelationships;
+        if (entityRelationships == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(entityRelationships);
+        }
     }
 
 
@@ -80,9 +98,16 @@ public class EntityUniverse extends EntityDetail
      *
      * @param entityRelationships - Relationships list
      */
-    public void setEntityRelationships(ArrayList<Relationship> entityRelationships)
+    public void setEntityRelationships(List<Relationship> entityRelationships)
     {
-        this.entityRelationships = entityRelationships;
+        if (entityRelationships == null)
+        {
+            this.entityRelationships = null;
+        }
+        else
+        {
+            this.entityRelationships = new ArrayList<>(entityRelationships);
+        }
     }
 
 

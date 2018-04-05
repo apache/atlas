@@ -18,15 +18,25 @@
 package org.apache.atlas.omrs.archivemanager.properties;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * OpenMetadataArchiveInstanceStore defines the contents of the InstanceStore in an open metadata archive.  It
  * consists of a list of entities and a list of relationships.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OpenMetadataArchiveInstanceStore
 {
     private ArrayList<EntityDetail> entities      = null;
@@ -46,9 +56,16 @@ public class OpenMetadataArchiveInstanceStore
      *
      * @return list of entities
      */
-    public ArrayList<EntityDetail> getEntities()
+    public List<EntityDetail> getEntities()
     {
-        return entities;
+        if (entities == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(entities);
+        }
     }
 
 
@@ -57,9 +74,16 @@ public class OpenMetadataArchiveInstanceStore
      *
      * @param entities - list of entities
      */
-    public void setEntities(ArrayList<EntityDetail> entities)
+    public void setEntities(List<EntityDetail> entities)
     {
-        this.entities = entities;
+        if (entities == null)
+        {
+            this.entities = null;
+        }
+        else
+        {
+            this.entities = new ArrayList<>(entities);
+        }
     }
 
 
@@ -68,9 +92,16 @@ public class OpenMetadataArchiveInstanceStore
      *
      * @return list of relationships
      */
-    public ArrayList<Relationship> getRelationships()
+    public List<Relationship> getRelationships()
     {
-        return relationships;
+        if (relationships == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(relationships);
+        }
     }
 
 
@@ -79,8 +110,15 @@ public class OpenMetadataArchiveInstanceStore
      *
      * @param relationships - list of relationship objects
      */
-    public void setRelationships(ArrayList<Relationship> relationships)
+    public void setRelationships(List<Relationship> relationships)
     {
-        this.relationships = relationships;
+        if (relationships == null)
+        {
+            this.relationships = null;
+        }
+        else
+        {
+            this.relationships = new ArrayList<>(relationships);
+        }
     }
 }

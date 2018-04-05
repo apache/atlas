@@ -17,13 +17,24 @@
  */
 package org.apache.atlas.omrs.auditlog.store;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * OMRSAuditLogRecord provides a carrier for details about a single log record in the OMRS audit log.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OMRSAuditLogRecord
 {
     private String                         guid                  = null;
@@ -36,6 +47,14 @@ public class OMRSAuditLogRecord
     private ArrayList<String>              additionalInformation = null;
     private String                         systemAction          = null;
     private String                         userAction            = null;
+
+
+    /**
+     * Default constructor
+     */
+    public OMRSAuditLogRecord()
+    {
+    }
 
 
     /**
@@ -72,13 +91,24 @@ public class OMRSAuditLogRecord
     }
 
     /**
-     * Return the unique Id of the audit log record
+     * Return the unique Id of the audit log record.
      *
      * @return String guid
      */
     public String getGUID()
     {
         return guid;
+    }
+
+
+    /**
+     * Set up the unique Id of the audit log record.
+     *
+     * @param guid - String guid
+     */
+    public void setGUID(String guid)
+    {
+        this.guid = guid;
     }
 
 
@@ -153,10 +183,50 @@ public class OMRSAuditLogRecord
      *
      * @return String additional information
      */
-    public ArrayList<String> getAdditionalInformation()
+    public List<String> getAdditionalInformation()
     {
         return additionalInformation;
     }
+
+
+
+
+
+    public void setTimeStamp(Date timeStamp)
+    {
+        this.timeStamp = timeStamp;
+    }
+
+    public void setOriginator(OMRSAuditLogRecordOriginator originator)
+    {
+        this.originator = originator;
+    }
+
+    public void setSeverity(String severity)
+    {
+        this.severity = severity;
+    }
+
+    public void setReportingComponent(OMRSAuditLogReportingComponent reportingComponent)
+    {
+        this.reportingComponent = reportingComponent;
+    }
+
+    public void setMessageId(String messageId)
+    {
+        this.messageId = messageId;
+    }
+
+    public void setMessageText(String messageText)
+    {
+        this.messageText = messageText;
+    }
+
+    public void setAdditionalInformation(ArrayList<String> additionalInformation)
+    {
+        this.additionalInformation = additionalInformation;
+    }
+
 
 
     public String getSystemAction()
@@ -164,10 +234,39 @@ public class OMRSAuditLogRecord
         return systemAction;
     }
 
+
+    /**
+     * Set up the description of the actions taken by the local server as a result of the reported situation.
+     *
+     * @param systemAction
+     */
+    public void setSystemAction(String systemAction)
+    {
+        this.systemAction = systemAction;
+    }
+
+
+    /**
+     * Return details of the actions (if any) that a user can take in response to the reported situation.
+     *
+     * @return String instructions
+     */
     public String getUserAction()
     {
         return userAction;
     }
+
+
+    /**
+     * Set up details of the actions (if any) that a user can take in response to the reported situation.
+     *
+     * @param userAction - String instructions
+     */
+    public void setUserAction(String userAction)
+    {
+        this.userAction = userAction;
+    }
+
 
     @Override
     public String toString()

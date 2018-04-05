@@ -17,16 +17,25 @@
  */
 package org.apache.atlas.omrs.metadatahighway.cohortregistry.store.properties;
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.ocf.properties.beans.Connection;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * MemberRegistration is a POJO for storing the information about a metadata repository that is a member
  * of the open metadata repository cohort. This information is saved to disk by the
  * OMRSCohortRegistryStore.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class MemberRegistration implements Serializable
 {
     private static final long serialVersionUID = 1L;

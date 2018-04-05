@@ -20,7 +20,7 @@ package org.apache.atlas.omrs.auditlog.store;
 import org.apache.atlas.ocf.ConnectorBase;
 
 /**
- * OMRSAuditLogStoreConnectorBase is the base calss for connectors that support the OMRSAuditLog
+ * OMRSAuditLogStoreConnectorBase is the base class for connectors that support the OMRSAuditLog
  */
 public abstract class OMRSAuditLogStoreConnectorBase extends ConnectorBase implements OMRSAuditLogStore
 {

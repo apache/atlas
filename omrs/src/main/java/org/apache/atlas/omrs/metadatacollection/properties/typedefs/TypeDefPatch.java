@@ -17,10 +17,17 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceStatus;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -30,6 +37,9 @@ import java.util.Map;
  * Changes to a TypeDef's category or superclasses requires a new type definition.
  * In addition it is not possible to delete an attribute through a patch.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TypeDefPatch extends TypeDefElementHeader
 {
     private TypeDefPatchAction                 action                   = null;
@@ -229,8 +239,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @return list of AttributeDefs
      */
-    public ArrayList<TypeDefAttribute> getTypeDefAttributes() {
-        return typeDefAttributes;
+    public List<TypeDefAttribute> getTypeDefAttributes()
+    {
+        if (typeDefAttributes == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(typeDefAttributes);
+        }
     }
 
 
@@ -239,9 +257,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @param typeDefAttributes - list of AttributeDefs
      */
-    public void setTypeDefAttributes(ArrayList<TypeDefAttribute> typeDefAttributes)
+    public void setTypeDefAttributes(List<TypeDefAttribute> typeDefAttributes)
     {
-        this.typeDefAttributes = typeDefAttributes;
+        if (typeDefAttributes == null)
+        {
+            this.typeDefAttributes = null;
+        }
+        else
+        {
+            this.typeDefAttributes = new ArrayList<>(typeDefAttributes);
+        }
     }
 
 
@@ -250,7 +275,8 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @return map of TypeDef Options that are new or changing.
      */
-    public Map<String, String> getTypeDefOptions() {
+    public Map<String, String> getTypeDefOptions()
+    {
         return typeDefOptions;
     }
 
@@ -260,7 +286,8 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @param typeDefOptions - map of TypeDef Options that are new or changing.
      */
-    public void setTypeDefOptions(Map<String, String> typeDefOptions) {
+    public void setTypeDefOptions(Map<String, String> typeDefOptions)
+    {
         this.typeDefOptions = typeDefOptions;
     }
 
@@ -270,9 +297,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @return list of external standards mappings
      */
-    public ArrayList<ExternalStandardMapping> getExternalStandardMappings()
+    public List<ExternalStandardMapping> getExternalStandardMappings()
     {
-        return externalStandardMappings;
+        if (externalStandardMappings == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(externalStandardMappings);
+        }
     }
 
 
@@ -281,9 +315,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @param externalStandardMappings list of external standards mappings
      */
-    public void setExternalStandardMappings(ArrayList<ExternalStandardMapping> externalStandardMappings)
+    public void setExternalStandardMappings(List<ExternalStandardMapping> externalStandardMappings)
     {
-        this.externalStandardMappings = externalStandardMappings;
+        if (externalStandardMappings == null)
+        {
+            this.externalStandardMappings = null;
+        }
+        else
+        {
+            this.externalStandardMappings = new ArrayList<>(externalStandardMappings);
+        }
     }
 
 
@@ -292,9 +333,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @return list of valid statuses
      */
-    public ArrayList<InstanceStatus> getValidInstanceStatusList()
+    public List<InstanceStatus> getValidInstanceStatusList()
     {
-        return validInstanceStatusList;
+        if (validInstanceStatusList == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(validInstanceStatusList);
+        }
     }
 
 
@@ -303,9 +351,16 @@ public class TypeDefPatch extends TypeDefElementHeader
      *
      * @param validInstanceStatusList - list of valid statuses
      */
-    public void setValidInstanceStatusList(ArrayList<InstanceStatus> validInstanceStatusList)
+    public void setValidInstanceStatusList(List<InstanceStatus> validInstanceStatusList)
     {
-        this.validInstanceStatusList = validInstanceStatusList;
+        if (validInstanceStatusList == null)
+        {
+            this.validInstanceStatusList = null;
+        }
+        else
+        {
+            this.validInstanceStatusList = new ArrayList<>(validInstanceStatusList);
+        }
     }
 
 

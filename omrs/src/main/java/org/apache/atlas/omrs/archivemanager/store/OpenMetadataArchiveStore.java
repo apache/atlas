@@ -44,12 +44,6 @@ import org.apache.atlas.omrs.archivemanager.properties.OpenMetadataArchive;
 public interface OpenMetadataArchiveStore
 {
     /**
-     * Open the archive and retrieve archive contents (if any)
-     */
-    void openArchive();
-
-
-    /**
      * Return the contents of the archive.
      *
      * @return OpenMetadataArchive object
@@ -63,10 +57,4 @@ public interface OpenMetadataArchiveStore
      * @param archiveContents - OpenMetadataArchive object
      */
     void setArchiveContents(OpenMetadataArchive   archiveContents);
-
-
-    /**
-     * Close the archive - this releases the connection and any resources held.
-     */
-    void closeArchive();
 }

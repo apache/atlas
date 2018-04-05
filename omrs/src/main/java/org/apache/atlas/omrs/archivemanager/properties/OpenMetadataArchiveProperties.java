@@ -18,8 +18,16 @@
 package org.apache.atlas.omrs.archivemanager.properties;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * OpenMetadataArchiveProperties defines the properties of an open metadata archive.  This includes the following
@@ -48,15 +56,19 @@ import java.util.Date;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OpenMetadataArchiveProperties
 {
-    private String                  archiveGUID        = null;
-    private String                  archiveName        = null;
-    private String                  archiveDescription = null;
-    private OpenMetadataArchiveType archiveType        = null;
-    private String                  originatorName     = null;
-    private Date                    creationDate       = null;
-    private ArrayList<String>       dependsOnArchives  = null;
+    private String                  archiveGUID            = null;
+    private String                  archiveName            = null;
+    private String                  archiveDescription     = null;
+    private OpenMetadataArchiveType archiveType            = null;
+    private String                  originatorName         = null;
+    private String                  originatorOrganization = null;
+    private Date                    creationDate           = null;
+    private ArrayList<String>       dependsOnArchives      = null;
 
 
     /**
@@ -156,7 +168,8 @@ public class OpenMetadataArchiveProperties
 
 
     /**
-     * Return the name of the originator of this open metadata archive (persona or organization).
+     * Return the name of the originator of this open metadata archive This will be used as the name of the
+     * creator for each element in the archive.
      *
      * @return String name
      */
@@ -167,13 +180,35 @@ public class OpenMetadataArchiveProperties
 
 
     /**
-     * Set up the name of the originator of this open metadata archive (persona or organization).
+     * Set up the name of the originator of this open metadata archive.  This will be used as the name of the
+     * creator for each element in the archive.
      *
      * @param originatorName - String name
      */
     public void setOriginatorName(String originatorName)
     {
         this.originatorName = originatorName;
+    }
+
+
+    /**
+     * Return the name of the organization that provided this archive.
+     *
+     * @return String organization name
+     */
+    public String getOriginatorOrganization()
+    {
+        return originatorOrganization;
+    }
+
+    /**
+     * Set up the name of the organization that provided this archive.
+     *
+     * @param originatorOrganization - String name
+     */
+    public void setOriginatorOrganization(String originatorOrganization)
+    {
+        this.originatorOrganization = originatorOrganization;
     }
 
 
@@ -204,9 +239,16 @@ public class OpenMetadataArchiveProperties
      *
      * @return list of guids
      */
-    public ArrayList<String> getDependsOnArchives()
+    public List<String> getDependsOnArchives()
     {
-        return dependsOnArchives;
+        if (dependsOnArchives == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(dependsOnArchives);
+        }
     }
 
 
@@ -215,8 +257,15 @@ public class OpenMetadataArchiveProperties
      *
      * @param dependsOnArchives - list of guids
      */
-    public void setDependsOnArchives(ArrayList<String> dependsOnArchives)
+    public void setDependsOnArchives(List<String> dependsOnArchives)
     {
-        this.dependsOnArchives = dependsOnArchives;
+        if (dependsOnArchives == null)
+        {
+            this.dependsOnArchives = null;
+        }
+        else
+        {
+            this.dependsOnArchives = new ArrayList<>(dependsOnArchives);
+        }
     }
 }

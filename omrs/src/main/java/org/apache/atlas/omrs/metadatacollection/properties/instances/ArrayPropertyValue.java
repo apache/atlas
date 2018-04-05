@@ -17,14 +17,25 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
+
+import java.util.Objects;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * ArrayPropertyValue stores the values of an array within an entity, struct or relationship properties.
  * The elements of the array are stored in an InstanceProperties map where the property name is set to the element
  * number and the property value is set to the value of the element in the array.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ArrayPropertyValue extends InstancePropertyValue
 {
     private  int                   arrayCount = 0;
@@ -151,5 +162,30 @@ public class ArrayPropertyValue extends InstancePropertyValue
                 ", typeGUID='" + getTypeGUID() + '\'' +
                 ", typeName='" + getTypeName() + '\'' +
                 '}';
+    }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        ArrayPropertyValue that = (ArrayPropertyValue) o;
+        return arrayCount == that.arrayCount &&
+                Objects.equals(arrayValues, that.arrayValues);
+    }
+
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash(arrayCount, arrayValues);
     }
 }

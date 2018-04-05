@@ -17,13 +17,23 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.instances;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * EntityProxy summarizes an entity instance.  It is used to describe one of the entities connected together by a
  * relationship.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class EntityProxy extends EntitySummary
 {
-    private InstanceProperties  uniqueAttributes = null;
+    private InstanceProperties uniqueProperties = null;
 
 
     /**
@@ -46,8 +56,19 @@ public class EntityProxy extends EntitySummary
 
         if (template == null)
         {
-            this.uniqueAttributes = template.getUniqueAttributes();
+            this.uniqueProperties = template.getUniqueProperties();
         }
+    }
+
+
+    /**
+     * Copy/clone constructor for the entity proxy.
+     *
+     * @param template - entity summary to copy
+     */
+    public EntityProxy(EntitySummary   template)
+    {
+        super(template);
     }
 
 
@@ -56,15 +77,15 @@ public class EntityProxy extends EntitySummary
      *
      * @return InstanceProperties iterator
      */
-    public InstanceProperties getUniqueAttributes()
+    public InstanceProperties getUniqueProperties()
     {
-        if (uniqueAttributes == null)
+        if (uniqueProperties == null)
         {
-            return uniqueAttributes;
+            return uniqueProperties;
         }
         else
         {
-            return new InstanceProperties(uniqueAttributes);
+            return new InstanceProperties(uniqueProperties);
         }
     }
 
@@ -75,7 +96,7 @@ public class EntityProxy extends EntitySummary
      *
      * @param uniqueAttributes - InstanceProperties iterator
      */
-    public void setUniqueAttributes(InstanceProperties uniqueAttributes) { this.uniqueAttributes = uniqueAttributes; }
+    public void setUniqueProperties(InstanceProperties uniqueAttributes) { this.uniqueProperties = uniqueAttributes; }
 
 
 
@@ -88,7 +109,7 @@ public class EntityProxy extends EntitySummary
     public String toString()
     {
         return "EntityProxy{" +
-                "uniqueAttributes=" + uniqueAttributes +
+                "uniqueProperties=" + uniqueProperties +
                 ", classifications=" + getClassifications() +
                 ", type=" + getType() +
                 ", instanceProvenanceType=" + getInstanceProvenanceType() +

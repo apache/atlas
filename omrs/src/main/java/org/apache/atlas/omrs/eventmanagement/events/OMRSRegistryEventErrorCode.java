@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.omrs.eventmanagement.events;
 
-import org.apache.atlas.omrs.eventmanagement.events.OMRSEventErrorCode;
 
 /**
  * OMRSRegistryEventErrorCode defines the list of error codes that are used to record errors in the registration

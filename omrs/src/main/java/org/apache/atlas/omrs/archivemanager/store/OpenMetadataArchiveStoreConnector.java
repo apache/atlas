@@ -20,8 +20,8 @@ package org.apache.atlas.omrs.archivemanager.store;
 import org.apache.atlas.ocf.ConnectorBase;
 
 /**
- * OpenMetadataArchiveStoreConnectorBase is the base class for connectors that support the OpenMetadataArchiveStore
+ * OpenMetadataArchiveStoreConnector is the base class for connectors that support the OpenMetadataArchiveStore
  */
-public abstract class OpenMetadataArchiveStoreConnectorBase extends ConnectorBase implements OpenMetadataArchiveStore
+public abstract class OpenMetadataArchiveStoreConnector extends ConnectorBase implements OpenMetadataArchiveStore
 {
 }

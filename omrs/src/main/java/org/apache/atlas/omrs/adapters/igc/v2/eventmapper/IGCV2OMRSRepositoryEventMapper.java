@@ -17,12 +17,13 @@
  */
 package org.apache.atlas.omrs.adapters.igc.v2.eventmapper;
 
+import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapperBase;
 
 
 /**
  * IGCOMRSRepositoryEventMapper provides an implementation of a repository event mapper for the
- * IBM Governance Catalog (IGC) for relaeave following 11.7.
+ * IBM Governance Catalog (IGC) for releases following 11.7.
  */
 public class IGCV2OMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 {
@@ -35,10 +36,23 @@ public class IGCV2OMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBas
 
 
     /**
-     * Free up any resources held since the connector is no longer needed.
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
-    public void disconnect()
+    public void start() throws ConnectorCheckedException
     {
+        super.start();
+    }
 
+
+    /**
+     * Free up any resources held since the connector is no longer needed.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public  void disconnect() throws ConnectorCheckedException
+    {
+        super.disconnect();
     }
 }

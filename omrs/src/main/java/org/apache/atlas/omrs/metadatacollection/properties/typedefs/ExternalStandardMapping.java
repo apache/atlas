@@ -17,12 +17,22 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
 /**
  * ExternalStandardMapping defines a mapping of TypeDefs and TypeDefAttributes to an external standard.  It includes the name
  * of the standard, the organization that owns the standard and the equivalent type in the external standard.
  * This mapping is done on a property type by property type basis.  The aim is to create clarity on the meaning
  * of the open metadata types and support importers and exporters between open metadata types and external standards.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ExternalStandardMapping extends TypeDefElementHeader
 {
     private   String standardName = null;

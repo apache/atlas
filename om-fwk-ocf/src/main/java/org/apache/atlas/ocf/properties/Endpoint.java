@@ -72,11 +72,11 @@ public class Endpoint extends Referenceable
     /*
      * Properties of an Endpoint
      */
-    private   String                 displayName      = null;
-    private   String                 description      = null;
-    private   String                 address          = null;
-    private   String                 protocol         = null;
-    private   String                 encryptionMethod = null;
+    protected   String                 displayName      = null;
+    protected   String                 description      = null;
+    protected   String                 address          = null;
+    protected   String                 protocol         = null;
+    protected   String                 encryptionMethod = null;
 
     /**
      * Admin Constructor - used when Endpoint is inside a Connection that is not part of the connected asset
@@ -164,6 +164,7 @@ public class Endpoint extends Referenceable
         this.encryptionMethod = encryptionMethod;
     }
 
+
     /**
      * Copy/clone constructor for an Endpoint not connected to an asset.
      *
@@ -173,6 +174,7 @@ public class Endpoint extends Referenceable
     {
         this(null, templateEndpoint);
     }
+
 
     /**
      * Copy/clone constructor for an Endpoint that is connected to an Asset (either directly or indirectly).

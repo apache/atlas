@@ -18,13 +18,12 @@
 package org.apache.atlas.omrs.eventmanagement.events;
 
 
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1ErrorSection;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceProvenanceType;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.AttributeTypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCategory;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -19,7 +19,12 @@ package org.apache.atlas.omrs.topicconnectors;
 
 import org.apache.atlas.ocf.ConnectorBase;
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
+import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
+import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
+import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
@@ -44,14 +49,15 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
 {
     ArrayList<OMRSTopicListener> topicListeners     = new  ArrayList<>();
 
+    private static final Logger       log      = LoggerFactory.getLogger(OMRSTopicConnector.class);
+    private static final OMRSAuditLog auditLog = new OMRSAuditLog(OMRSAuditingComponent.OMRS_TOPIC_CONNECTOR);
+
     /**
      * Simple constructor
      */
     public OMRSTopicConnector()
     {
-        /*
-         * Nothing to do
-         */
+        super();
     }
 
 
@@ -70,7 +76,16 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
             }
             catch (Throwable  error)
             {
-                // TODO Need to log error
+                final String   actionDescription = "Initialize Repository Operational Services";
+
+                OMRSAuditCode auditCode = OMRSAuditCode.EVENT_PROCESSING_ERROR;
+                auditLog.logRecord(actionDescription,
+                                   auditCode.getLogMessageId(),
+                                   auditCode.getSeverity(),
+                                   auditCode.getFormattedLogMessage(event.toString(), error.toString()),
+                                   null,
+                                   auditCode.getSystemAction(),
+                                   auditCode.getUserAction());
             }
         }
     }
@@ -91,12 +106,23 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
 
 
     /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public void start() throws ConnectorCheckedException
+    {
+        super.start();
+    }
+
+
+    /**
      * Free up any resources held since the connector is no longer needed.
      *
-     * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
-    public void disconnect() throws ConnectorCheckedException
+    public  void disconnect() throws ConnectorCheckedException
     {
-
+        super.disconnect();
     }
 }

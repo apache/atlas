@@ -34,7 +34,7 @@ public abstract class ElementHeader extends AssetPropertyBase
     /*
      * Attached classifications
      */
-    private Classifications classifications = null;
+    protected Classifications classifications = null;
 
 
     /**

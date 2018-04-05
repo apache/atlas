@@ -17,17 +17,27 @@
  */
 package org.apache.atlas.omrs.eventmanagement.events.v1;
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSRegistryEventType;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * OMRSEventV1RegistrySection describes properties that are used exclusively for registry events.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OMRSEventV1RegistrySection implements Serializable
 {
     private static final long serialVersionUID = 1L;
@@ -35,7 +45,7 @@ public class OMRSEventV1RegistrySection implements Serializable
     private OMRSRegistryEventType     registryEventType     = null;
     private Date                      registrationTimestamp = null;
     private Connection                remoteConnection      = null;
-    private ArrayList<TypeDefSummary> TypeDefList           = null;
+    private ArrayList<TypeDefSummary> typeDefList           = null;
 
     public OMRSEventV1RegistrySection()
     {
@@ -71,13 +81,27 @@ public class OMRSEventV1RegistrySection implements Serializable
         this.remoteConnection = remoteConnection;
     }
 
-    public ArrayList<TypeDefSummary> getTypeDefList()
+    public List<TypeDefSummary> getTypeDefList()
     {
-        return TypeDefList;
+        if (typeDefList == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(typeDefList);
+        }
     }
 
-    public void setTypeDefList(ArrayList<TypeDefSummary> typeDefList)
+    public void setTypeDefList(List<TypeDefSummary> typeDefList)
     {
-        TypeDefList = typeDefList;
+        if (typeDefList == null)
+        {
+            this.typeDefList = null;
+        }
+        else
+        {
+            this.typeDefList = new ArrayList<>(typeDefList);
+        }
     }
 }

@@ -26,6 +26,7 @@ import org.apache.atlas.ocf.properties.Connection;
 import org.apache.atlas.omrs.eventmanagement.OMRSRepositoryEventExchangeRule;
 import org.apache.atlas.omrs.eventmanagement.OMRSRepositoryEventManager;
 import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapper;
+import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapperConnector;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
@@ -41,16 +42,13 @@ import java.util.UUID;
  */
 public class LocalOMRSConnectorProvider extends ConnectorProvider
 {
-    private String                          localMetadataCollectionId       = null;
-    private Connection                      localRepositoryRemoteConnection = null;
-    private String                          localServerName                 = null;
-    private String                          localServerType                 = null;
-    private String                          localOrganizationName           = null;
-    private OMRSRepositoryEventMapper       repositoryEventMapper           = null;
-    private OMRSRepositoryEventManager      outboundRepositoryEventManager  = null;
-    private OMRSRepositoryContentManager    repositoryContentManager        = null;
-    private OMRSRepositoryEventExchangeRule saveExchangeRule                = null;
-    private LocalOMRSRepositoryConnector    localRepositoryConnector        = null;
+    private String                             localMetadataCollectionId       = null;
+    private Connection                         localRepositoryRemoteConnection = null;
+    private OMRSRepositoryEventMapperConnector realEventMapper                 = null;
+    private OMRSRepositoryEventManager         outboundRepositoryEventManager  = null;
+    private OMRSRepositoryContentManager       repositoryContentManager        = null;
+    private OMRSRepositoryEventExchangeRule    saveExchangeRule                = null;
+    private LocalOMRSRepositoryConnector       localRepositoryConnector        = null;
 
 
 
@@ -61,30 +59,21 @@ public class LocalOMRSConnectorProvider extends ConnectorProvider
      *
      * @param localMetadataCollectionId - metadata collection Id for the local repository
      * @param localRepositoryRemoteConnection - connection object for creating a remote connector to this repository.
-     * @param localServerName - name of the local server
-     * @param localServerType - type of the local server
-     * @param localOrganizationName - name of organization that owns the server
-     * @param repositoryEventMapper - optional event mapper for local repository
+     * @param realEventMapper - optional event mapper for local repository
      * @param outboundRepositoryEventManager - event manager to call for outbound events.
      * @param repositoryContentManager - repositoryContentManager for supporting OMRS in managing TypeDefs.
      * @param saveExchangeRule - rule to determine what events to save to the local repository.
      */
-    public LocalOMRSConnectorProvider(String                          localMetadataCollectionId,
-                                      Connection                      localRepositoryRemoteConnection,
-                                      String                          localServerName,
-                                      String                          localServerType,
-                                      String                          localOrganizationName,
-                                      OMRSRepositoryEventMapper       repositoryEventMapper,
-                                      OMRSRepositoryEventManager      outboundRepositoryEventManager,
-                                      OMRSRepositoryContentManager    repositoryContentManager,
-                                      OMRSRepositoryEventExchangeRule saveExchangeRule)
+    public LocalOMRSConnectorProvider(String                             localMetadataCollectionId,
+                                      Connection                         localRepositoryRemoteConnection,
+                                      OMRSRepositoryEventMapperConnector realEventMapper,
+                                      OMRSRepositoryEventManager         outboundRepositoryEventManager,
+                                      OMRSRepositoryContentManager       repositoryContentManager,
+                                      OMRSRepositoryEventExchangeRule    saveExchangeRule)
     {
         this.localMetadataCollectionId = localMetadataCollectionId;
         this.localRepositoryRemoteConnection = localRepositoryRemoteConnection;
-        this.localServerName = localServerName;
-        this.localServerType = localServerType;
-        this.localOrganizationName = localOrganizationName;
-        this.repositoryEventMapper = repositoryEventMapper;
+        this.realEventMapper = realEventMapper;
         this.outboundRepositoryEventManager = outboundRepositoryEventManager;
         this.repositoryContentManager = repositoryContentManager;
         this.saveExchangeRule = saveExchangeRule;
@@ -112,12 +101,12 @@ public class LocalOMRSConnectorProvider extends ConnectorProvider
     public synchronized Connector getConnector(Connection realLocalConnection) throws ConnectionCheckedException,
                                                                                       ConnectorCheckedException
     {
+        String methodName = "getConnector()";
+
         if (localMetadataCollectionId == null)
         {
-            String methodName = "getConnector()";
-
             /*
-             * Throw runtime exception to indicate that the local repository is not available.  This
+             * Throw checked exception to indicate that the local repository is not available.  This
              * is likely to be a configuration error.
              */
             OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
@@ -137,7 +126,7 @@ public class LocalOMRSConnectorProvider extends ConnectorProvider
          */
         if (localRepositoryConnector == null)
         {
-            OMRSRepositoryConnector realLocalConnector = null;
+            OMRSRepositoryConnector realLocalConnector;
 
             /*
              * Any problems creating the connector to the local repository are passed to the caller as exceptions.
@@ -155,29 +144,30 @@ public class LocalOMRSConnectorProvider extends ConnectorProvider
             }
             catch (Throwable error)
             {
-                // TODO throw ConnectionChecked Exception
-            }
+                OMRSErrorCode errorCode = OMRSErrorCode.BAD_LOCAL_REPOSITORY_CONNECTION;
+                String errorMessage = errorCode.getErrorMessageId()
+                                     + errorCode.getFormattedErrorMessage();
 
-            /*
-             * Set up the local metadata collection Id in the real local connector.
-             */
-            realLocalConnector.setMetadataCollectionId(localMetadataCollectionId);
+                throw new ConnectionCheckedException(errorCode.getHTTPErrorCode(),
+                                                    this.getClass().getName(),
+                                                    methodName,
+                                                    errorMessage,
+                                                    errorCode.getSystemAction(),
+                                                    errorCode.getUserAction(),
+                                                    error);
+            }
 
             /*
              * With the connection to the real local repository established it is possible to create the wrapper
              * for the local repository.  This wrapper is seen by most OMRS Components as the local repository
              * connector.  The exceptions are the inbound event processors that work with the real local connector.
              */
-            localRepositoryConnector = new LocalOMRSRepositoryConnector(localServerName,
-                                                                        localServerType,
-                                                                        localOrganizationName,
-                                                                        realLocalConnector,
-                                                                        repositoryEventMapper,
+            localRepositoryConnector = new LocalOMRSRepositoryConnector(realLocalConnector,
+                                                                        realEventMapper,
                                                                         outboundRepositoryEventManager,
                                                                         repositoryContentManager,
                                                                         saveExchangeRule);
             localRepositoryConnector.initialize(this.getNewConnectorGUID(), localRepositoryRemoteConnection);
-            localRepositoryConnector.setMetadataCollectionId(localMetadataCollectionId);
         }
 
         return localRepositoryConnector;

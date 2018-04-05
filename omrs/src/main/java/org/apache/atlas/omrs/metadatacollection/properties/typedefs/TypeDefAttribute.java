@@ -18,12 +18,23 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * TypeDefAttribute stores the properties used to describe a attribute within a Classification,
  * Entity or Relationship.  The attribute may itself be of types Enum, Collection or Primitive Types.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class TypeDefAttribute extends TypeDefElementHeader
 {
     protected String                             attributeName            = null;
@@ -69,7 +80,7 @@ public class TypeDefAttribute extends TypeDefElementHeader
             isUnique = template.isUnique();
             isIndexable = template.isIndexable();
             defaultValue = template.getDefaultValue();
-            externalStandardMappings = template.getExternalStandardMappings();
+            this.setExternalStandardMappings(template.getExternalStandardMappings());
         }
     }
 
@@ -263,11 +274,11 @@ public class TypeDefAttribute extends TypeDefElementHeader
      *
      * @return ExternalStandardMappings list
      */
-    public ArrayList<ExternalStandardMapping> getExternalStandardMappings()
+    public List<ExternalStandardMapping> getExternalStandardMappings()
     {
         if (externalStandardMappings == null)
         {
-            return externalStandardMappings;
+            return null;
         }
         else
         {
@@ -281,9 +292,16 @@ public class TypeDefAttribute extends TypeDefElementHeader
      *
      * @param externalStandardMappings - ExternalStandardMappings list
      */
-    public void setExternalStandardMappings(ArrayList<ExternalStandardMapping> externalStandardMappings)
+    public void setExternalStandardMappings(List<ExternalStandardMapping> externalStandardMappings)
     {
-        this.externalStandardMappings = externalStandardMappings;
+        if (externalStandardMappings == null)
+        {
+            this.externalStandardMappings = null;
+        }
+        else
+        {
+            this.externalStandardMappings = new ArrayList<>(externalStandardMappings);
+        }
     }
 
 

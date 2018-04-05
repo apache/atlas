@@ -17,11 +17,18 @@
  */
 package org.apache.atlas.omrs.archivemanager.properties;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.AttributeTypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefPatch;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -29,6 +36,9 @@ import java.util.ArrayList;
  * contains a list of types used for attributes, a list of type definition (TypeDef) patches to update existing types
  * and a list of TypeDefs for new types of classifications, entities and relationships.
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class OpenMetadataArchiveTypeStore
 {
     private ArrayList<AttributeTypeDef> attributeTypeDefs = null;
@@ -49,9 +59,16 @@ public class OpenMetadataArchiveTypeStore
      *
      * @return list of AttributeTypeDef objects
      */
-    public ArrayList<AttributeTypeDef> getAttributeTypeDefs()
+    public List<AttributeTypeDef> getAttributeTypeDefs()
     {
-        return attributeTypeDefs;
+        if (attributeTypeDefs == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(attributeTypeDefs);
+        }
     }
 
 
@@ -60,9 +77,16 @@ public class OpenMetadataArchiveTypeStore
      *
      * @param attributeTypeDefs - list of AttributeTypeDef objects
      */
-    public void setAttributeTypeDefs(ArrayList<AttributeTypeDef> attributeTypeDefs)
+    public void setAttributeTypeDefs(List<AttributeTypeDef> attributeTypeDefs)
     {
-        this.attributeTypeDefs = attributeTypeDefs;
+        if (attributeTypeDefs == null)
+        {
+            this.attributeTypeDefs = null;
+        }
+        else
+        {
+            this.attributeTypeDefs = new ArrayList<>(attributeTypeDefs);
+        }
     }
 
 
@@ -71,9 +95,16 @@ public class OpenMetadataArchiveTypeStore
      *
      * @return list of TypeDef objects
      */
-    public ArrayList<TypeDefPatch> getTypeDefPatches()
+    public List<TypeDefPatch> getTypeDefPatches()
     {
-        return typeDefPatches;
+        if (typeDefPatches == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(typeDefPatches);
+        }
     }
 
 
@@ -82,9 +113,16 @@ public class OpenMetadataArchiveTypeStore
      *
      * @param typeDefPatches - list of TypeDef objects
      */
-    public void setTypeDefPatches(ArrayList<TypeDefPatch> typeDefPatches)
+    public void setTypeDefPatches(List<TypeDefPatch> typeDefPatches)
     {
-        this.typeDefPatches = typeDefPatches;
+        if (typeDefPatches == null)
+        {
+            this.typeDefPatches =  null;
+        }
+        else
+        {
+            this.typeDefPatches =  new ArrayList<>(typeDefPatches);
+        }
     }
 
 
@@ -93,9 +131,16 @@ public class OpenMetadataArchiveTypeStore
      *
      * @return list of TypeDef objects
      */
-    public ArrayList<TypeDef> getNewTypeDefs()
+    public List<TypeDef> getNewTypeDefs()
     {
-        return newTypeDefs;
+        if (newTypeDefs == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new ArrayList<>(newTypeDefs);
+        }
     }
 
 
@@ -104,8 +149,15 @@ public class OpenMetadataArchiveTypeStore
      *
      * @param newTypeDefs - list of TypeDef objects
      */
-    public void setNewTypeDefs(ArrayList<TypeDef> newTypeDefs)
+    public void setNewTypeDefs(List<TypeDef> newTypeDefs)
     {
-        this.newTypeDefs = newTypeDefs;
+        if (newTypeDefs == null)
+        {
+            this.newTypeDefs = null;
+        }
+        else
+        {
+            this.newTypeDefs = new ArrayList<>(newTypeDefs);
+        }
     }
 }

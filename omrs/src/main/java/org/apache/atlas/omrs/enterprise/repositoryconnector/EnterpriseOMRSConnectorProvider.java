@@ -24,6 +24,9 @@ import org.apache.atlas.ocf.properties.Connection;
 import org.apache.atlas.omrs.enterprise.connectormanager.OMRSConnectorManager;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnectorProviderBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +48,13 @@ public class EnterpriseOMRSConnectorProvider extends OMRSRepositoryConnectorProv
 
     private static final Logger log = LoggerFactory.getLogger(EnterpriseOMRSConnectorProvider.class);
 
-    private static OMRSConnectorManager connectorManager                 = null;
-    private static String               enterpriseMetadataCollectionId   = null;
-    private static String               enterpriseMetadataCollectionName = null;
+    private static OMRSConnectorManager         connectorManager                 = null;
+    private static OMRSRepositoryContentManager repositoryContentManager         = null;
+    private static String                       localServerName                  = null;
+    private static String                       localServerType                  = null;
+    private static String                       owningOrganizationName           = null;
+    private static String                       enterpriseMetadataCollectionId   = null;
+    private static String                       enterpriseMetadataCollectionName = null;
 
 
     /**
@@ -56,16 +63,27 @@ public class EnterpriseOMRSConnectorProvider extends OMRSRepositoryConnectorProv
      * list of connectors to the repositories in the cohort.
      *
      * @param connectorManager - manager of the list of connectors to remote repositories.
+     * @param localServerName - name of the local server for this connection.
+     * @param localServerType - type of the local server.
+     * @param owningOrganizationName - name of the organization the owns the remote server.
      * @param enterpriseMetadataCollectionId - unique identifier for the combined metadata collection covered by the
      *                                      connected open metadata repositories.
      * @param enterpriseMetadataCollectionName - name of the combined metadata collection covered by the connected open
      *                                        metadata repositories.  Used for messages.
      */
-    public synchronized static void initialize(OMRSConnectorManager connectorManager,
-                                               String               enterpriseMetadataCollectionId,
-                                               String               enterpriseMetadataCollectionName)
+    public synchronized static void initialize(OMRSConnectorManager         connectorManager,
+                                               OMRSRepositoryContentManager repositoryContentManager,
+                                               String                       localServerName,
+                                               String                       localServerType,
+                                               String                       owningOrganizationName,
+                                               String                       enterpriseMetadataCollectionId,
+                                               String                       enterpriseMetadataCollectionName)
     {
         EnterpriseOMRSConnectorProvider.connectorManager = connectorManager;
+        EnterpriseOMRSConnectorProvider.repositoryContentManager = repositoryContentManager;
+        EnterpriseOMRSConnectorProvider.localServerName = localServerName;
+        EnterpriseOMRSConnectorProvider.localServerType = localServerType;
+        EnterpriseOMRSConnectorProvider.owningOrganizationName = owningOrganizationName;
         EnterpriseOMRSConnectorProvider.enterpriseMetadataCollectionId = enterpriseMetadataCollectionId;
         EnterpriseOMRSConnectorProvider.enterpriseMetadataCollectionName = enterpriseMetadataCollectionName;
     }
@@ -126,7 +144,12 @@ public class EnterpriseOMRSConnectorProvider extends OMRSRepositoryConnectorProv
                                                                                             enterpriseMetadataCollectionName);
 
         connector.initialize(this.getNewConnectorGUID(), connection);
+        connector.setServerName(localServerName);
+        connector.setServerType(localServerType);
+        connector.setOrganizationName(owningOrganizationName);
         connector.setMetadataCollectionId(enterpriseMetadataCollectionId);
+        connector.setRepositoryHelper(new OMRSRepositoryHelper(repositoryContentManager));
+        connector.setRepositoryValidator(new OMRSRepositoryValidator(repositoryContentManager));
         connector.initializeConnectedAssetProperties(new EnterpriseOMRSConnectorProperties(connector,
                                                                                            EnterpriseOMRSConnectorProvider.connectorManager,
                                                                                            enterpriseMetadataCollectionId,

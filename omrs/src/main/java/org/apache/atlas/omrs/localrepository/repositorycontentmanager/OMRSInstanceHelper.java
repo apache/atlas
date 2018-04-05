@@ -21,7 +21,7 @@ package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 import org.apache.atlas.omrs.ffdc.exception.TypeErrorException;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.*;
 
-import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -104,7 +104,7 @@ public interface OMRSInstanceHelper
                               String                    userName,
                               String                    typeName,
                               InstanceProperties        properties,
-                              ArrayList<Classification> classifications) throws TypeErrorException;
+                              List<Classification>      classifications) throws TypeErrorException;
 
 
     /**

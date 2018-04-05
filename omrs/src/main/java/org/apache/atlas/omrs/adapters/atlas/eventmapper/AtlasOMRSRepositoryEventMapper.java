@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.omrs.adapters.atlas.eventmapper;
 
+import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapperBase;
 
 public class AtlasOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
@@ -30,10 +31,23 @@ public class AtlasOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBas
 
 
     /**
-     * Free up any resources held since the connector is no longer needed.
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
-    public void disconnect()
+    public void start() throws ConnectorCheckedException
     {
+        super.start();
+    }
 
+
+    /**
+     * Free up any resources held since the connector is no longer needed.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public  void disconnect() throws ConnectorCheckedException
+    {
+        super.disconnect();
     }
 }

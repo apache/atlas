@@ -17,11 +17,18 @@
  */
 package org.apache.atlas.omrs.admin.properties;
 
-import org.apache.atlas.ocf.properties.Connection;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
 import java.util.ArrayList;
-
+import java.util.List;
 
 /**
  * LocalRepositoryConfig provides the properties to control the behavior of the metadata repository associated with
@@ -62,6 +69,9 @@ import java.util.ArrayList;
  *     </li>
  * </ul>
  */
+@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class LocalRepositoryConfig
 {
     private String                    metadataCollectionId              = null;
@@ -94,18 +104,18 @@ public class LocalRepositoryConfig
                                  Connection                localRepositoryLocalConnection,
                                  Connection                localRepositoryRemoteConnection,
                                  OpenMetadataExchangeRule  eventsToSaveRule,
-                                 ArrayList<TypeDefSummary> selectedTypesToSave,
+                                 List<TypeDefSummary>      selectedTypesToSave,
                                  OpenMetadataExchangeRule  eventsToSendRule,
-                                 ArrayList<TypeDefSummary> selectedTypesToSend,
+                                 List<TypeDefSummary>      selectedTypesToSend,
                                  Connection                eventMapperConnection)
     {
         this.metadataCollectionId = metadataCollectionId;
         this.localRepositoryLocalConnection = localRepositoryLocalConnection;
         this.localRepositoryRemoteConnection = localRepositoryRemoteConnection;
         this.eventsToSaveRule = eventsToSaveRule;
-        this.selectedTypesToSave = selectedTypesToSave;
+        this.setSelectedTypesToSave(selectedTypesToSave);
         this.eventsToSendRule = eventsToSendRule;
-        this.selectedTypesToSend = selectedTypesToSend;
+        this.setSelectedTypesToSend(selectedTypesToSend);
         this.eventMapperConnection = eventMapperConnection;
     }
 
@@ -218,9 +228,16 @@ public class LocalRepositoryConfig
      *
      * @return list of types
      */
-    public ArrayList<TypeDefSummary> getSelectedTypesToSave()
+    public List<TypeDefSummary> getSelectedTypesToSave()
     {
-        return selectedTypesToSave;
+        if (selectedTypesToSave == null)
+        {
+            return null;
+        }
+        else
+        {
+            return selectedTypesToSave;
+        }
     }
 
 
@@ -229,9 +246,16 @@ public class LocalRepositoryConfig
      *
      * @param selectedTypesToSave - list of types
      */
-    public void setSelectedTypesToSave(ArrayList<TypeDefSummary> selectedTypesToSave)
+    public void setSelectedTypesToSave(List<TypeDefSummary> selectedTypesToSave)
     {
-        this.selectedTypesToSave = selectedTypesToSave;
+        if (selectedTypesToSave == null)
+        {
+            this.selectedTypesToSave = null;
+        }
+        else
+        {
+            this.selectedTypesToSave = new ArrayList<>(selectedTypesToSave);
+        }
     }
 
 
@@ -264,9 +288,16 @@ public class LocalRepositoryConfig
      *
      * @return list of types
      */
-    public ArrayList<TypeDefSummary> getSelectedTypesToSend()
+    public List<TypeDefSummary> getSelectedTypesToSend()
     {
-        return selectedTypesToSend;
+        if (selectedTypesToSend == null)
+        {
+            return null;
+        }
+        else
+        {
+            return selectedTypesToSend;
+        }
     }
 
 
@@ -275,9 +306,16 @@ public class LocalRepositoryConfig
      *
      * @param selectedTypesToSend - list of types
      */
-    public void setSelectedTypesToSend(ArrayList<TypeDefSummary> selectedTypesToSend)
+    public void setSelectedTypesToSend(List<TypeDefSummary> selectedTypesToSend)
     {
-        this.selectedTypesToSend = selectedTypesToSend;
+        if (selectedTypesToSend == null)
+        {
+            this.selectedTypesToSend = null;
+        }
+        else
+        {
+            this.selectedTypesToSend = new ArrayList<>(selectedTypesToSend);
+        }
     }
 
 

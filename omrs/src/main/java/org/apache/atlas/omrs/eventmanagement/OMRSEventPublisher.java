@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.omrs.eventmanagement;
 
-import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.admin.properties.OpenMetadataEventProtocolVersion;
 import org.apache.atlas.omrs.auditlog.*;
 import org.apache.atlas.omrs.eventmanagement.events.*;
@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -277,7 +278,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
                                             String                    originatorOrganizationName,
                                             Date                      registrationTimestamp,
                                             Connection                remoteConnection,
-                                            ArrayList<TypeDefSummary> typeDefList)
+                                            List<TypeDefSummary>      typeDefList)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -345,7 +346,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
                                               String                    originatorOrganizationName,
                                               Date                      registrationTimestamp,
                                               Connection                remoteConnection,
-                                              ArrayList<TypeDefSummary> typeDefList)
+                                              List<TypeDefSummary>      typeDefList)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -1108,18 +1109,14 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this entity's TypeDef
-     * @param typeDefName - name of this entity's TypeDef
-     * @param instanceGUID - unique identifier for the entity
+     * @param entity - deleted entity
      */
     public void processDeletedEntityEvent(String       sourceName,
                                           String       originatorMetadataCollectionId,
                                           String       originatorServerName,
                                           String       originatorServerType,
                                           String       originatorOrganizationName,
-                                          String       typeDefGUID,
-                                          String       typeDefName,
-                                          String       instanceGUID)
+                                          EntityDetail entity)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -1129,9 +1126,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
         eventOriginator.setOrganizationName(originatorOrganizationName);
 
         OMRSInstanceEvent instanceEvent = new OMRSInstanceEvent(OMRSInstanceEventType.DELETED_ENTITY_EVENT,
-                                                                typeDefGUID,
-                                                                typeDefName,
-                                                                instanceGUID);
+                                                                entity);
 
         instanceEvent.setEventOriginator(eventOriginator);
 
@@ -1537,18 +1532,14 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefGUID - unique identifier for this relationship's TypeDef
-     * @param typeDefName - name of this relationship's TypeDef
-     * @param instanceGUID - unique identifier for the relationship
+     * @param relationship - deleted relationship
      */
     public void processDeletedRelationshipEvent(String       sourceName,
                                                 String       originatorMetadataCollectionId,
                                                 String       originatorServerName,
                                                 String       originatorServerType,
                                                 String       originatorOrganizationName,
-                                                String       typeDefGUID,
-                                                String       typeDefName,
-                                                String       instanceGUID)
+                                                Relationship relationship)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -1558,9 +1549,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
         eventOriginator.setOrganizationName(originatorOrganizationName);
 
         OMRSInstanceEvent instanceEvent = new OMRSInstanceEvent(OMRSInstanceEventType.DELETED_RELATIONSHIP_EVENT,
-                                                                typeDefGUID,
-                                                                typeDefName,
-                                                                instanceGUID);
+                                                                relationship);
 
         instanceEvent.setEventOriginator(eventOriginator);
 

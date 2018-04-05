@@ -18,6 +18,8 @@
 package org.apache.atlas.omrs.metadatahighway.cohortregistry.store.file;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.Endpoint;
 import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
 import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
@@ -30,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +74,31 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
 
 
     /**
+     * Initialize the connector.
+     *
+     * @param connectorInstanceId - unique id for the connector instance - useful for messages etc
+     * @param connection - POJO for the configuration used to create the connector.
+     */
+    @Override
+    public void initialize(String connectorInstanceId, Connection connection)
+    {
+        super.initialize(connectorInstanceId, connection);
+
+        Endpoint endpoint = connection.getEndpoint();
+
+        if (endpoint != null)
+        {
+            registryStoreName = endpoint.getAddress();
+
+            if (registryStoreName == null)
+            {
+                registryStoreName = defaultFilename;
+            }
+        }
+    }
+
+
+    /**
      * Returns the index of the requested member in the members array list.  If the member is not found, the index
      * returned is the size of the array.
      *
@@ -78,7 +106,7 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
      * @param members - list of members
      * @return int index pointing to the location of the member (or the size of the array if the member is not found).
      */
-    private int findRemoteRegistration(String   metadataCollectionId, ArrayList<MemberRegistration>   members)
+    private int findRemoteRegistration(String   metadataCollectionId, List<MemberRegistration>   members)
     {
         int   indexOfNewMember = members.size();
 
@@ -225,7 +253,7 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
              * It is possible that the remote repository already has an entry in the cohort registry and if this is
              * the case, it will be overwritten.  Otherwise the new remote properties are added.
              */
-            ArrayList<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
+            List<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
 
             int index = findRemoteRegistration(remoteRegistration.getMetadataCollectionId(), remotePropertiesList);
 
@@ -271,9 +299,9 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
      *
      * @return Remote registrations iterator
      */
-    public ArrayList<MemberRegistration> retrieveRemoteRegistrations()
+    public List<MemberRegistration> retrieveRemoteRegistrations()
     {
-        ArrayList<MemberRegistration>    remoteRegistrations = null;
+        List<MemberRegistration>    remoteRegistrations = null;
 
         /*
          * Ensure the current properties are retrieved from the registry.
@@ -286,14 +314,17 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
         /*
          * Copy the remote member properties into a registration iterator for return.
          */
-        ArrayList<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
-        ArrayList<MemberRegistration> remoteRegistrationArray = new ArrayList<>();
+        List<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
+        List<MemberRegistration> remoteRegistrationArray = new ArrayList<>();
 
-        for (MemberRegistration remoteRegistration : remotePropertiesList)
+        if (remotePropertiesList != null)
         {
-            MemberRegistration   member = new MemberRegistration(remoteRegistration);
+            for (MemberRegistration remoteRegistration : remotePropertiesList)
+            {
+                MemberRegistration   member = new MemberRegistration(remoteRegistration);
 
-            remoteRegistrationArray.add(member);
+                remoteRegistrationArray.add(member);
+            }
         }
 
         if (remoteRegistrationArray.size() > 0)
@@ -329,7 +360,7 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
             /*
              * Retrieve the list of remote registrations
              */
-            ArrayList<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
+            List<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
 
             /*
              * Locate the required entry
@@ -388,7 +419,7 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
             /*
              * Retrieve the list of remote registrations
              */
-            ArrayList<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
+            List<MemberRegistration> remotePropertiesList = registryStoreProperties.getRemoteRegistrations();
 
             /*
              * Locate the required entry
@@ -571,6 +602,7 @@ public class FileBasedRegistryStoreConnector extends OMRSCohortRegistryStoreConn
             }
         }
     }
+
 
     /**
      * Flush all changes and close the registry store.

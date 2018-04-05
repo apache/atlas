@@ -113,9 +113,18 @@ public abstract class Connector
 
 
     /**
+     * Indicates that the connector is completely configured and can begin processing.
+     *
+     * @throws ConnectorCheckedException - there is a problem within the connector.
+     */
+    public abstract void start() throws ConnectorCheckedException;
+
+
+
+    /**
      * Free up any resources held since the connector is no longer needed.
      *
-     * @throws ConnectorCheckedException - there is a problem disconnecting the connector.
+     * @throws ConnectorCheckedException - there is a problem within the connector.
      */
     public abstract void disconnect() throws ConnectorCheckedException;
 }

@@ -19,6 +19,7 @@ package org.apache.atlas.omrs.eventmanagement.repositoryeventmapper;
 
 import org.apache.atlas.omrs.eventmanagement.OMRSRepositoryEventProcessor;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 
 /**
@@ -36,20 +37,58 @@ public interface OMRSRepositoryEventMapper
      * @param repositoryConnector - this is the connector to the local repository that the event mapper is processing
      *                            events from.  The repository connector is used to retrieve additional information
      *                            necessary to fill out the OMRS Events.
-     * @param repositoryHelper - provides helper methods for building TypeDefs and metadata instances such as
-     *                         entities and relationships.
-     * @param localMetadataCollectionId - unique identifier for the local repository's metadata collection.
-     * @param localServerName - name of the local server.
-     * @param localServerType - type of local repository/server.
-     * @param localOrganizationName - name of the organization that owns the local metadata repository.
      */
     void initialize(String                      repositoryEventMapperName,
-                    OMRSRepositoryConnector     repositoryConnector,
-                    OMRSRepositoryHelper        repositoryHelper,
-                    String                      localMetadataCollectionId,
-                    String                      localServerName,
-                    String                      localServerType,
-                    String                      localOrganizationName);
+                    OMRSRepositoryConnector     repositoryConnector);
+
+
+    /**
+     * Set up a repository helper object for the repository connector to use.
+     *
+     * @param repositoryHelper - helper object for building TypeDefs and metadata instances.
+     */
+    void setRepositoryHelper(OMRSRepositoryHelper   repositoryHelper);
+
+
+    /**
+     * Set up a repository validator for the repository connector to use.
+     *
+     * @param repositoryValidator - validator object to check the validity of TypeDefs and metadata instances.
+     */
+    void setRepositoryValidator(OMRSRepositoryValidator repositoryValidator);
+
+
+    /**
+     * Set up the name of the server where the metadata collection resides.
+     *
+     * @param serverName - String name
+     */
+    void  setServerName(String      serverName);
+
+
+    /**
+     * Set up the descriptive string describing the type of the server.  This might be the
+     * name of the product, or similar identifier.
+     *
+     * @param serverType - String server type
+     */
+    void setServerType(String serverType);
+
+
+    /**
+     * Set up the name of the organization that runs/owns the server.
+     *
+     * @param organizationName - String organization name
+     */
+    void setOrganizationName(String organizationName);
+
+
+    /**
+     * Set up the unique Id for this metadata collection.
+     *
+     * @param metadataCollectionId - String unique Id
+     */
+    void setMetadataCollectionId(String         metadataCollectionId);
 
 
     /**
@@ -62,4 +101,7 @@ public interface OMRSRepositoryEventMapper
      *                                open metadata repository cohort.
      */
     void setRepositoryEventProcessor(OMRSRepositoryEventProcessor repositoryEventProcessor);
+
+
+
 }
