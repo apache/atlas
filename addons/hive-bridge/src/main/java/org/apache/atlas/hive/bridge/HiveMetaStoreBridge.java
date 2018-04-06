@@ -67,6 +67,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -233,10 +234,6 @@ public class HiveMetaStoreBridge {
 
     public Hive getHiveClient() {
         return hiveClient;
-    }
-
-    public AtlasClientV2 getAtlasClient() {
-        return atlasClientV2;
     }
 
     public boolean isConvertHdfsPathToLowerCase() {
@@ -458,6 +455,8 @@ public class HiveMetaStoreBridge {
             }
         }
 
+        clearRelationshipAttributes(ret);
+
         return ret;
     }
 
@@ -493,6 +492,8 @@ public class HiveMetaStoreBridge {
                 LOG.info("Created {} entity: name={}, guid={}", entity.getEntity().getTypeName(), entity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), entity.getEntity().getGuid());
             }
         }
+
+        clearRelationshipAttributes(ret);
 
         return ret;
     }
@@ -589,10 +590,6 @@ public class HiveMetaStoreBridge {
         tableEntity.setAttribute(ATTRIBUTE_PARTITION_KEYS, BaseHiveEvent.getObjectIds(partKeys));
         tableEntity.setAttribute(ATTRIBUTE_COLUMNS, BaseHiveEvent.getObjectIds(columns));
 
-        if (MapUtils.isNotEmpty(table.getReferredEntities())) {
-            table.getReferredEntities().clear();
-        }
-
         table.addReferredEntity(database);
         table.addReferredEntity(sdEntity);
 
@@ -607,6 +604,8 @@ public class HiveMetaStoreBridge {
                 table.addReferredEntity(column);
             }
         }
+
+        table.setEntity(tableEntity);
 
         return table;
     }
@@ -758,10 +757,10 @@ public class HiveMetaStoreBridge {
     }
 
     private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName) throws AtlasServiceException {
-        AtlasClientV2 atlasClientV2 = getAtlasClient();
+        AtlasEntityWithExtInfo ret = null;
 
         try {
-            return atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
+            ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
         } catch (AtlasServiceException e) {
             if(e.getStatus() == ClientResponse.Status.NOT_FOUND) {
                 return null;
@@ -769,6 +768,10 @@ public class HiveMetaStoreBridge {
 
             throw e;
         }
+
+        clearRelationshipAttributes(ret);
+
+        return ret;
     }
 
     private String getCreateTableString(Table table, String location){
@@ -878,5 +881,43 @@ public class HiveMetaStoreBridge {
 
     public static long getTableCreatedTime(Table table) {
         return table.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR;
+    }
+
+    private void clearRelationshipAttributes(AtlasEntitiesWithExtInfo entities) {
+        if (entities != null) {
+            if (entities.getEntities() != null) {
+                for (AtlasEntity entity : entities.getEntities()) {
+                    clearRelationshipAttributes(entity);;
+                }
+            }
+
+            if (entities.getReferredEntities() != null) {
+                clearRelationshipAttributes(entities.getReferredEntities().values());
+            }
+        }
+    }
+
+    private void clearRelationshipAttributes(AtlasEntityWithExtInfo entity) {
+        if (entity != null) {
+            clearRelationshipAttributes(entity.getEntity());
+
+            if (entity.getReferredEntities() != null) {
+                clearRelationshipAttributes(entity.getReferredEntities().values());
+            }
+        }
+    }
+
+    private void clearRelationshipAttributes(Collection<AtlasEntity> entities) {
+        if (entities != null) {
+            for (AtlasEntity entity : entities) {
+                clearRelationshipAttributes(entity);
+            }
+        }
+    }
+
+    private void clearRelationshipAttributes(AtlasEntity entity) {
+        if (entity != null && entity.getRelationshipAttributes() != null) {
+            entity.getRelationshipAttributes().clear();
+        }
     }
 }
