@@ -272,12 +272,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         List<AtlasClassification> c = this.classifications;
 
         if (c == null) {
-            c = new ArrayList<>(classifications);
-
-            this.classifications = c;
+            c = new ArrayList<>();
         }
 
         c.addAll(classifications);
+
+        this.classifications = c;
     }
 
     private void init() {
