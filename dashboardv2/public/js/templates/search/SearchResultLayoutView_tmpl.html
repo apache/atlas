@@ -31,28 +31,30 @@
                 <div class="col-sm-8 inline-content-fr no-padding-left">
                     <div class="inline" data-id="colManager"></div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
-                        <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" />
+                        <label class="checkbox-inline btn" for="historicalentities">
+                            <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" 
+                            id="historicalentities"/>
                             <b>Show historical entities</b></label>
                     </div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
-                        <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC"/>
+                        <label class="checkbox-inline btn" for="subclassifications">
+                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications"/>
                             <b>Exclude sub-classifications</b></label>
                     </div>
+                    {{#ifCond fromView '!==' "classification"}}
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
-                        <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" data-id="checkSubType"  data-value="excludeST"/>
+                        <label class="checkbox-inline btn" for="subtypes">
+                            <input type="checkbox" data-id="checkSubType" data-value="excludeST" id="subtypes"/>
                             <b>Exclude sub-types</b></label>
                     </div>
+                    {{/ifCond}}
                     <div class="inline">
                         <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
                     </div>
                 </div>
             </div>
             <div id="r_searchResultTableLayoutView">
-                <h1><b>{{searchType}}</b></h1>
-                {{#if entityCreate}}
+                <h1><b>{{searchType}}</b></h1> {{#if entityCreate}}
                 <div class="entityLink" style="display:none">
                     <p class="entityLink">Search Atlas for existing entities or
                         <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>

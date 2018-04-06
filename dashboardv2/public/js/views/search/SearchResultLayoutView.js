@@ -72,7 +72,8 @@ define(['require',
             templateHelpers: function() {
                 return {
                     entityCreate: Globals.entityCreate,
-                    searchType: this.searchType
+                    searchType: this.searchType,
+                    fromView: this.fromView
                 };
             },
             /** ui events hash */
@@ -451,7 +452,7 @@ define(['require',
                         'excludeDeletedEntities': (this.value.includeDE ? false : true),
                         'includeSubClassifications': (this.value.excludeSC ? false : true),
                         'includeSubTypes': (this.value.excludeST ? false : true),
-                        'includeClassificationAttributes' : true // server will return classication details with guid
+                        'includeClassificationAttributes': true // server will return classication details with guid
                     }
                 }
                 if (value) {
@@ -527,6 +528,9 @@ define(['require',
                     var table = new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     }));
+                    if (!that.REntityTableLayoutView) {
+                        return;
+                    }
                     that.REntityTableLayoutView.show(table);
                     if (that.value.searchType !== "dsl") {
                         that.ui.containerCheckBox.show();
