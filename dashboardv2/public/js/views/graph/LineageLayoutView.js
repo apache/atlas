@@ -160,13 +160,17 @@ define(['require',
                     nodeFound = _.where(relations, { 'fromEntityId': guid });
                 if (nodeFound.length) {
                     _.each(nodeFound, function(node) {
-                        that.fromToObj[node.toEntityId]['isLineage'] = false;
-                        var styleObj = {
-                            fill: 'none',
-                            stroke: '#fb4200'
+                        if (!node["traversed"]) {
+                            node["traversed"] = true;
+                            that.fromToObj[node.toEntityId]['isLineage'] = false;
+                            var styleObj = {
+                                fill: 'none',
+                                stroke: '#fb4200',
+                                width: 2
+                            }
+                            that.g.setEdge(node.fromEntityId, node.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
+                            that.checkForLineageOrImpactFlag(relations, node.toEntityId);
                         }
-                        that.g.setEdge(node.fromEntityId, node.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + "", 'styleObj': styleObj });
-                        that.checkForLineageOrImpactFlag(relations, node.toEntityId);
                     });
                 }
             },
