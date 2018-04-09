@@ -46,24 +46,29 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
     public static final String KEY_RELATIONSHIP_GUID       = "relationshipGuid";
     public static final String KEY_RELATIONSHIP_ATTRIBUTES = "relationshipAttributes";
 
-    private String      displayText             = null;
-    private String      relationshipGuid        = null;
-    private AtlasStruct relationshipAttributes;
+    private String                   displayText        = null;
+    private String                   relationshipGuid   = null;
+    private AtlasRelationship.Status relationshipStatus = null;
+    private AtlasStruct              relationshipAttributes;
 
     public AtlasRelatedObjectId() { }
 
-    public AtlasRelatedObjectId(String guid, String typeName, String relationshipGuid, AtlasStruct relationshipAttributes) {
+    public AtlasRelatedObjectId(String guid, String typeName, String relationshipGuid,
+                                AtlasRelationship.Status relationshipStatus, AtlasStruct relationshipAttributes) {
         super(guid, typeName);
 
         setRelationshipGuid(relationshipGuid);
+        setRelationshipStatus(relationshipStatus);
         setRelationshipAttributes(relationshipAttributes);
     }
 
     public AtlasRelatedObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes, String displayText,
-                                String relationshipGuid, AtlasStruct relationshipAttributes) {
+                                String relationshipGuid, AtlasRelationship.Status relationshipStatus,
+                                AtlasStruct relationshipAttributes) {
         super(guid, typeName, uniqueAttributes);
 
         setRelationshipGuid(relationshipGuid);
+        setRelationshipStatus(relationshipStatus);
         setDisplayText(displayText);
         setRelationshipAttributes(relationshipAttributes);
     }
@@ -88,12 +93,13 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         AtlasRelatedObjectId that = (AtlasRelatedObjectId) o;
         return Objects.equals(displayText, that.displayText) &&
                Objects.equals(relationshipGuid, that.relationshipGuid) &&
+               Objects.equals(relationshipStatus, that.relationshipStatus) &&
                Objects.equals(relationshipAttributes, that.relationshipAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), displayText, relationshipGuid, relationshipAttributes);
+        return Objects.hash(super.hashCode(), displayText, relationshipGuid, relationshipStatus, relationshipAttributes);
     }
 
     @Override
@@ -111,9 +117,18 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         super.toString(sb);
         sb.append("displayText='").append(displayText).append('\'');
         sb.append(", relationshipGuid='").append(relationshipGuid).append('\'');
+        sb.append(", relationshipStatus='").append(relationshipStatus).append('\'');
         sb.append(", relationshipAttributes=").append(relationshipAttributes);
         sb.append('}');
 
         return sb;
+    }
+
+    public AtlasRelationship.Status getRelationshipStatus() {
+        return relationshipStatus;
+    }
+
+    public void setRelationshipStatus(final AtlasRelationship.Status relationshipStatus) {
+        this.relationshipStatus = relationshipStatus;
     }
 }

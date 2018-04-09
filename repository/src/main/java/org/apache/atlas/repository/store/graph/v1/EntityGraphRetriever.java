@@ -848,7 +848,8 @@ public final class EntityGraphRetriever {
                 String            entityGuid     = getGuid(referenceVertex);
                 AtlasRelationship relationship   = mapEdgeToAtlasRelationship(edge);
 
-                ret = new AtlasRelatedObjectId(entityGuid, entityTypeName, relationship.getGuid(),
+                ret = new AtlasRelatedObjectId(entityGuid, entityTypeName,
+                                               relationship.getGuid(), relationship.getStatus(),
                                                new AtlasStruct(relationship.getTypeName(), relationship.getAttributes()));
 
                 Object displayText = getDisplayText(referenceVertex, entityTypeName);
