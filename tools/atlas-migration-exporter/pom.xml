@@ -25,6 +25,7 @@
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-migration-exporter</artifactId>
     <description>Apache Atlas Migration Exporter</description>
