@@ -309,8 +309,8 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void numericAttributes() {
-        verify("Table where partitionSize = 2048", "g.V().has('__typeName', 'Table').has('Table.partitionSize', eq(2048)).dedup().limit(25).toList()");
-        verify("Table where partitionSize = 2048 or partitionSize = 10", "g.V().has('__typeName', 'Table').or(__.has('Table.partitionSize', eq(2048)),__.has('Table.partitionSize', eq(10))).dedup().limit(25).toList()");
+        verify("Table where partitionSize = 2048", "g.V().has('__typeName', 'Table').has('Table.partitionSize', eq(2048f)).dedup().limit(25).toList()");
+        verify("Table where partitionSize = 2048 or partitionSize = 10", "g.V().has('__typeName', 'Table').or(__.has('Table.partitionSize', eq(2048f)),__.has('Table.partitionSize', eq(10f))).dedup().limit(25).toList()");
     }
 
     @Test
@@ -527,6 +527,7 @@ public class GremlinQueryComposerTest {
 
         @Override
         public boolean isNumeric(GremlinQueryComposer.Context context, String attrName) {
+            context.setNumericTypeFormatter("f");
             return attrName.equals("partitionSize");
         }
     }

@@ -168,7 +168,7 @@ public class GremlinQueryComposer {
         if (lhsI.isDate()) {
             rhs = parseDate(rhs);
         } else if (lhsI.isNumeric()) {
-            rhs = parseNumber(rhs);
+            rhs = parseNumber(rhs, this.context);
         }
 
         rhs = addQuotesIfNecessary(lhsI, rhs);
@@ -190,8 +190,8 @@ public class GremlinQueryComposer {
         }
     }
 
-    private String parseNumber(String rhs) {
-        return rhs.replace("'", "").replace("\"", "");
+    private String parseNumber(String rhs, Context context) {
+        return rhs.replace("'", "").replace("\"", "") + context.getNumericTypeFormatter();
     }
 
     public void addAndClauses(List<String> clauses) {
@@ -622,10 +622,11 @@ public class GremlinQueryComposer {
         private static final AtlasStructType UNKNOWN_TYPE = new AtlasStructType(new AtlasStructDef());
 
         private final Lookup lookup;
-        private final Map<String, String> aliasMap = new HashMap<>();
-        private AtlasType            activeType;
-        private SelectClauseComposer selectClauseComposer;
-        private ClauseValidator      validator;
+        private final Map<String, String>   aliasMap = new HashMap<>();
+        private AtlasType                   activeType;
+        private SelectClauseComposer        selectClauseComposer;
+        private ClauseValidator             validator;
+        private String                      numericTypeFormatter = "";
 
         public Context(Lookup lookup) {
             this.lookup = lookup;
@@ -716,6 +717,14 @@ public class GremlinQueryComposer {
 
         public boolean check(boolean condition, AtlasErrorCode vm, String... args) {
             return validator.check(condition, vm, args);
+        }
+
+        public void setNumericTypeFormatter(String formatter) {
+            this.numericTypeFormatter = formatter;
+        }
+
+        public String getNumericTypeFormatter() {
+            return this.numericTypeFormatter;
         }
     }
 

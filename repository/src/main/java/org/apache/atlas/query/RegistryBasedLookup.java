@@ -25,9 +25,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.*;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 class RegistryBasedLookup implements Lookup {
     private static final Set<String> SYSTEM_ATTRIBUTES = new HashSet<>(
@@ -38,14 +36,15 @@ class RegistryBasedLookup implements Lookup {
                     Constants.TIMESTAMP_PROPERTY_KEY,
                     Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY));
 
-    private static final Set<String> NUMERIC_ATTRIBUTES = new HashSet<>(
-            Arrays.asList(AtlasBaseTypeDef.ATLAS_TYPE_SHORT,
-                    AtlasBaseTypeDef.ATLAS_TYPE_INT,
-                    AtlasBaseTypeDef.ATLAS_TYPE_LONG,
-                    AtlasBaseTypeDef.ATLAS_TYPE_FLOAT,
-                    AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE,
-                    AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER,
-                    AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL));
+    private static final Map<String, String> NUMERIC_ATTRIBUTES = new HashMap<String, String>() {{
+            put(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, "");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_INT, "");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_LONG, "L");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, "f");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, "d");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER, "");
+            put(AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL, "");
+        }};
 
     private final AtlasTypeRegistry typeRegistry;
 
@@ -220,6 +219,11 @@ class RegistryBasedLookup implements Lookup {
         }
 
         AtlasType attr = et.getAttributeType(attrName);
-        return attr != null && NUMERIC_ATTRIBUTES.contains(attr.getTypeName());
+        boolean ret = attr != null && NUMERIC_ATTRIBUTES.containsKey(attr.getTypeName());
+        if(ret) {
+            context.setNumericTypeFormatter(NUMERIC_ATTRIBUTES.get(attr.getTypeName()));
+        }
+
+        return ret;
     }
 }
