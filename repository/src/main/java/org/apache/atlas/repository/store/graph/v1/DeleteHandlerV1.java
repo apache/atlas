@@ -51,6 +51,7 @@ import static org.apache.atlas.model.instance.AtlasClassification.PropagationSta
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
@@ -498,6 +499,10 @@ public abstract class DeleteHandlerV1 {
         for (AtlasEdge edge : classificationEdges) {
             deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, false, instanceVertex);
         }
+
+        //remove traitNames and propagatedTraitNames property from instanceVertex
+        instanceVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
+        instanceVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
     }
 
     protected AtlasAttribute getAttributeForEdge(String edgeLabel) throws AtlasBaseException {
