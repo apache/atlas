@@ -570,6 +570,8 @@
         <aopalliance.version>1.0</aopalliance.version>
         <jackson.version>2.9.2</jackson.version>
         <commons-conf.version>1.10</commons-conf.version>
+        <commons-conf2.version>2.2</commons-conf2.version>
+
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-logging.version>1.1.3</commons-logging.version>
         <commons-lang.version>2.6</commons-lang.version>
@@ -582,6 +584,10 @@
 		<maven-site-plugin.version>3.7</maven-site-plugin.version>
 		<doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
+        <!-- hadoop.hdfs-client.version should same as hadoop version -->
+        <hadoop.hdfs-client.version>2.8.1</hadoop.hdfs-client.version>
+        <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
+        <woodstox-core.version>5.0.3</woodstox-core.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>

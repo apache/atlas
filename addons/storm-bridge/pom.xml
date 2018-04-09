@@ -254,6 +254,11 @@
                                             <artifactId>commons-configuration</artifactId>
                                             <version>${commons-conf.version}</version>
                                         </artifactItem>
+                                        <dependency>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
+                                        </dependency>
                                         <artifactItem>
                                             <groupId>commons-logging</groupId>
                                             <artifactId>commons-logging</artifactId>
@@ -295,6 +300,40 @@
                                             <version>${hadoop.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-auth</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-databind</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-core</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <dependency>
+                                            <groupId>org.codehaus.woodstox</groupId>
+                                            <artifactId>stax2-api</artifactId>
+                                            <version>${codehaus.woodstox.stax2-api.version}</version>
+                                        </dependency>
+                                        <dependency>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-hdfs-client</artifactId>
+                                            <version>${hadoop.hdfs-client.version}</version>
+                                        </dependency>
+
+                                        <artifactItem>
                                             <groupId>log4j</groupId>
                                             <artifactId>log4j</artifactId>
                                             <version>${log4j.version}</version>
@@ -308,6 +347,11 @@
                                             <groupId>javax.ws.rs</groupId>
                                             <artifactId>jsr311-api</artifactId>
                                             <version>${jsr.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.woodstox</groupId>
+                                            <artifactId>woodstox-core</artifactId>
+                                            <version>${woodstox-core.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
