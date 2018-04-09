@@ -49,7 +49,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepository {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraBasedAuditRepository.class);
 
