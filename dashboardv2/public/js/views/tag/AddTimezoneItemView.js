@@ -118,6 +118,7 @@ define(['require',
                     _.extend(endDateObj, { "minDate": that.ui.startTime.val() })
                     that.endDateInitialize(endDateObj);
                     that.model.set('startTime', that.ui.startTime.val());
+                    that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {
                     that.ui.startTime.val('');
                     delete endDateObj.minDate;
@@ -125,6 +126,7 @@ define(['require',
                     that.model.set('startTime', that.ui.startTime.val());
                 });
                 this.endDateInitialize(endDateObj);
+                 this.buttonActive({ isButtonActive: true });
             },
             buttonActive: function(option) {
                 var that = this;
@@ -134,13 +136,15 @@ define(['require',
                 }
             },
             onCloseButton: function() {
+                if (this.tagModel) {
+                    this.buttonActive({ isButtonActive: true });
+                }
                 if (this.parentView.collection.models.length > 0) {
                     this.model.destroy();
                 }
                 if (this.parentView.collection.models.length <= 0) {
                     this.parentView.ui.timeZoneDiv.hide();
                     this.parentView.ui.checkTimeZone.prop('checked', false);
-                    this.parentView.modal.$el.find('button.ok').attr("disabled", true);
                 }
             },
             endDateInitialize: function(option) {
@@ -148,6 +152,7 @@ define(['require',
                 this.ui.endTime.daterangepicker(option).on('apply.daterangepicker', function(ev, picker) {
                     that.ui.endTime.val(picker.startDate.format('YYYY/MM/DD hh:mm:ss'));
                     that.model.set('endTime', that.ui.endTime.val());
+                    that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {
                     that.ui.endTime.val('');
                     that.model.set('endTime', that.ui.endTime.val());
