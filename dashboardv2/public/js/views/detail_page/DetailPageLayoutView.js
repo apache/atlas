@@ -171,6 +171,7 @@ define(['require',
                         }
                     }
                     this.hideLoader();
+                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
                     var obj = {
                         entity: collectionJSON,
                         guid: this.id,
@@ -202,12 +203,29 @@ define(['require',
                     }
 
                     // To render Schema check attribute "schemaElementsAttribute"
-                    var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
+                    var schemaOptions = this.activeEntityDef.get('options');
                     if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
                         this.$('.schemaTable').show();
                         this.renderSchemaLayoutView(_.extend({}, obj, {
                             attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
                         }));
+                    }
+                    if (this.activeEntityDef && _.contains(this.activeEntityDef.get('superTypes'), "DataSet")) {
+                        this.$('.lineageGraph').show();
+                        this.renderLineageLayoutView({
+                            guid: this.id,
+                            entityDefCollection: this.entityDefCollection,
+                            actionCallBack: function() {
+                                that.$('#expand_collapse_panel').click();
+                            }
+                        });
+                        this.$(".resizeGraph").resizable({
+                            handles: ' s',
+                            minHeight: 375,
+                            stop: function(event, ui) {
+                                ui.element.height(($(this).height()));
+                            },
+                        });
                     }
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
@@ -223,43 +241,29 @@ define(['require',
                 var that = this;
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
-                this.renderLineageLayoutView({
-                    guid: this.id,
-                    entityDefCollection: this.entityDefCollection,
-                    actionCallBack: function() {
-                        that.$('#expand_collapse_panel').click();
-                    }
-                });
-                this.$(".resize-graph").resizable({
-                    handles: ' s',
-                    minHeight: 375,
-                    stop: function(event, ui) {
-                        that.$('.resize-graph').height(($(this).height()));
-                    },
-                });
-                this.ui.fullscreenPanel.on('fullscreen_done', function(e, panel) {
-                    var svgEl = panel.find('.panel-body svg'),
-                        scaleEl = svgEl.find('>g'),
-                        zoom = that.RLineageLayoutView.currentView.zoom,
-                        svg = that.RLineageLayoutView.currentView.svg,
-                        viewThis = that.RLineageLayoutView.currentView,
-                        setGraphZoomPositionCal = that.RLineageLayoutView.currentView.setGraphZoomPositionCal,
-                        zoomed = that.RLineageLayoutView.currentView.zoomed;;
+                // this.ui.fullscreenPanel.on('fullscreen_done', function(e, panel) {
+                //     var svgEl = panel.find('.panel-body svg'),
+                //         scaleEl = svgEl.find('>g'),
+                //         zoom = that.RLineageLayoutView.currentView.zoom,
+                //         svg = that.RLineageLayoutView.currentView.svg,
+                //         viewThis = that.RLineageLayoutView.currentView,
+                //         setGraphZoomPositionCal = that.RLineageLayoutView.currentView.setGraphZoomPositionCal,
+                //         zoomed = that.RLineageLayoutView.currentView.zoomed;;
 
-                    if (zoom) {
-                        setGraphZoomPositionCal.call(viewThis);
-                        zoomed.call(viewThis);
-                        if ($(e.currentTarget).find('i').hasClass('fa fa-compress')) {
-                            svg.call(zoom)
-                                .on("dblclick.zoom", null);
+                //     if (zoom) {
+                //         setGraphZoomPositionCal.call(viewThis);
+                //         zoomed.call(viewThis);
+                //         if ($(e.currentTarget).find('i').hasClass('fa fa-compress')) {
+                //             svg.call(zoom)
+                //                 .on("dblclick.zoom", null);
 
-                        } else {
-                            svg.call(zoom)
-                                .on("wheel.zoom", null)
-                                .on("dblclick.zoom", null);
-                        }
-                    }
-                })
+                //         } else {
+                //             svg.call(zoom)
+                //                 .on("wheel.zoom", null)
+                //                 .on("dblclick.zoom", null);
+                //         }
+                //     }
+                // })
             },
             onShow: function() {
                 var params = Utils.getUrlState.getQueryParams();
@@ -278,13 +282,17 @@ define(['require',
                 this.collection.fetch({ reset: true });
             },
             getEntityDef: function(entityObj) {
-                var data = this.entityDefCollection.fullCollection.findWhere({ name: entityObj.typeName }).toJSON();
-                var attributeDefs = Utils.getNestedSuperTypeObj({
-                    data: data,
-                    attrMerge: true,
-                    collection: this.entityDefCollection
-                });
-                return attributeDefs;
+                if (this.activeEntityDef) {
+                    var data = this.activeEntityDef.toJSON();
+                    var attributeDefs = Utils.getNestedSuperTypeObj({
+                        data: data,
+                        attrMerge: true,
+                        collection: this.entityDefCollection
+                    });
+                    return attributeDefs;
+                } else {
+                    return [];
+                }
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),

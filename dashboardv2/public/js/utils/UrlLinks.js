@@ -88,6 +88,14 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return lineageUrl
             }
         },
+        relationshipApiUrl: function(guid) {
+            var relationshipUrl = this.baseUrlV2 + '/relationship';
+            if (guid) {
+                return relationshipUrl + '/guid/' + guid;
+            } else {
+                return relationshipUrl
+            }
+        },
         schemaApiUrl: function(guid) {
             var lineageUrl = this.baseUrl + '/lineage';
             if (guid) {

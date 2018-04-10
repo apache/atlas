@@ -30,7 +30,7 @@
                 </button>
             </div>
         </div>
-         <div class="form-group" style="display: none;" data-id="propagatedTagDiv">
+        <div class="form-group" style="display: none;" data-id="propagatedTagDiv">
             <span class="control-label-sm-pr pull-left">Propagated Classifications:</span>
             <div class="pull-left" data-id="propagatedTagList">
             </div>
@@ -40,7 +40,7 @@
         <div class="col-sm-12 default-tab">
             <ul class="nav nav-tabs" data-id="tab-list">
                 <li role="properties" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
-                <li role="lineage" class="tab"><a href="#tab-lineage" aria-controls="tab-lineage" role="tab" data-toggle="tab">Lineage</a></li>
+                <li role="lineage" class="tab lineageGraph" style="display:none"><a href="#tab-lineage" aria-controls="tab-lineage" role="tab" data-toggle="tab">Lineage</a></li>
                 <li role="relationship" class="tab"><a href="#tab-relationship" aria-controls="tab-relationship" role="tab" data-toggle="tab">Relationships</a></li>
                 <li role="classification"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
                 <li role="audit" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
@@ -60,7 +60,7 @@
             </div>
         </div>
         <div id="tab-lineage" role="lineage" class="tab-pane animated fadeIn">
-            <div class="resize-graph animated" align="center" style="height:64vh;">
+            <div class="resizeGraph animated position-relative" align="center" style="height:64vh;">
                 <div id="r_lineageLayoutView">
                     <div class="fontLoader-relative">
                         <i class="fa fa-refresh fa-spin-custom"></i>
@@ -69,7 +69,7 @@
             </div>
         </div>
         <div id="tab-relationship" role="relationship" class="tab-pane animated fadeIn">
-            <div class="resize-graph animated" align="center" style="height:64vh;">
+            <div class="resizeGraph animated position-relative" align="center" style="height:64vh;">
                 <div id="r_relationshipLayoutView">
                     <div class="fontLoader-relative">
                         <i class="fa fa-refresh fa-spin-custom"></i>

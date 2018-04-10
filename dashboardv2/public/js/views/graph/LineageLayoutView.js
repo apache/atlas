@@ -25,8 +25,9 @@ define(['require',
     'dagreD3',
     'd3-tip',
     'utils/Enums',
-    'utils/UrlLinks'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks) {
+    'utils/UrlLinks',
+    'platform'
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks, platform) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -56,15 +57,17 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack'));
-                this.entityModel = new VEntity();
                 this.collection = new VLineageList();
+                this.lineageData = null;
                 this.typeMap = {};
+                this.apiGuid = {};
                 this.asyncFetchCounter = 0;
-                this.fetchGraphData();
+                this.edgeCall;
             },
             onRender: function() {
                 var that = this;
                 this.$('.fontLoader').show();
+                this.fetchGraphData();
                 if (this.layoutRendered) {
                     this.layoutRendered();
                 }
@@ -90,12 +93,14 @@ define(['require',
                     skipDefaultError: true,
                     success: function(data) {
                         if (data.relations.length) {
+                            that.lineageData = data;
                             that.generateData(data.relations, data.guidEntityMap);
                         } else {
                             that.noLineage();
                         }
                     },
                     cust_error: function(model, response) {
+                        that.lineageData = [];
                         that.noLineage();
                     }
                 })
@@ -103,7 +108,7 @@ define(['require',
             noLineage: function() {
                 this.$('.fontLoader').hide();
                 //this.$('svg').height('100');
-                this.$('svg').html('<text x="' + (this.$('svg').width() - 150) / 2 + '" y="' + this.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No lineage data found</text>');
                 if (this.actionCallBack) {
                     this.actionCallBack();
                 }
@@ -142,9 +147,10 @@ define(['require',
                     }
                     var styleObj = {
                         fill: 'none',
-                        stroke: '#8bc152'
+                        stroke: '#8bc152',
+                        width: 2
                     }
-                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + "", 'styleObj': styleObj });
+                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
                 });
 
                 if (this.fromToObj[this.guid]) {
@@ -180,17 +186,19 @@ define(['require',
                     scaleEl = this.$('svg').find('>g'),
                     translateValue = [(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2]
                 if (_.keys(this.g._nodes).length > 15) {
-                    translateValue = [((this.$('svg').width() / 2)) / 2, 20];
                     initialScale = 0;
                     this.$('svg').addClass('noScale');
                 }
-                if (svgEl.parents('.panel.panel-fullscreen').length && svgEl.hasClass('noScale')) {
-                    if (!scaleEl.hasClass('scaleLinage')) {
-                        scaleEl.addClass('scaleLinage');
-                        initialScale = 1.2;
-                    } else {
-                        scaleEl.removeClass('scaleLinage');
-                        initialScale = 0;
+                if (svgEl.parents('.panel.panel-fullscreen').length) {
+                    translateValue = [20, 20];
+                    if (svgEl.hasClass('noScale')) {
+                        if (!scaleEl.hasClass('scaleLinage')) {
+                            scaleEl.addClass('scaleLinage');
+                            initialScale = 1.2;
+                        } else {
+                            scaleEl.removeClass('scaleLinage');
+                            initialScale = 0;
+                        }
                     }
                 } else {
                     scaleEl.removeClass('scaleLinage');
@@ -344,7 +352,7 @@ define(['require',
                 d3.selectAll(this.$('span.lineageZoomButton')).on('click', zoomClick);
                 var tooltip = d3Tip()
                     .attr('class', 'd3-tip')
-                    .offset([-18, 0])
+                    .offset([10, 0])
                     .html(function(d) {
                         var value = that.g.node(d);
                         var htmlStr = "";
@@ -363,7 +371,6 @@ define(['require',
 
                 svg.call(zoom)
                     .call(tooltip);
-                this.$('.fontLoader').hide();
                 render(svgGroup, this.g);
                 svg.on("dblclick.zoom", null)
                     .on("wheel.zoom", null);
@@ -414,6 +421,18 @@ define(['require',
                             }
                         }, 400)
                     });
+                svgGroup.selectAll("g.edgePath path.path").on('click', function(d) {
+                    var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) },
+                        relationshipId = data.obj.relationshipId;
+                    require(['views/graph/PropagationPropertyModal'], function(PropagationPropertyModal) {
+                        var view = new PropagationPropertyModal({
+                            edgeInfo: data,
+                            relationshipId: relationshipId,
+                            lineageData: that.lineageData,
+                            apiGuid: that.apiGuid
+                        });
+                    });
+                })
                 $('body').on('mouseover', '.d3-tip', function(el) {
                     that.activeTip = true;
                 });
@@ -427,7 +446,6 @@ define(['require',
                 this.setGraphZoomPositionCal();
                 zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
-
             }
         });
     return LineageLayoutView;

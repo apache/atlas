@@ -414,9 +414,19 @@ div.columnmanager-dropdown-container {
     color: #626467;
     border: 1px solid black;
 }
+
 .text-center {
     text-align: center !important;
 }
-.margin-15{
+
+.margin-15 {
     margin: 15px 0px;
+}
+
+.padding-left-0 {
+    padding-left: 0px !important;
+}
+
+.fa-color {
+    color: $color_keppel_approx
 }
