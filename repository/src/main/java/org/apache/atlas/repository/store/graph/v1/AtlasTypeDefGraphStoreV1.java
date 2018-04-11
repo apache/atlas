@@ -384,6 +384,16 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         return atlasGraph.addEdge(outVertex, inVertex, edgeLabel);
     }
 
+    void removeEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) {
+        Iterable<AtlasEdge> edges = outVertex.getEdges(AtlasEdgeDirection.OUT, edgeLabel);
+
+        for (AtlasEdge edge : edges) {
+            if (edge.getInVertex().getId().equals(inVertex.getId())) {
+                atlasGraph.removeEdge(edge);
+            }
+        }
+    }
+
     void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory)
             throws AtlasBaseException {
         Set<String> currentSuperTypes = getSuperTypeNames(vertex);
@@ -420,6 +430,18 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
                 }
                 getOrCreateEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV1.ENTITYTYPE_EDGE_LABEL);
             }
+        } else if (CollectionUtils.isNotEmpty(currentEntityTypes)) { // remove the restrictions, if present
+            for (String entityType : currentEntityTypes) {
+                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
+
+                if (entityTypeVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName,entityType);
+
+                }
+
+                removeEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV1.ENTITYTYPE_EDGE_LABEL);
+            }
+
         }
     }
 
