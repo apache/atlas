@@ -882,7 +882,7 @@ public class GlossaryService {
             if (DEBUG_ENABLED) {
                 LOG.debug("Creating relation between glossary = {} and term = {}", glossaryTerm.getAnchor().getGlossaryGuid(), saved.getGuid());
             }
-            createRelationship(defineTermAnchorRelation(glossaryTerm.getAnchor().getGlossaryGuid(), glossaryTerm.getGuid()));
+            createRelationship(defineTermAnchorRelation(glossaryTerm.getAnchor().getGlossaryGuid(), saved.getGuid()));
         }
     }
 

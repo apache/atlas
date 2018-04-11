@@ -71,19 +71,6 @@ public class DataAccess {
                 throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
             }
 
-            // Since mutation context has guid information, attempt to set the same.
-            if (entityMutationResponse.getFirstEntityCreated() != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Object created");
-                }
-                obj.setGuid(entityMutationResponse.getFirstEntityCreated().getGuid());
-            } else if (entityMutationResponse.getFirstEntityUpdated() != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Object updated");
-                }
-                obj.setGuid(entityMutationResponse.getFirstEntityUpdated().getGuid());
-            }
-
             return this.load(obj);
 
         } finally {
