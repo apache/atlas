@@ -21,7 +21,6 @@ package org.apache.atlas.migration;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.type.AtlasType;
@@ -38,7 +37,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 
 
@@ -139,14 +137,14 @@ public class Exporter {
     private void exportData() throws Exception {
         displayMessage("exporting data to file " + dataFileName);
 
-        OutputStream os = null;
+        FileOutputStream os = null;
 
         try {
             os = new FileOutputStream(dataFileName);
 
             Graph graph = getTitan0GraphDatabase();
 
-            GraphSONWriter.outputGraph(graph, os, GraphSONMode.EXTENDED);
+            AtlasGraphSONWriter.outputGraph(graph, os, GraphSONMode.EXTENDED);
         } finally {
             if (os != null) {
                 try {
