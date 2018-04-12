@@ -202,7 +202,7 @@
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
                 "type": "DataSet",
-                "name": "sourceToProcesses",
+                "name": "inputToProcesses",
                 "isContainer": false,
                 "cardinality": "SET"
             },
@@ -228,7 +228,7 @@
           },
           "endDef2": {
                 "type": "DataSet",
-                "name": "sinkFromProcesses",
+                "name": "outputFromProcesses",
                 "isContainer": false,
                 "cardinality": "SET"
           },
