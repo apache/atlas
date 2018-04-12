@@ -327,12 +327,14 @@ public abstract class AtlasBaseClient {
         ClientResponse clientResponse = null;
         int i = 0;
         do {
-            LOG.info("------------------------------------------------------");
-            LOG.info("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
-            LOG.info("Content-type : {} ", api.getConsumes());
-            LOG.info("Accept       : {} ", api.getProduces());
-            if (requestObject != null) {
-                LOG.info("Request      : {}", requestObject);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("------------------------------------------------------");
+                LOG.debug("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
+                LOG.debug("Content-type : {} ", api.getConsumes());
+                LOG.debug("Accept       : {} ", api.getProduces());
+                if (requestObject != null) {
+                    LOG.debug("Request      : {}", requestObject);
+                }
             }
 
             WebResource.Builder requestBuilder = resource.getRequestBuilder();
@@ -349,7 +351,12 @@ public abstract class AtlasBaseClient {
 
             clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
-            LOG.info("HTTP Status  : {}", clientResponse.getStatus());
+            LOG.debug("HTTP Status  : {}", clientResponse.getStatus());
+
+            if (!LOG.isDebugEnabled()) {
+                LOG.info("method={} path={} contentType={} accept={} status={}", api.getMethod(),
+                    api.getNormalizedPath(), api.getConsumes(), api.getProduces(), clientResponse.getStatus());
+            }
 
             if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
                 if (responseType == null) {
@@ -360,16 +367,16 @@ public abstract class AtlasBaseClient {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
                             JsonNode jsonObject = AtlasJson.parseToV1JsonNode(stringEntity);
-                            LOG.info("Response     : {}", jsonObject);
-                            LOG.info("------------------------------------------------------");
+                            LOG.debug("Response     : {}", jsonObject);
+                            LOG.debug("------------------------------------------------------");
                             return (T) jsonObject;
                         } catch (IOException e) {
                             throw new AtlasServiceException(api, e);
                         }
                     } else {
                         T entity = clientResponse.getEntity(responseType);
-                        LOG.info("Response     : {}", entity);
-                        LOG.info("------------------------------------------------------");
+                        LOG.debug("Response     : {}", entity);
+                        LOG.debug("------------------------------------------------------");
                         return entity;
                     }
                 } catch (ClientHandlerException e) {
