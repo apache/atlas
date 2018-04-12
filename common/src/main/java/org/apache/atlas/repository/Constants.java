@@ -65,6 +65,8 @@ public final class Constants {
     public static final String RELATIONSHIPTYPE_END2_KEY = "endDef2";
     public static final String RELATIONSHIPTYPE_CATEGORY_KEY = "relationshipCategory";
     public static final String RELATIONSHIPTYPE_TAG_PROPAGATION_KEY = "tagPropagation";
+    public static final String RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY = "blockedPropagatedClassifications";
+
     /**
      * Trait names property key and index name.
      */
@@ -119,6 +121,7 @@ public final class Constants {
     public static final String CLASSIFICATION_ENTITY_GUID                     = INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid";
     public static final String CLASSIFICATION_VALIDITY_PERIODS_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "validityPeriods";
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
+    public static final String CLASSIFICATION_VERTEX_NAME_KEY                 = TYPE_NAME_PROPERTY_KEY;
     public static final String CLASSIFICATION_EDGE_NAME_PROPERTY_KEY          = INTERNAL_PROPERTY_KEY_PREFIX + "name";
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated";
     public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;

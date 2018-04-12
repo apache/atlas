@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.DELETED;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
@@ -81,6 +82,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLa
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
@@ -459,27 +461,7 @@ public final class EntityGraphRetriever {
         }
     }
 
-    public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
-        List<AtlasClassification> ret   = new ArrayList<>();
-        Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                                              .has(CLASSIFICATION_EDGE_STATE_PROPERTY_KEY, ACTIVE.name()).edges();
-
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
-
-                if (edge != null) {
-                    ret.add(toAtlasClassification(edge.getInVertex()));
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    protected List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
+    public List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
         List<AtlasVertex> ret   = new ArrayList<>();
         Iterable          edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
@@ -495,6 +477,25 @@ public final class EntityGraphRetriever {
                     if (isPropagationEnabled(classificationVertex)) {
                         ret.add(classificationVertex);
                     }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
+        List<AtlasClassification> ret   = new ArrayList<>();
+        Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
+
+        if (edges != null) {
+            Iterator<AtlasEdge> iterator = edges.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                if (edge != null) {
+                    ret.add(toAtlasClassification(edge.getInVertex()));
                 }
             }
         }
@@ -897,7 +898,7 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
-    private AtlasRelationship mapSystemAttributes(AtlasEdge edge, AtlasRelationship relationship) {
+    private AtlasRelationship mapSystemAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping system attributes for relationship");
         }
@@ -929,7 +930,48 @@ public final class EntityGraphRetriever {
         relationship.setLabel(edge.getLabel());
         relationship.setPropagateTags(getPropagateTags(edge));
 
+        // set propagated and blocked propagated classifications
+        readClassificationsFromEdge(edge, relationship);
+
         return relationship;
+    }
+
+    private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
+        List<AtlasVertex>         classificationVertices    = getClassificationVertices(edge);
+        List<String>              blockedClassificationIds  = getBlockedClassificationIds(edge);
+        List<AtlasClassification> propagatedClassifications = new ArrayList<>();
+        List<AtlasClassification> blockedClassifications    = new ArrayList<>();
+
+        for (AtlasVertex classificationVertex : classificationVertices) {
+            String classificationId = classificationVertex.getIdForDisplay();
+
+            if (blockedClassificationIds.contains(classificationId)) {
+                blockedClassifications.add(toAtlasClassification(classificationVertex));
+            } else {
+                propagatedClassifications.add(toAtlasClassification(classificationVertex));
+            }
+        }
+
+        relationship.setPropagatedClassifications(propagatedClassifications);
+        relationship.setBlockedPropagatedClassifications(blockedClassifications);
+    }
+
+    public List<AtlasVertex> getClassificationVertices(AtlasEdge edge) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (edge != null) {
+            PropagateTags propagateTags = getPropagateTags(edge);
+
+            if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+                ret.addAll(getPropagationEnabledClassificationVertices(edge.getOutVertex()));
+            }
+
+            if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
+                ret.addAll(getPropagationEnabledClassificationVertices(edge.getInVertex()));
+            }
+        }
+
+        return ret;
     }
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
@@ -957,7 +999,7 @@ public final class EntityGraphRetriever {
         AtlasVertex outVertex = edge.getOutVertex();
         AtlasVertex inVertex  = edge.getInVertex();
 
-        if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+        if (propagateTags == ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
             addTagPropagation(outVertex, inVertex, edge);
         }
 
@@ -974,7 +1016,7 @@ public final class EntityGraphRetriever {
         AtlasVertex outVertex = edge.getOutVertex();
         AtlasVertex inVertex  = edge.getInVertex();
 
-        if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+        if (propagateTags == ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
             removeTagPropagation(outVertex, inVertex, edge);
         }
 

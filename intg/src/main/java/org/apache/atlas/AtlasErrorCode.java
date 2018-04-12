@@ -128,9 +128,9 @@ public enum AtlasErrorCode {
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(400, "ATLAS-400-00-06E", "No classifications associated with entity: {0}"),
     INVALID_CLASSIFICATION_PARAMS(400, "ATLAS-400-00-06F", "Invalid classification parameters passed for {0} operation for entity: {1}"),
     PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity"),
-    // Glossary Related errors
     INVALID_PARTIAL_UPDATE_ATTR_VAL(400, "ATLAS-400-00-071", "Invalid attrVal for partial update of {0}, expected = {1} found {2}"),
     MISSING_MANDATORY_ANCHOR(400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing"),
+    INVALID_BLOCKED_PROPAGATED_CLASSIFICATION(400, "ATLAS-400-00-073", "Invalid propagated classification: {0} with entityGuid: {1} added to blocked propagated classifications."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

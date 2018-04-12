@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -62,7 +63,8 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
@@ -312,7 +314,8 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
         updateTagPropagations(relationshipEdge, relationship.getPropagateTags());
 
-        AtlasGraphUtilsV1.setProperty(relationshipEdge, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, relationship.getPropagateTags().name());
+        // update blocked propagated classifications
+        handleBlockedClassifications(relationshipEdge, relationship.getBlockedPropagatedClassifications());
 
         if (MapUtils.isNotEmpty(relationType.getAllAttributes())) {
             for (AtlasAttribute attr : relationType.getAllAttributes().values()) {
@@ -326,6 +329,53 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         }
 
         return entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
+    }
+
+    private void handleBlockedClassifications(AtlasEdge edge, List<AtlasClassification> blockedPropagatedClassifications) throws AtlasBaseException {
+        if (blockedPropagatedClassifications != null) {
+            List<AtlasVertex> propagatedClassificationVertices = blockedPropagatedClassifications.isEmpty() ? null : entityRetriever.getClassificationVertices(edge);
+            List<String>      classificationIds                = new ArrayList<>();
+
+            for (AtlasClassification classification : blockedPropagatedClassifications) {
+                String classificationId = validateBlockedPropagatedClassification(propagatedClassificationVertices, classification);
+
+                // ignore invalid blocked propagated classification
+                if (classificationId == null) {
+                    continue;
+                }
+
+                classificationIds.add(classificationId);
+            }
+
+            addToBlockedClassificationIds(edge, classificationIds);
+        }
+    }
+
+    // propagated classifications should contain blocked propagated classification
+    private String validateBlockedPropagatedClassification(List<AtlasVertex> classificationVertices, AtlasClassification classification) throws AtlasBaseException {
+        String ret = null;
+
+        for (AtlasVertex vertex : classificationVertices) {
+            String classificationName = AtlasGraphUtilsV1.getProperty(vertex, CLASSIFICATION_VERTEX_NAME_KEY, String.class);
+            String entityGuid         = AtlasGraphUtilsV1.getProperty(vertex, CLASSIFICATION_ENTITY_GUID, String.class);
+
+            if (classificationName.equals(classification.getTypeName()) && entityGuid.equals(classification.getEntityGuid())) {
+                ret = vertex.getIdForDisplay();
+                break;
+            }
+        }
+
+        return ret;
+    }
+
+    private void addToBlockedClassificationIds(AtlasEdge edge, List<String> classificationIds) {
+        if (edge != null) {
+            if (classificationIds.isEmpty()) {
+                edge.removeProperty(Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY);
+            } else {
+                edge.setListProperty(Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, classificationIds);
+            }
+        }
     }
 
     private void updateTagPropagations(AtlasEdge relationshipEdge, PropagateTags tagPropagation) throws AtlasBaseException {
@@ -365,6 +415,8 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
                     entityRetriever.removeTagPropagation(relationshipEdge, ONE_TO_TWO);
                 }
             }
+
+            AtlasGraphUtilsV1.setProperty(relationshipEdge, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
         }
     }
 
@@ -570,6 +622,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             AtlasGraphUtilsV1.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, guid);
             AtlasGraphUtilsV1.setProperty(ret, Constants.VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
             AtlasGraphUtilsV1.setProperty(ret, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
+
+            // blocked propagated classifications
+            handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
 
             // propagate tags
             entityRetriever.addTagPropagation(ret, tagPropagation);

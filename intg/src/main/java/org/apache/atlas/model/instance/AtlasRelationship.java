@@ -24,12 +24,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +64,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public static final String KEY_LABEL          = "label";
     public static final String KEY_PROPAGATE_TAGS = "propagateTags";
 
+    public static final String KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS = "blockedPropagatedClassifications";
+    public static final String KEY_PROPAGATED_CLASSIFICATIONS         = "propagatedClassifications";
+
     private String        guid          = null;
     private AtlasObjectId end1          = null;
     private AtlasObjectId end2          = null;
@@ -74,6 +80,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Long          version       = 0L;
 
     public enum Status { ACTIVE, DELETED }
+
+    private List<AtlasClassification> propagatedClassifications;
+    private List<AtlasClassification> blockedPropagatedClassifications;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -97,13 +106,13 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2) {
         super(typeName);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L);
+        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
@@ -131,6 +140,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
             Object createTime    = map.get(KEY_CREATE_TIME);
             Object updateTime    = map.get(KEY_UPDATE_TIME);
             Object version       = map.get(KEY_VERSION);
+
+            Object propagatedClassifications        = map.get(KEY_PROPAGATED_CLASSIFICATIONS);
+            Object blockedPropagatedClassifications = map.get(KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS);
 
             if (oGuid != null) {
                 setGuid(oGuid.toString());
@@ -183,6 +195,30 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
             if (version instanceof Number) {
                 setVersion(((Number) version).longValue());
             }
+
+            if (CollectionUtils.isNotEmpty((List) propagatedClassifications)) {
+                this.propagatedClassifications = new ArrayList<>();
+
+                for (Object elem : (List) propagatedClassifications) {
+                    if (elem instanceof AtlasClassification) {
+                        this.propagatedClassifications.add((AtlasClassification) elem);
+                    } else if (elem instanceof Map) {
+                        this.propagatedClassifications.add(new AtlasClassification((Map) elem));
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty((List) blockedPropagatedClassifications)) {
+                this.blockedPropagatedClassifications = new ArrayList<>();
+
+                for (Object elem : (List) blockedPropagatedClassifications) {
+                    if (elem instanceof AtlasClassification) {
+                        this.blockedPropagatedClassifications.add((AtlasClassification) elem);
+                    } else if (elem instanceof Map) {
+                        this.blockedPropagatedClassifications.add(new AtlasClassification((Map) elem));
+                    }
+                }
+            }
         }
     }
 
@@ -190,8 +226,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         super(other);
 
         if (other != null) {
-            init(other.guid, other.end1, other.end2, other.label, other.propagateTags, other.status,
-                 other.createdBy, other.updatedBy, other.createTime, other.updateTime, other.version);
+            init(other.guid, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
+                 other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
         }
     }
 
@@ -271,12 +307,29 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 
+    public List<AtlasClassification> getPropagatedClassifications() {
+        return propagatedClassifications;
+    }
+
+    public void setPropagatedClassifications(List<AtlasClassification> propagatedClassifications) {
+        this.propagatedClassifications = propagatedClassifications;
+    }
+
+    public List<AtlasClassification> getBlockedPropagatedClassifications() {
+        return blockedPropagatedClassifications;
+    }
+
+    public void setBlockedPropagatedClassifications(List<AtlasClassification> blockedPropagatedClassifications) {
+        this.blockedPropagatedClassifications = blockedPropagatedClassifications;
+    }
+
     private void init() {
-        init(nextInternalId(), null, null, null, null, null,  null, null, null, null, 0L);
+        init(nextInternalId(), null, null, null, null, null,  null, null, null, null, 0L, null, null);
     }
 
     private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
-                      Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version) {
+                      Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
+                      List<AtlasClassification> propagatedClassifications, List<AtlasClassification> blockedPropagatedClassifications) {
         setGuid(guid);
         setEnd1(end1);
         setEnd2(end2);
@@ -288,6 +341,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         setCreateTime(createTime);
         setUpdateTime(updateTime);
         setVersion(version);
+        setPropagatedClassifications(propagatedClassifications);
+        setBlockedPropagatedClassifications(blockedPropagatedClassifications);
     }
 
     @Override
@@ -309,6 +364,12 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         dumpDateField(", createTime=", createTime, sb);
         dumpDateField(", updateTime=", updateTime, sb);
         sb.append(", version=").append(version);
+        sb.append(", propagatedClassifications=[");
+        dumpObjects(propagatedClassifications, sb);
+        sb.append("]");
+        sb.append(", blockedPropagatedClassifications=[");
+        dumpObjects(blockedPropagatedClassifications, sb);
+        sb.append("]");
         sb.append('}');
 
         return sb;
@@ -331,13 +392,15 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
                 Objects.equals(updatedBy, that.updatedBy) &&
                 Objects.equals(createTime, that.createTime) &&
                 Objects.equals(updateTime, that.updateTime) &&
-                Objects.equals(version, that.version);
+                Objects.equals(version, that.version) &&
+                Objects.equals(propagatedClassifications, that.propagatedClassifications) &&
+                Objects.equals(blockedPropagatedClassifications, that.blockedPropagatedClassifications);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, end1, end2, label, propagateTags,
-                status, createdBy, updatedBy, createTime, updateTime, version);
+        return Objects.hash(super.hashCode(), guid, end1, end2, label, propagateTags, status, createdBy, updatedBy,
+                            createTime, updateTime, version, propagatedClassifications, blockedPropagatedClassifications);
     }
 
     @Override

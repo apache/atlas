@@ -1060,6 +1060,18 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<String> getBlockedClassificationIds(AtlasEdge edge) {
+        List<String> ret = null;
+
+        if (edge != null) {
+            List<String> classificationIds = AtlasGraphUtilsV1.getProperty(edge, Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, List.class);
+
+            ret = CollectionUtils.isNotEmpty(classificationIds) ? classificationIds : Collections.emptyList();
+        }
+
+        return ret;
+    }
+
     public static PropagateTags getPropagateTags(AtlasElement element) {
         String propagateTags = element.getProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class);
 
