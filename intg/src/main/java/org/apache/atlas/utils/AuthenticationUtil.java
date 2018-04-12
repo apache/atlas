@@ -47,6 +47,20 @@ public final class AuthenticationUtil {
         return atlasConf.getBoolean("atlas.authentication.method.kerberos", false);
     }
 
+    public static boolean includeHadoopGroups(){
+        boolean includeHadoopGroups = false;
+
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            includeHadoopGroups = configuration.getBoolean("atlas.authentication.ugi-groups.include-hadoop-groups", includeHadoopGroups);
+        } catch (AtlasException e) {
+            LOG.error("AuthenticationUtil::includeHadoopGroups(). Error while loading atlas application properties ", e);
+        }
+
+        return includeHadoopGroups;
+    }
+
     public static String[] getBasicAuthenticationInput() {
         String username = null;
         String password = null;

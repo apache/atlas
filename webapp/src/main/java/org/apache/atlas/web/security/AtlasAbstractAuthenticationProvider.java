@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -33,7 +34,11 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import org.apache.atlas.utils.AuthenticationUtil;
 
 public abstract class AtlasAbstractAuthenticationProvider implements AuthenticationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractAuthenticationProvider.class);
@@ -94,33 +99,51 @@ public abstract class AtlasAbstractAuthenticationProvider implements Authenticat
     }
 
     public static List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
-        List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
+        Set<String>          userGroups = new HashSet<>();
+        UserGroupInformation ugi        = UserGroupInformation.createRemoteUser(userName);
 
-        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(userName);
         if (ugi != null) {
-            String[] userGroups = ugi.getGroupNames();
-            if (userGroups != null) {
-                for (String group : userGroups) {
-                    grantedAuths.add(new SimpleGrantedAuthority(group));
+            String[] groups = ugi.getGroupNames();
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("UserGroupInformation userGroups=" + groups);
+            }
+
+            if (groups != null) {
+                for (String group : groups) {
+                    userGroups.add(group);
                 }
             }
         }
-        // if group empty take groups from UGI LDAP-based group mapping
-        if (grantedAuths != null && grantedAuths.isEmpty()) {
+
+        // if group empty take groups from Hadoop LDAP-based group mapping
+        if (CollectionUtils.isEmpty(userGroups) || AuthenticationUtil.includeHadoopGroups()) {
             try {
                 Configuration config = new Configuration();
-                Groups gp = new Groups(config);
-                List<String> userGroups = gp.getGroups(userName);
-                if (userGroups != null) {
-                    for (String group : userGroups) {
-                        grantedAuths.add(new SimpleGrantedAuthority(group));
+                Groups        gp     = new Groups(config);
+                List<String>  groups = gp.getGroups(userName);
+
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("Hadoop userGroups=" + groups);
+                }
+
+                if (groups != null) {
+                    for (String group : groups) {
+                        userGroups.add(group);
                     }
                 }
             } catch (java.io.IOException e) {
                 LOG.error("Exception while fetching groups ", e);
             }
         }
-        return grantedAuths;
+
+        List<GrantedAuthority> ret = new ArrayList<>();
+
+        for (String userGroup : userGroups) {
+            ret.add(new SimpleGrantedAuthority(userGroup));
+        }
+
+        return ret;
     }
 
 }
