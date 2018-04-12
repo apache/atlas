@@ -40,15 +40,19 @@ public class CassandraAuditRepositoryTest extends AuditRepositoryTestBase {
     private final int CLUSTER_PORT          = 9042;
 
     @BeforeClass
-    public void setup() throws InterruptedException, TTransportException, ConfigurationException, IOException,
-            AtlasException {
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra_test.yml");
-        eventRepository = new CassandraBasedAuditRepository();
-        Configuration atlasConf = new MapConfiguration(getClusterProperties());
-        ((CassandraBasedAuditRepository) eventRepository).setApplicationProperties(atlasConf);
-        ((CassandraBasedAuditRepository) eventRepository).start();
+    public void setup() {
+        try {
+            EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra_test.yml");
+            eventRepository = new CassandraBasedAuditRepository();
+            Configuration atlasConf = new MapConfiguration(getClusterProperties());
+            ((CassandraBasedAuditRepository) eventRepository).setApplicationProperties(atlasConf);
+            ((CassandraBasedAuditRepository) eventRepository).start();
 
-        ensureClusterCreation();
+            ensureClusterCreation();
+        }
+        catch (Exception ex) {
+            throw new SkipException("setup: failed!", ex);
+        }
     }
 
     private Map<String, Object> getClusterProperties() {
