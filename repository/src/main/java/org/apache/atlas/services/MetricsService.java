@@ -18,21 +18,25 @@
 package org.apache.atlas.services;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @AtlasService
 public class MetricsService {
@@ -51,6 +55,7 @@ public class MetricsService {
 
     protected static final String METRIC_ENTITY_COUNT    = ENTITY + "Count";
     protected static final String METRIC_ENTITY_DELETED  = ENTITY + "Deleted";
+    protected static final String METRIC_ENTITY_ACTIVE   = ENTITY + "Active";
     protected static final String METRIC_TAGGED_ENTITIES = ENTITY + "Tagged";
     protected static final String METRIC_TAGS_PER_ENTITY = ENTITY + "Tags";
 
@@ -63,29 +68,30 @@ public class MetricsService {
 
     public static final String METRIC_COLLECTION_TIME = "collectionTime";
 
-    private static Configuration            configuration = null;
+    private static Configuration             configuration        = null;
     private static AtlasGremlinQueryProvider gremlinQueryProvider = null;
 
-    private final AtlasGraph                atlasGraph;
-    private final int                       cacheTTLInSecs;
+    private final AtlasGraph        atlasGraph;
+    private final AtlasTypeRegistry typeRegistry;
+    private final int               cacheTTLInSecs;
 
     private AtlasMetrics cachedMetrics       = null;
     private long         cacheExpirationTime = 0;
 
 
     @Inject
-    public MetricsService(AtlasGraph atlasGraph) throws AtlasException {
-        this(ApplicationProperties.get(), atlasGraph);
+    public MetricsService(final Configuration configuration, final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
+        this(configuration, graph, typeRegistry, AtlasGremlinQueryProvider.INSTANCE);
     }
 
     @VisibleForTesting
-    MetricsService(Configuration configuration, AtlasGraph graph) {
+    MetricsService(Configuration configuration, AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasGremlinQueryProvider queryProvider) {
         MetricsService.configuration = configuration;
-
-        atlasGraph        = graph;
-        cacheTTLInSecs    = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS)
-                : DEFAULT_CACHE_TTL_IN_SECS;
-        gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+        atlasGraph = graph;
+        cacheTTLInSecs = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS)
+                                 : DEFAULT_CACHE_TTL_IN_SECS;
+        gremlinQueryProvider = queryProvider;
+        this.typeRegistry = typeRegistry;
     }
 
     @SuppressWarnings("unchecked")
@@ -93,48 +99,120 @@ public class MetricsService {
         if (ignoreCache || !isCacheValid()) {
             AtlasMetrics metrics = new AtlasMetrics();
 
-            for (MetricQuery metricQuery : MetricQuery.values()) {
-                try {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Executing query: {}", metricQuery);
-                    }
-                    executeGremlinQuery(metrics, metricQuery.group, metricQuery.name, metricQuery.query);
-                } catch (AtlasBaseException e) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Gremlin execution failed for metric {}", metricQuery, e);
-                    } else {
-                        LOG.warn("Gremlin execution failed for metric {}", metricQuery);
-                    }
+            int typeCount = 0, unusedTypeCount = 0;
+
+            Collection<String> typeNames = typeRegistry.getAllTypeNames();
+            if (CollectionUtils.isNotEmpty(typeNames)) {
+                typeCount = typeNames.size();
+            }
+            metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, typeCount);
+
+            int tagCount = 0;
+
+            Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames()
+                                                                    .stream()
+                                                                    .map(x -> "'" + x + "'")
+                                                                    .collect(Collectors.toSet());
+            String             classificationNamesCSV = StringUtils.join(classificationDefNames, ',');
+            if (CollectionUtils.isNotEmpty(classificationDefNames)) {
+                tagCount = classificationDefNames.size();
+            }
+            metrics.addMetric(GENERAL, METRIC_TAG_COUNT, tagCount);
+
+            Collection<String> entityDefNames                  = typeRegistry.getAllEntityDefNames()
+                                                                             .stream()
+                                                                             .map(x -> "'" + x + "'")
+                                                                             .collect(Collectors.toList());
+            String             entityNamesCSV                  = StringUtils.join(entityDefNames, ',');
+            String             entityAndClassificationNamesCSV = entityNamesCSV + "," + classificationNamesCSV;
+
+            String query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_ACTIVE_METRIC), entityAndClassificationNamesCSV);
+            Map<String, Number> activeCountMap = extractCounts(query);
+
+            query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_DELETED_METRIC), entityAndClassificationNamesCSV);
+            Map<String, Number> deletedCountMap = extractCounts(query);
+
+            int totalEntities = 0;
+
+            Map<String, Number> activeEntityCount = new HashMap<>();
+            Map<String, Number> deletedEntityCount = new HashMap<>();
+
+            for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
+                Number activeCount = activeCountMap.getOrDefault(entityDefName, null);
+                Number deletedCount = deletedCountMap.getOrDefault(entityDefName, null);
+
+                if (activeCount != null) {
+                    activeEntityCount.put(entityDefName, activeCount);
+                    totalEntities += activeCount.intValue();
+                }
+                if (deletedCount != null) {
+                    deletedEntityCount.put(entityDefName, deletedCount);
+                    totalEntities += deletedCount.intValue();
+                }
+                if (activeCount == null && deletedCount == null) {
+                    unusedTypeCount++;
                 }
             }
 
+            metrics.addMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT, unusedTypeCount);
+            metrics.addMetric(GENERAL, METRIC_ENTITY_COUNT, totalEntities);
+            metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
+            metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
+
+            Map<String, Number> taggedEntityCount = new HashMap<>();
+            for (String classificationName : typeRegistry.getAllClassificationDefNames()) {
+                Object count = activeCountMap.getOrDefault(classificationName, null);
+                if (count != null) {
+                    taggedEntityCount.put(classificationName, (Number) count);
+                }
+            }
+            metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
+
+
+            // Miscellaneous metrics
             long collectionTime = System.currentTimeMillis();
 
-            metrics.addData(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
+            metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
 
-            this.cachedMetrics       = metrics;
+            this.cachedMetrics = metrics;
             this.cacheExpirationTime = (collectionTime + cacheTTLInSecs * 1000);
         }
 
         return cachedMetrics;
     }
 
-    private void executeGremlinQuery(AtlasMetrics metrics, String type, String name, String query) throws AtlasBaseException {
-        Object result = atlasGraph.executeGremlinScript(query, false);
-
-        if (result instanceof Number) {
-            metrics.addData(type, name, ((Number) result).intValue());
-        } else if (result instanceof List) {
-            for (Map<String, Number> resultMap : (List<Map<String, Number>>) result) {
-                for (Map.Entry<String, Number> entry : resultMap.entrySet()) {
-                    metrics.addData(type, entry.getKey(), entry.getValue().intValue());
-                }
+    private Map<String, Number> extractCounts(final String query) {
+        Map<String, Number> ret = new HashMap<>();
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Executing query: {}", query);
             }
-        } else {
-            String returnClassName = result != null ? result.getClass().getSimpleName() : "null";
 
-            LOG.warn("Unhandled return type {} for {}. Ignoring", returnClassName, query);
+            Object result = executeQuery(query);
+            if (result instanceof List) {
+                for (Object entry : (List) result) {
+                    if (entry instanceof Map) {
+                        ret.putAll((Map<String, Number>) entry);
+                    }
+                }
+            } else if (result instanceof Map) {
+                ret.putAll((Map<String, Number>) result);
+            } else {
+                String returnClassName = result != null ? result.getClass().getSimpleName() : "null";
+                LOG.warn("Unhandled return type {} for {}. Ignoring", returnClassName, query);
+            }
+        } catch (AtlasBaseException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Gremlin execution failed for metric {}", query, e);
+            } else {
+                LOG.warn("Gremlin execution failed for metric {}", query);
+            }
         }
+        return ret;
+    }
+
+    private Object executeQuery(final String query) throws AtlasBaseException {
+        return atlasGraph.executeGremlinScript(query, false);
     }
 
     private boolean isCacheValid() {
@@ -151,50 +229,12 @@ public class MetricsService {
 
     private static String getQuery(String type, String name, String defaultQuery) {
         String ret = configuration != null ? configuration.getString(METRIC_QUERY_PREFIX + type + "." + name, defaultQuery)
-                : defaultQuery;
+                             : defaultQuery;
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("query for {}.{}: {}", type, name, ret);
         }
 
         return ret;
-    }
-
-    /**
-     * MetricQuery enum has the capability of reading the queries from the externalized config.
-     *
-     * The default behavior is to read from the properties and override the statically type query if the configured
-     * query is not blank/empty.
-     */
-    private enum MetricQuery {
-        TYPE_COUNT(GENERAL, METRIC_TYPE_COUNT, AtlasGremlinQuery.TYPE_COUNT_METRIC),
-        UNUSED_TYPE_COUNT(GENERAL, METRIC_TYPE_UNUSED_COUNT, AtlasGremlinQuery.TYPE_UNUSED_COUNT_METRIC),
-        ENTITY_COUNT(GENERAL, METRIC_ENTITY_COUNT, AtlasGremlinQuery.ENTITY_COUNT_METRIC),
-        TAGS_COUNT(GENERAL, METRIC_TAG_COUNT, AtlasGremlinQuery.TAG_COUNT_METRIC),
-        DELETED_ENTITY_COUNT(GENERAL, METRIC_ENTITY_DELETED, AtlasGremlinQuery.ENTITY_DELETED_METRIC),
-
-        ENTITIES_PER_TYPE(ENTITY, METRIC_TYPE_ENTITIES, AtlasGremlinQuery.ENTITIES_PER_TYPE_METRIC),
-        TAGGED_ENTITIES(ENTITY, METRIC_TAGGED_ENTITIES, AtlasGremlinQuery.TAGGED_ENTITIES_METRIC),
-
-        ENTITIES_WITH_SPECIFIC_TAG(TAG, METRIC_ENTITIES_PER_TAG, AtlasGremlinQuery.ENTITIES_FOR_TAG_METRIC),
-        ;
-
-        private final String group;
-        private final String name;
-        private final String query;
-
-        MetricQuery(String group, String name, AtlasGremlinQuery gremlinQuery) {
-            this.group          = group;
-            this.name           = name;
-            this.query          = MetricsService.getQuery(group, name, gremlinQueryProvider.getQuery(gremlinQuery));
-        }
-
-        @Override
-        public String toString() {
-            return "MetricQuery{" + "group='" + group + '\'' +
-                    ", name='" + name + '\'' +
-                    ", query='" + query + '\'' +
-                    '}';
-        }
     }
 }

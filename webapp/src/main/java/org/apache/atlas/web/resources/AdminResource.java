@@ -99,15 +99,15 @@ public class AdminResource {
 
     private Response version;
 
-    private final ServiceState             serviceState;
-    private final MetricsService           metricsService;
-    private static Configuration           atlasProperties;
-    private final ExportService            exportService;
-    private final ImportService            importService;
-    private final SearchTracker            activeSearches;
-    private final AtlasTypeRegistry        typeRegistry;
-    private final MigrationProgressService migrationProgressService;
-    private final ReentrantLock            importExportOperationLock;
+    private static Configuration            atlasProperties;
+    private final  ServiceState             serviceState;
+    private final  MetricsService           metricsService;
+    private final  ExportService            exportService;
+    private final  ImportService            importService;
+    private final  SearchTracker            activeSearches;
+    private final  AtlasTypeRegistry        typeRegistry;
+    private final  MigrationProgressService migrationProgressService;
+    private final  ReentrantLock            importExportOperationLock;
 
     static {
         try {

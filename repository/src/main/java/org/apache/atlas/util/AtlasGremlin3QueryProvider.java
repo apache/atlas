@@ -23,10 +23,10 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
         // In case any overrides are necessary, a specific switch case can be added here to
         // return Gremlin 3 specific query otherwise delegate to super.getQuery
         switch (gremlinQuery) {
-            case TYPE_UNUSED_COUNT_METRIC:
-                return "g.V().has('__type', 'typeSystem').filter({ !it.getProperty('__type.category').name().matches('TRAIT') && it.inE().count() == 0}).count()";
-            case ENTITY_COUNT_METRIC:
-                return "g.V().has('__superTypeNames', within(['Referenceable'])).count()";
+            case ENTITY_ACTIVE_METRIC:
+                return "g.V().has('__typeName', within(%s)).has('__state', 'ACTIVE').groupCount().by('__typeName').toList()";
+            case ENTITY_DELETED_METRIC:
+                return "g.V().has('__typeName', within(%s)).has('__state', 'DELETED').groupCount().by('__typeName').toList()";
             case EXPORT_TYPE_STARTS_WITH:
                 return "g.V().has('__typeName',typeName).filter({it.get().value(attrName).startsWith(attrValue)}).has('__guid').values('__guid').toList()";
             case EXPORT_TYPE_ENDS_WITH:

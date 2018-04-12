@@ -36,13 +36,13 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class AtlasMetrics {
-    private Map<String, Map<String, Number>> data;
+    private Map<String, Map<String, Object>> data;
 
     public AtlasMetrics() {
         setData(null);
     }
 
-    public AtlasMetrics(Map<String, Map<String, Number>> data) {
+    public AtlasMetrics(Map<String, Map<String, Object>> data) {
         setData(data);
     }
 
@@ -52,41 +52,41 @@ public class AtlasMetrics {
         }
     }
 
-    public Map<String, Map<String, Number>> getData() {
+    public Map<String, Map<String, Object>> getData() {
         return data;
     }
 
-    public void setData(Map<String, Map<String, Number>> data) {
+    public void setData(Map<String, Map<String, Object>> data) {
         this.data = data;
     }
 
     @JsonIgnore
-    public void addData(String groupKey, String key, Number value) {
-        Map<String, Map<String, Number>> data = this.data;
+    public void addMetric(String groupKey, String key, Object value) {
+        Map<String, Map<String, Object>> data = this.data;
         if (data == null) {
             data = new HashMap<>();
         }
-        Map<String, Number> metricMap = data.get(groupKey);
-        if (metricMap == null) {
-            metricMap = new HashMap<>();
-            data.put(groupKey, metricMap);
-        }
+        Map<String, Object> metricMap = data.computeIfAbsent(groupKey, k -> new HashMap<>());
         metricMap.put(key, value);
         setData(data);
     }
 
     @JsonIgnore
-    public Number getMetric(String groupKey, String key) {
-        Map<String, Map<String, Number>> data = this.data;
-        if (data == null) {
-            return null;
-        } else {
-            Map<String, Number> metricMap = data.get(groupKey);
-            if (metricMap == null || metricMap.isEmpty()) {
-                return null;
-            } else {
-                return metricMap.get(key);
+    public Number getNumericMetric(String groupKey, String key) {
+        Object metric = getMetric(groupKey, key);
+        return metric instanceof Number ? (Number) metric : null;
+    }
+
+    @JsonIgnore
+    public Object getMetric(String groupKey, String key) {
+        Map<String, Map<String, Object>> data = this.data;
+        Object ret = null;
+        if (data != null) {
+            Map<String, Object> metricMap = data.get(groupKey);
+            if (metricMap != null && !metricMap.isEmpty()) {
+                ret = metricMap.get(key);
             }
         }
+        return ret;
     }
 }

@@ -34,8 +34,8 @@ public abstract class AtlasGremlinQueryProvider {
         // Metrics related Queries
         TYPE_COUNT_METRIC,
         TYPE_UNUSED_COUNT_METRIC,
-        ENTITY_COUNT_METRIC,
         TAG_COUNT_METRIC,
+        ENTITY_ACTIVE_METRIC,
         ENTITY_DELETED_METRIC,
         ENTITIES_PER_TYPE_METRIC,
         TAGGED_ENTITIES_METRIC,

@@ -17,19 +17,16 @@
  */
 package org.apache.atlas.services;
 
-import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasGremlin3QueryProvider;
 import org.apache.commons.configuration.Configuration;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -45,34 +42,40 @@ import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-@Guice(modules = TestModules.TestOnlyModule.class)
 public class MetricsServiceTest {
-    private Configuration mockConfig = mock(Configuration.class);
-    private AtlasTypeRegistry mockTypeRegistry = mock(AtlasTypeRegistry.class);
-    private AtlasGraph mockGraph = mock(AtlasGraph.class);
-    private MetricsService metricsService;
+    private Configuration             mockConfig        = mock(Configuration.class);
+    private AtlasTypeRegistry         mockTypeRegistry  = mock(AtlasTypeRegistry.class);
+    private AtlasGraph                mockGraph         = mock(AtlasGraph.class);
+    private MetricsService            metricsService;
 
-    private List<Map> mockMapList = new ArrayList<>();
-    private Number mockCount = 10;
+    private List<Map> activeEntityCountList = new ArrayList<>();
+    private List<Map> deletedEntityCountList = new ArrayList<>();
 
     @BeforeClass
     public void init() throws Exception {
         try {
-            Map<String, Object> mockMap = new HashMap<>();
-            mockMap.put("a", 1);
-            mockMap.put("b", 2);
-            mockMap.put("c", 3);
-            mockMapList.add(mockMap);
+            Map<String, Object> activeEntityCount = new HashMap<>();
+            activeEntityCount.put("a", 1);
+            activeEntityCount.put("b", 2);
+            activeEntityCount.put("d", 5);
+            activeEntityCount.put("e", 10);
+            activeEntityCount.put("f", 15);
+            activeEntityCountList.add(activeEntityCount);
+
+            Map<String, Object> deletedEntityCount = new HashMap<>();
+            deletedEntityCount.put("b", 5);
+            deletedEntityCountList.add(deletedEntityCount);
 
             when(mockConfig.getInt(anyString(), anyInt())).thenReturn(5);
             assertEquals(mockConfig.getInt("test", 1), 5);
-            when(mockConfig.getString(anyString(), anyString()))
-                    .thenReturn("count()", "count()", "count()", "count()", "count()", "toList()", "count()", "toList()");
+            when(mockConfig.getString(anyString(), anyString())).thenReturn("toList()", "toList()");
+            when(mockTypeRegistry.getAllTypeNames()).thenReturn(Arrays.asList("a", "b", "c", "d", "e", "f"));
             when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
-            when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
+            when(mockTypeRegistry.getAllClassificationDefNames()).thenReturn(Arrays.asList("d", "e", "f"));
+//            when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
             setupMockGraph();
 
-            metricsService = new MetricsService(mockConfig, mockGraph);
+            metricsService = new MetricsService(mockConfig, mockGraph, mockTypeRegistry, new AtlasGremlin3QueryProvider());
         }
         catch(Exception e) {
             throw new SkipException("MetricsServicesTest: init failed!", e);
@@ -88,16 +91,9 @@ public class MetricsServiceTest {
 
     private void setupMockGraph() throws AtlasBaseException {
         if (mockGraph == null) mockGraph = mock(AtlasGraph.class);
-        when(mockGraph.executeGremlinScript(anyString(), eq(false))).thenAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                if (((String)invocationOnMock.getArguments()[0]).contains("count()")) {
-                    return mockCount;
-                } else {
-                    return mockMapList;
-                }
-            }
-        });
+        when(mockGraph.executeGremlinScript(anyString(), eq(false)))
+                .thenReturn(activeEntityCountList)
+                .thenReturn(deletedEntityCountList);
     }
 
     @Test
@@ -105,29 +101,28 @@ public class MetricsServiceTest {
         assertNotNull(metricsService);
         AtlasMetrics metrics = metricsService.getMetrics(false);
         assertNotNull(metrics);
-        Number aCount = metrics.getMetric("entity", "a");
-        assertNotNull(aCount);
-        assertEquals(aCount, 1);
+        Map activeMetrics = (Map) metrics.getMetric("entity", "entityActive");
+        assertNotNull(activeMetrics);
+        assertEquals(activeMetrics.get("a"), 1);
+        assertEquals(activeMetrics.get("b"), 2);
 
-        Number bCount = metrics.getMetric("entity", "b");
-        assertNotNull(bCount);
-        assertEquals(bCount, 2);
+        Map deletedMetrics = (Map) metrics.getMetric("entity", "entityDeleted");
+        assertEquals(deletedMetrics.get("b"), 5);
 
-        Number cCount = metrics.getMetric("entity", "c");
-        assertNotNull(cCount);
-        assertEquals(cCount, 3);
+        Number unusedTypeCount = metrics.getNumericMetric("general", "typeUnusedCount");
+        assertEquals(unusedTypeCount, 1);
 
-        Number aTags = metrics.getMetric("tag", "a");
-        assertNotNull(aTags);
-        assertEquals(aTags, 1);
+        Number cCount = metrics.getNumericMetric("general", "entityCount");
+        assertEquals(cCount, 8);
 
-        Number bTags = metrics.getMetric("tag", "b");
-        assertNotNull(bTags);
-        assertEquals(bTags, 2);
+        Number aTags = (Number) metrics.getMetric("general", "tagCount");
+        assertEquals(aTags, 3);
 
-        Number cTags = metrics.getMetric("tag", "c");
-        assertNotNull(cTags);
-        assertEquals(cTags, 3);
+        Map taggedEntityMetric = (Map) metrics.getMetric("tag", "tagEntities");
+        assertNotNull(taggedEntityMetric);
+        assertEquals(taggedEntityMetric.get("d"), 5);
+        assertEquals(taggedEntityMetric.get("e"), 10);
+        assertEquals(taggedEntityMetric.get("f"), 15);
 
         verify(mockGraph, atLeastOnce()).executeGremlinScript(anyString(), anyBoolean());
 
