@@ -22,16 +22,28 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /*
@@ -73,11 +85,22 @@ public class SearchContext {
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, classificationName);
         }
 
+        AtlasVertex glossaryTermVertex = getGlossaryTermVertex(searchParameters.getTermName());
+
+        // Validate if the term exists
+        if (StringUtils.isNotEmpty(searchParameters.getTermName()) && glossaryTermVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_GLOSSARY_TERM, searchParameters.getTermName());
+        }
+
         // Invalid attributes will raise an exception with 400 error code
         validateAttributes(entityType, searchParameters.getEntityFilters());
 
         // Invalid attributes will raise an exception with 400 error code
         validateAttributes(classificationType, searchParameters.getTagFilters());
+
+        if (glossaryTermVertex != null) {
+            addProcessor(new TermSearchProcessor(this, getAssignedEntities(glossaryTermVertex)));
+        }
 
         if (needFullTextProcessor()) {
             addProcessor(new FullTextSearchProcessor(this));
@@ -184,5 +207,44 @@ public class SearchContext {
         }
 
         return ret;
+    }
+
+    private AtlasVertex getGlossaryTermVertex(String termName) {
+        AtlasVertex ret = null;
+
+        if (StringUtils.isNotEmpty(termName)) {
+            AtlasEntityType termType = getTermEntityType();
+            AtlasAttribute  attrName = termType.getAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME);
+            AtlasGraphQuery query    = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, termType.getTypeName())
+                                                    .has(attrName.getVertexPropertyName(), termName)
+                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            ret = results.hasNext() ? results.next() : null;
+        }
+
+        return ret;
+    }
+
+    private List<AtlasVertex> getAssignedEntities(AtlasVertex glossaryTerm) {
+        List<AtlasVertex>   ret      = new ArrayList<>();
+        AtlasEntityType     termType = getTermEntityType();
+        AtlasAttribute      attr     = termType.getRelationshipAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES);
+        Iterator<AtlasEdge> edges    = GraphHelper.getEdgesForLabel(glossaryTerm, attr.getRelationshipEdgeLabel(), attr.getRelationshipEdgeDirection());
+
+        if (edges != null) {
+            while (edges.hasNext()) {
+                AtlasEdge edge = edges.next();
+
+                ret.add(edge.getInVertex());
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasEntityType getTermEntityType() {
+        return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
     }
 }

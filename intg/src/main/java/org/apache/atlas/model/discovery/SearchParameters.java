@@ -43,6 +43,7 @@ public class SearchParameters implements Serializable {
     private String  query;
     private String  typeName;
     private String  classification;
+    private String  termName;
     private boolean excludeDeletedEntities;
     private boolean includeClassificationAttributes;
     private boolean includeSubTypes                 = true;
@@ -82,6 +83,22 @@ public class SearchParameters implements Serializable {
      */
     public void setTypeName(String typeName) {
         this.typeName = typeName;
+    }
+
+    /**
+     *
+     * @return termName to search on
+     */
+    public String getTermName() {
+        return termName;
+    }
+
+    /**
+     * Set the classification/tag to search on
+     * @param termName classification/tag name
+     */
+    public void setTermName(String termName) {
+        this.termName = termName;
     }
 
     /**
@@ -249,6 +266,7 @@ public class SearchParameters implements Serializable {
                 Objects.equals(query, that.query) &&
                 Objects.equals(typeName, that.typeName) &&
                 Objects.equals(classification, that.classification) &&
+                Objects.equals(termName, that.termName) &&
                 Objects.equals(entityFilters, that.entityFilters) &&
                 Objects.equals(tagFilters, that.tagFilters) &&
                 Objects.equals(attributes, that.attributes);
@@ -256,7 +274,7 @@ public class SearchParameters implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, classification, excludeDeletedEntities, includeClassificationAttributes, 
+        return Objects.hash(query, typeName, classification, termName, excludeDeletedEntities, includeClassificationAttributes,
                             limit, offset, entityFilters, tagFilters, attributes);
     }
 
@@ -269,6 +287,7 @@ public class SearchParameters implements Serializable {
         sb.append("query='").append(query).append('\'');
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
+        sb.append(", termName='").append(termName).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
         sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
         sb.append(", limit=").append(limit);
