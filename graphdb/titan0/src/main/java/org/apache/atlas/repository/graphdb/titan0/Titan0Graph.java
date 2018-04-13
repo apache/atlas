@@ -35,6 +35,7 @@ import com.tinkerpop.pipes.util.structures.Row;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -417,6 +418,11 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     @Override
     public void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
+    }
+
+    @Override
+    public MigrationStatus getMigrationStatus() {
+        return new MigrationStatus();
     }
 
     public void addMultiProperties(Set<String> names) {

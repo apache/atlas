@@ -73,42 +73,10 @@ public class JsonNodeParsers {
             return el;
         }
 
-        static Object getTypedValueFromJsonNode(final JsonNode node) {
-            Object theValue = null;
-
-            if (node != null && !node.isNull()) {
-                if (node.isBoolean()) {
-                    theValue = node.booleanValue();
-                } else if (node.isDouble()) {
-                    theValue = node.doubleValue();
-                } else if (node.isFloatingPointNumber()) {
-                    theValue = node.floatValue();
-                } else if (node.isInt()) {
-                    theValue = node.intValue();
-                } else if (node.isLong()) {
-                    theValue = node.longValue();
-                } else if (node.isTextual()) {
-                    theValue = node.textValue();
-                } else if (node.isArray()) {
-                    // this is an array so just send it back so that it can be
-                    // reprocessed to its primitive components
-                    theValue = node;
-                } else if (node.isObject()) {
-                    // this is an object so just send it back so that it can be
-                    // reprocessed to its primitive components
-                    theValue = node;
-                } else {
-                    theValue = node.textValue();
-                }
-            }
-
-            return theValue;
-        }
     }
 
     static class ParseEdge extends ParseElement {
         private static final String MESSAGE_EDGE          = "edge";
-        private static final String TYPE_NAME_NODE_NAME   = Constants.VERTEX_TYPE_PROPERTY_KEY;
 
 
         @Override
@@ -118,7 +86,7 @@ public class JsonNodeParsers {
 
         @Override
         Object getId(JsonNode node) {
-            return getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+            return utility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
         }
 
         @Override
@@ -163,7 +131,7 @@ public class JsonNodeParsers {
 
         @Override
         Object getId(JsonNode node) {
-            return getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+            return utility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
         }
 
         @Override

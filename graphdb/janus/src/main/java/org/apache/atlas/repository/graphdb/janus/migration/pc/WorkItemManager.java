@@ -55,7 +55,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
     public void shutdown() throws InterruptedException {
         int avgCommitTimeSeconds = getAvgCommitTimeSeconds() * 2;
 
-        LOG.info("WorkItemManager: Shutdown started. Will wait for: {} seconds...", avgCommitTimeSeconds);
+        LOG.info("WorkItemManager: Shutdown started. Will wait for: {} minutes...", avgCommitTimeSeconds);
 
         service.shutdown();
         service.awaitTermination(avgCommitTimeSeconds, TimeUnit.MINUTES);

@@ -120,10 +120,12 @@ public class DataMigrationService implements Service {
         @VisibleForTesting
         void processIncomingTypesDef(File typesDefFile) throws AtlasBaseException {
             try {
+                AtlasImportResult result = new AtlasImportResult();
                 String jsonStr = FileUtils.readFileToString(typesDefFile);
                 AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
                 ImportTypeDefProcessor processor = new ImportTypeDefProcessor(typeDefStore, typeRegistry);
-                processor.processTypes(typesDef, new AtlasImportResult());
+                processor.processTypes(typesDef, result);
+                LOG.info("  types migrated: {}", result.getMetrics());
             } catch (IOException e) {
                 LOG.error("processIncomingTypesDef: Could not process file: {}! Imported data may not be usable.", typesDefFile.getName());
             }

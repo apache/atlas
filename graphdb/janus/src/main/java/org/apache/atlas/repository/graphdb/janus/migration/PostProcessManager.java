@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.BlockingQueue;
 
 public class PostProcessManager {
-    private static class Consumer extends WorkItemConsumer<Object> {
+    static class Consumer extends WorkItemConsumer<Object> {
         private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
         private final Graph              bulkLoadGraph;

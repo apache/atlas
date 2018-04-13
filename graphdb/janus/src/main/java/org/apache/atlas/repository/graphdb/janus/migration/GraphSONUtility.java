@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -43,6 +44,8 @@ class GraphSONUtility {
     private static final String EMPTY_STRING = "";
 
     private final RelationshipTypeCache relationshipTypeCache;
+    private static AtlasBuiltInTypes.AtlasBigIntegerType bigIntegerType = new AtlasBuiltInTypes.AtlasBigIntegerType();
+    private static AtlasBuiltInTypes.AtlasBigDecimalType bigDecimalType = new AtlasBuiltInTypes.AtlasBigDecimalType();
 
     public GraphSONUtility(final RelationshipTypeCache relationshipTypeCache) {
         this.relationshipTypeCache = relationshipTypeCache;
@@ -187,7 +190,9 @@ class GraphSONUtility {
         if (StringUtils.isNotEmpty(typeName)) {
             props.put(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
         } else {
-            LOG.debug("Could not find relationship type for: {}", edgeLabel);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Could not find relationship type for: {}", edgeLabel);
+            }
         }
     }
 
@@ -223,6 +228,7 @@ class GraphSONUtility {
         }
     }
 
+    @VisibleForTesting
     static Map<String, Object> readProperties(final JsonNode node) {
         final Map<String, Object>                   map      = new HashMap<>();
         final Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
@@ -267,7 +273,13 @@ class GraphSONUtility {
         } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_INTEGER)) {
             propertyValue = node.get(GraphSONTokensTP2.VALUE).intValue();
         } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_LONG)) {
-            propertyValue = node.get(GraphSONTokensTP2.VALUE).longValue();
+            propertyValue = node.get(GraphSONTokensTP2.VALUE).asLong();
+        } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_BIG_DECIMAL)) {
+            propertyValue = bigDecimalType.getNormalizedValue(node.get(GraphSONTokensTP2.VALUE));
+        } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_BIG_INTEGER)) {
+            propertyValue = bigIntegerType.getNormalizedValue(node.get(GraphSONTokensTP2.VALUE));
+        } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_DATE)) {
+            propertyValue = new Date(node.get(GraphSONTokensTP2.VALUE).asLong());
         } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_STRING)) {
             propertyValue = node.get(GraphSONTokensTP2.VALUE).textValue();
         } else if (node.get(GraphSONTokensTP2.TYPE).textValue().equals(GraphSONTokensTP2.TYPE_LIST)) {
@@ -308,6 +320,10 @@ class GraphSONUtility {
                 theValue = node.longValue();
             } else if (node.isTextual()) {
                 theValue = node.textValue();
+            } else if (node.isBigDecimal()) {
+                theValue = node.decimalValue();
+            } else if (node.isBigInteger()) {
+                theValue = node.bigIntegerValue();
             } else if (node.isArray()) {
                 // this is an array so just send it back so that it can be
                 // reprocessed to its primitive components

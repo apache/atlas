@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.utils.LruCache;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -33,8 +34,11 @@ import static org.apache.atlas.repository.Constants.VERTEX_ID_IN_IMPORT_KEY;
 public class MappedElementCache {
     private static final Logger LOG = LoggerFactory.getLogger(MappedElementCache.class);
 
-    private final Map<Object, Vertex> lruVertexCache = new LruCache<>(500, 100000);
-    private final Map<String, String> lruEdgeCache   = new LruCache<>(500, 100000);
+    @VisibleForTesting
+    final Map<Object, Vertex> lruVertexCache = new LruCache<>(500, 100000);
+
+    @VisibleForTesting
+    final Map<String, String> lruEdgeCache   = new LruCache<>(500, 100000);
 
     public Vertex getMappedVertex(Graph gr, Object key) {
         try {
@@ -83,7 +87,8 @@ public class MappedElementCache {
         }
     }
 
-    private Vertex fetchVertex(Graph gr, Object key) {
+    @VisibleForTesting
+    Vertex fetchVertex(Graph gr, Object key) {
         try {
             return gr.traversal().V().has(VERTEX_ID_IN_IMPORT_KEY, key).next();
         } catch (Exception ex) {
@@ -92,7 +97,8 @@ public class MappedElementCache {
         }
     }
 
-    private Edge fetchEdge(Graph gr, String key) {
+    @VisibleForTesting
+    Edge fetchEdge(Graph gr, String key) {
         try {
             return gr.traversal().E().has(EDGE_ID_IN_IMPORT_KEY, key).next();
         } catch (Exception ex) {
@@ -101,16 +107,8 @@ public class MappedElementCache {
         }
     }
 
-    public void clearVertexCache() {
-        lruVertexCache.clear();
-    }
-
-    public void clearEdgeCache() {
-        lruEdgeCache.clear();
-    }
-
     public void clearAll() {
-        clearVertexCache();
-        clearEdgeCache();
+        lruVertexCache.clear();
+        lruEdgeCache.clear();
     }
 }

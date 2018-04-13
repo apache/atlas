@@ -86,7 +86,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
 
     protected abstract void processItem(T item);
 
-    private void updateCommitTime(long commitTime) {
+    protected void updateCommitTime(long commitTime) {
         if (this.maxCommitTimeSeconds < commitTime) {
             this.maxCommitTimeSeconds = commitTime;
         }

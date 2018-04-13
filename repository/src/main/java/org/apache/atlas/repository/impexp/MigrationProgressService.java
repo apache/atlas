@@ -18,97 +18,58 @@
 
 package org.apache.atlas.repository.impexp;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.model.impexp.MigrationStatus;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 @AtlasService
 @Singleton
 public class MigrationProgressService {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationProgressService.class);
+    public static final String MIGRATION_QUERY_CACHE_TTL    = "atlas.migration.query.cache.ttlInSecs";
 
-    private static final String MIGRATION_STATUS_TYPE_NAME = "__MigrationStatus";
-    private static final String CURRENT_INDEX_PROPERTY     = "currentIndex";
-    private static final String OPERATION_STATUS_PROPERTY  = "operationStatus";
-    private static final String START_TIME_PROPERTY        = "startTime";
-    private static final String END_TIME_PROPERTY          = "endTime";
-    private static final String TOTAL_COUNT_PROPERTY       = "totalCount";
-    private static final String MIGRATION_STATUS_KEY       = "1";
+    @VisibleForTesting
+    static long DEFAULT_CACHE_TTL_IN_SECS            = 30 * 1000; // 30 secs
 
+    private final long            cacheValidity;
     private final AtlasGraph      graph;
-    private final MigrationStatus defaultStatus = new MigrationStatus();
-    private       LoadingCache<String, MigrationStatus> cache;
+    private       MigrationStatus cachedStatus;
+    private       long            cacheExpirationTime = 0;
 
     @Inject
-    public MigrationProgressService(AtlasGraph graph) {
+    public MigrationProgressService(Configuration configuration, AtlasGraph graph) {
         this.graph = graph;
+        this.cacheValidity = (configuration != null) ?
+                configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) :
+                DEFAULT_CACHE_TTL_IN_SECS;
     }
 
     public MigrationStatus getStatus() {
-        try {
-            if (cache == null) {
-                initCache();
-                cache.get(MIGRATION_STATUS_KEY);
-            }
-
-            if(cache.size() > 0) {
-                return cache.get(MIGRATION_STATUS_KEY);
-            }
-
-            return defaultStatus;
-        } catch (ExecutionException e) {
-            return defaultStatus;
-        }
+        return fetchStatus();
     }
 
-    private void initCache() {
-        this.cache = CacheBuilder.newBuilder().refreshAfterWrite(30, TimeUnit.SECONDS).
-                build(new CacheLoader<String, MigrationStatus>() {
-                    @Override
-                    public MigrationStatus load(String key) {
-                        try {
-                            return from(fetchStatusVertex());
-                        } catch (Exception e) {
-                            LOG.error("Error retrieving status.", e);
-                            return defaultStatus;
-                        }
-                    }
+    private MigrationStatus fetchStatus() {
+        long currentTime = System.currentTimeMillis();
+        if(resetCache(currentTime)) {
+            cachedStatus = graph.getMigrationStatus();
+        }
 
-                    private MigrationStatus from(AtlasVertex vertex) {
-                        if (vertex == null) {
-                            return null;
-                        }
+        return cachedStatus;
+    }
 
-                        MigrationStatus ms = new MigrationStatus();
+    private boolean resetCache(long currentTime) {
+        boolean ret = cachedStatus == null || currentTime > cacheExpirationTime;
+        if(ret) {
+            cacheExpirationTime = currentTime + cacheValidity;
+        }
 
-                        ms.setStartTime(GraphHelper.getSingleValuedProperty(vertex, START_TIME_PROPERTY, Date.class));
-                        ms.setEndTime(GraphHelper.getSingleValuedProperty(vertex, END_TIME_PROPERTY, Date.class));
-                        ms.setCurrentIndex(GraphHelper.getSingleValuedProperty(vertex, CURRENT_INDEX_PROPERTY, Long.class));
-                        ms.setOperationStatus(GraphHelper.getSingleValuedProperty(vertex, OPERATION_STATUS_PROPERTY, String.class));
-                        ms.setTotalCount(GraphHelper.getSingleValuedProperty(vertex, TOTAL_COUNT_PROPERTY, Long.class));
-
-                        return ms;
-                    }
-
-                    private AtlasVertex fetchStatusVertex() {
-                        Iterator<AtlasVertex> itr = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME).vertices().iterator();
-                        return itr.hasNext() ? itr.next() : null;
-                    }
-                });
+        return ret;
     }
 }

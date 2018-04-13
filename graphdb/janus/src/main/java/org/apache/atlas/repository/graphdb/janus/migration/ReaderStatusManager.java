@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.Constants;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -43,7 +45,8 @@ public class ReaderStatusManager {
     public static final String STATUS_SUCCESS     = "SUCCESS";
     public static final String STATUS_FAILED      = "FAILED";
 
-    private Object migrationStatusId = null;
+    @VisibleForTesting
+    Object migrationStatusId = null;
     private Vertex migrationStatus   = null;
 
     public ReaderStatusManager(Graph graph, Graph bulkLoadGraph) {
@@ -71,7 +74,10 @@ public class ReaderStatusManager {
 
     public void update(Graph graph, Long counter) {
         migrationStatus.property(CURRENT_INDEX_PROPERTY, counter);
-        graph.tx().commit();
+
+        if(graph.features().graph().supportsTransactions()) {
+            graph.tx().commit();
+        }
     }
 
     public void update(Graph graph, Long counter, String status) {
@@ -91,7 +97,7 @@ public class ReaderStatusManager {
         return g.V(migrationStatusId).next();
     }
 
-    private Vertex fetchUsingTypeName(GraphTraversalSource g) {
+    private static Vertex fetchUsingTypeName(GraphTraversalSource g) {
         GraphTraversal src = g.V().has(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
         return src.hasNext() ? (Vertex) src.next() : null;
     }
@@ -109,8 +115,42 @@ public class ReaderStatusManager {
 
         migrationStatusId = v.id();
 
-        rGraph.tx().commit();
+        if(rGraph.features().graph().supportsTransactions()) {
+            rGraph.tx().commit();
+        }
 
         LOG.info("migrationStatus vertex created! v[{}]", migrationStatusId);
+    }
+
+    public static MigrationStatus updateFromVertex(Graph graph, MigrationStatus ms) {
+        Vertex vertex = fetchUsingTypeName(graph.traversal());
+
+        if(ms == null) {
+            ms = new MigrationStatus();
+        }
+
+        ms.setStartTime((Date) vertex.property(START_TIME_PROPERTY).value());
+        ms.setEndTime((Date) vertex.property(END_TIME_PROPERTY).value());
+        ms.setCurrentIndex((Long) vertex.property(CURRENT_INDEX_PROPERTY).value());
+        ms.setOperationStatus((String) vertex.property(OPERATION_STATUS_PROPERTY).value());
+        ms.setTotalCount((Long) vertex.property(TOTAL_COUNT_PROPERTY).value());
+
+        return ms;
+    }
+
+    public static MigrationStatus get(Graph graph) {
+        MigrationStatus ms = new MigrationStatus();
+        try {
+            Vertex v = fetchUsingTypeName(graph.traversal());
+            ms.setStartTime((Date) v.property(START_TIME_PROPERTY).value());
+            ms.setEndTime((Date) v.property(END_TIME_PROPERTY).value());
+            ms.setCurrentIndex((long) v.property(CURRENT_INDEX_PROPERTY).value());
+            ms.setOperationStatus((String) v.property(OPERATION_STATUS_PROPERTY).value());
+            ms.setTotalCount((long) v.property(TOTAL_COUNT_PROPERTY).value());
+        } catch (Exception ex) {
+            LOG.error("get: failed!", ex);
+        }
+
+        return ms;
     }
 }

@@ -40,7 +40,7 @@ import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.Assert.assertTrue;
 
 public class MigrationBaseAsserts {
     protected static final String ASSERT_NAME_PROPERTY = "Asset.name";
@@ -76,6 +76,7 @@ public class MigrationBaseAsserts {
 
     private void loadTypesFromJson() throws IOException, AtlasBaseException {
         loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
     }
 

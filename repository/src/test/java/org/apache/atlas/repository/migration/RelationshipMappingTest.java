@@ -29,6 +29,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.jcodings.util.Hash;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;

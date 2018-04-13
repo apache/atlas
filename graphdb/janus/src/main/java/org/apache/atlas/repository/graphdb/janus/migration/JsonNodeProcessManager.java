@@ -108,7 +108,7 @@ public class JsonNodeProcessManager {
             display("commit-size: {}: Done!", size);
         }
 
-        private void updateSchema(Map<String, Object> schema, org.apache.tinkerpop.shaded.jackson.databind.JsonNode node) {
+        private void updateSchema(Map<String, Object> schema, JsonNode node) {
             synchronized (graph) {
                 String typeName = parseElement.getType(node);
 
@@ -142,7 +142,7 @@ public class JsonNodeProcessManager {
 
             try {
                 Thread.sleep(WAIT_DURATION_AFTER_COMMIT_EXCEPTION);
-                for (org.apache.tinkerpop.shaded.jackson.databind.JsonNode n : nodes) {
+                for (JsonNode n : nodes) {
                     parseElement.parse(bulkLoadGraph, cache, n);
                 }
                 commitBulk();

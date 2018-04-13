@@ -103,6 +103,16 @@ public final class AtlasGraphSONReader {
                         processElement(parser, new JsonNodeParsers.ParseEdge(), startIndex);
                         break;
 
+                    case GraphSONTokensTP2.VERTEX_COUNT:
+                        parser.nextToken();
+                        LOG.info("Vertex count: {}", parser.getLongValue());
+                        break;
+
+                    case GraphSONTokensTP2.EDGE_COUNT:
+                        parser.nextToken();
+                        LOG.info("Edge count: {}", parser.getLongValue());
+                        break;
+
                     default:
                         throw new IllegalStateException(String.format("Unexpected token in GraphSON - %s", fieldName));
                 }

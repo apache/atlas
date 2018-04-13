@@ -18,14 +18,9 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 public class RelationshipTypeCache {

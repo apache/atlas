@@ -43,11 +43,16 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
 
     @Test
     public void fileImporterTest() throws IOException, AtlasBaseException {
+        final int EXPECTED_TOTAL_COUNT = 140;
+        final int EXPECTED_DB_COUNT = 1;
+        final int EXPECTED_TABLE_COUNT = 2;
+        final int EXPECTED_COLUMN_COUNT = 7;
+
         runFileImporter("parts_db");
 
         assertPartitionKeyProperty(getVertex("hive_table", "t1"), 1);
         assertPartitionKeyProperty(getVertex("hive_table", "tv1"), 1);
-        assertHiveVertices(1, 2, 7);
+        assertHiveVertices(EXPECTED_DB_COUNT, EXPECTED_TABLE_COUNT, EXPECTED_COLUMN_COUNT);
 
         assertTypeCountNameGuid("hive_db", 1, "parts_db", "ae30d78b-51b4-42ab-9436-8d60c8f68b95");
         assertTypeCountNameGuid("hive_process", 1, "", "");
@@ -55,7 +60,7 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
         assertEdges("hive_table", "t1", AtlasEdgeDirection.OUT, 1, 1, "hive_db_tables");
         assertEdges("hive_table", "tv1", AtlasEdgeDirection.OUT, 1, 1, "hive_db_tables");
 
-        assertMigrationStatus(136);
+        assertMigrationStatus(EXPECTED_TOTAL_COUNT);
     }
 
     private void assertPartitionKeyProperty(AtlasVertex vertex, int expectedCount) {

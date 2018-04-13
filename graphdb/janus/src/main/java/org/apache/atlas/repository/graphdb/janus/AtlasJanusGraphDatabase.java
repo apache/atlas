@@ -21,9 +21,11 @@ package org.apache.atlas.repository.graphdb.janus;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.migration.AtlasGraphSONReader;
+import org.apache.atlas.repository.graphdb.janus.migration.ReaderStatusManager;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
@@ -258,5 +260,9 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
             LOG.info("Done! loadLegacyGraphSON.");
         }
+    }
+
+    public static MigrationStatus getMigrationStatus() {
+        return ReaderStatusManager.get(getGraphInstance());
     }
 }
