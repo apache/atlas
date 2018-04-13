@@ -106,7 +106,6 @@ atlas.graph.index.search.solr.zookeeper-session-timeout=60000
                                     <descriptors>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
-                                        <descriptor>src/main/assemblies/migration-exporter.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
                                     <tarLongFileMode>gnu</tarLongFileMode>

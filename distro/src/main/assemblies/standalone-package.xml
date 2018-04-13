@@ -172,6 +172,38 @@
             <directory>../notification/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
+
+        <!-- for migration setup -->
+        <fileSet>
+            <includes>
+                <include>README*</include>
+            </includes>
+            <outputDirectory>tools/migration-exporter</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/atlas-migration-exporter/src/main/resources</directory>
+            <includes>
+                <include>*.py</include>
+                <include>migrationContext.xml</include>
+                <include>atlas-log4j.xml</include>
+                <include>README</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+            <outputDirectory>tools/migration-exporter</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/atlas-migration-exporter/target</directory>
+            <includes>
+                <include>atlas-migration-*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*-test-sources.jar</exclude>
+                <exclude>*-sources.jar</exclude>
+            </excludes>
+            <outputDirectory>tools/migration-exporter</outputDirectory>
+        </fileSet>
+
     </fileSets>
 
     <files>
