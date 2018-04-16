@@ -228,6 +228,14 @@ define(['require',
                         this.renderSchemaLayoutView(_.extend({}, obj, {
                             attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
                         }));
+                    } else if (this.value && this.value.tabActive == "schema") {
+                        Utils.setUrl({
+                            url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                            urlParams: { tabActive: 'properties' },
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: true
+                        });
                     }
                     if (this.activeEntityDef && _.contains(this.activeEntityDef.get('superTypes'), "DataSet")) {
                         this.$('.lineageGraph').show();
@@ -244,6 +252,14 @@ define(['require',
                             stop: function(event, ui) {
                                 ui.element.height(($(this).height()));
                             },
+                        });
+                    } else if (this.value && this.value.tabActive == "lineage") {
+                        Utils.setUrl({
+                            url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                            urlParams: { tabActive: 'properties' },
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: true
                         });
                     }
                 }, this);
@@ -285,10 +301,9 @@ define(['require',
                 // })
             },
             onShow: function() {
-                var params = Utils.getUrlState.getQueryParams();
-                if (params && params.tabActive) {
-                    this.$('.nav.nav-tabs').find('[role="' + params.tabActive + '"]').addClass('active').siblings().removeClass('active');
-                    this.$('.tab-content').find('[role="' + params.tabActive + '"]').addClass('active').siblings().removeClass('active');
+                if (this.value && this.value.tabActive) {
+                    this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
+                    this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
                 }
             },
