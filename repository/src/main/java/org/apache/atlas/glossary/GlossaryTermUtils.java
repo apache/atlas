@@ -31,10 +31,12 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -170,39 +172,42 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 break;
             case UPDATE:
                 for (AtlasGlossaryTerm.Relation relation : AtlasGlossaryTerm.Relation.values()) {
-                    Set<AtlasRelatedTermHeader> existingTermHeaders = existingRelatedTerms.get(relation);
-                    Set<AtlasRelatedTermHeader> newTermHeaders      = newRelatedTerms.get(relation);
+                    Map<String, AtlasRelatedTermHeader> existingTermHeaders = getRelatedTermHeaders(existingRelatedTerms, relation);
+                    Map<String, AtlasRelatedTermHeader> newTermHeaders      = getRelatedTermHeaders(newRelatedTerms, relation);
 
                     // No existing term relations, create all
-                    if (CollectionUtils.isEmpty(existingTermHeaders)) {
+                    if (MapUtils.isEmpty(existingTermHeaders)) {
                         if (DEBUG_ENABLED) {
                             LOG.debug("Creating new term relations, relation = {}, terms = {}", relation,
                                       Objects.nonNull(newTermHeaders) ? newTermHeaders.size() : "none");
                         }
-                        createTermRelationships(existing, relation, newTermHeaders);
+                        createTermRelationships(existing, relation, newTermHeaders.values());
                         continue;
                     }
 
                     // Existing term relations but nothing in updated object, remove all
-                    if (CollectionUtils.isEmpty(newTermHeaders)) {
+                    if (MapUtils.isEmpty(newTermHeaders)) {
                         if (DEBUG_ENABLED) {
                             LOG.debug("Deleting existing term relations, relation = {}, terms = {}", relation, existingTermHeaders.size());
                         }
-                        deleteTermRelationships(relation, existingTermHeaders);
+                        deleteTermRelationships(relation, existingTermHeaders.values());
                         continue;
                     }
                     // Determine what to update, delete or create
                     Set<AtlasRelatedTermHeader> toCreate = newTermHeaders
+                                                                   .values()
                                                                    .stream()
-                                                                   .filter(t -> Objects.isNull(t.getRelationGuid()))
+                                                                   .filter(t -> !existingTermHeaders.containsKey(t.getTermGuid()))
                                                                    .collect(Collectors.toSet());
                     Set<AtlasRelatedTermHeader> toUpdate = newTermHeaders
+                                                                   .values()
                                                                    .stream()
-                                                                   .filter(t -> Objects.nonNull(t.getRelationGuid()) && existingTermHeaders.contains(t))
+                                                                   .filter(t -> updatedExistingTermRelation(existingTermHeaders, t))
                                                                    .collect(Collectors.toSet());
                     Set<AtlasRelatedTermHeader> toDelete = existingTermHeaders
+                                                                   .values()
                                                                    .stream()
-                                                                   .filter(t -> !toCreate.contains(t) && !toUpdate.contains(t))
+                                                                   .filter(t -> !newTermHeaders.containsKey(t.getTermGuid()))
                                                                    .collect(Collectors.toSet());
 
                     createTermRelationships(existing, relation, toCreate);
@@ -221,61 +226,88 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void processAssociatedCategories(AtlasGlossaryTerm newObj, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
-        Set<AtlasTermCategorizationHeader> newCategories      = newObj.getCategories();
-        Set<AtlasTermCategorizationHeader> existingCategories = existing.getCategories();
+    private Map<String, AtlasRelatedTermHeader> getRelatedTermHeaders(Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTerms, AtlasGlossaryTerm.Relation relation) {
+        return Objects.nonNull(relatedTerms.get(relation)) ?
+                       relatedTerms.get(relation)
+                                   .stream()
+                                   .collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t)) :
+                       Collections.EMPTY_MAP;
+    }
+
+    private boolean updatedExistingTermRelation(Map<String, AtlasRelatedTermHeader> existingTermHeaders, AtlasRelatedTermHeader header) {
+        return Objects.nonNull(header.getRelationGuid()) && !header.equals(existingTermHeaders.get(header.getTermGuid()));
+    }
+
+    private void processAssociatedCategories(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
+        Map<String, AtlasTermCategorizationHeader> newCategories      = getAssociatedCategories(updatedTerm);
+        Map<String, AtlasTermCategorizationHeader> existingCategories = getAssociatedCategories(existing);
         switch (op) {
             case CREATE:
                 if (Objects.nonNull(newCategories)) {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Creating new term categorization, term = {}, categories = {}", existing.getGuid(), newCategories.size());
                     }
-                    createTermCategorizationRelationships(existing, newCategories);
+                    createTermCategorizationRelationships(existing, newCategories.values());
                 }
                 break;
             case UPDATE:
                 // If no existing categories are present then create all existing ones
-                if (CollectionUtils.isEmpty(existingCategories)) {
+                if (MapUtils.isEmpty(existingCategories)) {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Creating new term categorization, term = {}, categories = {}", existing.getGuid(),
                                   Objects.nonNull(newCategories) ? newCategories.size() : "none");
                     }
-                    createTermCategorizationRelationships(existing, newCategories);
+                    createTermCategorizationRelationships(existing, newCategories.values());
                     break;
                 }
 
                 // If no new categories are present then delete all existing ones
-                if (CollectionUtils.isEmpty(newCategories)) {
+                if (MapUtils.isEmpty(newCategories)) {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Deleting term categorization, term = {}, categories = {}", existing.getGuid(), existingCategories.size());
                     }
-                    deleteCategorizationRelationship(existingCategories);
+                    deleteCategorizationRelationship(existingCategories.values());
                     break;
                 }
 
                 Set<AtlasTermCategorizationHeader> toCreate = newCategories
+                                                                      .values()
                                                                       .stream()
-                                                                      .filter(c -> Objects.isNull(c.getRelationGuid()))
+                                                                      .filter(c -> !existingCategories.containsKey(c.getCategoryGuid()))
                                                                       .collect(Collectors.toSet());
                 createTermCategorizationRelationships(existing, toCreate);
                 Set<AtlasTermCategorizationHeader> toUpdate = newCategories
+                                                                      .values()
                                                                       .stream()
-                                                                      .filter(c -> Objects.nonNull(c.getRelationGuid()) && existingCategories.contains(c))
+                                                                      .filter(c -> updatedExistingCategorizationRelation(existingCategories, c))
                                                                       .collect(Collectors.toSet());
                 updateTermCategorizationRelationships(existing, toUpdate);
                 Set<AtlasTermCategorizationHeader> toDelete = existingCategories
+                                                                      .values()
                                                                       .stream()
-                                                                      .filter(c -> !toCreate.contains(c) && !toUpdate.contains(c))
+                                                                      .filter(c -> !newCategories.containsKey(c.getCategoryGuid()))
                                                                       .collect(Collectors.toSet());
                 deleteCategorizationRelationship(toDelete);
                 break;
             case DELETE:
-                deleteCategorizationRelationship(existingCategories);
+                deleteCategorizationRelationship(existingCategories.values());
                 break;
         }
     }
 
-    private void createTermCategorizationRelationships(AtlasGlossaryTerm existing, Set<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
+    private boolean updatedExistingCategorizationRelation(Map<String, AtlasTermCategorizationHeader> existingCategories, AtlasTermCategorizationHeader header) {
+        return Objects.nonNull(header.getRelationGuid()) && !header.equals(existingCategories.get(header.getCategoryGuid()));
+    }
+
+    private Map<String, AtlasTermCategorizationHeader> getAssociatedCategories(final AtlasGlossaryTerm term) {
+        return Objects.nonNull(term.getCategories()) ?
+                       term.getCategories()
+                           .stream()
+                           .collect(Collectors.toMap(AtlasTermCategorizationHeader::getCategoryGuid, c -> c)) :
+                       Collections.EMPTY_MAP;
+    }
+
+    private void createTermCategorizationRelationships(AtlasGlossaryTerm existing, Collection<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(categories)) {
             Set<AtlasTermCategorizationHeader> existingCategories = existing.getCategories();
             for (AtlasTermCategorizationHeader categorizationHeader : categories) {
@@ -293,7 +325,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void updateTermCategorizationRelationships(AtlasGlossaryTerm existing, Set<AtlasTermCategorizationHeader> toUpdate) throws AtlasBaseException {
+    private void updateTermCategorizationRelationships(AtlasGlossaryTerm existing, Collection<AtlasTermCategorizationHeader> toUpdate) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(toUpdate)) {
             for (AtlasTermCategorizationHeader categorizationHeader : toUpdate) {
                 if (DEBUG_ENABLED) {
@@ -306,7 +338,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void deleteCategorizationRelationship(Set<AtlasTermCategorizationHeader> existingCategories) throws AtlasBaseException {
+    private void deleteCategorizationRelationship(Collection<AtlasTermCategorizationHeader> existingCategories) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(existingCategories)) {
             for (AtlasTermCategorizationHeader categorizationHeader : existingCategories) {
                 if (DEBUG_ENABLED) {
@@ -317,11 +349,16 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void createTermRelationships(AtlasGlossaryTerm existing, AtlasGlossaryTerm.Relation relation, Set<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
+    private void createTermRelationships(AtlasGlossaryTerm existing, AtlasGlossaryTerm.Relation relation, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
-            Set<AtlasRelatedTermHeader> existingRelations = existing.getRelatedTerms().get(relation);
+            Map<String, AtlasRelatedTermHeader> existingRelations;
+            if (Objects.nonNull(existing.getRelatedTerms()) && Objects.nonNull(existing.getRelatedTerms().get(relation))) {
+                existingRelations = existing.getRelatedTerms().get(relation).stream().collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t));
+            } else {
+                existingRelations = Collections.EMPTY_MAP;
+            }
             for (AtlasRelatedTermHeader term : terms) {
-                if (Objects.nonNull(existingRelations) && existingRelations.contains(term)) {
+                if (Objects.nonNull(existingRelations) && existingRelations.containsKey(term.getTermGuid())) {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Skipping existing term relation termGuid={}", term.getTermGuid());
                     }
@@ -335,7 +372,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void updateTermRelationships(AtlasGlossaryTerm.Relation relation, Set<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
+    private void updateTermRelationships(AtlasGlossaryTerm.Relation relation, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
             for (AtlasRelatedTermHeader term : terms) {
                 if (DEBUG_ENABLED) {
@@ -348,7 +385,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void deleteTermRelationships(AtlasGlossaryTerm.Relation relation, Set<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
+    private void deleteTermRelationships(AtlasGlossaryTerm.Relation relation, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
             for (AtlasRelatedTermHeader termHeader : terms) {
                 if (DEBUG_ENABLED) {

@@ -500,12 +500,8 @@ public final class EntityGraphRetriever {
         Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.IN).label(TERM_ASSIGNMENT_LABEL).edges();
 
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
-
-                if (edge != null) {
+            for (final AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
+                if (edge != null && GraphHelper.getStatus(edge) != AtlasEntity.Status.DELETED) {
                     ret.add(toTermAssignmentHeader(edge));
                 }
             }

@@ -214,6 +214,7 @@ public class GlossaryREST {
      * @throws AtlasBaseException
      * @HTTP 200 If glossary creation was successful
      * @HTTP 400 If Glossary definition has invalid or missing information
+     * @HTTP 409 If Glossary definition already exists (duplicate qualifiedName)
      */
     @POST
     public AtlasGlossary createGlossary(AtlasGlossary atlasGlossary) throws AtlasBaseException {
@@ -236,6 +237,7 @@ public class GlossaryREST {
      * @throws AtlasBaseException
      * @HTTP 200 If glossary term creation was successful
      * @HTTP 400 If Glossary term definition has invalid or missing information
+     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
      */
     @POST
     @Path("/term")
@@ -289,6 +291,7 @@ public class GlossaryREST {
      * @throws AtlasBaseException
      * @HTTP 200 If glossary category creation was successful
      * @HTTP 400 If Glossary category definition has invalid or missing information
+     * @HTTP 409 If Glossary category already exists (duplicate qualifiedName)
      */
     @POST
     @Path("/category")

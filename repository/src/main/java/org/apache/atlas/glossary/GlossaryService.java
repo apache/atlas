@@ -27,6 +27,7 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
@@ -53,13 +54,17 @@ public class GlossaryService {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryService.class);
     private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
 
-    private final DataAccess             dataAccess;
-    private final GlossaryTermUtils      glossaryTermUtils;
-    private final GlossaryCategoryUtils  glossaryCategoryUtils;
+    private static final String QUALIFIED_NAME_ATTR              = "qualifiedName";
+
+    private final DataAccess            dataAccess;
+    private final GlossaryTermUtils     glossaryTermUtils;
+    private final GlossaryCategoryUtils glossaryCategoryUtils;
+    private final AtlasTypeRegistry     atlasTypeRegistry;
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry) {
         this.dataAccess = dataAccess;
+        this.atlasTypeRegistry = typeRegistry;
         glossaryTermUtils = new GlossaryTermUtils(relationshipStore, typeRegistry);
         glossaryCategoryUtils = new GlossaryCategoryUtils(relationshipStore, typeRegistry);
     }
@@ -78,7 +83,7 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.getGlossaries({}, {}, {})", limit, offset, sortOrder);
         }
 
-        List<String>     glossaryGuids    = AtlasGraphUtilsV1.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_PREFIX, sortOrder);
+        List<String>     glossaryGuids    = AtlasGraphUtilsV1.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
         PaginationHelper paginationHelper = new PaginationHelper<>(glossaryGuids, offset, limit);
 
         List<AtlasGlossary> ret;
@@ -118,6 +123,7 @@ public class GlossaryService {
         if (Objects.isNull(atlasGlossary)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Glossary definition missing");
         }
+
         if (StringUtils.isEmpty(atlasGlossary.getQualifiedName())) {
             if (StringUtils.isEmpty(atlasGlossary.getDisplayName())) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
@@ -125,11 +131,17 @@ public class GlossaryService {
                 atlasGlossary.setQualifiedName(atlasGlossary.getDisplayName());
             }
         }
+
+        if (glossaryExists(atlasGlossary)) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS, atlasGlossary.getQualifiedName());
+        }
+
         AtlasGlossary saved = dataAccess.save(atlasGlossary);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.createGlossary() : {}", saved);
         }
+
         return saved;
     }
 
@@ -297,6 +309,10 @@ public class GlossaryService {
             }
         }
 
+        if (termExists(glossaryTerm)) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, glossaryTerm.getQualifiedName());
+        }
+
         AtlasGlossaryTerm existing = dataAccess.save(glossaryTerm);
         glossaryTermUtils.processTermRelations(glossaryTerm, existing, GlossaryUtils.RelationshipOperation.CREATE);
 
@@ -455,6 +471,10 @@ public class GlossaryService {
             } else {
                 glossaryCategory.setQualifiedName(displayName + "@" + glossaryName);
             }
+        }
+
+        if (categoryExists(glossaryCategory)) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_ALREADY_EXISTS, glossaryCategory.getQualifiedName());
         }
 
         AtlasGlossaryCategory saved = dataAccess.save(glossaryCategory);
@@ -724,6 +744,27 @@ public class GlossaryService {
         AtlasGlossary glossary = new AtlasGlossary();
         glossary.setGuid(glossaryGuid);
         return glossary;
+    }
+
+    private boolean glossaryExists(AtlasGlossary atlasGlossary) {
+        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME), new HashMap<String, Object>() {{
+            put(QUALIFIED_NAME_ATTR, atlasGlossary.getQualifiedName());
+        }});
+        return Objects.nonNull(vertex);
+    }
+
+    private boolean termExists(AtlasGlossaryTerm term) {
+        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME), new HashMap<String, Object>() {{
+            put(QUALIFIED_NAME_ATTR, term.getQualifiedName());
+        }});
+        return Objects.nonNull(vertex);
+    }
+
+    private boolean categoryExists(AtlasGlossaryCategory category) {
+        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME), new HashMap<String, Object>() {{
+            put(QUALIFIED_NAME_ATTR, category.getQualifiedName());
+        }});
+        return Objects.nonNull(vertex);
     }
 
     private void deleteCategories(final AtlasGlossary existing, final Set<AtlasRelatedCategoryHeader> categories) throws AtlasBaseException {
