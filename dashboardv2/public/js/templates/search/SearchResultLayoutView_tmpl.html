@@ -36,11 +36,13 @@
                             id="historicalentities"/>
                             <b>Show historical entities</b></label>
                     </div>
+                    {{#ifCond fromView '!==' "glossary"}}
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="subclassifications">
                             <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications"/>
                             <b>Exclude sub-classifications</b></label>
                     </div>
+                    {{/ifCond}}
                     {{#ifCond fromView '!==' "classification"}}
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="subtypes">

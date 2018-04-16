@@ -27,7 +27,8 @@ define(['require'], function(require) {
         tabState: {
             stateChanged: false,
             tagUrl: "#!/tag",
-            searchUrl: "#!/search"
+            searchUrl: "#!/search",
+            glossaryUrl: "#!/glossary"
         },
         detailPageState: {}
     };

@@ -16,20 +16,38 @@
  * limitations under the License.
  */
 
-@import "__mixin.scss";
-@import "__variable.scss";
-@import "common.scss";
-@import "tab.scss";
-@import "form.scss";
-@import "nav.scss";
-@import "panel.scss";
-@import "loader.scss";
-@import "graph.scss";
-@import "relationship.scss";
-@import "old-style.scss";
-@import "theme.scss";
-@import "tag.scss";
-@import "search.scss";
-@import "profile-table.scss";
-@import "glossary.scss";
-@import "override.scss";
+.jstree-contextmenu {
+    z-index: 99;
+}
+
+.jstree-default-dark {
+    background: transparent !important;
+    .jstree-clicked,
+    .jstree-wholerow-clicked {
+        background: $color_jungle_green_approx !important;
+    }
+    .jstree-hovered {
+        background: $color_star_dust_approx;
+    }
+    .jstree-anchor {
+        color: #dbdbdb;
+    }
+    .jstree-search {
+        color: #fbfece !important
+    }
+    li[role="treeitem"] {
+        .jstree-wholerow-clicked {
+            .tools {
+                display: inline-block;
+            }
+        }
+        .tools {
+            display: none;
+            position: relative;
+            width: 9%;
+            float: right;
+            text-align: center;
+            cursor: pointer;
+        }
+    }
+}

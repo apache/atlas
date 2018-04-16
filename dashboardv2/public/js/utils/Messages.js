@@ -46,7 +46,13 @@ define(['require'], function(require) {
         tag: {
             addAttributeSuccessMessage: "Classification attribute is added successfully",
             updateTagDescriptionMessage: "Classification description is updated successfully"
+        },
+        glossary: {
+            removeTermfromCategory: "Remove Term Assignment",
+            removeTermfromEntity: "Remove Term Assignment",
+            removeCategoryfromTerm: "Remove Category Assignment"
         }
+
     };
     return Messages;
 });

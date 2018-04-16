@@ -51,7 +51,9 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
+                termClick: '[data-id="termClick"]',
                 addTag: '[data-id="addTag"]',
+                addTerm: '[data-id="addTerm"]',
                 paginationDiv: '[data-id="paginationDiv"]',
                 previousData: "[data-id='previousData']",
                 nextData: "[data-id='nextData']",
@@ -94,6 +96,20 @@ define(['require',
                         });
                     }
                 };
+                events["click " + this.ui.termClick] = function(e) {
+                    var scope = $(e.currentTarget);
+                    if (e.target.nodeName.toLocaleLowerCase() == "i") {
+                        this.onClickTermCross(e);
+                    } else {
+                        this.triggerUrl({
+                            url: '#!/glossary/' + scope.find('i').data('termguid'),
+                            urlParams: { gType: "term" },
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: null
+                        });
+                    }
+                };
                 events["keyup " + this.ui.gotoPage] = function(e) {
                     var code = e.which,
                         goToPage = parseInt(e.currentTarget.value);
@@ -111,6 +127,7 @@ define(['require',
                 events["change " + this.ui.showPage] = 'changePageLimit';
                 events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
                 events["click " + this.ui.addTag] = 'checkedValue';
+                events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events["click " + this.ui.addAssignTag] = 'checkedValue';
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
@@ -125,7 +142,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable', 'fromView'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable', 'fromView', 'glossaryCollection', 'termName'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -200,7 +217,7 @@ define(['require',
                         this.updateColumnList(state);
                         var excludeDefaultColumn = [];
                         if (this.value && this.value.type) {
-                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag");
+                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "term");
                             if (this.searchTableColumns[this.value.type] === null) {
                                 this.ui.columnEmptyInfo.show();
                             } else {
@@ -459,7 +476,7 @@ define(['require',
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null });
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null, 'termName': that.termName || null });
                     if (value.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
@@ -470,7 +487,7 @@ define(['require',
                     }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
-                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'))
+                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'))
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -482,7 +499,7 @@ define(['require',
                     }
                 } else {
                     if (isPostMethod) {
-                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification'));
+                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
@@ -561,12 +578,12 @@ define(['require',
                     this.hideLoader();
                     Utils.generatePopover({
                         el: this.$('[data-id="showMoreLess"]'),
-                        contentClass: 'popover-tag',
+                        contentClass: 'popover-tag-term',
                         viewFixedPopover: true,
                         popoverOptions: {
                             container: null,
                             content: function() {
-                                return $(this).find('.popup-tag').children().clone();
+                                return $(this).find('.popup-tag-term').children().clone();
                             }
                         }
                     });
@@ -580,6 +597,7 @@ define(['require',
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
+
                 col['Check'] = {
                     name: "selected",
                     label: "Select",
@@ -589,6 +607,7 @@ define(['require',
                     renderable: (columnToShow ? _.contains(columnToShow, 'selected') : true),
                     headerCell: "select-all"
                 };
+
 
                 col['name'] = {
                     label: this.value && this.value.profileDBView ? "Table Name" : "Name",
@@ -617,6 +636,7 @@ define(['require',
                         }
                     })
                 };
+
                 col['owner'] = {
                     label: "Owner",
                     cell: "String",
@@ -634,6 +654,8 @@ define(['require',
                         }
                     })
                 };
+
+
                 if (this.value && this.value.profileDBView) {
                     col['createTime'] = {
                         label: "Date Created",
@@ -653,6 +675,7 @@ define(['require',
                     }
                 }
                 if (this.value && !this.value.profileDBView) {
+
                     col['description'] = {
                         label: "Description",
                         cell: "String",
@@ -670,6 +693,8 @@ define(['require',
                             }
                         })
                     };
+
+
                     col['typeName'] = {
                         label: "Type",
                         cell: "Html",
@@ -688,6 +713,9 @@ define(['require',
                         })
                     };
                     this.getTagCol({ 'col': col, 'columnToShow': columnToShow });
+                    if (this.fromView != "glossary") {
+                        this.getTermCol({ 'col': col, 'columnToShow': columnToShow });
+                    }
 
                     if (this.value && this.value.searchType === "basic") {
                         var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
@@ -806,6 +834,34 @@ define(['require',
                     };
                 }
             },
+            getTermCol: function(options) {
+                var that = this,
+                    columnToShow = options.columnToShow,
+                    col = options.col;
+                if (col) {
+                    col['term'] = {
+                        label: "Term",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        resizeable: true,
+                        orderable: true,
+                        renderable: (columnToShow ? _.contains(columnToShow, 'term') : true),
+                        className: 'searchTag',
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON();
+                                if (obj.status && Enums.entityStateReadOnly[obj.status]) {
+                                    return '<div class="readOnly">' + CommonViewFunction.termForTable(obj); + '</div>';
+                                } else {
+                                    return CommonViewFunction.termForTable(obj);
+                                }
+
+                            }
+                        })
+                    };
+                }
+            },
             addTagModalView: function(guid, multiple) {
                 var that = this;
                 require(['views/tag/AddTagModalView'], function(AddTagModalView) {
@@ -863,6 +919,19 @@ define(['require',
                     that.addTagModalView(guid);
                 }
             },
+            onClickAddTermBtn: function(e) {
+                var that = this,
+                    entityGuid = $(e.currentTarget).data("guid");
+                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                    var view = new AssignTermLayoutView({
+                        guid: entityGuid,
+                        callback: function() {
+                            that.fetchCollection();
+                        },
+                        glossaryCollection: that.glossaryCollection,
+                    });
+                });
+            },
             onClickTagCross: function(e) {
                 var that = this,
                     tagName = $(e.target).data("name"),
@@ -884,6 +953,31 @@ define(['require',
                         modal.trigger('cancel');
                     });
                 }
+            },
+            onClickTermCross: function(e) {
+                var $el = $(e.target),
+                    termGuid = $el.data('termguid'),
+                    guid = $el.data('guid'),
+                    termName = $(e.currentTarget).text(),
+                    assetname = $el.data('assetname'),
+                    meanings = this.searchCollection.find({ "guid": guid }).get("meanings"),
+                    that = this,
+                    termObj = _.find(meanings, { termGuid: termGuid });
+                CommonViewFunction.removeCategoryTermAssociation({
+                    termGuid: termGuid,
+                    model: {
+                        guid: guid,
+                        relationshipGuid: termObj.relationGuid
+                    },
+                    collection: that.glossaryCollection,
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + assetname + "?</b></div>",
+                    titleMessage: Messages.glossary.removeTermfromEntity,
+                    isEntityView: true,
+                    buttonText: "Remove",
+                    callback: function() {
+                        that.fetchCollection();
+                    }
+                });
             },
             deleteTagData: function(options) {
                 var that = this;

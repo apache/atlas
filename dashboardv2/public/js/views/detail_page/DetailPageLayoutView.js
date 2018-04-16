@@ -50,6 +50,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
+                termClick: '[data-id="termClick"]',
                 propagatedTagDiv: '[data-id="propagatedTagDiv"]',
                 title: '[data-id="title"]',
                 editButton: '[data-id="editButton"]',
@@ -57,8 +58,11 @@ define(['require',
                 description: '[data-id="description"]',
                 editBox: '[data-id="editBox"]',
                 deleteTag: '[data-id="deleteTag"]',
+                deleteTerm: '[data-id="deleteTerm"]',
                 addTag: '[data-id="addTag"]',
+                addTerm: '[data-id="addTerm"]',
                 tagList: '[data-id="tagList"]',
+                termList: '[data-id="termList"]',
                 propagatedTagList: '[data-id="propagatedTagList"]',
                 fullscreenPanel: "#fullscreen_panel",
                 tablist: '[data-id="tab-list"] li'
@@ -81,7 +85,19 @@ define(['require',
                         });
                     }
                 };
+                events["click " + this.ui.termClick] = function(e) {
+                    if (e.target.nodeName.toLocaleLowerCase() != "i") {
+                        Utils.setUrl({
+                            url: '#!/glossary/' + $(e.currentTarget).find('i').data('guid'),
+                            mergeBrowserUrl: false,
+                            urlParams: { gType: "term" },
+                            trigger: true
+                        });
+                    }
+                };
+                events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
+                events["click " + this.ui.deleteTerm] = 'onClickTermCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 events["click " + this.ui.tablist] = function(e) {
                     var tabValue = $(e.currentTarget).attr('role');
@@ -101,7 +117,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection'));
                 this.bindEvents();
                 $('body').addClass("detail-page");
             },
@@ -155,6 +171,9 @@ define(['require',
                             this.generateTag(collectionJSON.classifications);
                         } else {
                             this.generateTag([]);
+                        }
+                        if (collectionJSON.relationshipAttributes && collectionJSON.relationshipAttributes.meanings) {
+                            this.generateTerm(collectionJSON.relationshipAttributes.meanings);
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
                             this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
@@ -326,6 +345,30 @@ define(['require',
                     }
                 }));
             },
+            onClickTermCross: function(e) {
+                var $el = $(e.currentTarget),
+                    termGuid = $el.data('guid'),
+                    termName = $el.text(),
+                    that = this,
+                    termObj = _.find(this.collection.first().get('entity').relationshipAttributes.meanings, { guid: termGuid });
+                CommonViewFunction.removeCategoryTermAssociation({
+                    termGuid: termGuid,
+                    model: {
+                        guid: that.id,
+                        relationshipGuid: termObj.relationshipGuid
+                    },
+                    collection: that.glossaryCollection,
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    titleMessage: Messages.glossary.removeTermfromEntity,
+                    isEntityView: true,
+                    buttonText: "Remove",
+                    showLoader: that.showLoader.bind(that),
+                    hideLoader: that.hideLoader.bind(that),
+                    callback: function() {
+                        that.fetchCollection();
+                    }
+                });
+            },
             generateTag: function(tagObject) {
                 var that = this,
                     tagData = "",
@@ -338,7 +381,7 @@ define(['require',
                     val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
                 });
                 _.each(tag.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Delete Tag"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Tag"></i></span>';
                 });
                 _.each(tag.propagated, function(val) {
                     propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span></span>';
@@ -349,6 +392,15 @@ define(['require',
                 this.ui.tagList.prepend(tagData);
                 this.ui.propagatedTagList.html(propagatedTagListData);
 
+            },
+            generateTerm: function(data) {
+                var that = this,
+                    termData = "";
+                _.each(data, function(val) {
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.displayText + ' data-id="termClick"><span>' + val.displayText + '</span><i class="fa fa-close" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                });
+                this.ui.termList.find("span.btn").remove();
+                this.ui.termList.prepend(termData);
             },
             hideLoader: function() {
                 Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
@@ -375,6 +427,23 @@ define(['require',
                         hideLoader: that.hideLoader.bind(that),
                         collection: that.classificationDefCollection,
                         enumDefCollection: that.enumDefCollection
+                    });
+                    view.modal.on('ok', function() {
+                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                    });
+                });
+            },
+            onClickAddTermBtn: function(e) {
+                var that = this;
+                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                    var view = new AssignTermLayoutView({
+                        guid: that.id,
+                        callback: function() {
+                            that.fetchCollection();
+                        },
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that),
+                        glossaryCollection: that.glossaryCollection
                     });
                     view.modal.on('ok', function() {
                         Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));

@@ -233,7 +233,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     }
     CommonViewFunction.tagForTable = function(obj) {
         var traits = obj.classifications,
-            atags = "",
+            tagHtml = "",
             addTag = "",
             popTag = "",
             count = 0,
@@ -251,7 +251,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (count >= 1) {
                     popTag += tagString;
                 } else {
-                    atags += tagString;
+                    tagHtml += tagString;
                 }
                 ++count;
             });
@@ -264,9 +264,41 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
         }
         if (count > 1) {
-            addTag += '<div data-id="showMoreLess" class="btn btn-action btn-sm assignTag"><i class="fa fa-ellipsis-h" aria-hidden="true"></i><div class="popup-tag">' + popTag + '</div></div>'
+            addTag += '<div data-id="showMoreLess" class="btn btn-action btn-sm assignTag"><i class="fa fa-ellipsis-h" aria-hidden="true"></i><div class="popup-tag-term">' + popTag + '</div></div>'
         }
-        return '<div class="tagList btn-inline btn-fixed-width">' + atags + addTag + '</div>';
+        return '<div class="tagList btn-inline btn-fixed-width">' + tagHtml + addTag + '</div>';
+    }
+    CommonViewFunction.termForTable = function(obj) {
+        var terms = obj.meanings,
+            termHtml = "",
+            addTerm = "",
+            popTerm = "",
+            count = 0,
+            entityName = Utils.getName(obj);
+        if (terms) {
+            terms.map(function(term) {
+                var className = "btn btn-action btn-sm btn-blue btn-icon",
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + term.typeName + '" data-type="tag" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + term.typeName + '">' + term.displayText + '</span>' + deleteIcon + '</a>';
+                if (count >= 1) {
+                    popTerm += termString;
+                } else {
+                    termHtml += termString;
+                }
+                ++count;
+            });
+        }
+        if (!Enums.entityStateReadOnly[obj.status]) {
+            if (obj.guid) {
+                addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="btn btn-action btn-sm assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
+            } else {
+                addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="btn btn-action btn-sm assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
+            }
+        }
+        if (count > 1) {
+            addTerm += '<div data-id="showMoreLess" class="btn btn-action btn-sm assignTerm"><i class="fa fa-ellipsis-h" aria-hidden="true"></i><div class="popup-tag-term">' + popTerm + '</div></div>'
+        }
+        return '<div class="tagList btn-inline btn-fixed-width">' + termHtml + addTerm + '</div>';
     }
     CommonViewFunction.generateQueryOfFilter = function(value) {
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
@@ -536,6 +568,183 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             } else {
                 return null;
             }
+        }
+    }
+    CommonViewFunction.createEditGlossaryCategoryTerm = function(options) {
+        if (options) {
+            var model = options.model,
+                isTermView = options.isTermView,
+                isGlossaryView = options.isGlossaryView,
+                collection = options.collection
+        }
+        require([
+            'views/glossary/CreateEditCategoryTermLayoutView',
+            'views/glossary/CreateEditGlossaryLayoutView',
+            'modules/Modal'
+        ], function(CreateEditCategoryTermLayoutView, CreateEditGlossaryLayoutView, Modal) {
+            var view = null,
+                title = null;
+            if (isGlossaryView) {
+                view = new CreateEditGlossaryLayoutView({ "glossaryCollection": collection, "model": model });
+                title = "Glossary";
+            } else {
+                view = new CreateEditCategoryTermLayoutView({ "glossaryCollection": collection, "modelJSON": model });
+                title = (isTermView ? 'Term' : 'Category');
+            }
+
+            var modal = new Modal({
+                "title": ((model ? "Update " : "Create ") + title),
+                "content": view,
+                "cancelText": "Cancel",
+                "okCloses": false,
+                "okText": model ? "Update" : "Create",
+                "allowCancel": true
+            }).open();
+            modal.on('ok', function() {
+                if (isGlossaryView) {
+                    modal.$el.find('button.ok').attr("disabled", "true");
+                }
+                CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
+            });
+            modal.on('closeModal', function() {
+                modal.trigger('cancel');
+                if (options.onModalClose) {
+                    options.onModalClose()
+                }
+            });
+        });
+    }
+    CommonViewFunction.createEditGlossaryCategoryTermSubmit = function(options) {
+        if (options) {
+            var ref = options.ref,
+                modal = options.modal,
+                model = options.model,
+                node = options.node,
+                isTermView = options.isTermView,
+                isCategoryView = options.isCategoryView,
+                collection = options.collection,
+                isGlossaryView = options.isGlossaryView,
+                data = ref.ui[(isGlossaryView ? "glossaryForm" : "categoryTermForm")].serializeArray().reduce(function(obj, item) {
+                    obj[item.name] = item.value;
+                    return obj;
+                }, {}),
+                newModel = new options.collection.model(),
+                messageType = "Glossary ";
+        }
+        if (isTermView) {
+            messageType = "Term ";
+        } else if (isCategoryView) {
+            messageType = "Category ";
+        }
+        var ajaxOptions = {
+            success: function(rModel, response) {
+                Utils.notifySuccess({
+                    content: messageType + ref.ui.displayName.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
+                });
+                if (options.callback) {
+                    options.callback(response);
+                }
+                modal.trigger('closeModal');
+            }
+        }
+        if (model) {
+            if (isGlossaryView) {
+                model.set(data).save(null, ajaxOptions)
+            } else {
+                newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
+                    guid: model.guid,
+                    data: JSON.stringify(_.extend({}, model, data)),
+                }));
+            }
+
+        } else {
+            if (isGlossaryView) {
+                new collection.model().set(data).save(null, ajaxOptions);
+            } else {
+                if (node) {
+                    var key = "anchor",
+                        guidKey = "glossaryGuid";
+                    data["anchor"] = {
+                        "glossaryGuid": node.glossaryId || node.guid,
+                        "displayText": node.glossaryName || node.text
+                    }
+                    if (node.type == "GlossaryCategory") {
+                        data["parentCategory"] = {
+                            "categoryGuid": node.guid
+                        }
+                    }
+                }
+                newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
+                    data: JSON.stringify(data),
+                }));
+            }
+        }
+
+    }
+    CommonViewFunction.removeCategoryTermAssociation = function(options) {
+        if (options) {
+            var selectedGuid = options.guid,
+                termGuid = options.termGuid,
+                isCategoryView = options.isCategoryView,
+                isTermView = options.isTermView,
+                isEntityView = options.isEntityView,
+                collection = options.collection,
+                model = options.model,
+                newModel = new options.collection.model(),
+                ajaxOptions = {
+                    success: function(rModel, response) {
+                        Utils.notifySuccess({
+                            content: ((isCategoryView ? "Term" : "Category") + " association is removed successfully")
+                        });
+                        if (options.callback) {
+                            options.callback();
+                        }
+                        modal.trigger('closeModal');
+                    },
+                    cust_error: function() {
+                        if (options.hideLoader) {
+                            options.hideLoader();
+                        }
+                    }
+                },
+                modal = new Modal({
+                    title: options.titleMessage,
+                    okText: options.buttonText,
+                    htmlContent: options.msg,
+                    cancelText: "Cancel",
+                    allowCancel: true,
+                    okCloses: true,
+                    showFooter: true,
+                }).open();
+            modal.on('ok', function() {
+                if (options.showLoader) {
+                    options.showLoader();
+                }
+                if (isEntityView && model) {
+                    var data = [model];
+                    newModel.removeTermFromEntity(termGuid, _.extend(ajaxOptions, {
+                        data: JSON.stringify(data)
+                    }))
+                } else {
+                    var data = _.extend({}, model);
+                    if (isTermView) {
+                        data.categories = _.reject(data.categories, function(term) { return term.categoryGuid != selectedGuid });
+                    } else {
+                        data.terms = _.reject(data.terms, function(term) { return term.termGuid != selectedGuid });
+                    }
+
+                    newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
+                        guid: model.guid,
+                        data: JSON.stringify(_.extend({}, model, data)),
+                    }));
+                }
+            });
+            modal.on('closeModal', function() {
+                modal.trigger('cancel');
+                if (options.onModalClose) {
+                    options.onModalClose()
+                }
+            });
         }
     }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {

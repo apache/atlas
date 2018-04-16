@@ -53,9 +53,11 @@ define(['require',
                         entities.push(temp);
                     });
                     return entities;
-                } else {
+                } else if (resp.entities) {
                     this.dynamicTable = false;
                     return resp.entities ? resp.entities : [];
+                } else {
+                    return resp ? resp : [];
                 }
             },
             getBasicRearchResult: function(options) {

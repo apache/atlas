@@ -36,8 +36,12 @@ define(['require',
             events['click ' + this.ui.backButton] = function() {
                 var queryParams = Utils.getUrlState.getQueryParams(),
                     urlPath = "searchUrl";
-                if (queryParams && queryParams.from && queryParams.from == "classification") {
-                    urlPath = "tagUrl";
+                if (queryParams && queryParams.from) {
+                    if (queryParams.from == "classification") {
+                        urlPath = "tagUrl";
+                    } else if(queryParams.from == "glossary"){
+                        urlPath = "glossaryUrl";
+                    }
                 }
                 Utils.setUrl({
                     url: Globals.saveApplicationState.tabState[urlPath],

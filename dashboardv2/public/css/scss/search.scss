@@ -94,11 +94,11 @@ $color_celeste_approx: #1D1F2B;
     }
 }
 
-.popup-tag {
+.popup-tag-term {
     display: none;
 }
 
-.popover-tag {
+.popover-tag-term {
     .btn {
         display: block;
     }
@@ -112,7 +112,8 @@ $color_celeste_approx: #1D1F2B;
         }
     }
 }
-.table-responsive{
+
+.table-responsive {
     position: relative;
 }
 

@@ -120,6 +120,51 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return saveSearchUrl;
             }
         },
+        glossaryApiUrl: function(options) {
+            var guid = options && options.guid,
+                glossaryUrl = this.baseUrlV2 + '/glossary';
+            if (guid) {
+                return glossaryUrl + '/' + guid;
+            } else {
+                return glossaryUrl;
+            }
+        },
+        categoryApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                categoryUrl = this.glossaryApiUrl() + '/' + (list ? 'categories' : 'category');
+            if (guid) {
+                if (related) {
+                    return categoryUrl + '/' + guid + "/related";
+                } else {
+                    return categoryUrl + '/' + guid;
+                }
+            } else {
+                return categoryUrl;
+            }
+        },
+        termApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                termUrl = this.glossaryApiUrl() + '/' + (list ? 'terms' : 'term');
+            if (guid) {
+                if (related) {
+                    return termUrl + '/' + guid + "/related";
+                } else {
+                    return termUrl + '/' + guid;
+                }
+            } else {
+                return termUrl;
+            }
+        },
+        termToEntityApiUrl: function(guid) {
+            var termUrl = this.termApiUrl({ list: true });
+            if (guid) {
+                return termUrl + '/' + guid + '/assignedEntities';
+            }
+        },
         versionApiUrl: function() {
             return this.baseUrl + '/admin/version';
         },

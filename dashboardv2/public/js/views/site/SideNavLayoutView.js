@@ -29,14 +29,14 @@ define(['require',
 
         regions: {
             RTagLayoutView: "#r_tagLayoutView",
-            RSearchLayoutView: "#r_searchLayoutView"
+            RSearchLayoutView: "#r_searchLayoutView",
+            RGlossaryLayoutView: "#r_glossaryLayoutView"
         },
         ui: {
             tabs: '.tabs li a',
         },
         templateHelpers: function() {
             return {
-                tabClass: this.tabClass,
                 apiBaseUrl: UrlLinks.apiBaseUrl
             };
         },
@@ -60,11 +60,14 @@ define(['require',
                     }
                 }
 
-                if (elementName.name == "tab-tag") {
+                if (elementName.name == "tab-classification") {
                     urlString = tabStateUrls.tagUrl; //'#!/tag';
                 } else if (elementName.name == "tab-search") {
                     urlString = tabStateUrls.searchUrl; // '#!/search';
+                } else if (elementName.name == "tab-glossary") {
+                    urlString = tabStateUrls.glossaryUrl; // '#!/glossary';
                 }
+
                 Utils.setUrl({
                     url: urlString,
                     mergeBrowserUrl: false,
@@ -75,40 +78,35 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'url', 'value', 'tag', 'selectFirst', 'classificationDefCollection', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'searchTableColumns', 'searchTableFilters'));
-            this.tabClass = "tab col-sm-6";
+            this.options = options;
         },
         onRender: function() {
             this.renderTagLayoutView();
             this.renderSearchLayoutView();
+            this.renderGlossaryLayoutView();
             this.selectTab();
 
         },
         renderTagLayoutView: function() {
             var that = this;
             require(['views/tag/TagLayoutView'], function(TagLayoutView) {
-                that.RTagLayoutView.show(new TagLayoutView({
-                    collection: that.classificationDefCollection,
-                    tag: that.tag,
-                    value: that.value,
-                    enumDefCollection: that.enumDefCollection,
-                    typeHeaders: that.typeHeaders
-                }));
+                that.RTagLayoutView.show(new TagLayoutView(
+                    _.extend(that.options, {
+                        "collection": that.options.classificationDefCollection
+                    })
+                ));
             });
         },
         renderSearchLayoutView: function() {
             var that = this;
             require(['views/search/SearchLayoutView'], function(SearchLayoutView) {
-                that.RSearchLayoutView.show(new SearchLayoutView({
-                    value: that.value,
-                    searchVent: that.searchVent,
-                    typeHeaders: that.typeHeaders,
-                    entityDefCollection: that.entityDefCollection,
-                    enumDefCollection: that.enumDefCollection,
-                    classificationDefCollection: that.classificationDefCollection,
-                    searchTableColumns: that.searchTableColumns,
-                    searchTableFilters: that.searchTableFilters
-                }));
+                that.RSearchLayoutView.show(new SearchLayoutView(that.options));
+            });
+        },
+        renderGlossaryLayoutView: function() {
+            var that = this;
+            require(['views/glossary/GlossaryLayoutView'], function(GlossaryLayoutView) {
+                that.RGlossaryLayoutView.show(new GlossaryLayoutView(that.options));
             });
         },
         selectTab: function() {
@@ -121,12 +119,18 @@ define(['require',
             if (Utils.getUrlState.isSearchTab() || Utils.getUrlState.isInitial()) {
                 activeTab({ "view": "search" });
             } else if (Utils.getUrlState.isTagTab()) {
-                activeTab({ "view": "tag" });
+                activeTab({ "view": "classification" });
+            } else if (Utils.getUrlState.isGlossaryTab()) {
+                activeTab({ "view": "glossary" });
             } else if (Utils.getUrlState.isDetailPage()) {
                 var queryParams = Utils.getUrlState.getQueryParams(),
                     view = "search";
-                if (queryParams && queryParams.from && queryParams.from == "classification") {
-                    view = "tag";
+                if (queryParams && queryParams.from) {
+                    if (queryParams.from == "classification") {
+                        view = "tag";
+                    } else if (queryParams.from == "glossary") {
+                        view = "glossary";
+                    }
                 }
                 activeTab({ "view": view });
             }

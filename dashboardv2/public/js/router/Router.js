@@ -24,8 +24,8 @@ define([
     'utils/Globals',
     'utils/Utils',
     'utils/UrlLinks',
-    'collection/VTagList'
-], function($, _, Backbone, App, Globals, Utils, UrlLinks, VTagList) {
+    'collection/VGlossaryList'
+], function($, _, Backbone, App, Globals, Utils, UrlLinks, VGlossaryList) {
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
@@ -36,6 +36,8 @@ define([
             '!/detailPage/:id': 'detailPage',
             '!/tag': 'commonAction',
             '!/search': 'commonAction',
+            '!/glossary': 'commonAction',
+            '!/glossary/:id': 'glossaryDetailPage',
             // Default
             '*actions': 'defaultAction'
         },
@@ -45,14 +47,19 @@ define([
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
+            this.glossaryCollection = new VGlossaryList([], {});
             this.preFetchedCollectionLists = {
                 'entityDefCollection': this.entityDefCollection,
                 'typeHeaders': this.typeHeaders,
                 'enumDefCollection': this.enumDefCollection,
-                'classificationDefCollection': this.classificationDefCollection
+                'classificationDefCollection': this.classificationDefCollection,
+                'glossaryCollection': this.glossaryCollection
             }
             this.sharedObj = {
                 searchTableColumns: {},
+                glossary: {
+                    selectedItem: {}
+                },
                 searchTableFilters: {
                     tagFilters: {},
                     entityFilters: {}
@@ -169,6 +176,31 @@ define([
                 }
             });
         },
+        glossaryDetailPage: function(id) {
+            var that = this;
+            if (id) {
+                require([
+                    'views/site/Header',
+                    'views/glossary/GlossaryDetailLayoutView',
+                    'views/site/SideNavLayoutView'
+                ], function(Header, GlossaryDetailLayoutView, SideNavLayoutView) {
+                    var paramObj = Utils.getUrlState.getQueryParams();
+                    App.rNHeader.show(new Header());
+                    if (!App.rSideNav.currentView) {
+                        App.rSideNav.show(new SideNavLayoutView(
+                            _.extend({}, that.preFetchedCollectionLists, that.sharedObj, { 'guid': id, 'value': paramObj })
+                        ));
+                    } else {
+                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({}, { 'guid': id, 'value': paramObj }));
+                        App.rSideNav.currentView.selectTab();
+                    }
+                    App.rNContent.show(new GlossaryDetailLayoutView(_.extend({
+                        'guid': id,
+                        'value': paramObj
+                    }, that.preFetchedCollectionLists, that.sharedObj)));
+                });
+            }
+        },
         commonAction: function() {
             var that = this;
             require([
@@ -188,8 +220,11 @@ define([
                     App.rSideNav.currentView.selectTab();
                     if (Utils.getUrlState.isTagTab()) {
                         App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
+                    } else if (Utils.getUrlState.isGlossaryTab()) {
+                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({}, paramObj));
                     }
                 }
+
                 if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
                     App.rNContent.show(new SearchDetailLayoutView(
                         _.extend({

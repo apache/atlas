@@ -174,12 +174,12 @@ define(['require',
                     that.$('.multiSelectTag').hide();
                     Utils.generatePopover({
                         el: that.$('[data-id="showMoreLess"]'),
-                        contentClass: 'popover-tag',
+                        contentClass: 'popover-tag-term',
                         viewFixedPopover: true,
                         popoverOptions: {
                             container: null,
                             content: function() {
-                                return $(this).find('.popup-tag').children().clone();
+                                return $(this).find('.popup-tag-term').children().clone();
                             }
                         }
                     });

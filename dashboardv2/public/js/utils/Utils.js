@@ -283,6 +283,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['tagUrl'] = options.url;
                 } else if (Utils.getUrlState.isSearchTab(options.url)) {
                     urlUpdate['searchUrl'] = options.url;
+                } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
+                    urlUpdate['glossaryUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -312,6 +314,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         },
         isSearchTab: function(url) {
             return this.getQueryUrl(url).firstValue == "search";
+        },
+        isGlossaryTab: function(url) {
+            return this.getQueryUrl(url).firstValue == "glossary";
         },
         isDetailPage: function(url) {
             return this.getQueryUrl(url).firstValue == "detailPage";

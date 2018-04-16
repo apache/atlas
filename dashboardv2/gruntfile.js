@@ -98,14 +98,15 @@ module.exports = function(grunt) {
                     'select2.full.min.js': { 'select2/dist/js': 'select2' },
                     'backgrid-select-all.min.js': { 'backgrid-select-all': 'backgrid-select-all' },
                     'moment.min.js': { 'moment/min': 'moment/js' },
-                    'moment-timezone-with-data.min.js' : {'moment-timezone/builds' : 'moment-timezone'},
+                    'moment-timezone-with-data.min.js': { 'moment-timezone/builds': 'moment-timezone' },
                     'jquery.placeholder.js': { 'jquery-placeholder': 'jquery-placeholder/js' },
                     'platform.js': { 'platform': 'platform' },
                     'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
                     'daterangepicker.js': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/js' },
                     'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
-                    'table-dragger.js': { 'table-dragger/dist': 'table-dragger' }
+                    'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
+                    'jstree.min.js': { 'jstree/dist': 'jstree' }
                 }
 
             },
@@ -127,16 +128,22 @@ module.exports = function(grunt) {
                     'select2.min.css': { 'select2/dist/css': 'select2/css' },
                     'backgrid-select-all.min.css': { 'backgrid-select-all': 'backgrid-select-all' },
                     'font-awesome.min.css': { 'font-awesome/css': 'font-awesome/css' },
-                    '*': {
+                    '*': [{
                         'expand': true,
                         'dot': true,
                         'cwd': nodeModulePath + 'font-awesome',
                         'src': ['fonts/*.*'],
                         'dest': libPath + 'font-awesome/'
-                    },
+                    }, {
+                        'expand': true,
+                        'dot': true,
+                        'cwd': nodeModulePath + 'jstree/dist/themes/',
+                        'src': ['**'],
+                        'dest': libPath + 'jstree/css/'
+                    }],
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
-                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' }
+                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
                 }
 
             },
@@ -160,7 +167,7 @@ module.exports = function(grunt) {
                         { 'dagre-d3': 'dagre-d3' },
                         { 'platform': 'platform/' },
                         { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' },
-                        {'moment-timezone' : 'moment-timezone'}
+                        { 'moment-timezone': 'moment-timezone' }
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },
@@ -177,6 +184,14 @@ module.exports = function(grunt) {
                         { 'backgrid-select-all': 'backgrid-select-all' }
                     ]
                 }
+            }
+        },
+        rename: {
+            main: {
+                files: [
+                    { src: [libPath + '/jstree/css/default/style.min.css'], dest: libPath + '/jstree/css/default/default-theme.min.css' },
+                    { src: [libPath + '/jstree/css/default-dark/style.min.css'], dest: libPath + '/jstree/css/default-dark/default-dark-theme.min.css' },
+                ]
             }
         },
         sass: {
@@ -296,8 +311,12 @@ module.exports = function(grunt) {
                     });
                 }
             } else {
-                key = Object.keys(obj);
-                options.libFiles.push({ 'src': pathPrefix.srcPrefix + key + "/" + fileName, 'dest': pathPrefix.destPrefix + obj[key] + "/" + fileName });
+                if (fileName == "*") {
+                    options.libFiles.push(obj);
+                } else {
+                    key = Object.keys(obj);
+                    options.libFiles.push({ 'src': pathPrefix.srcPrefix + key + "/" + fileName, 'dest': pathPrefix.destPrefix + obj[key] + "/" + fileName });
+                }
             }
         };
 
@@ -305,16 +324,12 @@ module.exports = function(grunt) {
         var options = npmCopy[key].options,
             files = npmCopy[key].files;
         for (var fileName in files) {
-            if (fileName == "*") {
-                libFiles.push(files[fileName]);
-            } else {
-                createPath({
-                    'obj': files[fileName],
-                    'libFiles': libFiles,
-                    'pathPrefix': options,
-                    'fileName': fileName
-                });
-            }
+            createPath({
+                'obj': files[fileName],
+                'libFiles': libFiles,
+                'pathPrefix': options,
+                'fileName': fileName
+            });
         }
     };
     grunt.config.set('copy.libs', { files: libFiles });
@@ -326,6 +341,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
     grunt.loadNpmTasks('grunt-template');
+    grunt.loadNpmTasks('grunt-contrib-rename');
 
     require('load-grunt-tasks')(grunt);
 
@@ -333,6 +349,7 @@ module.exports = function(grunt) {
         'clean',
         'copy:libs',
         'copy:dist',
+        'rename',
         'sass:dist',
         'template',
         'setupProxies:server',
@@ -344,6 +361,7 @@ module.exports = function(grunt) {
         'clean',
         'copy:libs',
         'copy:build',
+        'rename',
         'sass:build',
         'template'
     ]);
@@ -352,6 +370,7 @@ module.exports = function(grunt) {
         'clean',
         'copy:libs',
         'copy:dist',
+        'rename',
         'sass:dist',
         'uglify',
         'cssmin',
@@ -365,6 +384,7 @@ module.exports = function(grunt) {
         'clean',
         'copy:libs',
         'copy:build',
+        'rename',
         'sass:build',
         'uglify',
         'cssmin',

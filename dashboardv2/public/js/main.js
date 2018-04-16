@@ -114,11 +114,11 @@ require.config({
         'daterangepicker': {
             'deps': ['jquery', 'moment']
         },
-        'moment-timezone' : {
-            'deps' : ['moment']
+        'moment-timezone': {
+            'deps': ['moment']
         },
-        'moment':{
-            'exports':['moment']
+        'moment': {
+            'exports': ['moment']
         },
         'nvd3': {
             'deps': ['d3']
@@ -126,6 +126,9 @@ require.config({
         'sparkline': {
             'deps': ['jquery'],
             'exports': ['sparkline']
+        },
+        'jstree': {
+            'deps': ['jquery']
         }
     },
 
@@ -167,7 +170,8 @@ require.config({
         'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
         'nvd3': 'libs/nvd3/nv.d3.min',
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
-        'table-dragger': 'libs/table-dragger/table-dragger'
+        'table-dragger': 'libs/table-dragger/table-dragger',
+        'jstree': 'libs/jstree/jstree.min'
     },
 
     /**

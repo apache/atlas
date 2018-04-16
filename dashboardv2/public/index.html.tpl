@@ -54,6 +54,8 @@
     <link href="js/libs/jQueryQueryBuilder/css/query-builder.default.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/bootstrap-daterangepicker/css/daterangepicker.css?bust=<%- bust %>" rel="stylesheet">
     <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>">
+    <link href="js/libs/jstree/css/default-dark/default-dark-theme.min.css?bust=<%- bust %>" rel="stylesheet">
+    <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="css/style.css?bust=<%- bust %>" rel="stylesheet">
 </head>
 
